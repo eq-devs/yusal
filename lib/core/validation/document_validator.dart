@@ -38,7 +38,7 @@ List<ValidationError> validateHouse(HouseDocument d) {
     if (prior == null) {
       first[value] = path;
     } else {
-      add(1, '$path/id', 'id $value 重复', related: [prior]);
+      add(1, '$path/id', 'id $value 重复', related: ['$prior/id']);
     }
   }
 
@@ -101,26 +101,6 @@ List<ValidationError> validateHouse(HouseDocument d) {
     }
   }
   if (d.floors.isEmpty) add(15, '/floors', '至少需要一层');
-  if (d.mainEntranceOpeningId != null) {
-    final doors = d.floors
-        .expand((f) => f.openings)
-        .where((o) => o.id == d.mainEntranceOpeningId && o is DoorOpening);
-    if (doors.length != 1) add(20, '/mainEntranceOpeningId', '主入口必须引用唯一存在的门');
-  }
-  for (var i = 0; i < d.axes.global.length; i++) {
-    final a = d.axes.global[i];
-    if (a.dir == AxisDir.V
-        ? (a.pos <= 0 || a.pos >= d.footprint.width)
-        : (a.pos <= 0 || a.pos >= d.footprint.depth))
-      add(4, '/axes/global/$i/pos', '内部轴线超出外轮廓');
-  }
-  for (var i = 0; i < d.axes.floor.length; i++) {
-    final a = d.axes.floor[i];
-    if (a.dir == AxisDir.V
-        ? (a.pos <= 0 || a.pos >= d.footprint.width)
-        : (a.pos <= 0 || a.pos >= d.footprint.depth))
-      add(4, '/axes/floor/$i/pos', '内部轴线超出外轮廓');
-  }
   if (d.footprint.northAngleDeg < 0 || d.footprint.northAngleDeg >= 360)
     add(23, '/footprint/northAngleDeg', '方位角必须在 0 到 359 之间');
   final defs = d.defaults;
@@ -149,25 +129,79 @@ List<ValidationError> validateHouse(HouseDocument d) {
   } else if (d.roof.parapetHeight! < 0 || d.roof.parapetHeight! > 1500)
     add(21, '/roof/parapetHeight', '女儿墙高度必须在 0 到 1500 毫米之间');
   if (d.schemaVersion != 1) add(24, '/schemaVersion', 'schemaVersion 必须为 1');
-  if (out.any((e) => e.code == 'INV01' || e.code == 'INV03'))
+  final orderedA1 = [for (var i = 0; i < out.length; i++) (i: i, error: out[i])]
+    ..sort((a, b) {
+      final code = a.error.code.compareTo(b.error.code);
+      return code != 0 ? code : a.i.compareTo(b.i);
+    });
+  out
+    ..clear()
+    ..addAll(orderedA1.map((item) => item.error));
+  if (out.any((e) => e.code == 'INV01' || e.code == 'INV03')) {
     return List.unmodifiable(out);
+  }
   for (var i = 0; i < d.axes.global.length; i++) {
     final a = d.axes.global[i];
     if (a.dir == AxisDir.V
         ? (a.pos <= 0 || a.pos >= d.footprint.width)
         : (a.pos <= 0 || a.pos >= d.footprint.depth))
-      continue;
+      add(4, '/axes/global/$i/pos', '内部轴线超出外轮廓');
+  }
+  for (var i = 0; i < d.axes.floor.length; i++) {
+    final a = d.axes.floor[i];
+    if (a.dir == AxisDir.V
+        ? (a.pos <= 0 || a.pos >= d.footprint.width)
+        : (a.pos <= 0 || a.pos >= d.footprint.depth))
+      add(4, '/axes/floor/$i/pos', '内部轴线超出外轮廓');
+  }
+  if (d.mainEntranceOpeningId != null) {
+    final doors = d.floors
+        .expand((f) => f.openings)
+        .where((o) => o.id == d.mainEntranceOpeningId && o is DoorOpening);
+    if (doors.length != 1) add(20, '/mainEntranceOpeningId', '主入口必须引用唯一存在的门');
+  }
+  final resolvedFloors = [
+    for (final floor in d.floors) resolveFloorAxes(d, floor.id)!
+  ];
+  final globalIssues = <ValidationError>[], localIssues = <ValidationError>[];
+  final reported = <({AxisDir? dir, String first, String second})>{};
+  for (final axes in resolvedFloors) {
+    final bad = {
+      for (final issue
+          in axes.issues.where((e) => e.code == 'POSITION_OUT_OF_RANGE'))
+        ...issue.axisIds
+    };
+    for (final issue in axes.issues.where((e) =>
+        e.code == 'POSITION_COLLISION' || e.code == 'SPACING_TOO_SMALL')) {
+      if (issue.axisIds.any(bad.contains)) continue;
+      final a = lookupAxis(axes, issue.axisIds.first).axis!,
+          b = lookupAxis(axes, issue.axisIds.last).axis!;
+      final key = (dir: issue.dir, first: a.id, second: b.id);
+      String path(ResolvedAxis axis) {
+        if (axis.kind == 'global')
+          return '/axes/global/${d.axes.global.indexWhere((v) => v.id == axis.id)}/pos';
+        return '/axes/floor/${d.axes.floor.indexWhere((v) => v.id == axis.id)}/pos';
+      }
+
+      final local = a.kind == 'floor' || b.kind == 'floor';
+      if (!local && !reported.add(key)) continue;
+      final target =
+          local ? (b.kind == 'floor' ? b : a) : (b.kind == 'global' ? b : a);
+      final other = identical(target, a) ? b : a;
+      final error = ValidationError(
+          'INV05', path(target), '轴线 ${a.id} 与 ${b.id} 的间距不足或重合',
+          related: other.kind == 'boundary' ? [] : [path(other)]);
+      (local ? localIssues : globalIssues).add(error);
+    }
+  }
+  for (final error in [...globalIssues, ...localIssues]) {
+    if (out.length >= 100) break;
+    out.add(error);
   }
   for (var f = 0; f < d.floors.length; f++) {
-    final floor = d.floors[f], axes = resolveFloorAxes(d, floor.id);
-    if (axes == null) continue;
-    for (final issue in axes.issues) {
-      if (issue.code == 'POSITION_COLLISION' ||
-          issue.code == 'SPACING_TOO_SMALL')
-        add(5, '/axes', '轴线位置冲突或间距不足');
-    }
+    final floor = d.floors[f], axes = resolvedFloors[f];
     if (axes.issues.isNotEmpty) continue;
-    final occupied = <Cell, String>{};
+    final placed = <({String id, String path, Set<Cell> cells})>[];
     final validObjects = <({String id, String path, Set<Cell> cells})>[];
     for (var r = 0; r < floor.rooms.length; r++) {
       final room = floor.rooms[r], path = '/floors/$f/rooms/$r/regions';
@@ -181,7 +215,14 @@ List<ValidationError> validateHouse(HouseDocument d) {
           final pieces = e.field.split('/');
           final idx = pieces.length > 1 ? pieces[1] : '0';
           final fld = pieces.length > 2 ? pieces[2] : '';
-          add(8, '$path/$idx/$fld', '房间区域引用无效');
+          add(
+              e.code == 'AXIS_NOT_VISIBLE'
+                  ? 9
+                  : e.code == 'INVALID_RESERVED_REF'
+                      ? 6
+                      : 8,
+              '$path/$idx${fld == 'x' || fld == 'y' ? '' : '/$fld'}',
+              '房间区域引用无效（${e.code}）');
         }
         continue;
       }
@@ -197,7 +238,15 @@ List<ValidationError> validateHouse(HouseDocument d) {
     for (var s = 0; s < floor.stairs.length; s++) {
       final stair = floor.stairs[s], resolved = resolveRect(axes, stair.region);
       if (!resolved.isSuccess) {
-        add(8, '/floors/$f/stairs/$s/region', '楼梯区域引用无效');
+        for (final error in resolved.errors)
+          add(
+              error.code == 'AXIS_NOT_VISIBLE'
+                  ? 9
+                  : error.code == 'INVALID_RESERVED_REF'
+                      ? 6
+                      : 8,
+              '/floors/$f/stairs/$s/region${error.field == 'x' || error.field == 'y' ? '' : '/${error.field}'}',
+              '楼梯区域引用无效（${error.code}）');
         continue;
       }
       validObjects.add((
@@ -207,21 +256,27 @@ List<ValidationError> validateHouse(HouseDocument d) {
       ));
     }
     for (final obj in validObjects) {
-      final conflicts = <String>{};
-      for (final c in obj.cells) {
-        final prior = occupied[c];
-        if (prior != null) conflicts.add(prior);
+      for (final prior in placed) {
+        if (obj.cells.any(prior.cells.contains))
+          add(11, obj.path, '对象 ${obj.id} 与 ${prior.id} 占用重叠',
+              related: [prior.path]);
       }
-      for (final prior in conflicts)
-        add(11, obj.path, '对象 ${obj.id} 与 $prior 占用重叠');
-      for (final c in obj.cells) occupied[c] = obj.id;
+      placed.add(obj);
     }
     final spans = <({String axis, int start, int end, String path})>[];
     for (var w = 0; w < floor.wallOverrides.length; w++) {
       final wall = floor.wallOverrides[w],
           res = resolveAnchor(axes, wall.anchor);
       if (!res.isSuccess) {
-        add(10, '/floors/$f/wallOverrides/$w/anchor', '墙例外锚点无效');
+        for (final error in res.errors)
+          add(
+              error.code == 'AXIS_NOT_VISIBLE'
+                  ? 9
+                  : error.code == 'INVALID_RESERVED_REF'
+                      ? 6
+                      : 10,
+              '/floors/$f/wallOverrides/$w/anchor${error.code.startsWith('ANCHOR_') ? '' : '/${error.field}'}',
+              '墙例外锚点无效（${error.code}）');
         continue;
       }
       final c = res.chain!;
@@ -244,7 +299,16 @@ List<ValidationError> validateHouse(HouseDocument d) {
     }
     for (var o = 0; o < floor.openings.length; o++) {
       final res = resolveAnchor(axes, floor.openings[o].anchor);
-      if (!res.isSuccess) add(10, '/floors/$f/openings/$o/anchor', '门窗锚点无效');
+      if (!res.isSuccess)
+        for (final error in res.errors)
+          add(
+              error.code == 'AXIS_NOT_VISIBLE'
+                  ? 9
+                  : error.code == 'INVALID_RESERVED_REF'
+                      ? 6
+                      : 10,
+              '/floors/$f/openings/$o/anchor${error.code.startsWith('ANCHOR_') ? '' : '/${error.field}'}',
+              '门窗锚点无效（${error.code}）');
     }
   }
   return List.unmodifiable(out);

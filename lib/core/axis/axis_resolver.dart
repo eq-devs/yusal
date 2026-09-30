@@ -13,13 +13,34 @@ class ResolvedAxis {
   final int pos;
   final String kind;
   final int index;
+  @override
+  bool operator ==(Object other) =>
+      other is ResolvedAxis &&
+      id == other.id &&
+      dir == other.dir &&
+      pos == other.pos &&
+      kind == other.kind &&
+      index == other.index;
+  @override
+  int get hashCode => Object.hash(id, dir, pos, kind, index);
 }
 
 class AxisIssue {
-  const AxisIssue(this.code, this.dir, this.axisIds);
+  AxisIssue(this.code, this.dir, List<String> axisIds)
+      : axisIds = List.unmodifiable(axisIds);
   final String code;
   final AxisDir? dir;
   final List<String> axisIds;
+  @override
+  bool operator ==(Object other) =>
+      other is AxisIssue &&
+      code == other.code &&
+      dir == other.dir &&
+      axisIds.length == other.axisIds.length &&
+      [for (var i = 0; i < axisIds.length; i++) axisIds[i] == other.axisIds[i]]
+          .every((v) => v);
+  @override
+  int get hashCode => Object.hash(code, dir, Object.hashAll(axisIds));
 }
 
 class AxisRecord {
@@ -37,17 +58,18 @@ class ResolvedAxes {
     required List<ResolvedAxis> h,
     required List<AxisIssue> issues,
     required Map<String, List<AxisRecord>> axisRegistry,
-  }) : v = List.unmodifiable(v),
-       h = List.unmodifiable(h),
-       issues = List.unmodifiable(issues),
-       axisRegistry = Map.unmodifiable(axisRegistry);
+  })  : v = List.unmodifiable(v),
+        h = List.unmodifiable(h),
+        issues = List.unmodifiable(issues),
+        axisRegistry = Map.unmodifiable(axisRegistry.map((key, value) =>
+            MapEntry(key, List<AxisRecord>.unmodifiable(value))));
   final String floorId;
   final List<ResolvedAxis> v, h;
   final List<AxisIssue> issues;
   final Map<String, List<AxisRecord>> axisRegistry;
   int get nx => v.length - 1;
   int get ny => h.length - 1;
-  List<ResolvedAxis> get all => [...v, ...h];
+  List<ResolvedAxis> get all => List.unmodifiable([...v, ...h]);
 }
 
 class AxisLookupFailure {
@@ -85,6 +107,11 @@ class ResolvedRect {
 class AxisReferenceError {
   const AxisReferenceError(this.code, this.field);
   final String code, field;
+  @override
+  bool operator ==(Object other) =>
+      other is AxisReferenceError && code == other.code && field == other.field;
+  @override
+  int get hashCode => Object.hash(code, field);
 }
 
 class ResolveRectResult {
@@ -187,10 +214,10 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
     ),
   ]);
   int kindOrder(String k) => switch (k) {
-    'boundary' => 0,
-    'global' => 1,
-    _ => 2,
-  };
+        'boundary' => 0,
+        'global' => 1,
+        _ => 2,
+      };
   List<ResolvedAxis> sort(AxisDir d) {
     final list = visible.where((a) => a.dir == d).toList()
       ..sort((a, b) {
@@ -252,13 +279,21 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
     'POSITION_COLLISION': 3,
     'SPACING_TOO_SMALL': 4,
   };
+  final ordinal = {for (var i = 0; i < issues.length; i++) issues[i]: i};
   issues.sort((a, b) {
     final c = (issueOrder[a.code] ?? 9).compareTo(issueOrder[b.code] ?? 9);
     if (c != 0) return c;
     final d = (a.dir == AxisDir.V ? 0 : 1).compareTo(
       b.dir == AxisDir.V ? 0 : 1,
     );
-    return d;
+    if (d != 0) return d;
+    if (a.dir != null) {
+      final axes = a.dir == AxisDir.V ? v : h;
+      final ai = axes.indexWhere((axis) => axis.id == a.axisIds.first);
+      final bi = axes.indexWhere((axis) => axis.id == b.axisIds.first);
+      if (ai != bi) return ai.compareTo(bi);
+    }
+    return ordinal[a]!.compareTo(ordinal[b]!);
   });
   return ResolvedAxes(
     floorId: floorId,
@@ -287,8 +322,7 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
     return (axis: null, failure: const AxisLookupFailure('AXIS_AMBIGUOUS'));
   if ((axes.axisRegistry[id] ?? const <AxisRecord>[]).any(
     (a) => a.kind == 'floor' && a.floorId != axes.floorId,
-  ))
-    return (axis: null, failure: const AxisLookupFailure('AXIS_NOT_VISIBLE'));
+  )) return (axis: null, failure: const AxisLookupFailure('AXIS_NOT_VISIBLE'));
   return (axis: null, failure: const AxisLookupFailure('AXIS_NOT_FOUND'));
 }
 
@@ -297,12 +331,14 @@ ResolveRectResult resolveRect(ResolvedAxes axes, AxisRectangle rect) {
   final found = <String, ResolvedAxis>{};
   final errors = <AxisReferenceError>[];
   for (final (field, key) in refs) {
-    final r = lookupAxis(axes, switch (key) {
-      'x0' => rect.x0,
-      'x1' => rect.x1,
-      'y0' => rect.y0,
-      _ => rect.y1,
-    });
+    final r = lookupAxis(
+        axes,
+        switch (key) {
+          'x0' => rect.x0,
+          'x1' => rect.x1,
+          'y0' => rect.y0,
+          _ => rect.y1,
+        });
     if (r.axis != null)
       found[field] = r.axis!;
     else
@@ -343,9 +379,9 @@ ResolveRectResult resolveRect(ResolvedAxes axes, AxisRectangle rect) {
 }
 
 List<Cell> cellsOfRect(ResolvedRect rect) => [
-  for (var j = rect.j0; j < rect.j1; j++)
-    for (var i = rect.i0; i < rect.i1; i++) Cell(i, j),
-];
+      for (var j = rect.j0; j < rect.j1; j++)
+        for (var i = rect.i0; i < rect.i1; i++) Cell(i, j),
+    ];
 
 ResolveChainResult resolveAnchor(ResolvedAxes axes, BoundaryAnchor anchor) {
   final refs = [

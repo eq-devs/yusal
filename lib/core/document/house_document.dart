@@ -18,6 +18,15 @@ enum RoofType { flat, gable }
 
 enum PositionType { center, fromStart, fromEnd }
 
+bool _listEquals<T>(List<T> a, List<T> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
+
 class Meta {
   const Meta({
     required this.name,
@@ -62,6 +71,36 @@ class Defaults {
       windowWidth,
       windowHeight,
       windowSill;
+  @override
+  bool operator ==(Object other) =>
+      other is Defaults &&
+      outerWallThickness == other.outerWallThickness &&
+      innerWallThickness == other.innerWallThickness &&
+      slabThickness == other.slabThickness &&
+      stairRiserMax == other.stairRiserMax &&
+      stairTread == other.stairTread &&
+      stairWidthMin == other.stairWidthMin &&
+      floorHeight == other.floorHeight &&
+      doorWidth == other.doorWidth &&
+      doorHeight == other.doorHeight &&
+      windowWidth == other.windowWidth &&
+      windowHeight == other.windowHeight &&
+      windowSill == other.windowSill;
+  @override
+  int get hashCode => Object.hashAll([
+        outerWallThickness,
+        innerWallThickness,
+        slabThickness,
+        stairRiserMax,
+        stairTread,
+        stairWidthMin,
+        floorHeight,
+        doorWidth,
+        doorHeight,
+        windowWidth,
+        windowHeight,
+        windowSill
+      ]);
 }
 
 class BuildingFootprint {
@@ -71,6 +110,14 @@ class BuildingFootprint {
     required this.northAngleDeg,
   });
   final int width, depth, northAngleDeg;
+  @override
+  bool operator ==(Object other) =>
+      other is BuildingFootprint &&
+      width == other.width &&
+      depth == other.depth &&
+      northAngleDeg == other.northAngleDeg;
+  @override
+  int get hashCode => Object.hash(width, depth, northAngleDeg);
 }
 
 class GlobalAxis {
@@ -78,6 +125,14 @@ class GlobalAxis {
   final String id;
   final AxisDir dir;
   final int pos;
+  @override
+  bool operator ==(Object other) =>
+      other is GlobalAxis &&
+      id == other.id &&
+      dir == other.dir &&
+      pos == other.pos;
+  @override
+  int get hashCode => Object.hash(id, dir, pos);
 }
 
 class FloorAxis {
@@ -90,14 +145,31 @@ class FloorAxis {
   final String id, floorId;
   final AxisDir dir;
   final int pos;
+  @override
+  bool operator ==(Object other) =>
+      other is FloorAxis &&
+      id == other.id &&
+      floorId == other.floorId &&
+      dir == other.dir &&
+      pos == other.pos;
+  @override
+  int get hashCode => Object.hash(id, floorId, dir, pos);
 }
 
 class AxisSystem {
   AxisSystem({required List<GlobalAxis> global, required List<FloorAxis> floor})
-    : global = List.unmodifiable(global),
-      floor = List.unmodifiable(floor);
+      : global = List.unmodifiable(global),
+        floor = List.unmodifiable(floor);
   final List<GlobalAxis> global;
   final List<FloorAxis> floor;
+  @override
+  bool operator ==(Object other) =>
+      other is AxisSystem &&
+      _listEquals(global, other.global) &&
+      _listEquals(floor, other.floor);
+  @override
+  int get hashCode =>
+      Object.hash(Object.hashAll(global), Object.hashAll(floor));
 }
 
 class AxisRectangle {
@@ -126,6 +198,14 @@ class BoundaryAnchor {
     required this.endAxisId,
   });
   final String axisId, startAxisId, endAxisId;
+  @override
+  bool operator ==(Object other) =>
+      other is BoundaryAnchor &&
+      axisId == other.axisId &&
+      startAxisId == other.startAxisId &&
+      endAxisId == other.endAxisId;
+  @override
+  int get hashCode => Object.hash(axisId, startAxisId, endAxisId);
 }
 
 sealed class WallOverride {
@@ -136,6 +216,11 @@ sealed class WallOverride {
 
 class OpenWall extends WallOverride {
   const OpenWall({required super.id, required super.anchor});
+  @override
+  bool operator ==(Object other) =>
+      other is OpenWall && id == other.id && anchor == other.anchor;
+  @override
+  int get hashCode => Object.hash(id, anchor);
 }
 
 class ThicknessWall extends WallOverride {
@@ -145,6 +230,14 @@ class ThicknessWall extends WallOverride {
     required this.value,
   });
   final int value;
+  @override
+  bool operator ==(Object other) =>
+      other is ThicknessWall &&
+      id == other.id &&
+      anchor == other.anchor &&
+      value == other.value;
+  @override
+  int get hashCode => Object.hash(id, anchor, value);
 }
 
 sealed class OpeningPosition {
@@ -153,16 +246,28 @@ sealed class OpeningPosition {
 
 class CenterPosition extends OpeningPosition {
   const CenterPosition();
+  @override
+  bool operator ==(Object other) => other is CenterPosition;
+  @override
+  int get hashCode => 0;
 }
 
 class FromStartPosition extends OpeningPosition {
   const FromStartPosition(this.d);
   final int d;
+  @override
+  bool operator ==(Object other) => other is FromStartPosition && d == other.d;
+  @override
+  int get hashCode => Object.hash('fromStart', d);
 }
 
 class FromEndPosition extends OpeningPosition {
   const FromEndPosition(this.d);
   final int d;
+  @override
+  bool operator ==(Object other) => other is FromEndPosition && d == other.d;
+  @override
+  int get hashCode => Object.hash('fromEnd', d);
 }
 
 sealed class Opening {
@@ -195,6 +300,20 @@ class DoorOpening extends Opening {
   final Hinge hinge;
   final OpeningSide opensTo;
   @override
+  bool operator ==(Object other) =>
+      other is DoorOpening &&
+      id == other.id &&
+      anchor == other.anchor &&
+      position == other.position &&
+      width == other.width &&
+      height == other.height &&
+      sill == other.sill &&
+      hinge == other.hinge &&
+      opensTo == other.opensTo;
+  @override
+  int get hashCode =>
+      Object.hash(id, anchor, position, width, height, sill, hinge, opensTo);
+  @override
   OpeningKind get kind => OpeningKind.door;
 }
 
@@ -209,6 +328,17 @@ class WindowOpening extends Opening {
   });
   @override
   OpeningKind get kind => OpeningKind.window;
+  @override
+  bool operator ==(Object other) =>
+      other is WindowOpening &&
+      id == other.id &&
+      anchor == other.anchor &&
+      position == other.position &&
+      width == other.width &&
+      height == other.height &&
+      sill == other.sill;
+  @override
+  int get hashCode => Object.hash(id, anchor, position, width, height, sill);
 }
 
 class SlidingOpening extends Opening {
@@ -222,6 +352,17 @@ class SlidingOpening extends Opening {
   });
   @override
   OpeningKind get kind => OpeningKind.sliding;
+  @override
+  bool operator ==(Object other) =>
+      other is SlidingOpening &&
+      id == other.id &&
+      anchor == other.anchor &&
+      position == other.position &&
+      width == other.width &&
+      height == other.height &&
+      sill == other.sill;
+  @override
+  int get hashCode => Object.hash(id, anchor, position, width, height, sill);
 }
 
 sealed class Stair {
@@ -243,6 +384,14 @@ class StraightStair extends Stair {
     required super.startEdge,
   });
   @override
+  bool operator ==(Object other) =>
+      other is StraightStair &&
+      id == other.id &&
+      region == other.region &&
+      startEdge == other.startEdge;
+  @override
+  int get hashCode => Object.hash(id, region, startEdge);
+  @override
   StairType get type => StairType.straight;
 }
 
@@ -256,25 +405,46 @@ class TurnStair extends Stair {
   });
   final StairTurn turn;
   @override
+  bool operator ==(Object other) =>
+      other is TurnStair &&
+      id == other.id &&
+      region == other.region &&
+      startEdge == other.startEdge &&
+      turn == other.turn &&
+      type == other.type;
+  @override
+  int get hashCode => Object.hash(id, region, startEdge, turn, type);
+  @override
   final StairType type;
 }
 
 class Roof {
   const Roof.flat(this.parapetHeight)
-    : type = RoofType.flat,
-      ridgeDir = null,
-      pitchDeg = null,
-      overhang = null;
+      : type = RoofType.flat,
+        ridgeDir = null,
+        pitchDeg = null,
+        overhang = null;
   const Roof.gable({
     required this.ridgeDir,
     required this.pitchDeg,
     required this.overhang,
-  }) : type = RoofType.gable,
-       parapetHeight = null;
+  })  : type = RoofType.gable,
+        parapetHeight = null;
   final RoofType type;
   final int? parapetHeight;
   final AxisDir? ridgeDir;
   final int? pitchDeg, overhang;
+  @override
+  bool operator ==(Object other) =>
+      other is Roof &&
+      type == other.type &&
+      parapetHeight == other.parapetHeight &&
+      ridgeDir == other.ridgeDir &&
+      pitchDeg == other.pitchDeg &&
+      overhang == other.overhang;
+  @override
+  int get hashCode =>
+      Object.hash(type, parapetHeight, ridgeDir, pitchDeg, overhang);
 }
 
 class Room {
@@ -288,6 +458,15 @@ class Room {
   final RoomType type;
   final String name;
   final List<AxisRectangle> regions;
+  @override
+  bool operator ==(Object other) =>
+      other is Room &&
+      id == other.id &&
+      type == other.type &&
+      name == other.name &&
+      _listEquals(regions, other.regions);
+  @override
+  int get hashCode => Object.hash(id, type, name, Object.hashAll(regions));
 }
 
 class Floor {
@@ -299,16 +478,35 @@ class Floor {
     required List<WallOverride> wallOverrides,
     required List<Opening> openings,
     required List<Stair> stairs,
-  }) : rooms = List.unmodifiable(rooms),
-       wallOverrides = List.unmodifiable(wallOverrides),
-       openings = List.unmodifiable(openings),
-       stairs = List.unmodifiable(stairs);
+  })  : rooms = List.unmodifiable(rooms),
+        wallOverrides = List.unmodifiable(wallOverrides),
+        openings = List.unmodifiable(openings),
+        stairs = List.unmodifiable(stairs);
   final String id, name;
   final int height;
   final List<Room> rooms;
   final List<WallOverride> wallOverrides;
   final List<Opening> openings;
   final List<Stair> stairs;
+  @override
+  bool operator ==(Object other) =>
+      other is Floor &&
+      id == other.id &&
+      name == other.name &&
+      height == other.height &&
+      _listEquals(rooms, other.rooms) &&
+      _listEquals(wallOverrides, other.wallOverrides) &&
+      _listEquals(openings, other.openings) &&
+      _listEquals(stairs, other.stairs);
+  @override
+  int get hashCode => Object.hash(
+      id,
+      name,
+      height,
+      Object.hashAll(rooms),
+      Object.hashAll(wallOverrides),
+      Object.hashAll(openings),
+      Object.hashAll(stairs));
 }
 
 class HouseDocument {
@@ -336,36 +534,53 @@ class HouseDocument {
       schemaVersion == other.schemaVersion &&
       meta == other.meta &&
       mainEntranceOpeningId == other.mainEntranceOpeningId &&
-      footprint.width == other.footprint.width &&
-      footprint.depth == other.footprint.depth &&
-      footprint.northAngleDeg == other.footprint.northAngleDeg &&
-      floors.length == other.floors.length;
+      defaults == other.defaults &&
+      footprint == other.footprint &&
+      axes == other.axes &&
+      _listEquals(floors, other.floors) &&
+      roof == other.roof;
   @override
   int get hashCode => Object.hash(
-    schemaVersion,
-    meta,
-    mainEntranceOpeningId,
-    footprint.width,
-    footprint.depth,
-    floors.length,
-  );
+        schemaVersion,
+        meta,
+        mainEntranceOpeningId,
+        defaults,
+        footprint,
+        axes,
+        Object.hashAll(floors),
+        roof,
+      );
 }
 
 class UndoableDesignState {
-  const UndoableDesignState({
+  UndoableDesignState({
     required this.defaults,
     required this.footprint,
     required this.axes,
-    required this.floors,
+    required List<Floor> floors,
     required this.roof,
     this.mainEntranceOpeningId,
-  });
+  }) : floors = List.unmodifiable(floors);
   final Defaults defaults;
   final BuildingFootprint footprint;
   final AxisSystem axes;
   final List<Floor> floors;
   final Roof roof;
   final String? mainEntranceOpeningId;
+  @override
+  bool operator ==(Object other) =>
+      other is UndoableDesignState &&
+      defaults == other.defaults &&
+      footprint == other.footprint &&
+      axes == other.axes &&
+      roof == other.roof &&
+      mainEntranceOpeningId == other.mainEntranceOpeningId &&
+      floors.length == other.floors.length &&
+      [for (var i = 0; i < floors.length; i++) floors[i] == other.floors[i]]
+          .every((equal) => equal);
+  @override
+  int get hashCode => Object.hash(defaults, footprint, axes, roof,
+      mainEntranceOpeningId, Object.hashAll(floors));
 }
 
 UndoableDesignState extractDesignState(HouseDocument doc) =>

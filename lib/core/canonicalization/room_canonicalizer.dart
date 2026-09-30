@@ -86,9 +86,8 @@ CanonicalCellsResult canonicalizeCells(ResolvedAxes axes, Set<Cell> cells) {
       }
     }
     intervals.add((start, end));
-    final keys = intervals
-        .map((interval) => '${interval.$1}:${interval.$2}')
-        .toSet();
+    final keys =
+        intervals.map((interval) => '${interval.$1}:${interval.$2}').toSet();
     for (final key in open.keys.toList())
       if (!keys.contains(key)) {
         final e = open.remove(key)!;
@@ -154,8 +153,7 @@ bool isConnected(Set<Cell> cells) {
       Cell(c.i - 1, c.j),
       Cell(c.i, c.j + 1),
       Cell(c.i, c.j - 1),
-    ])
-      if (cells.contains(n) && visited.add(n)) queue.add(n);
+    ]) if (cells.contains(n) && visited.add(n)) queue.add(n);
   }
   return visited.length == cells.length;
 }
@@ -208,12 +206,12 @@ CellSetResult components(ResolvedAxes axes, Set<Cell> cells) {
 
 int compareComponentPriority(ResolvedAxes axes, Set<Cell> a, Set<Cell> b) {
   int area(Set<Cell> s) => s.fold<int>(
-    0,
-    (sum, c) =>
-        sum +
-        (axes.v[c.i + 1].pos - axes.v[c.i].pos) *
-            (axes.h[c.j + 1].pos - axes.h[c.j].pos),
-  );
+        0,
+        (sum, c) =>
+            sum +
+            (axes.v[c.i + 1].pos - axes.v[c.i].pos) *
+                (axes.h[c.j + 1].pos - axes.h[c.j].pos),
+      );
   final c = area(b).compareTo(area(a));
   return c != 0 ? c : _rowOrder(_ordered(a).first, _ordered(b).first);
 }

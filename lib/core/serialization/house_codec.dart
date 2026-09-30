@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'schema_validator.dart';
 
 import '../document/house_document.dart';
 import '../validation/document_validator.dart';
@@ -184,6 +185,12 @@ class _Decoder {
     );
     if (!re.hasMatch(v)) return false;
     try {
+      final date = DateTime.parse(v.substring(0, 10));
+      if (date.toIso8601String().substring(0, 10) != v.substring(0, 10))
+        return false;
+      if (int.parse(v.substring(11, 13)) > 23 ||
+          int.parse(v.substring(14, 16)) > 59 ||
+          int.parse(v.substring(17, 19)) > 59) return false;
       DateTime.parse(v);
       return true;
     } catch (_) {
@@ -282,11 +289,14 @@ class _Decoder {
         : FromEndPosition(d);
   }
 
-  void _shape(Map<String, Object?> m, String p, List<String> keys) {
-    for (final k in keys)
+  void _shape(Map<String, Object?> m, String p, List<String> required,
+      {List<String>? allowed}) {
+    final accepted = allowed ?? required;
+    for (final k in required)
       if (!m.containsKey(k)) err('MISSING_FIELD', '$p/$k', '缺少字段 $k');
     for (final k in m.keys)
-      if (!keys.contains(k)) err('FIELD_NOT_ALLOWED', '$p/$k', '此形状不允许字段 $k');
+      if (!accepted.contains(k))
+        err('FIELD_NOT_ALLOWED', '$p/$k', '此形状不允许字段 $k');
   }
 
   WallOverride wall(Object? v, String p) {
@@ -337,7 +347,7 @@ class _Decoder {
     final raw = m['kind'];
     final kind = OpeningKind.values.where((e) => e.name == raw).firstOrNull;
     if (kind == null) err('UNKNOWN_DISCRIMINATOR', '$p/kind', '未知 kind');
-    final keys = [
+    final required = [
       'kind',
       'id',
       'anchor',
@@ -346,9 +356,9 @@ class _Decoder {
       'height',
       'sill',
       if (kind == OpeningKind.door) 'hinge',
-      'opensTo',
+      if (kind == OpeningKind.door) 'opensTo',
     ];
-    _shape(m, p, keys);
+    _shape(m, p, required);
     final id = str(m['id'], '$p/id', id: true),
         a = anchor(m['anchor'], '$p/anchor'),
         pos = position(m['position'], '$p/position');
@@ -534,7 +544,8 @@ class _Decoder {
       return _empty();
     }
     final m = value.cast<String, Object?>();
-    _shape(m, '', keys.where((k) => k != 'mainEntranceOpeningId').toList());
+    _shape(m, '', keys.where((key) => key != 'mainEntranceOpeningId').toList(),
+        allowed: keys);
     String? entrance;
     if (m.containsKey('mainEntranceOpeningId'))
       entrance = str(
@@ -556,35 +567,35 @@ class _Decoder {
   }
 
   HouseDocument _empty() => HouseDocument(
-    schemaVersion: 1,
-    meta: const Meta(
-      name: '',
-      createdAt: '2000-01-01T00:00:00Z',
-      updatedAt: '2000-01-01T00:00:00Z',
-    ),
-    defaults: const Defaults(
-      outerWallThickness: 1,
-      innerWallThickness: 1,
-      slabThickness: 1,
-      stairRiserMax: 1,
-      stairTread: 1,
-      stairWidthMin: 1,
-      floorHeight: 2400,
-      doorWidth: 1,
-      doorHeight: 1,
-      windowWidth: 1,
-      windowHeight: 1,
-      windowSill: 0,
-    ),
-    footprint: const BuildingFootprint(
-      width: 3000,
-      depth: 3000,
-      northAngleDeg: 0,
-    ),
-    axes: AxisSystem(global: [], floor: []),
-    floors: [],
-    roof: const Roof.flat(0),
-  );
+        schemaVersion: 1,
+        meta: const Meta(
+          name: '',
+          createdAt: '2000-01-01T00:00:00Z',
+          updatedAt: '2000-01-01T00:00:00Z',
+        ),
+        defaults: const Defaults(
+          outerWallThickness: 1,
+          innerWallThickness: 1,
+          slabThickness: 1,
+          stairRiserMax: 1,
+          stairTread: 1,
+          stairWidthMin: 1,
+          floorHeight: 2400,
+          doorWidth: 1,
+          doorHeight: 1,
+          windowWidth: 1,
+          windowHeight: 1,
+          windowSill: 0,
+        ),
+        footprint: const BuildingFootprint(
+          width: 3000,
+          depth: 3000,
+          northAngleDeg: 0,
+        ),
+        axes: AxisSystem(global: [], floor: []),
+        floors: [],
+        roof: const Roof.flat(0),
+      );
 }
 
 LoadResult loadHouse(List<int> bytes) {
@@ -643,6 +654,13 @@ LoadResult loadHouse(List<int> bytes) {
         LoadError('UNSUPPORTED_NEWER_VERSION', '/schemaVersion', '文件版本高于当前版本'),
       ]),
     );
+  return decodeV1(raw);
+}
+
+LoadResult decodeV1(Object? raw) {
+  final schemaErrors = validateSchemaV1(raw);
+  if (schemaErrors.isNotEmpty)
+    return LoadResult.failure(LoadFailure('decode', schemaErrors));
   final d = _Decoder(), doc = d.document(raw);
   if (d.errors.isNotEmpty)
     return LoadResult.failure(
@@ -659,22 +677,23 @@ LoadResult loadHouse(List<int> bytes) {
 }
 
 String encodeHouse(HouseDocument d) {
+  assert(validateHouse(d).isEmpty, 'Only valid documents can be encoded');
   Map<String, Object?> rect(AxisRectangle r) => {
-    'x0': r.x0,
-    'x1': r.x1,
-    'y0': r.y0,
-    'y1': r.y1,
-  };
+        'x0': r.x0,
+        'x1': r.x1,
+        'y0': r.y0,
+        'y1': r.y1,
+      };
   Map<String, Object?> anchor(BoundaryAnchor a) => {
-    'axisId': a.axisId,
-    'startAxisId': a.startAxisId,
-    'endAxisId': a.endAxisId,
-  };
+        'axisId': a.axisId,
+        'startAxisId': a.startAxisId,
+        'endAxisId': a.endAxisId,
+      };
   Map<String, Object?> pos(OpeningPosition p) => switch (p) {
-    CenterPosition() => {'type': 'center'},
-    FromStartPosition(:final d) => {'type': 'fromStart', 'd': d},
-    FromEndPosition(:final d) => {'type': 'fromEnd', 'd': d},
-  };
+        CenterPosition() => {'type': 'center'},
+        FromStartPosition(:final d) => {'type': 'fromStart', 'd': d},
+        FromEndPosition(:final d) => {'type': 'fromEnd', 'd': d},
+      };
   final root = <String, Object?>{
     'schemaVersion': d.schemaVersion,
     'meta': {
@@ -732,68 +751,68 @@ String encodeHouse(HouseDocument d) {
             for (final w in f.wallOverrides)
               switch (w) {
                 OpenWall() => {
-                  'type': 'open',
-                  'id': w.id,
-                  'anchor': anchor(w.anchor),
-                },
+                    'type': 'open',
+                    'id': w.id,
+                    'anchor': anchor(w.anchor),
+                  },
                 ThicknessWall() => {
-                  'type': 'thickness',
-                  'id': w.id,
-                  'anchor': anchor(w.anchor),
-                  'value': w.value,
-                },
+                    'type': 'thickness',
+                    'id': w.id,
+                    'anchor': anchor(w.anchor),
+                    'value': w.value,
+                  },
               },
           ],
           'openings': [
             for (final o in f.openings)
               switch (o) {
                 DoorOpening() => {
-                  'kind': 'door',
-                  'id': o.id,
-                  'anchor': anchor(o.anchor),
-                  'position': pos(o.position),
-                  'width': o.width,
-                  'height': o.height,
-                  'sill': o.sill,
-                  'hinge': o.hinge.name,
-                  'opensTo': o.opensTo.name,
-                },
+                    'kind': 'door',
+                    'id': o.id,
+                    'anchor': anchor(o.anchor),
+                    'position': pos(o.position),
+                    'width': o.width,
+                    'height': o.height,
+                    'sill': o.sill,
+                    'hinge': o.hinge.name,
+                    'opensTo': o.opensTo.name,
+                  },
                 WindowOpening() => {
-                  'kind': 'window',
-                  'id': o.id,
-                  'anchor': anchor(o.anchor),
-                  'position': pos(o.position),
-                  'width': o.width,
-                  'height': o.height,
-                  'sill': o.sill,
-                },
+                    'kind': 'window',
+                    'id': o.id,
+                    'anchor': anchor(o.anchor),
+                    'position': pos(o.position),
+                    'width': o.width,
+                    'height': o.height,
+                    'sill': o.sill,
+                  },
                 SlidingOpening() => {
-                  'kind': 'sliding',
-                  'id': o.id,
-                  'anchor': anchor(o.anchor),
-                  'position': pos(o.position),
-                  'width': o.width,
-                  'height': o.height,
-                  'sill': o.sill,
-                },
+                    'kind': 'sliding',
+                    'id': o.id,
+                    'anchor': anchor(o.anchor),
+                    'position': pos(o.position),
+                    'width': o.width,
+                    'height': o.height,
+                    'sill': o.sill,
+                  },
               },
           ],
           'stairs': [
             for (final s in f.stairs)
               switch (s) {
                 StraightStair() => {
-                  'type': 'straight',
-                  'id': s.id,
-                  'region': rect(s.region),
-                  'startEdge': s.startEdge.name,
-                },
+                    'type': 'straight',
+                    'id': s.id,
+                    'region': rect(s.region),
+                    'startEdge': s.startEdge.name,
+                  },
                 TurnStair() => {
-                  'type': s.type.name,
-                  'id': s.id,
-                  'region': rect(s.region),
-                  'startEdge': s.startEdge.name,
-                  'turn': s.turn.name,
-                },
+                    'type': s.type.name,
+                    'id': s.id,
+                    'region': rect(s.region),
+                    'startEdge': s.startEdge.name,
+                    'turn': s.turn.name,
+                  },
               },
           ],
         },
@@ -801,11 +820,11 @@ String encodeHouse(HouseDocument d) {
     'roof': switch (d.roof.type) {
       RoofType.flat => {'type': 'flat', 'parapetHeight': d.roof.parapetHeight},
       RoofType.gable => {
-        'type': 'gable',
-        'ridgeDir': d.roof.ridgeDir!.name,
-        'pitchDeg': d.roof.pitchDeg,
-        'overhang': d.roof.overhang,
-      },
+          'type': 'gable',
+          'ridgeDir': d.roof.ridgeDir!.name,
+          'pitchDeg': d.roof.pitchDeg,
+          'overhang': d.roof.overhang,
+        },
     },
   };
   return '${const JsonEncoder.withIndent('  ').convert(root)}\n';

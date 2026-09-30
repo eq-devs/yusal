@@ -11,7 +11,7 @@
 
 ## 阶段与交付
 
-1. **House Core（当前）**：HouseDocument 不可变模型、严格 v1 JSON 解码/稳定编码、Schema Migration 接口、AxisResolver、RoomCanonicalizer、DocumentValidator、两个 fixture。解码错误需有稳定 path/code/order，输入异常不得导致崩溃。
+1. **House Core**：HouseDocument 不可变模型、严格 v1 JSON 解码/稳定编码、Schema Migration 接口、AxisResolver、RoomCanonicalizer、DocumentValidator、两个 fixture。解码错误需有稳定 path/code/order，输入异常不得导致崩溃。
 2. **基础几何**：格子归属、边界链、墙段与墙矩形、净尺寸、尺寸标注。
 3. **3D 技术验证**：用 scene3d 候选输入验证相机、拾取、逐层显示、材质和性能；只确定 render3d 适配方案。
 4. **2D 只读编辑器**：响应式首页/新建流程和 2D 平面显示，按产品用语呈现，不暴露 CAD 概念。
@@ -24,10 +24,40 @@
 
 ## 当前执行范围
 
-立即完成阶段 1，并搭起最小 Flutter 应用骨架。阶段 1 完成后，在此计划中记录规格差异和尚未实现项；后续阶段按上表依序推进。每个阶段的纯 Dart 核心均保持平台独立。只有需要用户操作的发布、外部服务写入等事项才另行确认。
+已实现从项目创建到编辑、保存、检查与 3D 查看的一整条工作流。纯 Dart core 保持平台独立。下表区分实现状态与完整规格验收；通过现有测试不等于两份规格的全部验收项已完成。
+
+| 阶段 | 实现状态 |
+| --- | --- |
+| 1 Core | 模型、严格解码/编码、校验、轴解析、规范化、两个逐字节 golden 已实现；10,000 个格子集合性质测试通过。全部负例矩阵和排序/值对象契约仍需逐项审计。 |
+| 2 基础几何 | 所有权、墙段、墙矩形、净面积、净宽、标注已实现；完整几何 golden 矩阵待补齐。 |
+| 3/10 3D | 软件投影查看器实现相机、逐层显示、材质、拾取和平面联动；生产引擎选型、精确深度/透明度与真机性能验收未完成。 |
+| 4/11 编辑器 | 首页、空白与三套模板、2D、属性面板、楼层与网格、手机横竖屏已实现；网格和门窗拖动预览已实现；尺寸直接点击等细节待补齐。 |
+| 5 命令历史 | 纯设计状态 Applied/Rejected/NeedsResolution 接口、房间/门窗/楼梯/楼层/网格/屋顶命令、撤销重做实现；全部原因码与冲突对象列表的精确契约待审计。 |
+| 6 门窗墙例外 | 定位、状态、墙洞口、门窗类型、铰链、主入口、墙开放和墙厚已实现。 |
+| 7 楼梯屋顶 | 三种楼梯、楼板洞口、平/双坡屋顶、scene3d 实现；SourceRef 严格类型、稳定 scene 顺序和玻璃平面已实现；墙块进一步合并待补齐。 |
+| 8 存储 | 文件系统接口、原子文档/索引/预览、临时清理、损坏项目、自动保存、导入导出、原生打开实现；统一结果类型、错误分类和完整故障注入矩阵待补齐。 |
+| 9 检查 | R01–R10 和定位高亮实现；全部文案、focus 精确坐标和 golden 矩阵待补齐。 |
+
+## 发布前剩余验收
+
+- 完成上述纯 API 契约和全部规格矩阵的逐项核对。
+- 完成 3D 引擎技术选型和目标真机性能测试。
+- 在目标聊天/文件应用验证 .house 分享、冷启动/运行中打开和权限失败。
+- 完成 Android 真机运行、签名发布配置与用户可用性验收。
+
 
 ## 执行记录（2026-09-30）
 
-- 已完成阶段 1 的初版实现：文档数据类型、重复 JSON 键识别与严格加载入口、确定性编码、轴线/矩形/边界链解析、房间格子规范化与连通块拆分、文档校验首版，以及两份 fixture。
-- 已建立 Flutter app 入口及 pubspec 壳；当前机器 Flutter SDK 的 `bin/cache/engine.stamp` 为只读，`flutter create` 无法运行。当前沙箱也没有缓存 `test`、`flutter_lints` 或 Flutter 插件包，pub.dev 网络访问不可用，因此不能执行 Flutter package 获取和测试。
-- 阶段 1 暂未验收：需补足规格全部联合类型和验证边界案例，严格符合验证器阶段/去重/错误排序契约，为完整文档模型补上深度值相等，并在具备依赖的环境运行 T1–T23、A1–A21、C1–C19、Q1–Q9、V1–V16。现在属于开始编码，不应视为已达到阶段验收。
+- Flutter web/iOS/Android project scaffolding is generated and dependencies are resolved.
+- Initial analyzer/test snapshot passed. House Core includes a two-floor fixture, strict JSON loading/encoding, axis resolution, canonicalization, and an initial validator.
+- Deep value equality and a broader regression suite have been added. Stage 1 still needs the full spec matrices and validator ordering/deduplication conformance before it can be marked accepted.
+
+## 本次执行记录
+
+- 编辑器补齐房间合并/类型/删除、轴删除冲突/作用范围/提升、门窗转换/铰链/定位、楼层/楼梯/屋顶/默认值、检查定位和 3D 联动。
+- 新增模板、原生 .house 收件、硬上限流读取、原子索引、WebP 缩略图和损坏项目展示。
+- 当前静态分析无问题；42 个单元/组件测试通过（其中一个用例覆盖 10,000 个种子格子集合）。
+- iPhone 17 Pro / iOS 26.4 模拟器 integration_test 通过：创建模板、3D、原生 WebP 存盘、返回首页并重新打开。
+- 最终源码的 Web release、Android debug APK、iOS simulator 均已构建成功；iOS integration_test 已再次通过。
+
+- 网格/门窗拖动预览、双指取消、一次提交一次撤销的手势回归通过；真实 iOS 文件 URL 打开 .house 已在模拟器验证成功。

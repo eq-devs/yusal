@@ -5,6 +5,7 @@
     "createdAt": "2026-09-29T12:00:00Z",
     "updatedAt": "2026-09-29T12:00:00Z"
   },
+  "mainEntranceOpeningId": "o1",
   "defaults": {
     "outerWallThickness": 240,
     "innerWallThickness": 120,
@@ -26,8 +27,16 @@
   },
   "axes": {
     "global": [
-      {"id": "V1", "dir": "V", "pos": 4500},
-      {"id": "H1", "dir": "H", "pos": 4000}
+      {
+        "id": "V1",
+        "dir": "V",
+        "pos": 4500
+      },
+      {
+        "id": "H1",
+        "dir": "H",
+        "pos": 4000
+      }
     ],
     "floor": []
   },
@@ -37,31 +46,173 @@
       "name": "一楼",
       "height": 3000,
       "rooms": [
-        {"id": "r1", "type": "living", "name": "客厅", "regions": [{"x0": "@left", "x1": "V1", "y0": "@bottom", "y1": "H1"}]},
-        {"id": "r2", "type": "kitchen", "name": "厨房", "regions": [{"x0": "V1", "x1": "@right", "y0": "@bottom", "y1": "H1"}]},
-        {"id": "r3", "type": "dining", "name": "餐厅", "regions": [{"x0": "@left", "x1": "@right", "y0": "H1", "y1": "@top"}]}
+        {
+          "id": "r1",
+          "type": "living",
+          "name": "客厅",
+          "regions": [
+            {
+              "x0": "@left",
+              "x1": "V1",
+              "y0": "@bottom",
+              "y1": "H1"
+            }
+          ]
+        },
+        {
+          "id": "r2",
+          "type": "kitchen",
+          "name": "厨房",
+          "regions": [
+            {
+              "x0": "V1",
+              "x1": "@right",
+              "y0": "@bottom",
+              "y1": "H1"
+            }
+          ]
+        },
+        {
+          "id": "r3",
+          "type": "dining",
+          "name": "餐厅",
+          "regions": [
+            {
+              "x0": "V1",
+              "x1": "@right",
+              "y0": "H1",
+              "y1": "@top"
+            }
+          ]
+        }
       ],
-      "wallOverrides": [{"type": "open", "id": "wo1", "anchor": {"axisId": "H1", "startAxisId": "@left", "endAxisId": "V1"}}, {"type": "thickness", "id": "wo2", "anchor": {"axisId": "V1", "startAxisId": "@bottom", "endAxisId": "H1"}, "value": 150}],
+      "wallOverrides": [
+        {
+          "type": "open",
+          "id": "wo1",
+          "anchor": {
+            "axisId": "H1",
+            "startAxisId": "@left",
+            "endAxisId": "V1"
+          }
+        },
+        {
+          "type": "thickness",
+          "id": "wo2",
+          "anchor": {
+            "axisId": "V1",
+            "startAxisId": "@bottom",
+            "endAxisId": "H1"
+          },
+          "value": 150
+        }
+      ],
       "openings": [
-        {"kind": "door", "id": "o1", "anchor": {"axisId": "@bottom", "startAxisId": "@left", "endAxisId": "V1"}, "position": {"type": "fromStart", "d": 1200}, "width": 900, "height": 2100, "sill": 0, "hinge": "start", "opensTo": "positiveSide"},
-        {"kind": "window", "id": "o2", "anchor": {"axisId": "@left", "startAxisId": "@bottom", "endAxisId": "H1"}, "position": {"type": "center"}, "width": 1500, "height": 1500, "sill": 900},
-        {"kind": "sliding", "id": "o3", "anchor": {"axisId": "@top", "startAxisId": "@left", "endAxisId": "@right"}, "position": {"type": "fromEnd", "d": 1600}, "width": 1800, "height": 2100, "sill": 0}
+        {
+          "kind": "door",
+          "id": "o1",
+          "anchor": {
+            "axisId": "@bottom",
+            "startAxisId": "@left",
+            "endAxisId": "V1"
+          },
+          "position": {
+            "type": "fromStart",
+            "d": 1200
+          },
+          "width": 900,
+          "height": 2100,
+          "sill": 0,
+          "hinge": "start",
+          "opensTo": "positiveSide"
+        },
+        {
+          "kind": "window",
+          "id": "o2",
+          "anchor": {
+            "axisId": "@left",
+            "startAxisId": "@bottom",
+            "endAxisId": "H1"
+          },
+          "position": {
+            "type": "center"
+          },
+          "width": 1500,
+          "height": 1500,
+          "sill": 900
+        },
+        {
+          "kind": "sliding",
+          "id": "o3",
+          "anchor": {
+            "axisId": "@top",
+            "startAxisId": "@left",
+            "endAxisId": "@right"
+          },
+          "position": {
+            "type": "fromEnd",
+            "d": 1600
+          },
+          "width": 1800,
+          "height": 2100,
+          "sill": 0
+        }
       ],
-      "stairs": [{"type": "straight", "id": "s1", "region": {"x0": "V1", "x1": "@right", "y0": "H1", "y1": "@top"}, "startEdge": "bottom"}]
+      "stairs": [
+        {
+          "type": "straight",
+          "id": "s1",
+          "region": {
+            "x0": "@left",
+            "x1": "V1",
+            "y0": "H1",
+            "y1": "@top"
+          },
+          "startEdge": "bottom"
+        }
+      ]
     },
     {
       "id": "f2",
       "name": "二楼",
       "height": 3000,
       "rooms": [
-        {"id": "r4", "type": "bedroom", "name": "卧室", "regions": [{"x0": "@left", "x1": "@right", "y0": "@bottom", "y1": "H1"}]},
-        {"id": "r5", "type": "bathroom", "name": "卫生间", "regions": [{"x0": "@left", "x1": "@right", "y0": "H1", "y1": "@top"}]}
+        {
+          "id": "r4",
+          "type": "bedroom",
+          "name": "卧室",
+          "regions": [
+            {
+              "x0": "@left",
+              "x1": "@right",
+              "y0": "@bottom",
+              "y1": "H1"
+            }
+          ]
+        },
+        {
+          "id": "r5",
+          "type": "bathroom",
+          "name": "卫生间",
+          "regions": [
+            {
+              "x0": "@left",
+              "x1": "@right",
+              "y0": "H1",
+              "y1": "@top"
+            }
+          ]
+        }
       ],
       "wallOverrides": [],
       "openings": [],
       "stairs": []
     }
   ],
-  "mainEntranceOpeningId": "o1",
-  "roof": {"type": "gable", "ridgeDir": "V", "pitchDeg": 30, "overhang": 500}
+  "roof": {
+    "type": "gable",
+    "ridgeDir": "V",
+    "pitchDeg": 30,
+    "overhang": 500
+  }
 }

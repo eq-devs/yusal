@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "name": "最小样例",
+    "createdAt": "2026-09-29T12:00:00.000Z",
+    "updatedAt": "2026-09-29T12:00:00.000Z"
+  },
+  "defaults": {
+    "outerWallThickness": 240,
+    "innerWallThickness": 120,
+    "slabThickness": 120,
+    "stairRiserMax": 175,
+    "stairTread": 260,
+    "stairWidthMin": 900,
+    "floorHeight": 3000,
+    "doorWidth": 900,
+    "doorHeight": 2100,
+    "windowWidth": 1500,
+    "windowHeight": 1500,
+    "windowSill": 900
+  },
+  "footprint": {
+    "width": 6000,
+    "depth": 5000,
+    "northAngleDeg": 0
+  },
+  "axes": {
+    "global": [],
+    "floor": []
+  },
+  "floors": [
+    {
+      "id": "f1",
+      "name": "一楼",
+      "height": 3000,
+      "rooms": [
+        {
+          "id": "r1",
+          "type": "living",
+          "name": "客厅",
+          "regions": [
+            {
+              "x0": "@left",
+              "x1": "@right",
+              "y0": "@bottom",
+              "y1": "@top"
+            }
+          ]
+        }
+      ],
+      "wallOverrides": [],
+      "openings": [],
+      "stairs": []
+    }
+  ],
+  "roof": {
+    "type": "flat",
+    "parapetHeight": 900
+  }
+}

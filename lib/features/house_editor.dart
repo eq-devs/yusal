@@ -22,6 +22,7 @@ import '../storage/project_store.dart';
 import '../storage/house_import.dart';
 import 'footprint_sketch.dart';
 import 'wall_length_dialog.dart';
+import 'wall_attachment_points.dart';
 
 class HouseHome extends StatefulWidget {
   const HouseHome({super.key});
@@ -429,7 +430,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
             : MediaQuery.sizeOf(context).width < 350
                 ? 180.0
                 : 138.0;
-    return EdgeInsets.fromLTRB(12, 112, 68, bottom);
+    return EdgeInsets.fromLTRB(12, 112, 68, bottom + 36);
   }
 
   FloorPlanPainter interactionPainter() =>
@@ -885,12 +886,29 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    canvasTransform.addListener(onCanvasTransformChanged);
     view3d = widget.initialView3d;
     if (view3d) toolCategory = 2;
     history = DesignHistory(widget.entry.document);
     derive();
     if (widget.initialTool == 'drawWall') startWallDrawing();
+    if (widget.initialTool == 'wallContext') {
+      final wall =
+          base.wallSegments.firstWhere((w) => w.axis.kind != 'boundary');
+      final point = wall.axis.dir == AxisDir.H
+          ? Offset(
+              (wall.start.pos + wall.end.pos) / 2, wall.axis.pos.toDouble())
+          : Offset(
+              wall.axis.pos.toDouble(), (wall.start.pos + wall.end.pos) / 2);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) showWallContext(wall, point);
+      });
+    }
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  void onCanvasTransformChanged() {
+    if (mounted) setState(() {});
   }
 
   void derive() {
@@ -906,6 +924,8 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    wallHoldTimer?.cancel();
+    canvasTransform.removeListener(onCanvasTransformChanged);
     canvasTransform.dispose();
     timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
@@ -1113,13 +1133,15 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   }
 
   void cancelDrag() {
+    wallHoldTimer?.cancel();
     if (pointers.isNotEmpty) cancelledStroke = true;
     spatialStart = null;
     spatialEnd = null;
     spatialPreview = null;
     downPoint = null;
-    if (tool == 'drawWall' && drawingBefore != null)
+    if (tool == 'drawWall' && drawingStrokeActive)
       drawingOrigin = drawingBefore;
+    drawingStrokeActive = false;
     drawingBefore = null;
     drawingEnd = null;
     spatialError = null;
@@ -2020,8 +2042,9 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         .toList()
       ..sort((x, y) =>
           (local - x.value).distance.compareTo((local - y.value).distance));
-    wallGrip =
-        (local - handles.first.value).distance <= 24 ? handles.first.key : null;
+    wallGrip = (local - handles.first.value).distance * canvasZoom <= 24
+        ? handles.first.key
+        : null;
     editDown = wallPoint(local, size);
     editPreviewStart = null;
     editPreviewEnd = null;
@@ -2146,19 +2169,21 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       setState(() => refreshWallSelection(start, end));
   }
 
-  Future<void> wallSettings() async {
+  Future<void> wallSettings({bool directThickness = false}) async {
     if (selectedDrawnAnchor == null) return;
-    final choice = await showModalBottomSheet<String>(
-        context: context,
-        builder: (context) => SafeArea(
-                child: ListView(shrinkWrap: true, children: [
-              ListTile(
-                  title: const Text('调整墙厚'),
-                  onTap: () => Navigator.pop(context, 'thickness')),
-              ListTile(
-                  title: const Text('恢复默认墙厚'),
-                  onTap: () => Navigator.pop(context, 'default'))
-            ])));
+    final choice = directThickness
+        ? 'thickness'
+        : await showModalBottomSheet<String>(
+            context: context,
+            builder: (context) => SafeArea(
+                    child: ListView(shrinkWrap: true, children: [
+                  ListTile(
+                      title: const Text('调整墙厚'),
+                      onTap: () => Navigator.pop(context, 'thickness')),
+                  ListTile(
+                      title: const Text('恢复默认墙厚'),
+                      onTap: () => Navigator.pop(context, 'default'))
+                ])));
     if (choice == null) return;
     int? value;
     if (choice == 'thickness') {
@@ -2230,11 +2255,146 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   }
 
   Offset? drawingBefore;
+  bool placingWallStart = false;
+  bool drawingStrokeActive = false;
+  bool wallFromAdjust = false;
+  Timer? wallHoldTimer;
+  Offset? wallHoldScreen;
+  double get canvasZoom => canvasTransform.value.getMaxScaleOnAxis();
+
+  List<Offset> visibleWallAttachments(Size size) {
+    final painter = interactionPainter();
+    final result = <Offset>[];
+    for (final p
+        in wallAttachmentPoints(base, derived.floors[floorIndex].openings)) {
+      final local = painter.point(p.dx, p.dy, size);
+      if (result.every((q) =>
+          (local - painter.point(q.dx, q.dy, size)).distance * canvasZoom >=
+          42)) result.add(p);
+    }
+    return result;
+  }
+
+  WallSegment? wallAtPoint(Offset local, Size size) {
+    final painter = interactionPainter(),
+        world = painter.worldPoint(local, size);
+    final tolerance = 18 / (painter.scale(size) * canvasZoom);
+    final walls = base.wallSegments.where((w) {
+      final along = w.axis.dir == AxisDir.H ? world.x : world.y;
+      final cross = w.axis.dir == AxisDir.H ? world.y : world.x;
+      return along >= w.start.pos - tolerance &&
+          along <= w.end.pos + tolerance &&
+          (cross - w.axis.pos).abs() <= tolerance;
+    }).toList();
+    walls.sort((a, b) =>
+        (a.axis.dir == AxisDir.H ? world.y - a.axis.pos : world.x - a.axis.pos)
+            .abs()
+            .compareTo((b.axis.dir == AxisDir.H
+                    ? world.y - b.axis.pos
+                    : world.x - b.axis.pos)
+                .abs()));
+    return walls.firstOrNull;
+  }
+
+  Offset attachmentOnWall(WallSegment wall, Offset local, Size size) {
+    final world = interactionPainter().worldPoint(local, size);
+    final horizontal = wall.axis.dir == AxisDir.H;
+    final along = ((horizontal ? world.x : world.y) / 100).round() * 100.0;
+    return horizontal
+        ? Offset(along.clamp(wall.start.pos, wall.end.pos).toDouble(),
+            wall.axis.pos.toDouble())
+        : Offset(wall.axis.pos.toDouble(),
+            along.clamp(wall.start.pos, wall.end.pos).toDouble());
+  }
+
+  void scheduleWallHold(Offset local, Offset screen, Size size) {
+    wallHoldTimer?.cancel();
+    wallHoldScreen = screen;
+    if (!(browse ||
+        tool == 'drawWall' ||
+        tool == 'editWall' ||
+        tool == 'selectWall')) return;
+    final wall = wallAtPoint(local, size);
+    if (wall == null) return;
+    wallHoldTimer = Timer(const Duration(milliseconds: 500), () {
+      if (!mounted || pointers.length != 1 || cancelledStroke) return;
+      final point = attachmentOnWall(wall, local, size);
+      setState(cancelDrag);
+      showWallContext(wall, point);
+    });
+  }
+
+  Future<void> showWallContext(WallSegment wall, Offset point) async {
+    final inner = wall.axis.kind != 'boundary';
+    if (inner) selectWallForEdit(wall, point.dx, point.dy);
+    final wallLength = inner
+        ? (editEnd! - editStart!).distance
+        : (wall.end.pos - wall.start.pos).toDouble();
+    final openingAtPoint = derived.floors[floorIndex].openings.any((o) {
+      final along = o.axis.dir == AxisDir.H ? point.dx : point.dy;
+      final cross = o.axis.dir == AxisDir.H ? point.dy : point.dx;
+      return o.status == 'ok' &&
+          cross == o.axis.pos &&
+          along >= o.start &&
+          along <= o.end;
+    });
+    final choice = await showModalBottomSheet<String>(
+        context: context,
+        builder: (context) => SafeArea(
+                child: ListView(shrinkWrap: true, children: [
+              ListTile(
+                  title: const Text('墙体操作'),
+                  subtitle: Text(
+                      '${inner ? "内墙" : "外墙"} · ${(wallLength / 1000).toStringAsFixed(2)} 米')),
+              ListTile(
+                  leading: const Icon(Icons.add),
+                  title: const Text('从这里接墙'),
+                  subtitle: openingAtPoint ? const Text('此处有门窗，请换个接墙位置') : null,
+                  onTap: openingAtPoint
+                      ? null
+                      : () => Navigator.pop(context, 'add')),
+              if (inner) ...[
+                ListTile(
+                    title: const Text('调整长度'),
+                    onTap: () => Navigator.pop(context, 'length')),
+                ListTile(
+                    title: const Text('移动墙体'),
+                    onTap: () => Navigator.pop(context, 'move')),
+                ListTile(
+                    title: const Text('修改墙厚'),
+                    onTap: () => Navigator.pop(context, 'thickness')),
+                ListTile(
+                    title: const Text('删除墙体'),
+                    onTap: () => Navigator.pop(context, 'delete')),
+              ] else
+                ListTile(
+                    title: const Text('调整房屋长宽'),
+                    onTap: () => Navigator.pop(context, 'footprint')),
+            ])));
+    if (choice == null || !mounted) return;
+    if (choice == 'add') {
+      setState(() {
+        startWallDrawing();
+        drawingOrigin = point;
+      });
+      return;
+    }
+    if (choice == 'footprint') {
+      await footprintOptions();
+      return;
+    }
+    selectWallForEdit(wall, point.dx, point.dy);
+    if (choice == 'length') await preciseWallLength();
+    if (choice == 'move') await preciseWallPosition();
+    if (choice == 'thickness') await wallSettings(directThickness: true);
+    if (choice == 'delete') await deleteSelectedWall();
+  }
+
   Offset wallPoint(Offset local, Size size,
       {Set<String> excludeAxes = const {}}) {
     final painter = interactionPainter(),
         world = painter.worldPoint(local, size);
-    final tolerance = 14 / painter.scale(size);
+    final tolerance = 14 / (painter.scale(size) * canvasZoom);
     double snap(double value, List<ResolvedAxis> axes) {
       ResolvedAxis? best;
       var distance = tolerance;
@@ -2251,12 +2411,30 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   }
 
   void beginWallStroke(Offset local, Size size) {
+    drawingStrokeActive = true;
     drawingBefore = drawingOrigin;
     final painter = interactionPainter();
-    if (drawingOrigin == null ||
-        (painter.point(drawingOrigin!.dx, drawingOrigin!.dy, size) - local)
-                .distance >
-            30) drawingOrigin = wallPoint(local, size);
+    final candidates = [
+      if (drawingOrigin != null) drawingOrigin!,
+      ...visibleWallAttachments(size)
+    ];
+    candidates.sort((a, b) => (painter.point(a.dx, a.dy, size) - local)
+        .distance
+        .compareTo((painter.point(b.dx, b.dy, size) - local).distance));
+    if (candidates.isNotEmpty &&
+        (painter.point(candidates.first.dx, candidates.first.dy, size) - local)
+                    .distance *
+                canvasZoom <=
+            24) {
+      drawingOrigin = candidates.first;
+    } else if (placingWallStart) {
+      drawingOrigin = wallPoint(local, size);
+      placingWallStart = false;
+    } else {
+      final wall = wallAtPoint(local, size);
+      drawingOrigin = wall == null ? null : attachmentOnWall(wall, local, size);
+      if (wall == null) placementHint = '从墙上的 ➕ 拖出新墙；独立起墙请点“独立墙”';
+    }
     drawingEnd = null;
     spatialError = null;
     spatialDocument = null;
@@ -2273,6 +2451,9 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
 
   void previewWallStroke(Offset local, Size size) {
     if (drawingOrigin == null) return;
+    if (drawingEnd == null &&
+        downPoint != null &&
+        (local - downPoint!).distance * canvasZoom < 8) return;
     final raw = interactionPainter().worldPoint(local, size);
     final horizontal =
         (raw.x - drawingOrigin!.dx).abs() >= (raw.y - drawingOrigin!.dy).abs();
@@ -2311,6 +2492,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
 
   void finishWallStroke() {
     final end = drawingEnd, error = spatialError;
+    if (drawingOrigin == null) drawingOrigin = drawingBefore;
     final accepted = end != null &&
         drawingOrigin != null &&
         (end - drawingOrigin!).distance >= 300 &&
@@ -2319,6 +2501,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     spatialDocument = null;
     spatialBase = null;
     spatialError = null;
+    drawingStrokeActive = false;
     drawingBefore = null;
     drawingEnd = null;
     if (args != null) {
@@ -2328,7 +2511,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     if (error != null)
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(error)));
-    placementHint = '拖动 ➕ 继续绘墙，或点空白设置起点';
+    placementHint = '从墙上的 ➕ 拖出新墙 · 长按墙体可修改';
     setState(() {});
   }
 
@@ -2361,10 +2544,11 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     browse = false;
     view3d = false;
     tool = 'drawWall';
-    drawingOrigin = Offset(history.present.footprint.width / 2,
-        history.present.footprint.depth / 2);
+    toolCategory = 0;
+    drawingOrigin = null;
+    placingWallStart = false;
     drawingEnd = null;
-    placementHint = '拖动 ➕ 拉出墙，也可点空白设置起点';
+    placementHint = '拖墙上的 ➕ 接墙 · 长按墙体修改';
   }
 
   Widget floatingHeader() => floatingSurface(Padding(
@@ -2501,12 +2685,19 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           browse = false;
           tool = 'split';
         }),
-        basicTool(Icons.crop_square, '拖动划房', tool == 'box', () {
-          view3d = false;
-          browse = false;
-          tool = 'box';
-          brush = RoomType.custom;
-        }),
+        if (tool == 'drawWall')
+          basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
+            drawingOrigin = null;
+            placingWallStart = true;
+            placementHint = '在空白处拖出独立墙，或点一下选起点';
+          })
+        else
+          basicTool(Icons.crop_square, '拖动划房', tool == 'box', () {
+            view3d = false;
+            browse = false;
+            tool = 'box';
+            brush = RoomType.custom;
+          }),
         openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门'),
         openingTool(OpeningKind.window, Icons.window_outlined, '拖入窗'),
         basicTool(Icons.more_horiz, '更多工具', false, moreTools)
@@ -2520,7 +2711,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         basicTool(Icons.view_week_outlined, '墙体调整', tool == 'selectWall', () {
           view3d = false;
           tool = 'selectWall';
-          browse = true;
+          browse = false;
         }),
         basicTool(Icons.straighten, '房屋尺寸', tool == 'resize', footprintOptions),
         basicTool(Icons.more_horiz, '更多工具', false, moreTools)
@@ -2579,12 +2770,14 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   String get interactionHint =>
       placementHint ??
       (tool == 'drawWall'
-          ? '拖动 ➕ 拉出墙，松手后可继续'
-          : spatialTool
-              ? (tool == 'split' ? '拉一条横线或竖线，松手分房' : '从一角拖到另一角，松手创建房间')
-              : tool == 'resize'
-                  ? '拖动外框手柄 · 作用于全部楼层'
-                  : '拖动画布 · 点选对象调整 · 双指缩放');
+          ? '拖墙上的 ➕ 接墙 · 长按墙体修改'
+          : tool == 'selectWall'
+              ? '点墙修改 · 拖 ➕ 接墙 · 双指移动'
+              : spatialTool
+                  ? (tool == 'split' ? '拉一条横线或竖线，松手分房' : '从一角拖到另一角，松手创建房间')
+                  : tool == 'resize'
+                      ? '拖动外框手柄 · 作用于全部楼层'
+                      : '拖动画布 · 点选对象调整 · 双指缩放');
 
   Widget floatingTools() {
     final tools = Wrap(
@@ -2625,7 +2818,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
             if (tool == 'drawWall')
               IconButton(
                   tooltip: '输入墙长',
-                  onPressed: addWallByLength,
+                  onPressed: drawingOrigin == null ? null : addWallByLength,
                   icon: const Icon(Icons.straighten, size: 18)),
             if (tool == 'drawWall')
               TextButton(
@@ -2701,11 +2894,33 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                           maxScale: 5,
                           child: Listener(
                               onPointerDown: (e) {
-                                if (pointers.isEmpty) cancelledStroke = false;
+                                if (pointers.isEmpty) {
+                                  cancelledStroke = false;
+                                  wallFromAdjust = false;
+                                }
                                 pointers.add(e.pointer);
+                                if (pointers.length == 1)
+                                  scheduleWallHold(
+                                      e.localPosition, e.position, size);
                                 downPoint = e.localPosition;
                                 if (pointers.length == 1) {
-                                  if (tool == 'drawWall') {
+                                  if (tool == 'selectWall') {
+                                    final painter = interactionPainter();
+                                    final hit = visibleWallAttachments(size)
+                                        .any((p) =>
+                                            (painter.point(p.dx, p.dy, size) -
+                                                        e.localPosition)
+                                                    .distance *
+                                                canvasZoom <=
+                                            24);
+                                    if (hit)
+                                      setState(() {
+                                        tool = 'drawWall';
+                                        browse = false;
+                                        wallFromAdjust = true;
+                                        beginWallStroke(e.localPosition, size);
+                                      });
+                                  } else if (tool == 'drawWall') {
                                     setState(() =>
                                         beginWallStroke(e.localPosition, size));
                                   } else if (tool == 'editWall') {
@@ -2734,6 +2949,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                 if (!browse &&
                                     !spatialTool &&
                                     tool != 'editWall' &&
+                                    tool != 'selectWall' &&
                                     tool != 'drawWall' &&
                                     tool != 'placeOpening' &&
                                     tool != 'resize' &&
@@ -2743,6 +2959,9 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                   setState(() => record(e.localPosition, size));
                               },
                               onPointerMove: (e) {
+                                if (wallHoldScreen != null &&
+                                    (e.position - wallHoldScreen!).distance > 8)
+                                  wallHoldTimer?.cancel();
                                 if (tool == 'editWall' &&
                                     !cancelledStroke &&
                                     pointers.length == 1)
@@ -2768,6 +2987,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                 if (!browse &&
                                     !spatialTool &&
                                     tool != 'editWall' &&
+                                    tool != 'selectWall' &&
                                     tool != 'drawWall' &&
                                     tool != 'placeOpening' &&
                                     tool != 'resize' &&
@@ -2790,6 +3010,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                 lastPoint = null;
                               },
                               onPointerUp: (e) {
+                                wallHoldTimer?.cancel();
                                 if (tool == 'editWall' &&
                                     wallGrip != null &&
                                     !cancelledStroke &&
@@ -2802,7 +3023,21 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                 if (tool == 'drawWall' &&
                                     !cancelledStroke &&
                                     pointers.length == 1) {
-                                  finishWallStroke();
+                                  final tapFromAdjust = wallFromAdjust &&
+                                      downPoint != null &&
+                                      (downPoint! - e.localPosition).distance *
+                                              canvasZoom <
+                                          8;
+                                  if (tapFromAdjust) {
+                                    setState(() {
+                                      cancelDrag();
+                                      tool = 'selectWall';
+                                    });
+                                    tapObject(e.localPosition, size);
+                                  } else {
+                                    finishWallStroke();
+                                    if (wallFromAdjust) toolCategory = 0;
+                                  }
                                   pointers.remove(e.pointer);
                                   downPoint = null;
                                   return;
@@ -2869,6 +3104,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                 }
                                 if ((browse ||
                                         tool == 'editWall' ||
+                                        tool == 'selectWall' ||
                                         tool == 'opening' ||
                                         tool == 'grid') &&
                                     !cancelledStroke &&
@@ -2971,6 +3207,8 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                                       (editPreviewEnd ?? editEnd)!.dy)
                                                   : null,
                                               wallSeed: tool == 'drawWall' ? drawingOrigin : null,
+                                              wallAttachments: (tool == 'drawWall' || tool == 'selectWall') ? visibleWallAttachments(size) : const [],
+                                              handleScale: canvasZoom,
                                               draftLabel: tool == 'drawWall' && drawingEnd != null && drawingOrigin != null ? '${((drawingEnd! - drawingOrigin!).distance / 1000).toStringAsFixed(2)} 米' : null,
                                               draft: tool == 'drawWall' && drawingEnd != null && drawingOrigin != null ? PlanRect(math.min(drawingOrigin!.dx, drawingEnd!.dx), math.min(drawingOrigin!.dy, drawingEnd!.dy), math.max(drawingOrigin!.dx, drawingEnd!.dx), math.max(drawingOrigin!.dy, drawingEnd!.dy)) : spatialPreview,
                                               showGridDimensions: tool == 'grid',

@@ -1,0 +1,37 @@
+{
+  "cache_root": "/Users/estai/Desktop/eq/yusal/.dart_tool/flutter_build",
+  "removed_generated_dirs": [
+    "0635a5ba0197ecee04ad2be2ade634aa",
+    "863527fb3439cc9b7ba50dfc58f01396",
+    "836b4998ee2ee4f4aa41976eebed2541",
+    "4a7bec8cb3c8ae6f5344ec1a290ef679",
+    "c8258967ee31a0f8f9deba356422b710",
+    "cb520b2cae1fff4bce7ac3a11930cf6a",
+    "f56558ea91e9bd0e661da3b3c3d88624",
+    "4e5d51bc6a36a8a6b97649266bae1e82",
+    "0147e7533bac9140f2efe4ba37efc68a",
+    "4552704c8de71914758c66d59b55d52c",
+    "49d2d23120647a13f91683d4a2639618",
+    "cd02f21908b6bba3341df49bab433ffb",
+    "74dc049a204a420a8ba11f1cfd933b41",
+    "b38de04f4c35499530ef689eba61cff8",
+    "71dc85f07ba267a5336409f167bf8835",
+    "3e1f7290d4da33184919df424c17146b",
+    "a2cfeb74d4f63db42238f08769c3ac6c",
+    "ded33f1e224c18c195f50535cee9e06c",
+    "555ecd71bb6eb413fdbb73a7454c3982",
+    "76a6fba67acac2d338117582283653d7",
+    "67762f671f0865d8007ffd82c1ce0a9f",
+    "ab190fecac45fa9dda1a1125f19b1059",
+    "8ed638469c327a9379a573a7b1e5e930",
+    "f041a0ca6412a0d584bf798b60892ec3",
+    "b32c06b4f4a0e0c8ea3609399792ad3e"
+  ],
+  "kept_newest": [
+    "1271c2b52566c368c9b5cbac7a155be9",
+    "76babebfe981ff70a85187cb200f37cd",
+    "af253c8089b68d4c07de068e606cb10d"
+  ],
+  "time": 1790841719.729457,
+  "removed_generated_android_intermediates": "/Users/estai/Desktop/eq/yusal/build/app/intermediates"
+}

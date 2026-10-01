@@ -27,6 +27,8 @@ class FloorPlanPainter extends CustomPainter {
       this.resizeHandles = false,
       this.wallHandle,
       this.wallSeed,
+      this.wallAttachments = const [],
+      this.handleScale = 1,
       this.editableWall,
       this.draftLabel,
       this.viewport,
@@ -35,6 +37,8 @@ class FloorPlanPainter extends CustomPainter {
   final FloorBase base;
   final PlanRect? focus, draft, wallHandle, editableWall;
   final Offset? wallSeed;
+  final List<Offset> wallAttachments;
+  final double handleScale;
   final String? draftLabel;
   final bool draftIsLine, draftInvalid, resizeHandles, showGridDimensions;
   final ({double scale, Offset origin})? viewport;
@@ -337,18 +341,34 @@ class FloorPlanPainter extends CustomPainter {
         canvas.drawCircle(p, 8, Paint()..color = color);
       }
     }
+    for (final attachment in wallAttachments) {
+      final center = point(attachment.dx, attachment.dy, size);
+      final radius = 13 / handleScale;
+      canvas.drawCircle(
+          center, radius + 2 / handleScale, Paint()..color = Colors.white);
+      canvas.drawCircle(
+          center, radius, Paint()..color = const Color(0xff286b50));
+      final pen = Paint()
+        ..color = Colors.white
+        ..strokeWidth = 2 / handleScale;
+      final span = 5 / handleScale;
+      canvas.drawLine(center - Offset(span, 0), center + Offset(span, 0), pen);
+      canvas.drawLine(center - Offset(0, span), center + Offset(0, span), pen);
+    }
     if (wallSeed != null) {
       final center = point(wallSeed!.dx, wallSeed!.dy, size);
-      canvas.drawCircle(center, 23, Paint()..color = Colors.white);
-      canvas.drawCircle(center, 21, Paint()..color = const Color(0xff286b50));
+      canvas.drawCircle(
+          center, 23 / handleScale, Paint()..color = Colors.white);
+      canvas.drawCircle(
+          center, 21 / handleScale, Paint()..color = const Color(0xff286b50));
       final plus = Paint()
         ..color = Colors.white
-        ..strokeWidth = 2.5
+        ..strokeWidth = 2.5 / handleScale
         ..strokeCap = StrokeCap.round;
-      canvas.drawLine(
-          center - const Offset(8, 0), center + const Offset(8, 0), plus);
-      canvas.drawLine(
-          center - const Offset(0, 8), center + const Offset(0, 8), plus);
+      canvas.drawLine(center - Offset(8 / handleScale, 0),
+          center + Offset(8 / handleScale, 0), plus);
+      canvas.drawLine(center - Offset(0, 8 / handleScale),
+          center + Offset(0, 8 / handleScale), plus);
     }
     if (focus != null) {
       paint

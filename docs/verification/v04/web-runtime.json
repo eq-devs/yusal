@@ -1,0 +1,5 @@
+{
+  "url": "http://127.0.0.1:8765/",
+  "served_js_equals_final_build": true,
+  "main_js_sha256": "37a80171d9c9a603cdc9d6802a77165059d6166614506fe0ceed54475a81faec"
+}

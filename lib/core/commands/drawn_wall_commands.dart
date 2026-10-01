@@ -4,6 +4,7 @@ import '../axis/axis_resolver.dart';
 import '../canonicalization/room_canonicalizer.dart';
 import '../document/house_document.dart';
 import '../geometry/floor_base.dart';
+import '../geometry/derived_house.dart';
 import '../geometry/opening_constraints.dart';
 import '../serialization/house_codec.dart';
 import '../validation/document_validator.dart';
@@ -381,6 +382,16 @@ EditResult editDrawnWall(HouseDocument original, String kind,
                 carrier < r.top &&
                 lo < r.right &&
                 hi > r.left) return const EditResult(null, '墙体不能穿过楼梯');
+      }
+      for (final opening
+          in deriveOpenings(doc, deriveFloorBase(doc, floorId), floorId)) {
+        if (opening.status == 'ok' &&
+            opening.axis.dir != direction &&
+            carrier > opening.start &&
+            carrier < opening.end &&
+            lo <= opening.axis.pos &&
+            hi >= opening.axis.pos)
+          return const EditResult(null, '接墙位置不能穿过已有门窗，请换一个位置');
       }
       walls.add(SolidWall(
           id: prior?.id ?? newId(),

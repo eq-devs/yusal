@@ -179,6 +179,8 @@ void main() {
 
     await tester.tap(find.byTooltip('墙体'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('独立墙'));
+    await tester.pumpAndSettle();
     await drag(6000, 5000, 8000, 5000);
     await drag(8000, 5000, 8000, 8000);
     await drag(8000, 8000, 6000, 8000);
@@ -223,6 +225,78 @@ void main() {
     await tester.tap(find.text('浮层绘墙验收').first);
     await tester.pumpAndSettle();
     expect(find.byTooltip('墙体'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('fixed wall attachments and long-press editing on native touch',
+      (tester) async {
+    app.main();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('新建设计'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '接点长按验收');
+    await tester.tap(find.text('开始设计'));
+    await tester.pumpAndSettle();
+    final canvas = find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.painter is FloorPlanPainter);
+    Offset point(double x, double y) {
+      final painter =
+          tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
+      return tester
+          .renderObject<RenderBox>(canvas)
+          .localToGlobal(painter.point(x, y, tester.getSize(canvas)));
+    }
+
+    Future<void> drag(double x0, double y0, double x1, double y1) async {
+      final g = await tester.startGesture(point(x0, y0));
+      await g.moveTo(point(x1, y1));
+      await tester.pump();
+      await g.up();
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.byTooltip('墙体'));
+    await tester.pumpAndSettle();
+    expect(
+        (tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter)
+            .wallSeed,
+        isNull);
+    await tester.tapAt(point(3000, 5000));
+    await tester.pumpAndSettle();
+    expect(
+        (tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter)
+            .wallSeed,
+        isNull);
+    await drag(6000, 0, 6000, 4000);
+    await drag(6000, 4000, 3000, 4000);
+    await tester.tap(find.text('结束'));
+    await tester.pumpAndSettle();
+    final hold = await tester.startGesture(point(6000, 2000));
+    await tester.pump(const Duration(milliseconds: 650));
+    await hold.up();
+    await tester.pumpAndSettle();
+    expect(find.text('墙体操作'), findsOneWidget);
+    await tester.tap(find.text('调整长度'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '5.0');
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('立即保存'));
+    await tester.pumpAndSettle();
+    final entry = (await ProjectStore().listProjects())
+        .firstWhere((e) => e.document.meta.name == '接点长按验收');
+    expect(
+        entry.document.floors.first.wallOverrides.whereType<SolidWall>().length,
+        2);
+    final axes =
+        resolveFloorAxes(entry.document, entry.document.floors.first.id)!;
+    expect(
+        entry.document.floors.first.wallOverrides.whereType<SolidWall>().any(
+            (w) => resolveAnchor(axes, w.anchor).chain!.nominalLength == 5000),
+        true);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('接点长按验收').first);
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 }

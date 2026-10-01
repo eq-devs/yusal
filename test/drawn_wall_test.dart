@@ -186,6 +186,23 @@ void main() {
     expect(deleted.floors.first.wallOverrides, isEmpty);
     expect(deleted.floors.first.explicitWalls, true);
   });
+  test('new branches cannot cross an existing door opening', () {
+    var s = add(initial(), 2000, 3000, 6000, 3000);
+    final wall = s.floors.first.wallOverrides.whereType<SolidWall>().single;
+    s = (edit(s, 'AddOpening', {
+      'anchor': wall.anchor,
+      'kind': OpeningKind.door,
+      'tapT': 4000,
+      'centerAtTap': true
+    }) as Applied)
+        .newState;
+    final opening = deriveHouse(doc(s)).floors.first.openings.single;
+    expect(opening.status, 'ok');
+    final x = ((opening.start + opening.end) / 2).round();
+    expect(edit(s, 'AddDrawnWall', {'x0': x, 'y0': 3000, 'x1': x, 'y1': 6000}),
+        isA<Rejected>());
+    expect(s.floors.first.wallOverrides.whereType<SolidWall>().length, 1);
+  });
   test('room tools preserve unfinished walls and merge only actual boundaries',
       () {
     var s = add(initial(), 2000, 2000, 4000, 2000);

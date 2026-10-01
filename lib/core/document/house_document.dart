@@ -240,6 +240,21 @@ class ThicknessWall extends WallOverride {
   int get hashCode => Object.hash(id, anchor, value);
 }
 
+/// An independently drawn wall, including unfinished partitions.
+class SolidWall extends WallOverride {
+  const SolidWall(
+      {required super.id, required super.anchor, required this.value});
+  final int value;
+  @override
+  bool operator ==(Object other) =>
+      other is SolidWall &&
+      id == other.id &&
+      anchor == other.anchor &&
+      value == other.value;
+  @override
+  int get hashCode => Object.hash(id, anchor, value);
+}
+
 sealed class OpeningPosition {
   const OpeningPosition();
 }
@@ -471,6 +486,7 @@ class Room {
 
 class Floor {
   Floor({
+    this.explicitWalls = false,
     required this.id,
     required this.name,
     required this.height,
@@ -483,6 +499,7 @@ class Floor {
         openings = List.unmodifiable(openings),
         stairs = List.unmodifiable(stairs);
   final String id, name;
+  final bool explicitWalls;
   final int height;
   final List<Room> rooms;
   final List<WallOverride> wallOverrides;
@@ -491,6 +508,7 @@ class Floor {
   @override
   bool operator ==(Object other) =>
       other is Floor &&
+      explicitWalls == other.explicitWalls &&
       id == other.id &&
       name == other.name &&
       height == other.height &&
@@ -505,6 +523,7 @@ class Floor {
       height,
       Object.hashAll(rooms),
       Object.hashAll(wallOverrides),
+      explicitWalls,
       Object.hashAll(openings),
       Object.hashAll(stairs));
 }
@@ -594,7 +613,10 @@ UndoableDesignState extractDesignState(HouseDocument doc) =>
     );
 HouseDocument composeDocument(Meta meta, UndoableDesignState state) =>
     HouseDocument(
-      schemaVersion: 1,
+      schemaVersion: state.floors.any((f) =>
+              f.explicitWalls || f.wallOverrides.any((w) => w is SolidWall))
+          ? 2
+          : 1,
       meta: meta,
       mainEntranceOpeningId: state.mainEntranceOpeningId,
       defaults: state.defaults,

@@ -62,6 +62,10 @@ void main() {
     await tester.pumpWidget(MaterialApp(
         home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
     await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('更多工具'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('客厅'));
+    await tester.pumpAndSettle();
     final canvas = find.byWidgetPredicate(
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     final paint =
@@ -100,6 +104,8 @@ void main() {
     final id = await store.createProject(doc);
     await tester.pumpWidget(MaterialApp(
         home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('更多工具'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('网格'));
     await tester.pumpAndSettle();
@@ -143,6 +149,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(
         home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
     await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('更多工具'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('网格'));
     await tester.pumpAndSettle();
     final canvas = find.byWidgetPredicate(
@@ -163,6 +171,169 @@ void main() {
     await tester.pumpAndSettle();
     expect(files.writeCount, 1);
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
+  testWidgets(
+      'rectangle drag creates once, saves, and undoes without leaving axes',
+      (tester) async {
+    var sequence = 0;
+    final doc = createHouse(
+        name: '直接划房',
+        width: 12000,
+        depth: 10000,
+        columns: 1,
+        rows: 1,
+        timestamp: '2026-09-30T00:00:00Z',
+        newId: () => 'rect${sequence++}');
+    final files = MemoryFiles();
+    final store = ProjectStore(fileSystem: files);
+    final id = await store.createProject(doc);
+    await tester.pumpWidget(MaterialApp(
+        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('拖动划房'));
+    await tester.pumpAndSettle();
+    final canvas = find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.painter is FloorPlanPainter);
+    final painter =
+        tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
+    final origin = tester.getTopLeft(canvas), size = tester.getSize(canvas);
+    final gesture =
+        await tester.startGesture(origin + painter.point(0, 0, size));
+    await gesture.moveTo(origin + painter.point(3000, 4000, size));
+    await tester.pump(const Duration(milliseconds: 1600));
+    expect(files.writeCount, 1);
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
+    final saved = await store.openProject(id);
+    expect(saved.floors.first.rooms.length, 1);
+    expect(saved.axes.floor.length, 2);
+    await tester.tap(find.byTooltip('撤销'));
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
+    final restored = await store.openProject(id);
+    expect(restored.floors.first.rooms, isEmpty);
+    expect(restored.axes.floor, isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'door drags from palette onto the wall and saves a single opening',
+      (tester) async {
+    var sequence = 0;
+    final doc = createHouse(
+        name: '门窗拖动测试',
+        width: 12000,
+        depth: 10000,
+        columns: 1,
+        rows: 1,
+        timestamp: '2026-09-30T00:00:00Z',
+        newId: () => 'door${sequence++}');
+    final store = ProjectStore(fileSystem: MemoryFiles());
+    final id = await store.createProject(doc);
+    await tester.pumpWidget(MaterialApp(
+        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpAndSettle();
+    final canvas = find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.painter is FloorPlanPainter);
+    final painter =
+        tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
+    final target = tester.getTopLeft(canvas) +
+        painter.point(6000, 0, tester.getSize(canvas));
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byTooltip('拖入门')));
+    await gesture.moveBy(const Offset(0, -30));
+    await tester.pump();
+    await gesture.moveTo(target);
+    await tester.pump();
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
+    expect((await store.openProject(id)).floors.first.openings.length, 1);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
+  testWidgets('line drag partitions space and undo removes both rooms',
+      (tester) async {
+    var sequence = 0;
+    final doc = createHouse(
+        name: '拉线测试',
+        width: 12000,
+        depth: 10000,
+        columns: 1,
+        rows: 1,
+        timestamp: '2026-09-30T00:00:00Z',
+        newId: () => 'line${sequence++}');
+    final store = ProjectStore(fileSystem: MemoryFiles());
+    final id = await store.createProject(doc);
+    await tester.pumpWidget(MaterialApp(
+        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('拉线分房'));
+    await tester.pumpAndSettle();
+    final canvas = find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.painter is FloorPlanPainter);
+    final painter =
+        tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
+    final origin = tester.getTopLeft(canvas), size = tester.getSize(canvas);
+    final gesture =
+        await tester.startGesture(origin + painter.point(6000, 2000, size));
+    await gesture.moveTo(origin + painter.point(6000, 8000, size));
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
+    expect((await store.openProject(id)).floors.first.rooms.length, 2);
+    await tester.tap(find.byTooltip('撤销'));
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
+    expect((await store.openProject(id)).floors.first.rooms, isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('outer edge handle changes width in one saved transaction',
+      (tester) async {
+    var sequence = 0;
+    final doc = createHouse(
+        name: '外形拖动测试',
+        width: 12000,
+        depth: 10000,
+        columns: 1,
+        rows: 1,
+        timestamp: '2026-09-30T00:00:00Z',
+        newId: () => 'edge${sequence++}');
+    final files = MemoryFiles();
+    final store = ProjectStore(fileSystem: files);
+    final id = await store.createProject(doc);
+    await tester.pumpWidget(MaterialApp(
+        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('房屋长宽'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('拖动外边框调整'));
+    await tester.pumpAndSettle();
+    final canvas = find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.painter is FloorPlanPainter);
+    final painter =
+        tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
+    final origin = tester.getTopLeft(canvas), size = tester.getSize(canvas);
+    final gesture =
+        await tester.startGesture(origin + painter.point(12000, 5000, size));
+    await gesture.moveBy(const Offset(20, 0));
+    await tester.pump(const Duration(milliseconds: 1600));
+    expect(files.writeCount, 1);
+    await gesture.up();
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
+    expect((await store.openProject(id)).footprint.width, greaterThan(12000));
+    await tester.tap(find.byTooltip('撤销'));
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
+    expect((await store.openProject(id)).footprint.width, 12000);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });

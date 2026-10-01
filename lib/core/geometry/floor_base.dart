@@ -112,7 +112,7 @@ FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
     final n = owners[neg], p = owners[pos];
     final kind = neg == null || pos == null
         ? 'exterior'
-        : n == p
+        : floor.explicitWalls || n == p
             ? 'none'
             : n == null || p == null
                 ? 'temporary'
@@ -135,7 +135,10 @@ FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
       if (chain.carrier.id == a.id &&
           s.pos >= chain.startPos &&
           e.pos <= chain.endPos) {
-        if (override is OpenWall) {
+        if (override is SolidWall) {
+          wall = UnitEdge(
+              a, s, e, neg, pos, 'interior', override.value.toDouble());
+        } else if (override is OpenWall) {
           wall = UnitEdge(a, s, e, neg, pos, 'open', 0);
         } else if (override is ThicknessWall && wall.hasWall) {
           wall =

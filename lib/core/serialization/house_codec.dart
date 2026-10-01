@@ -4,7 +4,7 @@ import 'schema_validator.dart';
 import '../document/house_document.dart';
 import '../validation/document_validator.dart';
 
-const currentSchemaVersion = 1;
+const currentSchemaVersion = 2;
 const maxHouseBytes = 10485760;
 
 class LoadError {
@@ -123,7 +123,8 @@ class _Decoder {
     if (errors.length < 100) errors.add(LoadError(code, path, message));
   }
 
-  Map<String, Object?> obj(Object? value, String path, List<String> allowed) {
+  Map<String, Object?> obj(Object? value, String path, List<String> allowed,
+      {List<String> optional = const []}) {
     if (value is! Map) {
       err(value == null ? 'NULL_NOT_ALLOWED' : 'WRONG_TYPE', path, '应为对象');
       return const {};
@@ -133,7 +134,7 @@ class _Decoder {
       if (!m.containsKey(key)) err('MISSING_FIELD', '$path/$key', '缺少字段 $key');
     }
     for (final key in m.keys) {
-      if (!allowed.contains(key))
+      if (!allowed.contains(key) && !optional.contains(key))
         err('UNKNOWN_FIELD', '$path/$key', '未知字段 $key');
     }
     return m;
@@ -316,6 +317,13 @@ class _Decoder {
         anchor: anchor(m['anchor'], '$p/anchor'),
       );
     }
+    if (raw == 'solid') {
+      _shape(m, p, ['type', 'id', 'anchor', 'value']);
+      return SolidWall(
+          id: str(m['id'], '$p/id', id: true),
+          anchor: anchor(m['anchor'], '$p/anchor'),
+          value: integer(m['value'], '$p/value'));
+    }
     if (raw == 'thickness') {
       _shape(m, p, ['type', 'id', 'anchor', 'value']);
       return ThicknessWall(
@@ -462,12 +470,13 @@ class _Decoder {
       'openings',
       'stairs',
     ];
-    final m = obj(v, p, keys);
+    final m = obj(v, p, keys, optional: ['explicitWalls']);
     final rooms = arr(m['rooms'], '$p/rooms'),
         walls = arr(m['wallOverrides'], '$p/wallOverrides'),
         opens = arr(m['openings'], '$p/openings'),
         stairs = arr(m['stairs'], '$p/stairs');
     return Floor(
+      explicitWalls: m['explicitWalls'] == true,
       id: str(m['id'], '$p/id', id: true),
       name: str(m['name'], '$p/name'),
       height: integer(m['height'], '$p/height'),
@@ -738,6 +747,7 @@ String encodeHouse(HouseDocument d) {
           'id': f.id,
           'name': f.name,
           'height': f.height,
+          if (f.explicitWalls) 'explicitWalls': true,
           'rooms': [
             for (final r in f.rooms)
               {
@@ -754,6 +764,12 @@ String encodeHouse(HouseDocument d) {
                     'type': 'open',
                     'id': w.id,
                     'anchor': anchor(w.anchor),
+                  },
+                SolidWall() => {
+                    'type': 'solid',
+                    'id': w.id,
+                    'anchor': anchor(w.anchor),
+                    'value': w.value
                   },
                 ThicknessWall() => {
                     'type': 'thickness',

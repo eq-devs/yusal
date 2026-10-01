@@ -1,0 +1,16 @@
+{
+  "ios_main_app": {
+    "bundle_id": "com.example.yusal",
+    "version": "0.3.0",
+    "build": "3",
+    "simulator": "69A9330F-92B1-4192-B44E-035E41272064",
+    "installed_and_launched": true,
+    "launch_pid": 78190
+  },
+  "web": {
+    "url": "http://127.0.0.1:8765/",
+    "http_get_index_and_main_js": "success",
+    "served_js_equals_final_build": true,
+    "main_js_sha256": "85a821d34e04e02bee8f45dd04b339d4f4b88f2fdd65aad9ee7b730a30094995"
+  }
+}

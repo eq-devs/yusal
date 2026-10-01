@@ -51,4 +51,69 @@ void main() {
     expect((result as Applied).newState, initial);
     expect(allocated, 0);
   });
+  test('merging rooms resolves disappearing hosted doors as one transaction',
+      () {
+    var doc = createHouse(
+        name: '合并',
+        width: 12000,
+        depth: 10000,
+        columns: 2,
+        rows: 1,
+        timestamp: '2026-09-30T00:00:00Z',
+        newId: next);
+    doc = paintCells(
+        doc, doc.floors.first.id, [const Cell(0, 0)], RoomType.living, next);
+    doc = paintCells(
+        doc, doc.floors.first.id, [const Cell(1, 0)], RoomType.bedroom, next);
+    final added = executeCommand(
+        extractDesignState(doc),
+        DesignCommand('AddOpening', {
+          'floorId': doc.floors.first.id,
+          'kind': OpeningKind.door,
+          'tapT': 5000,
+          'centerAtTap': true,
+          'anchor': BoundaryAnchor(
+              axisId: doc.axes.global.single.id,
+              startAxisId: '@bottom',
+              endAxisId: '@top'),
+        }),
+        context) as Applied;
+    final arguments = <String, dynamic>{
+      'roomIdA': added.newState.floors.first.rooms.first.id,
+      'roomIdB': added.newState.floors.first.rooms.last.id
+    };
+    final preview = executeCommand(
+        added.newState, DesignCommand('MergeRooms', arguments), context);
+    expect(preview, isA<NeedsResolution>());
+    expect(added.newState.floors.first.openings.length, 1);
+    final applied = executeCommand(
+        added.newState,
+        DesignCommand(
+            'MergeRooms', {...arguments, 'deleteHostedObjects': true}),
+        context) as Applied;
+    expect(applied.newState.floors.first.rooms.length, 1);
+    expect(applied.newState.floors.first.openings, isEmpty);
+    expect(validateDesignState(applied.newState), isEmpty);
+  });
+  test('direct opening placement follows the drop and rejects overlap', () {
+    final initial = state();
+    final arguments = <String, dynamic>{
+      'floorId': initial.floors.first.id,
+      'anchor': const BoundaryAnchor(
+          axisId: '@bottom', startAxisId: '@left', endAxisId: '@right'),
+      'tapT': 5000,
+      'kind': OpeningKind.door,
+      'centerAtTap': true
+    };
+    final first =
+        executeCommand(initial, DesignCommand('AddOpening', arguments), context)
+            as Applied;
+    final position = first.newState.floors.first.openings.single.position
+        as FromStartPosition;
+    expect(position.d, 4550);
+    final overlapping = executeCommand(
+        first.newState, DesignCommand('AddOpening', arguments), context);
+    expect(overlapping, isA<Rejected>());
+    expect(first.newState.floors.first.openings.length, 1);
+  });
 }

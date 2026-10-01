@@ -13,6 +13,8 @@ class ValidationError {
   final List<String> related;
 }
 
+const maxExplicitAxesPerDirection = 512;
+
 List<ValidationError> validateHouse(HouseDocument d) {
   final out = <ValidationError>[];
   void add(
@@ -80,7 +82,12 @@ List<ValidationError> validateHouse(HouseDocument d) {
     final floor = d.floors[f];
     for (var w = 0; w < floor.wallOverrides.length; w++) {
       final x = floor.wallOverrides[w];
-      if (x is ThicknessWall && (x.value < 60 || x.value > 600))
+      final thickness = x is ThicknessWall
+          ? x.value
+          : x is SolidWall
+              ? x.value
+              : null;
+      if (thickness != null && (thickness < 60 || thickness > 600))
         add(13, '/floors/$f/wallOverrides/$w/value', '墙厚必须在 60 到 600 毫米之间');
     }
     if (floor.height < 2400) add(15, '/floors/$f/height', '层高不得低于 2400 毫米');
@@ -128,7 +135,17 @@ List<ValidationError> validateHouse(HouseDocument d) {
       add(21, '/roof/overhang', '挑檐必须在 0 到 1500 毫米之间');
   } else if (d.roof.parapetHeight! < 0 || d.roof.parapetHeight! > 1500)
     add(21, '/roof/parapetHeight', '女儿墙高度必须在 0 到 1500 毫米之间');
-  if (d.schemaVersion != 1) add(24, '/schemaVersion', 'schemaVersion 必须为 1');
+  if (d.schemaVersion != 1 && d.schemaVersion != 2)
+    add(24, '/schemaVersion', '不支持此文件版本');
+  if (d.schemaVersion == 1 &&
+      d.floors.any(
+          (f) => f.explicitWalls || f.wallOverrides.any((w) => w is SolidWall)))
+    add(24, '/schemaVersion', '独立墙段需要文件版本 2');
+  for (var i = 0; i < d.floors.length; i++) {
+    if (!d.floors[i].explicitWalls &&
+        d.floors[i].wallOverrides.any((w) => w is SolidWall))
+      add(24, '/floors/$i', '独立墙段需要独立墙体模式');
+  }
   final orderedA1 = [for (var i = 0; i < out.length; i++) (i: i, error: out[i])]
     ..sort((a, b) {
       final code = a.error.code.compareTo(b.error.code);
@@ -160,6 +177,19 @@ List<ValidationError> validateHouse(HouseDocument d) {
         .where((o) => o.id == d.mainEntranceOpeningId && o is DoorOpening);
     if (doors.length != 1) add(20, '/mainEntranceOpeningId', '主入口必须引用唯一存在的门');
   }
+  for (var i = 0; i < d.floors.length; i++) {
+    final floor = d.floors[i];
+    if (!floor.explicitWalls) continue;
+    for (final dir in AxisDir.values) {
+      final count = d.axes.global.where((a) => a.dir == dir).length +
+          d.axes.floor
+              .where((a) => a.floorId == floor.id && a.dir == dir)
+              .length;
+      if (count > maxExplicitAxesPerDirection)
+        add(24, '/floors/$i', '墙体坐标过多，请整理布局后再继续');
+    }
+  }
+  if (out.any((e) => e.code == 'INV24')) return List.unmodifiable(out);
   final resolvedFloors = [
     for (final floor in d.floors) resolveFloorAxes(d, floor.id)!
   ];

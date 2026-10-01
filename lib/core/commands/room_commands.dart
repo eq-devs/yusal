@@ -44,6 +44,7 @@ HouseDocument paintCells(HouseDocument doc, String floorId, List<Cell> stroke,
         sets[target]!);
   for (final room in floor.rooms) append(room, sets[room.id]!);
   final replacement = Floor(
+      explicitWalls: floor.explicitWalls,
       id: floor.id,
       name: floor.name,
       height: floor.height,
@@ -78,6 +79,7 @@ HouseDocument createHouse(
     required int depth,
     required int columns,
     required int rows,
+    bool initialRoom = false,
     required String timestamp,
     required String Function() newId}) {
   final floorId = newId();
@@ -112,7 +114,21 @@ HouseDocument createHouse(
             id: floorId,
             name: '一楼',
             height: 3000,
-            rooms: [],
+            rooms: initialRoom
+                ? [
+                    Room(
+                        id: newId(),
+                        type: RoomType.custom,
+                        name: '房间',
+                        regions: [
+                          const AxisRectangle(
+                              x0: '@left',
+                              x1: '@right',
+                              y0: '@bottom',
+                              y1: '@top')
+                        ])
+                  ]
+                : [],
             wallOverrides: [],
             openings: [],
             stairs: [])

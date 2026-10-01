@@ -3,8 +3,15 @@ import 'package:flutter/material.dart';
 import '../core/geometry/derived_house.dart';
 
 class HouseViewer extends StatefulWidget {
-  const HouseViewer({super.key, required this.house, this.onPick});
+  const HouseViewer(
+      {super.key,
+      required this.house,
+      this.onPick,
+      this.showHint = true,
+      this.resetToken = 0});
   final DerivedHouse house;
+  final bool showHint;
+  final int resetToken;
   final ValueChanged<SourceRef?>? onPick;
   @override
   State<HouseViewer> createState() => _HouseViewerState();
@@ -22,6 +29,12 @@ class _HouseViewerState extends State<HouseViewer> {
   @override
   void didUpdateWidget(covariant HouseViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.resetToken != oldWidget.resetToken) {
+      yaw = -math.pi / 6;
+      pitch = 35 * math.pi / 180;
+      zoom = 1;
+      pan = Offset.zero;
+    }
     if (floor != null) floor = floor!.clamp(0, widget.house.floors.length - 1);
     if (!identical(oldWidget.house, widget.house)) selected = null;
   }
@@ -77,9 +90,10 @@ class _HouseViewerState extends State<HouseViewer> {
                 size: Size(constraints.maxWidth, constraints.maxHeight),
                 painter: painter));
       })),
-      const Padding(
-          padding: EdgeInsets.all(12),
-          child: Text('单指旋转 · 双指缩放和平移', style: TextStyle(fontSize: 12)))
+      if (widget.showHint)
+        const Padding(
+            padding: EdgeInsets.all(12),
+            child: Text('单指旋转 · 双指缩放和平移', style: TextStyle(fontSize: 12)))
     ]);
   }
 }

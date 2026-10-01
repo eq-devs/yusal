@@ -20,6 +20,8 @@ import '../render2d/floor_plan_painter.dart';
 import '../render2d/project_preview.dart';
 import '../storage/project_store.dart';
 import '../storage/house_import.dart';
+import 'footprint_sketch.dart';
+import 'wall_length_dialog.dart';
 
 class HouseHome extends StatefulWidget {
   const HouseHome({super.key});
@@ -113,36 +115,38 @@ class _HouseHomeState extends State<HouseHome> {
     }
   }
 
-  Future<void> create() async {
-    final start = await showModalBottomSheet<String>(
+  Future<void> createFromTemplate() async {
+    final key = await showModalBottomSheet<String>(
         context: context,
         builder: (context) => SafeArea(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-              for (final entry in houseTemplates.entries)
+                child: ListView(shrinkWrap: true, children: [
+              for (final entry
+                  in houseTemplates.entries.where((e) => e.key != 'blank'))
                 ListTile(
                     title: Text(entry.value),
-                    onTap: () => Navigator.pop(context, entry.key)),
+                    onTap: () => Navigator.pop(context, entry.key))
             ])));
-    if (start == null) return;
-    if (start != 'blank') {
-      try {
-        final doc = createTemplate(start,
-            DateTime.now().toUtc().toIso8601String(), () => const Uuid().v4());
-        final id = await store.createProject(doc);
-        if (mounted) await open(ProjectEntry(id, doc));
-      } catch (_) {
-        if (mounted)
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('无法创建，请检查存储空间')));
-      }
-      return;
+    if (key == null) return;
+    try {
+      final doc = createTemplate(key, DateTime.now().toUtc().toIso8601String(),
+          () => const Uuid().v4());
+      final id = await store.createProject(doc);
+      if (mounted) await open(ProjectEntry(id, doc));
+    } catch (_) {
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('无法创建，请检查存储空间')));
     }
+  }
+
+  Future<void> create() async {
     final name = TextEditingController(text: '我的房屋'),
         width = TextEditingController(text: '12.00'),
         depth = TextEditingController(text: '10.00');
-    var columns = 3, rows = 2;
+    const columns = 1, rows = 1;
     String? validation;
-    final doc = await showDialog<HouseDocument>(
+    var sketchRequested = false;
+    var doc = await showDialog<HouseDocument>(
         context: context,
         builder: (context) => StatefulBuilder(
             builder: (context, setDialog) => AlertDialog(
@@ -158,47 +162,28 @@ class _HouseHomeState extends State<HouseHome> {
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
                           decoration:
-                              const InputDecoration(labelText: '房屋宽度（米）')),
+                              const InputDecoration(labelText: '宽（米，左右方向）')),
                       TextField(
                           controller: depth,
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
                           decoration:
-                              const InputDecoration(labelText: '房屋进深（米）')),
-                      Row(children: [
-                        const Text('分成几间？'),
-                        const Spacer(),
-                        IconButton(
-                            onPressed: columns > 1
-                                ? () => setDialog(() => columns--)
-                                : null,
-                            icon: const Icon(Icons.remove)),
-                        Text('$columns'),
-                        IconButton(
-                            onPressed: columns < 12
-                                ? () => setDialog(() => columns++)
-                                : null,
-                            icon: const Icon(Icons.add))
-                      ]),
-                      Row(children: [
-                        const Text('分成几段？'),
-                        const Spacer(),
-                        IconButton(
-                            onPressed:
-                                rows > 1 ? () => setDialog(() => rows--) : null,
-                            icon: const Icon(Icons.remove)),
-                        Text('$rows'),
-                        IconButton(
-                            onPressed: rows < 12
-                                ? () => setDialog(() => rows++)
-                                : null,
-                            icon: const Icon(Icons.add))
-                      ]),
+                              const InputDecoration(labelText: '长（米，上下方向）')),
+                      const Padding(
+                          padding: EdgeInsets.only(top: 12),
+                          child: Text('先确定外形，进入画布后直接拖动划分房间。')),
                       if (validation != null)
                         Text(validation!,
                             style: const TextStyle(color: Colors.red))
                     ])),
                     actions: [
+                      TextButton.icon(
+                          onPressed: () {
+                            sketchRequested = true;
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.crop_square),
+                          label: const Text('直接拖出外形')),
                       TextButton(
                           onPressed: () => Navigator.pop(context),
                           child: const Text('取消')),
@@ -208,6 +193,8 @@ class _HouseHomeState extends State<HouseHome> {
                                 d = double.tryParse(depth.text);
                             if (w == null ||
                                 d == null ||
+                                !w.isFinite ||
+                                !d.isFinite ||
                                 w < 3 ||
                                 w > 100 ||
                                 d < 3 ||
@@ -226,6 +213,7 @@ class _HouseHomeState extends State<HouseHome> {
                                     depth: (d * 1000).round(),
                                     columns: columns,
                                     rows: rows,
+                                    initialRoom: true,
                                     timestamp: DateTime.now()
                                         .toUtc()
                                         .toIso8601String(),
@@ -234,6 +222,20 @@ class _HouseHomeState extends State<HouseHome> {
                           child: const Text('开始设计'))
                     ])));
     // The controllers stay alive until the dialog exit animation completes.
+    if (sketchRequested && mounted) {
+      final dimensions = await Navigator.of(context).push<FootprintDimensions>(
+          MaterialPageRoute(builder: (_) => const FootprintSketch()));
+      if (dimensions == null) return;
+      doc = createHouse(
+          name: name.text,
+          width: dimensions.width,
+          depth: dimensions.depth,
+          columns: 1,
+          rows: 1,
+          initialRoom: true,
+          timestamp: DateTime.now().toUtc().toIso8601String(),
+          newId: () => const Uuid().v4());
+    }
     if (doc == null) return;
     try {
       final id = await store.createProject(doc);
@@ -289,17 +291,21 @@ class _HouseHomeState extends State<HouseHome> {
           child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 760),
               child: ListView(padding: const EdgeInsets.all(24), children: [
-                const Text('从几个格子，搭出你的家',
+                const Text('从长宽开始，设计你的家',
                     style:
                         TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
-                const Text('分格子 · 填房间 · 看尺寸'),
+                const Text('定长宽 · 拖动分房 · 放门窗'),
                 const SizedBox(height: 24),
                 FilledButton.icon(
                     onPressed: create,
                     icon: const Icon(Icons.add),
                     label: const Padding(
                         padding: EdgeInsets.all(12), child: Text('新建设计'))),
+                TextButton.icon(
+                    onPressed: createFromTemplate,
+                    icon: const Icon(Icons.auto_awesome_mosaic_outlined),
+                    label: const Text('也可以从示例开始')),
                 const SizedBox(height: 32),
                 const Text('最近设计',
                     style:
@@ -383,7 +389,14 @@ class _HouseHomeState extends State<HouseHome> {
 }
 
 class HouseEditor extends StatefulWidget {
-  const HouseEditor({super.key, required this.entry, required this.store});
+  const HouseEditor(
+      {super.key,
+      required this.entry,
+      required this.store,
+      this.initialView3d = false,
+      this.initialTool});
+  final bool initialView3d;
+  final String? initialTool;
   final ProjectEntry entry;
   final ProjectStore store;
   @override
@@ -395,12 +408,467 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   late FloorBase base;
   late DerivedHouse derived;
   bool view3d = false;
-  String tool = 'room';
+  String tool = 'browse';
   PlanRect? focus;
+  Offset? spatialStart, spatialEnd;
+  FloorPlanPainter? dragCoordinatePainter;
+  WallSegment? selectedWall;
+  PlanRect? spatialPreview;
+  String? spatialError;
+  HouseDocument? spatialDocument;
+  FloorBase? spatialBase;
+
+  final canvasKey = GlobalKey();
+  final canvasTransform = TransformationController();
+  EdgeInsets get canvasInsets {
+    final wide = MediaQuery.sizeOf(context).width >= 600;
+    final bottom = MediaQuery.textScalerOf(context).scale(12) > 16
+        ? (wide ? 150.0 : 210.0)
+        : wide
+            ? 112.0
+            : MediaQuery.sizeOf(context).width < 350
+                ? 180.0
+                : 138.0;
+    return EdgeInsets.fromLTRB(12, 112, 68, bottom);
+  }
+
+  FloorPlanPainter interactionPainter() =>
+      FloorPlanPainter(base, {}, {}, viewportInsets: canvasInsets);
+
+  OpeningKind? placingOpening;
+  Map<String, dynamic>? openingDrop;
+  String? placementHint;
+
+  void previewOpening(OpeningKind kind, Offset global) {
+    final box = canvasKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final painter = interactionPainter();
+    final world = painter.worldPoint(box.globalToLocal(global), box.size);
+    final tolerance = 28 / painter.scale(box.size);
+    final walls = base.wallSegments.where((wall) {
+      final along = wall.axis.dir == AxisDir.H ? world.x : world.y;
+      final cross = wall.axis.dir == AxisDir.H ? world.y : world.x;
+      return along >= wall.start.pos &&
+          along <= wall.end.pos &&
+          (cross - wall.axis.pos).abs() <= tolerance &&
+          wall.kind != 'open';
+    }).toList();
+    walls.sort((a, b) => ((a.axis.dir == AxisDir.H ? world.y : world.x) -
+            a.axis.pos)
+        .abs()
+        .compareTo(((b.axis.dir == AxisDir.H ? world.y : world.x) - b.axis.pos)
+            .abs()));
+    final wall = walls.firstOrNull;
+    openingDrop = null;
+    derive();
+    if (wall == null) {
+      placementHint = '拖到墙上，门窗会自动贴合';
+      return;
+    }
+    final arguments = <String, dynamic>{
+      'floorId': floor.id,
+      'anchor': wall.ref.anchor,
+      'kind': kind,
+      'centerAtTap': true,
+      'tapT': (wall.axis.dir == AxisDir.H ? world.x : world.y) - wall.start.pos
+    };
+    final result = executeCommand(
+        extractDesignState(history.present),
+        DesignCommand('AddOpening', arguments),
+        CommandContext(newId: () => const Uuid().v4(), now: () => 'unused'));
+    if (result is Applied) {
+      openingDrop = arguments;
+      derived =
+          deriveHouse(composeDocument(history.present.meta, result.newState));
+      base = derived.floors[floorIndex].base;
+      placementHint = '已贴合墙面，松手放置';
+    } else {
+      placementHint = result is Rejected ? result.message : '此处无法放置';
+    }
+  }
+
+  String toolLabel(String label) => switch (label) {
+        '拉线分房' => '分房',
+        '拖动划房' => '框房',
+        '拖入门' => '门',
+        '拖入窗' => '窗',
+        '更多工具' => '更多',
+        '墙体调整' => '改墙',
+        '墙设置' => '设置',
+        _ => label
+      };
+
+  Widget basicTool(
+          IconData icon, String label, bool selected, VoidCallback onTap) =>
+      Semantics(
+          button: true,
+          selected: selected,
+          label: label,
+          child: Tooltip(
+              message: label,
+              child: Material(
+                  color: selected
+                      ? Theme.of(context).colorScheme.secondaryContainer
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () {
+                        cancelDrag();
+                        spatialDocument = null;
+                        spatialBase = null;
+                        spatialError = null;
+                        spatialStart = null;
+                        spatialEnd = null;
+                        spatialPreview = null;
+                        placementHint = null;
+                        onTap();
+                        if (mounted) setState(() {});
+                      },
+                      child: SizedBox(
+                          width: math.max(
+                              48,
+                              MediaQuery.textScalerOf(context).scale(12) *
+                                      toolLabel(label).length +
+                                  4),
+                          height: math.max(58,
+                              MediaQuery.textScalerOf(context).scale(12) + 44),
+                          child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(icon, size: 24),
+                                const SizedBox(height: 4),
+                                Text(toolLabel(label),
+                                    maxLines: 1,
+                                    style: const TextStyle(fontSize: 12))
+                              ]))))));
+
+  Future<void> footprintOptions() async {
+    final width = TextEditingController(
+        text: (history.present.footprint.width / 1000).toStringAsFixed(2));
+    final depth = TextEditingController(
+        text: (history.present.footprint.depth / 1000).toStringAsFixed(2));
+    String? error;
+    await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => StatefulBuilder(
+            builder: (context, update) => SafeArea(
+                child: SingleChildScrollView(
+                    child: Padding(
+                        padding: EdgeInsets.fromLTRB(20, 20, 20,
+                            MediaQuery.viewInsetsOf(context).bottom + 20),
+                        child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const Text('房屋长宽',
+                                  style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w600)),
+                              const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                  child: Text('外形尺寸用于全部楼层。内部房间位置保持不变。')),
+                              TextField(
+                                  controller: width,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                  decoration: const InputDecoration(
+                                      labelText: '宽（米，左右方向）')),
+                              TextField(
+                                  controller: depth,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                          decimal: true),
+                                  decoration: const InputDecoration(
+                                      labelText: '长（米，上下方向）')),
+                              if (error != null)
+                                Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(error!,
+                                        style: TextStyle(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .error))),
+                              const SizedBox(height: 16),
+                              FilledButton(
+                                  onPressed: () {
+                                    final w = double.tryParse(width.text),
+                                        d = double.tryParse(depth.text);
+                                    if (w == null ||
+                                        d == null ||
+                                        !w.isFinite ||
+                                        !d.isFinite ||
+                                        w < 3 ||
+                                        d < 3 ||
+                                        w > 100 ||
+                                        d > 100) {
+                                      update(() => error = '长宽需在 3–100 米之间');
+                                      return;
+                                    }
+                                    final args = <String, dynamic>{
+                                      'width': (w * 1000).round(),
+                                      'depth': (d * 1000).round()
+                                    };
+                                    final result = executeCommand(
+                                        extractDesignState(history.present),
+                                        DesignCommand('SetFootprintSize', args),
+                                        CommandContext(
+                                            newId: () => const Uuid().v4(),
+                                            now: () => 'unused'));
+                                    if (result is Rejected) {
+                                      update(() => error = result.message);
+                                      return;
+                                    }
+                                    Navigator.pop(context);
+                                    action('SetFootprintSize', args);
+                                  },
+                                  child: const Text('应用尺寸')),
+                              TextButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    setState(() {
+                                      view3d = false;
+                                      browse = false;
+                                      tool = 'resize';
+                                      placementHint = null;
+                                    });
+                                  },
+                                  icon: const Icon(Icons.open_in_full),
+                                  label: const Text('拖动外边框调整')),
+                            ]))))));
+  }
+
+  Future<void> moreTools() async {
+    final choice = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => SafeArea(
+            child: SizedBox(
+                height: math.min(MediaQuery.sizeOf(context).height * 0.7, 500),
+                child: ListView(children: [
+                  const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text('更多工具',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w600))),
+                  for (final entry in {
+                    'fit': '恢复画布视角',
+                    'grid': '网格',
+                    'opening': '门窗',
+                    'stair': '楼梯',
+                    for (final type in RoomType.values)
+                      type.name: roomNames[type]!,
+                    'erase': '擦除'
+                  }.entries)
+                    ListTile(
+                        title: Text(entry.value),
+                        onTap: () => Navigator.pop(context, entry.key)),
+                ]))));
+    if (choice == null || !mounted) return;
+    if (choice == 'fit') {
+      canvasTransform.value = Matrix4.identity();
+      return;
+    }
+    setState(() {
+      browse = false;
+      erase = choice == 'erase';
+      placementHint = null;
+      if (['grid', 'opening', 'stair'].contains(choice))
+        tool = choice;
+      else {
+        tool = 'room';
+        if (!erase) brush = RoomType.values.firstWhere((t) => t.name == choice);
+      }
+    });
+  }
+
+  Widget openingTool(OpeningKind kind, IconData icon, String label) {
+    final button = basicTool(
+        icon, label, tool == 'placeOpening' && placingOpening == kind, () {
+      placingOpening = kind;
+      browse = false;
+      tool = 'placeOpening';
+      placementHint = '点一下墙面放置，也可以从工具栏直接拖入';
+    });
+    return Draggable<OpeningKind>(
+        data: kind,
+        dragAnchorStrategy: pointerDragAnchorStrategy,
+        feedback: Material(
+            color: Colors.transparent,
+            child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12)),
+                child: Icon(icon, size: 32))),
+        onDragEnd: (_) => setState(() {
+              openingDrop = null;
+              placementHint = null;
+              derive();
+            }),
+        child: button);
+  }
+
+  bool get spatialTool => tool == 'box' || tool == 'split';
+
+  void updateSpatial(Offset point, Size size) {
+    final painter = interactionPainter();
+    final world = painter.worldPoint(point, size);
+    int snap(double value, List<ResolvedAxis> axes) {
+      final clamped = value.round().clamp(axes.first.pos, axes.last.pos);
+      for (final axis in axes) {
+        if ((axis.pos - clamped).abs() <
+            math.min(12 / painter.scale(size), 250)) return axis.pos;
+      }
+      return (clamped / 100).round() * 100;
+    }
+
+    spatialEnd = Offset(snap(world.x, base.axes.v).toDouble(),
+        snap(world.y, base.axes.h).toDouble());
+    spatialStart ??= spatialEnd;
+    if (tool == 'split') {
+      final vertical = (spatialEnd!.dy - spatialStart!.dy).abs() >=
+          (spatialEnd!.dx - spatialStart!.dx).abs();
+      spatialPreview = vertical
+          ? PlanRect(
+              spatialStart!.dx,
+              math.min(spatialStart!.dy, spatialEnd!.dy),
+              spatialStart!.dx,
+              math.max(spatialStart!.dy, spatialEnd!.dy))
+          : PlanRect(
+              math.min(spatialStart!.dx, spatialEnd!.dx),
+              spatialStart!.dy,
+              math.max(spatialStart!.dx, spatialEnd!.dx),
+              spatialStart!.dy);
+      validateSpatialPreview();
+      return;
+    }
+
+    spatialPreview = PlanRect(
+        math.min(spatialStart!.dx, spatialEnd!.dx),
+        math.min(spatialStart!.dy, spatialEnd!.dy),
+        math.max(spatialStart!.dx, spatialEnd!.dx),
+        math.max(spatialStart!.dy, spatialEnd!.dy));
+    validateSpatialPreview();
+  }
+
+  void validateSpatialPreview() {
+    final rect = spatialPreview;
+    if (rect == null || spatialStart == null || spatialEnd == null) return;
+    if ((spatialStart! - spatialEnd!).distance < 300 ||
+        tool == 'box' &&
+            (rect.right - rect.left < 300 || rect.top - rect.bottom < 300)) {
+      spatialError = null;
+      spatialDocument = null;
+      spatialBase = null;
+      placementHint = null;
+      return;
+    }
+    final vertical = (spatialEnd!.dy - spatialStart!.dy).abs() >=
+        (spatialEnd!.dx - spatialStart!.dx).abs();
+    final midpoint = (spatialStart! + spatialEnd!) / 2;
+    final arguments = tool == 'split'
+        ? <String, dynamic>{
+            'floorId': floor.id,
+            'dir': vertical ? AxisDir.V : AxisDir.H,
+            'pos': (vertical ? spatialStart!.dx : spatialStart!.dy).round(),
+            'x': midpoint.dx
+                .round()
+                .clamp(1, history.present.footprint.width - 1),
+            'y': midpoint.dy
+                .round()
+                .clamp(1, history.present.footprint.depth - 1)
+          }
+        : <String, dynamic>{
+            'floorId': floor.id,
+            'left': rect.left.round(),
+            'bottom': rect.bottom.round(),
+            'right': rect.right.round(),
+            'top': rect.top.round(),
+            'roomType': brush
+          };
+    final result = executeCommand(
+        extractDesignState(history.present),
+        DesignCommand(tool == 'split' ? 'SplitSpace' : 'CarveRoom', arguments),
+        CommandContext(newId: () => const Uuid().v4(), now: () => 'unused'));
+    spatialError = result is Rejected ? result.message : null;
+    if (result is Applied) {
+      spatialDocument = composeDocument(history.present.meta, result.newState);
+      spatialBase = deriveFloorBase(spatialDocument!, floor.id);
+      final count = spatialDocument!.floors
+          .firstWhere((f) => f.id == floor.id)
+          .rooms
+          .length;
+      placementHint =
+          count > floor.rooms.length + 1 ? '分房后会得到 $count 个独立空间，松手完成' : null;
+    } else {
+      spatialDocument = null;
+      spatialBase = null;
+      placementHint = spatialError;
+    }
+  }
+
+  void finishSpatial() {
+    spatialDocument = null;
+    spatialBase = null;
+    final message = spatialError;
+    spatialError = null;
+    placementHint = null;
+    if (message != null) {
+      spatialStart = null;
+      spatialEnd = null;
+      spatialPreview = null;
+      setState(() {});
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+      return;
+    }
+    final rectangle = spatialPreview;
+    if (tool == 'split' &&
+        spatialStart != null &&
+        spatialEnd != null &&
+        (spatialStart! - spatialEnd!).distance >= 300) {
+      final vertical = (spatialEnd!.dy - spatialStart!.dy).abs() >=
+          (spatialEnd!.dx - spatialStart!.dx).abs();
+      final midpoint = (spatialStart! + spatialEnd!) / 2;
+      final args = <String, dynamic>{
+        'floorId': floor.id,
+        'dir': vertical ? AxisDir.V : AxisDir.H,
+        'pos': (vertical ? spatialStart!.dx : spatialStart!.dy).round(),
+        'x': midpoint.dx.round().clamp(1, history.present.footprint.width - 1),
+        'y': midpoint.dy.round().clamp(1, history.present.footprint.depth - 1)
+      };
+      spatialStart = null;
+      spatialEnd = null;
+      spatialPreview = null;
+      action('SplitSpace', args);
+      return;
+    }
+    spatialStart = null;
+    spatialEnd = null;
+    spatialPreview = null;
+    if (rectangle == null ||
+        rectangle.right - rectangle.left < 300 ||
+        rectangle.top - rectangle.bottom < 300) {
+      setState(() {});
+      return;
+    }
+    action('CarveRoom', {
+      'floorId': floor.id,
+      'left': rectangle.left.round(),
+      'bottom': rectangle.bottom.round(),
+      'right': rectangle.right.round(),
+      'top': rectangle.top.round(),
+      'roomType': brush
+    });
+  }
+
   Offset? downPoint;
   int floorIndex = 0;
   RoomType brush = RoomType.living;
-  bool browse = false, erase = false, dirty = false, saving = false;
+  bool browse = true, erase = false, dirty = false, saving = false;
   String status = '已保存';
   final stroke = <Cell>[];
   final pointers = <int>{};
@@ -410,15 +878,18 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   OpeningPlacement? draggingOpening;
   Map<String, dynamic>? dragArguments;
   String? dragKind;
-  bool dragged = false;
+  bool dragged = false, dragAttempted = false, dragValid = false;
   Timer? timer;
   Future<void>? pendingSave;
   Floor get floor => history.present.floors[floorIndex];
   @override
   void initState() {
     super.initState();
+    view3d = widget.initialView3d;
+    if (view3d) toolCategory = 2;
     history = DesignHistory(widget.entry.document);
     derive();
+    if (widget.initialTool == 'drawWall') startWallDrawing();
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -435,6 +906,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    canvasTransform.dispose();
     timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -484,16 +956,36 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   }
 
   void beginDrag(Offset point, Size size) {
+    if (tool == 'selectWall') return;
     draggingAxis = null;
     draggingOpening = null;
     dragArguments = null;
     dragKind = null;
     dragged = false;
-    final painter = FloorPlanPainter(base, {}, {}), scale = painter.scale(size);
+    dragAttempted = false;
+    dragValid = false;
+    final painter = interactionPainter(), scale = painter.scale(size);
+    dragCoordinatePainter = painter;
     final x = painter.worldPoint(point, size).x,
         y = painter.worldPoint(point, size).y,
         tolerance = 12 / scale;
-    if (tool == 'grid') {
+    if (tool == 'wall' && selectedWall != null) {
+      final wall = selectedWall!;
+      final along = (wall.start.pos + wall.end.pos) / 2;
+      final center = wall.axis.dir == AxisDir.V
+          ? painter.point(wall.axis.pos.toDouble(), along, size)
+          : painter.point(along, wall.axis.pos.toDouble(), size);
+      if ((point - center).distance <= 24) draggingAxis = wall.axis;
+    } else if (tool == 'resize') {
+      final width = history.present.footprint.width.toDouble(),
+          depth = history.present.footprint.depth.toDouble();
+      if ((point - painter.point(width, depth / 2, size)).distance <= 24) {
+        draggingAxis = base.axes.v.last;
+      } else if ((point - painter.point(width / 2, depth, size)).distance <=
+          24) {
+        draggingAxis = base.axes.h.last;
+      }
+    } else if (tool == 'grid') {
       final axes = base.axes.all
           .where((a) =>
               a.kind != 'boundary' &&
@@ -503,7 +995,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           .abs()
           .compareTo(((b.dir == AxisDir.V ? x : y) - b.pos).abs()));
       draggingAxis = axes.firstOrNull;
-    } else if (tool == 'opening') {
+    } else if (tool == 'opening' || browse) {
       draggingOpening = derived.floors[floorIndex].openings.where((p) {
         final along = p.axis.dir == AxisDir.H ? x : y,
             cross = p.axis.dir == AxisDir.H ? y : x;
@@ -517,71 +1009,138 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   void previewDrag(Offset point, Size size) {
     if (downPoint == null || (downPoint! - point).distance < 8 && !dragged)
       return;
-    final painter = FloorPlanPainter(base, {}, {});
+    dragAttempted = true;
+    dragValid = false;
+    final painter = dragCoordinatePainter ?? interactionPainter();
     final x = painter.worldPoint(point, size).x,
         y = painter.worldPoint(point, size).y;
     if (draggingAxis != null) {
       final axis = draggingAxis!;
-      var low = 0,
-          high = axis.dir == AxisDir.V
-              ? history.present.footprint.width
-              : history.present.footprint.depth;
-      for (final floor in history.present.floors) {
-        final axes = resolveFloorAxes(history.present, floor.id)!;
-        final resolved = lookupAxis(axes, axis.id).axis;
-        if (resolved == null) continue;
-        final list = axis.dir == AxisDir.V ? axes.v : axes.h;
-        low = math.max(low, list[resolved.index - 1].pos + 300);
-        high = math.min(high, list[resolved.index + 1].pos - 300);
+      if (tool == 'wall' && selectedWall != null) {
+        final originalAxes = resolveFloorAxes(history.present, floor.id)!;
+        final originalList =
+            axis.dir == AxisDir.V ? originalAxes.v : originalAxes.h;
+        final original = lookupAxis(originalAxes, axis.id).axis!;
+        dragKind = 'MoveLocalWall';
+        dragArguments = {
+          'floorId': floor.id,
+          'anchor': selectedWall!.ref.anchor,
+          'pos': (((axis.dir == AxisDir.V ? x : y) / 100).round() * 100).clamp(
+              originalList[original.index - 1].pos + 300,
+              originalList[original.index + 1].pos - 300)
+        };
+      } else if (axis.kind == 'boundary') {
+        dragKind = 'SetFootprintSize';
+        dragArguments = {
+          axis.dir == AxisDir.V ? 'width' : 'depth':
+              ((axis.dir == AxisDir.V ? x : y) / 100).round().clamp(30, 1000) *
+                  100
+        };
+      } else {
+        var low = 0,
+            high = axis.dir == AxisDir.V
+                ? history.present.footprint.width
+                : history.present.footprint.depth;
+        for (final floor in history.present.floors) {
+          final axes = resolveFloorAxes(history.present, floor.id)!;
+          final resolved = lookupAxis(axes, axis.id).axis;
+          if (resolved == null) continue;
+          final list = axis.dir == AxisDir.V ? axes.v : axes.h;
+          low = math.max(low, list[resolved.index - 1].pos + 300);
+          high = math.min(high, list[resolved.index + 1].pos - 300);
+        }
+        dragKind = 'MoveAxis';
+        dragArguments = {
+          'axisId': axis.id,
+          'pos': (axis.dir == AxisDir.V ? x : y).round().clamp(low, high)
+        };
       }
-      dragKind = 'MoveAxis';
-      dragArguments = {
-        'axisId': axis.id,
-        'pos': (axis.dir == AxisDir.V ? x : y).round().clamp(low, high)
-      };
     } else if (draggingOpening != null) {
       final opening = draggingOpening!;
-      final axes = resolveFloorAxes(history.present, floor.id)!;
-      final chain = resolveAnchor(axes, opening.opening.anchor).chain!;
-      final along = opening.axis.dir == AxisDir.H ? x : y;
+      final originalBase = deriveFloorBase(history.present, floor.id);
+      final tolerance = 28 / painter.scale(size);
+      final candidates = originalBase.wallSegments.where((wall) {
+        final along = wall.axis.dir == AxisDir.H ? x : y;
+        final cross = wall.axis.dir == AxisDir.H ? y : x;
+        return along >= wall.start.pos &&
+            along <= wall.end.pos &&
+            (cross - wall.axis.pos).abs() <= tolerance;
+      }).toList();
+      candidates.sort((a, b) => ((a.axis.dir == AxisDir.H ? y : x) - a.axis.pos)
+          .abs()
+          .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
+      final wall = candidates.firstOrNull;
+      if (wall == null) {
+        placementHint = '拖到另一面墙，门窗会自动贴合';
+        return;
+      }
+      final along = wall.axis.dir == AxisDir.H ? x : y;
+      final available = wall.end.pos - wall.start.pos - opening.opening.width;
+      if (available < 0) {
+        placementHint = '这段墙放不下这个门窗';
+        return;
+      }
       dragKind = 'MoveOpening';
       dragArguments = {
         'openingId': opening.opening.id,
+        'anchor': wall.ref.anchor,
         'position': {
           'type': 'fromStart',
-          'd': math.max(
-              0, (along - chain.startPos - opening.opening.width / 2).round())
+          'd': (along - wall.start.pos - opening.opening.width / 2)
+              .round()
+              .clamp(0, available)
         }
       };
     } else {
       return;
     }
-    var id = 0;
     final result = executeCommand(
         extractDesignState(history.present),
         DesignCommand(dragKind!, dragArguments!),
         CommandContext(
-            newId: () => '__preview_${++id}',
-            now: () => '1970-01-01T00:00:00Z'));
+            newId: () => const Uuid().v4(), now: () => '1970-01-01T00:00:00Z'));
     if (result is Applied) {
+      placementHint = null;
       dragged = true;
+      dragValid = true;
       derived =
           deriveHouse(composeDocument(history.present.meta, result.newState));
       base = derived.floors[floorIndex].base;
+    } else if (result is Rejected) {
+      derive();
+      placementHint = result.message;
     }
   }
 
   void cancelDrag() {
+    if (pointers.isNotEmpty) cancelledStroke = true;
+    spatialStart = null;
+    spatialEnd = null;
+    spatialPreview = null;
+    downPoint = null;
+    if (tool == 'drawWall' && drawingBefore != null)
+      drawingOrigin = drawingBefore;
+    drawingBefore = null;
+    drawingEnd = null;
+    spatialError = null;
+    wallGrip = null;
+    editPreviewStart = null;
+    editPreviewEnd = null;
+    editDown = null;
+    spatialDocument = null;
+    spatialBase = null;
     draggingAxis = null;
     draggingOpening = null;
     dragArguments = null;
     dragKind = null;
     dragged = false;
+    dragAttempted = false;
+    dragValid = false;
     derive();
   }
 
   void sample(Offset p, Size size) {
-    final painter = FloorPlanPainter(base, {}, {});
+    final painter = interactionPainter();
     final x = painter.worldPoint(p, size).x, y = painter.worldPoint(p, size).y;
     final i = base.axes.v.indexWhere((a) => a.pos > x) - 1,
         j = base.axes.h.indexWhere((a) => a.pos > y) - 1;
@@ -685,7 +1244,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     final choice = await showModalBottomSheet<String>(
         context: context,
         builder: (context) => SafeArea(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                child: ListView(shrinkWrap: true, children: [
               for (final entry in {
                 'AddFloor': '新增空层',
                 'CopyFloor': '复制本层',
@@ -732,7 +1291,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     final choice = await showModalBottomSheet<String>(
         context: context,
         builder: (context) => SafeArea(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                child: ListView(shrinkWrap: true, children: [
               for (final e in {
                 'width': '房屋宽度',
                 'depth': '房屋进深',
@@ -775,7 +1334,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       final direction = await showModalBottomSheet<String>(
           context: context,
           builder: (context) => SafeArea(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  child: ListView(shrinkWrap: true, children: [
                 ListTile(
                     title: const Text('屋脊沿进深方向'),
                     onTap: () => Navigator.pop(context, 'V')),
@@ -832,7 +1391,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       final value = await showModalBottomSheet<int>(
           context: context,
           builder: (context) => SafeArea(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  child: ListView(shrinkWrap: true, children: [
                 for (final angle in [0, 90, 180, 270])
                   ListTile(
                       title: Text('正北指向 $angle°'),
@@ -873,7 +1432,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         final scope = await showModalBottomSheet<String>(
             context: context,
             builder: (context) => SafeArea(
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    child: ListView(shrinkWrap: true, children: [
                   ListTile(
                       title: const Text('所有楼层'),
                       onTap: () => Navigator.pop(context, 'global')),
@@ -893,7 +1452,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       final operation = await showModalBottomSheet<String>(
         context: context,
         builder: (context) => SafeArea(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
+            child: ListView(shrinkWrap: true, children: [
           ListTile(
               title: const Text('修改位置'),
               onTap: () => Navigator.pop(context, 'move')),
@@ -1045,7 +1604,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   }
 
   Future<void> tapObject(Offset point, Size size) async {
-    final painter = FloorPlanPainter(base, {}, {}), scale = painter.scale(size);
+    final painter = interactionPainter(), scale = painter.scale(size);
     final x = painter.worldPoint(point, size).x,
         y = painter.worldPoint(point, size).y,
         tolerance = 12 / scale;
@@ -1057,7 +1616,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           along <= p.end + tolerance &&
           (cross - p.axis.pos).abs() < tolerance;
     }).firstOrNull;
-    if (opening != null) {
+    if (opening != null && tool != 'selectWall') {
       openingOptions(opening.opening);
       return;
     }
@@ -1069,14 +1628,20 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           (cross - w.axis.pos).abs() < tolerance;
     }).firstOrNull;
     if (wall != null) {
+      if (wall.axis.kind != 'boundary') {
+        selectWallForEdit(wall, x, y);
+        return;
+      }
       final choice = await showModalBottomSheet<String>(
           context: context,
           builder: (context) => SafeArea(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  child: ListView(shrinkWrap: true, children: [
                 for (final entry in {
                   'door': '门',
                   'window': '窗',
                   'sliding': '推拉门',
+                  if (wall.axis.kind != 'boundary') 'move': '拖动这段墙',
+                  if (wall.axis.kind != 'boundary') 'position': '精确调整这段墙',
                   'open': '开放（无墙）',
                   'thickness': '调整墙厚',
                   'default': '恢复默认墙'
@@ -1086,6 +1651,23 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                       onTap: () => Navigator.pop(context, entry.key))
               ])));
       if (choice == null) return;
+      if (choice == 'move') {
+        setState(() {
+          selectedWall = wall;
+          tool = 'wall';
+          browse = false;
+          placementHint = null;
+        });
+        return;
+      }
+      if (choice == 'position') {
+        final value = await length(
+            wall.axis.dir == AxisDir.V ? '距左侧外墙' : '距下侧外墙', wall.axis.pos);
+        if (value != null)
+          action('MoveLocalWall',
+              {'floorId': floor.id, 'anchor': wall.ref.anchor, 'pos': value});
+        return;
+      }
       if (['door', 'window', 'sliding'].contains(choice)) {
         action('AddOpening', {
           'floorId': floor.id,
@@ -1113,42 +1695,108 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     final id = base.owners[Cell(i, j)];
     final room = floor.rooms.where((r) => r.id == id).firstOrNull;
     if (room != null) {
+      final geometry = base.roomGeometry.firstWhere((g) => g.id == room.id);
+      final clear =
+          geometry.clearRects.length == 1 ? geometry.clearRects.single : null;
+      final details = clear == null
+          ? '净面积 ${(geometry.clearArea / 1000000).toStringAsFixed(1)} ㎡'
+          : '净宽 ${((clear.right - clear.left) / 1000).toStringAsFixed(2)} 米 · 净长 ${((clear.top - clear.bottom) / 1000).toStringAsFixed(2)} 米 · ${(geometry.clearArea / 1000000).toStringAsFixed(1)} ㎡';
       final choice = await showModalBottomSheet<String>(
           context: context,
+          isScrollControlled: true,
           builder: (context) => SafeArea(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                ListTile(
-                    title: Text(room.name),
-                    subtitle: const Text('修改名称'),
-                    onTap: () => Navigator.pop(context, 'rename')),
-                for (final type in RoomType.values)
-                  ListTile(
-                      title: Text(roomNames[type]!),
-                      selected: room.type == type,
-                      onTap: () => Navigator.pop(context, type.name)),
-                ListTile(
-                    title: const Text('与相邻房间合并'),
-                    onTap: () => Navigator.pop(context, 'merge')),
-                ListTile(
-                    title: const Text('删除房间'),
-                    onTap: () => Navigator.pop(context, 'delete')),
-              ])));
+              child: SizedBox(
+                  height:
+                      math.min(420, MediaQuery.sizeOf(context).height * 0.75),
+                  child: ListView(padding: const EdgeInsets.all(16), children: [
+                    Text(room.name,
+                        style: const TextStyle(
+                            fontSize: 22, fontWeight: FontWeight.w600)),
+                    Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(details)),
+                    const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text('这个房间用来做什么？')),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      for (final type in RoomType.values)
+                        ChoiceChip(
+                            label: Text(roomNames[type]!),
+                            selected: room.type == type,
+                            onSelected: (_) =>
+                                Navigator.pop(context, type.name))
+                    ]),
+                    const Divider(height: 24),
+                    ListTile(
+                        leading: const Icon(Icons.edit_outlined),
+                        title: const Text('修改名称'),
+                        onTap: () => Navigator.pop(context, 'rename')),
+                    ListTile(
+                        leading: const Icon(Icons.join_inner),
+                        title: const Text('与相邻房间合并'),
+                        onTap: () => Navigator.pop(context, 'merge')),
+                    ListTile(
+                        leading: const Icon(Icons.delete_outline),
+                        title: const Text('删除房间'),
+                        onTap: () => Navigator.pop(context, 'delete')),
+                  ]))));
       if (choice == 'rename') {
         final value = await ask('房间名称', room.name);
         if (value != null)
           action('RenameRoom', {'roomId': room.id, 'value': value});
       } else if (choice == 'merge') {
+        final adjacent = floor.rooms
+            .where((r) =>
+                r.id != room.id &&
+                isConnected({
+                  ...regionCells(base.axes, room.regions).cells,
+                  ...regionCells(base.axes, r.regions).cells
+                }))
+            .toList();
+        if (adjacent.isEmpty) {
+          if (mounted)
+            ScaffoldMessenger.of(context)
+                .showSnackBar(const SnackBar(content: Text('没有可以合并的相邻房间')));
+          return;
+        }
         final target = await showModalBottomSheet<String>(
             context: context,
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [
-                  for (final other in floor.rooms.where((r) => r.id != room.id))
+                  for (final other in adjacent)
                     ListTile(
                         title: Text(other.name),
                         onTap: () => Navigator.pop(context, other.id)),
                 ])));
-        if (target != null)
-          action('MergeRooms', {'roomIdA': room.id, 'roomIdB': target});
+        if (target != null) {
+          final arguments = <String, dynamic>{
+            'roomIdA': room.id,
+            'roomIdB': target
+          };
+          final preview = executeCommand(
+              extractDesignState(history.present),
+              DesignCommand('MergeRooms', arguments),
+              CommandContext(
+                  newId: () => const Uuid().v4(), now: () => 'unused'));
+          if (preview is NeedsResolution && mounted) {
+            final proceed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                        title: const Text('合并这两个房间？'),
+                        content: Text(preview.conflict.message),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('取消')),
+                          FilledButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('合并并移除这些门窗'))
+                        ]));
+            if (proceed != true) return;
+            arguments['deleteHostedObjects'] = true;
+          }
+          action('MergeRooms', arguments);
+        }
       } else if (choice == 'delete') {
         final updated = paintCells(
             history.present,
@@ -1171,7 +1819,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       final choice = await showModalBottomSheet<String>(
           context: context,
           builder: (context) => SafeArea(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  child: ListView(shrinkWrap: true, children: [
                 for (final e in {
                   'straight': '直梯',
                   'L': 'L 型楼梯',
@@ -1208,7 +1856,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     final choice = await showModalBottomSheet<String>(
         context: context,
         builder: (context) => SafeArea(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                child: ListView(shrinkWrap: true, children: [
               for (final e in {
                 'width': '宽度',
                 'height': '高度',
@@ -1258,7 +1906,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       final kind = await showModalBottomSheet<OpeningKind>(
           context: context,
           builder: (context) => SafeArea(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  child: ListView(shrinkWrap: true, children: [
                 for (final entry in {
                   OpeningKind.door: '门',
                   OpeningKind.window: '窗',
@@ -1288,9 +1936,730 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     if (choice == 'delete') action('DeleteOpening', {'openingId': opening.id});
   }
 
+  Offset? drawingOrigin, drawingEnd;
+  int toolCategory = 0;
+  int viewResetToken = 0;
+  Duration get motionDuration => MediaQuery.disableAnimationsOf(context)
+      ? Duration.zero
+      : const Duration(milliseconds: 200);
+
+  Widget floatingSurface(Widget child) => Material(
+      color: Theme.of(context).colorScheme.surface,
+      elevation: 3,
+      clipBehavior: Clip.antiAlias,
+      shadowColor: Colors.black.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(20),
+      child: child);
+
+  void chooseCategory(int value) {
+    setState(() {
+      cancelDrag();
+      spatialStart = null;
+      spatialEnd = null;
+      spatialPreview = null;
+      toolCategory = value;
+      if (value != 2) view3d = false;
+      tool = 'browse';
+      browse = true;
+      drawingOrigin = null;
+      drawingEnd = null;
+      placementHint = null;
+    });
+  }
+
+  String? selectedDrawnId;
+  BoundaryAnchor? selectedDrawnAnchor;
+  Offset? editStart, editEnd, editPreviewStart, editPreviewEnd, editDown;
+  String? wallGrip;
+
+  void selectWallForEdit(WallSegment wall, double x, double y) {
+    final along = wall.axis.dir == AxisDir.V ? y : x;
+    final solid = floor.wallOverrides.whereType<SolidWall>().where((w) {
+      final c = resolveAnchor(base.axes, w.anchor).chain!;
+      return c.carrier.id == wall.axis.id &&
+          c.startPos <= along &&
+          c.endPos >= along;
+    }).firstOrNull;
+    final a = solid?.anchor ?? wall.ref.anchor;
+    final c = resolveAnchor(base.axes, a).chain!;
+    setState(() {
+      cancelDrag();
+      selectedWall = wall;
+      selectedDrawnId = solid?.id;
+      selectedDrawnAnchor = a;
+      editStart = c.carrier.dir == AxisDir.V
+          ? Offset(c.carrier.pos.toDouble(), c.startPos.toDouble())
+          : Offset(c.startPos.toDouble(), c.carrier.pos.toDouble());
+      editEnd = c.carrier.dir == AxisDir.V
+          ? Offset(c.carrier.pos.toDouble(), c.endPos.toDouble())
+          : Offset(c.endPos.toDouble(), c.carrier.pos.toDouble());
+      toolCategory = 1;
+      tool = 'editWall';
+      browse = false;
+      placementHint = '拖两端改长度 · 拖中间移动墙';
+    });
+  }
+
+  Map<String, dynamic> wallEditArguments(Offset start, Offset end) => {
+        'floorId': floor.id,
+        if (selectedDrawnId != null) 'wallId': selectedDrawnId,
+        if (selectedDrawnId == null) 'anchor': selectedDrawnAnchor,
+        'x0': start.dx.round(),
+        'y0': start.dy.round(),
+        'x1': end.dx.round(),
+        'y1': end.dy.round()
+      };
+
+  void beginWallEdit(Offset local, Size size) {
+    if (editStart == null || editEnd == null) return;
+    final painter = interactionPainter();
+    final a = painter.point(editStart!.dx, editStart!.dy, size),
+        b = painter.point(editEnd!.dx, editEnd!.dy, size);
+    final handles = {'middle': (a + b) / 2, 'start': a, 'end': b}
+        .entries
+        .toList()
+      ..sort((x, y) =>
+          (local - x.value).distance.compareTo((local - y.value).distance));
+    wallGrip =
+        (local - handles.first.value).distance <= 24 ? handles.first.key : null;
+    editDown = wallPoint(local, size);
+    editPreviewStart = null;
+    editPreviewEnd = null;
+    spatialError = null;
+  }
+
+  void previewWallEdit(Offset local, Size size) {
+    if (wallGrip == null ||
+        editDown == null ||
+        editStart == null ||
+        editEnd == null) return;
+    final exclude = <String>{
+      if (selectedDrawnAnchor != null) selectedDrawnAnchor!.axisId,
+      if (wallGrip == 'start' && selectedDrawnAnchor != null)
+        selectedDrawnAnchor!.startAxisId,
+      if (wallGrip == 'end' && selectedDrawnAnchor != null)
+        selectedDrawnAnchor!.endAxisId
+    };
+    final delta = wallPoint(local, size, excludeAxes: exclude) - editDown!;
+    final vertical = editStart!.dx == editEnd!.dx;
+    editPreviewStart = wallGrip == 'middle'
+        ? editStart! + delta
+        : wallGrip == 'start'
+            ? editStart! +
+                (vertical ? Offset(0, delta.dy) : Offset(delta.dx, 0))
+            : editStart;
+    editPreviewEnd = wallGrip == 'middle'
+        ? editEnd! + delta
+        : wallGrip == 'end'
+            ? editEnd! + (vertical ? Offset(0, delta.dy) : Offset(delta.dx, 0))
+            : editEnd;
+    final result = executeCommand(
+        extractDesignState(history.present),
+        DesignCommand('UpdateDrawnWall',
+            wallEditArguments(editPreviewStart!, editPreviewEnd!)),
+        CommandContext(newId: () => const Uuid().v4(), now: () => 'unused'));
+    if (result is Applied) {
+      spatialDocument = composeDocument(history.present.meta, result.newState);
+      spatialBase = deriveFloorBase(spatialDocument!, floor.id);
+      spatialError = null;
+      placementHint = '松手完成，支持撤销';
+    } else {
+      spatialDocument = null;
+      spatialBase = null;
+      spatialError = result is Rejected ? result.message : '无法移动这段墙';
+      placementHint = spatialError;
+    }
+  }
+
+  void refreshWallSelection(Offset start, Offset end) {
+    final vertical = start.dx == end.dx,
+        along0 = vertical ? start.dy : start.dx,
+        along1 = vertical ? end.dy : end.dx;
+    final solid = floor.wallOverrides.whereType<SolidWall>().where((w) {
+      final c = resolveAnchor(base.axes, w.anchor).chain!;
+      return c.carrier.dir == (vertical ? AxisDir.V : AxisDir.H) &&
+          c.carrier.pos == (vertical ? start.dx : start.dy) &&
+          c.startPos == math.min(along0, along1) &&
+          c.endPos == math.max(along0, along1);
+    }).firstOrNull;
+    if (solid == null) {
+      selectedDrawnId = null;
+      selectedDrawnAnchor = null;
+      tool = 'browse';
+      browse = true;
+      return;
+    }
+    selectedDrawnId = solid.id;
+    selectedDrawnAnchor = solid.anchor;
+    editStart = start;
+    editEnd = end;
+  }
+
+  void finishWallEdit() {
+    final start = editPreviewStart, end = editPreviewEnd, error = spatialError;
+    final args = start != null && end != null && error == null
+        ? wallEditArguments(start, end)
+        : null;
+    cancelDrag();
+    spatialError = null;
+    if (args != null) {
+      final before = history.present;
+      action('UpdateDrawnWall', args);
+      if (history.present != before) refreshWallSelection(start!, end!);
+    }
+    if (error != null)
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+    placementHint = '拖两端改长度 · 拖中间移动墙';
+    setState(() {});
+  }
+
+  Future<void> preciseWallLength() async {
+    if (editStart == null || editEnd == null) return;
+    final value = await length('墙长', (editEnd! - editStart!).distance.round());
+    if (value == null) return;
+    final vertical = editStart!.dx == editEnd!.dx;
+    final end = vertical
+        ? Offset(editStart!.dx, editStart!.dy + value)
+        : Offset(editStart!.dx + value, editStart!.dy);
+    final before = history.present;
+    action('UpdateDrawnWall', wallEditArguments(editStart!, end));
+    if (history.present != before)
+      setState(() => refreshWallSelection(editStart!, end));
+  }
+
+  Future<void> preciseWallPosition() async {
+    if (editStart == null || editEnd == null) return;
+    final vertical = editStart!.dx == editEnd!.dx;
+    final value = await length(vertical ? '距左侧的位置' : '距下侧的位置',
+        (vertical ? editStart!.dx : editStart!.dy).round());
+    if (value == null) return;
+    final start = vertical
+        ? Offset(value.toDouble(), editStart!.dy)
+        : Offset(editStart!.dx, value.toDouble());
+    final end = vertical
+        ? Offset(value.toDouble(), editEnd!.dy)
+        : Offset(editEnd!.dx, value.toDouble());
+    final before = history.present;
+    action('UpdateDrawnWall', wallEditArguments(start, end));
+    if (history.present != before)
+      setState(() => refreshWallSelection(start, end));
+  }
+
+  Future<void> wallSettings() async {
+    if (selectedDrawnAnchor == null) return;
+    final choice = await showModalBottomSheet<String>(
+        context: context,
+        builder: (context) => SafeArea(
+                child: ListView(shrinkWrap: true, children: [
+              ListTile(
+                  title: const Text('调整墙厚'),
+                  onTap: () => Navigator.pop(context, 'thickness')),
+              ListTile(
+                  title: const Text('恢复默认墙厚'),
+                  onTap: () => Navigator.pop(context, 'default'))
+            ])));
+    if (choice == null) return;
+    int? value;
+    if (choice == 'thickness') {
+      final current = floor.wallOverrides
+          .where((w) => w.anchor == selectedDrawnAnchor)
+          .firstOrNull;
+      final thickness = current is SolidWall
+          ? current.value
+          : current is ThicknessWall
+              ? current.value
+              : selectedWall?.thickness.round() ??
+                  history.present.defaults.innerWallThickness;
+      value = await length('墙厚', thickness);
+      if (value == null) return;
+    }
+    final start = editStart, end = editEnd;
+    action('SetWallOverride', {
+      'floorId': floor.id,
+      'anchor': selectedDrawnAnchor,
+      'type': choice,
+      if (value != null) 'value': value
+    });
+    if (start != null && end != null)
+      setState(() => refreshWallSelection(start, end));
+  }
+
+  Future<void> deleteSelectedWall() async {
+    if (editStart == null || editEnd == null) return;
+    final vertical = editStart!.dx == editEnd!.dx;
+    final hosted = derived.floors[floorIndex].openings
+        .where((o) =>
+            o.axis.dir == (vertical ? AxisDir.V : AxisDir.H) &&
+            o.axis.pos == (vertical ? editStart!.dx : editStart!.dy) &&
+            o.start < (vertical ? editEnd!.dy : editEnd!.dx) &&
+            o.end > (vertical ? editStart!.dy : editStart!.dx))
+        .length;
+    if (hosted > 0) {
+      final yes = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+                  title: const Text('删除墙及其门窗？'),
+                  content: Text('这段墙上的 $hosted 个门窗也会删除，可通过撤销恢复。'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('取消')),
+                    FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('删除'))
+                  ]));
+      if (yes != true) return;
+    }
+    final args = wallEditArguments(editStart!, editEnd!)
+      ..['deleteHostedObjects'] = true;
+    final before = history.present;
+    action('DeleteDrawnWall', args);
+    if (history.present != before)
+      setState(() {
+        cancelDrag();
+        tool = 'browse';
+        browse = true;
+        selectedWall = null;
+        selectedDrawnId = null;
+        selectedDrawnAnchor = null;
+        editStart = null;
+        editEnd = null;
+        placementHint = null;
+      });
+  }
+
+  Offset? drawingBefore;
+  Offset wallPoint(Offset local, Size size,
+      {Set<String> excludeAxes = const {}}) {
+    final painter = interactionPainter(),
+        world = painter.worldPoint(local, size);
+    final tolerance = 14 / painter.scale(size);
+    double snap(double value, List<ResolvedAxis> axes) {
+      ResolvedAxis? best;
+      var distance = tolerance;
+      for (final axis in axes)
+        if (!excludeAxes.contains(axis.id) &&
+            (axis.pos - value).abs() < distance) {
+          best = axis;
+          distance = (axis.pos - value).abs();
+        }
+      return best?.pos.toDouble() ?? (value / 100).round() * 100.0;
+    }
+
+    return Offset(snap(world.x, base.axes.v), snap(world.y, base.axes.h));
+  }
+
+  void beginWallStroke(Offset local, Size size) {
+    drawingBefore = drawingOrigin;
+    final painter = interactionPainter();
+    if (drawingOrigin == null ||
+        (painter.point(drawingOrigin!.dx, drawingOrigin!.dy, size) - local)
+                .distance >
+            30) drawingOrigin = wallPoint(local, size);
+    drawingEnd = null;
+    spatialError = null;
+    spatialDocument = null;
+    spatialBase = null;
+  }
+
+  Map<String, dynamic> get drawingArguments => {
+        'floorId': floor.id,
+        'x0': drawingOrigin!.dx.round(),
+        'y0': drawingOrigin!.dy.round(),
+        'x1': drawingEnd!.dx.round(),
+        'y1': drawingEnd!.dy.round()
+      };
+
+  void previewWallStroke(Offset local, Size size) {
+    if (drawingOrigin == null) return;
+    final raw = interactionPainter().worldPoint(local, size);
+    final horizontal =
+        (raw.x - drawingOrigin!.dx).abs() >= (raw.y - drawingOrigin!.dy).abs();
+    final exclude = <String>{
+      for (final axis in horizontal ? base.axes.v : base.axes.h)
+        if (axis.pos == (horizontal ? drawingOrigin!.dx : drawingOrigin!.dy))
+          axis.id
+    };
+    final end = wallPoint(local, size, excludeAxes: exclude),
+        delta = end - drawingOrigin!;
+    drawingEnd = delta.dx.abs() >= delta.dy.abs()
+        ? Offset(end.dx, drawingOrigin!.dy)
+        : Offset(drawingOrigin!.dx, end.dy);
+    if ((drawingEnd! - drawingOrigin!).distance < 300) {
+      spatialDocument = null;
+      spatialBase = null;
+      spatialError = null;
+      return;
+    }
+    final result = executeCommand(
+        extractDesignState(history.present),
+        DesignCommand('AddDrawnWall', drawingArguments),
+        CommandContext(newId: () => const Uuid().v4(), now: () => 'unused'));
+    if (result is Applied) {
+      spatialDocument = composeDocument(history.present.meta, result.newState);
+      spatialBase = deriveFloorBase(spatialDocument!, floor.id);
+      spatialError = null;
+      placementHint = '松手创建墙，末端可继续拖动';
+    } else {
+      spatialDocument = null;
+      spatialBase = null;
+      spatialError = result is Rejected ? result.message : '此处无法绘墙';
+      placementHint = spatialError;
+    }
+  }
+
+  void finishWallStroke() {
+    final end = drawingEnd, error = spatialError;
+    final accepted = end != null &&
+        drawingOrigin != null &&
+        (end - drawingOrigin!).distance >= 300 &&
+        error == null;
+    final args = accepted ? drawingArguments : null;
+    spatialDocument = null;
+    spatialBase = null;
+    spatialError = null;
+    drawingBefore = null;
+    drawingEnd = null;
+    if (args != null) {
+      action('AddDrawnWall', args);
+      drawingOrigin = end;
+    }
+    if (error != null)
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+    placementHint = '拖动 ➕ 继续绘墙，或点空白设置起点';
+    setState(() {});
+  }
+
+  Future<void> addWallByLength() async {
+    if (drawingOrigin == null) return;
+    final value = await showDialog<WallLengthChoice>(
+        context: context, builder: (_) => const WallLengthDialog());
+    if (value == null || !mounted || drawingOrigin == null) return;
+    final origin = drawingOrigin!;
+    final delta = switch (value.direction) {
+      'up' => Offset(0, value.length.toDouble()),
+      'down' => Offset(0, -value.length.toDouble()),
+      'left' => Offset(-value.length.toDouble(), 0),
+      _ => Offset(value.length.toDouble(), 0)
+    };
+    final end = origin + delta;
+    final before = history.present;
+    action('AddDrawnWall', {
+      'floorId': floor.id,
+      'x0': origin.dx.round(),
+      'y0': origin.dy.round(),
+      'x1': end.dx.round(),
+      'y1': end.dy.round()
+    });
+    if (history.present != before) setState(() => drawingOrigin = end);
+  }
+
+  void startWallDrawing() {
+    cancelDrag();
+    browse = false;
+    view3d = false;
+    tool = 'drawWall';
+    drawingOrigin = Offset(history.present.footprint.width / 2,
+        history.present.footprint.depth / 2);
+    drawingEnd = null;
+    placementHint = '拖动 ➕ 拉出墙，也可点空白设置起点';
+  }
+
+  Widget floatingHeader() => floatingSurface(Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(children: [
+          BackButton(),
+          Expanded(
+              child: Text(history.present.meta.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 15))),
+          IconButton(
+              tooltip: '撤销',
+              icon: const Icon(Icons.undo, size: 21),
+              onPressed: history.canUndo
+                  ? () {
+                      setState(() {
+                        cancelDrag();
+                        history.undo();
+                        selectedWall = null;
+                        drawingEnd = null;
+                        changed();
+                      });
+                    }
+                  : null),
+          IconButton(
+              tooltip: '重做',
+              icon: const Icon(Icons.redo, size: 21),
+              onPressed: history.canRedo
+                  ? () {
+                      setState(() {
+                        cancelDrag();
+                        history.redo();
+                        selectedWall = null;
+                        drawingEnd = null;
+                        changed();
+                      });
+                    }
+                  : null),
+          IconButton(
+              tooltip: '平面 / 3D',
+              icon: Icon(view3d ? Icons.grid_view : Icons.view_in_ar, size: 21),
+              onPressed: () => setState(() {
+                    cancelDrag();
+                    view3d = !view3d;
+                    toolCategory = view3d ? 2 : 0;
+                    tool = 'browse';
+                    browse = true;
+                    drawingEnd = null;
+                    selectedWall = null;
+                  })),
+          PopupMenuButton<String>(
+              tooltip: '更多操作',
+              onSelected: (value) {
+                if (value == 'checks') checks();
+                if (value == 'settings') settings();
+                if (value == 'export') export();
+              },
+              itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'checks', child: Text('设计检查')),
+                    PopupMenuItem(value: 'settings', child: Text('设置')),
+                    PopupMenuItem(value: 'export', child: Text('导出 .house'))
+                  ])
+        ]),
+        Row(children: [
+          const SizedBox(width: 12),
+          DropdownButton<int>(
+              value: floorIndex,
+              underline: const SizedBox.shrink(),
+              items: [
+                for (var i = 0; i < history.present.floors.length; i++)
+                  DropdownMenuItem(
+                      value: i,
+                      child: Text(history.present.floors[i].name,
+                          style: const TextStyle(fontSize: 13)))
+              ],
+              onChanged: (value) => setState(() {
+                    cancelDrag();
+                    floorIndex = value!;
+                    tool = 'browse';
+                    browse = true;
+                    selectedWall = null;
+                    drawingOrigin = null;
+                    drawingEnd = null;
+                    derive();
+                  })),
+          IconButton(
+              tooltip: '楼层操作',
+              onPressed: floorOptions,
+              icon: const Icon(Icons.layers_outlined, size: 20)),
+          Expanded(
+              child: TextButton(
+                  onPressed: footprintOptions,
+                  child: Tooltip(
+                      message: '房屋长宽',
+                      child: Text(
+                          '${(base.axes.v.last.pos / 1000).toStringAsFixed(1)} × ${(base.axes.h.last.pos / 1000).toStringAsFixed(1)} 米',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12))))),
+          IconButton(
+              tooltip: '立即保存',
+              onPressed: save,
+              icon: const Icon(Icons.save_outlined, size: 20)),
+        ])
+      ])));
+
+  List<Widget> categoryTools() {
+    if (tool == 'editWall' && editStart != null && editEnd != null)
+      return [
+        TextButton.icon(
+            onPressed: preciseWallLength,
+            icon: const Icon(Icons.straighten, size: 18),
+            label: Text(
+                '${((editEnd! - editStart!).distance / 1000).toStringAsFixed(2)} 米')),
+        basicTool(Icons.open_with, '墙位置', false, preciseWallPosition),
+        basicTool(Icons.add, '继续绘墙', false, () {
+          final end = editEnd;
+          startWallDrawing();
+          drawingOrigin = end;
+          toolCategory = 0;
+        }),
+        basicTool(Icons.delete_outline, '删除墙', false, deleteSelectedWall),
+        basicTool(Icons.more_horiz, '墙设置', false, wallSettings)
+      ];
+    if (toolCategory == 0)
+      return [
+        basicTool(
+            Icons.add_outlined, '墙体', tool == 'drawWall', startWallDrawing),
+        basicTool(Icons.vertical_split_outlined, '拉线分房', tool == 'split', () {
+          view3d = false;
+          browse = false;
+          tool = 'split';
+        }),
+        basicTool(Icons.crop_square, '拖动划房', tool == 'box', () {
+          view3d = false;
+          browse = false;
+          tool = 'box';
+          brush = RoomType.custom;
+        }),
+        openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门'),
+        openingTool(OpeningKind.window, Icons.window_outlined, '拖入窗'),
+        basicTool(Icons.more_horiz, '更多工具', false, moreTools)
+      ];
+    if (toolCategory == 1)
+      return [
+        basicTool(Icons.pan_tool_outlined, '浏览', browse, () {
+          tool = 'browse';
+          browse = true;
+        }),
+        basicTool(Icons.view_week_outlined, '墙体调整', tool == 'selectWall', () {
+          view3d = false;
+          tool = 'selectWall';
+          browse = true;
+        }),
+        basicTool(Icons.straighten, '房屋尺寸', tool == 'resize', footprintOptions),
+        basicTool(Icons.more_horiz, '更多工具', false, moreTools)
+      ];
+    return [
+      basicTool(Icons.center_focus_strong, '恢复画布视角', false, () {
+        if (view3d) viewResetToken++;
+        canvasTransform.value = Matrix4.identity();
+      }),
+      basicTool(Icons.layers_outlined, '楼层操作', false, floorOptions),
+      basicTool(Icons.fact_check_outlined, '设计检查', false, checks)
+    ];
+  }
+
+  Widget categoryRail() => floatingSurface(Padding(
+      padding: const EdgeInsets.all(4),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        for (var i = 0; i < 3; i++)
+          Semantics(
+              selected: toolCategory == i,
+              button: true,
+              label: ['建造分类', '调整分类', '查看分类'][i],
+              child: Tooltip(
+                  message: ['建造分类', '调整分类', '查看分类'][i],
+                  child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () => chooseCategory(i),
+                      child: AnimatedContainer(
+                          duration: motionDuration,
+                          width: 48,
+                          padding: EdgeInsets.symmetric(
+                              vertical: MediaQuery.sizeOf(context).height < 450
+                                  ? 6
+                                  : 10),
+                          decoration: BoxDecoration(
+                              color: toolCategory == i
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .secondaryContainer
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(16)),
+                          child: Column(children: [
+                            Icon(
+                                [
+                                  Icons.add_box_outlined,
+                                  Icons.tune,
+                                  Icons.visibility_outlined
+                                ][i],
+                                size: 22),
+                            const SizedBox(height: 3),
+                            Text(['建造', '调整', '查看'][i],
+                                style: const TextStyle(fontSize: 11))
+                          ])))))
+      ])));
+
+  String get interactionHint =>
+      placementHint ??
+      (tool == 'drawWall'
+          ? '拖动 ➕ 拉出墙，松手后可继续'
+          : spatialTool
+              ? (tool == 'split' ? '拉一条横线或竖线，松手分房' : '从一角拖到另一角，松手创建房间')
+              : tool == 'resize'
+                  ? '拖动外框手柄 · 作用于全部楼层'
+                  : '拖动画布 · 点选对象调整 · 双指缩放');
+
+  Widget floatingTools() {
+    final tools = Wrap(
+        key: ValueKey('$toolCategory:$tool'),
+        alignment: WrapAlignment.center,
+        spacing: 2,
+        runSpacing: 4,
+        children: categoryTools());
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final content = Padding(
+        padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          reduced
+              ? tools
+              : AnimatedSwitcher(
+                  duration: motionDuration,
+                  layoutBuilder: (current, previous) => Stack(
+                          alignment: Alignment.topCenter,
+                          clipBehavior: Clip.none,
+                          children: [
+                            for (final child in previous)
+                              Positioned(
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  child: IgnorePointer(
+                                      child: ExcludeSemantics(child: child))),
+                            if (current != null) current
+                          ]),
+                  child: tools),
+          const SizedBox(height: 4),
+          Row(children: [
+            Expanded(
+                child: Text(view3d ? '单指旋转 · 双指缩放和平移' : interactionHint,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11))),
+            if (tool == 'drawWall')
+              IconButton(
+                  tooltip: '输入墙长',
+                  onPressed: addWallByLength,
+                  icon: const Icon(Icons.straighten, size: 18)),
+            if (tool == 'drawWall')
+              TextButton(
+                  onPressed: () => setState(() {
+                        cancelDrag();
+                        tool = 'browse';
+                        browse = true;
+                        drawingOrigin = null;
+                        drawingEnd = null;
+                        placementHint = null;
+                      }),
+                  child: const Text('结束')),
+            Text(status, style: const TextStyle(fontSize: 10))
+          ])
+        ]));
+    return floatingSurface(reduced
+        ? content
+        : AnimatedSize(
+            duration: motionDuration,
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.bottomCenter,
+            child: content));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final roomMap = {for (final r in floor.rooms) r.id: r};
+    final wide = MediaQuery.sizeOf(context).width >= 600;
+    final bottomReserve = MediaQuery.textScalerOf(context).scale(12) > 16
+        ? (wide ? 150.0 : 210.0)
+        : (wide
+            ? 112.0
+            : MediaQuery.sizeOf(context).width < 350
+                ? 180.0
+                : 138.0);
     return PopScope(
         canPop: !dirty,
         onPopInvokedWithResult: (didPop, result) async {
@@ -1300,288 +2669,343 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           }
         },
         child: Scaffold(
-            appBar: AppBar(title: Text(history.present.meta.name), actions: [
-              IconButton(
-                  tooltip: '撤销',
-                  onPressed: history.canUndo
-                      ? () => setState(() {
-                            history.undo();
-                            changed();
-                          })
-                      : null,
-                  icon: const Icon(Icons.undo)),
-              IconButton(
-                  tooltip: '重做',
-                  onPressed: history.canRedo
-                      ? () => setState(() {
-                            history.redo();
-                            changed();
-                          })
-                      : null,
-                  icon: const Icon(Icons.redo)),
-              IconButton(
-                  tooltip: '平面 / 3D',
-                  onPressed: () => setState(() => view3d = !view3d),
-                  icon: Icon(view3d ? Icons.grid_view : Icons.view_in_ar)),
-              PopupMenuButton<String>(
-                tooltip: '更多操作',
-                onSelected: (value) {
-                  if (value == 'checks') checks();
-                  if (value == 'settings') settings();
-                  if (value == 'export') export();
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'checks', child: Text('设计检查')),
-                  PopupMenuItem(value: 'settings', child: Text('设置')),
-                  PopupMenuItem(value: 'export', child: Text('导出 .house')),
-                ],
-              )
-            ]),
-            body: Column(children: [
-              Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(children: [
-                    DropdownButton<int>(
-                        value: floorIndex,
-                        items: [
-                          for (var i = 0;
-                              i < history.present.floors.length;
-                              i++)
-                            DropdownMenuItem(
-                                value: i,
-                                child: Text(history.present.floors[i].name))
-                        ],
-                        onChanged: (value) => setState(() {
-                              floorIndex = value!;
-                              derive();
-                            })),
-                    IconButton(
-                        tooltip: '楼层操作',
-                        onPressed: floorOptions,
-                        icon: const Icon(Icons.layers_outlined)),
-                    const Spacer(),
-                    Text(status, style: const TextStyle(fontSize: 12)),
-                    IconButton(
-                        tooltip: '立即保存',
-                        onPressed: save,
-                        icon: const Icon(Icons.save_outlined))
-                  ])),
-              Expanded(
-                  child: view3d
-                      ? HouseViewer(house: derived, onPick: pick3d)
-                      : LayoutBuilder(builder: (context, constraints) {
-                          final size =
-                              Size(constraints.maxWidth, constraints.maxHeight);
-                          return InteractiveViewer(
-                              panEnabled: browse || pointers.length > 1,
-                              minScale: 0.4,
-                              maxScale: 5,
-                              child: Listener(
-                                  onPointerDown: (e) {
-                                    if (pointers.isEmpty)
-                                      cancelledStroke = false;
-                                    pointers.add(e.pointer);
-                                    downPoint = e.localPosition;
-                                    if (pointers.length == 1)
-                                      beginDrag(e.localPosition, size);
-                                    if (pointers.length > 1) {
-                                      cancelledStroke = true;
-                                      setState(() {
-                                        stroke.clear();
-                                        cancelDrag();
-                                      });
-                                      lastPoint = null;
-                                      return;
-                                    }
-                                    if (!browse &&
-                                        tool != 'opening' &&
-                                        tool != 'grid')
-                                      setState(
-                                          () => record(e.localPosition, size));
-                                  },
-                                  onPointerMove: (e) {
-                                    if (!cancelledStroke &&
-                                        pointers.length == 1 &&
-                                        (draggingAxis != null ||
-                                            draggingOpening != null))
-                                      setState(() =>
-                                          previewDrag(e.localPosition, size));
-                                    if (!browse &&
-                                        tool != 'opening' &&
-                                        tool != 'grid' &&
-                                        !cancelledStroke &&
-                                        pointers.length == 1)
-                                      setState(
-                                          () => record(e.localPosition, size));
-                                  },
-                                  onPointerCancel: (e) {
-                                    pointers.remove(e.pointer);
+            body: SafeArea(
+                child: Stack(children: [
+          SizedBox.expand(
+              child: view3d
+                  ? Padding(
+                      padding: canvasInsets,
+                      child: HouseViewer(
+                          house: derived,
+                          onPick: pick3d,
+                          showHint: false,
+                          resetToken: viewResetToken))
+                  : LayoutBuilder(builder: (context, constraints) {
+                      final size =
+                          Size(constraints.maxWidth, constraints.maxHeight);
+                      final displayBase = spatialBase ?? base;
+                      final displayRooms = spatialDocument?.floors
+                              .firstWhere((f) => f.id == floor.id)
+                              .rooms ??
+                          floor.rooms;
+                      final displayOpenings = spatialDocument == null
+                          ? derived.floors[floorIndex].openings
+                          : deriveOpenings(
+                              spatialDocument!, displayBase, floor.id);
+                      return InteractiveViewer(
+                          transformationController: canvasTransform,
+                          boundaryMargin: const EdgeInsets.all(200),
+                          panEnabled: (browse && draggingOpening == null) ||
+                              pointers.length > 1,
+                          minScale: 0.4,
+                          maxScale: 5,
+                          child: Listener(
+                              onPointerDown: (e) {
+                                if (pointers.isEmpty) cancelledStroke = false;
+                                pointers.add(e.pointer);
+                                downPoint = e.localPosition;
+                                if (pointers.length == 1) {
+                                  if (tool == 'drawWall') {
+                                    setState(() =>
+                                        beginWallStroke(e.localPosition, size));
+                                  } else if (tool == 'editWall') {
+                                    setState(() =>
+                                        beginWallEdit(e.localPosition, size));
+                                  } else if (spatialTool) {
+                                    spatialStart = null;
+                                    setState(() =>
+                                        updateSpatial(e.localPosition, size));
+                                  } else {
+                                    setState(
+                                        () => beginDrag(e.localPosition, size));
+                                  }
+                                }
+                                if (pointers.length > 1) {
+                                  cancelledStroke = true;
+                                  setState(() {
+                                    stroke.clear();
+                                    spatialStart = null;
+                                    spatialPreview = null;
+                                    cancelDrag();
+                                  });
+                                  lastPoint = null;
+                                  return;
+                                }
+                                if (!browse &&
+                                    !spatialTool &&
+                                    tool != 'editWall' &&
+                                    tool != 'drawWall' &&
+                                    tool != 'placeOpening' &&
+                                    tool != 'resize' &&
+                                    tool != 'wall' &&
+                                    tool != 'opening' &&
+                                    tool != 'grid')
+                                  setState(() => record(e.localPosition, size));
+                              },
+                              onPointerMove: (e) {
+                                if (tool == 'editWall' &&
+                                    !cancelledStroke &&
+                                    pointers.length == 1)
+                                  setState(() =>
+                                      previewWallEdit(e.localPosition, size));
+                                if (tool == 'drawWall' &&
+                                    !cancelledStroke &&
+                                    pointers.length == 1)
+                                  setState(() =>
+                                      previewWallStroke(e.localPosition, size));
+                                if (spatialTool &&
+                                    !cancelledStroke &&
+                                    pointers.length == 1) {
+                                  setState(() =>
+                                      updateSpatial(e.localPosition, size));
+                                }
+                                if (!cancelledStroke &&
+                                    pointers.length == 1 &&
+                                    (draggingAxis != null ||
+                                        draggingOpening != null))
+                                  setState(
+                                      () => previewDrag(e.localPosition, size));
+                                if (!browse &&
+                                    !spatialTool &&
+                                    tool != 'editWall' &&
+                                    tool != 'drawWall' &&
+                                    tool != 'placeOpening' &&
+                                    tool != 'resize' &&
+                                    tool != 'wall' &&
+                                    tool != 'opening' &&
+                                    tool != 'grid' &&
+                                    !cancelledStroke &&
+                                    pointers.length == 1)
+                                  setState(() => record(e.localPosition, size));
+                              },
+                              onPointerCancel: (e) {
+                                pointers.remove(e.pointer);
+                                setState(() {
+                                  stroke.clear();
+                                  spatialStart = null;
+                                  spatialEnd = null;
+                                  spatialPreview = null;
+                                  cancelDrag();
+                                });
+                                lastPoint = null;
+                              },
+                              onPointerUp: (e) {
+                                if (tool == 'editWall' &&
+                                    wallGrip != null &&
+                                    !cancelledStroke &&
+                                    pointers.length == 1) {
+                                  finishWallEdit();
+                                  pointers.remove(e.pointer);
+                                  downPoint = null;
+                                  return;
+                                }
+                                if (tool == 'drawWall' &&
+                                    !cancelledStroke &&
+                                    pointers.length == 1) {
+                                  finishWallStroke();
+                                  pointers.remove(e.pointer);
+                                  downPoint = null;
+                                  return;
+                                }
+                                if (tool == 'placeOpening' &&
+                                    !cancelledStroke &&
+                                    pointers.length == 1 &&
+                                    downPoint != null &&
+                                    (downPoint! - e.localPosition).distance <
+                                        8) {
+                                  final box = canvasKey.currentContext!
+                                      .findRenderObject() as RenderBox;
+                                  previewOpening(placingOpening!,
+                                      box.localToGlobal(e.localPosition));
+                                  final args = openingDrop;
+                                  derive();
+                                  if (args != null)
+                                    action('AddOpening', args);
+                                  else
+                                    setState(() {});
+                                  pointers.remove(e.pointer);
+                                  downPoint = null;
+                                  return;
+                                }
+                                if (spatialTool &&
+                                    !cancelledStroke &&
+                                    pointers.length == 1) {
+                                  finishSpatial();
+                                  pointers.remove(e.pointer);
+                                  downPoint = null;
+                                  return;
+                                }
+                                if (dragAttempted &&
+                                    !cancelledStroke &&
+                                    pointers.length == 1) {
+                                  final kind = dragKind,
+                                      arguments = dragArguments,
+                                      valid = dragValid,
+                                      message = placementHint;
+                                  cancelDrag();
+                                  if (valid &&
+                                      kind != null &&
+                                      arguments != null)
+                                    action(kind, arguments);
+                                  else {
+                                    setState(() {});
+                                    if (message != null)
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                              SnackBar(content: Text(message)));
+                                  }
+
+                                  if (tool == 'wall')
                                     setState(() {
-                                      stroke.clear();
-                                      cancelDrag();
+                                      tool = 'browse';
+                                      browse = true;
+                                      selectedWall = null;
+                                      placementHint = null;
                                     });
-                                    lastPoint = null;
+                                  pointers.remove(e.pointer);
+                                  lastPoint = null;
+                                  downPoint = null;
+                                  return;
+                                }
+                                if ((browse ||
+                                        tool == 'editWall' ||
+                                        tool == 'opening' ||
+                                        tool == 'grid') &&
+                                    !cancelledStroke &&
+                                    pointers.length == 1 &&
+                                    downPoint != null &&
+                                    (downPoint! - e.localPosition).distance <
+                                        8) {
+                                  tapObject(e.localPosition, size);
+                                }
+                                if (tool == 'stair' &&
+                                    !cancelledStroke &&
+                                    stroke.isNotEmpty &&
+                                    pointers.length == 1) {
+                                  final first = stroke.first,
+                                      last = stroke.last;
+                                  final i0 = math.min(first.i, last.i),
+                                      i1 = math.max(first.i, last.i) + 1,
+                                      j0 = math.min(first.j, last.j),
+                                      j1 = math.max(first.j, last.j) + 1;
+                                  action('AddStair', {
+                                    'floorId': floor.id,
+                                    'type': StairType.straight,
+                                    'region': AxisRectangle(
+                                        x0: base.axes.v[i0].id,
+                                        x1: base.axes.v[i1].id,
+                                        y0: base.axes.h[j0].id,
+                                        y1: base.axes.h[j1].id)
+                                  });
+                                  stroke.clear();
+                                }
+                                if (tool == 'room' &&
+                                    !browse &&
+                                    !cancelledStroke &&
+                                    pointers.length == 1 &&
+                                    stroke.isNotEmpty) {
+                                  final cells = List.of(stroke);
+                                  stroke.clear();
+                                  action(erase ? 'EraseCells' : 'PaintCells', {
+                                    'floorId': floor.id,
+                                    'cells': cells,
+                                    'roomType': brush
+                                  });
+                                }
+                                pointers.remove(e.pointer);
+                                lastPoint = null;
+                              },
+                              child: DragTarget<OpeningKind>(
+                                  onWillAcceptWithDetails: (_) => true,
+                                  onMove: (details) => setState(() => previewOpening(
+                                      details.data, details.offset)),
+                                  onLeave: (_) => setState(() {
+                                        openingDrop = null;
+                                        placementHint = null;
+                                        derive();
+                                      }),
+                                  onAcceptWithDetails: (details) {
+                                    previewOpening(
+                                        details.data, details.offset);
+                                    final arguments = openingDrop;
+                                    openingDrop = null;
+                                    placementHint = null;
+                                    derive();
+                                    if (arguments != null)
+                                      action('AddOpening', arguments);
+                                    else
+                                      setState(() {});
                                   },
-                                  onPointerUp: (e) {
-                                    if (dragged &&
-                                        !cancelledStroke &&
-                                        pointers.length == 1) {
-                                      final kind = dragKind!,
-                                          arguments = dragArguments!;
-                                      cancelDrag();
-                                      action(kind, arguments);
-                                      pointers.remove(e.pointer);
-                                      lastPoint = null;
-                                      downPoint = null;
-                                      return;
-                                    }
-                                    if ((browse ||
-                                            tool == 'opening' ||
-                                            tool == 'grid') &&
-                                        !cancelledStroke &&
-                                        pointers.length == 1 &&
-                                        downPoint != null &&
-                                        (downPoint! - e.localPosition)
-                                                .distance <
-                                            8) {
-                                      tapObject(e.localPosition, size);
-                                    }
-                                    if (tool == 'stair' &&
-                                        !cancelledStroke &&
-                                        stroke.isNotEmpty &&
-                                        pointers.length == 1) {
-                                      final first = stroke.first,
-                                          last = stroke.last;
-                                      final i0 = math.min(first.i, last.i),
-                                          i1 = math.max(first.i, last.i) + 1,
-                                          j0 = math.min(first.j, last.j),
-                                          j1 = math.max(first.j, last.j) + 1;
-                                      action('AddStair', {
-                                        'floorId': floor.id,
-                                        'type': StairType.straight,
-                                        'region': AxisRectangle(
-                                            x0: base.axes.v[i0].id,
-                                            x1: base.axes.v[i1].id,
-                                            y0: base.axes.h[j0].id,
-                                            y1: base.axes.h[j1].id)
-                                      });
-                                      stroke.clear();
-                                    }
-                                    if (tool == 'room' &&
-                                        !browse &&
-                                        !cancelledStroke &&
-                                        pointers.length == 1 &&
-                                        stroke.isNotEmpty) {
-                                      setState(() {
-                                        final next = paintCells(
-                                            history.present,
-                                            floor.id,
-                                            List.of(stroke),
-                                            brush,
-                                            () => const Uuid().v4(),
-                                            erase: erase);
-                                        if (history.commit(next)) changed();
-                                        stroke.clear();
-                                      });
-                                    }
-                                    pointers.remove(e.pointer);
-                                    lastPoint = null;
-                                  },
-                                  child: CustomPaint(
-                                      size: size,
-                                      painter: FloorPlanPainter(
-                                          base,
-                                          {
-                                            for (final r in roomMap.values)
-                                              r.id: r.name
-                                          },
-                                          {
-                                            for (final r in roomMap.values)
-                                              r.id: roomColors[r.type]!
-                                          },
-                                          openings: derived
-                                              .floors[floorIndex].openings,
-                                          stairs:
-                                              derived.floors[floorIndex].stairs,
-                                          northAngleDeg: history
-                                              .present.footprint.northAngleDeg,
-                                          focus: focus,
-                                          preview: List.of(stroke)))));
-                        })),
-              Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(children: [
-                        ChoiceChip(
-                            label: const Text('浏览'),
-                            selected: browse,
-                            onSelected: (_) => setState(() {
-                                  browse = true;
-                                  tool = 'browse';
-                                })),
-                        const SizedBox(width: 8),
-                        ChoiceChip(
-                            label: const Text('网格'),
-                            selected: tool == 'grid',
-                            onSelected: (_) => setState(() {
-                                  browse = false;
-                                  tool = 'grid';
-                                })),
-                        const SizedBox(width: 8),
-                        ChoiceChip(
-                            label: const Text('门窗'),
-                            selected: tool == 'opening',
-                            onSelected: (_) => setState(() {
-                                  tool = 'opening';
-                                  browse = false;
-                                })),
-                        const SizedBox(width: 8),
-                        ChoiceChip(
-                            label: const Text('楼梯'),
-                            selected: tool == 'stair',
-                            onSelected: (_) => setState(() {
-                                  tool = 'stair';
-                                  browse = false;
-                                })),
-                        const SizedBox(width: 8),
-                        for (final type in RoomType.values)
-                          Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: ChoiceChip(
-                                  label: Text(roomNames[type]!),
-                                  avatar: CircleAvatar(
-                                      radius: 6,
-                                      backgroundColor: roomColors[type]),
-                                  selected: tool == 'room' &&
-                                      !browse &&
-                                      !erase &&
-                                      brush == type,
-                                  onSelected: (_) => setState(() {
-                                        browse = false;
-                                        tool = 'room';
-                                        erase = false;
-                                        brush = type;
-                                      }))),
-                        ChoiceChip(
-                            label: const Text('擦除'),
-                            selected: tool == 'room' && !browse && erase,
-                            onSelected: (_) => setState(() {
-                                  browse = false;
-                                  tool = 'room';
-                                  erase = true;
-                                }))
-                      ]))),
-              Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                      tool == 'grid'
-                          ? '拖动分隔线 · 双指缩放和平移'
-                          : tool == 'opening'
-                              ? '点墙添加门窗 · 拖动门窗调整位置'
-                              : '单指刷房间 · 双指缩放和平移',
-                      style: const TextStyle(fontSize: 12)))
-            ])));
+                                  builder: (context, candidates, rejected) =>
+                                      CustomPaint(
+                                          key: canvasKey,
+                                          size: size,
+                                          painter: FloorPlanPainter(
+                                              displayBase,
+                                              {
+                                                for (final r in displayRooms)
+                                                  r.id: r.name
+                                              },
+                                              {
+                                                for (final r in displayRooms)
+                                                  r.id: roomColors[r.type]!
+                                              },
+                                              viewportInsets: canvasInsets,
+                                              openings: displayOpenings,
+                                              stairs: derived
+                                                  .floors[floorIndex].stairs,
+                                              northAngleDeg: history.present
+                                                  .footprint.northAngleDeg,
+                                              focus: focus,
+                                              editableWall: tool == 'editWall' &&
+                                                      editStart != null &&
+                                                      editEnd != null
+                                                  ? PlanRect(
+                                                      (editPreviewStart ??
+                                                              editStart)!
+                                                          .dx,
+                                                      (editPreviewStart ??
+                                                              editStart)!
+                                                          .dy,
+                                                      (editPreviewEnd ?? editEnd)!.dx,
+                                                      (editPreviewEnd ?? editEnd)!.dy)
+                                                  : null,
+                                              wallSeed: tool == 'drawWall' ? drawingOrigin : null,
+                                              draftLabel: tool == 'drawWall' && drawingEnd != null && drawingOrigin != null ? '${((drawingEnd! - drawingOrigin!).distance / 1000).toStringAsFixed(2)} 米' : null,
+                                              draft: tool == 'drawWall' && drawingEnd != null && drawingOrigin != null ? PlanRect(math.min(drawingOrigin!.dx, drawingEnd!.dx), math.min(drawingOrigin!.dy, drawingEnd!.dy), math.max(drawingOrigin!.dx, drawingEnd!.dx), math.max(drawingOrigin!.dy, drawingEnd!.dy)) : spatialPreview,
+                                              showGridDimensions: tool == 'grid',
+                                              draftInvalid: spatialError != null,
+                                              draftIsLine: tool == 'split' || tool == 'drawWall',
+                                              viewport: draggingAxis?.kind == 'boundary' && dragAttempted && dragCoordinatePainter != null
+                                                  ? (
+                                                      scale:
+                                                          dragCoordinatePainter!
+                                                              .scale(size),
+                                                      origin:
+                                                          dragCoordinatePainter!
+                                                              .origin(size)
+                                                    )
+                                                  : null,
+                                              resizeHandles: tool == 'resize',
+                                              wallHandle: tool == 'wall' && selectedWall != null ? (selectedWall!.axis.dir == AxisDir.V ? PlanRect((dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble()) : PlanRect(selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()))) : null,
+                                              preview: List.of(stroke))))));
+                    })),
+          Positioned(
+              top: 12,
+              left: 12,
+              right: wide ? 80 : 12,
+              child: floatingHeader()),
+          Positioned(
+              right: 12,
+              top: wide ? 12 : 112,
+              bottom: wide ? 12 : bottomReserve,
+              child: Align(
+                  alignment: Alignment.centerRight, child: categoryRail())),
+          Positioned(
+              left: 12,
+              right: wide ? 80 : 12,
+              bottom: 12,
+              child: floatingTools()),
+        ]))));
   }
 }

@@ -4,6 +4,10 @@ import '../validation/document_validator.dart';
 import 'design_commands.dart';
 import 'delete_axis.dart';
 import 'room_commands.dart';
+import 'spatial_commands.dart';
+import 'spatial_wall_commands.dart';
+import 'drawn_wall_commands.dart';
+import '../geometry/opening_constraints.dart';
 
 class DesignCommand {
   DesignCommand(this.kind, Map<String, dynamic> arguments)
@@ -54,8 +58,33 @@ List<ValidationError> validateDesignState(UndoableDesignState state) =>
 CommandResult executeCommand(
     UndoableDesignState state, DesignCommand command, CommandContext context) {
   final doc = _document(state), args = command.arguments;
-  Applied apply(HouseDocument document) =>
-      Applied(extractDesignState(document));
+  CommandResult apply(HouseDocument document) {
+    if ([
+      'SplitSpace',
+      'CarveRoom',
+      'PaintCells',
+      'EraseCells',
+      'DeleteRoom',
+      'MergeRooms',
+      'AddStair',
+      'UpdateStair',
+      'DeleteStair'
+    ].contains(command.kind)) {
+      for (final floor in document.floors.where((f) => f.explicitWalls))
+        document = syncRoomWalls(doc, document, floor.id, context.newId);
+      if (command.kind != 'MergeRooms') {
+        final healthy = documentOpenings(doc)
+            .where((p) => p.status == 'ok')
+            .map((p) => p.opening.id)
+            .toSet();
+        if (documentOpenings(document)
+            .any((p) => healthy.contains(p.opening.id) && p.status != 'ok'))
+          return const Rejected('HOST_CONFLICT', '此调整会影响已有门窗，请避开门窗位置');
+      }
+    }
+    return Applied(extractDesignState(document));
+  }
+
   try {
     if (validateHouse(doc).isNotEmpty)
       return const Rejected('INTERNAL_INVALID', '输入设计状态无效');
@@ -81,6 +110,50 @@ CommandResult executeCommand(
           entry.value != null &&
           !identities[key]!.contains(entry.value))
         return const Rejected('NOT_FOUND', '找不到要编辑的对象');
+    }
+    if (['AddDrawnWall', 'UpdateDrawnWall', 'DeleteDrawnWall']
+        .contains(command.kind)) {
+      final result = editDrawnWall(doc, command.kind, args, context.newId);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('WALL_CONFLICT', result.error!);
+    }
+    if (command.kind == 'EnableWallDrawing')
+      return apply(
+          enableWallDrawing(doc, args['floorId'] as String, context.newId));
+    if (command.kind == 'MoveLocalWall') {
+      final result = moveLocalWall(doc, args['floorId'] as String,
+          args['anchor'] as BoundaryAnchor, args['pos'] as int, context.newId);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('SPATIAL_CONFLICT', result.error!);
+    }
+    if (command.kind == 'SplitSpace') {
+      final result = splitSpace(
+          doc,
+          args['floorId'] as String,
+          args['dir'] as AxisDir,
+          args['pos'] as int,
+          args['x'] as int,
+          args['y'] as int,
+          context.newId);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('SPATIAL_CONFLICT', result.error!);
+    }
+    if (command.kind == 'CarveRoom') {
+      final result = carveRoom(
+          doc,
+          args['floorId'] as String,
+          args['left'] as int,
+          args['bottom'] as int,
+          args['right'] as int,
+          args['top'] as int,
+          args['roomType'] as RoomType? ?? RoomType.custom,
+          context.newId);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('SPATIAL_CONFLICT', result.error!);
     }
     if (command.kind == 'DeleteAxis') {
       final result = deleteAxis(doc, args['axisId'] as String, context.newId,
@@ -134,7 +207,39 @@ CommandResult executeCommand(
     }
     final result =
         executeDocumentCommand(doc, command.kind, args, context.newId);
-    if (result.accepted) return apply(result.document!);
+    if (result.accepted) {
+      var document = result.document!;
+      if (command.kind == 'MergeRooms') {
+        for (final floor in document.floors.where((f) => f.explicitWalls))
+          document = syncRoomWalls(doc, document, floor.id, context.newId);
+        final healthy = documentOpenings(doc)
+            .where((p) => p.status == 'ok')
+            .map((p) => p.opening.id)
+            .toSet();
+        final removedHosts = documentOpenings(document)
+            .where((p) => healthy.contains(p.opening.id) && p.status != 'ok')
+            .map((p) => p.opening.id)
+            .toList();
+        if (removedHosts.isNotEmpty && args['deleteHostedObjects'] != true) {
+          return NeedsResolution(CommandConflict(
+              'MergeRooms',
+              '合并后有 ${removedHosts.length} 个门窗所在的墙会消失，需要同时移除这些门窗。',
+              const ['deleteHostedObjects'],
+              List.unmodifiable(removedHosts)));
+        }
+        for (final id in removedHosts) {
+          document = executeDocumentCommand(
+                  document, 'DeleteOpening', {'openingId': id}, context.newId)
+              .document!;
+        }
+      }
+      if (command.kind == 'SetWallOverride')
+        document = recognizeWallRooms(
+            document, args['floorId'] as String, context.newId,
+            preserveOpenZones: args['type'] != 'open');
+      return apply(document);
+    }
+
     final message = result.error!;
     final reason = message.contains('间距') || message.contains('两条线')
         ? 'SPACING'

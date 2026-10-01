@@ -3,6 +3,8 @@ import '../document/house_document.dart';
 import '../serialization/house_codec.dart';
 import '../axis/axis_resolver.dart';
 import '../geometry/derived_house.dart';
+import '../geometry/opening_constraints.dart';
+import '../geometry/floor_base.dart';
 import 'room_commands.dart';
 import '../canonicalization/room_canonicalizer.dart';
 
@@ -29,6 +31,22 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         return const EditResult(null, '楼梯需要上方还有楼层');
       final region = args['region'] as AxisRectangle,
           axes = resolveFloorAxes(doc, targetFloor)!;
+      if (doc.floors[index].explicitWalls) {
+        final r = resolveRect(axes, region).rect!;
+        final walls = deriveFloorBase(doc, targetFloor).wallSegments;
+        if (walls.any((w) =>
+            w.axis.kind != 'boundary' &&
+            (w.axis.dir == AxisDir.V
+                ? w.axis.pos > r.left &&
+                    w.axis.pos < r.right &&
+                    w.start.pos < r.top &&
+                    w.end.pos > r.bottom
+                : w.axis.pos > r.bottom &&
+                    w.axis.pos < r.top &&
+                    w.start.pos < r.right &&
+                    w.end.pos > r.left)))
+          return const EditResult(null, '楼梯不能穿过已有墙体，请先移动或删除这段墙');
+      }
       doc = paintCells(doc, targetFloor,
           cellsOfRect(resolveRect(axes, region).rect!), RoomType.custom, newId,
           erase: true);
@@ -203,15 +221,16 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         object('rooms', args['roomId'] as String)['name'] = args['value'];
         break;
       case 'SetRoomType':
-        object('rooms', args['roomId'] as String)['type'] =
-            (args['value'] as RoomType).name;
+        final room = object('rooms', args['roomId'] as String);
+        final previous = RoomType.values.byName(room['type'] as String);
+        final next = args['value'] as RoomType;
+        if (room['name'] == roomNames[previous]) room['name'] = roomNames[next];
+        room['type'] = next.name;
         break;
       case 'AddOpening':
         final a = args['anchor'] as BoundaryAnchor,
             f = floor(args['floorId'] as String),
-            base = deriveHouse(doc)
-                .floors[doc.floors.indexWhere((f) => f.id == args['floorId'])]
-                .base;
+            base = deriveFloorBase(doc, args['floorId'] as String);
         final chain = resolveAnchor(base.axes, a).chain!,
             tap = (args['tapT'] as num).toDouble(),
             openingKind = args['kind'] as OpeningKind;
@@ -238,13 +257,10 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         if (isDoor) {
           opening['hinge'] = start ? 'start' : 'end';
           final segment = chain.locate(tap.round())!;
-          final derived = deriveHouse(doc)
-              .floors
-              .firstWhere((f) => f.base.axes.floorId == args['floorId']);
           double score(Cell? c) {
             if (c == null) return -1;
             final id = base.owners[c];
-            return derived.base.roomGeometry
+            return base.roomGeometry
                     .where((g) => g.id == id)
                     .firstOrNull
                     ?.clearArea ??
@@ -255,6 +271,16 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
               score(segment.positiveSide) >= score(segment.negativeSide)
                   ? 'positiveSide'
                   : 'negativeSide';
+        }
+        if (args['centerAtTap'] == true) {
+          final width = opening['width'] as int;
+          if (width > chain.nominalLength) {
+            return const EditResult(null, '墙面太短，放不下这个门窗');
+          }
+          opening['position'] = {
+            'type': 'fromStart',
+            'd': (tap - width / 2).round().clamp(0, chain.nominalLength - width)
+          };
         }
         (f['openings'] as List).add(opening);
         break;
@@ -290,6 +316,8 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
           o.remove('hinge');
           o.remove('opensTo');
           o['sill'] = kind == OpeningKind.window ? doc.defaults.windowSill : 0;
+          if (kind == OpeningKind.window)
+            o['height'] = doc.defaults.windowHeight;
           if (raw['mainEntranceOpeningId'] == o['id'])
             raw.remove('mainEntranceOpeningId');
         }
@@ -310,6 +338,35 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         if (args['anchor'] != null)
           o['anchor'] = anchor(args['anchor'] as BoundaryAnchor);
         o['position'] = args['position'];
+        if (args['anchor'] != null && o['kind'] == 'door') {
+          final f = doc.floors
+              .firstWhere((f) => f.openings.any((p) => p.id == o['id']));
+          final base = deriveFloorBase(doc, f.id);
+          final chain =
+              resolveAnchor(base.axes, args['anchor'] as BoundaryAnchor).chain!;
+          final position = args['position'] as Map<String, dynamic>;
+          final center = switch (position['type']) {
+            'fromStart' =>
+              (position['d'] as num).toDouble() + (o['width'] as num) / 2,
+            'fromEnd' => chain.nominalLength -
+                (position['d'] as num) -
+                (o['width'] as num) / 2,
+            _ => chain.nominalLength / 2,
+          };
+          final segment =
+              chain.locate(center.round().clamp(0, chain.nominalLength))!;
+          double score(Cell? cell) => cell == null
+              ? -1
+              : base.roomGeometry
+                      .where((g) => g.id == base.owners[cell])
+                      .firstOrNull
+                      ?.clearArea ??
+                  0;
+          o['opensTo'] =
+              score(segment.positiveSide) >= score(segment.negativeSide)
+                  ? 'positiveSide'
+                  : 'negativeSide';
+        }
         break;
       case 'DeleteOpening':
         for (final f in floors)
@@ -389,12 +446,16 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
             newOverrides.add(copy);
           }
         }
-        if (type != 'default')
+        final explicit =
+            f['explicitWalls'] == true && chain.carrier.kind != 'boundary';
+        if (type != 'default' || explicit)
           newOverrides.add({
-            'type': type,
+            'type': explicit && type != 'open' ? 'solid' : type,
             'id': newId(),
             'anchor': anchor(a),
-            if (type == 'thickness') 'value': args['value']
+            if (type == 'thickness') 'value': args['value'],
+            if (explicit && type == 'default')
+              'value': doc.defaults.innerWallThickness,
           });
         f['wallOverrides'] = newOverrides;
         break;
@@ -404,6 +465,44 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
     final loaded = loadHouse(utf8.encode(jsonEncode(raw)));
     if (!loaded.isSuccess)
       return EditResult(null, '操作无法完成：${loaded.failure!.errors.first.message}');
+    if (kind == 'SetFootprintSize' || kind == 'MoveAxis') {
+      final healthy = documentOpenings(doc)
+          .where((p) => p.status == 'ok')
+          .map((p) => p.opening.id)
+          .toSet();
+      if (documentOpenings(loaded.document!)
+          .any((p) => healthy.contains(p.opening.id) && p.status != 'ok')) {
+        return const EditResult(null, '此尺寸会影响已有门窗，请先调整门窗或保留更多空间');
+      }
+    }
+    if (['AddOpening', 'MoveOpening', 'ResizeOpening', 'SetOpeningKind']
+        .contains(kind)) {
+      final originalIds =
+          doc.floors.expand((f) => f.openings).map((o) => o.id).toSet();
+      final placements = documentOpenings(loaded.document!);
+      for (final candidate in placements) {
+        final changed = kind == 'AddOpening'
+            ? !originalIds.contains(candidate.opening.id)
+            : candidate.opening.id == args['openingId'];
+        if (!changed) continue;
+        if (candidate.status != 'ok') {
+          return const EditResult(null, '门窗超出有效墙面，请换一个位置或调整尺寸');
+        }
+        for (final other in placements) {
+          if (candidate.opening.id == other.opening.id || other.status != 'ok')
+            continue;
+          if (candidate.host?.ref == other.host?.ref &&
+              candidate.start < other.end &&
+              other.start < candidate.end &&
+              candidate.opening.sill <
+                  other.opening.sill + other.opening.height &&
+              other.opening.sill <
+                  candidate.opening.sill + candidate.opening.height) {
+            return const EditResult(null, '与已有门窗重叠，请挪开一些');
+          }
+        }
+      }
+    }
     return EditResult(loaded.document, null);
   } catch (_) {
     return const EditResult(null, '操作参数无效，原设计已保留');

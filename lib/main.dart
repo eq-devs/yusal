@@ -9,6 +9,7 @@ class HouseApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
       title: '自建房设计',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
           colorSchemeSeed: const Color(0xff526b5b),
           scaffoldBackgroundColor: const Color(0xfff6f7f3),

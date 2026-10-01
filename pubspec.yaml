@@ -1,7 +1,7 @@
 name: yusal
 description: 手动搭建自建房平面与三维结构。
 publish_to: none
-version: 0.1.0+1
+version: 0.3.0+3
 environment:
   sdk: '>=3.4.0 <4.0.0'
 dependencies:

@@ -225,6 +225,8 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
       if (w.anchor.axisId == id) continue;
       overrides.add(switch (w) {
         OpenWall() => OpenWall(id: w.id, anchor: anchor(w.anchor)),
+        SolidWall() =>
+          SolidWall(id: w.id, anchor: anchor(w.anchor), value: w.value),
         ThicknessWall() =>
           ThicknessWall(id: w.id, anchor: anchor(w.anchor), value: w.value)
       });
@@ -246,6 +248,7 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
       });
     }
     floors.add(Floor(
+        explicitWalls: floor.explicitWalls,
         id: floor.id,
         name: floor.name,
         height: floor.height,

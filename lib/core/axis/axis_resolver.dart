@@ -265,7 +265,11 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
           issues.add(
             AxisIssue('POSITION_COLLISION', dir, [list[i - 1].id, a.id]),
           );
-        else if (delta > 0 && delta < 300)
+        else if (delta > 0 &&
+            delta <
+                (doc.floors.firstWhere((f) => f.id == floorId).explicitWalls
+                    ? 1
+                    : 300))
           issues.add(
             AxisIssue('SPACING_TOO_SMALL', dir, [list[i - 1].id, a.id]),
           );

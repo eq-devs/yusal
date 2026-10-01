@@ -63,6 +63,7 @@ List<LoadError> validateSchemaV1(Object? value) {
       'height': 'int',
       'rooms': '[]Room',
       'wallOverrides': '[]Wall',
+      'explicitWalls?': 'bool',
       'openings': '[]Opening',
       'stairs': '[]Stair'
     },
@@ -74,6 +75,12 @@ List<LoadError> validateSchemaV1(Object? value) {
     },
     'Wall.open': {'type': 'string', 'id': 'id', 'anchor': 'Anchor'},
     'Wall.thickness': {
+      'type': 'string',
+      'id': 'id',
+      'anchor': 'Anchor',
+      'value': 'int'
+    },
+    'Wall.solid': {
       'type': 'string',
       'id': 'id',
       'anchor': 'Anchor',
@@ -140,7 +147,7 @@ List<LoadError> validateSchemaV1(Object? value) {
     },
   };
   const unions = {
-    'Wall': ['open', 'thickness'],
+    'Wall': ['open', 'thickness', 'solid'],
     'Position': ['center', 'fromStart', 'fromEnd'],
     'Opening': ['door', 'window', 'sliding'],
     'Stair': ['straight', 'L', 'U'],
@@ -184,6 +191,10 @@ List<LoadError> validateSchemaV1(Object? value) {
       }
       for (var i = 0; i < v.length && errors.length < 100; i++)
         node(v[i], type.substring(2), '$path/$i');
+      return;
+    }
+    if (type == 'bool') {
+      if (v is! bool) error('WRONG_TYPE', path, '应为布尔值');
       return;
     }
     if (type == 'int') {

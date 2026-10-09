@@ -175,7 +175,8 @@ void main() {
         await tester.startGesture(tester.getCenter(find.byTooltip('拖入门')));
     await gesture.moveBy(const Offset(0, -30));
     await tester.pump();
-    await gesture.moveTo(target);
+    // The dragged door lands at its arrow tip, 28 px above the finger.
+    await gesture.moveTo(target + const Offset(0, 28));
     await tester.pump();
     await gesture.up();
     await saved(tester);

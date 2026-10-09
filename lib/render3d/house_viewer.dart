@@ -8,8 +8,12 @@ class HouseViewer extends StatefulWidget {
       required this.house,
       this.onPick,
       this.showHint = true,
-      this.resetToken = 0});
+      this.resetToken = 0,
+      this.floorNames});
   final DerivedHouse house;
+
+  /// Names shown next to the floor slider; numbered when absent.
+  final List<String>? floorNames;
   final bool showHint;
   final int resetToken;
   final ValueChanged<SourceRef?>? onPick;
@@ -55,7 +59,9 @@ class _HouseViewerState extends State<HouseViewer> {
                 onChanged: widget.house.floors.length > 1
                     ? (v) => setState(() => floor = v.round())
                     : null)),
-        Text('${m + 1}楼'),
+        Text(widget.floorNames != null && m < widget.floorNames!.length
+            ? widget.floorNames![m]
+            : '${m + 1}楼'),
         IconButton(
             tooltip: '恢复视角',
             onPressed: () => setState(() {

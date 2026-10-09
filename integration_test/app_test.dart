@@ -94,7 +94,9 @@ void main() {
         await tester.startGesture(tester.getCenter(find.byTooltip('拖入门')));
     await door.moveBy(const Offset(0, -30));
     await tester.pump();
-    await door.moveTo(origin + painter.point(8500, 0, size));
+    // The dragged door lands at its arrow tip, 28 px above the finger.
+    await door
+        .moveTo(origin + painter.point(8500, 0, size) + const Offset(0, 28));
     await tester.pump();
     await door.up();
     await tester.pumpAndSettle();
@@ -124,8 +126,8 @@ void main() {
     await tester.tap(find.text('新建设计'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '外形草绘验收');
-    await tester.ensureVisible(find.text('直接拖出外形'));
-    await tester.tap(find.text('直接拖出外形'));
+    await tester.ensureVisible(find.text('在画布上拖出外形'));
+    await tester.tap(find.text('在画布上拖出外形'));
     await tester.pumpAndSettle();
     final canvas = find.byKey(const ValueKey('footprint-sketch-canvas'));
     final size = tester.getSize(canvas), origin = tester.getTopLeft(canvas);
@@ -191,7 +193,7 @@ void main() {
         await tester.startGesture(tester.getCenter(find.byTooltip('拖入门')));
     await g.moveBy(const Offset(0, -30));
     await tester.pump();
-    await g.moveTo(point(7000, 5000));
+    await g.moveTo(point(7000, 5000) + const Offset(0, 28));
     await tester.pump();
     await g.up();
     await tester.pumpAndSettle();
@@ -201,7 +203,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tapAt(point(7000, 5000));
     await tester.pumpAndSettle();
-    expect(find.byTooltip('删除墙'), findsOneWidget);
+    expect(find.byTooltip('删除墙体'), findsOneWidget);
     await drag(7000, 5000, 7000, 4500);
     await tester.tap(find.byTooltip('立即保存'));
     await tester.pumpAndSettle();
@@ -274,8 +276,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 650));
     await hold.up();
     await tester.pumpAndSettle();
-    expect(find.text('墙体操作'), findsOneWidget);
-    await tester.tap(find.text('调整长度'));
+    expect(find.byTooltip('调整长度'), findsOneWidget);
+    await tester.tap(find.byTooltip('调整长度'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '5.0');
     await tester.tap(find.text('确定'));

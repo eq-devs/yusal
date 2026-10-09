@@ -112,9 +112,10 @@ void main() {
     await t.pump(const Duration(milliseconds: 600));
     await g.up();
     await t.pumpAndSettle();
-    expect(find.text('墙体操作'), findsOneWidget);
-    expect(find.text('从这里接墙'), findsOneWidget);
-    await t.tap(find.text('从这里接墙'));
+    expect(find.textContaining('外墙 12.00 米'), findsOneWidget,
+        reason: 'the menu names the pressed wall and its length');
+    expect(find.byTooltip('从这里接墙'), findsOneWidget);
+    await t.tap(find.byTooltip('从这里接墙'));
     await t.pumpAndSettle();
     final painter = t.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
     expect(painter.wallSeed, const Offset(6000, 0));
@@ -149,15 +150,15 @@ void main() {
     await t.pumpAndSettle();
     await t.tapAt(point(t, 6000, 2000));
     await t.pumpAndSettle();
-    expect(find.byTooltip('删除墙'), findsOneWidget);
+    expect(find.byTooltip('删除墙体'), findsOneWidget);
     final g = await t.startGesture(point(t, 6000, 2000));
     await t.pump(const Duration(milliseconds: 600));
     await g.up();
     await t.pumpAndSettle();
-    expect(find.text('调整长度'), findsOneWidget);
-    expect(find.text('移动墙体'), findsOneWidget);
-    expect(find.text('删除墙体'), findsOneWidget);
-    await t.tap(find.text('修改墙厚'));
+    expect(find.byTooltip('调整长度'), findsOneWidget);
+    expect(find.byTooltip('移动墙体'), findsOneWidget);
+    expect(find.byTooltip('删除墙体'), findsOneWidget);
+    await t.tap(find.byTooltip('修改墙厚'));
     await t.pumpAndSettle();
     expect(find.text('墙厚（米）'), findsOneWidget);
     await t.enterText(find.byType(TextField), '0.18');
@@ -179,7 +180,13 @@ void main() {
     final session = await mount(t, initial());
     await t.tap(find.byTooltip('墙体'));
     await t.pumpAndSettle();
+    // Tapping a plus selects its wall; the menu then sets the start point.
     await t.tapAt(point(t, 6000, 0));
+    await t.pumpAndSettle();
+    expect(
+        (t.widget<CustomPaint>(canvas).painter! as FloorPlanPainter).wallSeed,
+        isNull);
+    await t.tap(find.byTooltip('从这里接墙'));
     await t.pumpAndSettle();
     await t.tapAt(point(t, 3000, 5000));
     await t.pumpAndSettle();
@@ -296,7 +303,7 @@ void main() {
     final session = await mount(t, composeDocument(doc.meta, result.newState));
     await t.tapAt(point(t, 4000, 3000));
     await t.pumpAndSettle();
-    expect(find.byTooltip('删除墙'), findsOneWidget);
+    expect(find.byTooltip('删除墙体'), findsOneWidget);
     await drag(t, 6000, 3000, 7000, 3000);
     await saved(t);
     var persisted = await session.store.openProject(session.id),
@@ -304,13 +311,25 @@ void main() {
     var wall =
         persisted.floors.first.wallOverrides.whereType<SolidWall>().single;
     expect(resolveAnchor(axes, wall.anchor).chain!.endPos, 7000);
+    // A mostly sideways drag of the body slides the wall along its line
+    // only; it does not drift diagonally.
     await drag(t, 4500, 3000, 5500, 3500);
     await saved(t);
     persisted = await session.store.openProject(session.id);
     axes = resolveFloorAxes(persisted, persisted.floors.first.id)!;
     wall = persisted.floors.first.wallOverrides.whereType<SolidWall>().single;
-    final chain = resolveAnchor(axes, wall.anchor).chain!;
-    expect(chain.carrier.pos, 3500);
+    var chain = resolveAnchor(axes, wall.anchor).chain!;
+    expect(chain.carrier.pos, 3000);
+    expect(chain.startPos, 3000);
+    expect(chain.endPos, 8000);
+    // Dragging anywhere on the body across the wall moves it sideways.
+    await drag(t, 7000, 3000, 7100, 4000);
+    await saved(t);
+    persisted = await session.store.openProject(session.id);
+    axes = resolveFloorAxes(persisted, persisted.floors.first.id)!;
+    wall = persisted.floors.first.wallOverrides.whereType<SolidWall>().single;
+    chain = resolveAnchor(axes, wall.anchor).chain!;
+    expect(chain.carrier.pos, 4000);
     expect(chain.startPos, 3000);
     expect(chain.endPos, 8000);
     expect(t.takeException(), isNull);
@@ -474,7 +493,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tapAt(point(t, 7000, 5000));
     await t.pumpAndSettle();
-    expect(find.byTooltip('删除墙'), findsOneWidget);
+    expect(find.byTooltip('删除墙体'), findsOneWidget);
     await drag(t, 7000, 5000, 7000, 4500);
     await saved(t);
     final persisted = await session.store.openProject(session.id),

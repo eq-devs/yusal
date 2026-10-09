@@ -269,6 +269,86 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
       keepUnassigned: true);
 }
 
+/// Move one physical wall sideways to [args]['pos'] and keep every wall that
+/// ends on it attached by stretching or shortening that wall. Walls that only
+/// grow are updated first so that rooms never open up mid-transaction (which
+/// would lose their names); shrinking walls follow the moved wall.
+EditResult moveDrawnWall(HouseDocument original, Map<String, dynamic> args,
+    String Function() newId) {
+  try {
+    final floorId = args['floorId'] as String;
+    final doc = enableWallDrawing(original, floorId, newId);
+    final floor = doc.floors.firstWhere((f) => f.id == floorId);
+    final axes = resolveFloorAxes(doc, floorId)!;
+    final solids = floor.wallOverrides.whereType<SolidWall>().toList();
+    final wallId = args['wallId'] as String?,
+        anchor = args['anchor'] as BoundaryAnchor?;
+    final target = solids
+        .where((w) => wallId != null ? w.id == wallId : w.anchor == anchor)
+        .firstOrNull;
+    if (target == null) return const EditResult(null, '找不到这段墙，请重新选择');
+    final chain = resolveAnchor(axes, target.anchor).chain!;
+    final from = chain.carrier.pos, to = args['pos'] as int;
+    if (from == to) return EditResult(original, null);
+    final vertical = chain.carrier.dir == AxisDir.V;
+    Map<String, dynamic> wall(String id, bool v, int carrier, int lo, int hi) =>
+        {
+          'floorId': floorId,
+          'wallId': id,
+          'x0': v ? carrier : lo,
+          'y0': v ? lo : carrier,
+          'x1': v ? carrier : hi,
+          'y1': v ? hi : carrier
+        };
+    final grow = <Map<String, dynamic>>[], shrink = <Map<String, dynamic>>[];
+    for (final w in solids) {
+      if (w.id == target.id) continue;
+      final c = resolveAnchor(axes, w.anchor).chain!;
+      if (c.carrier.dir == chain.carrier.dir ||
+          c.carrier.pos < chain.startPos ||
+          c.carrier.pos > chain.endPos) continue;
+      final atStart = c.startPos == from, atEnd = c.endPos == from;
+      if (!atStart && !atEnd) continue;
+      // At the moved wall's own end, a line that continues past it is a
+      // through wall the end simply slides along, not an attached wall.
+      if ((c.carrier.pos == chain.startPos || c.carrier.pos == chain.endPos) &&
+          solids.any((o) {
+            if (o.id == w.id || o.id == target.id) return false;
+            final other = resolveAnchor(axes, o.anchor).chain!;
+            return other.carrier.id == c.carrier.id &&
+                (atStart ? other.endPos == from : other.startPos == from);
+          })) continue;
+      final lo = atStart ? to : c.startPos, hi = atEnd ? to : c.endPos;
+      if (hi - lo < 300) return const EditResult(null, '相连的墙会短于 0.30 米，请少移动一些');
+      (hi - lo > c.endPos - c.startPos ? grow : shrink)
+          .add(wall(w.id, !vertical, c.carrier.pos, lo, hi));
+    }
+    final moved = wall(target.id, vertical, to, chain.startPos, chain.endPos);
+    String? firstError;
+    for (final order in [
+      [...grow, moved, ...shrink],
+      [moved, ...grow, ...shrink]
+    ]) {
+      var current = doc;
+      String? error;
+      for (final step in order) {
+        final result = editDrawnWall(current, 'UpdateDrawnWall', step, newId);
+        if (!result.accepted) {
+          error = result.error;
+          break;
+        }
+        current = result.document!;
+      }
+      if (error == null) return EditResult(current, null);
+      firstError ??= error;
+      if (grow.isEmpty) break;
+    }
+    return EditResult(null, firstError);
+  } on FormatException catch (e) {
+    return EditResult(null, e.message);
+  }
+}
+
 /// Insert or alter one physical wall as a single transaction. Endpoints share
 /// existing axes when exact; new coordinates are local to this floor.
 EditResult editDrawnWall(HouseDocument original, String kind,
@@ -278,6 +358,9 @@ EditResult editDrawnWall(HouseDocument original, String kind,
     var doc = enableWallDrawing(original, floorId, newId);
     final floor = doc.floors.firstWhere((f) => f.id == floorId);
     final oldAxes = resolveFloorAxes(doc, floorId)!;
+    List<OpeningPlacement>? openingsBefore;
+    List<OpeningPlacement> originalOpenings() =>
+        openingsBefore ??= documentOpenings(original, floorId: floorId);
     final walls = [...floor.wallOverrides];
     final wallId = args['wallId'] as String?;
     final targetAnchor = args['anchor'] as BoundaryAnchor?;
@@ -383,8 +466,9 @@ EditResult editDrawnWall(HouseDocument original, String kind,
                 lo < r.right &&
                 hi > r.left) return const EditResult(null, '墙体不能穿过楼梯');
       }
-      for (final opening
-          in deriveOpenings(doc, deriveFloorBase(doc, floorId), floorId)) {
+      for (final opening in identical(doc, original)
+          ? originalOpenings()
+          : deriveOpenings(doc, deriveFloorBase(doc, floorId), floorId)) {
         if (opening.status == 'ok' &&
             opening.axis.dir != direction &&
             carrier > opening.start &&
@@ -521,11 +605,13 @@ EditResult editDrawnWall(HouseDocument original, String kind,
     }
     final errors = validateHouse(doc);
     if (errors.isNotEmpty) return EditResult(null, errors.first.message);
-    final healthy = documentOpenings(original)
+    // Only this floor's walls, openings and local axes changed, so doors
+    // and windows on other floors keep their state by construction.
+    final healthy = originalOpenings()
         .where((o) => o.status == 'ok')
         .map((o) => o.opening.id)
         .toSet();
-    if (documentOpenings(doc)
+    if (documentOpenings(doc, floorId: floorId)
         .any((o) => healthy.contains(o.opening.id) && o.status != 'ok'))
       return const EditResult(null, '此调整会影响已有门窗，请避开门窗位置');
     return EditResult(doc, null);

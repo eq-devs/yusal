@@ -15,6 +15,10 @@ class EditResult {
   bool get accepted => document != null;
 }
 
+/// New floors follow the first floor's naming: 一楼, 二楼 … 十楼, then digits.
+String _floorName(int number) =>
+    number <= 10 ? '${'一二三四五六七八九十'[number - 1]}楼' : '$number楼';
+
 EditResult executeDocumentCommand(HouseDocument original, String kind,
     Map<String, dynamic> args, String Function() newId) {
   try {
@@ -125,7 +129,7 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         if (kind == 'AddFloor') {
           floors.insert(index + 1, {
             'id': id,
-            'name': '${floors.length + 1}楼',
+            'name': _floorName(floors.length + 1),
             'height': doc.defaults.floorHeight,
             'rooms': [],
             'wallOverrides': [],

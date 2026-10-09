@@ -55,6 +55,11 @@ HouseDocument _document(UndoableDesignState state) => composeDocument(
 List<ValidationError> validateDesignState(UndoableDesignState state) =>
     validateHouse(_document(state));
 
+/// Design states already checked as valid input. A drag previews many
+/// commands against the same state; it only needs validating once. States
+/// are immutable, so caching by identity is safe.
+final _validInputs = Expando<bool>('validInputs');
+
 CommandResult executeCommand(
     UndoableDesignState state, DesignCommand command, CommandContext context) {
   final doc = _document(state), args = command.arguments;
@@ -86,8 +91,11 @@ CommandResult executeCommand(
   }
 
   try {
-    if (validateHouse(doc).isNotEmpty)
-      return const Rejected('INTERNAL_INVALID', '输入设计状态无效');
+    if (_validInputs[state] != true) {
+      if (validateHouse(doc).isNotEmpty)
+        return const Rejected('INTERNAL_INVALID', '输入设计状态无效');
+      _validInputs[state] = true;
+    }
     final identities = <String, Set<String>>{
       'floorId': doc.floors.map((f) => f.id).toSet(),
       'axisId': {
@@ -114,6 +122,12 @@ CommandResult executeCommand(
     if (['AddDrawnWall', 'UpdateDrawnWall', 'DeleteDrawnWall']
         .contains(command.kind)) {
       final result = editDrawnWall(doc, command.kind, args, context.newId);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('WALL_CONFLICT', result.error!);
+    }
+    if (command.kind == 'MoveDrawnWall') {
+      final result = moveDrawnWall(doc, args, context.newId);
       return result.accepted
           ? apply(result.document!)
           : Rejected('WALL_CONFLICT', result.error!);

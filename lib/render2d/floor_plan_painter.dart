@@ -31,12 +31,19 @@ class FloorPlanPainter extends CustomPainter {
       this.handleScale = 1,
       this.editableWall,
       this.draftLabel,
+      this.draftConnected = false,
+      this.draftEnd,
+      this.coach,
       this.viewport,
       this.viewportInsets = EdgeInsets.zero,
       this.northAngleDeg = 0});
   final FloorBase base;
   final PlanRect? focus, draft, wallHandle, editableWall;
-  final Offset? wallSeed;
+  final Offset? wallSeed, draftEnd;
+  final bool draftConnected;
+
+  /// First-use guide: a dashed arrow from a wall attachment into the house.
+  final (Offset, Offset)? coach;
   final List<Offset> wallAttachments;
   final double handleScale;
   final String? draftLabel;
@@ -105,7 +112,9 @@ class FloorPlanPainter extends CustomPainter {
             style: TextStyle(color: Color(0xff404a40), fontSize: 11)),
         textDirection: TextDirection.ltr)
       ..layout();
-    northLabel.paint(canvas, Offset(size.width - 31, 48));
+    northLabel.paint(canvas, center + Offset(12, -northLabel.height / 2 - 4));
+    // One path per space so adjacent cells do not show anti-aliased seams.
+    final fills = <String?, Path>{};
     for (final entry in base.owners.entries) {
       final c = entry.key;
       final r = PlanRect(
@@ -113,8 +122,19 @@ class FloorPlanPainter extends CustomPainter {
           base.axes.h[c.j].pos.toDouble(),
           base.axes.v[c.i + 1].pos.toDouble(),
           base.axes.h[c.j + 1].pos.toDouble());
-      paint.color = colors[entry.value] ?? const Color(0xffeceeea);
-      canvas.drawRect(rectangle(r, size), paint);
+      (fills[entry.value] ??= Path()).addRect(rectangle(r, size));
+    }
+    for (final entry in fills.entries) {
+      paint.color = colors[entry.key] ?? const Color(0xffeceeea);
+      canvas.drawPath(entry.value, paint);
+    }
+    for (final entry in base.owners.entries) {
+      final c = entry.key;
+      final r = PlanRect(
+          base.axes.v[c.i].pos.toDouble(),
+          base.axes.h[c.j].pos.toDouble(),
+          base.axes.v[c.i + 1].pos.toDouble(),
+          base.axes.h[c.j + 1].pos.toDouble());
       if (showGridDimensions) {
         paint
           ..color = const Color(0xffd1d5cd)
@@ -197,16 +217,17 @@ class FloorPlanPainter extends CustomPainter {
       }
     }
     void text(String value, Offset at,
-        {double font = 13, double? maxWidth, double angle = 0}) {
+        {double font = 13, double? maxWidth, double angle = 0, int? maxLines}) {
       final t = TextPainter(
           text: TextSpan(
               text: value,
               style: TextStyle(
                   color: const Color(0xff384437),
-                  fontSize: font,
+                  // Constant on-screen size whatever the canvas zoom.
+                  fontSize: font / handleScale,
                   fontWeight: FontWeight.w600)),
           textDirection: TextDirection.ltr,
-          maxLines: maxWidth == null ? null : 3,
+          maxLines: maxWidth == null ? null : maxLines ?? 3,
           ellipsis: maxWidth == null ? null : '…',
           textAlign: TextAlign.center)
         ..layout(maxWidth: maxWidth ?? double.infinity);
@@ -223,13 +244,26 @@ class FloorPlanPainter extends CustomPainter {
           : room.clearRects.reduce((a, b) => a.area >= b.area ? a : b);
       final available =
           largest == null ? 80.0 : (largest.right - largest.left) * scale(size);
-      final dimensions = room.clearRects.length == 1 && available >= 110
-          ? '\n净 ${((largest!.right - largest.left) / 1000).toStringAsFixed(2)} × ${((largest.top - largest.bottom) / 1000).toStringAsFixed(2)} 米'
-          : '';
+      // Fit the label to the room as seen on screen: drop the dimensions,
+      // then the area, then the name, rather than spill over walls.
+      final screenWidth = available * handleScale,
+          screenHeight = largest == null
+              ? 60.0
+              : (largest.top - largest.bottom) * scale(size) * handleScale;
+      if (screenWidth < 28 || screenHeight < 18) continue;
+      final lines = [
+        labels[room.id] ?? '',
+        if (screenHeight >= 36 && screenWidth >= 44)
+          '${(room.clearArea / 1000000).toStringAsFixed(1)} ㎡',
+        if (room.clearRects.length == 1 &&
+            screenWidth >= 110 &&
+            screenHeight >= 56)
+          '净 ${((largest!.right - largest.left) / 1000).toStringAsFixed(2)} × ${((largest.top - largest.bottom) / 1000).toStringAsFixed(2)} 米',
+      ];
       text(
-          '${labels[room.id] ?? ''}\n${(room.clearArea / 1000000).toStringAsFixed(1)} ㎡$dimensions',
-          point(room.labelAnchor.x, room.labelAnchor.y, size),
-          maxWidth: math.max(32, available - 10));
+          lines.join('\n'), point(room.labelAnchor.x, room.labelAnchor.y, size),
+          maxWidth: math.max(24 / handleScale, available - 8 / handleScale),
+          maxLines: lines.length);
     }
     if (showGridDimensions) {
       final grid = Paint()
@@ -247,16 +281,18 @@ class FloorPlanPainter extends CustomPainter {
       for (var i = 0; i < base.axes.nx; i++) {
         final a = base.axes.v[i], b = base.axes.v[i + 1];
         text('${((b.pos - a.pos) / 1000).toStringAsFixed(2)} 米',
-            point((a.pos + b.pos) / 2, -450, size),
+            point((a.pos + b.pos) / 2, 0, size) + Offset(0, 30 / handleScale),
             font: 11);
       }
     } else {
-      text('宽 ${(base.axes.v.last.pos / 1000).toStringAsFixed(2)} 米',
-          point(base.axes.v.last.pos / 2, -450, size),
+      text(
+          '宽 ${(base.axes.v.last.pos / 1000).toStringAsFixed(2)} 米',
+          point(base.axes.v.last.pos / 2, 0, size) +
+              Offset(0, 30 / handleScale),
           font: 11);
     }
     text('长 ${(base.axes.h.last.pos / 1000).toStringAsFixed(2)} 米',
-        Offset(origin(size).dx - 25, size.height / 2),
+        point(0, base.axes.h.last.pos / 2, size) - Offset(30 / handleScale, 0),
         font: 11, angle: -math.pi / 2);
     if (wallHandle != null) {
       final rect = rectangle(wallHandle!, size);
@@ -282,48 +318,133 @@ class FloorPlanPainter extends CustomPainter {
             ..strokeWidth = 2);
     }
     if (resizeHandles) {
-      for (final center in [
-        point(base.axes.v.last.pos.toDouble(), base.axes.h.last.pos / 2, size),
-        point(base.axes.v.last.pos / 2, base.axes.h.last.pos.toDouble(), size)
-      ]) {
-        canvas.drawCircle(center, 13, Paint()..color = const Color(0xff356a55));
-        canvas.drawLine(
-            center - const Offset(6, 0),
-            center + const Offset(6, 0),
-            Paint()
-              ..color = Colors.white
-              ..strokeWidth = 2);
-        canvas.drawLine(
-            center - const Offset(0, 6),
-            center + const Offset(0, 6),
-            Paint()
-              ..color = Colors.white
-              ..strokeWidth = 2);
+      // Round grips with two-way arrows: drag right edge for width, top
+      // edge for length.
+      final right = point(
+              base.axes.v.last.pos.toDouble(), base.axes.h.last.pos / 2, size),
+          top = point(
+              base.axes.v.last.pos / 2, base.axes.h.last.pos.toDouble(), size);
+      for (final (center, horizontal) in [(right, true), (top, false)]) {
+        final r = 16 / handleScale;
+        canvas.drawCircle(
+            center, r + 2 / handleScale, Paint()..color = Colors.white);
+        canvas.drawCircle(center, r, Paint()..color = const Color(0xff356a55));
+        final pen = Paint()
+          ..color = Colors.white
+          ..strokeWidth = 2 / handleScale
+          ..strokeCap = StrokeCap.round;
+        final axis = horizontal ? const Offset(1, 0) : const Offset(0, 1),
+            normal = Offset(axis.dy, axis.dx);
+        final reach = 8 / handleScale, head = 4 / handleScale;
+        canvas.drawLine(center - axis * reach, center + axis * reach, pen);
+        for (final sign in [-1.0, 1.0]) {
+          final tip = center + axis * reach * sign;
+          canvas.drawLine(tip, tip - axis * head * sign + normal * head, pen);
+          canvas.drawLine(tip, tip - axis * head * sign - normal * head, pen);
+        }
       }
+    }
+    void pill(String value, Offset at, Color color) {
+      final t = TextPainter(
+          text: TextSpan(
+              text: value,
+              style: TextStyle(
+                  color: color,
+                  fontSize: 14 / handleScale,
+                  fontWeight: FontWeight.w700)),
+          textDirection: TextDirection.ltr)
+        ..layout();
+      final box = Rect.fromCenter(
+          center: at,
+          width: t.width + 16 / handleScale,
+          height: t.height + 8 / handleScale);
+      final shape =
+          RRect.fromRectAndRadius(box, Radius.circular(10 / handleScale));
+      canvas.drawRRect(
+          shape, Paint()..color = Colors.white.withValues(alpha: 0.94));
+      canvas.drawRRect(
+          shape,
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2 / handleScale);
+      t.paint(canvas, box.center - Offset(t.width / 2, t.height / 2));
+    }
+
+    if (coach != null) {
+      final a = point(coach!.$1.dx, coach!.$1.dy, size),
+          b = point(coach!.$2.dx, coach!.$2.dy, size);
+      final guide = Paint()
+        ..color = const Color(0xff286b50).withValues(alpha: 0.75)
+        ..strokeWidth = 3 / handleScale
+        ..strokeCap = StrokeCap.round;
+      final length = (b - a).distance, unit = (b - a) / length;
+      final dash = 10 / handleScale;
+      for (var d = 24 / handleScale; d < length - dash; d += dash * 2)
+        canvas.drawLine(a + unit * d, a + unit * (d + dash), guide);
+      final normal = Offset(-unit.dy, unit.dx) * (8 / handleScale);
+      canvas.drawLine(b, b - unit * (12 / handleScale) + normal, guide);
+      canvas.drawLine(b, b - unit * (12 / handleScale) - normal, guide);
     }
     if (draft != null) {
       final rect = rectangle(draft!, size);
+      final tone =
+          draftInvalid ? const Color(0xffa14539) : const Color(0xff356a55);
       paint
         ..style = PaintingStyle.fill
-        ..color =
-            (draftInvalid ? const Color(0xffa14539) : const Color(0xff356a55))
-                .withValues(alpha: 0.15);
+        ..color = tone.withValues(alpha: 0.15);
       canvas.drawRect(rect, paint);
       paint
         ..style = PaintingStyle.stroke
-        ..color =
-            draftInvalid ? const Color(0xffa14539) : const Color(0xff356a55)
+        ..color = tone
         ..strokeWidth = 3;
       canvas.drawRect(rect, paint);
       paint.style = PaintingStyle.fill;
-      text(
-          draftLabel ??
-              (draftIsLine
-                  ? '松手分房'
-                  : '${((draft!.right - draft!.left) / 1000).toStringAsFixed(1)} × '
-                      '${((draft!.top - draft!.bottom) / 1000).toStringAsFixed(1)} 米'),
-          Offset(rect.center.dx, rect.top - 18),
-          font: 13);
+      if (draftIsLine && draftLabel != null) {
+        // Beside the middle of the line: never under the start handle or
+        // the finger at the free end.
+        final vertical = rect.width < rect.height;
+        pill(
+            draftLabel!,
+            rect.center +
+                (vertical
+                    ? Offset(-34 / handleScale, 0)
+                    : Offset(0, -24 / handleScale)),
+            tone);
+      } else {
+        text(
+            draftLabel ??
+                (draftIsLine
+                    ? '松手分房'
+                    : '${((draft!.right - draft!.left) / 1000).toStringAsFixed(1)} × '
+                        '${((draft!.top - draft!.bottom) / 1000).toStringAsFixed(1)} 米'),
+            Offset(rect.center.dx, rect.top - 18),
+            font: 13);
+      }
+    }
+    if (draftEnd != null) {
+      final end = point(draftEnd!.dx, draftEnd!.dy, size);
+      final tone =
+          draftInvalid ? const Color(0xffa14539) : const Color(0xff286b50);
+      if (draftConnected && !draftInvalid) {
+        canvas.drawCircle(
+            end,
+            13 / handleScale,
+            Paint()
+              ..color = tone
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 3 / handleScale);
+        canvas.drawCircle(end, 6 / handleScale, Paint()..color = tone);
+      } else {
+        canvas.drawCircle(end, 7 / handleScale, Paint()..color = Colors.white);
+        canvas.drawCircle(
+            end,
+            7 / handleScale,
+            Paint()
+              ..color = tone
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2 / handleScale);
+      }
     }
     if (editableWall != null) {
       final a = point(editableWall!.left, editableWall!.bottom, size),
@@ -335,11 +456,34 @@ class FloorPlanPainter extends CustomPainter {
           b,
           Paint()
             ..color = color.withValues(alpha: 0.45)
-            ..strokeWidth = 8);
-      for (final p in [a, b, (a + b) / 2]) {
-        canvas.drawCircle(p, 11, Paint()..color = Colors.white);
-        canvas.drawCircle(p, 8, Paint()..color = color);
+            ..strokeWidth = 10 / handleScale
+            ..strokeCap = StrokeCap.round);
+      final grips = wallGrips(a, b, zoom: handleScale);
+      for (final p in [grips.start, grips.end]) {
+        if (p != a && p != b)
+          canvas.drawLine(
+              (p - a).distance < (p - b).distance ? a : b,
+              p,
+              Paint()
+                ..color = color.withValues(alpha: 0.6)
+                ..strokeWidth = 2 / handleScale);
       }
+      for (final p in [
+        grips.start,
+        grips.end,
+        if (grips.middle != null) grips.middle!
+      ]) {
+        canvas.drawCircle(p, 12 / handleScale, Paint()..color = Colors.white);
+        canvas.drawCircle(p, 9 / handleScale, Paint()..color = color);
+      }
+      if (draftLabel != null && draft == null)
+        pill(
+            draftLabel!,
+            (a + b) / 2 +
+                ((a - b).dx.abs() < (a - b).dy.abs()
+                    ? Offset(-38 / handleScale, 0)
+                    : Offset(0, -26 / handleScale)),
+            color);
     }
     for (final attachment in wallAttachments) {
       final center = point(attachment.dx, attachment.dy, size);
@@ -396,4 +540,21 @@ class FloorPlanPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant FloorPlanPainter oldDelegate) => true;
+}
+
+/// Screen grips for editing one wall from [a] to [b] (canvas-local pixels).
+/// Short walls get their end grips pushed apart and lose the middle grip so
+/// each grip keeps a finger-sized target; the wall body still moves the wall.
+({Offset start, Offset end, Offset? middle}) wallGrips(Offset a, Offset b,
+    {required double zoom, double minimumGap = 44}) {
+  final length = (b - a).distance * zoom;
+  if (length >= minimumGap * 2) return (start: a, end: b, middle: (a + b) / 2);
+  final direction =
+      length == 0 ? const Offset(1, 0) : (b - a) / (b - a).distance;
+  final center = (a + b) / 2, half = minimumGap / zoom;
+  return (
+    start: center - direction * half,
+    end: center + direction * half,
+    middle: null
+  );
 }

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../app/settings.dart';
 
 typedef FootprintDimensions = ({int width, int depth});
 
@@ -61,16 +62,17 @@ class _FootprintSketchState extends State<FootprintSketch> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(title: const Text('拖出房屋外形')),
+      appBar: AppBar(title: Text(tr('拖出房屋外形', 'Үй пішінін сызу'))),
       body: SafeArea(
           child: LayoutBuilder(
               builder: (context, viewport) => SingleChildScrollView(
                   child: SizedBox(
                       height: math.max(460, viewport.maxHeight),
                       child: Column(children: [
-                        const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Text('从一个角拖到另一个角。1 格为 1 米，之后可以输入精确长宽。')),
+                        Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Text(tr('从一个角拖到另一个角。1 格为 1 米，之后可以输入精确长宽。',
+                                'Бір бұрыштан екіншісіне тартыңыз. 1 тор — 1 м, кейін нақты өлшем енгізуге болады.'))),
                         Expanded(child:
                             LayoutBuilder(builder: (context, constraints) {
                           final size =
@@ -147,8 +149,8 @@ class _FootprintSketchState extends State<FootprintSketch> {
                                         onChanged: (_) => editDimensions(),
                                         keyboardType: const TextInputType
                                             .numberWithOptions(decimal: true),
-                                        decoration: const InputDecoration(
-                                            labelText: '宽（米）'))),
+                                        decoration: InputDecoration(
+                                            labelText: tr('宽（米）', 'Ені (м)')))),
                                 const SizedBox(width: 16),
                                 Expanded(
                                     child: TextField(
@@ -156,13 +158,15 @@ class _FootprintSketchState extends State<FootprintSketch> {
                                         onChanged: (_) => editDimensions(),
                                         keyboardType: const TextInputType
                                             .numberWithOptions(decimal: true),
-                                        decoration: const InputDecoration(
-                                            labelText: '长（米）')))
+                                        decoration: InputDecoration(
+                                            labelText: tr('长（米）', 'Ұзындығы (м)'))))
                               ]),
                               const SizedBox(height: 12),
                               Text(dimensions == null
-                                  ? '长宽至少 3 米，可重新拖动或输入尺寸'
-                                  : '外形已确定，可以继续分房'),
+                                  ? tr('长宽至少 3 米，可重新拖动或输入尺寸',
+                                      'Өлшем кемінде 3 м: қайта тартыңыз не енгізіңіз')
+                                  : tr('外形已确定，可以继续分房',
+                                      'Пішін дайын, бөлмелерге бөлуге болады')),
                               const SizedBox(height: 12),
                               SizedBox(
                                   width: double.infinity,
@@ -171,7 +175,7 @@ class _FootprintSketchState extends State<FootprintSketch> {
                                           ? null
                                           : () => Navigator.pop(
                                               context, dimensions),
-                                      child: const Text('使用这个外形'))),
+                                      child: Text(tr('使用这个外形', 'Осы пішінді қолдану')))),
                             ])),
                       ]))))));
 }

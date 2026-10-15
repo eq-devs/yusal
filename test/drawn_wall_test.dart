@@ -378,7 +378,7 @@ void main() {
     final raw = jsonDecode(encodeHouse(doc(s))) as Map<String, dynamic>;
     raw['schemaVersion'] = 1;
     expect(loadHouse(utf8.encode(jsonEncode(raw))).isSuccess, false);
-    raw['schemaVersion'] = 3;
+    raw['schemaVersion'] = 4;
     expect(loadHouse(utf8.encode(jsonEncode(raw))).failure!.errors.single.code,
         'UNSUPPORTED_NEWER_VERSION');
   });

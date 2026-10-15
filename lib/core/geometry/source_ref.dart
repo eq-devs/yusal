@@ -42,3 +42,13 @@ class WallSource extends SourceRef {
   @override
   int get hashCode => Object.hash(WallSource, wall);
 }
+
+class FurnitureSource extends SourceRef {
+  const FurnitureSource(this.furnitureId);
+  final String furnitureId;
+  @override
+  bool operator ==(Object other) =>
+      other is FurnitureSource && other.furnitureId == furnitureId;
+  @override
+  int get hashCode => Object.hash(FurnitureSource, furnitureId);
+}

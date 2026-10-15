@@ -1,18 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'app/settings.dart';
+import 'app/tokens.dart';
 import 'features/house_editor.dart';
 
-void main() => runApp(const ProviderScope(child: HouseApp()));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AppSettings.instance.load();
+  runApp(const ProviderScope(child: HouseApp()));
+}
 
 class HouseApp extends StatelessWidget {
   const HouseApp({super.key});
   @override
-  Widget build(BuildContext context) => MaterialApp(
-      title: '自建房设计',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-          colorSchemeSeed: const Color(0xff526b5b),
-          scaffoldBackgroundColor: const Color(0xfff6f7f3),
-          useMaterial3: true),
-      home: const HouseHome());
+  Widget build(BuildContext context) => ListenableBuilder(
+      listenable: AppSettings.instance,
+      builder: (context, _) {
+        final settings = AppSettings.instance;
+        return MaterialApp(
+            title: tr('自建房设计', 'Үй жобалау'),
+            debugShowCheckedModeBanner: false,
+            theme: buildTheme(settings.theme == ThemeChoice.night
+                ? Tokens.night
+                : Tokens.light),
+            darkTheme: buildTheme(settings.theme == ThemeChoice.day
+                ? Tokens.light
+                : Tokens.night),
+            themeMode: switch (settings.theme) {
+              ThemeChoice.auto => ThemeMode.system,
+              ThemeChoice.day => ThemeMode.light,
+              ThemeChoice.night => ThemeMode.dark
+            },
+            builder: (context, child) => AppScope(child: child!),
+            home: const HouseHome());
+      });
 }

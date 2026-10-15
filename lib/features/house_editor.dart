@@ -13,9 +13,10 @@ import '../core/geometry/floor_base.dart';
 import '../core/history/design_history.dart';
 import '../core/commands/delete_axis.dart';
 import '../core/commands/house_templates.dart';
+import '../core/commands/kz_template.dart';
 import '../core/geometry/derived_house.dart';
 import '../core/checks/check_engine.dart';
-import '../render3d/house_viewer.dart';
+import '../render3d/scene_view.dart';
 import '../render2d/floor_plan_painter.dart';
 import '../render2d/project_preview.dart';
 import '../storage/project_store.dart';
@@ -25,386 +26,25 @@ import 'footprint_sketch.dart';
 import 'wall_length_dialog.dart';
 import 'wall_attachment_points.dart';
 import 'wall_snap.dart';
+import '../app/messages.dart';
+import '../app/settings.dart';
+import '../app/tokens.dart';
+import '../app/ui.dart';
+import '../core/analysis/house_analysis.dart';
+import '../core/analysis/design_summary.dart';
+import '../core/commands/extras_commands.dart';
+import '../render2d/furniture_names.dart';
+import '../render2d/section_painters.dart';
+import '../core/checks/construction_checks.dart';
 
-class HouseHome extends StatefulWidget {
-  const HouseHome({super.key, this.store});
-  final ProjectStore? store;
-  @override
-  State<HouseHome> createState() => _HouseHomeState();
-}
-
-class _HouseHomeState extends State<HouseHome> {
-  late final store =
-      widget.store ?? ProjectStore(previewRenderer: renderProjectPreview);
-  static const importChannel = MethodChannel('yusal/house_import');
-  List<ProjectEntry> projects = [];
-  String? error;
-  @override
-  void initState() {
-    super.initState();
-    refresh().then((_) => reopenLast());
-    if (!kIsWeb) {
-      importChannel.setMethodCallHandler((call) async {
-        if (call.method == 'importFile') await receiveFile(call.arguments);
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        try {
-          final pending =
-              await importChannel.invokeListMethod<Object?>('getPending');
-          for (final file in pending ?? <Object?>[]) {
-            await receiveFile(file);
-          }
-        } on MissingPluginException {
-          /* Widget tests and unsupported desktop platforms. */
-        }
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    if (!kIsWeb) importChannel.setMethodCallHandler(null);
-    super.dispose();
-  }
-
-  Future<void> receiveFile(Object? payload) async {
-    if (!mounted || payload is! Map) return;
-    if (payload['bytes'] is! Uint8List) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(payload['error'] == 'FILE_TOO_LARGE'
-              ? '文件超过 10 MiB，无法打开'
-              : '无法读取设计文件')));
-      return;
-    }
-    final loaded = loadHouse(payload['bytes'] as Uint8List);
-    if (!loaded.isSuccess) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('这个文件的内容有误，无法打开')));
-      return;
-    }
-    try {
-      final id = await store.createProject(loaded.document!);
-      if (mounted) await open(ProjectEntry(id, loaded.document!));
-    } catch (_) {
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('无法保存导入的设计')));
-    }
-  }
-
-  /// After a reload or restart, go straight back to the design that was
-  /// being edited.
-  Future<void> reopenLast() async {
-    final id = await LastOpenProject.read();
-    if (id == null || !mounted) return;
-    final entry = projects.where((p) => p.id == id).firstOrNull;
-    if (entry == null) {
-      await LastOpenProject.write(null);
-      return;
-    }
-    await open(entry);
-  }
-
-  Future<void> refresh() async {
-    try {
-      final list = await store.listProjects();
-      if (mounted)
-        setState(() {
-          projects = list;
-          error = null;
-        });
-    } catch (_) {
-      if (mounted) setState(() => error = '暂时无法读取设计，请稍后重试');
-    }
-  }
-
-  Future<void> open(ProjectEntry entry) async {
-    try {
-      final document = await store.openProject(entry.id);
-      if (!mounted) return;
-      await Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => HouseEditor(
-              entry: ProjectEntry(entry.id, document), store: store)));
-      await refresh();
-    } catch (_) {
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('这个设计无法打开，请检查文件')));
-    }
-  }
-
-  Future<void> createFromTemplate() async {
-    final key = await showModalBottomSheet<String>(
-        context: context,
-        builder: (context) => SafeArea(
-                child: ListView(shrinkWrap: true, children: [
-              for (final entry
-                  in houseTemplates.entries.where((e) => e.key != 'blank'))
-                ListTile(
-                    title: Text(entry.value),
-                    onTap: () => Navigator.pop(context, entry.key))
-            ])));
-    if (key == null) return;
-    try {
-      final doc = createTemplate(key, DateTime.now().toUtc().toIso8601String(),
-          () => const Uuid().v4());
-      final id = await store.createProject(doc);
-      if (mounted) await open(ProjectEntry(id, doc));
-    } catch (_) {
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('无法创建，请检查存储空间')));
-    }
-  }
-
-  Future<void> create() async {
-    final name = TextEditingController(text: '我的房屋'),
-        width = TextEditingController(text: '12.00'),
-        depth = TextEditingController(text: '10.00');
-    const columns = 1, rows = 1;
-    String? validation;
-    var sketchRequested = false;
-    var doc = await showDialog<HouseDocument>(
-        context: context,
-        builder: (context) => StatefulBuilder(
-            builder: (context, setDialog) => AlertDialog(
-                    title: const Text('新建设计'),
-                    content: SingleChildScrollView(
-                        child:
-                            Column(mainAxisSize: MainAxisSize.min, children: [
-                      TextField(
-                          controller: name,
-                          decoration: const InputDecoration(labelText: '设计名称')),
-                      TextField(
-                          controller: width,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration:
-                              const InputDecoration(labelText: '宽（米，左右方向）')),
-                      TextField(
-                          controller: depth,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration:
-                              const InputDecoration(labelText: '长（米，上下方向）')),
-                      const Padding(
-                          padding: EdgeInsets.only(top: 12),
-                          child: Text('进去后，从墙上的 ＋ 拖出隔墙。')),
-                      if (validation != null)
-                        Text(validation!,
-                            style: const TextStyle(color: Colors.red))
-                    ])),
-                    actions: [
-                      TextButton.icon(
-                          onPressed: () {
-                            sketchRequested = true;
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.gesture),
-                          label: const Text('在画布上拖出外形')),
-                      TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('取消')),
-                      FilledButton(
-                          onPressed: () {
-                            final w = double.tryParse(width.text),
-                                d = double.tryParse(depth.text);
-                            if (w == null ||
-                                d == null ||
-                                !w.isFinite ||
-                                !d.isFinite ||
-                                w < 3 ||
-                                w > 100 ||
-                                d < 3 ||
-                                d > 100 ||
-                                w * 1000 / columns < 300 ||
-                                d * 1000 / rows < 300) {
-                              setDialog(
-                                  () => validation = '宽和长都要在 3 到 100 米之间');
-                              return;
-                            }
-                            Navigator.pop(
-                                context,
-                                createHouse(
-                                    name: name.text,
-                                    width: (w * 1000).round(),
-                                    depth: (d * 1000).round(),
-                                    columns: columns,
-                                    rows: rows,
-                                    initialRoom: true,
-                                    timestamp: DateTime.now()
-                                        .toUtc()
-                                        .toIso8601String(),
-                                    newId: () => const Uuid().v4()));
-                          },
-                          child: const Text('开始设计'))
-                    ])));
-    // The controllers stay alive until the dialog exit animation completes.
-    if (sketchRequested && mounted) {
-      final dimensions = await Navigator.of(context).push<FootprintDimensions>(
-          MaterialPageRoute(builder: (_) => const FootprintSketch()));
-      if (dimensions == null) return;
-      doc = createHouse(
-          name: name.text,
-          width: dimensions.width,
-          depth: dimensions.depth,
-          columns: 1,
-          rows: 1,
-          initialRoom: true,
-          timestamp: DateTime.now().toUtc().toIso8601String(),
-          newId: () => const Uuid().v4());
-    }
-    if (doc == null) return;
-    try {
-      final id = await store.createProject(doc);
-      if (mounted) await open(ProjectEntry(id, doc));
-    } catch (_) {
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('无法创建，请检查存储空间')));
-    }
-  }
-
-  Future<void> import() async {
-    try {
-      final file = await openFile(acceptedTypeGroups: [
-        const XTypeGroup(
-            label: '房屋设计',
-            extensions: ['house'],
-            uniformTypeIdentifiers: ['public.data'])
-      ]);
-      if (file == null) return;
-      if (await file.length() > maxHouseBytes) {
-        if (mounted)
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('文件超过 10 MiB，无法打开')));
-        return;
-      }
-      final loaded = await loadHouseStream(file.openRead(0, maxHouseBytes + 1),
-          length: await file.length());
-      if (!loaded.isSuccess) {
-        if (mounted)
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('这个文件的内容有误，无法打开')));
-        return;
-      }
-      final id = await store.createProject(loaded.document!);
-      if (mounted) await open(ProjectEntry(id, loaded.document!));
-    } catch (_) {
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('无法导入设计')));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(title: const Text('自建房设计工具'), actions: [
-        IconButton(
-            onPressed: import,
-            tooltip: '导入 .house',
-            icon: const Icon(Icons.file_open_outlined))
-      ]),
-      body: Center(
-          child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: ListView(padding: const EdgeInsets.all(24), children: [
-                const Text('从长宽开始，设计你的家',
-                    style:
-                        TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                const Text('定长宽 · 拖出隔墙 · 放门窗 · 看 3D'),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                    onPressed: create,
-                    icon: const Icon(Icons.add),
-                    label: const Padding(
-                        padding: EdgeInsets.all(12), child: Text('新建设计'))),
-                TextButton.icon(
-                    onPressed: createFromTemplate,
-                    icon: const Icon(Icons.auto_awesome_mosaic_outlined),
-                    label: const Text('也可以从示例开始')),
-                const SizedBox(height: 32),
-                const Text('最近设计',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                if (error != null) Text(error!),
-                if (projects.isEmpty)
-                  const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 32),
-                      child: Text('还没有设计，创建你的第一栋房屋。')),
-                for (final entry in store.corruptProjects.entries)
-                  Card(
-                      child: ListTile(
-                          leading: const Icon(Icons.error_outline),
-                          title: Text(entry.key),
-                          subtitle: Text(entry.value),
-                          trailing: IconButton(
-                              tooltip: '删除损坏的设计',
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () async {
-                                final yes = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                            title: const Text('删除无法打开的设计？'),
-                                            content: Text(entry.key),
-                                            actions: [
-                                              TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                          context, false),
-                                                  child: const Text('取消')),
-                                              TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                          context, true),
-                                                  child: const Text('删除'))
-                                            ]));
-                                if (yes == true) {
-                                  await store.deleteProject(entry.key);
-                                  await refresh();
-                                }
-                              }))),
-                for (final entry in projects)
-                  Card(
-                      child: ListTile(
-                          onTap: () => open(entry),
-                          leading: entry.preview == null
-                              ? const Icon(Icons.other_houses_outlined)
-                              : Image.memory(Uint8List.fromList(entry.preview!),
-                                  width: 56, height: 56, fit: BoxFit.contain),
-                          title: Text(entry.document.meta.name),
-                          subtitle: Text(
-                              '${entry.document.footprint.width / 1000} × ${entry.document.footprint.depth / 1000} 米 · ${entry.document.floors.length} 层'),
-                          trailing: IconButton(
-                              tooltip: '删除设计',
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () async {
-                                final yes = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                            title: const Text('删除这个设计？'),
-                                            content:
-                                                Text(entry.document.meta.name),
-                                            actions: [
-                                              TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                          context, false),
-                                                  child: const Text('取消')),
-                                              FilledButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(
-                                                          context, true),
-                                                  child: const Text('删除'))
-                                            ]));
-                                if (yes == true) {
-                                  await store.deleteProject(entry.id);
-                                  await refresh();
-                                }
-                              })))
-              ]))));
-}
+part 'editor/editor_header.dart';
+part 'editor/plan_tab.dart';
+part 'editor/selection_cards.dart';
+part 'editor/furniture_tool.dart';
+part 'editor/other_tabs.dart';
+part 'editor/scene_tab.dart';
+part 'editor/home_screen.dart';
+part 'editor/compare_card.dart';
 
 class HouseEditor extends StatefulWidget {
   const HouseEditor(
@@ -412,20 +52,163 @@ class HouseEditor extends StatefulWidget {
       required this.entry,
       required this.store,
       this.initialView3d = false,
-      this.initialTool});
+      this.initialTool,
+      this.compareWithId});
   final bool initialView3d;
   final String? initialTool;
+
+  /// Another design to compare with, e.g. the one this scheme was copied from.
+  final String? compareWithId;
   final ProjectEntry entry;
   final ProjectStore store;
   @override
   State<HouseEditor> createState() => _HouseEditorState();
 }
 
-class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
+class _HouseEditorState extends State<HouseEditor>
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   late final DesignHistory history;
   late FloorBase base;
   late DerivedHouse derived;
-  bool view3d = false;
+  /// Current page: plan, ext (3D), walk, det, qty or iss.
+  String tab = 'plan';
+  bool get view3d => tab != 'plan';
+  set view3d(bool value) {
+    if (value != view3d) tab = value ? 'ext' : 'plan';
+  }
+
+  /// Plan layers, the selection shown in the card, and transient marks.
+  bool showFurniture = true, showDimensions = true, showFoundation = false;
+  bool panelCollapsed = false;
+
+  /// Short-screen layout, decided by the last build.
+  bool compact = false;
+  List<Offset> measurePoints = [];
+  String? selectedRoomId, selectedOpeningId, selectedFurnitureId;
+  FurnitureKind? placingFurniture;
+
+  /// Furniture being moved, resized or turned: the live preview, the grip
+  /// and where the press started (plan millimetres).
+  FurnitureItem? furnitureDraft;
+  String? furnitureGrip;
+  Offset? furnitureDown;
+  List<PlanRect> highlights = [];
+  Level? issueFilter;
+
+  /// The design shown in the scheme comparison.
+  String? compareId;
+  HouseDocument? compareDoc;
+
+  /// 3D page state, kept while switching pages.
+  SceneSettings sceneSettings = const SceneSettings();
+  String sceneView = 'iso';
+  int sceneViewToken = 0;
+  SourceRef? scenePicked;
+
+  /// Where the walk-through starts; a new token moves the walker there.
+  ({int floorIndex, double x, double y, double yaw, int token})? walkStart;
+  late final AnimationController pulse = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1400));
+  final barsKey = GlobalKey();
+
+  void update(VoidCallback fn) => setState(fn);
+
+  /// Keep messages above the tool rows.
+  double get snackLift {
+    final box = barsKey.currentContext?.findRenderObject() as RenderBox?;
+    return (box?.hasSize ?? false) ? box!.size.height + 16 : 16;
+  }
+
+  List<(String, String)> get editorTabs => [
+        ('plan', tr('2D 平面', '2D жоспар')),
+        ('ext', tr('3D 外观', '3D сыртқы көрініс')),
+        ('walk', tr('室内漫游', 'Ішкі серуен')),
+        ('det', tr('构造细节', 'Құрылым бөлшектері')),
+        ('qty', tr('门窗与工程量', 'Есік-терезе және көлем')),
+        ('iss', tr('问题清单', 'Мәселелер тізімі')),
+      ];
+
+  void showTab(String value) {
+    if (value == tab) return;
+    setState(() {
+      cancelDrag();
+      clearWallSelection();
+      tab = value;
+      if (value != 'plan') {
+        tool = 'browse';
+        browse = true;
+        drawingOrigin = null;
+        drawingEnd = null;
+        placementHint = null;
+      }
+    });
+  }
+
+  Widget tabBody(bool wide) => switch (tab) {
+        'plan' => planTab(wide),
+        'ext' || 'walk' => sceneTab(wide),
+        'det' => detailsTab(wide),
+        'qty' => quantitiesTab(wide),
+        _ => issuesTab(wide),
+      };
+
+  void clearSelection() {
+    selectedRoomId = null;
+    selectedOpeningId = null;
+    selectedFurnitureId = null;
+    furnitureDraft = null;
+    furnitureGrip = null;
+  }
+
+  /// Delete key: the selected wall, furniture or door/window.
+  void deleteSelection() {
+    if (editStart != null) {
+      deleteSelectedWall();
+    } else if (selectedFurnitureId != null) {
+      final id = selectedFurnitureId!;
+      setState(clearSelection);
+      action('DeleteFurniture', {'furnitureId': id});
+    } else if (selectedOpeningId != null) {
+      final opening = floor.openings
+          .where((o) => o.id == selectedOpeningId)
+          .firstOrNull;
+      if (opening != null) {
+        setState(clearSelection);
+        action('DeleteOpening', {'openingId': opening.id});
+      }
+    }
+  }
+
+  /// Floors named automatically ("一楼", "二楼 副本") follow the language.
+  String displayFloorName(String name) {
+    const numerals = '一二三四五六七八九十';
+    final m = RegExp(r'^([一二三四五六七八九十])楼( 副本)?$').firstMatch(name);
+    if (m == null || !isKk) return name;
+    final n = numerals.indexOf(m[1]!) + 1;
+    return '$n-қабат${m[2] == null ? '' : ' (көшірме)'}';
+  }
+
+  /// Rooms keep the name the user gave; automatic names follow the language.
+  String displayRoomName(Room r) {
+    for (final e in roomNames.entries)
+      if (r.name == e.value) return roomTypeName(e.key);
+    return r.name;
+  }
+
+  /// Flash plan areas (issue locations) until the next edit or tap.
+  void flash(List<PlanRect> areas) {
+    highlights = areas;
+    if (areas.isEmpty || MediaQuery.disableAnimationsOf(context)) {
+      pulse.stop();
+      pulse.value = 0;
+    } else {
+      // A few beats to draw the eye, then the area stays marked.
+      pulse
+        ..value = 0
+        ..repeat(reverse: true, count: 6);
+    }
+  }
+
   String tool = 'browse';
   PlanRect? focus;
   Offset? spatialStart, spatialEnd;
@@ -438,17 +221,9 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
 
   final canvasKey = GlobalKey();
   final canvasTransform = TransformationController();
-  EdgeInsets get canvasInsets {
-    final wide = MediaQuery.sizeOf(context).width >= 600;
-    final bottom = MediaQuery.textScalerOf(context).scale(12) > 16
-        ? (wide ? 150.0 : 210.0)
-        : wide
-            ? 112.0
-            : MediaQuery.sizeOf(context).width < 350
-                ? 180.0
-                : 138.0;
-    return EdgeInsets.fromLTRB(12, compactHeader ? 72 : 112, 68, bottom + 36);
-  }
+  /// Room around the plan inside its sheet for dimension chains, the
+  /// north arrow and the zoom buttons.
+  EdgeInsets get canvasInsets => const EdgeInsets.fromLTRB(52, 60, 60, 60);
 
   FloorPlanPainter interactionPainter() =>
       FloorPlanPainter(base, {}, {}, viewportInsets: canvasInsets);
@@ -480,7 +255,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     openingDrop = null;
     derive();
     if (wall == null) {
-      placementHint = '拖到墙上，门窗会自动贴合';
+      placementHint = tr('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады');
       return;
     }
     final arguments = <String, dynamic>{
@@ -499,68 +274,96 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       derived =
           deriveHouse(composeDocument(history.present.meta, result.newState));
       base = derived.floors[floorIndex].base;
-      placementHint = '已贴合墙面，松手放置';
+      placementHint = tr('已贴合墙面，松手放置', 'Қабырғаға орнықты, жіберіңіз');
     } else {
-      placementHint = result is Rejected ? result.message : '此处无法放置';
+      placementHint = result is Rejected ? result.message : tr('此处无法放置', 'Мұнда қоюға болмайды');
     }
   }
 
-  String toolLabel(String label) => switch (label) {
-        '拉线分房' => '分房',
-        '拖动划房' => '框房',
-        '拖入门' => '门',
-        '拖入窗' => '窗',
-        '更多工具' => '更多',
-        '墙体调整' => '改墙',
-        '墙设置' => '设置',
-        _ => label
-      };
+  /// Tool names: Chinese key → (Chinese short, Kazakh full, Kazakh short).
+  static const toolText = {
+    '浏览': ('浏览', 'Шолу', 'Шолу'),
+    '墙体': ('墙体', 'Қабырға салу', 'Қабырға'),
+    '独立墙': ('独立墙', 'Бөлек қабырға', 'Бөлек'),
+    '拉线分房': ('分房', 'Сызықпен бөлу', 'Бөлу'),
+    '拖动划房': ('框房', 'Бөлме сызу', 'Бөлме'),
+    '拖入门': ('门', 'Есік қосу', 'Есік'),
+    '拖入窗': ('窗', 'Терезе қосу', 'Терезе'),
+    '家具': ('家具', 'Жиһаз қою', 'Жиһаз'),
+    '更多工具': ('更多', 'Басқа құралдар', 'Басқа'),
+    '墙体调整': ('改墙', 'Қабырғаны түзету', 'Түзету'),
+    '房屋尺寸': ('房屋尺寸', 'Үй өлшемі', 'Өлшем'),
+  };
+
+  String toolLabel(String label) {
+    final text = toolText[label];
+    if (text == null) return label;
+    return isKk ? text.$3 : text.$1;
+  }
+
+  String toolTip(String label) {
+    final text = toolText[label];
+    return text == null || !isKk ? label : text.$2;
+  }
 
   Widget basicTool(
-          IconData icon, String label, bool selected, VoidCallback onTap) =>
-      Semantics(
-          button: true,
-          selected: selected,
-          label: label,
-          child: Tooltip(
-              message: label,
-              child: Material(
-                  color: selected
-                      ? Theme.of(context).colorScheme.secondaryContainer
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: () {
-                        cancelDrag();
-                        closeWallMenu();
-                        spatialDocument = null;
-                        spatialBase = null;
-                        spatialError = null;
-                        spatialStart = null;
-                        spatialEnd = null;
-                        spatialPreview = null;
-                        placementHint = null;
-                        onTap();
-                        if (mounted) setState(() {});
-                      },
-                      child: SizedBox(
-                          width: math.max(
-                              48,
-                              MediaQuery.textScalerOf(context).scale(12) *
-                                      toolLabel(label).length +
-                                  4),
-                          height: math.max(58,
-                              MediaQuery.textScalerOf(context).scale(12) + 44),
-                          child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(icon, size: 24),
-                                const SizedBox(height: 4),
-                                Text(toolLabel(label),
-                                    maxLines: 1,
-                                    style: const TextStyle(fontSize: 12))
-                              ]))))));
+      IconData icon, String label, bool selected, VoidCallback onTap) {
+    final t = Tokens.of(context);
+    return Semantics(
+        button: true,
+        selected: selected,
+        label: toolTip(label),
+        child: Tooltip(
+            message: toolTip(label),
+            child: Material(
+                color: selected ? Tokens.mix(t.accent, 0.14, t.panel) : t.panel,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                        color: selected ? t.accent : t.line,
+                        width: selected ? 1.5 : 1)),
+                child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () {
+                      cancelDrag();
+                      closeWallMenu();
+                      spatialDocument = null;
+                      spatialBase = null;
+                      spatialError = null;
+                      spatialStart = null;
+                      spatialEnd = null;
+                      spatialPreview = null;
+                      placementHint = null;
+                      placingFurniture = null;
+                      measurePoints = [];
+                      onTap();
+                      if (mounted) setState(() {});
+                    },
+                    child: SizedBox(
+                        width: math.max(
+                            52,
+                            MediaQuery.textScalerOf(context).scale(11) *
+                                    (toolLabel(label).length *
+                                        (isKk ? 0.62 : 1.0)) +
+                                14),
+                        height: math.max(
+                            50, MediaQuery.textScalerOf(context).scale(11) + 38),
+                        child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(icon,
+                                  size: 21, color: selected ? t.accent : t.ink),
+                              const SizedBox(height: 3),
+                              Text(toolLabel(label),
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: selected ? t.accent : t.ink,
+                                      fontWeight: selected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400))
+                            ]))))));
+  }
 
   Future<void> footprintOptions() async {
     final width = TextEditingController(
@@ -581,27 +384,27 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Text('房屋长宽',
+                              Text(tr('房屋长宽', 'Үйдің ені мен ұзындығы'),
                                   style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w600)),
-                              const Padding(
+                              Padding(
                                   padding: EdgeInsets.symmetric(vertical: 12),
-                                  child: Text('外形尺寸用于全部楼层。内部房间位置保持不变。')),
+                                  child: Text(tr('外形尺寸用于全部楼层。内部房间位置保持不变。', 'Сыртқы өлшем барлық қабатқа қолданылады. Ішкі бөлмелердің орны сақталады.'))),
                               TextField(
                                   controller: width,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
                                           decimal: true),
-                                  decoration: const InputDecoration(
-                                      labelText: '宽（米，左右方向）')),
+                                  decoration: InputDecoration(
+                                      labelText: tr('宽（米，左右方向）', 'Ені (м, солдан оңға)'))),
                               TextField(
                                   controller: depth,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
                                           decimal: true),
-                                  decoration: const InputDecoration(
-                                      labelText: '长（米，上下方向）')),
+                                  decoration: InputDecoration(
+                                      labelText: tr('长（米，上下方向）', 'Ұзындығы (м, төменнен жоғары)'))),
                               if (error != null)
                                 Padding(
                                     padding: const EdgeInsets.only(top: 8),
@@ -623,7 +426,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                         d < 3 ||
                                         w > 100 ||
                                         d > 100) {
-                                      update(() => error = '长宽需在 3–100 米之间');
+                                      update(() => error = tr('长宽需在 3–100 米之间', 'Өлшем 3–100 м аралығында болуы керек'));
                                       return;
                                     }
                                     final args = <String, dynamic>{
@@ -643,7 +446,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                     Navigator.pop(context);
                                     action('SetFootprintSize', args);
                                   },
-                                  child: const Text('应用尺寸')),
+                                  child: Text(tr('应用尺寸', 'Өлшемді қолдану'))),
                               TextButton.icon(
                                   onPressed: () {
                                     Navigator.pop(context);
@@ -655,7 +458,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                     });
                                   },
                                   icon: const Icon(Icons.open_in_full),
-                                  label: const Text('拖动外边框调整')),
+                                  label: Text(tr('拖动外边框调整', 'Сыртқы жиекті сүйреп өзгерту'))),
                             ]))))));
   }
 
@@ -667,19 +470,19 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
             child: SizedBox(
                 height: math.min(MediaQuery.sizeOf(context).height * 0.7, 500),
                 child: ListView(children: [
-                  const Padding(
+                  Padding(
                       padding: EdgeInsets.all(16),
-                      child: Text('更多工具',
+                      child: Text(tr('更多工具', 'Басқа құралдар'),
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w600))),
                   for (final entry in {
-                    'fit': '恢复画布视角',
-                    'grid': '网格',
-                    'opening': '门窗',
-                    'stair': '楼梯',
+                    'fit': tr('恢复画布视角', 'Көріністі қалпына келтіру'),
+                    'grid': tr('网格', 'Тор'),
+                    'opening': tr('门窗', 'Есік-терезе'),
+                    'stair': tr('楼梯', 'Баспалдақ'),
                     for (final type in RoomType.values)
-                      type.name: roomNames[type]!,
-                    'erase': '擦除'
+                      type.name: roomTypeName(type),
+                    'erase': tr('擦除', 'Өшіру')
                   }.entries)
                     ListTile(
                         title: Text(entry.value),
@@ -706,16 +509,16 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   OpeningKind? draggingNewOpening;
 
   String openingName(Opening o) => switch (o) {
-        DoorOpening() => '门',
-        WindowOpening() => '窗',
-        SlidingOpening() => '推拉门'
+        DoorOpening() => tr('门', 'есік'),
+        WindowOpening() => tr('窗', 'терезе'),
+        SlidingOpening() => tr('推拉门', 'сырғымалы есік')
       };
 
-  static const openingNames = {
-    OpeningKind.door: '门',
-    OpeningKind.window: '窗',
-    OpeningKind.sliding: '推拉门'
-  };
+  Map<OpeningKind, String> get openingNames => {
+        OpeningKind.door: tr('门', 'есік'),
+        OpeningKind.window: tr('窗', 'терезе'),
+        OpeningKind.sliding: tr('推拉门', 'сырғымалы есік')
+      };
 
   /// The dragged door or window floats above the finger so the snapped
   /// preview on the wall stays visible. Its arrow tip, not the finger, is
@@ -729,10 +532,12 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       placingOpening = kind;
       browse = false;
       tool = 'placeOpening';
-      placementHint = '点一下墙面放置，也可以从工具栏直接拖入';
+      placementHint = tr('点一下墙面放置，也可以从工具栏直接拖入', 'Қабырғаны басып қойыңыз, не құралдар жолынан сүйреп әкеліңіз');
     });
     return Draggable<OpeningKind>(
         data: kind,
+        // Sideways swipes scroll the tool row; dragging up takes the item.
+        affinity: Axis.vertical,
         dragAnchorStrategy: (_, __, ___) => openingDragAnchor,
         feedback: Material(
             color: Colors.transparent,
@@ -856,7 +661,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           .rooms
           .length;
       placementHint =
-          count > floor.rooms.length + 1 ? '分房后会得到 $count 个独立空间，松手完成' : null;
+          count > floor.rooms.length + 1 ? tr('分房后会得到 $count 个独立空间，松手完成', 'Бөлгенде $count бөлек кеңістік шығады, жіберіңіз') : null;
     } else {
       spatialDocument = null;
       spatialBase = null;
@@ -952,8 +757,11 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     canvasTransform.addListener(onCanvasTransformChanged);
-    view3d = widget.initialView3d;
-    if (view3d) toolCategory = 2;
+    if (widget.initialView3d) tab = 'ext';
+    if (widget.compareWithId != null)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) loadCompare(widget.compareWithId!);
+      });
     history = DesignHistory(widget.entry.document);
     LastOpenProject.write(widget.entry.id);
     derive();
@@ -995,6 +803,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     previewTimer?.cancel();
     canvasTransform.removeListener(onCanvasTransformChanged);
     canvasTransform.dispose();
+    pulse.dispose();
     timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -1031,7 +840,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       if (mounted) {
         final firstFailure = status != '保存失败';
         setState(() => status = '保存失败');
-        if (firstFailure) notify('没能保存到本机，请检查存储空间；稍后会自动再试，也可点右上角保存');
+        if (firstFailure) notify(tr('没能保存到本机，请检查存储空间；稍后会自动再试，也可点右上角保存', 'Құрылғыға сақталмады, жадты тексеріңіз; кейін өзі қайта көреді, не «Сақтау» батырмасын басыңыз'));
       }
     } finally {
       saving = false;
@@ -1044,6 +853,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
 
   void changed() {
     focus = null;
+    if (highlights.isNotEmpty) flash(const []);
     derive();
     dirty = true;
     status = '未保存';
@@ -1199,13 +1009,13 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
       final wall = candidates.firstOrNull;
       if (wall == null) {
-        placementHint = '拖到另一面墙，门窗会自动贴合';
+        placementHint = tr('拖到另一面墙，门窗会自动贴合', 'Басқа қабырғаға апарыңыз, есік-терезе өзі орнығады');
         return;
       }
       final along = wall.axis.dir == AxisDir.H ? x : y;
       final available = wall.end.pos - wall.start.pos - opening.opening.width;
       if (available < 0) {
-        placementHint = '这段墙放不下这个门窗';
+        placementHint = tr('这段墙放不下这个门窗', 'Бұл қабырғаға есік-терезе сыймайды');
         return;
       }
       dragKind = 'MoveOpening';
@@ -1270,6 +1080,9 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     dragged = false;
     dragAttempted = false;
     dragValid = false;
+    furnitureDraft = null;
+    furnitureGrip = null;
+    furnitureDown = null;
     derive();
   }
 
@@ -1303,7 +1116,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       final cleanedName = history.present.meta.name
           .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '')
           .trim();
-      final filename = '${cleanedName.isEmpty ? '房屋设计' : cleanedName}.house';
+      final filename = '${cleanedName.isEmpty ? tr('房屋设计', 'Үй жобасы') : cleanedName}.house';
       final file = XFile.fromData(utf8.encode(raw),
           mimeType: 'application/json', name: filename);
       if (kIsWeb) {
@@ -1317,7 +1130,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                 : box.localToGlobal(Offset.zero) & box.size));
       }
     } catch (_) {
-      notify('暂时无法导出这个设计');
+      notify(tr('暂时无法导出这个设计', 'Жобаны қазір шығару мүмкін емес'));
     }
   }
 
@@ -1325,7 +1138,10 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     final before = history.present;
     action('AddOpening', arguments);
     if (history.present != before)
-      notify('已放置${openingNames[arguments['kind']]} · 可以直接拖动它调整位置', undo: undo);
+      notify(
+          tr('已放置${openingNames[arguments['kind']]} · 可以直接拖动它调整位置',
+              '${openingNames[arguments['kind']]} қойылды · оны сүйреп жылжытуға болады'),
+          undo: undo);
   }
 
   /// Short floating message above the tool card; [undo] adds an undo button.
@@ -1333,15 +1149,15 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
     messenger.showSnackBar(SnackBar(
-        content: Text(message),
+        content: Text(coreMessage(message)),
         behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.fromLTRB(16, 0, 16, canvasInsets.bottom - 24),
+        margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
         duration: Duration(milliseconds: undo == null ? 2500 : 6000),
         // Undo also stays in the header, so the message need not linger.
         persist: false,
         action: undo == null
             ? null
-            : SnackBarAction(label: '撤销', onPressed: undo)));
+            : SnackBarAction(label: tr('撤销', 'Болдырмау'), onPressed: undo)));
   }
 
   /// Forget a start point or selection that the document no longer has.
@@ -1369,7 +1185,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         browse = true;
       }
     });
-    notify('已撤销上一步');
+    notify(tr('已撤销上一步', 'Соңғы әрекет болдырылмады'));
   }
 
   void redo() {
@@ -1384,7 +1200,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         browse = true;
       }
     });
-    notify('已重做');
+    notify(tr('已重做', 'Қайталанды'));
   }
 
   void action(String kind, Map<String, dynamic> args) {
@@ -1422,16 +1238,17 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('取消')),
+                      child: Text(tr('取消', 'Болдырмау'))),
                   FilledButton(
                       onPressed: () => Navigator.pop(context, controller.text),
-                      child: const Text('确定'))
+                      child: Text(tr('确定', 'Жарайды')))
                 ]));
   }
 
   Future<int?> length(String label, int value) async {
     final result =
-        await ask('$label（米）', (value / 1000).toStringAsFixed(2), number: true);
+        await ask(tr('$label（米）', '$label (м)'), (value / 1000).toStringAsFixed(2),
+        number: true);
     final parsed = double.tryParse(result ?? '');
     if (parsed == null || !parsed.isFinite) return null;
     return (parsed * 1000).round();
@@ -1443,11 +1260,11 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
               for (final entry in {
-                'AddFloor': '新增空层',
-                'CopyFloor': '复制本层',
-                'RenameFloor': '楼层名称',
-                'SetFloorHeight': '层高',
-                'DeleteFloor': '删除本层'
+                'AddFloor': tr('新增空层', 'Бос қабат қосу'),
+                'CopyFloor': tr('复制本层', 'Қабатты көшіру'),
+                'RenameFloor': tr('楼层名称', 'Қабат атауы'),
+                'SetFloorHeight': tr('层高', 'Қабат биіктігі'),
+                'DeleteFloor': tr('删除本层', 'Қабатты жою')
               }.entries)
                 ListTile(
                     title: Text(entry.value),
@@ -1455,25 +1272,25 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
             ])));
     if (choice == null) return;
     if (choice == 'SetFloorHeight') {
-      final value = await length('层高', floor.height);
+      final value = await length(tr('层高', 'Қабат биіктігі'), floor.height);
       if (value != null) action(choice, {'floorId': floor.id, 'value': value});
     } else if (choice == 'RenameFloor') {
-      final value = await ask('楼层名称', floor.name);
+      final value = await ask(tr('楼层名称', 'Қабат атауы'), floor.name);
       if (value != null) action(choice, {'floorId': floor.id, 'value': value});
     } else {
       if (choice == 'DeleteFloor') {
         final yes = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-                    title: const Text('删除本层及其全部内容？'),
-                    content: const Text('本层房间和门窗将删除。删除顶层时，下层通向本层的楼梯也会删除。'),
+                    title: Text(tr('删除本层及其全部内容？', 'Қабатты бүкіл ішімен жою керек пе?')),
+                    content: Text(tr('本层房间和门窗将删除。删除顶层时，下层通向本层的楼梯也会删除。', 'Қабаттағы бөлмелер мен есік-терезелер жойылады. Жоғарғы қабат жойылса, оған апаратын баспалдақ та жойылады.')),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text('取消')),
+                          child: Text(tr('取消', 'Болдырмау'))),
                       FilledButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: const Text('删除'))
+                          child: Text(tr('删除', 'Жою')))
                     ]));
         if (yes != true) return;
       }
@@ -1493,8 +1310,10 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         derive();
       });
       notify(choice == 'DeleteFloor'
-          ? '已删除楼层，现在是「${floor.name}」'
-          : '已新增「${floor.name}」，现在编辑这一层');
+          ? tr('已删除楼层，现在是「${displayFloorName(floor.name)}」',
+              'Қабат жойылды, қазір «${displayFloorName(floor.name)}»')
+          : tr('已新增「${displayFloorName(floor.name)}」，现在编辑这一层',
+              '«${displayFloorName(floor.name)}» қосылды, енді осы қабатты өзгертесіз'));
     }
   }
 
@@ -1504,13 +1323,13 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
               for (final e in {
-                'width': '房屋宽度',
-                'depth': '房屋进深',
-                'north': '正北方向',
-                'flat': '平屋顶',
-                'gable': '双坡屋顶',
-                'grid': '编辑网格',
-                'defaults': '默认尺寸'
+                'width': tr('房屋宽度', 'Үйдің ені'),
+                'depth': tr('房屋进深', 'Үйдің тереңдігі'),
+                'north': tr('正北方向', 'Солтүстік бағыты'),
+                'flat': tr('平屋顶', 'Тегіс шатыр'),
+                'gable': tr('双坡屋顶', 'Қос беткейлі шатыр'),
+                'grid': tr('编辑网格', 'Торды өзгерту'),
+                'defaults': tr('默认尺寸', 'Әдепкі өлшемдер')
               }.entries)
                 ListTile(
                     title: Text(e.value),
@@ -1518,7 +1337,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
             ])));
     if (choice == 'width' || choice == 'depth') {
       final value = await length(
-          choice == 'width' ? '房屋宽度' : '房屋进深',
+          choice == 'width' ? tr('房屋宽度', 'Үйдің ені') : tr('房屋进深', 'Үйдің тереңдігі'),
           choice == 'width'
               ? history.present.footprint.width
               : history.present.footprint.depth);
@@ -1526,7 +1345,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     }
     if (choice == 'flat') {
       final height =
-          await length('女儿墙高度', history.present.roof.parapetHeight ?? 900);
+          await length(tr('女儿墙高度', 'Парапет биіктігі'), history.present.roof.parapetHeight ?? 900);
       if (height != null)
         action('SetRoof', {
           'roof': {'type': 'flat', 'parapetHeight': height}
@@ -1534,23 +1353,23 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     }
     if (choice == 'gable') {
       final pitchText = await ask(
-          '屋顶坡度（5–60°）', '${history.present.roof.pitchDeg ?? 30}',
+          tr('屋顶坡度（5–60°）', 'Шатыр еңісі (5–60°)'), '${history.present.roof.pitchDeg ?? 30}',
           number: true);
       if (pitchText == null) return;
       final pitch = int.tryParse(pitchText);
       if (pitch == null) return;
       final overhang =
-          await length('屋檐伸出', history.present.roof.overhang ?? 500);
+          await length(tr('屋檐伸出', 'Карниз шығыңқылығы'), history.present.roof.overhang ?? 500);
       if (overhang == null) return;
       final direction = await showModalBottomSheet<String>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 ListTile(
-                    title: const Text('屋脊沿进深方向'),
+                    title: Text(tr('屋脊沿进深方向', 'Жота тереңдік бойымен')),
                     onTap: () => Navigator.pop(context, 'V')),
                 ListTile(
-                    title: const Text('屋脊沿宽度方向'),
+                    title: Text(tr('屋脊沿宽度方向', 'Жота ені бойымен')),
                     onTap: () => Navigator.pop(context, 'H')),
               ])));
       if (direction != null)
@@ -1568,18 +1387,18 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           jsonDecode(encodeHouse(history.present)) as Map<String, dynamic>;
       final defaults = raw['defaults'] as Map<String, dynamic>;
       final labels = {
-        'outerWallThickness': '外墙厚度',
-        'innerWallThickness': '内墙厚度',
-        'slabThickness': '楼板厚度',
-        'stairRiserMax': '楼梯最大步高',
-        'stairTread': '楼梯踏步进深',
-        'stairWidthMin': '楼梯最小宽度',
-        'floorHeight': '默认层高',
-        'doorWidth': '默认门宽',
-        'doorHeight': '默认门高',
-        'windowWidth': '默认窗宽',
-        'windowHeight': '默认窗高',
-        'windowSill': '默认窗台高度'
+        'outerWallThickness': tr('外墙厚度', 'Сыртқы қабырға қалыңдығы'),
+        'innerWallThickness': tr('内墙厚度', 'Ішкі қабырға қалыңдығы'),
+        'slabThickness': tr('楼板厚度', 'Плита қалыңдығы'),
+        'stairRiserMax': tr('楼梯最大步高', 'Баспалдақтың ең үлкен биіктігі'),
+        'stairTread': tr('楼梯踏步进深', 'Баспалдақ табанының тереңдігі'),
+        'stairWidthMin': tr('楼梯最小宽度', 'Баспалдақтың ең аз ені'),
+        'floorHeight': tr('默认层高', 'Әдепкі қабат биіктігі'),
+        'doorWidth': tr('默认门宽', 'Әдепкі есік ені'),
+        'doorHeight': tr('默认门高', 'Әдепкі есік биіктігі'),
+        'windowWidth': tr('默认窗宽', 'Әдепкі терезе ені'),
+        'windowHeight': tr('默认窗高', 'Әдепкі терезе биіктігі'),
+        'windowSill': tr('默认窗台高度', 'Әдепкі терезе алды биіктігі')
       };
       final field = await showModalBottomSheet<String>(
           context: context,
@@ -1589,7 +1408,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                   ListTile(
                       title: Text(entry.value),
                       subtitle:
-                          Text('${(defaults[entry.key] as int) / 1000} 米'),
+                          Text('${dec(((defaults[entry.key] as int) / 1000).toString())} $unitM'),
                       onTap: () => Navigator.pop(context, entry.key)),
               ])));
       if (field != null) {
@@ -1605,7 +1424,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                   child: ListView(shrinkWrap: true, children: [
                 for (final angle in [0, 90, 180, 270])
                   ListTile(
-                      title: Text('正北指向 $angle°'),
+                      title: Text(tr('正北指向 $angle°', 'Солтүстік $angle° бағытта')),
                       onTap: () => Navigator.pop(context, angle))
               ])));
       if (value != null) action('SetNorthAngle', {'value': value});
@@ -1621,21 +1440,22 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                 height: 360,
                 child: ListView(children: [
                   ListTile(
-                      title: const Text('新增竖向分隔线'),
+                      title: Text(tr('新增竖向分隔线', 'Тік бөлу сызығын қосу')),
                       onTap: () => Navigator.pop(context, AxisDir.V)),
                   ListTile(
-                      title: const Text('新增横向分隔线'),
+                      title: Text(tr('新增横向分隔线', 'Көлденең бөлу сызығын қосу')),
                       onTap: () => Navigator.pop(context, AxisDir.H)),
                   for (final axis
                       in base.axes.all.where((a) => a.kind != 'boundary'))
                     ListTile(
                         title: Text(
-                            '${axis.dir == AxisDir.V ? '竖' : '横'}线 · ${(axis.pos / 1000).toStringAsFixed(2)} 米'),
+                            tr('${axis.dir == AxisDir.V ? '竖' : '横'}线 · ${(axis.pos / 1000).toStringAsFixed(2)} 米',
+                                '${axis.dir == AxisDir.V ? 'Тік' : 'Көлденең'} сызық · ${m2dp(axis.pos)} м')),
                         onTap: () => Navigator.pop(context, axis))
                 ]))));
     if (selected is AxisDir) {
       final value = await length(
-          '新分隔线位置',
+          tr('新分隔线位置', 'Жаңа сызықтың орны'),
           selected == AxisDir.V
               ? history.present.footprint.width ~/ 2
               : history.present.footprint.depth ~/ 2);
@@ -1645,10 +1465,10 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [
                   ListTile(
-                      title: const Text('所有楼层'),
+                      title: Text(tr('所有楼层', 'Барлық қабат')),
                       onTap: () => Navigator.pop(context, 'global')),
                   ListTile(
-                      title: const Text('仅本层'),
+                      title: Text(tr('仅本层', 'Тек осы қабат')),
                       onTap: () => Navigator.pop(context, 'floor')),
                 ])));
         if (scope != null)
@@ -1665,19 +1485,19 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         builder: (context) => SafeArea(
             child: ListView(shrinkWrap: true, children: [
           ListTile(
-              title: const Text('修改位置'),
+              title: Text(tr('修改位置', 'Орнын өзгерту')),
               onTap: () => Navigator.pop(context, 'move')),
           if (selected.kind == 'floor')
             ListTile(
-                title: const Text('同步到所有楼层'),
+                title: Text(tr('同步到所有楼层', 'Барлық қабатқа тарату')),
                 onTap: () => Navigator.pop(context, 'promote')),
           ListTile(
-              title: const Text('删除分隔线'),
+              title: Text(tr('删除分隔线', 'Сызықты жою')),
               onTap: () => Navigator.pop(context, 'delete')),
         ])),
       );
       if (operation == 'move') {
-        final value = await length('分隔线位置', selected.pos);
+        final value = await length(tr('分隔线位置', 'Сызықтың орны'), selected.pos);
         if (value != null)
           action('MoveAxis', {'axisId': selected.id, 'pos': value});
       }
@@ -1690,17 +1510,17 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           final resolution = await showDialog<String>(
               context: context,
               builder: (context) => AlertDialog(
-                    title: const Text('删除分隔线'),
+                    title: Text(tr('删除分隔线', 'Сызықты жою')),
                     content: Text(
-                        '${result.message}\n${result.hasHosted ? '这条线上的门窗和墙设置将删除。\n' : ''}${result.hasStairs ? '受影响的楼梯将删除。\n' : ''}请选择合并后保留的房间。'),
+                        '${coreMessage(result.message ?? '')}\n${result.hasHosted ? tr('这条线上的门窗和墙设置将删除。\n', 'Осы сызықтағы есік-терезе мен қабырға баптаулары жойылады.\n') : ''}${result.hasStairs ? tr('受影响的楼梯将删除。\n', 'Әсер ететін баспалдақтар жойылады.\n') : ''}${tr('请选择合并后保留的房间。', 'Біріктірген соң қалатын бөлмені таңдаңыз.')}'),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text('取消')),
+                          child: Text(tr('取消', 'Болдырмау'))),
                       for (final entry in {
-                        'mergeRooms': '合并房间',
-                        'keepLowSide': '保留左 / 下侧',
-                        'keepHighSide': '保留右 / 上侧'
+                        'mergeRooms': tr('合并房间', 'Бөлмелерді біріктіру'),
+                        'keepLowSide': tr('保留左 / 下侧', 'Сол / төменгі жағын қалдыру'),
+                        'keepHighSide': tr('保留右 / 上侧', 'Оң / жоғарғы жағын қалдыру')
                       }.entries)
                         TextButton(
                             onPressed: () => Navigator.pop(context, entry.key),
@@ -1717,10 +1537,11 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         if (!mounted) return;
         if (result.document != null) {
           setState(() {
-            if (history.commit(result.document!)) changed();
+            if (history.commit(
+                withExtras(result.document!, history.present.extras))) changed();
           });
         } else {
-          notify(result.message ?? '无法删除分隔线');
+          notify(result.message ?? tr('无法删除分隔线', 'Сызықты жою мүмкін емес'));
         }
       }
     }
@@ -1772,47 +1593,6 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       });
   }
 
-  void checks() {
-    final results = runChecks(history.present, derived);
-    showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        builder: (context) => SafeArea(
-            child: SizedBox(
-                height: MediaQuery.sizeOf(context).height * 0.7,
-                child: ListView(padding: const EdgeInsets.all(16), children: [
-                  const Text('设计检查',
-                      style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  if (results.isEmpty) const ListTile(title: Text('没有需要处理的提示')),
-                  for (final result in results)
-                    ListTile(
-                        leading: Icon(
-                            result.level == 'important'
-                                ? Icons.error_outline
-                                : Icons.lightbulb_outline,
-                            color: result.level == 'important'
-                                ? Colors.red
-                                : Colors.orange),
-                        title: Text(result.message),
-                        onTap: () {
-                          Navigator.pop(context);
-                          setState(() {
-                            final index = history.present.floors
-                                .indexWhere((f) => f.id == result.floorId);
-                            if (index >= 0) floorIndex = index;
-                            view3d = false;
-                            derive();
-                            focus = result.focus;
-                          });
-                        }),
-                  const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('这些阈值属于设计建议，不代表当地建筑法规或结构安全的合规结论。',
-                          style: TextStyle(fontSize: 12)))
-                ]))));
-  }
-
   Future<void> tapObject(Offset point, Size size) async {
     final painter = interactionPainter();
     // Tolerances are screen pixels, so they stay finger-sized at any zoom.
@@ -1831,11 +1611,31 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
     final opening = placements.firstOrNull;
     if (opening != null && tool != 'selectWall') {
-      openingOptions(opening.opening);
+      selectOpening(opening.opening);
+      return;
+    }
+    final cellI = base.axes.v.indexWhere((a) => a.pos > x) - 1,
+        cellJ = base.axes.h.indexWhere((a) => a.pos > y) - 1;
+    final roomHere = base.owners[Cell(cellI, cellJ)];
+    final piece = furnitureAtWorld(Offset(x, y));
+    // Rugs cover rooms: the first tap picks the room, the next the rug.
+    if (piece != null &&
+        tool != 'selectWall' &&
+        (!isFlatFurniture(piece.kind) ||
+            (roomHere != null && roomHere == selectedRoomId) ||
+            roomHere == null)) {
+      setState(() {
+        clearSelection();
+        clearWallSelection();
+        selectedFurnitureId = piece.id;
+        panelCollapsed = false;
+        placementHint = null;
+      });
       return;
     }
     final wall = wallAtPoint(point, size, radius: 16);
     if (wall != null) {
+      setState(clearSelection);
       if (wall.axis.kind != 'boundary') {
         setState(
             () => showWallContext(wall, attachmentOnWall(wall, point, size)));
@@ -1846,14 +1646,14 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 for (final entry in {
-                  'door': '门',
-                  'window': '窗',
-                  'sliding': '推拉门',
-                  if (wall.axis.kind != 'boundary') 'move': '拖动这段墙',
-                  if (wall.axis.kind != 'boundary') 'position': '精确调整这段墙',
-                  'open': '开放（无墙）',
-                  'thickness': '调整墙厚',
-                  'default': '恢复默认墙'
+                  'door': tr('门', 'Есік'),
+                  'window': tr('窗', 'Терезе'),
+                  'sliding': tr('推拉门', 'Сырғымалы есік'),
+                  if (wall.axis.kind != 'boundary') 'move': tr('拖动这段墙', 'Қабырғаны сүйреу'),
+                  if (wall.axis.kind != 'boundary') 'position': tr('精确调整这段墙', 'Қабырғаны дәл орналастыру'),
+                  'open': tr('开放（无墙）', 'Ашық (қабырғасыз)'),
+                  'thickness': tr('调整墙厚', 'Қалыңдығын өзгерту'),
+                  'default': tr('恢复默认墙', 'Әдепкі қабырғаны қайтару')
                 }.entries)
                   ListTile(
                       title: Text(entry.value),
@@ -1871,7 +1671,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       }
       if (choice == 'position') {
         final value = await length(
-            wall.axis.dir == AxisDir.V ? '距左侧外墙' : '距下侧外墙', wall.axis.pos);
+            wall.axis.dir == AxisDir.V ? tr('距左侧外墙', 'Сол жақ сыртқы қабырғадан') : tr('距下侧外墙', 'Төменгі сыртқы қабырғадан'), wall.axis.pos);
         if (value != null)
           action('MoveLocalWall',
               {'floorId': floor.id, 'anchor': wall.ref.anchor, 'pos': value});
@@ -1888,7 +1688,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       } else {
         int? thickness;
         if (choice == 'thickness')
-          thickness = await length('墙厚', wall.thickness.round());
+          thickness = await length(tr('墙厚', 'Қабырға қалыңдығы'), wall.thickness.round());
         if (choice != 'thickness' || thickness != null)
           action('SetWallOverride', {
             'floorId': floor.id,
@@ -1916,123 +1716,19 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     final id = base.owners[Cell(i, j)];
     final room = floor.rooms.where((r) => r.id == id).firstOrNull;
     if (room != null) {
-      final geometry = base.roomGeometry.firstWhere((g) => g.id == room.id);
-      final clear =
-          geometry.clearRects.length == 1 ? geometry.clearRects.single : null;
-      final details = clear == null
-          ? '净面积 ${(geometry.clearArea / 1000000).toStringAsFixed(1)} ㎡'
-          : '净宽 ${((clear.right - clear.left) / 1000).toStringAsFixed(2)} 米 · 净长 ${((clear.top - clear.bottom) / 1000).toStringAsFixed(2)} 米 · ${(geometry.clearArea / 1000000).toStringAsFixed(1)} ㎡';
-      final choice = await showModalBottomSheet<String>(
-          context: context,
-          isScrollControlled: true,
-          builder: (context) => SafeArea(
-              child: SizedBox(
-                  height:
-                      math.min(420, MediaQuery.sizeOf(context).height * 0.75),
-                  child: ListView(padding: const EdgeInsets.all(16), children: [
-                    Text(room.name,
-                        style: const TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.w600)),
-                    Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(details)),
-                    const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('这个房间用来做什么？')),
-                    Wrap(spacing: 8, runSpacing: 8, children: [
-                      for (final type in RoomType.values)
-                        ChoiceChip(
-                            label: Text(roomNames[type]!),
-                            selected: room.type == type,
-                            onSelected: (_) =>
-                                Navigator.pop(context, type.name))
-                    ]),
-                    const Divider(height: 24),
-                    ListTile(
-                        leading: const Icon(Icons.edit_outlined),
-                        title: const Text('修改名称'),
-                        onTap: () => Navigator.pop(context, 'rename')),
-                    ListTile(
-                        leading: const Icon(Icons.join_inner),
-                        title: const Text('与相邻房间合并'),
-                        onTap: () => Navigator.pop(context, 'merge')),
-                    ListTile(
-                        leading: const Icon(Icons.delete_outline),
-                        title: const Text('删除房间'),
-                        onTap: () => Navigator.pop(context, 'delete')),
-                  ]))));
-      if (choice == 'rename') {
-        final value = await ask('房间名称', room.name);
-        if (value != null)
-          action('RenameRoom', {'roomId': room.id, 'value': value});
-      } else if (choice == 'merge') {
-        final adjacent = floor.rooms
-            .where((r) =>
-                r.id != room.id &&
-                isConnected({
-                  ...regionCells(base.axes, room.regions).cells,
-                  ...regionCells(base.axes, r.regions).cells
-                }))
-            .toList();
-        if (adjacent.isEmpty) {
-          notify('没有可以合并的相邻房间');
-          return;
-        }
-        final target = await showModalBottomSheet<String>(
-            context: context,
-            builder: (context) => SafeArea(
-                    child: ListView(shrinkWrap: true, children: [
-                  for (final other in adjacent)
-                    ListTile(
-                        title: Text(other.name),
-                        onTap: () => Navigator.pop(context, other.id)),
-                ])));
-        if (target != null) {
-          final arguments = <String, dynamic>{
-            'roomIdA': room.id,
-            'roomIdB': target
-          };
-          final preview = executeCommand(
-              presentState,
-              DesignCommand('MergeRooms', arguments),
-              CommandContext(
-                  newId: () => const Uuid().v4(), now: () => 'unused'));
-          if (preview is NeedsResolution && mounted) {
-            final proceed = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                        title: const Text('合并这两个房间？'),
-                        content: Text(preview.conflict.message),
-                        actions: [
-                          TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('取消')),
-                          FilledButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('合并并移除这些门窗'))
-                        ]));
-            if (proceed != true) return;
-            arguments['deleteHostedObjects'] = true;
-          }
-          action('MergeRooms', arguments);
-        }
-      } else if (choice == 'delete') {
-        final updated = paintCells(
-            history.present,
-            floor.id,
-            regionCells(base.axes, room.regions).cells.toList(),
-            room.type,
-            () => const Uuid().v4(),
-            erase: true);
-        setState(() {
-          if (history.commit(updated)) changed();
-        });
-      } else if (choice != null) {
-        action('SetRoomType',
-            {'roomId': room.id, 'value': RoomType.values.byName(choice)});
-      }
+      setState(() {
+        clearSelection();
+        selectedRoomId = room.id;
+        panelCollapsed = false;
+        if (highlights.isNotEmpty) flash(const []);
+      });
       return;
     }
+    if (id == null)
+      setState(() {
+        clearSelection();
+        if (highlights.isNotEmpty) flash(const []);
+      });
     final stair = floor.stairs.where((s) => s.id == id).firstOrNull;
     if (stair != null) {
       final choice = await showModalBottomSheet<String>(
@@ -2040,12 +1736,12 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 for (final e in {
-                  'straight': '直梯',
-                  'L': 'L 型楼梯',
-                  'U': 'U 型楼梯',
-                  'turn': '切换转向',
-                  'start': '切换起步边',
-                  'delete': '删除楼梯'
+                  'straight': tr('直梯', 'Тік баспалдақ'),
+                  'L': tr('L 型楼梯', 'L тәрізді баспалдақ'),
+                  'U': tr('U 型楼梯', 'U тәрізді баспалдақ'),
+                  'turn': tr('切换转向', 'Бұрылысын ауыстыру'),
+                  'start': tr('切换起步边', 'Басталатын жағын ауыстыру'),
+                  'delete': tr('删除楼梯', 'Баспалдақты жою')
                 }.entries)
                   ListTile(
                       title: Text(e.value),
@@ -2071,165 +1767,28 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> openingOptions(Opening opening) async {
-    final placement = derived.floors[floorIndex].openings
-        .where((p) => p.opening.id == opening.id)
-        .firstOrNull;
-    final chain = resolveAnchor(base.axes, opening.anchor).chain;
-    final offset = placement == null || chain == null
-        ? null
-        : (placement.start - chain.startPos).round();
-    final name = openingName(opening);
-    final vertical = chain?.carrier.dir == AxisDir.V;
-    final choice = await showModalBottomSheet<String>(
-        context: context,
-        isScrollControlled: true,
-        builder: (context) {
-          Widget item(String key, IconData icon, String title,
-                  {String? value, bool danger = false}) =>
-              ListTile(
-                  leading: Icon(icon,
-                      color:
-                          danger ? Theme.of(context).colorScheme.error : null),
-                  title: Text(title,
-                      style: danger
-                          ? TextStyle(
-                              color: Theme.of(context).colorScheme.error)
-                          : null),
-                  trailing: value == null ? null : Text(value),
-                  onTap: () => Navigator.pop(context, key));
-          return SafeArea(
-              child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                      maxHeight: MediaQuery.sizeOf(context).height * 0.8),
-                  child: ListView(shrinkWrap: true, children: [
-                    Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                        child: Text(
-                            '$name · 宽 ${meters(opening.width)} 米 · 高 ${meters(opening.height)} 米',
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w600))),
-                    const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: Text('也可以直接在图上拖动它，换位置或换到别的墙上',
-                            style: TextStyle(fontSize: 13))),
-                    item('width', Icons.straighten, '宽度',
-                        value: '${meters(opening.width)} 米'),
-                    item('height', Icons.height, '高度',
-                        value: '${meters(opening.height)} 米'),
-                    if (opening is! DoorOpening)
-                      item('sill', Icons.vertical_align_bottom, '窗台高度',
-                          value: '${meters(opening.sill)} 米'),
-                    item('offset', Icons.space_bar, vertical ? '距墙下端' : '距墙左端',
-                        value: offset == null ? null : '${meters(offset)} 米'),
-                    item('center', Icons.format_align_center, '放到墙中间'),
-                    item('kind', Icons.swap_horiz, '换成其他门窗', value: name),
-                    if (opening is DoorOpening) ...[
-                      item('hinge', Icons.flip, '门轴换到另一边'),
-                      item('flip', Icons.swap_vert, '换开门方向'),
-                      item('entrance', Icons.home_outlined, '设为大门（主入口）'),
-                    ],
-                    item('delete', Icons.delete_outline, '删除这个$name',
-                        danger: true),
-                  ])));
-        });
-    if (choice == null) return;
-    if (['width', 'height', 'sill'].contains(choice)) {
-      final value = await length(
-          choice == 'width'
-              ? '宽度'
-              : choice == 'height'
-                  ? '高度'
-                  : '窗台高度',
-          choice == 'width'
-              ? opening.width
-              : choice == 'height'
-                  ? opening.height
-                  : opening.sill);
-      if (value != null)
-        action('ResizeOpening', {'openingId': opening.id, choice: value});
-    }
-    if (choice == 'center')
-      action('MoveOpening', {
-        'openingId': opening.id,
-        'position': {'type': 'center'}
+  /// Show the card of [opening]; it can also be dragged on the plan.
+  void selectOpening(Opening opening) => setState(() {
+        clearSelection();
+        clearWallSelection();
+        selectedOpeningId = opening.id;
+        panelCollapsed = false;
       });
-    if (choice == 'offset') {
-      final value = await length(vertical ? '距墙下端' : '距墙左端', offset ?? 0);
-      if (value != null)
-        action('MoveOpening', {
-          'openingId': opening.id,
-          'position': {'type': 'fromStart', 'd': value}
-        });
-    }
-    if (choice == 'kind') {
-      final kind = await showModalBottomSheet<OpeningKind>(
-          context: context,
-          builder: (context) => SafeArea(
-                  child: ListView(shrinkWrap: true, children: [
-                for (final entry in {
-                  OpeningKind.door: '门',
-                  OpeningKind.window: '窗',
-                  OpeningKind.sliding: '推拉门'
-                }.entries)
-                  ListTile(
-                      title: Text(entry.value),
-                      onTap: () => Navigator.pop(context, entry.key)),
-              ])));
-      if (kind != null)
-        action('SetOpeningKind', {'openingId': opening.id, 'kind': kind});
-    }
-    if (choice == 'hinge' && opening is DoorOpening)
-      action('FlipDoor', {
-        'openingId': opening.id,
-        'hinge': opening.hinge == Hinge.start ? 'end' : 'start'
-      });
-    if (choice == 'entrance')
-      action('SetMainEntrance', {'openingId': opening.id});
-    if (choice == 'flip' && opening is DoorOpening)
-      action('FlipDoor', {
-        'openingId': opening.id,
-        'opensTo': opening.opensTo == OpeningSide.positiveSide
-            ? 'negativeSide'
-            : 'positiveSide'
-      });
-    if (choice == 'delete') {
-      final before = history.present;
-      action('DeleteOpening', {'openingId': opening.id});
-      if (history.present != before) notify('已删除$name', undo: undo);
-    }
-  }
 
   Offset? drawingOrigin, drawingEnd;
-  int toolCategory = 0;
-  int viewResetToken = 0;
-  Duration get motionDuration => MediaQuery.disableAnimationsOf(context)
-      ? Duration.zero
-      : const Duration(milliseconds: 200);
 
-  Widget floatingSurface(Widget child) => Material(
-      color: Theme.of(context).colorScheme.surface,
-      elevation: 3,
-      clipBehavior: Clip.antiAlias,
-      shadowColor: Colors.black.withValues(alpha: 0.10),
-      borderRadius: BorderRadius.circular(20),
-      child: child);
-
-  void chooseCategory(int value) {
-    setState(() {
-      cancelDrag();
-      clearWallSelection();
-      spatialStart = null;
-      spatialEnd = null;
-      spatialPreview = null;
-      toolCategory = value;
-      if (value != 2) view3d = false;
-      tool = 'browse';
-      browse = true;
-      drawingOrigin = null;
-      drawingEnd = null;
-      placementHint = null;
-    });
+  /// Floating sheet over the plan (wall menu, live status).
+  Widget floatingSurface(Widget child) {
+    final t = Tokens.of(context);
+    return Material(
+        color: t.panel,
+        elevation: 2,
+        clipBehavior: Clip.antiAlias,
+        shadowColor: Colors.black.withValues(alpha: 0.12),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(color: t.line)),
+        child: child);
   }
 
   String? selectedDrawnId;
@@ -2291,11 +1850,10 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
           ? Offset(c.carrier.pos.toDouble(), c.endPos.toDouble())
           : Offset(c.endPos.toDouble(), c.carrier.pos.toDouble());
       if (!keepTool) {
-        toolCategory = 1;
         tool = 'editWall';
         browse = false;
       }
-      placementHint = '拖两端改长度 · 拖墙身移动';
+      placementHint = tr('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз');
     });
   }
 
@@ -2416,7 +1974,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       }
     }
     schedulePreview(editCommand!, editArgs!,
-        ok: '松手完成，支持撤销', failed: '无法移动这段墙');
+        ok: tr('松手完成，支持撤销', 'Жіберіңіз, болдырмауға болады'), failed: tr('无法移动这段墙', 'Бұл қабырғаны жылжыту мүмкін емес'));
   }
 
   /// Full previews (validation plus the resulting rooms) can take tens of
@@ -2550,7 +2108,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       if (history.present != before) refreshWallSelection(start, end);
     }
     if (error != null) notify(error);
-    placementHint = '拖两端改长度 · 拖墙身移动';
+    placementHint = tr('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз');
     setState(() {});
   }
 
@@ -2569,7 +2127,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   Future<void> preciseWallLength() async {
     if (editStart == null || editEnd == null) return;
     final start = editStart!, end = editEnd!;
-    final value = await length('墙长', (end - start).distance.round());
+    final value = await length(tr('墙长', 'Қабырға ұзындығы'), (end - start).distance.round());
     if (value == null || !mounted) return;
     // Keep the end that is joined to another wall; move the free one.
     final keepEnd = selectedEndJoins(end) && !selectedEndJoins(start);
@@ -2581,14 +2139,15 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     action('UpdateDrawnWall', wallEditArguments(from, to));
     if (history.present != before) {
       setState(() => refreshWallSelection(from, to));
-      notify('墙长已改为 ${(value / 1000).toStringAsFixed(2)} 米');
+      notify(tr('墙长已改为 ${(value / 1000).toStringAsFixed(2)} 米',
+          'Қабырға ұзындығы ${m2dp(value)} м болды'));
     }
   }
 
   Future<void> preciseWallPosition() async {
     if (editStart == null || editEnd == null) return;
     final vertical = editStart!.dx == editEnd!.dx;
-    final value = await length(vertical ? '墙到左侧外墙的距离' : '墙到下侧外墙的距离',
+    final value = await length(vertical ? tr('墙到左侧外墙的距离', 'Сол сыртқы қабырғаға дейінгі қашықтық') : tr('墙到下侧外墙的距离', 'Төменгі сыртқы қабырғаға дейінгі қашықтық'),
         (vertical ? editStart!.dx : editStart!.dy).round());
     if (value == null || !mounted) return;
     final start = vertical
@@ -2617,10 +2176,10 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [
                   ListTile(
-                      title: const Text('调整墙厚'),
+                      title: Text(tr('调整墙厚', 'Қалыңдығын өзгерту')),
                       onTap: () => Navigator.pop(context, 'thickness')),
                   ListTile(
-                      title: const Text('恢复默认墙厚'),
+                      title: Text(tr('恢复默认墙厚', 'Әдепкі қалыңдықты қайтару')),
                       onTap: () => Navigator.pop(context, 'default'))
                 ])));
     if (choice == null) return;
@@ -2665,15 +2224,16 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       final yes = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-                  title: const Text('删除墙及其门窗？'),
-                  content: Text('这段墙上的 $hosted 个门窗也会删除，可通过撤销恢复。'),
+                  title: Text(tr('删除墙及其门窗？', 'Қабырға мен ондағы есік-терезені жою керек пе?')),
+                  content: Text(tr('这段墙上的 $hosted 个门窗也会删除，可通过撤销恢复。',
+                      'Қабырғадағы $hosted есік-терезе де жойылады, болдырмау арқылы қайтаруға болады.')),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: const Text('取消')),
+                        child: Text(tr('取消', 'Болдырмау'))),
                     FilledButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: const Text('删除'))
+                        child: Text(tr('删除', 'Жою')))
                   ]));
       if (yes != true) return;
     }
@@ -2691,7 +2251,11 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         clearWallSelection();
         placementHint = null;
       });
-      notify(hosted > 0 ? '已删除墙体和 $hosted 个门窗' : '已删除墙体', undo: undo);
+      notify(
+          hosted > 0
+              ? tr('已删除墙体和 $hosted 个门窗', 'Қабырға мен $hosted есік-терезе жойылды')
+              : tr('已删除墙体', 'Қабырға жойылды'),
+          undo: undo);
     }
   }
 
@@ -2812,7 +2376,10 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     final wall = wallAtPoint(local, size);
     if (wall == null) return;
     wallHoldTimer = Timer(const Duration(milliseconds: 500), () {
-      if (!mounted || pointers.length != 1 || cancelledStroke) return;
+      if (!mounted ||
+          pointers.length != 1 ||
+          cancelledStroke ||
+          furnitureGrip != null) return;
       final point = attachmentOnWall(wall, local, size);
       setState(() {
         cancelDrag();
@@ -2847,7 +2414,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         clearWallSelection();
         startWallDrawing();
         drawingOrigin = point;
-        placementHint = '按住大 ＋ 拖出新墙';
+        placementHint = tr('按住大 ＋ 拖出新墙', 'Үлкен ＋ белгісін ұстап, жаңа қабырға тартыңыз');
       });
       return;
     }
@@ -2886,7 +2453,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     }).firstOrNull;
     if (opening != null) {
       setState(clearWallSelection);
-      openingOptions(opening.opening);
+      selectOpening(opening.opening);
       return;
     }
     final wall = wallAtPoint(local, size, radius: 16);
@@ -3026,7 +2593,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       return;
     }
     schedulePreview('AddDrawnWall', drawingArguments,
-        ok: '松手建墙，末端可以继续拖', failed: '此处无法建墙');
+        ok: tr('松手建墙，末端可以继续拖', 'Жіберсеңіз қабырға салынады, ұшынан жалғастыруға болады'), failed: tr('此处无法建墙', 'Мұнда қабырға салу мүмкін емес'));
   }
 
   void finishWallStroke() {
@@ -3059,9 +2626,9 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     }
     if (error != null) notify(error);
     placementHint = tapped
-        ? '按住大 ＋ 拖出新墙 · 也可点尺子输入长度'
+        ? tr('按住大 ＋ 拖出新墙 · 也可点尺子输入长度', 'Үлкен ＋ белгісін ұстап тартыңыз · не сызғышты басып ұзындық енгізіңіз')
         : !accepted && error == null
-            ? '墙至少 0.30 米，请拖远一些'
+            ? tr('墙至少 0.30 米，请拖远一些', 'Қабырға кемінде 0,30 м, әріректе жіберіңіз')
             : null;
     setState(() {});
   }
@@ -3095,7 +2662,6 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     browse = false;
     view3d = false;
     tool = 'drawWall';
-    toolCategory = 0;
     drawingOrigin = null;
     placingWallStart = false;
     drawingEnd = null;
@@ -3103,7 +2669,10 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     placementHint = null;
   }
 
-  String meters(num value) => (value / 1000).toStringAsFixed(2);
+  String meters(num value) => m2dp(value);
+
+  String get dragOntoWallHint =>
+      tr('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады');
 
   bool get floorHasInnerWalls =>
       base.wallSegments.any((w) => w.axis.kind != 'boundary');
@@ -3118,16 +2687,15 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
 
   bool get showStartCoach =>
       tool == 'browse' &&
-      toolCategory == 0 &&
       !view3d &&
       !coachDismissed &&
       !floorHasInnerWalls &&
       floor.openings.isEmpty;
 
   String? get coachText => showWallCoach
-      ? '按住绿色 ＋ 往里拖，松手就建好一面墙'
+      ? tr('按住橙色 ＋ 往里拖，松手就建好一面墙', 'Сары ＋ белгісін ішке қарай тартыңыз, жіберсеңіз қабырға салынады')
       : showStartCoach
-          ? '先点「墙体」，再按住 ＋ 往里拖'
+          ? tr('先点「墙体」，再按住 ＋ 往里拖', 'Алдымен «Қабырға» батырмасын, сосын ＋ белгісін ішке тартыңыз')
           : null;
 
   /// Dashed arrow from one outer plus into the house for the first wall.
@@ -3153,14 +2721,15 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
   /// In-canvas label for the wall being drawn, resized or moved.
   String? get wallDraftLabel {
     if (tool == 'drawWall' && drawingEnd != null && drawingOrigin != null)
-      return '${meters((drawingEnd! - drawingOrigin!).distance)} 米';
+      return '${meters((drawingEnd! - drawingOrigin!).distance)} $unitM';
     if (wallGrip == null || editPreviewStart == null || editPreviewEnd == null)
       return null;
     if (editCommand == 'MoveDrawnWall' ||
         (wallGrip == 'middle' && editStart != null)) {
-      return '移动 ${meters((editPreviewStart! - editStart!).distance)} 米';
+      return tr('移动 ${meters((editPreviewStart! - editStart!).distance)} 米',
+          'Жылжыту ${meters((editPreviewStart! - editStart!).distance)} м');
     }
-    return '${meters((editPreviewEnd! - editPreviewStart!).distance)} 米';
+    return '${meters((editPreviewEnd! - editPreviewStart!).distance)} $unitM';
   }
 
   /// Live state while drawing or editing a wall: what will happen on release.
@@ -3175,18 +2744,18 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         drawingEnd != null) {
       final length = (drawingEnd! - drawingOrigin!).distance;
       if (length < 300)
-        return (text: '继续拖动 · 墙至少 0.30 米', icon: Icons.straighten, color: info);
+        return (text: tr('继续拖动 · 墙至少 0.30 米', 'Тарта беріңіз · қабырға кемінде 0,30 м'), icon: Icons.straighten, color: info);
       if (spatialError != null)
         return (text: spatialError!, icon: Icons.block, color: bad);
-      final direction = drawingEnd!.dy == drawingOrigin!.dy ? '横墙' : '竖墙';
+      final direction = drawingEnd!.dy == drawingOrigin!.dy ? tr('横墙', 'Көлденең қабырға') : tr('竖墙', 'Тік қабырға');
       return drawConnected
           ? (
-              text: '$direction ${meters(length)} 米 · 已连到墙',
+              text: tr('$direction ${meters(length)} 米 · 已连到墙', '$direction ${meters(length)} м · қабырғаға жалғанды'),
               icon: Icons.link,
               color: good
             )
           : (
-              text: '$direction ${meters(length)} 米 · 末端没连墙',
+              text: tr('$direction ${meters(length)} 米 · 末端没连墙', '$direction ${meters(length)} м · ұшы жалғанбаған'),
               icon: Icons.link_off,
               color: warn
             );
@@ -3197,13 +2766,13 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       return dragValid && (width != null || depth != null)
           ? (
               text: width != null
-                  ? '房屋宽 ${meters(width)} 米 · 所有楼层一起改'
-                  : '房屋长 ${meters(depth!)} 米 · 所有楼层一起改',
+                  ? tr('房屋宽 ${meters(width)} 米 · 所有楼层一起改', 'Үй ені ${meters(width)} м · барлық қабат бірге өзгереді')
+                  : tr('房屋长 ${meters(depth!)} 米 · 所有楼层一起改', 'Үй ұзындығы ${meters(depth)} м · барлық қабат бірге өзгереді'),
               icon: Icons.open_in_full,
               color: good
             )
           : (
-              text: placementHint ?? '这个尺寸放不下已有的墙或房间',
+              text: placementHint ?? tr('这个尺寸放不下已有的墙或房间', 'Бұл өлшемге бар қабырға не бөлме сыймайды'),
               icon: Icons.block,
               color: bad
             );
@@ -3212,12 +2781,12 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
       final name = openingName(draggingOpening!.opening);
       return dragValid
           ? (
-              text: '松手把$name放在这里',
+              text: tr('松手把$name放在这里', '$name осында қою үшін жіберіңіз'),
               icon: Icons.check_circle_outline,
               color: good
             )
           : (
-              text: placementHint ?? '这里放不下$name',
+              text: placementHint ?? tr('这里放不下$name', '$name мұнда сыймайды'),
               icon: Icons.block,
               color: bad
             );
@@ -3225,12 +2794,13 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     if (draggingNewOpening != null) {
       return openingDrop != null
           ? (
-              text: '已贴合墙面，松手放下${openingNames[draggingNewOpening]}',
+              text: tr('已贴合墙面，松手放下${openingNames[draggingNewOpening]}',
+                  'Қабырғаға орнықты, ${openingNames[draggingNewOpening]} қою үшін жіберіңіз'),
               icon: Icons.check_circle_outline,
               color: good
             )
           : (
-              text: placementHint ?? '拖到墙上，门窗会自动贴合',
+              text: placementHint ?? tr('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады'),
               icon: Icons.touch_app_outlined,
               color: warn
             );
@@ -3240,7 +2810,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         return (text: spatialError!, icon: Icons.block, color: bad);
       if (editCommand == 'MoveDrawnWall')
         return (
-          text: '${wallDraftLabel!} · 相连的墙会跟着伸缩',
+          text: tr('${wallDraftLabel!} · 相连的墙会跟着伸缩', '${wallDraftLabel!} · жалғас қабырғалар бірге созылады'),
           icon: Icons.open_with,
           color: good
         );
@@ -3248,12 +2818,12 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
         return (text: wallDraftLabel!, icon: Icons.open_with, color: good);
       return drawConnected
           ? (
-              text: '墙长 ${wallDraftLabel!} · 已连到墙',
+              text: tr('墙长 ${wallDraftLabel!} · 已连到墙', 'Қабырға ${wallDraftLabel!} · қабырғаға жалғанды'),
               icon: Icons.link,
               color: good
             )
           : (
-              text: '墙长 ${wallDraftLabel!} · 这一端没连墙',
+              text: tr('墙长 ${wallDraftLabel!} · 这一端没连墙', 'Қабырға ${wallDraftLabel!} · бұл ұшы жалғанбаған'),
               icon: Icons.link_off,
               color: warn
             );
@@ -3278,7 +2848,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                 Icon(status.icon, size: 20, color: status.color),
                 const SizedBox(width: 8),
                 Flexible(
-                    child: Text(status.text,
+                    child: Text(coreMessage(status.text),
                         style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -3329,7 +2899,7 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
     if (y + height > bottom) {
       // No room above or below (a long wall): beside it if there is room,
       // otherwise just above the pressed point.
-      final right = canvasSize.width - (compactHeader ? 80 : 68);
+      final right = canvasSize.width - 8;
       y = (anchor.dy - height / 2)
           .clamp(top, math.max(top, bottom - height))
           .toDouble();
@@ -3393,443 +2963,63 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
               Row(children: [
                 Expanded(
                     child: Text(
-                        '${inner ? '内墙' : '外墙'} ${meters(length)} 米 · 厚 ${meters(wall.thickness)} 米',
+                        tr('${inner ? '内墙' : '外墙'} ${meters(length)} 米 · 厚 ${meters(wall.thickness)} 米',
+                            '${inner ? 'Ішкі' : 'Сыртқы'} қабырға ${meters(length)} м · қалыңдығы ${meters(wall.thickness)} м'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600))),
                 IconButton(
-                    tooltip: '关闭',
+                    tooltip: tr('关闭', 'Жабу'),
                     visualDensity: VisualDensity.compact,
                     onPressed: () => setState(closeWallMenu),
                     icon: const Icon(Icons.close, size: 18))
               ]),
               Row(children: [
-                button('add', Icons.add_circle_outline, '接墙', '从这里接墙',
+                button('add', Icons.add_circle_outline, tr('接墙', 'Жалғау'),
+                    '从这里接墙'.trKey('Осы жерден жалғау'),
                     enabled: !opening),
                 if (inner) ...[
-                  button('length', Icons.straighten, '长度', '调整长度'),
-                  button('move', Icons.open_with, '位置', '移动墙体'),
-                  button('thickness', Icons.line_weight, '墙厚', '修改墙厚'),
-                  button('delete', Icons.delete_outline, '删除', '删除墙体',
+                  button('length', Icons.straighten, tr('长度', 'Ұзындық'),
+                      '调整长度'.trKey('Ұзындығын өзгерту')),
+                  button('move', Icons.open_with, tr('位置', 'Орны'),
+                      '移动墙体'.trKey('Қабырғаны жылжыту')),
+                  button('thickness', Icons.line_weight, tr('墙厚', 'Қалыңдық'),
+                      '修改墙厚'.trKey('Қалыңдығын өзгерту')),
+                  button('delete', Icons.delete_outline, tr('删除', 'Жою'),
+                      '删除墙体'.trKey('Қабырғаны жою'),
                       danger: true),
                 ] else ...[
-                  button('footprint', Icons.aspect_ratio, '房屋尺寸', '调整房屋长宽'),
-                  button('outerThickness', Icons.line_weight, '墙厚', '外墙厚度'),
+                  button('footprint', Icons.aspect_ratio, tr('房屋尺寸', 'Үй өлшемі'),
+                      '调整房屋长宽'.trKey('Үй өлшемін өзгерту')),
+                  button('outerThickness', Icons.line_weight, tr('墙厚', 'Қалыңдық'),
+                      '外墙厚度'.trKey('Сыртқы қабырға қалыңдығы')),
                 ]
               ]),
               if (opening)
-                const Padding(
+                Padding(
                     padding: EdgeInsets.only(bottom: 4),
                     child:
-                        Text('这里有门窗，换个位置才能接墙', style: TextStyle(fontSize: 12))),
+                        Text(tr('这里有门窗，换个位置才能接墙', 'Мұнда есік-терезе бар, жалғау үшін басқа жерді таңдаңыз'), style: TextStyle(fontSize: 12))),
             ]))));
   }
 
-  /// Wide screens fit the whole header on one row, leaving the plan more
-  /// height (landscape phones especially).
-  bool get compactHeader => MediaQuery.sizeOf(context).width >= 600;
-
-  /// Where floating status and menus may start, just below the header.
-  double get overlayTop => compactHeader ? 76 : 124;
-
-  Widget floatingHeader() => floatingSurface(Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      child: compactHeader
-          ? Row(children: [
-              BackButton(),
-              Expanded(
-                  child: Text(history.present.meta.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 15))),
-              const SizedBox(width: 12),
-              DropdownButton<int>(
-                  value: floorIndex,
-                  underline: const SizedBox.shrink(),
-                  items: [
-                    for (var i = 0; i < history.present.floors.length; i++)
-                      DropdownMenuItem(
-                          value: i,
-                          child: Text(history.present.floors[i].name,
-                              style: const TextStyle(fontSize: 13)))
-                  ],
-                  onChanged: (value) => setState(() {
-                        cancelDrag();
-                        clearWallSelection();
-                        floorIndex = value!;
-                        tool = 'browse';
-                        browse = true;
-                        selectedWall = null;
-                        drawingOrigin = null;
-                        drawingEnd = null;
-                        derive();
-                      })),
-              IconButton(
-                  tooltip: '楼层操作',
-                  onPressed: floorOptions,
-                  icon: const Icon(Icons.layers_outlined, size: 20)),
-              TextButton(
-                  onPressed: footprintOptions,
-                  child: Tooltip(
-                      message: '房屋长宽',
-                      child: Text(
-                          '${(base.axes.v.last.pos / 1000).toStringAsFixed(1)} × ${(base.axes.h.last.pos / 1000).toStringAsFixed(1)} 米',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12)))),
-              IconButton(
-                  tooltip: '立即保存',
-                  onPressed: save,
-                  icon: const Icon(Icons.save_outlined, size: 20)),
-              IconButton(
-                  tooltip: '撤销',
-                  icon: const Icon(Icons.undo, size: 21),
-                  onPressed: history.canUndo ? undo : null),
-              IconButton(
-                  tooltip: '重做',
-                  icon: const Icon(Icons.redo, size: 21),
-                  onPressed: history.canRedo ? redo : null),
-              IconButton(
-                  tooltip: '平面 / 3D',
-                  icon: Icon(view3d ? Icons.grid_view : Icons.view_in_ar,
-                      size: 21),
-                  onPressed: () => setState(() {
-                        cancelDrag();
-                        clearWallSelection();
-                        view3d = !view3d;
-                        toolCategory = view3d ? 2 : 0;
-                        tool = 'browse';
-                        browse = true;
-                        drawingEnd = null;
-                        selectedWall = null;
-                      })),
-              PopupMenuButton<String>(
-                  tooltip: '更多操作',
-                  onSelected: (value) {
-                    if (value == 'checks') checks();
-                    if (value == 'settings') settings();
-                    if (value == 'export') export();
-                  },
-                  itemBuilder: (context) => const [
-                        PopupMenuItem(value: 'checks', child: Text('设计检查')),
-                        PopupMenuItem(value: 'settings', child: Text('设置')),
-                        PopupMenuItem(value: 'export', child: Text('导出 .house'))
-                      ])
-            ])
-          : Column(mainAxisSize: MainAxisSize.min, children: [
-              Row(children: [
-                BackButton(),
-                Expanded(
-                    child: Text(history.present.meta.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 15))),
-                IconButton(
-                    tooltip: '撤销',
-                    icon: const Icon(Icons.undo, size: 21),
-                    onPressed: history.canUndo ? undo : null),
-                IconButton(
-                    tooltip: '重做',
-                    icon: const Icon(Icons.redo, size: 21),
-                    onPressed: history.canRedo ? redo : null),
-                IconButton(
-                    tooltip: '平面 / 3D',
-                    icon: Icon(view3d ? Icons.grid_view : Icons.view_in_ar,
-                        size: 21),
-                    onPressed: () => setState(() {
-                          cancelDrag();
-                          clearWallSelection();
-                          view3d = !view3d;
-                          toolCategory = view3d ? 2 : 0;
-                          tool = 'browse';
-                          browse = true;
-                          drawingEnd = null;
-                          selectedWall = null;
-                        })),
-                PopupMenuButton<String>(
-                    tooltip: '更多操作',
-                    onSelected: (value) {
-                      if (value == 'checks') checks();
-                      if (value == 'settings') settings();
-                      if (value == 'export') export();
-                    },
-                    itemBuilder: (context) => const [
-                          PopupMenuItem(value: 'checks', child: Text('设计检查')),
-                          PopupMenuItem(value: 'settings', child: Text('设置')),
-                          PopupMenuItem(
-                              value: 'export', child: Text('导出 .house'))
-                        ])
-              ]),
-              Row(children: [
-                const SizedBox(width: 12),
-                DropdownButton<int>(
-                    value: floorIndex,
-                    underline: const SizedBox.shrink(),
-                    items: [
-                      for (var i = 0; i < history.present.floors.length; i++)
-                        DropdownMenuItem(
-                            value: i,
-                            child: Text(history.present.floors[i].name,
-                                style: const TextStyle(fontSize: 13)))
-                    ],
-                    onChanged: (value) => setState(() {
-                          cancelDrag();
-                          clearWallSelection();
-                          floorIndex = value!;
-                          tool = 'browse';
-                          browse = true;
-                          selectedWall = null;
-                          drawingOrigin = null;
-                          drawingEnd = null;
-                          derive();
-                        })),
-                IconButton(
-                    tooltip: '楼层操作',
-                    onPressed: floorOptions,
-                    icon: const Icon(Icons.layers_outlined, size: 20)),
-                Expanded(
-                    child: TextButton(
-                        onPressed: footprintOptions,
-                        child: Tooltip(
-                            message: '房屋长宽',
-                            child: Text(
-                                '${(base.axes.v.last.pos / 1000).toStringAsFixed(1)} × ${(base.axes.h.last.pos / 1000).toStringAsFixed(1)} 米',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12))))),
-                IconButton(
-                    tooltip: '立即保存',
-                    onPressed: save,
-                    icon: const Icon(Icons.save_outlined, size: 20)),
-              ])
-            ])));
-
-  List<Widget> categoryTools() {
-    if (toolCategory == 0)
-      return [
-        basicTool(
-            Icons.add_outlined, '墙体', tool == 'drawWall', startWallDrawing),
-        basicTool(Icons.vertical_split_outlined, '拉线分房', tool == 'split', () {
-          view3d = false;
-          browse = false;
-          tool = 'split';
-        }),
-        if (tool == 'drawWall')
-          basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
-            drawingOrigin = null;
-            placingWallStart = true;
-            placementHint = '在空白处拖出独立墙，或点一下选起点';
-          })
-        else
-          basicTool(Icons.crop_square, '拖动划房', tool == 'box', () {
-            view3d = false;
-            browse = false;
-            tool = 'box';
-            brush = RoomType.custom;
-          }),
-        openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门'),
-        openingTool(OpeningKind.window, Icons.window_outlined, '拖入窗'),
-        basicTool(Icons.more_horiz, '更多工具', false, moreTools)
-      ];
-    if (toolCategory == 1)
-      return [
-        basicTool(Icons.pan_tool_outlined, '浏览', browse, () {
-          tool = 'browse';
-          browse = true;
-        }),
-        basicTool(Icons.view_week_outlined, '墙体调整',
-            tool == 'selectWall' || tool == 'editWall', () {
-          view3d = false;
-          tool = 'selectWall';
-          browse = false;
-        }),
-        basicTool(Icons.open_in_full, '房屋尺寸', tool == 'resize', () {
-          // Straight to the handles; numbers stay one tap away in the card.
-          view3d = false;
-          browse = false;
-          tool = 'resize';
-        }),
-        basicTool(Icons.more_horiz, '更多工具', false, moreTools)
-      ];
-    return [
-      basicTool(Icons.center_focus_strong, '恢复画布视角', false, () {
-        if (view3d) viewResetToken++;
-        canvasTransform.value = Matrix4.identity();
-      }),
-      basicTool(Icons.layers_outlined, '楼层操作', false, floorOptions),
-      basicTool(Icons.fact_check_outlined, '设计检查', false, checks)
-    ];
-  }
-
-  Widget categoryRail() => floatingSurface(Padding(
-      padding: const EdgeInsets.all(4),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        for (var i = 0; i < 3; i++)
-          Semantics(
-              selected: toolCategory == i,
-              button: true,
-              label: ['建造分类', '调整分类', '查看分类'][i],
-              child: Tooltip(
-                  message: ['建造分类', '调整分类', '查看分类'][i],
-                  child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () => chooseCategory(i),
-                      child: AnimatedContainer(
-                          duration: motionDuration,
-                          width: 48,
-                          padding: EdgeInsets.symmetric(
-                              vertical: MediaQuery.sizeOf(context).height < 450
-                                  ? 6
-                                  : 10),
-                          decoration: BoxDecoration(
-                              color: toolCategory == i
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .secondaryContainer
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(16)),
-                          child: Column(children: [
-                            Icon(
-                                [
-                                  Icons.add_box_outlined,
-                                  Icons.tune,
-                                  Icons.visibility_outlined
-                                ][i],
-                                size: 22),
-                            const SizedBox(height: 3),
-                            Text(['建造', '调整', '查看'][i],
-                                style: const TextStyle(fontSize: 11))
-                          ])))))
-      ])));
+  /// Where floating status and menus may start inside the plan sheet.
+  double get overlayTop => 52;
 
   String get interactionHint =>
-      placementHint ??
+      (placementHint == null ? null : coreMessage(placementHint!)) ??
       (tool == 'drawWall'
-          ? '按住 ＋ 拖出新墙 · 点墙修改 · 拖空白处移动画布'
+          ? tr('按住 ＋ 拖出新墙 · 点墙修改 · 拖空白处移动画布', '＋ белгісін ұстап қабырға тартыңыз · қабырғаны басып өзгертіңіз · бос жерді сүйреп жылжытыңыз')
           : tool == 'selectWall'
-              ? '点墙修改 · 拖 ＋ 接墙 · 拖空白处移动画布'
+              ? tr('点墙修改 · 拖 ＋ 接墙 · 拖空白处移动画布', 'Қабырғаны басып өзгертіңіз · ＋ белгісінен жалғаңыз · бос жерді сүйреп жылжытыңыз')
               : tool == 'editWall'
-                  ? '拖两端改长度 · 拖墙身移动'
+                  ? tr('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз')
                   : spatialTool
-                      ? (tool == 'split' ? '拉一条横线或竖线，松手分房' : '从一角拖到另一角，松手创建房间')
+                      ? (tool == 'split' ? tr('拉一条横线或竖线，松手分房', 'Көлденең не тік сызық тартып, жіберсеңіз бөлінеді') : tr('从一角拖到另一角，松手创建房间', 'Бір бұрыштан екіншісіне тартып жіберсеңіз, бөлме жасалады'))
                       : tool == 'resize'
-                          ? '拖右边或上边的圆形手柄改长宽 · 所有楼层一起改'
-                          : '拖动画布 · 点选对象调整 · 双指缩放');
-
-  Widget floatingTools() {
-    final tools = Wrap(
-        key: ValueKey('$toolCategory:$tool'),
-        alignment: WrapAlignment.center,
-        spacing: 2,
-        runSpacing: 4,
-        children: categoryTools());
-    final reduced = MediaQuery.disableAnimationsOf(context);
-    final content = Padding(
-        padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          reduced
-              ? tools
-              : AnimatedSwitcher(
-                  duration: motionDuration,
-                  layoutBuilder: (current, previous) => Stack(
-                          alignment: Alignment.topCenter,
-                          clipBehavior: Clip.none,
-                          children: [
-                            for (final child in previous)
-                              Positioned(
-                                  top: 0,
-                                  left: 0,
-                                  right: 0,
-                                  child: IgnorePointer(
-                                      child: ExcludeSemantics(child: child))),
-                            if (current != null) current
-                          ]),
-                  child: tools),
-          const SizedBox(height: 4),
-          // First-use instruction lives in the card on its own row, never
-          // over the plan, so it cannot hide a plus or get cut short.
-          if (coachText != null &&
-              placementHint == null &&
-              !view3d &&
-              !compactHeader)
-            Padding(
-                padding: const EdgeInsets.fromLTRB(4, 2, 4, 2),
-                child: Row(children: [
-                  Icon(Icons.touch_app_outlined,
-                      size: 20, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(width: 6),
-                  Expanded(
-                      child: Text(coachText!,
-                          style: TextStyle(
-                              fontSize: 14,
-                              height: 1.3,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.primary)))
-                ])),
-          Row(children: [
-            Expanded(
-                child: !view3d &&
-                        coachText != null &&
-                        placementHint == null &&
-                        compactHeader
-                    // Wide screens keep the guide on the status row.
-                    ? Row(children: [
-                        Icon(Icons.touch_app_outlined,
-                            size: 20,
-                            color: Theme.of(context).colorScheme.primary),
-                        const SizedBox(width: 6),
-                        Flexible(
-                            child: Text(coachText!,
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color:
-                                        Theme.of(context).colorScheme.primary)))
-                      ])
-                    : Text(
-                        view3d
-                            ? '单指旋转 · 双指缩放和平移'
-                            : coachText != null && placementHint == null
-                                ? ''
-                                : interactionHint,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11))),
-            if (tool == 'resize')
-              TextButton.icon(
-                  onPressed: footprintOptions,
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('输入长宽')),
-            if (tool == 'drawWall')
-              IconButton(
-                  tooltip: '输入墙长',
-                  onPressed: drawingOrigin == null ? null : addWallByLength,
-                  icon: const Icon(Icons.straighten, size: 18)),
-            if (tool == 'drawWall')
-              TextButton(
-                  onPressed: () => setState(() {
-                        cancelDrag();
-                        tool = 'browse';
-                        browse = true;
-                        drawingOrigin = null;
-                        drawingEnd = null;
-                        placementHint = null;
-                      }),
-                  child: const Text('结束')),
-            saveIndicator()
-          ])
-        ]));
-    return floatingSurface(reduced
-        ? content
-        : AnimatedSize(
-            duration: motionDuration,
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.bottomCenter,
-            child: content));
-  }
+                          ? tr('拖右边或上边的圆形手柄改长宽 · 所有楼层一起改', 'Оң не жоғарғы дөңгелек тұтқаны сүйреп өлшемін өзгертіңіз · барлық қабат бірге өзгереді')
+                          : tr('拖动画布 · 点选对象调整 · 双指缩放', 'Сызбаны сүйреп жылжытыңыз · нысанды басып өзгертіңіз · екі саусақпен үлкейтіңіз'));
 
   MouseCursor canvasCursor = MouseCursor.defer;
 
@@ -3893,8 +3083,19 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
               size: 14,
               color: color),
           const SizedBox(width: 2),
-          Text(saving ? '保存中' : status,
-              style: TextStyle(fontSize: 11, color: color)),
+          Flexible(
+              child: Text(
+                  saving
+                      ? tr('保存中', 'Сақталуда')
+                      : switch (status) {
+                          '已保存' => tr('已保存', 'Сақталды'),
+                          '未保存' => tr('未保存', 'Сақталмаған'),
+                          '保存失败' => tr('保存失败', 'Сақталмады'),
+                          _ => status
+                        },
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11, color: color))),
         ])));
   }
 
@@ -3922,21 +3123,8 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 600;
-    // The plan fills the safe area; know its size before the canvas lays
-    // out so overlays placed in this build (the wall menu) are current
-    // right after a window resize or rotation.
-    final screen = MediaQuery.sizeOf(context),
-        padding = MediaQuery.paddingOf(context);
-    canvasSize = Size(
-        screen.width - padding.horizontal, screen.height - padding.vertical);
-    final bottomReserve = MediaQuery.textScalerOf(context).scale(12) > 16
-        ? (wide ? 150.0 : 210.0)
-        : (wide
-            ? 112.0
-            : MediaQuery.sizeOf(context).width < 350
-                ? 180.0
-                : 138.0);
+    AppScope.watch(context);
+    final t = Tokens.of(context);
     return PopScope(
         canPop: !dirty,
         onPopInvokedWithResult: (didPop, result) async {
@@ -3956,32 +3144,47 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
               const SingleActivator(LogicalKeyboardKey.keyY, control: true):
                   redo,
               const SingleActivator(LogicalKeyboardKey.escape): escape,
-              const SingleActivator(LogicalKeyboardKey.delete): () {
-                if (editStart != null) deleteSelectedWall();
-              },
-              const SingleActivator(LogicalKeyboardKey.backspace): () {
-                if (editStart != null) deleteSelectedWall();
-              },
+              const SingleActivator(LogicalKeyboardKey.delete): deleteSelection,
+              const SingleActivator(LogicalKeyboardKey.backspace):
+                  deleteSelection,
             },
             child: Focus(
                 autofocus: true,
                 child: Scaffold(
+                    backgroundColor: t.bg,
                     body: SafeArea(
-                        child: Stack(children: [
-                  SizedBox.expand(
-                      child: view3d
-                          ? Padding(
-                              padding: canvasInsets,
-                              child: HouseViewer(
-                                  house: derived,
-                                  onPick: pick3d,
-                                  showHint: false,
-                                  resetToken: viewResetToken,
-                                  floorNames: [
-                                    for (final f in history.present.floors)
-                                      f.name
-                                  ]))
-                          : LayoutBuilder(builder: (context, constraints) {
+                        child: LayoutBuilder(builder: (context, constraints) {
+                      // Short screens (landscape phones) merge the header
+                      // into the tab bar and put tools beside the plan.
+                      compact = constraints.maxHeight < 640 &&
+                          constraints.maxWidth > constraints.maxHeight;
+                      final wide = !compact && constraints.maxWidth >= 1000;
+                      return Center(
+                          child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 1440),
+                              child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    if (compact)
+                                      compactBar()
+                                    else ...[
+                                      editorHeader(wide),
+                                      Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12),
+                                          child: TabStrip(
+                                              tabs: editorTabs,
+                                              current: tab,
+                                              onSelect: showTab)),
+                                    ],
+                                    Expanded(child: tabBody(wide)),
+                                  ])));
+                    }))))));
+  }
+
+  /// The plan drawing with all editing gestures; sized by its sheet.
+  Widget planCanvas() => LayoutBuilder(builder: (context, constraints) {
                               final size = Size(
                                   constraints.maxWidth, constraints.maxHeight);
                               canvasSize = size;
@@ -3997,9 +3200,12 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                               return InteractiveViewer(
                                   transformationController: canvasTransform,
                                   boundaryMargin: const EdgeInsets.all(200),
-                                  panEnabled:
-                                      (browse && draggingOpening == null) ||
-                                          pointers.length > 1,
+                                  panEnabled: ((browse ||
+                                              tool == 'measure' ||
+                                              tool == 'placeFurniture') &&
+                                          draggingOpening == null &&
+                                          furnitureGrip == null) ||
+                                      pointers.length > 1,
                                   minScale: 0.4,
                                   maxScale: 5,
                                   child: MouseRegion(
@@ -4025,7 +3231,11 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                             gestureScreen = e.position;
                                             wallGesture = null;
                                             if (pointers.length == 1) {
-                                              if (tool == 'selectWall') {
+                                              if (browse &&
+                                                  beginFurnitureGesture(
+                                                      e.localPosition, size)) {
+                                                setState(() {});
+                                              } else if (tool == 'selectWall') {
                                                 if (attachmentAt(
                                                         e.localPosition,
                                                         size) !=
@@ -4094,7 +3304,9 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                                 tool != 'resize' &&
                                                 tool != 'wall' &&
                                                 tool != 'opening' &&
-                                                tool != 'grid')
+                                                tool != 'grid' &&
+                                                tool != 'measure' &&
+                                                tool != 'placeFurniture')
                                               setState(() => record(
                                                   e.localPosition, size));
                                           },
@@ -4105,6 +3317,11 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                                     8) wallHoldTimer?.cancel();
                                             final single = !cancelledStroke &&
                                                 pointers.length == 1;
+                                            if (single && furnitureGrip != null) {
+                                              setState(() => previewFurniture(
+                                                  e.localPosition, size));
+                                              return;
+                                            }
                                             if (single &&
                                                 (wallGesture == 'tap' ||
                                                     wallGesture == 'pan')) {
@@ -4151,6 +3368,8 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                                 tool != 'wall' &&
                                                 tool != 'opening' &&
                                                 tool != 'grid' &&
+                                                tool != 'measure' &&
+                                                tool != 'placeFurniture' &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1)
                                               setState(() => record(
@@ -4178,13 +3397,47 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                               downPoint = null;
                                               return;
                                             }
+                                            if (single && furnitureGrip != null) {
+                                              final tap = furnitureDraft == null &&
+                                                  furnitureGrip != 'rotate';
+                                              finishFurniture();
+                                              pointers.remove(e.pointer);
+                                              final at = downPoint;
+                                              downPoint = null;
+                                              // A tap on the selected piece
+                                              // may mean the door beside it.
+                                              if (tap && at != null)
+                                                tapObject(e.localPosition, size);
+                                              return;
+                                            }
+                                            final tapped = single &&
+                                                downPoint != null &&
+                                                (downPoint! - e.localPosition)
+                                                            .distance *
+                                                        canvasZoom <
+                                                    8;
+                                            if (tapped &&
+                                                tool == 'placeFurniture') {
+                                              placeFurnitureAt(
+                                                  e.localPosition, size);
+                                              pointers.remove(e.pointer);
+                                              downPoint = null;
+                                              return;
+                                            }
+                                            if (tapped && tool == 'measure') {
+                                              addMeasurePoint(
+                                                  e.localPosition, size);
+                                              pointers.remove(e.pointer);
+                                              downPoint = null;
+                                              return;
+                                            }
                                             if (single &&
                                                 gesture == 'opening' &&
                                                 !dragAttempted) {
                                               final opening = draggingOpening;
                                               setState(cancelDrag);
                                               if (opening != null)
-                                                openingOptions(opening.opening);
+                                                selectOpening(opening.opening);
                                               pointers.remove(e.pointer);
                                               downPoint = null;
                                               return;
@@ -4244,8 +3497,6 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                                     e.localPosition, size);
                                               } else {
                                                 finishWallStroke();
-                                                if (wallFromAdjust)
-                                                  toolCategory = 0;
                                               }
                                               pointers.remove(e.pointer);
                                               downPoint = null;
@@ -4402,9 +3653,9 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                                 else {
                                                   setState(() {});
                                                   notify(message == null ||
-                                                          message
-                                                              .startsWith('拖到')
-                                                      ? '没有放上墙：请把${openingNames[details.data]}拖到墙上再松手'
+                                                          message == dragOntoWallHint
+                                                      ? tr('没有放上墙：请把${openingNames[details.data]}拖到墙上再松手',
+                                                          '${openingNames[details.data]} қабырғаға қойылмады: оны қабырғаға апарып жіберіңіз')
                                                       : message);
                                                 }
                                               },
@@ -4417,14 +3668,9 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                                           {
                                                             for (final r
                                                                 in displayRooms)
-                                                              r.id: r.name
+                                                              r.id: displayRoomName(r)
                                                           },
-                                                          {
-                                                            for (final r
-                                                                in displayRooms)
-                                                              r.id: roomColors[
-                                                                  r.type]!
-                                                          },
+                                                          const {},
                                                           viewportInsets:
                                                               canvasInsets,
                                                           openings:
@@ -4468,32 +3714,19 @@ class _HouseEditorState extends State<HouseEditor> with WidgetsBindingObserver {
                                                               : null,
                                                           resizeHandles: tool == 'resize',
                                                           wallHandle: tool == 'wall' && selectedWall != null ? (selectedWall!.axis.dir == AxisDir.V ? PlanRect((dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble()) : PlanRect(selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()))) : null,
+                                                          tokens: Tokens.of(context),
+                                                          bearingMin: history.present.extras.foundation.bearingMin,
+                                                          furniture: [for (final f in history.present.extras.furniture) if (f.floorId == floor.id && f.id != furnitureDraft?.id) f],
+                                                          furnitureDraft: furnitureDraft,
+                                                          selectedFurniture: selectedFurnitureId,
+                                                          selectedRoom: selectedRoomId,
+                                                          showFurniture: showFurniture,
+                                                          showDimensions: showDimensions,
+                                                          foundation: showFoundation && floorIndex == 0 ? foundationTakeoff(history.present, derived) : null,
+                                                          sleeves: history.present.extras.sleeves,
+                                                          highlights: highlights,
+                                                          pulse: pulse,
+                                                          measure: measurePoints,
                                                           preview: List.of(stroke)))))));
-                            })),
-                  if (!view3d)
-                    Positioned(
-                        top: overlayTop,
-                        left: 12,
-                        right: wide ? 80 : 68,
-                        child: statusChip()),
-                  Positioned(
-                      top: 12,
-                      left: 12,
-                      right: wide ? 80 : 12,
-                      child: floatingHeader()),
-                  Positioned(
-                      right: 12,
-                      top: wide ? 12 : 112,
-                      bottom: wide ? 12 : bottomReserve,
-                      child: Align(
-                          alignment: Alignment.centerRight,
-                          child: categoryRail())),
-                  Positioned(
-                      left: 12,
-                      right: wide ? 80 : 12,
-                      bottom: 12,
-                      child: floatingTools()),
-                  if (wallMenuCard() case final menu?) menu,
-                ]))))));
-  }
+                            });
 }

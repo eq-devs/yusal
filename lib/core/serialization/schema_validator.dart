@@ -30,7 +30,8 @@ List<LoadError> validateSchemaV1(Object? value) {
       'footprint': 'Footprint',
       'axes': 'Axes',
       'floors': '[]Floor',
-      'roof': 'Roof'
+      'roof': 'Roof',
+      'extras?': 'json'
     },
     'Meta': {
       'name': 'string',
@@ -193,6 +194,8 @@ List<LoadError> validateSchemaV1(Object? value) {
         node(v[i], type.substring(2), '$path/$i');
       return;
     }
+    // Checked by its own typed decoder.
+    if (type == 'json') return;
     if (type == 'bool') {
       if (v is! bool) error('WRONG_TYPE', path, '应为布尔值');
       return;

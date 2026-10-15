@@ -1,3 +1,6 @@
+import 'house_extras.dart';
+export 'house_extras.dart';
+
 enum AxisDir { V, H }
 
 enum RoomType { living, bedroom, kitchen, bathroom, dining, custom }
@@ -538,7 +541,9 @@ class HouseDocument {
     required this.axes,
     required List<Floor> floors,
     required this.roof,
-  }) : floors = List.unmodifiable(floors);
+    HouseExtras? extras,
+  })  : floors = List.unmodifiable(floors),
+        extras = extras ?? HouseExtras.empty;
   final int schemaVersion;
   final Meta meta;
   final String? mainEntranceOpeningId;
@@ -547,6 +552,9 @@ class HouseDocument {
   final AxisSystem axes;
   final List<Floor> floors;
   final Roof roof;
+
+  /// Furniture, notes and construction specs (schema version 3).
+  final HouseExtras extras;
   @override
   bool operator ==(Object other) =>
       other is HouseDocument &&
@@ -557,7 +565,8 @@ class HouseDocument {
       footprint == other.footprint &&
       axes == other.axes &&
       _listEquals(floors, other.floors) &&
-      roof == other.roof;
+      roof == other.roof &&
+      extras == other.extras;
   @override
   int get hashCode => Object.hash(
         schemaVersion,
@@ -568,6 +577,7 @@ class HouseDocument {
         axes,
         Object.hashAll(floors),
         roof,
+        extras,
       );
 }
 
@@ -579,13 +589,16 @@ class UndoableDesignState {
     required List<Floor> floors,
     required this.roof,
     this.mainEntranceOpeningId,
-  }) : floors = List.unmodifiable(floors);
+    HouseExtras? extras,
+  })  : floors = List.unmodifiable(floors),
+        extras = extras ?? HouseExtras.empty;
   final Defaults defaults;
   final BuildingFootprint footprint;
   final AxisSystem axes;
   final List<Floor> floors;
   final Roof roof;
   final String? mainEntranceOpeningId;
+  final HouseExtras extras;
   @override
   bool operator ==(Object other) =>
       other is UndoableDesignState &&
@@ -594,12 +607,22 @@ class UndoableDesignState {
       axes == other.axes &&
       roof == other.roof &&
       mainEntranceOpeningId == other.mainEntranceOpeningId &&
+      extras == other.extras &&
       floors.length == other.floors.length &&
       [for (var i = 0; i < floors.length; i++) floors[i] == other.floors[i]]
           .every((equal) => equal);
   @override
   int get hashCode => Object.hash(defaults, footprint, axes, roof,
-      mainEntranceOpeningId, Object.hashAll(floors));
+      mainEntranceOpeningId, extras, Object.hashAll(floors));
+
+  UndoableDesignState withExtras(HouseExtras value) => UndoableDesignState(
+      defaults: defaults,
+      footprint: footprint,
+      axes: axes,
+      floors: floors,
+      roof: roof,
+      mainEntranceOpeningId: mainEntranceOpeningId,
+      extras: value);
 }
 
 UndoableDesignState extractDesignState(HouseDocument doc) =>
@@ -610,18 +633,42 @@ UndoableDesignState extractDesignState(HouseDocument doc) =>
       floors: doc.floors,
       roof: doc.roof,
       mainEntranceOpeningId: doc.mainEntranceOpeningId,
+      extras: doc.extras,
     );
-HouseDocument composeDocument(Meta meta, UndoableDesignState state) =>
-    HouseDocument(
-      schemaVersion: state.floors.any((f) =>
-              f.explicitWalls || f.wallOverrides.any((w) => w is SolidWall))
-          ? 2
-          : 1,
-      meta: meta,
-      mainEntranceOpeningId: state.mainEntranceOpeningId,
-      defaults: state.defaults,
-      footprint: state.footprint,
-      axes: state.axes,
-      floors: state.floors,
-      roof: state.roof,
-    );
+
+/// Extras with references to removed floors, rooms or openings dropped.
+HouseExtras prunedExtras(HouseExtras extras, List<Floor> floors) =>
+    extras.pruned({
+      for (final f in floors) f.id
+    }, {
+      for (final f in floors)
+        for (final r in f.rooms) r.id
+    }, {
+      for (final f in floors)
+        for (final o in f.openings) o.id
+    });
+
+HouseDocument composeDocument(Meta meta, UndoableDesignState state) {
+  final extras = prunedExtras(state.extras, state.floors);
+  return HouseDocument(
+    schemaVersion: !extras.isEmpty
+        ? 3
+        : state.floors.any((f) =>
+                f.explicitWalls || f.wallOverrides.any((w) => w is SolidWall))
+            ? 2
+            : 1,
+    meta: meta,
+    mainEntranceOpeningId: state.mainEntranceOpeningId,
+    defaults: state.defaults,
+    footprint: state.footprint,
+    axes: state.axes,
+    floors: state.floors,
+    roof: state.roof,
+    extras: extras,
+  );
+}
+
+/// [doc] carrying [extras] (pruned), for results of geometry operations
+/// that build documents without knowing about extras.
+HouseDocument withExtras(HouseDocument doc, HouseExtras extras) =>
+    composeDocument(doc.meta, extractDesignState(doc).withExtras(extras));

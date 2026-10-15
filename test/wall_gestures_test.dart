@@ -87,7 +87,7 @@ void main() {
       (t) async {
     final session = await mount(t, initial());
     await wallTool(t);
-    expect(find.textContaining('按住绿色'), findsOneWidget,
+    expect(find.textContaining('按住橙色'), findsOneWidget,
         reason: 'first-wall guide in an empty house');
     final g = await t.startGesture(point(t, 6000, 10000));
     await g.moveTo(point(t, 6000, 5000));
@@ -103,7 +103,7 @@ void main() {
     expect(doc.floors.first.rooms.length, 2);
     expect(painter(t).wallSeed, isNull,
         reason: 'a T on the outer wall cannot be continued');
-    expect(find.textContaining('按住绿色'), findsNothing);
+    expect(find.textContaining('按住橙色'), findsNothing);
   });
 
   testWidgets('dragging empty space in the wall tool pans and builds nothing',

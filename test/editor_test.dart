@@ -29,11 +29,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.text('我的房屋'), findsOneWidget);
-      await tester.tap(find.byTooltip('平面 / 3D'));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      await tester.tap(find.byTooltip('平面 / 3D'));
-      await tester.pumpAndSettle();
+      for (final tab in ['ext', 'walk', 'det', 'qty', 'iss', 'plan']) {
+        await tester.ensureVisible(find.byKey(ValueKey('tab-$tab')));
+        await tester.tap(find.byKey(ValueKey('tab-$tab')));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: tab);
+      }
       await tester.tap(find.byTooltip('更多操作'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('设计检查'));

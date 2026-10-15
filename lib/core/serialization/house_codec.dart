@@ -4,7 +4,7 @@ import 'schema_validator.dart';
 import '../document/house_document.dart';
 import '../validation/document_validator.dart';
 
-const currentSchemaVersion = 2;
+const currentSchemaVersion = 3;
 const maxHouseBytes = 10485760;
 
 class LoadError {
@@ -547,13 +547,19 @@ class _Decoder {
       'axes',
       'floors',
       'roof',
+      'extras',
     ];
     if (value is! Map) {
       err('ROOT_NOT_OBJECT', '', '根节点应为对象');
       return _empty();
     }
     final m = value.cast<String, Object?>();
-    _shape(m, '', keys.where((key) => key != 'mainEntranceOpeningId').toList(),
+    _shape(
+        m,
+        '',
+        keys
+            .where((key) => key != 'mainEntranceOpeningId' && key != 'extras')
+            .toList(),
         allowed: keys);
     String? entrance;
     if (m.containsKey('mainEntranceOpeningId'))
@@ -572,6 +578,9 @@ class _Decoder {
       axes: axes(m['axes'], '/axes'),
       floors: [for (var i = 0; i < ds.length; i++) floor(ds[i], '/floors/$i')],
       roof: roof(m['roof'], '/roof'),
+      extras: m.containsKey('extras')
+          ? HouseExtras.fromJson(m['extras'], '/extras', JsonReader(err))
+          : null,
     );
   }
 
@@ -842,6 +851,7 @@ String encodeHouse(HouseDocument d) {
           'overhang': d.roof.overhang,
         },
     },
+    if (!d.extras.isEmpty) 'extras': d.extras.toJson(),
   };
   return '${const JsonEncoder.withIndent('  ').convert(root)}\n';
 }

@@ -15,6 +15,8 @@ Flutter house planning app for web, iOS and Android. Dimensions are integer mill
 - Net dimensions/areas, 2D plans, orbitable 3D previews and linked picking.
 - R01–R10 design checks with highlighted locations.
 - Local projects, atomic saves, autosave, recovery index, WebP thumbnails, damaged-file entries, import/export and native `.house` opening.
+- Drafting-table interface in Kazakh and Chinese with auto/day/night themes: pages for the 2D plan, 3D exterior, walk-through, construction details, door/window schedule and quantities, and the issue list.
+- Furniture (including Kazakh textiles: кілем, тұскиіз, көрпеше, сандық, дастарқан), room notes and drawing areas, foundation parameters and take-off, wall/roof/floor build-ups, pipe sleeves and the user's own issues, all saved in the file and undoable.
 
 ## Run
 
@@ -40,6 +42,12 @@ The unit/widget suite includes 10,000 seeded canonicalization cases, byte-for-by
 
 ## Structure
 
+- `lib/app/`: language and theme settings, colour tokens, shared page widgets, Kazakh text for core messages.
+- `lib/core/document/house_extras.dart`, `lib/core/commands/extras_commands.dart`: furniture, notes, construction specs and issues (file schema v3, only written when used).
+- `lib/core/analysis/`, `lib/core/checks/construction_checks.dart`: wall roles, foundation and masonry take-offs, construction remarks.
+- `lib/core/commands/kz_template.dart`: the 10 × 13 m village house as an editable template.
+- `lib/render3d/scene_model.dart`, `scene_view.dart`: software 3D with sun, night, cut, foundation and the walk-through.
+
 - `lib/core/`: pure Dart documents, codec, validation, axes, canonicalization, commands, history, geometry and checks.
 - `lib/features/`: project home and interactive editor.
 - `lib/render2d/`, `lib/render3d/`: render derived geometry.
@@ -52,6 +60,22 @@ This is a runnable implementation candidate. Full acceptance of every matrix in 
 
 See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conformance work.
 
+
+## v0.6 制图台界面
+
+界面按“制图台”网页重做，所有内容都可以修改：
+
+1. 顶部：设计名称和尺寸（点名称可改名）、Қазақша / 中文、◐ 自动 / ☀ 日间 / ☾ 夜间、楼层、撤销重做和保存。下面是页签：2D 平面、3D 外观、室内漫游、构造细节、门窗与工程量、问题清单。
+2. 2D 平面：承重墙（外墙和厚度不小于“承重墙判定”的内墙）画斜线，隔墙实心；门画开启弧线，窗画双线；四周有尺寸链。下方可开关家具、尺寸、地基图层和测距。点房间、门窗或家具，在旁边（手机上在平面下方）的卡片里修改尺寸、名称、类型、图纸标注面积和说明。
+3. 家具：工具栏“家具”选种类后点平面放置；选中后拖动移动，拖右下角圆点改大小，拖上方圆圈旋转 90°。
+4. 3D 外观：屋顶、家具、地基（含钢筋笼和垫层）、剖切高度、五个视角、日照时间和图纸朝向；夜间主题时窗户亮灯。点物体可回到 2D 编辑。
+5. 室内漫游：摇杆或 W A S D / 方向键行走，墙会挡住，门洞可以穿过；“去往”直接到各房间。
+6. 构造细节：条形基础剖面、参数和材料用量，外墙、屋顶、地坪构造层（可增删、改厚度和材料），各节说明可改写。
+7. 门窗与工程量：门窗表、房间面积对照（实算与图纸）、主要工程量，表格里的数值可直接点击修改。
+8. 问题清单：R01–R10 检查、构造检查（隔墙基础、埋深、雪荷载、采光、厨房与客厅连通、卧室门开向客厅等）和自己添加的问题；“在平面图中定位”会切到平面并闪烁标出位置。
+9. 首页提供“哈萨克乡村住宅 10×13”示例，打开后就是可编辑的完整设计。
+
+使用家具、说明、构造参数或自建问题后文件为 schema v3；未使用时仍按 v1 / v2 保存，旧版文件可直接打开。
 
 ## v0.4 使用流程
 

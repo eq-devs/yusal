@@ -4,7 +4,7 @@ import 'package:yusal/core/house_core.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/features/house_editor.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/render3d/house_viewer.dart';
+import 'package:yusal/render3d/scene_view.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
 
@@ -56,6 +56,18 @@ void main() {
     await t.pump();
     await g.up();
     await t.pumpAndSettle();
+  }
+
+  Future<void> tool(WidgetTester t, String name) async {
+    await t.ensureVisible(find.byTooltip(name));
+    await t.pumpAndSettle();
+    await t.tap(find.byTooltip(name));
+    await t.pumpAndSettle();
+  }
+
+  Future<void> showTab(WidgetTester t, String key) async {
+    await t.ensureVisible(find.byKey(ValueKey('tab-$key')));
+    await t.tap(find.byKey(ValueKey('tab-$key')));
   }
 
   Future<void> saved(WidgetTester t) async {
@@ -127,10 +139,7 @@ void main() {
       'adjust mode exposes attachments while tapping still selects a wall',
       (t) async {
     final session = await mount(t, initial());
-    await t.tap(find.byTooltip('调整分类'));
-    await t.pumpAndSettle();
-    await t.tap(find.byTooltip('墙体调整'));
-    await t.pumpAndSettle();
+    await tool(t, '墙体调整');
     expect(
         (t.widget<CustomPaint>(canvas).painter! as FloorPlanPainter)
             .wallAttachments
@@ -268,7 +277,7 @@ void main() {
     expect(t.takeException(), isNull);
   });
   testWidgets(
-      'switching category during a stroke cancels the interrupted preview',
+      'switching page during a stroke cancels the interrupted preview',
       (t) async {
     final doc = initial(), session = await mount(t, doc);
     await t.tap(find.byTooltip('墙体'));
@@ -278,7 +287,7 @@ void main() {
     final g = await t.startGesture(point(t, 6000, 5000), pointer: 1);
     await g.moveTo(point(t, 8000, 5000));
     await t.pump();
-    await t.tap(find.byTooltip('查看分类'));
+    await showTab(t, 'ext');
     await t.pumpAndSettle();
     await g.up();
     await saved(t);
@@ -336,7 +345,7 @@ void main() {
   });
   for (final size in [const Size(320, 568), const Size(844, 390)]) {
     testWidgets(
-        'floating categories and reduced motion fit $size with large text',
+        'every page and reduced motion fit $size with large text',
         (t) async {
       t.view.physicalSize = size;
       t.view.devicePixelRatio = 1;
@@ -344,10 +353,10 @@ void main() {
       addTearDown(t.view.resetDevicePixelRatio);
       await mount(t, initial(), scale: 1.8, reduce: true);
       expect(find.byTooltip('墙体'), findsOneWidget);
-      for (final name in ['调整分类', '查看分类', '建造分类']) {
-        await t.tap(find.byTooltip(name));
+      for (final key in ['ext', 'walk', 'det', 'qty', 'iss', 'plan']) {
+        await showTab(t, key);
         await t.pumpAndSettle();
-        expect(t.takeException(), isNull);
+        expect(t.takeException(), isNull, reason: key);
       }
       expect(find.byType(AnimatedSize), findsNothing);
       expect(find.byType(AnimatedSwitcher), findsNothing);
@@ -392,8 +401,9 @@ void main() {
     await t.pumpAndSettle();
     final viewer = t.widget<InteractiveViewer>(find.byType(InteractiveViewer));
     final size = t.getSize(canvas);
+    // Pan little enough that the left wall stays inside the plan sheet.
     viewer.transformationController!.value = Matrix4.identity()
-      ..translateByDouble(-size.width * 0.25, -size.height * 0.25, 0, 1)
+      ..translateByDouble(-size.width * 0.1, -size.height * 0.25, 0, 1)
       ..scaleByDouble(1.5, 1.5, 1, 1);
     await t.pump();
     final painter = t.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
@@ -416,23 +426,21 @@ void main() {
     expect(chain.endPos, 3000);
     expect(t.takeException(), isNull);
   });
-  testWidgets(
-      'view category reset reaches the 3D renderer and has one gesture hint',
+  testWidgets('view reset reaches the 3D renderer and the page has one hint',
       (t) async {
     await mount(t, initial());
-    await t.tap(find.byTooltip('平面 / 3D'));
+    await showTab(t, 'ext');
     await t.pumpAndSettle();
-    expect(find.byTooltip('恢复画布视角'), findsOneWidget);
-    expect(find.text('单指旋转 · 双指缩放和平移'), findsOneWidget);
-    expect(t.widget<HouseViewer>(find.byType(HouseViewer)).resetToken, 0);
-    await t.tap(find.byTooltip('恢复画布视角'));
+    expect(find.byType(SceneView), findsOneWidget);
+    expect(find.textContaining('双指缩放'), findsOneWidget);
+    expect(t.widget<SceneView>(find.byType(SceneView)).viewToken, 0);
+    await t.tap(find.byTooltip('恢复视角'));
     await t.pumpAndSettle();
-    expect(t.widget<HouseViewer>(find.byType(HouseViewer)).resetToken, 1);
+    expect(t.widget<SceneView>(find.byType(SceneView)).viewToken, 1);
     expect(t.takeException(), isNull);
   });
   testWidgets('precise length offers a non-drag creation path', (t) async {
     final session = await mount(t, initial());
-    expect(t.getSize(canvas), t.getSize(find.byType(SafeArea).first));
     await t.tap(find.byTooltip('墙体'));
     await t.pumpAndSettle();
     await t.tap(find.byTooltip('独立墙'));
@@ -455,12 +463,12 @@ void main() {
     expect(t.takeException(), isNull);
   });
   testWidgets(
-      'rapid category changes keep the latest mode and interrupt motion safely',
+      'rapid page changes keep the latest page and interrupt motion safely',
       (t) async {
     await mount(t, initial());
     for (var i = 0; i < 3; i++)
-      for (final name in ['调整分类', '查看分类', '建造分类']) {
-        await t.tap(find.byTooltip(name));
+      for (final key in ['ext', 'det', 'plan']) {
+        await showTab(t, key);
         await t.pump(const Duration(milliseconds: 20));
       }
     await t.pumpAndSettle();
@@ -487,10 +495,7 @@ void main() {
             CommandContext(newId: next, now: () => '2026-10-01T00:00:00Z'))
         as Applied;
     final session = await mount(t, composeDocument(doc.meta, result.newState));
-    await t.tap(find.byTooltip('调整分类'));
-    await t.pumpAndSettle();
-    await t.tap(find.byTooltip('墙体调整'));
-    await t.pumpAndSettle();
+    await tool(t, '墙体调整');
     await t.tapAt(point(t, 7000, 5000));
     await t.pumpAndSettle();
     expect(find.byTooltip('删除墙体'), findsOneWidget);

@@ -8,6 +8,7 @@ import 'spatial_commands.dart';
 import 'spatial_wall_commands.dart';
 import 'drawn_wall_commands.dart';
 import '../geometry/opening_constraints.dart';
+import 'extras_commands.dart';
 
 class DesignCommand {
   DesignCommand(this.kind, Map<String, dynamic> arguments)
@@ -87,7 +88,11 @@ CommandResult executeCommand(
           return const Rejected('HOST_CONFLICT', '此调整会影响已有门窗，请避开门窗位置');
       }
     }
-    return Applied(extractDesignState(document));
+    // Geometry operations build documents without extras; carry them over.
+    final next = extractDesignState(document);
+    return Applied(next.withExtras(prunedExtras(
+        document.extras.isEmpty ? state.extras : document.extras,
+        next.floors)));
   }
 
   try {
@@ -119,6 +124,12 @@ CommandResult executeCommand(
           !identities[key]!.contains(entry.value))
         return const Rejected('NOT_FOUND', '找不到要编辑的对象');
     }
+    final extras =
+        executeExtrasCommand(state, command.kind, args, context.newId);
+    if (extras != null)
+      return extras.state != null
+          ? Applied(extras.state!)
+          : Rejected('INVALID_VALUE', extras.error!);
     if (['AddDrawnWall', 'UpdateDrawnWall', 'DeleteDrawnWall']
         .contains(command.kind)) {
       final result = editDrawnWall(doc, command.kind, args, context.newId);

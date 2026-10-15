@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../app/settings.dart';
 
 typedef WallLengthChoice = ({int length, String direction});
 
@@ -21,7 +22,7 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
   void submit() {
     final meters = double.tryParse(controller.text);
     if (meters == null || !meters.isFinite || meters < 0.3 || meters > 100) {
-      setState(() => error = '请输入 0.30 到 100 米');
+      setState(() => error = tr('请输入 0.30 到 100 米', '0,30–100 м аралығында енгізіңіз'));
       return;
     }
     Navigator.pop(
@@ -30,7 +31,7 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-          title: const Text('从起点输入墙长'),
+          title: Text(tr('从起点输入墙长', 'Бастаудан қабырға ұзындығы')),
           scrollable: true,
           content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -41,17 +42,19 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration:
-                        InputDecoration(labelText: '墙长（米）', errorText: error),
+                        InputDecoration(
+                            labelText: tr('墙长（米）', 'Қабырға ұзындығы (м)'),
+                            errorText: error),
                     onSubmitted: (_) => submit()),
                 const SizedBox(height: 16),
-                const Text('方向'),
+                Text(tr('方向', 'Бағыты')),
                 const SizedBox(height: 8),
                 Wrap(spacing: 8, runSpacing: 4, children: [
                   for (final item in {
-                    'right': '向右',
-                    'up': '向上',
-                    'left': '向左',
-                    'down': '向下'
+                    'right': tr('向右', 'Оңға'),
+                    'up': tr('向上', 'Жоғары'),
+                    'left': tr('向左', 'Солға'),
+                    'down': tr('向下', 'Төмен')
                   }.entries)
                     ChoiceChip(
                         label: Text(item.value),
@@ -62,13 +65,15 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('取消')),
-            FilledButton(onPressed: submit, child: const Text('增加墙'))
+                child: Text(tr('取消', 'Болдырмау'))),
+            FilledButton(
+                onPressed: submit, child: Text(tr('增加墙', 'Қабырға қосу')))
           ]);
 }
 
 /// Wall thickness with the brick sizes self-builders already use
-/// (12 墙 / 18 墙 / 24 墙 / 37 墙) one tap away, plus a free value.
+/// (12 墙 / 18 墙 / 24 墙 / 37 墙, i.e. 120–370 mm) one tap away, plus a
+/// free value.
 class WallThicknessDialog extends StatefulWidget {
   const WallThicknessDialog({super.key, required this.initial});
   final int initial;
@@ -90,7 +95,7 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
   void submit() {
     final meters = double.tryParse(controller.text);
     if (meters == null || !meters.isFinite || meters < 0.05 || meters > 1) {
-      setState(() => error = '请输入 0.05 到 1.00 米');
+      setState(() => error = tr('请输入 0.05 到 1.00 米', '0,05–1,00 м аралығында енгізіңіз'));
       return;
     }
     Navigator.pop(context, (meters * 1000).round());
@@ -100,7 +105,7 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
   Widget build(BuildContext context) {
     final current = ((double.tryParse(controller.text) ?? 0) * 1000).round();
     return AlertDialog(
-        title: const Text('墙厚'),
+        title: Text(tr('墙厚', 'Қабырға қалыңдығы')),
         scrollable: true,
         content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -109,8 +114,9 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
               Wrap(spacing: 8, runSpacing: 4, children: [
                 for (final entry in presets.entries)
                   ChoiceChip(
-                      label: Text(
-                          '${entry.value} · ${(entry.key / 1000).toStringAsFixed(2)} 米'),
+                      label: Text(isKk
+                          ? '${entry.key} мм'
+                          : '${entry.value} · ${(entry.key / 1000).toStringAsFixed(2)} 米'),
                       selected: current == entry.key,
                       onSelected: (_) => setState(() => controller.text =
                           (entry.key / 1000).toStringAsFixed(2)))
@@ -121,14 +127,17 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration:
-                      InputDecoration(labelText: '墙厚（米）', errorText: error),
+                      InputDecoration(
+                          labelText: tr('墙厚（米）', 'Қабырға қалыңдығы (м)'),
+                          errorText: error),
                   onChanged: (_) => setState(() => error = null),
                   onSubmitted: (_) => submit()),
             ]),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: const Text('取消')),
-          FilledButton(onPressed: submit, child: const Text('确定'))
+              onPressed: () => Navigator.pop(context),
+              child: Text(tr('取消', 'Болдырмау'))),
+          FilledButton(onPressed: submit, child: Text(tr('确定', 'Жарайды')))
         ]);
   }
 }

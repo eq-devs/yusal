@@ -135,8 +135,11 @@ List<ValidationError> validateHouse(HouseDocument d) {
       add(21, '/roof/overhang', '挑檐必须在 0 到 1500 毫米之间');
   } else if (d.roof.parapetHeight! < 0 || d.roof.parapetHeight! > 1500)
     add(21, '/roof/parapetHeight', '女儿墙高度必须在 0 到 1500 毫米之间');
-  if (d.schemaVersion != 1 && d.schemaVersion != 2)
+  if (d.schemaVersion < 1 || d.schemaVersion > 3)
     add(24, '/schemaVersion', '不支持此文件版本');
+  if (d.schemaVersion < 3 && !d.extras.isEmpty)
+    add(24, '/schemaVersion', '家具与构造资料需要文件版本 3');
+  for (final (path, message) in d.extras.problems()) add(25, path, message);
   if (d.schemaVersion == 1 &&
       d.floors.any(
           (f) => f.explicitWalls || f.wallOverrides.any((w) => w is SolidWall)))

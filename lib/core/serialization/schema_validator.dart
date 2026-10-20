@@ -66,7 +66,8 @@ List<LoadError> validateSchemaV1(Object? value) {
       'wallOverrides': '[]Wall',
       'explicitWalls?': 'bool',
       'openings': '[]Opening',
-      'stairs': '[]Stair'
+      'stairs': '[]Stair',
+      'outside?': '[]Rect'
     },
     'Room': {
       'id': 'id',
@@ -146,13 +147,14 @@ List<LoadError> validateSchemaV1(Object? value) {
       'pitchDeg': 'int',
       'overhang': 'int'
     },
+    'Roof.hip': {'type': 'string', 'pitchDeg': 'int', 'overhang': 'int'},
   };
   const unions = {
     'Wall': ['open', 'thickness', 'solid'],
     'Position': ['center', 'fromStart', 'fromEnd'],
     'Opening': ['door', 'window', 'sliding'],
     'Stair': ['straight', 'L', 'U'],
-    'Roof': ['flat', 'gable']
+    'Roof': ['flat', 'gable', 'hip']
   };
   String child(String path, String field) =>
       '$path/${field.replaceAll('~', '~0').replaceAll('/', '~1')}';

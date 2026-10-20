@@ -118,7 +118,8 @@ EditResult moveLocalWall(HouseDocument doc, String floorId,
       rooms: rooms,
       wallOverrides: floor.wallOverrides,
       openings: floor.openings,
-      stairs: floor.stairs);
+      stairs: floor.stairs,
+      outside: floor.outside);
   final raw = jsonDecode(encodeHouse(rebuild([
     for (final item in doc.floors) item.id == floorId ? changed : item
   ]))) as Map<String, dynamic>;

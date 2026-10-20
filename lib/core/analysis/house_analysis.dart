@@ -238,7 +238,7 @@ FoundationTakeoff foundationTakeoff(HouseDocument doc, DerivedHouse derived) {
               (spec.partitionHeight - 2 * spec.cover)) +
       150.0;
   final depth = spec.height - spec.plinth + spec.cushion;
-  final perimeter = 2 * (w + d);
+  final perimeter = outlineLength(derived.floors.first.base);
   return FoundationTakeoff(
       strips: List.unmodifiable(strips),
       mainLength: lm,
@@ -291,11 +291,12 @@ class WallTakeoff {
 WallTakeoff wallTakeoff(HouseDocument doc, DerivedHouse derived) {
   final spec = doc.extras.foundation;
   var el = 0.0, bl = 0.0, pl = 0.0, eo = 0.0, bo = 0.0, po = 0.0;
-  var ev = 0.0, bv = 0.0, pv = 0.0, height = 0.0;
+  var ev = 0.0, bv = 0.0, pv = 0.0, height = 0.0, gross = 0.0;
   for (var f = 0; f < doc.floors.length; f++) {
     final h = doc.floors[f].height.toDouble();
     height += h;
     final g = derived.floors[f];
+    gross += outlineLength(g.base) * h;
     for (final wall in wallsOf(g.base, spec)) {
       if (wall.role == WallRole.temporary) continue;
       final openings = g.openings
@@ -321,7 +322,6 @@ WallTakeoff wallTakeoff(HouseDocument doc, DerivedHouse derived) {
       }
     }
   }
-  final w = doc.footprint.width.toDouble(), d = doc.footprint.depth.toDouble();
   return WallTakeoff(
       exteriorLength: el / math.max(1, doc.floors.length),
       bearingLength: bl,
@@ -332,6 +332,6 @@ WallTakeoff wallTakeoff(HouseDocument doc, DerivedHouse derived) {
       exteriorVolume: ev,
       bearingVolume: bv,
       partitionVolume: pv,
-      exteriorGross: 2 * (w + d) * height,
+      exteriorGross: gross,
       height: height);
 }

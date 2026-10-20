@@ -18,6 +18,9 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
     bool deleteHostedObjects = false,
     bool deleteStairs = false}) {
   if (id.startsWith('@')) return const AxisDeletion(null, '外轮廓边界不能删除');
+  if (doc.floors.any(
+      (f) => f.outside.any((r) => [r.x0, r.x1, r.y0, r.y1].contains(id))))
+    return const AxisDeletion(null, '这条线是缺角的边，请先恢复矩形外形');
   final affected = <String, ResolvedAxes>{};
   for (final floor in doc.floors) {
     final axes = resolveFloorAxes(doc, floor.id)!;
@@ -255,7 +258,8 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
         rooms: rooms,
         wallOverrides: overrides,
         openings: openings,
-        stairs: stairs));
+        stairs: stairs,
+        outside: [for (final r in floor.outside) rect(r)]));
   }
   final result = HouseDocument(
       schemaVersion: doc.schemaVersion,

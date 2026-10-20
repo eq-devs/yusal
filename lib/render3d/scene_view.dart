@@ -20,8 +20,12 @@ class SceneSettings {
       this.cutHeight = 1.4,
       this.hour = 11,
       this.maxFloor = 999,
-      this.dark = false});
+      this.dark = false,
+      this.site = true});
   final bool roof, furniture, foundation, cut, dark;
+
+  /// Outbuildings, fence and garden from the plot.
+  final bool site;
   final double cutHeight, hour;
   final int maxFloor;
   SceneSettings copyWith(
@@ -32,7 +36,8 @@ class SceneSettings {
           double? cutHeight,
           double? hour,
           int? maxFloor,
-          bool? dark}) =>
+          bool? dark,
+          bool? site}) =>
       SceneSettings(
           roof: roof ?? this.roof,
           furniture: furniture ?? this.furniture,
@@ -41,7 +46,8 @@ class SceneSettings {
           cutHeight: cutHeight ?? this.cutHeight,
           hour: hour ?? this.hour,
           maxFloor: maxFloor ?? this.maxFloor,
-          dark: dark ?? this.dark);
+          dark: dark ?? this.dark,
+          site: site ?? this.site);
   bool get night => dark || hour < 6 || hour > 20.5;
 }
 
@@ -58,6 +64,38 @@ class Camera {
     final d = p - eye;
     return Vec3(d.dot(right), d.dot(up), d.dot(forward));
   }
+}
+
+/// Orbit pose of a preset view: iso (default), front, back, side or top.
+({Vec3 target, double distance, double yaw, double pitch}) viewPose(
+    SceneModel model, String view) {
+  final size = math.max(model.width, model.depth) / 13;
+  final c = model.center;
+  final front = model.frontZ;
+  final (x, y, z) = switch (view) {
+    'front' => (1.5, 3.2, 25.0 * front),
+    'back' => (2.0, 4.0, -21.0 * front),
+    'side' => (24.0, 5.0, 2.0),
+    'top' => (0.0, 34.0, 0.01),
+    _ => (15.0, 12.0, 19.0 * front),
+  };
+  final offset = Vec3(x, y, z) * math.max(0.6, size);
+  final distance = offset.length;
+  return (
+    target: Vec3(c.x, view == 'top' ? 0 : 1.4, c.z),
+    distance: distance,
+    yaw: math.atan2(offset.x, offset.z),
+    pitch: math.asin((offset.y / distance).clamp(-1.0, 1.0))
+  );
+}
+
+/// Camera looking at [target] from [distance] at [yaw] and [pitch].
+Camera orbitCamera(Vec3 target, double yaw, double pitch, double distance) {
+  final eye = target +
+      Vec3(math.cos(pitch) * math.sin(yaw), math.sin(pitch),
+              math.cos(pitch) * math.cos(yaw)) *
+          distance;
+  return Camera(eye, (target - eye).unit, 42 * math.pi / 180);
 }
 
 class _Item {
@@ -329,7 +367,13 @@ class ScenePainter extends CustomPainter {
         Layer3.floorSurface => 3,
         Layer3.covering => f.interior && shell ? 6 : 4,
         Layer3.ceiling => 5,
-        Layer3.sorted => f.interior && shell ? 6 : 7,
+        // The roof sits on the walls: drawn after them it hides their tops,
+        // which large sloped faces lose to in a depth sort.
+        Layer3.sorted => f.interior && shell
+            ? 6
+            : f.covering && shell
+                ? 8
+                : 7,
       };
       final alpha = f.glow && night ? 0.62 : f.alpha;
       if (f.textile != null && f.uv != null && identical(pts, f.points)) {
@@ -616,6 +660,7 @@ class SceneViewState extends State<SceneView>
       widget.settings.furniture,
       widget.settings.foundation,
       widget.settings.roof,
+      widget.settings.site,
       widget.walk,
       widget.areaUnit,
       widget.outsideLabel
@@ -629,27 +674,18 @@ class SceneViewState extends State<SceneView>
             roof: widget.settings.roof,
             furniture: widget.settings.furniture,
             foundation: widget.settings.foundation,
+            site: widget.settings.site,
             walk: widget.walk),
         widget.roomName,
         areaUnit: widget.areaUnit);
   }
 
   void applyView(String view) {
-    final size = math.max(model.width, model.depth) / 13;
-    final c = model.center;
-    final front = model.frontZ;
-    final (x, y, z) = switch (view) {
-      'front' => (1.5, 3.2, 25.0 * front),
-      'back' => (2.0, 4.0, -21.0 * front),
-      'side' => (24.0, 5.0, 2.0),
-      'top' => (0.0, 34.0, 0.01),
-      _ => (15.0, 12.0, 19.0 * front),
-    };
-    target = Vec3(c.x, view == 'top' ? 0 : 1.4, c.z);
-    final offset = Vec3(x, y, z) * math.max(0.6, size);
-    distance = offset.length;
-    yaw = math.atan2(offset.x, offset.z);
-    pitch = math.asin((offset.y / distance).clamp(-1.0, 1.0));
+    final pose = viewPose(model, view);
+    target = pose.target;
+    distance = pose.distance;
+    yaw = pose.yaw;
+    pitch = pose.pitch;
   }
 
   void placeWalker() {
@@ -731,11 +767,7 @@ class SceneViewState extends State<SceneView>
           -math.cos(wYaw) * math.cos(wPitch));
       return Camera(Vec3(wx, eyeY, wz), f, 72 * math.pi / 180);
     }
-    final eye = target +
-        Vec3(math.cos(pitch) * math.sin(yaw), math.sin(pitch),
-                math.cos(pitch) * math.cos(yaw)) *
-            distance;
-    return Camera(eye, (target - eye).unit, 42 * math.pi / 180);
+    return orbitCamera(target, yaw, pitch, distance);
   }
 
   /// Room name (or outside / in a wall) under the walker.

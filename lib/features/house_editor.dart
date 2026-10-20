@@ -26,6 +26,7 @@ import 'footprint_sketch.dart';
 import 'wall_length_dialog.dart';
 import 'wall_attachment_points.dart';
 import 'wall_snap.dart';
+import 'drawing_export.dart';
 import '../app/messages.dart';
 import '../app/settings.dart';
 import '../app/tokens.dart';
@@ -36,6 +37,13 @@ import '../core/commands/extras_commands.dart';
 import '../render2d/furniture_names.dart';
 import '../render2d/section_painters.dart';
 import '../core/checks/construction_checks.dart';
+import '../core/analysis/build_schedule.dart';
+import '../core/analysis/cost_estimate.dart';
+import '../core/analysis/heat_loss.dart';
+import '../core/analysis/site_analysis.dart';
+import '../core/analysis/utility_plan.dart';
+import '../render2d/planning_names.dart';
+import '../render2d/site_plan_painter.dart';
 
 part 'editor/editor_header.dart';
 part 'editor/plan_tab.dart';
@@ -45,6 +53,12 @@ part 'editor/other_tabs.dart';
 part 'editor/scene_tab.dart';
 part 'editor/home_screen.dart';
 part 'editor/compare_card.dart';
+part 'editor/cost_tab.dart';
+part 'editor/heat_tab.dart';
+part 'editor/site_tab.dart';
+part 'editor/build_tab.dart';
+part 'editor/utility_tool.dart';
+part 'editor/outline_tool.dart';
 
 class HouseEditor extends StatefulWidget {
   const HouseEditor(
@@ -70,7 +84,8 @@ class _HouseEditorState extends State<HouseEditor>
   late final DesignHistory history;
   late FloorBase base;
   late DerivedHouse derived;
-  /// Current page: plan, ext (3D), walk, det, qty or iss.
+  /// Current page: plan, ext (3D), walk, site, det, heat, qty, cost, build
+  /// or iss.
   String tab = 'plan';
   bool get view3d => tab != 'plan';
   set view3d(bool value) {
@@ -79,6 +94,23 @@ class _HouseEditorState extends State<HouseEditor>
 
   /// Plan layers, the selection shown in the card, and transient marks.
   bool showFurniture = true, showDimensions = true, showFoundation = false;
+  bool showUtilities = false;
+
+  /// Utility point being placed, the selected one and its drag preview.
+  UtilityKind? placingUtility;
+  String? selectedUtilityId;
+  UtilityPoint? utilityDraft;
+  Offset? utilityDown;
+
+  /// Site page: the selected item ('@house' for the house), where it was
+  /// grabbed, its dragged position and issue areas to flash.
+  String? selectedSiteId;
+  Offset? siteDown;
+  ({int x, int y})? siteDraft;
+  List<PlanRect> siteHighlights = [];
+
+  /// The schedule stage opened to show its checklist.
+  String? expandedStage;
   bool panelCollapsed = false;
 
   /// Short-screen layout, decided by the last build.
@@ -123,8 +155,12 @@ class _HouseEditorState extends State<HouseEditor>
         ('plan', tr('2D 平面', '2D жоспар')),
         ('ext', tr('3D 外观', '3D сыртқы көрініс')),
         ('walk', tr('室内漫游', 'Ішкі серуен')),
+        ('site', tr('宅基地', 'Учаске')),
         ('det', tr('构造细节', 'Құрылым бөлшектері')),
+        ('heat', tr('保温采暖', 'Жылу')),
         ('qty', tr('门窗与工程量', 'Есік-терезе және көлем')),
+        ('cost', tr('预算', 'Смета')),
+        ('build', tr('施工进度', 'Құрылыс кестесі')),
         ('iss', tr('问题清单', 'Мәселелер тізімі')),
       ];
 
@@ -147,8 +183,12 @@ class _HouseEditorState extends State<HouseEditor>
   Widget tabBody(bool wide) => switch (tab) {
         'plan' => planTab(wide),
         'ext' || 'walk' => sceneTab(wide),
+        'site' => siteTab(wide),
         'det' => detailsTab(wide),
+        'heat' => heatTab(wide),
         'qty' => quantitiesTab(wide),
+        'cost' => costTab(wide),
+        'build' => buildTab(wide),
         _ => issuesTab(wide),
       };
 
@@ -156,6 +196,9 @@ class _HouseEditorState extends State<HouseEditor>
     selectedRoomId = null;
     selectedOpeningId = null;
     selectedFurnitureId = null;
+    selectedUtilityId = null;
+    utilityDraft = null;
+    utilityDown = null;
     furnitureDraft = null;
     furnitureGrip = null;
   }
@@ -164,6 +207,10 @@ class _HouseEditorState extends State<HouseEditor>
   void deleteSelection() {
     if (editStart != null) {
       deleteSelectedWall();
+    } else if (selectedUtilityId != null) {
+      final id = selectedUtilityId!;
+      setState(clearSelection);
+      action('DeleteUtility', {'utilityId': id});
     } else if (selectedFurnitureId != null) {
       final id = selectedFurnitureId!;
       setState(clearSelection);
@@ -290,6 +337,7 @@ class _HouseEditorState extends State<HouseEditor>
     '拖入门': ('门', 'Есік қосу', 'Есік'),
     '拖入窗': ('窗', 'Терезе қосу', 'Терезе'),
     '家具': ('家具', 'Жиһаз қою', 'Жиһаз'),
+    '水电': ('水电', 'Су-электр нүктелері', 'Су-электр'),
     '更多工具': ('更多', 'Басқа құралдар', 'Басқа'),
     '墙体调整': ('改墙', 'Қабырғаны түзету', 'Түзету'),
     '房屋尺寸': ('房屋尺寸', 'Үй өлшемі', 'Өлшем'),
@@ -335,6 +383,7 @@ class _HouseEditorState extends State<HouseEditor>
                       spatialPreview = null;
                       placementHint = null;
                       placingFurniture = null;
+                      placingUtility = null;
                       measurePoints = [];
                       onTap();
                       if (mounted) setState(() {});
@@ -459,6 +508,21 @@ class _HouseEditorState extends State<HouseEditor>
                                   },
                                   icon: const Icon(Icons.open_in_full),
                                   label: Text(tr('拖动外边框调整', 'Сыртқы жиекті сүйреп өзгерту'))),
+                              TextButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    cutCornerDialog();
+                                  },
+                                  icon: const Icon(Icons.crop),
+                                  label: Text(tr('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)'))),
+                              if (hasOutline)
+                                TextButton.icon(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      restoreOutlineAction();
+                                    },
+                                    icon: const Icon(Icons.crop_square),
+                                    label: Text(tr('恢复矩形外形', 'Тіктөртбұрышқа қайтару'))),
                             ]))))));
   }
 
@@ -1134,6 +1198,74 @@ class _HouseEditorState extends State<HouseEditor>
     }
   }
 
+  /// The drawing set as a PDF, or the current floor's plan as a PNG,
+  /// downloaded on the web and shared on phones.
+  Future<void> exportDrawings({bool png = false}) async {
+    await save();
+    if (!mounted) return;
+    final progress = ValueNotifier<String>(tr('正在准备图纸…', 'Сызбалар дайындалып жатыр…'));
+    final today = DateTime.now();
+    final input = DrawingInput(
+        doc: history.present,
+        derived: derived,
+        roomName: displayRoomName,
+        floorName: displayFloorName,
+        openingLabel: openingLabel,
+        date:
+            '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}');
+    unawaited(showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => PopScope(
+            canPop: false,
+            child: AlertDialog(
+                content: Row(children: [
+              const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5)),
+              const SizedBox(width: 16),
+              Expanded(
+                  child: ValueListenableBuilder<String>(
+                      valueListenable: progress,
+                      builder: (context, text, _) => Text(text))),
+            ])))));
+    try {
+      final bytes = png
+          ? await buildPlanPng(input, floorIndex)
+          : await buildDrawingPdf(input,
+              onProgress: (done, total) => progress.value =
+                  tr('正在绘制第 $done / $total 张图纸…', '$done / $total сызба салынып жатыр…'));
+      final cleaned = history.present.meta.name
+          .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '')
+          .trim();
+      final base = cleaned.isEmpty ? tr('房屋设计', 'Үй жобасы') : cleaned;
+      final filename = png
+          ? '$base ${displayFloorName(floor.name)}.png'
+          : '$base ${tr('图纸', 'сызбалар')}.pdf';
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      final file = XFile.fromData(bytes,
+          mimeType: png ? 'image/png' : 'application/pdf', name: filename);
+      if (kIsWeb) {
+        await file.saveTo(filename);
+      } else if (mounted) {
+        final box = context.findRenderObject() as RenderBox?;
+        await SharePlus.instance.share(ShareParams(
+            files: [file],
+            sharePositionOrigin: box == null
+                ? null
+                : box.localToGlobal(Offset.zero) & box.size));
+      }
+    } catch (_) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).maybePop();
+        notify(tr('暂时无法生成图纸', 'Сызбаларды қазір жасау мүмкін емес'));
+      }
+    } finally {
+      progress.dispose();
+    }
+  }
+
   void placeOpening(Map<String, dynamic> arguments) {
     final before = history.present;
     action('AddOpening', arguments);
@@ -1328,6 +1460,9 @@ class _HouseEditorState extends State<HouseEditor>
                 'north': tr('正北方向', 'Солтүстік бағыты'),
                 'flat': tr('平屋顶', 'Тегіс шатыр'),
                 'gable': tr('双坡屋顶', 'Қос беткейлі шатыр'),
+                'hip': tr('四坡屋顶', 'Төрт беткейлі шатыр'),
+                'cut': tr('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)'),
+                if (hasOutline) 'restore': tr('恢复矩形外形', 'Тіктөртбұрышқа қайтару'),
                 'grid': tr('编辑网格', 'Торды өзгерту'),
                 'defaults': tr('默认尺寸', 'Әдепкі өлшемдер')
               }.entries)
@@ -1350,6 +1485,19 @@ class _HouseEditorState extends State<HouseEditor>
         action('SetRoof', {
           'roof': {'type': 'flat', 'parapetHeight': height}
         });
+    }
+    if (choice == 'hip') {
+      final pitchText = await ask(
+          tr('屋顶坡度（5–60°）', 'Шатыр еңісі (5–60°)'), '${history.present.roof.pitchDeg ?? 25}',
+          number: true);
+      final pitch = int.tryParse(pitchText ?? '');
+      if (pitch == null) return;
+      final overhang =
+          await length(tr('屋檐伸出', 'Карниз шығыңқылығы'), history.present.roof.overhang ?? 500);
+      if (overhang == null) return;
+      action('SetRoof', {
+        'roof': {'type': 'hip', 'pitchDeg': pitch, 'overhang': overhang}
+      });
     }
     if (choice == 'gable') {
       final pitchText = await ask(
@@ -1430,6 +1578,8 @@ class _HouseEditorState extends State<HouseEditor>
       if (value != null) action('SetNorthAngle', {'value': value});
     }
     if (choice == 'grid') grid();
+    if (choice == 'cut') cutCornerDialog();
+    if (choice == 'restore') restoreOutlineAction();
   }
 
   Future<void> grid() async {
@@ -1609,6 +1759,17 @@ class _HouseEditorState extends State<HouseEditor>
       ..sort((a, b) => ((a.axis.dir == AxisDir.H ? y : x) - a.axis.pos)
           .abs()
           .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
+    final utility = utilityAt(point, size);
+    if (utility != null && tool != 'selectWall') {
+      setState(() {
+        clearSelection();
+        clearWallSelection();
+        selectedUtilityId = utility.id;
+        panelCollapsed = false;
+        placementHint = null;
+      });
+      return;
+    }
     final opening = placements.firstOrNull;
     if (opening != null && tool != 'selectWall') {
       selectOpening(opening.opening);
@@ -3116,6 +3277,9 @@ class _HouseEditorState extends State<HouseEditor>
         browse = true;
         drawingOrigin = null;
         placingWallStart = false;
+        placingUtility = null;
+      } else if (selectedUtilityId != null) {
+        selectedUtilityId = null;
       }
       placementHint = null;
     });
@@ -3202,9 +3366,11 @@ class _HouseEditorState extends State<HouseEditor>
                                   boundaryMargin: const EdgeInsets.all(200),
                                   panEnabled: ((browse ||
                                               tool == 'measure' ||
-                                              tool == 'placeFurniture') &&
+                                              tool == 'placeFurniture' ||
+                                              tool == 'placeUtility') &&
                                           draggingOpening == null &&
-                                          furnitureGrip == null) ||
+                                          furnitureGrip == null &&
+                                          utilityDown == null) ||
                                       pointers.length > 1,
                                   minScale: 0.4,
                                   maxScale: 5,
@@ -3232,6 +3398,10 @@ class _HouseEditorState extends State<HouseEditor>
                                             wallGesture = null;
                                             if (pointers.length == 1) {
                                               if (browse &&
+                                                  beginUtilityGesture(
+                                                      e.localPosition, size)) {
+                                                setState(() {});
+                                              } else if (browse &&
                                                   beginFurnitureGesture(
                                                       e.localPosition, size)) {
                                                 setState(() {});
@@ -3306,7 +3476,8 @@ class _HouseEditorState extends State<HouseEditor>
                                                 tool != 'opening' &&
                                                 tool != 'grid' &&
                                                 tool != 'measure' &&
-                                                tool != 'placeFurniture')
+                                                tool != 'placeFurniture' &&
+                                                tool != 'placeUtility')
                                               setState(() => record(
                                                   e.localPosition, size));
                                           },
@@ -3317,6 +3488,11 @@ class _HouseEditorState extends State<HouseEditor>
                                                     8) wallHoldTimer?.cancel();
                                             final single = !cancelledStroke &&
                                                 pointers.length == 1;
+                                            if (single && utilityDown != null) {
+                                              setState(() => previewUtility(
+                                                  e.localPosition, size));
+                                              return;
+                                            }
                                             if (single && furnitureGrip != null) {
                                               setState(() => previewFurniture(
                                                   e.localPosition, size));
@@ -3370,6 +3546,7 @@ class _HouseEditorState extends State<HouseEditor>
                                                 tool != 'grid' &&
                                                 tool != 'measure' &&
                                                 tool != 'placeFurniture' &&
+                                                tool != 'placeUtility' &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1)
                                               setState(() => record(
@@ -3397,6 +3574,14 @@ class _HouseEditorState extends State<HouseEditor>
                                               downPoint = null;
                                               return;
                                             }
+                                            if (single && utilityDown != null) {
+                                              final moved = finishUtility();
+                                              pointers.remove(e.pointer);
+                                              downPoint = null;
+                                              if (!moved)
+                                                tapObject(e.localPosition, size);
+                                              return;
+                                            }
                                             if (single && furnitureGrip != null) {
                                               final tap = furnitureDraft == null &&
                                                   furnitureGrip != 'rotate';
@@ -3419,6 +3604,14 @@ class _HouseEditorState extends State<HouseEditor>
                                             if (tapped &&
                                                 tool == 'placeFurniture') {
                                               placeFurnitureAt(
+                                                  e.localPosition, size);
+                                              pointers.remove(e.pointer);
+                                              downPoint = null;
+                                              return;
+                                            }
+                                            if (tapped &&
+                                                tool == 'placeUtility') {
+                                              placeUtilityAt(
                                                   e.localPosition, size);
                                               pointers.remove(e.pointer);
                                               downPoint = null;
@@ -3718,6 +3911,8 @@ class _HouseEditorState extends State<HouseEditor>
                                                           bearingMin: history.present.extras.foundation.bearingMin,
                                                           furniture: [for (final f in history.present.extras.furniture) if (f.floorId == floor.id && f.id != furnitureDraft?.id) f],
                                                           furnitureDraft: furnitureDraft,
+                                                          utilities: showUtilities ? [for (final u in floorUtilities) u.id == utilityDraft?.id ? utilityDraft! : u] : const [],
+                                                          selectedUtility: selectedUtilityId,
                                                           selectedFurniture: selectedFurnitureId,
                                                           selectedRoom: selectedRoomId,
                                                           showFurniture: showFurniture,

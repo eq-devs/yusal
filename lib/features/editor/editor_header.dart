@@ -10,9 +10,11 @@ extension _EditorHeader on _HouseEditorState {
     final w = doc.footprint.width, d = doc.footprint.depth;
     String meters(int mm) => dec((mm / 1000).toStringAsFixed(
         mm % 1000 == 0 ? 0 : (mm % 100 == 0 ? 1 : 2)));
-    final roof = doc.roof.type == RoofType.flat
-        ? tr('平屋顶', 'тегіс шатыр')
-        : tr('双坡屋顶', 'қос беткейлі шатыр');
+    final roof = switch (doc.roof.type) {
+      RoofType.flat => tr('平屋顶', 'тегіс шатыр'),
+      RoofType.gable => tr('双坡屋顶', 'қос беткейлі шатыр'),
+      RoofType.hip => tr('四坡屋顶', 'төрт беткейлі шатыр'),
+    };
     final title = InkWell(
         borderRadius: BorderRadius.circular(6),
         onTap: renameProject,
@@ -89,6 +91,8 @@ extension _EditorHeader on _HouseEditorState {
           if (value == 'checks') showTab('iss');
           if (value == 'settings') settings();
           if (value == 'export') export();
+          if (value == 'pdf') exportDrawings();
+          if (value == 'png') exportDrawings(png: true);
           if (value == 'variant') duplicateAsVariant();
           if (value == 'compare') {
             showTab('qty');
@@ -106,6 +110,12 @@ extension _EditorHeader on _HouseEditorState {
                   child: Text(tr('方案对比', 'Нұсқаларды салыстыру'))),
               PopupMenuItem(
                   value: 'settings', child: Text(tr('设置', 'Баптаулар'))),
+              PopupMenuItem(
+                  value: 'pdf',
+                  child: Text(tr('导出图纸 PDF', 'Сызбаларды PDF ету'))),
+              PopupMenuItem(
+                  value: 'png',
+                  child: Text(tr('导出本层平面图 PNG', 'Қабат жоспарын PNG ету'))),
               PopupMenuItem(
                   value: 'export',
                   child: Text(tr('导出 .house', '.house файлын шығару')))
@@ -190,6 +200,8 @@ extension _EditorHeader on _HouseEditorState {
                 if (value == 'checks') showTab('iss');
                 if (value == 'settings') settings();
                 if (value == 'export') export();
+                if (value == 'pdf') exportDrawings();
+                if (value == 'png') exportDrawings(png: true);
                 if (value == 'variant') duplicateAsVariant();
                 if (value == 'compare') {
                   showTab('qty');
@@ -216,6 +228,12 @@ extension _EditorHeader on _HouseEditorState {
                         child: Text(tr('方案对比', 'Нұсқаларды салыстыру'))),
                     PopupMenuItem(
                         value: 'settings', child: Text(tr('设置', 'Баптаулар'))),
+                    PopupMenuItem(
+                        value: 'pdf',
+                        child: Text(tr('导出图纸 PDF', 'Сызбаларды PDF ету'))),
+                    PopupMenuItem(
+                        value: 'png',
+                        child: Text(tr('导出本层平面图 PNG', 'Қабат жоспарын PNG ету'))),
                     PopupMenuItem(
                         value: 'export',
                         child: Text(tr('导出 .house', '.house файлын шығару'))),

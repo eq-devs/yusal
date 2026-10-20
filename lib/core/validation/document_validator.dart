@@ -128,15 +128,17 @@ List<ValidationError> validateHouse(HouseDocument d) {
   if (defs.windowSill < 0) add(22, '/defaults/windowSill', 'windowSill 不得为负');
   if (defs.floorHeight < 2400)
     add(22, '/defaults/floorHeight', 'floorHeight 不得低于 2400');
-  if (d.roof.type == RoofType.gable) {
+  if (d.roof.pitched) {
     if (d.roof.pitchDeg! <= 0 || d.roof.pitchDeg! > 60)
       add(21, '/roof/pitchDeg', '坡度必须在 1 到 60 度之间');
     if (d.roof.overhang! < 0 || d.roof.overhang! > 1500)
       add(21, '/roof/overhang', '挑檐必须在 0 到 1500 毫米之间');
   } else if (d.roof.parapetHeight! < 0 || d.roof.parapetHeight! > 1500)
     add(21, '/roof/parapetHeight', '女儿墙高度必须在 0 到 1500 毫米之间');
-  if (d.schemaVersion < 1 || d.schemaVersion > 3)
+  if (d.schemaVersion < 1 || d.schemaVersion > 4)
     add(24, '/schemaVersion', '不支持此文件版本');
+  if (d.schemaVersion < 4 && needsVersion4(d.roof, d.extras, d.floors))
+    add(24, '/schemaVersion', '不规则外形、四坡屋顶、预算、采暖、水电、宅基地和施工进度需要文件版本 4');
   if (d.schemaVersion < 3 && !d.extras.isEmpty)
     add(24, '/schemaVersion', '家具与构造资料需要文件版本 3');
   for (final (path, message) in d.extras.problems()) add(25, path, message);
@@ -296,6 +298,28 @@ List<ValidationError> validateHouse(HouseDocument d) {
       }
       placed.add(obj);
     }
+    final cut = <Cell>{};
+    for (var o = 0; o < floor.outside.length; o++) {
+      final resolved = resolveRect(axes, floor.outside[o]);
+      if (!resolved.isSuccess) {
+        for (final error in resolved.errors)
+          add(
+              error.code == 'AXIS_NOT_VISIBLE'
+                  ? 9
+                  : error.code == 'INVALID_RESERVED_REF'
+                      ? 6
+                      : 8,
+              '/floors/$f/outside/$o${error.field == 'x' || error.field == 'y' ? '' : '/${error.field}'}',
+              '室外区域引用无效（${error.code}）');
+        continue;
+      }
+      cut.addAll(cellsOfRect(resolved.rect!));
+    }
+    for (final obj in validObjects)
+      if (obj.cells.any(cut.contains))
+        add(11, obj.path, '房间和楼梯不能放在房屋外（缺角处）');
+    if (cut.isNotEmpty && cut.length >= axes.nx * axes.ny)
+      add(12, '/floors/$f/outside', '不能把整层都设为室外');
     final spans = <({String axis, int start, int end, String path})>[];
     for (var w = 0; w < floor.wallOverrides.length; w++) {
       final wall = floor.wallOverrides[w],

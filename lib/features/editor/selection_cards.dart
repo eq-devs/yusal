@@ -7,6 +7,10 @@ extension _SelectionCards on _HouseEditorState {
   Widget? selectionCard() {
     if (view3d) return null;
     final g = derived.floors[floorIndex];
+    if (selectedUtilityId != null) {
+      final u = floorUtilities.where((u) => u.id == selectedUtilityId).firstOrNull;
+      if (u != null) return utilityCard(u);
+    }
     if (selectedFurnitureId != null) {
       final f = history.present.extras.furniture
           .where((f) => f.id == selectedFurnitureId)
@@ -613,6 +617,7 @@ extension _SelectionCards on _HouseEditorState {
                 action('SetDefault', {'field': 'outerWallThickness', 'value': v});
             }),
           ]),
+          if (showUtilities) utilitySummary(),
           for (final room in floor.rooms)
             InkWell(
                 onTap: () => update(() {

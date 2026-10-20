@@ -197,6 +197,11 @@ extension _SceneTab on _HouseEditorState {
                 label: tr('地基', 'Іргетас'),
                 selected: s.foundation,
                 onChanged: (v) => set(s.copyWith(foundation: v))),
+            if (history.present.extras.site != null)
+              PillToggle(
+                  label: tr('院子', 'Аула'),
+                  selected: s.site,
+                  onChanged: (v) => set(s.copyWith(site: v))),
             PillToggle(
                 label: tr('剖切', 'Кесу'),
                 selected: s.cut,

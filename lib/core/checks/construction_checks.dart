@@ -8,7 +8,10 @@ import '../geometry/floor_base.dart';
 /// highlight.
 class ConstructionIssue {
   const ConstructionIssue(this.code, this.level, this.title, this.text,
-      {this.floorId, this.areas = const [], this.showFoundation = false});
+      {this.floorId,
+      this.areas = const [],
+      this.showFoundation = false,
+      this.site = false});
   final String code;
   final IssueLevel level;
 
@@ -17,6 +20,9 @@ class ConstructionIssue {
   final String? floorId;
   final List<PlanRect> areas;
   final bool showFoundation;
+
+  /// [areas] are on the plot drawing rather than a floor plan.
+  final bool site;
 }
 
 String _m(double mm) => (mm / 1000).toStringAsFixed(2);

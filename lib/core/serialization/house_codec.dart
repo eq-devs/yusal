@@ -4,7 +4,7 @@ import 'schema_validator.dart';
 import '../document/house_document.dart';
 import '../validation/document_validator.dart';
 
-const currentSchemaVersion = 3;
+const currentSchemaVersion = 4;
 const maxHouseBytes = 10485760;
 
 class LoadError {
@@ -456,6 +456,13 @@ class _Decoder {
         overhang: integer(m['overhang'], '$p/overhang'),
       );
     }
+    if (raw == 'hip') {
+      _shape(m, p, ['type', 'pitchDeg', 'overhang']);
+      return Roof.hip(
+        pitchDeg: integer(m['pitchDeg'], '$p/pitchDeg'),
+        overhang: integer(m['overhang'], '$p/overhang'),
+      );
+    }
     err('UNKNOWN_DISCRIMINATOR', '$p/type', '未知屋顶 type');
     return const Roof.flat(0);
   }
@@ -470,11 +477,14 @@ class _Decoder {
       'openings',
       'stairs',
     ];
-    final m = obj(v, p, keys, optional: ['explicitWalls']);
+    final m = obj(v, p, keys, optional: ['explicitWalls', 'outside']);
     final rooms = arr(m['rooms'], '$p/rooms'),
         walls = arr(m['wallOverrides'], '$p/wallOverrides'),
         opens = arr(m['openings'], '$p/openings'),
-        stairs = arr(m['stairs'], '$p/stairs');
+        stairs = arr(m['stairs'], '$p/stairs'),
+        outside = m['outside'] == null
+            ? const <Object?>[]
+            : arr(m['outside'], '$p/outside');
     return Floor(
       explicitWalls: m['explicitWalls'] == true,
       id: str(m['id'], '$p/id', id: true),
@@ -494,6 +504,10 @@ class _Decoder {
       stairs: [
         for (var i = 0; i < stairs.length; i++)
           stair(stairs[i], '$p/stairs/$i'),
+      ],
+      outside: [
+        for (var i = 0; i < outside.length; i++)
+          rect(outside[i], '$p/outside/$i'),
       ],
     );
   }
@@ -840,6 +854,8 @@ String encodeHouse(HouseDocument d) {
                   },
               },
           ],
+          if (f.outside.isNotEmpty)
+            'outside': [for (final r in f.outside) rect(r)],
         },
     ],
     'roof': switch (d.roof.type) {
@@ -847,6 +863,11 @@ String encodeHouse(HouseDocument d) {
       RoofType.gable => {
           'type': 'gable',
           'ridgeDir': d.roof.ridgeDir!.name,
+          'pitchDeg': d.roof.pitchDeg,
+          'overhang': d.roof.overhang,
+        },
+      RoofType.hip => {
+          'type': 'hip',
           'pitchDeg': d.roof.pitchDeg,
           'overhang': d.roof.overhang,
         },

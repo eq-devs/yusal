@@ -132,7 +132,10 @@ DerivedHouse deriveHouse(HouseDocument doc) {
     ]);
   }
 
-  box('Slab', 0, null, 'slab', PlanRect(0, 0, width, depth), -slab, 0);
+  final groundBase = deriveFloorBase(doc, doc.floors.first.id);
+  for (final r in groundBase.outside.isEmpty
+      ? [PlanRect(0, 0, width, depth)]
+      : insideRects(groundBase)) box('Slab', 0, null, 'slab', r, -slab, 0);
   var elevation = 0.0;
   for (var f = 0; f < doc.floors.length; f++) {
     final floor = doc.floors[f],
@@ -194,6 +197,11 @@ DerivedHouse deriveHouse(HouseDocument doc) {
         center = p.host!.thickness / 2;
       if (p.axis.id == '@right') center = width - p.host!.thickness / 2;
       if (p.axis.id == '@top') center = depth - p.host!.thickness / 2;
+      if (p.axis.kind != 'boundary' && p.host!.kind == 'exterior') {
+        // Outside walls along a cut-out sit to one side of their line.
+        final r = base.wallRects[base.wallSegments.indexOf(p.host!)];
+        center = horizontal ? (r.bottom + r.top) / 2 : (r.left + r.right) / 2;
+      }
       final thickness = o is DoorOpening ? 40.0 : 4.0;
       final r = horizontal
           ? PlanRect(
@@ -328,6 +336,8 @@ DerivedHouse deriveHouse(HouseDocument doc) {
           List.unmodifiable(landings), requiredA, requiredB));
     }
     // A floor-top slab is split around the staircase openings.
+    // Cut-out floors split along the grid so no slab hangs outside.
+    final cut = base.outside.isNotEmpty;
     final xs = {
       <double>{
         0,
@@ -335,7 +345,8 @@ DerivedHouse deriveHouse(HouseDocument doc) {
         for (final s in stairs) ...[
           s.opening.left.clamp(0, width),
           s.opening.right.clamp(0, width)
-        ]
+        ],
+        if (cut) for (final a in base.axes.v) a.pos.toDouble()
       }
     }.first.toList()
       ..sort();
@@ -346,7 +357,8 @@ DerivedHouse deriveHouse(HouseDocument doc) {
         for (final s in stairs) ...[
           s.opening.bottom.clamp(0, depth),
           s.opening.top.clamp(0, depth)
-        ]
+        ],
+        if (cut) for (final a in base.axes.h) a.pos.toDouble()
       }
     }.first.toList()
       ..sort();
@@ -354,6 +366,7 @@ DerivedHouse deriveHouse(HouseDocument doc) {
       for (var i = 0; i < xs.length - 1; i++) {
         final x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2;
         if (stairs.any((s) => s.opening.contains(x, y))) continue;
+        if (cut && !base.inside(x, y)) continue;
         box(
             'Slab',
             f,
@@ -379,12 +392,68 @@ DerivedHouse deriveHouse(HouseDocument doc) {
   if (roof.type == RoofType.flat) {
     final t = doc.defaults.outerWallThickness.toDouble(),
         z = elevation + roof.parapetHeight!;
-    for (final r in [
-      PlanRect(0, 0, width, t),
-      PlanRect(0, depth - t, width, depth),
-      PlanRect(0, t, t, depth - t),
-      PlanRect(width - t, t, width, depth - t)
-    ]) box('Parapet', -1, null, 'wall', r, elevation, z);
+    final topBase = floors.last.base;
+    for (final r in topBase.outside.isEmpty
+        ? [
+            PlanRect(0, 0, width, t),
+            PlanRect(0, depth - t, width, depth),
+            PlanRect(0, t, t, depth - t),
+            PlanRect(width - t, t, width, depth - t)
+          ]
+        : [
+            // Along the outline of the top floor.
+            for (var k = 0; k < topBase.wallSegments.length; k++)
+              if (topBase.wallSegments[k].kind == 'exterior')
+                topBase.wallRects[k]
+          ]) box('Parapet', -1, null, 'wall', r, elevation, z);
+  } else if (roof.type == RoofType.hip) {
+    // Four planes at one pitch: height grows with the distance from the
+    // nearest wall line, so the ridge runs along the longer side (a point
+    // on a square house) and the eaves droop by the overhang.
+    final o = roof.overhang!.toDouble(),
+        slope = math.tan(roof.pitchDeg! * math.pi / 180);
+    final half = math.min(width, depth) / 2,
+        eave = elevation - o * slope,
+        ridge = elevation + half * slope;
+    final a = (x: half, y: half),
+        b = width >= depth
+            ? (x: width - half, y: half)
+            : (x: half, y: depth - half);
+    final c00 = (x: -o, y: -o), c10 = (x: width + o, y: -o),
+        c11 = (x: width + o, y: depth + o), c01 = (x: -o, y: depth + o);
+    final planes = width >= depth
+        ? [
+            [c00, c10, b, a],
+            [c11, c01, a, b],
+            [c01, c00, a],
+            [c10, c11, b]
+          ]
+        : [
+            [c00, c10, a],
+            [c11, c01, b],
+            [c01, c00, a, b],
+            [c10, c11, b, a]
+          ];
+    for (final plane in planes) {
+      final top = <({double x, double y})>[];
+      for (final p in plane)
+        if (top.isEmpty ||
+            (top.last.x - p.x).abs() + (top.last.y - p.y).abs() > 1) top.add(p);
+      if ((top.first.x - top.last.x).abs() + (top.first.y - top.last.y).abs() <=
+          1) top.removeLast();
+      if (top.length < 3) continue;
+      double z(({double x, double y}) p) =>
+          p == a || p == b ? ridge : eave;
+      final n = top.length;
+      mesh('RoofPlane', -1, null, 'roof', [
+        for (final p in top) (x: p.x, y: p.y, z: z(p)),
+        for (final p in top) (x: p.x, y: p.y, z: z(p) - slab),
+      ], [
+        [for (var i = 0; i < n; i++) i],
+        [for (var i = n - 1; i >= 0; i--) n + i],
+        for (var i = 0; i < n; i++) [i, n + i, n + (i + 1) % n, (i + 1) % n],
+      ]);
+    }
   } else {
     final overhang = roof.overhang!.toDouble(),
         vertical = roof.ridgeDir == AxisDir.V;

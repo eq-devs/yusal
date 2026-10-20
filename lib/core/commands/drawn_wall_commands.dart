@@ -14,7 +14,8 @@ import 'room_commands.dart';
 HouseDocument _replaceFloor(HouseDocument doc, Floor floor,
         {AxisSystem? axes}) =>
     HouseDocument(
-        schemaVersion: 2,
+        // Independent walls need 2; a hip roof or cut-outs keep 4.
+        schemaVersion: doc.schemaVersion > 2 ? doc.schemaVersion : 2,
         meta: doc.meta,
         defaults: doc.defaults,
         footprint: doc.footprint,
@@ -40,6 +41,7 @@ HouseDocument enableWallDrawing(
           rooms: floor.rooms,
           openings: floor.openings,
           stairs: floor.stairs,
+          outside: floor.outside,
           wallOverrides: [
             for (final w in floor.wallOverrides)
               if (w is OpenWall ||
@@ -75,7 +77,9 @@ HouseDocument recognizeWallRooms(
   final remaining = <Cell>{
     for (var j = 0; j < axes.ny; j++)
       for (var i = 0; i < axes.nx; i++)
-        if (!stairs.contains(base.owners[Cell(i, j)])) Cell(i, j)
+        if (!stairs.contains(base.owners[Cell(i, j)]) &&
+            !base.outside.contains(Cell(i, j)))
+          Cell(i, j)
   };
   final adjacency = <Cell, Set<Cell>>{};
   for (final e in base.edges) {
@@ -153,7 +157,8 @@ HouseDocument recognizeWallRooms(
           rooms: rooms,
           wallOverrides: floor.wallOverrides,
           openings: floor.openings,
-          stairs: floor.stairs));
+          stairs: floor.stairs,
+          outside: floor.outside));
 }
 
 /// Keep room-based tools usable after upgrading to physical wall segments.
@@ -177,7 +182,8 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
               if (w is! SolidWall) w
           ],
           openings: floor.openings,
-          stairs: floor.stairs));
+          stairs: floor.stairs,
+          outside: floor.outside));
   final wanted = deriveFloorBase(natural, floorId);
   String? oldOwner(Cell? c) {
     if (c == null) return null;
@@ -263,7 +269,8 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
               rooms: floor.rooms,
               wallOverrides: walls,
               openings: floor.openings,
-              stairs: floor.stairs)),
+              stairs: floor.stairs,
+              outside: floor.outside)),
       floorId,
       newId,
       keepUnassigned: true);
@@ -547,7 +554,8 @@ EditResult editDrawnWall(HouseDocument original, String kind,
             rooms: floor.rooms,
             wallOverrides: walls,
             openings: opens,
-            stairs: floor.stairs),
+            stairs: floor.stairs,
+            outside: floor.outside),
         axes: AxisSystem(global: doc.axes.global, floor: localAxes));
     if (removed.contains(doc.mainEntranceOpeningId)) {
       final raw = jsonDecode(encodeHouse(doc)) as Map<String, dynamic>;

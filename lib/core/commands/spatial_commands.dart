@@ -100,7 +100,8 @@ EditResult carveRoom(HouseDocument doc, String floorId, int left, int bottom,
         rooms: rooms,
         wallOverrides: original.wallOverrides,
         openings: original.openings,
-        stairs: original.stairs);
+        stairs: original.stairs,
+        outside: original.outside);
     final result = rebuild(axisSystem, [
       for (final floor in doc.floors) floor.id == floorId ? replacement : floor
     ]);
@@ -159,7 +160,9 @@ EditResult splitSpace(HouseDocument doc, String floorId, AxisDir dir, int pos,
       floor.rooms.where((r) => sets[r.id]!.contains(seed)).firstOrNull;
   final reserved = {
     for (final stair in floor.stairs)
-      ...cellsOfRect(resolveRect(axes, stair.region).rect!)
+      ...cellsOfRect(resolveRect(axes, stair.region).rect!),
+    // Cut-out corners are outdoors, not undivided space.
+    for (final r in floor.outside) ...cellsOfRect(resolveRect(axes, r).rect!)
   };
   final occupied = sets.values.expand((s) => s).toSet();
   final candidates = source == null
@@ -209,7 +212,8 @@ EditResult splitSpace(HouseDocument doc, String floorId, AxisDir dir, int pos,
       rooms: rooms,
       wallOverrides: floor.wallOverrides,
       openings: floor.openings,
-      stairs: floor.stairs);
+      stairs: floor.stairs,
+      outside: floor.outside);
   final result = HouseDocument(
       schemaVersion: doc.schemaVersion,
       meta: doc.meta,

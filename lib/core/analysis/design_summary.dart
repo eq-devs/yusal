@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import '../document/house_document.dart';
 import '../geometry/derived_house.dart';
+import '../geometry/floor_base.dart';
 import 'house_analysis.dart';
 
 /// Figures for comparing two designs side by side, after the layout
@@ -129,8 +130,8 @@ DesignSummary summarizeDesign(HouseDocument doc, DerivedHouse derived,
           : spansAcross(w <= d);
   return DesignSummary(
       frontWidth: front == '@top' || front == '@bottom' ? w : d,
-      buildingArea: w * d,
-      exteriorLength: 2 * (w + d),
+      buildingArea: footprintArea(derived.floors.first.base),
+      exteriorLength: outlineLength(derived.floors.first.base),
       roomAreas: areas,
       spans: [for (final s in spans) math.max(0, s)],
       bedroomsThroughLiving: throughLiving,

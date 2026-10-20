@@ -45,8 +45,8 @@ extension _OtherTabs on _HouseEditorState {
               '寒冷地区平屋顶要注意三点：排水口和落水管容易冻堵，建议加电伴热；积雪荷载按当地规范计算；女儿墙内侧防水上翻不少于 300 mm，并留一个检修上人孔。',
               'Суық аймақта тегіс шатырдың үш маңызды жері бар: су қабылдағыш пен құбыр қатуы мүмкін — электр жылытқыш қойыңыз; қар жүктемесін жергілікті норма бойынша есептеңіз; парапет ішіне гидрооқшауды кемінде 300 мм көтеріп, шатырға шығатын люк қалдырыңыз.')
           : tr(
-              '坡屋顶注意檐口保温连续、屋脊通风和雪挡。坡度越大积雪越少，但屋面面积和造价随之增加。',
-              'Қос беткейлі шатырда карниз жылытқышы үзіліссіз, жотада желдету және қар ұстағыш болсын. Еңіс үлкен болса қар аз жиналады, бірақ шатыр ауданы мен құны артады.'),
+              '坡屋顶注意檐口保温连续、屋脊通风和雪挡。坡度越大积雪越少，但屋面面积和造价随之增加。四坡屋顶四面都有挑檐，墙面淋雨少，但斜脊和屋架更费工。',
+              'Еңісті шатырда карниз жылытқышы үзіліссіз, жотада желдету және қар ұстағыш болсын. Еңіс үлкен болса қар аз жиналады, бірақ шатыр ауданы мен құны артады. Төрт беткейлі шатырдың төрт жағында да карниз бар, қабырғаға жаңбыр аз тиеді, бірақ қырлары мен қаңқасы күрделірек.'),
       'floor' => tr(
           '如果考虑地暖，找平层里埋管，XPS 必须连续不断。卫生间和厨房在找平层上面再加一道防水，墙根上翻 200–300 mm。',
           'Жылы еден жасасаңыз, құбыр тегістеу қабатына салынады, XPS үзіліссіз болуы керек. Жуыну бөлмесі мен ас үйде тағы бір гидрооқшау салып, қабырғаға 200–300 мм көтеріңіз.'),
@@ -107,9 +107,11 @@ extension _OtherTabs on _HouseEditorState {
             note: 'wall',
             horizontal: true),
         layerCard(
-            title: doc.roof.type == RoofType.flat
-                ? tr('平屋顶 · 坡度 2%', 'Тегіс шатыр · еңісі 2%')
-                : tr('双坡屋顶', 'Қос беткейлі шатыр'),
+            title: switch (doc.roof.type) {
+              RoofType.flat => tr('平屋顶 · 坡度 2%', 'Тегіс шатыр · еңісі 2%'),
+              RoofType.gable => tr('双坡屋顶', 'Қос беткейлі шатыр'),
+              RoofType.hip => tr('四坡屋顶', 'Төрт беткейлі шатыр'),
+            },
             group: 'roof',
             layers: x.roofLayers,
             note: 'roof',
@@ -174,35 +176,42 @@ extension _OtherTabs on _HouseEditorState {
               action('SetDefault', {'field': 'slabThickness', 'value': v});
           }),
         ]),
-        Wrap(spacing: 8, children: [
-          Btn(
-              label: tr('改为双坡屋顶', 'Қос беткейлі ету'),
-              icon: Icons.roofing,
-              onPressed: () => action('SetRoof', {
-                    'roof': {
-                      'type': 'gable',
-                      'ridgeDir': history.present.footprint.width >=
-                              history.present.footprint.depth
-                          ? 'H'
-                          : 'V',
-                      'pitchDeg': 30,
-                      'overhang': 500
-                    }
-                  }))
-        ]),
+        Wrap(spacing: 8, runSpacing: 8, children: [gableButton(), hipButton()]),
       ];
     Future<void> gable(String field, String title, int value) async {
       final v = await askMm(title, value);
       if (v == null) return;
       action('SetRoof', {
         'roof': {
-          'type': 'gable',
-          'ridgeDir': roof.ridgeDir!.name,
+          'type': roof.type.name,
+          if (roof.type == RoofType.gable) 'ridgeDir': roof.ridgeDir!.name,
           'pitchDeg': field == 'pitch' ? v : roof.pitchDeg,
           'overhang': field == 'overhang' ? v : roof.overhang,
         }
       });
     }
+
+    final flat = Btn(
+        label: tr('改为平屋顶', 'Тегіс ету'),
+        icon: Icons.crop_landscape,
+        onPressed: () => action('SetRoof', {
+              'roof': {'type': 'flat', 'parapetHeight': 1000}
+            }));
+    if (roof.type == RoofType.hip)
+      return [
+        KvGrid([
+          Kv('${roof.pitchDeg}°', tr('坡度', 'Еңісі'),
+              onTap: () => gable('pitch', tr('坡度 (度)', 'Еңісі (градус)'),
+                  roof.pitchDeg!)),
+          Kv('${roof.overhang}', tr('挑檐 mm', 'Карниз, мм'),
+              onTap: () =>
+                  gable('overhang', tr('挑檐', 'Карниз'), roof.overhang!)),
+          Kv(
+              '${dec((math.min(history.present.footprint.width, history.present.footprint.depth) / 2 * math.tan(roof.pitchDeg! * math.pi / 180) / 1000).toStringAsFixed(2))} $unitM',
+              tr('屋脊高出墙顶', 'Жота қабырғадан биік')),
+        ]),
+        Wrap(spacing: 8, runSpacing: 8, children: [flat, gableButton()]),
+      ];
 
     return [
       KvGrid([
@@ -223,16 +232,35 @@ extension _OtherTabs on _HouseEditorState {
                   }
                 })),
       ]),
-      Wrap(spacing: 8, children: [
-        Btn(
-            label: tr('改为平屋顶', 'Тегіс ету'),
-            icon: Icons.crop_landscape,
-            onPressed: () => action('SetRoof', {
-                  'roof': {'type': 'flat', 'parapetHeight': 1000}
-                }))
-      ]),
+      Wrap(spacing: 8, runSpacing: 8, children: [flat, hipButton()]),
     ];
   }
+
+  Widget gableButton() => Btn(
+      label: tr('改为双坡屋顶', 'Қос беткейлі ету'),
+      icon: Icons.roofing,
+      onPressed: () => action('SetRoof', {
+            'roof': {
+              'type': 'gable',
+              'ridgeDir': history.present.footprint.width >=
+                      history.present.footprint.depth
+                  ? 'H'
+                  : 'V',
+              'pitchDeg': history.present.roof.pitchDeg ?? 30,
+              'overhang': history.present.roof.overhang ?? 500
+            }
+          }));
+
+  Widget hipButton() => Btn(
+      label: tr('改为四坡屋顶', 'Төрт беткейлі ету'),
+      icon: Icons.house_outlined,
+      onPressed: () => action('SetRoof', {
+            'roof': {
+              'type': 'hip',
+              'pitchDeg': history.present.roof.pitchDeg ?? 25,
+              'overhang': history.present.roof.overhang ?? 500
+            }
+          }));
 
   Widget layerCard(
       {required String title,
@@ -929,8 +957,11 @@ extension _OtherTabs on _HouseEditorState {
     final t = Tokens.of(context);
     final doc = history.present;
     final results = runChecks(doc, derived);
-    final building =
-        constructionChecks(doc, derived, nameOf: displayRoomName);
+    final building = [
+      ...constructionChecks(doc, derived, nameOf: displayRoomName),
+      ...heatChecks(doc, heatLoss(doc, derived)),
+      ...siteChecks(doc, nameOf: siteItemName),
+    ];
     const ruleTitles = {
       'R01': ('房间偏窄', 'Бөлме тар'),
       'R02': ('墙占满了空间', 'Қабырға орынды толық алды'),
@@ -950,6 +981,7 @@ extension _OtherTabs on _HouseEditorState {
       String? floorId,
       List<PlanRect> areas,
       bool foundation,
+      bool site,
       UserIssue? own
     })>[
       for (final i in doc.extras.issues)
@@ -964,6 +996,7 @@ extension _OtherTabs on _HouseEditorState {
                   a.$4.toDouble())
           ],
           foundation: false,
+          site: false,
           own: i
         ),
       for (final r in results)
@@ -975,6 +1008,7 @@ extension _OtherTabs on _HouseEditorState {
           floorId: r.floorId,
           areas: [if (r.focus != null) r.focus!],
           foundation: false,
+          site: false,
           own: null
         ),
       for (final c in building)
@@ -985,6 +1019,7 @@ extension _OtherTabs on _HouseEditorState {
           floorId: c.floorId,
           areas: c.areas,
           foundation: c.showFoundation,
+          site: c.site,
           own: null
         ),
     ]..sort((a, b) {
@@ -1065,10 +1100,20 @@ extension _OtherTabs on _HouseEditorState {
                     Wrap(spacing: 8, runSpacing: 8, children: [
                       if (i.areas.isNotEmpty)
                         Btn(
-                            label: tr('在平面图中定位', 'Жоспардан көрсету'),
+                            label: i.site
+                                ? tr('在宅基地图中定位', 'Учаскеден көрсету')
+                                : tr('在平面图中定位', 'Жоспардан көрсету'),
                             icon: Icons.my_location,
-                            onPressed: () => locate(i.floorId, i.areas,
-                                foundation: i.foundation)),
+                            onPressed: () => i.site
+                                ? update(() {
+                                    tab = 'site';
+                                    siteHighlights = i.areas;
+                                    pulse
+                                      ..value = 0
+                                      ..repeat(reverse: true, count: 6);
+                                  })
+                                : locate(i.floorId, i.areas,
+                                    foundation: i.foundation)),
                       if (i.own != null) ...[
                         Btn(
                             label: tr('编辑', 'Өзгерту'),

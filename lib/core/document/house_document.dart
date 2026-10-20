@@ -17,7 +17,7 @@ enum StairEdge { bottom, top, left, right }
 
 enum StairTurn { left, right }
 
-enum RoofType { flat, gable }
+enum RoofType { flat, gable, hip }
 
 enum PositionType { center, fromStart, fromEnd }
 
@@ -448,7 +448,14 @@ class Roof {
     required this.overhang,
   })  : type = RoofType.gable,
         parapetHeight = null;
+
+  /// Four slopes; the ridge runs along the longer side (version 4).
+  const Roof.hip({required this.pitchDeg, required this.overhang})
+      : type = RoofType.hip,
+        parapetHeight = null,
+        ridgeDir = null;
   final RoofType type;
+  bool get pitched => type != RoofType.flat;
   final int? parapetHeight;
   final AxisDir? ridgeDir;
   final int? pitchDeg, overhang;
@@ -497,10 +504,12 @@ class Floor {
     required List<WallOverride> wallOverrides,
     required List<Opening> openings,
     required List<Stair> stairs,
+    List<AxisRectangle> outside = const [],
   })  : rooms = List.unmodifiable(rooms),
         wallOverrides = List.unmodifiable(wallOverrides),
         openings = List.unmodifiable(openings),
-        stairs = List.unmodifiable(stairs);
+        stairs = List.unmodifiable(stairs),
+        outside = List.unmodifiable(outside);
   final String id, name;
   final bool explicitWalls;
   final int height;
@@ -508,6 +517,11 @@ class Floor {
   final List<WallOverride> wallOverrides;
   final List<Opening> openings;
   final List<Stair> stairs;
+
+  /// Parts of the footprint rectangle left outside the building on this
+  /// floor (an L-shaped house, a terrace over the floor below). Walls run
+  /// along their edges as outside walls (version 4).
+  final List<AxisRectangle> outside;
   @override
   bool operator ==(Object other) =>
       other is Floor &&
@@ -518,7 +532,8 @@ class Floor {
       _listEquals(rooms, other.rooms) &&
       _listEquals(wallOverrides, other.wallOverrides) &&
       _listEquals(openings, other.openings) &&
-      _listEquals(stairs, other.stairs);
+      _listEquals(stairs, other.stairs) &&
+      _listEquals(outside, other.outside);
   @override
   int get hashCode => Object.hash(
       id,
@@ -528,7 +543,8 @@ class Floor {
       Object.hashAll(wallOverrides),
       explicitWalls,
       Object.hashAll(openings),
-      Object.hashAll(stairs));
+      Object.hashAll(stairs),
+      Object.hashAll(outside));
 }
 
 class HouseDocument {
@@ -648,10 +664,18 @@ HouseExtras prunedExtras(HouseExtras extras, List<Floor> floors) =>
         for (final o in f.openings) o.id
     });
 
+/// Whether a design uses anything only schema version 4 can hold.
+bool needsVersion4(Roof roof, HouseExtras extras, List<Floor> floors) =>
+    roof.type == RoofType.hip ||
+    extras.needsVersion4 ||
+    floors.any((f) => f.outside.isNotEmpty);
+
 HouseDocument composeDocument(Meta meta, UndoableDesignState state) {
   final extras = prunedExtras(state.extras, state.floors);
   return HouseDocument(
-    schemaVersion: !extras.isEmpty
+    schemaVersion: needsVersion4(state.roof, extras, state.floors)
+        ? 4
+        : !extras.isEmpty
         ? 3
         : state.floors.any((f) =>
                 f.explicitWalls || f.wallOverrides.any((w) => w is SolidWall))

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show Color, Offset;
 import '../core/analysis/house_analysis.dart';
+import '../core/analysis/site_analysis.dart';
 import '../core/document/house_document.dart';
 import '../core/geometry/derived_house.dart';
 import '../core/geometry/floor_base.dart';
@@ -45,6 +46,7 @@ class Face3 {
       Vec3? normal,
       this.castsShadow = true,
       this.interior = false,
+      this.covering = false,
       this.textile,
       this.textileVariant = 0,
       this.uv})
@@ -60,6 +62,10 @@ class Face3 {
   /// Inside the shell (inner walls, furniture, stairs, upper slabs): hidden
   /// by the outer walls and roof unless the roof is off or the house is cut.
   final bool interior;
+
+  /// A pitched roof covering: it rests on the walls, so it is drawn after
+  /// them whenever the shell is shown.
+  final bool covering;
 
   /// Kazakh textile pattern, mapped with [uv] (0–1 per point).
   final Textile? textile;
@@ -116,8 +122,9 @@ class SceneOptions {
       this.furniture = true,
       this.foundation = false,
       this.walk = false,
+      this.site = true,
       this.maxFloor = 999});
-  final bool roof, furniture, foundation, walk;
+  final bool roof, furniture, foundation, walk, site;
   final int maxFloor;
 }
 
@@ -171,7 +178,10 @@ class Mat {
       white = Color(0xffF4F4F2),
       table = Color(0xff7C5E40),
       appl = Color(0xffB8BEC1),
-      dastTop = Color(0xff8A5A34);
+      dastTop = Color(0xff8A5A34),
+      garden = Color(0xff6E8B4E),
+      paving = Color(0xffB9B6AE),
+      fence = Color(0xff7B6A55);
   static const rugs = [Color(0xff8E1C1C), Color(0xff6E1630), Color(0xff1F3B5A)];
   static const rugBorders = [
     Color(0xff1D2A48),
@@ -209,6 +219,7 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       bool bottom = false,
       bool glow = false,
       bool interior = false,
+      bool covering = false,
       Textile? textile,
       int variant = 0}) {
     if (x1 - x0 <= 1e-4 || y1 - y0 <= 1e-4 || z1 - z0 <= 1e-4) return;
@@ -240,7 +251,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
         floorIndex: floor,
         castsShadow: shadow,
         glow: glow,
-        interior: interior || furniture));
+        interior: interior || furniture,
+        covering: covering));
     // Counter-clockwise seen from outside.
     if (top)
       f([p(x0, y1, z0), p(x0, y1, z1), p(x1, y1, z1), p(x1, y1, z0)]);
@@ -264,7 +276,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
           bool top = true,
           bool bottom = false,
           bool glow = false,
-          bool interior = false}) =>
+          bool interior = false,
+          bool covering = false}) =>
       box(px(r.left), y0, pz(r.top), px(r.right), y1, pz(r.bottom), color,
           alpha: alpha,
           layer: layer,
@@ -276,7 +289,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
           top: top,
           bottom: bottom,
           glow: glow,
-          interior: interior);
+          interior: interior,
+          covering: covering);
 
   final elevations = <double>[];
   var elevation = 0.0;
@@ -291,12 +305,18 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
     }
     final slab = doc.defaults.slabThickness / 1000;
     // Floor slab under this floor (ground floor: on the plinth).
-    planBox(PlanRect(0, 0, doc.footprint.width.toDouble(),
-            doc.footprint.depth.toDouble()), elevation - slab, elevation, Mat.slab,
-        layer: f == 0 ? Layer3.floorSurface : Layer3.sorted,
-        floor: f,
-        top: f != 0,
-        interior: f != 0);
+    final outline = g.base.outside.isEmpty
+        ? [
+            PlanRect(0, 0, doc.footprint.width.toDouble(),
+                doc.footprint.depth.toDouble())
+          ]
+        : insideRects(g.base);
+    for (final r in outline)
+      planBox(r, elevation - slab, elevation, Mat.slab,
+          layer: f == 0 ? Layer3.floorSurface : Layer3.sorted,
+          floor: f,
+          top: f != 0,
+          interior: f != 0);
     // Room floors: wood in living spaces, tiles in wet rooms.
     for (final room in floor.rooms) {
       final s = g.base.roomGeometry.firstWhere((r) => r.id == room.id);
@@ -415,7 +435,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
         final out = switch (p.axis.id) {
           '@left' || '@bottom' => -1.0,
           '@right' || '@top' => 1.0,
-          _ => 1.0
+          // Along a cut-out: outdoors is the side without a room.
+          _ => roomsBeside(p, g.base).$1 == null ? -1.0 : 1.0
         };
         final fz = out < 0 ? c0 : c1;
         final r = horizontal
@@ -434,12 +455,13 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
     }
     // Ceiling of this floor for the walk-through.
     if (options.walk)
-      faces.add(Face3([
-        Vec3(0, elevation + h - slab - 0.005, 0),
-        Vec3(w, elevation + h - slab - 0.005, 0),
-        Vec3(w, elevation + h - slab - 0.005, d),
-        Vec3(0, elevation + h - slab - 0.005, d),
-      ], Mat.ceil, layer: Layer3.ceiling, floorIndex: f, castsShadow: false));
+      for (final r in outline)
+        faces.add(Face3([
+          Vec3(px(r.left), elevation + h - slab - 0.005, pz(r.top)),
+          Vec3(px(r.right), elevation + h - slab - 0.005, pz(r.top)),
+          Vec3(px(r.right), elevation + h - slab - 0.005, pz(r.bottom)),
+          Vec3(px(r.left), elevation + h - slab - 0.005, pz(r.bottom)),
+        ], Mat.ceil, layer: Layer3.ceiling, floorIndex: f, castsShadow: false));
     // Furniture.
     if (options.furniture || options.walk)
       for (final item
@@ -460,9 +482,42 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       final parT = doc.defaults.outerWallThickness / 1000;
       final parH = roof.parapetHeight! / 1000;
       final rs = top + slab, rt = rs + 0.25;
-      box(0, top, 0, w, rs, d, Mat.wall, roof: true, floor: -1);
+      final topBase = derived.floors.last.base;
+      if (topBase.outside.isNotEmpty) {
+        // An outline with cut-outs: slab and membrane over the building,
+        // parapets along its outside walls.
+        final rects = insideRects(topBase);
+        final outer = [
+          for (final x in wallsOf(topBase, spec))
+            if (x.role == WallRole.exterior) x.rect
+        ];
+        for (final r in rects)
+          planBox(r, top, rs, Mat.wall, roof: true, floor: -1, covering: true);
+        // The membrane stops at the parapets' inner faces.
+        for (final r in _subtract(rects, outer))
+          planBox(r, rs, rt, Mat.membrane,
+              roof: true, floor: -1, covering: true);
+        // One parapet per wall line, as on a rectangular roof, so each
+        // long face sorts against the membrane as a whole.
+        if (parH > slab)
+          for (final r in _joinRuns(outer)) {
+            planBox(r, rs, top + parH, Mat.bear,
+                roof: true, floor: -1, covering: true);
+            planBox(PlanRect(r.left - 40, r.bottom - 40, r.right + 40, r.top + 40),
+                top + parH, top + parH + 0.05, Mat.coping,
+                roof: true, floor: -1, covering: true);
+          }
+        final hatch = rects.reduce((a, b) => a.area >= b.area ? a : b);
+        final cx = (hatch.left + hatch.right) / 2,
+            cy = (hatch.bottom + hatch.top) / 2;
+        planBox(PlanRect(cx - 400, cy - 400, cx + 400, cy + 400), rt, rt + 0.35,
+            Mat.coping,
+            roof: true, floor: -1, covering: true);
+      } else {
+      box(0, top, 0, w, rs, d, Mat.wall,
+          roof: true, floor: -1, covering: true);
       box(parT, rs, parT, w - parT, rt, d - parT, Mat.membrane,
-          roof: true, floor: -1);
+          roof: true, floor: -1, covering: true);
       if (parH > slab)
         for (final (x0, z0, x1, z1) in [
           (0.0, 0.0, w, parT),
@@ -470,10 +525,11 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
           (0.0, parT, parT, d - parT),
           (w - parT, parT, w, d - parT)
         ]) {
-          box(x0, rs, z0, x1, top + parH, z1, Mat.bear, roof: true, floor: -1);
+          box(x0, rs, z0, x1, top + parH, z1, Mat.bear,
+              roof: true, floor: -1, covering: true);
           box(x0 - 0.04, top + parH, z0 - 0.04, x1 + 0.04, top + parH + 0.05,
               z1 + 0.04, Mat.coping,
-              roof: true, floor: -1);
+              roof: true, floor: -1, covering: true);
         }
       for (final x in [1.5, w - 1.5]) {
         if (x < 0.5 || x > w - 0.5) continue;
@@ -484,7 +540,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       }
       box(w / 2 - 0.4, rt, d / 2 - 0.4, w / 2 + 0.4, rt + 0.35, d / 2 + 0.4,
           Mat.coping,
-          roof: true, floor: -1);
+          roof: true, floor: -1, covering: true);
+      }
     } else {
       for (final e in derived.scene3d.where((e) => e.floorIndex == -1)) {
         final pts = [
@@ -493,7 +550,10 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
         for (final face in e.faces)
           faces.add(Face3([for (final i in face) pts[i]],
               e.kind == 'RoofPlane' ? Mat.roof : Mat.bear,
-              roof: true, floorIndex: -1, doubleSided: e.kind == 'RoofPlane'));
+              roof: true,
+              floorIndex: -1,
+              doubleSided: e.kind == 'RoofPlane',
+              covering: e.kind == 'RoofPlane'));
       }
     }
   }
@@ -544,6 +604,110 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
     }
   }
 
+  // The plot: outbuildings with small gable roofs, fence, garden, well.
+  final site = doc.extras.site;
+  if (site != null && options.site && !options.walk) {
+    // Plot millimetres to world metres around the house.
+    double sx(num x) => px(x - site.houseX);
+    double sz(num y) => pz(y - site.houseY);
+    for (final item in site.items) {
+      final x0 = sx(item.x), x1 = sx(item.right);
+      final z0 = sz(item.top), z1 = sz(item.y);
+      final h = siteHeights[item.kind]! / 1000;
+      switch (item.kind) {
+        case SiteKind.garden || SiteKind.yard || SiteKind.septic:
+          box(x0, gl, z0, x1, gl + h, z1,
+              item.kind == SiteKind.garden
+                  ? Mat.garden
+                  : item.kind == SiteKind.yard
+                      ? Mat.paving
+                      : Mat.slab,
+              layer: Layer3.ground,
+              shadow: false);
+        case SiteKind.well:
+          box(x0, gl, z0, x1, gl + h, z1, Mat.coping);
+        case SiteKind.gate:
+          final across = x1 - x0 >= z1 - z0;
+          final c = across ? (z0 + z1) / 2 : (x0 + x1) / 2;
+          if (across)
+            box(x0, gl, c - 0.04, x1, gl + h, c + 0.04, Mat.door);
+          else
+            box(c - 0.04, gl, z0, c + 0.04, gl + h, z1, Mat.door);
+        default:
+          final color = switch (item.kind) {
+            SiteKind.barn || SiteKind.shed => Mat.woodF,
+            SiteKind.bathhouse || SiteKind.toilet => Mat.wood,
+            SiteKind.greenhouse => Mat.glass,
+            _ => Mat.wall,
+          };
+          final glass = item.kind == SiteKind.greenhouse;
+          box(x0, gl, z0, x1, gl + h, z1, color,
+              alpha: glass ? 0.55 : 1, top: false);
+          // Gable roof along the longer side, 0.25 m overhang.
+          const o = 0.25;
+          final alongX = x1 - x0 >= z1 - z0;
+          final span = alongX ? z1 - z0 : x1 - x0;
+          final rise = math.min(1.4, span * 0.35);
+          final top = gl + h;
+          Vec3 p(double along, double across, double y) =>
+              alongX ? Vec3(along, y, across) : Vec3(across, y, along);
+          final a0 = (alongX ? x0 : z0) - o, a1 = (alongX ? x1 : z1) + o;
+          final c0 = (alongX ? z0 : x0) - o, c1 = (alongX ? z1 : x1) + o;
+          final mid = (c0 + c1) / 2, eave = top - o * rise / (span / 2);
+          for (final side in [c0, c1])
+            faces.add(Face3([
+              p(a0, side, eave),
+              p(a1, side, eave),
+              p(a1, mid, top + rise),
+              p(a0, mid, top + rise)
+            ], glass ? Mat.glass : Mat.roof,
+                alpha: glass ? 0.6 : 1, doubleSided: true));
+          for (final end in [alongX ? x0 : z0, alongX ? x1 : z1])
+            faces.add(Face3([
+              p(end, c0 + o, top),
+              p(end, c1 - o, top),
+              p(end, mid, top + rise)
+            ], color, alpha: glass ? 0.55 : 1, doubleSided: true));
+      }
+    }
+    if (site.fence) {
+      const t = 0.06, h = 1.6;
+      final gates = site.items.where((i) => i.kind == SiteKind.gate);
+      for (final (ax, ay, bx, by) in [
+        (0, 0, site.width, 0),
+        (site.width, 0, site.width, site.depth),
+        (0, site.depth, site.width, site.depth),
+        (0, 0, 0, site.depth)
+      ]) {
+        final horizontal = ay == by;
+        final lo = horizontal ? ax : ay, hi = horizontal ? bx : by;
+        final cuts = [
+          for (final g in gates)
+            if (horizontal
+                ? (g.y - 600 <= ay && g.top + 600 >= ay)
+                : (g.x - 600 <= ax && g.right + 600 >= ax))
+              horizontal ? (g.x, g.right) : (g.y, g.top)
+        ]..sort((a, b) => a.$1.compareTo(b.$1));
+        var from = lo;
+        for (final (c0, c1) in [...cuts, (hi, hi)]) {
+          final to = c0.clamp(lo, hi);
+          if (to > from) {
+            if (horizontal) {
+              final z = sz(ay);
+              box(sx(from), gl, z - t, sx(to), gl + h, z + t, Mat.fence,
+                  shadow: false);
+            } else {
+              final x = sx(ax);
+              box(x - t, gl, sz(to), x + t, gl + h, sz(from), Mat.fence,
+                  shadow: false);
+            }
+          }
+          from = math.max(from, c1.clamp(lo, hi));
+        }
+      }
+    }
+  }
+
   // Walk spots: outside the front door and in every room.
   final entrance = derived.floors.first.openings
       .where((p) => p.opening.id == doc.mainEntranceOpeningId)
@@ -552,6 +716,64 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
   if (entrance != null && entrance.axis.id == '@top') frontZ = -1.0;
   return SceneModel(faces, lines, labels, colliders, elevations, w, d,
       math.max(top, 1), gl, frontZ);
+}
+
+/// Rectangles on the same line that touch or overlap, joined into runs.
+List<PlanRect> _joinRuns(List<PlanRect> rects) {
+  final out = <PlanRect>[];
+  for (final r in [...rects]..sort((a, b) => a.left != b.left
+      ? a.left.compareTo(b.left)
+      : a.bottom.compareTo(b.bottom))) {
+    final i = out.indexWhere((o) =>
+        (o.bottom == r.bottom && o.top == r.top && r.left <= o.right && o.left <= r.right) ||
+        (o.left == r.left && o.right == r.right && r.bottom <= o.top && o.bottom <= r.top));
+    if (i < 0) {
+      out.add(r);
+    } else {
+      final o = out[i];
+      out[i] = PlanRect(math.min(o.left, r.left), math.min(o.bottom, r.bottom),
+          math.max(o.right, r.right), math.max(o.top, r.top));
+    }
+  }
+  return out;
+}
+
+/// [area] less [holes], as rectangles merged row by row.
+List<PlanRect> _subtract(List<PlanRect> area, List<PlanRect> holes) {
+  final xs = {for (final r in [...area, ...holes]) ...[r.left, r.right]}.toList()
+    ..sort();
+  final ys = {for (final r in [...area, ...holes]) ...[r.bottom, r.top]}.toList()
+    ..sort();
+  bool keep(int i, int j) {
+    final x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2;
+    return area.any((r) => r.contains(x, y)) &&
+        !holes.any((r) => r.contains(x, y));
+  }
+
+  final open = <(int, int), int>{};
+  final out = <PlanRect>[];
+  for (var j = 0; j <= ys.length - 1; j++) {
+    final runs = <(int, int)>{};
+    if (j < ys.length - 1) {
+      var i = 0;
+      while (i < xs.length - 1) {
+        if (!keep(i, j)) {
+          i++;
+          continue;
+        }
+        final start = i;
+        while (i < xs.length - 1 && keep(i, j)) i++;
+        runs.add((start, i));
+      }
+    }
+    for (final run in open.keys.toList())
+      if (!runs.contains(run)) {
+        final j0 = open.remove(run)!;
+        out.add(PlanRect(xs[run.$1], ys[j0], xs[run.$2], ys[j]));
+      }
+    for (final run in runs) open.putIfAbsent(run, () => j);
+  }
+  return out;
 }
 
 typedef _BoxFn = void Function(double x0, double y0, double z0, double x1,

@@ -524,3 +524,65 @@ Future<String?> promptText(BuildContext context,
                     child: Text(ok))
               ]));
 }
+
+/// Horizontal bars for one series: a label, a bar from a shared baseline
+/// with a rounded data end, and the value at its tip. Hovering or a long
+/// press shows the row as a tooltip.
+class ShareBars extends StatelessWidget {
+  const ShareBars(this.items, {super.key, this.labelWidth = 116});
+  final List<(String label, double value, String text)> items;
+  final double labelWidth;
+  @override
+  Widget build(BuildContext context) {
+    final t = Tokens.of(context);
+    // The accent darkened one step at night to stay inside the dark band.
+    final color = t.dark ? const Color(0xffCF8020) : t.accent;
+    final top = items.fold(0.0, (m, i) => math.max(m, i.$2));
+    final valueStyle = mono(size: 12, color: t.ink);
+    var reserve = 0.0;
+    for (final i in items) {
+      final p = TextPainter(
+          text: TextSpan(text: i.$3, style: valueStyle),
+          textDirection: TextDirection.ltr)
+        ..layout();
+      reserve = math.max(reserve, p.width + 10);
+    }
+    return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(children: [
+          for (final (label, value, text) in items)
+            Tooltip(
+                message: '$label · $text',
+                child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(children: [
+                      SizedBox(
+                          width: labelWidth,
+                          child: Text(label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 12, color: t.muted))),
+                      Expanded(
+                          child: LayoutBuilder(
+                              builder: (context, c) => Row(children: [
+                                    Container(
+                                        width: top <= 0
+                                            ? 0
+                                            : math.max(
+                                                value > 0 ? 2.0 : 0.0,
+                                                (c.maxWidth - reserve) *
+                                                    value /
+                                                    top),
+                                        height: 10,
+                                        decoration: BoxDecoration(
+                                            color: color,
+                                            borderRadius:
+                                                const BorderRadius.horizontal(
+                                                    right: Radius.circular(4)))),
+                                    const SizedBox(width: 6),
+                                    Text(text, style: valueStyle),
+                                  ]))),
+                    ])))
+        ]));
+  }
+}

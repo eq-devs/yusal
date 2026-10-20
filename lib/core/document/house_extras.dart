@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'extras_planning.dart';
+export 'extras_planning.dart';
 
 /// Content beyond walls, rooms and openings: furniture, room notes,
 /// construction specs, user issues and pipe sleeves. Saved in an optional
 /// `extras` section (schema version 3) so older files keep their bytes.
+/// Prices, climate, utilities, the plot and the schedule need version 4.
 
 enum FurnitureKind {
   bed,
@@ -357,17 +360,38 @@ class FoundationSpec {
   int get hashCode => jsonEncode(toJson()).hashCode;
 }
 
+/// Thermal conductivity of each material when a layer gives none,
+/// thousandths of W/(m·K).
+const materialLambda = {
+  LayerMaterial.conc: 1920,
+  LayerMaterial.block: 140,
+  LayerMaterial.ins: 40,
+  LayerMaterial.earth: 1500,
+  LayerMaterial.sand: 580,
+  LayerMaterial.plaster: 760,
+  LayerMaterial.metal: 170,
+  LayerMaterial.wood: 150,
+  LayerMaterial.film: 200,
+  LayerMaterial.gyp: 250,
+};
+
 /// One layer of a wall, roof or floor build-up, outside to inside / top down.
 class Layer {
-  const Layer(this.name, this.nameKk, this.thickness, this.material);
+  const Layer(this.name, this.nameKk, this.thickness, this.material,
+      {this.lambda});
   final String name, nameKk;
   final int thickness;
   final LayerMaterial material;
+
+  /// The user's thermal conductivity, thousandths of W/(m·K) (version 4).
+  final int? lambda;
+  int get conductivity => lambda ?? materialLambda[material]!;
   Json toJson() => {
         'name': name,
         'nameKk': nameKk,
         'thickness': thickness,
         'material': material.name,
+        if (lambda != null) 'lambda': lambda,
       };
   static Layer fromJson(Object? v, String p, JsonReader r) {
     final m = r.obj(v, p);
@@ -376,7 +400,10 @@ class Layer {
         r.text(m['nameKk'], '$p/nameKk'),
         r.integer(m['thickness'], '$p/thickness', 0),
         r.en(m['material'], '$p/material', LayerMaterial.values,
-            LayerMaterial.plaster));
+            LayerMaterial.plaster),
+        lambda: m['lambda'] == null
+            ? null
+            : r.integer(m['lambda'], '$p/lambda', 1000));
   }
 }
 
@@ -511,7 +538,15 @@ class HouseExtras {
     List<UserIssue> issues = const [],
     List<Sleeve> sleeves = const [],
     Map<String, String> notes = const {},
-  })  : furniture = List.unmodifiable(furniture),
+    CostSpec? cost,
+    this.heat = const HeatSpec(),
+    List<UtilityPoint> utilities = const [],
+    this.site,
+    List<BuildStage> schedule = const [],
+  })  : cost = cost ?? CostSpec(),
+        utilities = List.unmodifiable(utilities),
+        schedule = List.unmodifiable(schedule),
+        furniture = List.unmodifiable(furniture),
         rooms = Map.unmodifiable(rooms),
         openingLabels = Map.unmodifiable(openingLabels),
         wallLayers = List.unmodifiable(wallLayers),
@@ -534,6 +569,19 @@ class HouseExtras {
   /// Free text per page section, keyed by section name.
   final Map<String, String> notes;
 
+  final CostSpec cost;
+  final HeatSpec heat;
+  final List<UtilityPoint> utilities;
+
+  /// The plot around the house; null until the user sets one up.
+  final SitePlan? site;
+
+  /// Building stages; empty means the built-in ones, untouched.
+  final List<BuildStage> schedule;
+
+  /// The stages shown and edited: the saved ones or the defaults.
+  List<BuildStage> get stages => schedule.isEmpty ? defaultSchedule() : schedule;
+
   HouseExtras copyWith({
     List<FurnitureItem>? furniture,
     Map<String, RoomInfo>? rooms,
@@ -545,6 +593,12 @@ class HouseExtras {
     List<UserIssue>? issues,
     List<Sleeve>? sleeves,
     Map<String, String>? notes,
+    CostSpec? cost,
+    HeatSpec? heat,
+    List<UtilityPoint>? utilities,
+    SitePlan? site,
+    bool clearSite = false,
+    List<BuildStage>? schedule,
   }) =>
       HouseExtras(
           furniture: furniture ?? this.furniture,
@@ -556,12 +610,18 @@ class HouseExtras {
           floorLayers: floorLayers ?? this.floorLayers,
           issues: issues ?? this.issues,
           sleeves: sleeves ?? this.sleeves,
-          notes: notes ?? this.notes);
+          notes: notes ?? this.notes,
+          cost: cost ?? this.cost,
+          heat: heat ?? this.heat,
+          utilities: utilities ?? this.utilities,
+          site: clearSite ? null : site ?? this.site,
+          schedule: schedule ?? this.schedule);
 
   /// Drop references to floors, rooms and openings that no longer exist.
   HouseExtras pruned(
       Set<String> floorIds, Set<String> roomIds, Set<String> openingIds) {
     final f = furniture.where((i) => floorIds.contains(i.floorId)).toList(),
+        u = utilities.where((i) => floorIds.contains(i.floorId)).toList(),
         r = {
           for (final e in rooms.entries)
             if (roomIds.contains(e.key) && !e.value.isEmpty) e.key: e.value
@@ -582,11 +642,13 @@ class HouseExtras {
                     areas: x.areas)
         ];
     if (f.length == furniture.length &&
+        u.length == utilities.length &&
         r.length == rooms.length &&
         o.length == openingLabels.length &&
         !issues.any((x) => x.floorId != null && !floorIds.contains(x.floorId)))
       return this;
-    return copyWith(furniture: f, rooms: r, openingLabels: o, issues: i);
+    return copyWith(
+        furniture: f, utilities: u, rooms: r, openingLabels: o, issues: i);
   }
 
   Json toJson() {
@@ -617,7 +679,25 @@ class HouseExtras {
         'notes': {
           for (final k in (notes.keys.toList()..sort())) k: notes[k]
         },
+      if (!cost.isDefault) 'cost': cost.toJson(),
+      if (!heat.isDefault) 'heat': heat.toJson(),
+      if (utilities.isNotEmpty)
+        'utilities': [for (final u in utilities) u.toJson()],
+      if (site != null) 'site': site!.toJson(),
+      if (schedule.isNotEmpty) 'schedule': [for (final s in schedule) s.toJson()],
     };
+  }
+
+  /// Whether the saved extras use anything that needs schema version 4.
+  bool get needsVersion4 {
+    final json = toJson();
+    return const ['cost', 'heat', 'utilities', 'site', 'schedule']
+            .any(json.containsKey) ||
+        [
+          if (json.containsKey('wallLayers')) ...wallLayers,
+          if (json.containsKey('roofLayers')) ...roofLayers,
+          if (json.containsKey('floorLayers')) ...floorLayers,
+        ].any((l) => l.lambda != null);
   }
 
   late final String _key = jsonEncode(toJson());
@@ -635,7 +715,12 @@ class HouseExtras {
       'floorLayers',
       'issues',
       'sleeves',
-      'notes'
+      'notes',
+      'cost',
+      'heat',
+      'utilities',
+      'site',
+      'schedule'
     };
     for (final k in m.keys)
       if (!known.contains(k)) r.err('UNKNOWN_FIELD', '$p/$k', '未知字段 $k');
@@ -668,7 +753,18 @@ class HouseExtras {
             : items('floorLayers', Layer.fromJson),
         issues: items('issues', UserIssue.fromJson),
         sleeves: items('sleeves', Sleeve.fromJson),
-        notes: keyed('notes', (v, path) => r.text(v, path)));
+        notes: keyed('notes', (v, path) => r.text(v, path)),
+        cost: m['cost'] == null
+            ? null
+            : CostSpec.fromJson(m['cost'], '$p/cost', r),
+        heat: m['heat'] == null
+            ? const HeatSpec()
+            : HeatSpec.fromJson(m['heat'], '$p/heat', r),
+        utilities: items('utilities', UtilityPoint.fromJson),
+        site: m['site'] == null
+            ? null
+            : SitePlan.fromJson(m['site'], '$p/site', r),
+        schedule: items('schedule', BuildStage.fromJson));
   }
 
   /// Structural problems; references to missing objects are pruned instead.
@@ -702,9 +798,13 @@ class HouseExtras {
       ('roofLayers', roofLayers),
       ('floorLayers', floorLayers)
     ])
-      for (var i = 0; i < layers.length; i++)
+      for (var i = 0; i < layers.length; i++) {
         if (layers[i].thickness < 0 || layers[i].thickness > 5000)
           out.add(('/extras/$key/$i/thickness', '层厚超出范围'));
+        if (layers[i].lambda != null &&
+            (layers[i].lambda! <= 0 || layers[i].lambda! > 100000))
+          out.add(('/extras/$key/$i/lambda', '导热系数超出范围'));
+      }
     final issueIds = <String>{};
     for (var i = 0; i < issues.length; i++) {
       if (issues[i].id.isEmpty || !issueIds.add(issues[i].id))
@@ -720,6 +820,12 @@ class HouseExtras {
       if (sleeves[i].diameter <= 0 || sleeves[i].diameter > 1000)
         out.add(('/extras/sleeves/$i/diameter', '套管直径超出范围'));
     }
+    out.addAll(planningProblems(
+        cost: cost,
+        heat: heat,
+        utilities: utilities,
+        site: site,
+        schedule: schedule));
     return out;
   }
 

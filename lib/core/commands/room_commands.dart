@@ -51,7 +51,8 @@ HouseDocument paintCells(HouseDocument doc, String floorId, List<Cell> stroke,
       rooms: rooms,
       wallOverrides: floor.wallOverrides,
       openings: floor.openings,
-      stairs: floor.stairs);
+      stairs: floor.stairs,
+      outside: floor.outside);
   final result = HouseDocument(
       schemaVersion: doc.schemaVersion,
       meta: doc.meta,

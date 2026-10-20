@@ -11,12 +11,19 @@ Flutter house planning app for web, iOS and Android. Dimensions are integer mill
 - Global/per-floor grids, precise movement, promotion and deletion with conflict choices.
 - Doors, windows, sliding doors, positioning, sizing, hinges and main entrance.
 - Wall opening/thickness overrides; floors, floor copies, heights and deletion.
-- Straight, L and U stairs; flat/gable roofs; configurable creation defaults.
+- Straight, L and U stairs; flat, gable and hip roofs; configurable creation defaults.
+- Non-rectangular outlines: cut a corner off the footprint (L, T or U shapes) on every floor or one floor (a terrace); outside walls follow the cut and slabs, roofs, quantities and heat loss follow the outline.
 - Net dimensions/areas, 2D plans, orbitable 3D previews and linked picking.
 - R01–R10 design checks with highlighted locations.
 - Local projects, atomic saves, autosave, recovery index, WebP thumbnails, damaged-file entries, import/export and native `.house` opening.
 - Drafting-table interface in Kazakh and Chinese with auto/day/night themes: pages for the 2D plan, 3D exterior, walk-through, construction details, door/window schedule and quantities, and the issue list.
 - Furniture (including Kazakh textiles: кілем, тұскиіз, көрпеше, сандық, дастарқан), room notes and drawing areas, foundation parameters and take-off, wall/roof/floor build-ups, pipe sleeves and the user's own issues, all saved in the file and undoable.
+- Budget: model quantities × editable unit prices (example prices in ¥ or ₸), labour and contingency shares, the user's own lines, totals per stage and per m².
+- Insulation and heating: U-values from the build-ups (editable conductivity per layer), heat loss per part and per room (EN ISO 13370 for the ground floor), boiler size, seasonal fuel and radiator sections; weak parts appear in the issue list.
+- Electrical, water and heating points on the plan with an automatic first layout per floor, cable and pipe lengths, and the budget measuring services from them.
+- Plot plan: plot size, house position, fence, gate and outbuildings (barn, bathhouse, toilet, well, garden…) with the usual village distances checked, also shown in 3D.
+- Building schedule: stages with dates, checklists, money spent against each stage's budget and overall progress.
+- Drawing set export: A4 PDF sheets (cover with 3D view, plans, services, foundation, build-ups, schedules, budget, heat, plot, schedule) or one floor plan as PNG.
 
 ## Run
 
@@ -46,6 +53,9 @@ The unit/widget suite includes 10,000 seeded canonicalization cases, byte-for-by
 - `lib/core/document/house_extras.dart`, `lib/core/commands/extras_commands.dart`: furniture, notes, construction specs and issues (file schema v3, only written when used).
 - `lib/core/analysis/`, `lib/core/checks/construction_checks.dart`: wall roles, foundation and masonry take-offs, construction remarks.
 - `lib/core/commands/kz_template.dart`: the 10 × 13 m village house as an editable template.
+- `lib/core/document/extras_planning.dart`, `lib/core/analysis/{cost_estimate,heat_loss,utility_plan,site_analysis,build_schedule}.dart`: planning data (file schema v4, only written when used) and its pure-Dart calculations.
+- `lib/core/commands/outline_commands.dart`: corner cuts for non-rectangular houses.
+- `lib/features/drawing_export.dart`: the PDF/PNG drawing set.
 - `lib/render3d/scene_model.dart`, `scene_view.dart`: software 3D with sun, night, cut, foundation and the walk-through.
 
 - `lib/core/`: pure Dart documents, codec, validation, axes, canonicalization, commands, history, geometry and checks.
@@ -60,6 +70,19 @@ This is a runnable implementation candidate. Full acceptance of every matrix in 
 
 See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conformance work.
 
+
+## v0.7 预算、采暖、水电、宅基地与施工
+
+1. **预算**：工程量来自当前设计，乘以单价得出造价；单价有人民币和坚戈两套示例，点单价可改，清空恢复示例。人工按材料比例、另加预备费，可添加自己的费用项。各阶段花费用横条表示。
+2. **保温采暖**：按构造层算外墙、屋顶、地面的传热系数 (每种材料的导热系数可改)，算出最冷天的热负荷、各房间所需暖气片、建议锅炉功率和一个采暖季的燃料 (煤、天然气、电、木柴)。保温偏弱时在问题清单里提示。
+3. **水电暖点位**：2D 平面工具栏“水电”可逐个放灯、开关、插座、排气扇、给排水点、暖气片和配电箱，也可“自动布置本层”；打开“水电”图层显示，拖动可移动。预算里的电线和水管长度改按点位实算。
+4. **宅基地**：设置宅基地长宽和房子位置，添加院墙、大门、牲畜棚、澡堂、厕所、水井、菜园等，拖动摆放；自动检查房子离边界、厕所和牲畜棚离房子、水井离污染源的常见间距。3D 外观里也显示院子。
+5. **施工进度**：准备、基础、墙体、屋顶、门窗、水电暖、装修、院子、验收九个阶段，每个阶段有检查清单、开工日期、工期、预算和已花费，可添加自己的阶段。
+6. **四坡屋顶**：设置或“构造细节”里可在平、双坡、四坡屋顶之间切换。
+7. **缺角（L 形房子）**：“房屋长宽”里点“切掉一个角”，选角和长宽；可只切当前楼层形成露台。切口自动成为外墙，楼板、屋顶、工程量和热负荷都按实际外形计算。坡屋顶仍盖住整个矩形，缺角处成为有顶的门廊。
+8. **导出图纸**：右上角“⋯”里可导出整套 A4 图纸 PDF (效果图、平面、水电、基础、构造、门窗表、预算、采暖、宅基地、进度)，或把当前楼层平面导出为 PNG 发给施工队。
+
+使用以上任一功能后文件为 schema v4；没有使用时仍按 v1–v3 保存。旧版应用打不开 v4 文件，请用新版打开。
 
 ## v0.6 制图台界面
 

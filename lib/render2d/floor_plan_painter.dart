@@ -56,6 +56,8 @@ class FloorPlanPainter extends CustomPainter {
       this.pulse,
       this.measure = const [],
       this.furnitureDraft,
+      this.utilities = const [],
+      this.selectedUtility,
       this.showLabels = true})
       : super(repaint: pulse);
   final FloorBase base;
@@ -99,6 +101,10 @@ class FloorPlanPainter extends CustomPainter {
 
   /// Furniture being placed or dragged, drawn on top.
   final FurnitureItem? furnitureDraft;
+
+  /// Electrical, water and heating points of this floor; empty hides them.
+  final List<UtilityPoint> utilities;
+  final String? selectedUtility;
 
   /// Room names, furniture names and the north arrow; off for thumbnails.
   final bool showLabels;
@@ -220,6 +226,8 @@ class FloorPlanPainter extends CustomPainter {
     final fills = <String?, Path>{};
     for (final entry in base.owners.entries) {
       final c = entry.key;
+      // Cut-out corners are outdoors: the sheet shows through.
+      if (base.outside.contains(c)) continue;
       final r = PlanRect(
           base.axes.v[c.i].pos.toDouble(),
           base.axes.h[c.j].pos.toDouble(),
@@ -492,6 +500,9 @@ class FloorPlanPainter extends CustomPainter {
       }
     }
 
+    for (final u in utilities)
+      drawUtility(canvas, size, u, selected: u.id == selectedUtility);
+
     if (showGridDimensions) {
       final grid = Paint()
         ..color = t.chk.withValues(alpha: 0.35)
@@ -518,6 +529,84 @@ class FloorPlanPainter extends CustomPainter {
     // North arrow beside the top-right corner.
     if (showLabels) drawNorth(canvas, size, width, depth);
     drawOverlays(canvas, size, width, depth);
+  }
+
+  /// Plan symbol of a utility point, a fixed size on screen.
+  void drawUtility(Canvas canvas, Size size, UtilityPoint u,
+      {bool selected = false}) {
+    final t = tokens;
+    final c = point(u.x.toDouble(), u.y.toDouble(), size);
+    final color = switch (u.kind) {
+      UtilityKind.water || UtilityKind.drain => t.chk,
+      UtilityKind.radiator => t.rug,
+      _ => t.accent,
+    };
+    final stroke = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = px(1.6);
+    final fill = Paint()..color = color;
+    final back = Paint()..color = t.panel;
+    if (selected)
+      canvas.drawCircle(
+          c,
+          px(13),
+          Paint()
+            ..color = t.accent.withValues(alpha: 0.25)
+            ..style = PaintingStyle.fill);
+    switch (u.kind) {
+      case UtilityKind.light:
+        canvas.drawCircle(c, px(7), back);
+        canvas.drawCircle(c, px(7), stroke);
+        final d = px(4.9);
+        canvas.drawLine(c + Offset(-d, -d), c + Offset(d, d), stroke);
+        canvas.drawLine(c + Offset(-d, d), c + Offset(d, -d), stroke);
+      case UtilityKind.lightSwitch:
+        canvas.drawLine(c, c + Offset(px(7), -px(7)), stroke);
+        canvas.drawCircle(c, px(3.5), fill);
+      case UtilityKind.socket:
+        final r = Rect.fromCircle(center: c, radius: px(6));
+        canvas.drawArc(r, math.pi, math.pi, true, back);
+        canvas.drawArc(r, math.pi, math.pi, false, stroke);
+        canvas.drawLine(c + Offset(-px(7), 0), c + Offset(px(7), 0), stroke);
+        canvas.drawLine(c + Offset(0, -px(6)), c + Offset(0, -px(10)), stroke);
+      case UtilityKind.vent:
+        final r = Rect.fromCenter(center: c, width: px(14), height: px(14));
+        canvas.drawRect(r, back);
+        canvas.drawRect(r, stroke);
+        canvas.drawCircle(c, px(4.5), stroke);
+      case UtilityKind.panel:
+        final r = Rect.fromCenter(center: c, width: px(18), height: px(9));
+        canvas.drawRect(r, fill);
+        canvas.drawLine(r.topLeft, r.bottomRight, Paint()
+          ..color = t.panel
+          ..strokeWidth = px(1.2));
+      case UtilityKind.water:
+        canvas.drawCircle(c, px(5.5), fill);
+        canvas.drawCircle(
+            c,
+            px(5.5),
+            Paint()
+              ..color = t.panel
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = px(1));
+      case UtilityKind.drain:
+        canvas.drawCircle(c, px(5.5), back);
+        canvas.drawCircle(c, px(5.5), stroke);
+        canvas.drawLine(c + Offset(-px(5.5), 0), c + Offset(px(5.5), 0), stroke);
+        canvas.drawLine(c + Offset(0, -px(5.5)), c + Offset(0, px(5.5)), stroke);
+      case UtilityKind.radiator:
+        final r = Rect.fromCenter(center: c, width: px(22), height: px(8));
+        canvas.drawRect(r, back);
+        canvas.drawRect(r, stroke);
+        for (var k = 1; k < 5; k++) {
+          final x = r.left + r.width * k / 5;
+          canvas.drawLine(Offset(x, r.top), Offset(x, r.bottom), stroke);
+        }
+    }
+    if (u.label != null && showLabels)
+      label(canvas, u.label!, c + Offset(0, px(15)),
+          font: 10, color: t.dim, weight: FontWeight.w500, halo: t.panel);
   }
 
   void drawNorth(Canvas canvas, Size size, double width, double depth) {

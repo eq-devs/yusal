@@ -9,6 +9,7 @@ import 'spatial_wall_commands.dart';
 import 'drawn_wall_commands.dart';
 import '../geometry/opening_constraints.dart';
 import 'extras_commands.dart';
+import 'outline_commands.dart';
 
 class DesignCommand {
   DesignCommand(this.kind, Map<String, dynamic> arguments)
@@ -74,7 +75,9 @@ CommandResult executeCommand(
       'MergeRooms',
       'AddStair',
       'UpdateStair',
-      'DeleteStair'
+      'DeleteStair',
+      'CutOutline',
+      'RestoreOutline'
     ].contains(command.kind)) {
       for (final floor in document.floors.where((f) => f.explicitWalls))
         document = syncRoomWalls(doc, document, floor.id, context.newId);
@@ -142,6 +145,18 @@ CommandResult executeCommand(
       return result.accepted
           ? apply(result.document!)
           : Rejected('WALL_CONFLICT', result.error!);
+    }
+    if (command.kind == 'CutOutline' || command.kind == 'RestoreOutline') {
+      final ids = (args['floorIds'] as List?)?.cast<String>() ??
+          [for (final f in doc.floors) f.id];
+      final result = command.kind == 'CutOutline'
+          ? cutCorner(doc, ids, args['corner'] as String,
+              (args['width'] as num).round(), (args['depth'] as num).round(),
+              context.newId)
+          : restoreOutline(doc, ids);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('SPATIAL_CONFLICT', result.error!);
     }
     if (command.kind == 'EnableWallDrawing')
       return apply(
@@ -221,6 +236,11 @@ CommandResult executeCommand(
       if (cells
           .any((c) => c.i < 0 || c.j < 0 || c.i >= axes.nx || c.j >= axes.ny))
         return const Rejected('INVALID_VALUE', '格子超出房屋范围');
+      final cut = {
+        for (final r in floor.outside) ...cellsOfRect(resolveRect(axes, r).rect!)
+      };
+      if (command.kind == 'PaintCells' && cells.any(cut.contains))
+        return const Rejected('OUTSIDE', '房间和楼梯不能放在房屋外（缺角处）');
       if (command.kind == 'PaintCells' &&
           cells.isNotEmpty &&
           floor.stairs.any((s) => cellsOfRect(resolveRect(axes, s.region).rect!)

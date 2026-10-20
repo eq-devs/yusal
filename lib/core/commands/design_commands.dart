@@ -466,6 +466,9 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
       default:
         return EditResult(null, '尚未支持的命令 $kind');
     }
+    // A hip roof needs version 4; the caller settles the final version.
+    if ((raw['roof'] as Map)['type'] == 'hip' && (raw['schemaVersion'] as int) < 4)
+      raw['schemaVersion'] = 4;
     final loaded = loadHouse(utf8.encode(jsonEncode(raw)));
     if (!loaded.isSuccess)
       return EditResult(null, '操作无法完成：${loaded.failure!.errors.first.message}');

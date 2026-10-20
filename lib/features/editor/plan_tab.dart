@@ -229,6 +229,8 @@ extension _PlanTab on _HouseEditorState {
       openingTool(OpeningKind.window, Icons.window_outlined, '拖入窗'),
       basicTool(Icons.chair_outlined, '家具', tool == 'placeFurniture',
           chooseFurniture),
+      basicTool(Icons.electrical_services_outlined, '水电',
+          tool == 'placeUtility', chooseUtility),
       basicTool(Icons.view_week_outlined, '墙体调整',
           tool == 'selectWall' || tool == 'editWall', () {
         view3d = false;
@@ -253,6 +255,20 @@ extension _PlanTab on _HouseEditorState {
             label: tr('尺寸', 'Өлшемдер'),
             selected: showDimensions,
             onChanged: (v) => update(() => showDimensions = v)),
+        PillToggle(
+            label: tr('水电', 'Су-электр'),
+            selected: showUtilities,
+            onChanged: (v) => update(() {
+                  showUtilities = v;
+                  if (!v) {
+                    selectedUtilityId = null;
+                    if (tool == 'placeUtility') {
+                      tool = 'browse';
+                      browse = true;
+                      placementHint = null;
+                    }
+                  }
+                })),
         PillToggle(
             label: tr('地基', 'Іргетас'),
             selected: showFoundation,
@@ -317,7 +333,10 @@ extension _PlanTab on _HouseEditorState {
                 tooltip: '输入墙长',
                 onPressed: drawingOrigin == null ? null : addWallByLength,
                 icon: const Icon(Icons.straighten, size: 18)),
-          if (tool == 'drawWall' || tool == 'placeFurniture' || tool == 'measure')
+          if (tool == 'drawWall' ||
+              tool == 'placeFurniture' ||
+              tool == 'placeUtility' ||
+              tool == 'measure')
             TextButton(
                 onPressed: () => update(() {
                       cancelDrag();
@@ -327,6 +346,7 @@ extension _PlanTab on _HouseEditorState {
                       drawingEnd = null;
                       placementHint = null;
                       placingFurniture = null;
+                      placingUtility = null;
                       measurePoints = [];
                     }),
                 child: Text(tr('结束', 'Аяқтау'))),

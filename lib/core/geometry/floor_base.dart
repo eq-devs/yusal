@@ -77,7 +77,8 @@ class FloorBase {
       this.roomGeometry,
       this.stairGeometryBase,
       this.unassignedCells,
-      this.unassignedNominalArea);
+      this.unassignedNominalArea,
+      [this.outside = const {}]);
   final ResolvedAxes axes;
   final Map<Cell, String?> owners;
   final List<UnitEdge> edges;
@@ -86,6 +87,16 @@ class FloorBase {
   final List<SpaceGeometry> roomGeometry, stairGeometryBase;
   final List<Cell> unassignedCells;
   final double unassignedNominalArea;
+
+  /// Cells cut out of the footprint on this floor: outside the building.
+  final Set<Cell> outside;
+
+  /// Whether the plan point is inside the footprint and not cut out.
+  bool inside(double x, double y) {
+    final i = axes.v.indexWhere((a) => a.pos > x) - 1,
+        j = axes.h.indexWhere((a) => a.pos > y) - 1;
+    return i >= 0 && j >= 0 && !outside.contains(Cell(i, j));
+  }
 }
 
 FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
@@ -94,6 +105,9 @@ FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
   final owners = <Cell, String?>{
     for (var j = 0; j < axes.ny; j++)
       for (var i = 0; i < axes.nx; i++) Cell(i, j): null
+  };
+  final outside = <Cell>{
+    for (final r in floor.outside) ...cellsOfRect(resolveRect(axes, r).rect!)
   };
   final spaces = <String, Set<Cell>>{};
   for (final room in floor.rooms) {
@@ -110,7 +124,14 @@ FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
   void edge(
       ResolvedAxis a, ResolvedAxis s, ResolvedAxis e, Cell? neg, Cell? pos) {
     final n = owners[neg], p = owners[pos];
-    final kind = neg == null || pos == null
+    final outN = neg == null || outside.contains(neg),
+        outP = pos == null || outside.contains(pos);
+    // Between two cut-out cells (or a cut-out and the edge) nothing is built.
+    if (outN && outP) {
+      edges.add(UnitEdge(a, s, e, neg, pos, 'none', 0));
+      return;
+    }
+    final kind = outN || outP
         ? 'exterior'
         : floor.explicitWalls || n == p
             ? 'none'
@@ -136,8 +157,10 @@ FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
           s.pos >= chain.startPos &&
           e.pos <= chain.endPos) {
         if (override is SolidWall) {
-          wall = UnitEdge(
-              a, s, e, neg, pos, 'interior', override.value.toDouble());
+          // A drawn wall on the outline stays an outside wall.
+          if (wall.kind != 'exterior')
+            wall = UnitEdge(
+                a, s, e, neg, pos, 'interior', override.value.toDouble());
         } else if (override is OpenWall) {
           wall = UnitEdge(a, s, e, neg, pos, 'open', 0);
         } else if (override is ThicknessWall && wall.hasWall) {
@@ -157,6 +180,9 @@ FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
     for (var j = 0; j < axes.ny; j++)
       edge(axes.v[i], axes.h[j], axes.h[j + 1], i == 0 ? null : Cell(i - 1, j),
           i == axes.nx ? null : Cell(i, j));
+  /// Which side of an outside wall is outdoors: the negative one or not.
+  bool outdoorsBelow(UnitEdge e) =>
+      e.negative == null || outside.contains(e.negative);
   bool junction(UnitEdge a, int position) => edges.any((b) =>
       b.hasWall &&
       b.axis.dir != a.axis.dir &&
@@ -190,6 +216,7 @@ FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
           prev.end.pos != e.start.pos ||
           prev.kind != e.kind ||
           prev.thickness != e.thickness ||
+          (e.kind == 'exterior' && outdoorsBelow(prev) != outdoorsBelow(e)) ||
           junction(e, e.start.pos)) flush();
     }
     pending.add(e);
@@ -207,6 +234,10 @@ FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
           low: doc.footprint.depth - t,
           high: doc.footprint.depth.toDouble()
         ),
+      // Outside walls along a cut-out stand on the building's side.
+      _ when s.kind == 'exterior' => outdoorsBelow(s.edges.first)
+          ? (low: p, high: p + t)
+          : (low: p - t, high: p),
       _ => (low: p - t / 2, high: p + t / 2)
     };
   }
@@ -328,7 +359,9 @@ FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
     ));
   }
 
-  final unassigned = owners.keys.where((c) => owners[c] == null).toList();
+  final unassigned = owners.keys
+      .where((c) => owners[c] == null && !outside.contains(c))
+      .toList();
   return FloorBase(
       axes,
       Map.unmodifiable(owners),
@@ -343,5 +376,59 @@ FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
           (sum, c) =>
               sum +
               (axes.v[c.i + 1].pos - axes.v[c.i].pos) *
-                  (axes.h[c.j + 1].pos - axes.h[c.j].pos)));
+                  (axes.h[c.j + 1].pos - axes.h[c.j].pos)),
+      Set.unmodifiable(outside));
+}
+
+/// Plan area of the building on [base]'s floor, mm², cut-outs left out.
+double footprintArea(FloorBase base) {
+  var area = 0.0;
+  for (final c in base.owners.keys)
+    if (!base.outside.contains(c))
+      area += (base.axes.v[c.i + 1].pos - base.axes.v[c.i].pos) *
+          (base.axes.h[c.j + 1].pos - base.axes.h[c.j].pos).toDouble();
+  return area;
+}
+
+/// Length of the building's outline on [base]'s floor, mm.
+double outlineLength(FloorBase base) => base.edges
+    .where((e) => e.kind == 'exterior' || (e.kind == 'open' && _onOutline(base, e)))
+    .fold(0.0, (s, e) => s + e.end.pos - e.start.pos);
+
+bool _onOutline(FloorBase base, UnitEdge e) =>
+    e.negative == null ||
+    e.positive == null ||
+    base.outside.contains(e.negative) ||
+    base.outside.contains(e.positive);
+
+/// The building's cells on [base]'s floor merged into rectangles: runs
+/// along each row, joined with identical runs on the rows above.
+List<PlanRect> insideRects(FloorBase base) {
+  final axes = base.axes;
+  final open = <(int, int), int>{};
+  final out = <PlanRect>[];
+  void close((int, int) run, int j0, int j1) => out.add(PlanRect(
+      axes.v[run.$1].pos.toDouble(),
+      axes.h[j0].pos.toDouble(),
+      axes.v[run.$2].pos.toDouble(),
+      axes.h[j1].pos.toDouble()));
+  for (var j = 0; j <= axes.ny; j++) {
+    final runs = <(int, int)>{};
+    if (j < axes.ny) {
+      var i = 0;
+      while (i < axes.nx) {
+        if (base.outside.contains(Cell(i, j))) {
+          i++;
+          continue;
+        }
+        final start = i;
+        while (i < axes.nx && !base.outside.contains(Cell(i, j))) i++;
+        runs.add((start, i));
+      }
+    }
+    for (final run in open.keys.toList())
+      if (!runs.contains(run)) close(run, open.remove(run)!, j);
+    for (final run in runs) open.putIfAbsent(run, () => j);
+  }
+  return out;
 }

@@ -1,8 +1,20 @@
 part of '../house_editor.dart';
 
 class HouseHome extends StatefulWidget {
-  const HouseHome({super.key, this.store});
+  const HouseHome(
+      {super.key,
+      this.store,
+      this.onFindBuilders,
+      this.onBackup,
+      this.reload});
   final ProjectStore? store;
+
+  /// Platform hooks: publish a demand from a design and back it up. The
+  /// design tool works without them.
+  final void Function(ProjectEntry entry)? onFindBuilders, onBackup;
+
+  /// Fires when designs were added from outside, e.g. restored backups.
+  final Listenable? reload;
   @override
   State<HouseHome> createState() => _HouseHomeState();
 }
@@ -46,6 +58,7 @@ class _HouseHomeState extends State<HouseHome> {
   @override
   void initState() {
     super.initState();
+    widget.reload?.addListener(refresh);
     refresh().then((_) => reopenLast());
     if (!kIsWeb) {
       importChannel.setMethodCallHandler((call) async {
@@ -67,6 +80,7 @@ class _HouseHomeState extends State<HouseHome> {
 
   @override
   void dispose() {
+    widget.reload?.removeListener(refresh);
     if (!kIsWeb) importChannel.setMethodCallHandler(null);
     super.dispose();
   }
@@ -351,7 +365,11 @@ class _HouseHomeState extends State<HouseHome> {
             Seg<AppLang>(
                 label: 'Тіл / 语言',
                 value: app.lang,
-                items: const [(AppLang.kk, 'Қазақша'), (AppLang.zh, '中文')],
+                items: const [
+          (AppLang.kk, 'Қазақша'),
+          (AppLang.ru, 'Русский'),
+          (AppLang.zh, '中文')
+        ],
                 onChanged: app.setLang),
             Seg<ThemeChoice>(
                 value: app.theme,
@@ -507,6 +525,16 @@ class _HouseHomeState extends State<HouseHome> {
                             '${m(doc.footprint.width)} × ${m(doc.footprint.depth)} $unitM · ${doc.floors.length} ${tr('层', 'қабат')}',
                             style: mono(size: 12, color: t.muted)),
                       ])),
+                  if (widget.onFindBuilders != null)
+                    IconButton(
+                        tooltip: tr('找施工方', 'Мердігер іздеу'),
+                        icon: const Icon(Icons.engineering_outlined),
+                        onPressed: () => widget.onFindBuilders!(entry)),
+                  if (widget.onBackup != null)
+                    IconButton(
+                        tooltip: tr('备份到账号', 'Аккаунтқа сақтау'),
+                        icon: const Icon(Icons.cloud_upload_outlined),
+                        onPressed: () => widget.onBackup!(entry)),
                   IconButton(
                       tooltip: tr('删除设计', 'Жобаны жою'),
                       icon: const Icon(Icons.delete_outline),

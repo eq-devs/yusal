@@ -2,7 +2,9 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum AppLang { zh, kk }
+/// Chinese, Kazakh and Russian. The design tool is written in Chinese and
+/// Kazakh; in Russian it shows its Kazakh text until it is translated.
+enum AppLang { zh, kk, ru }
 
 enum ThemeChoice { auto, day, night }
 
@@ -22,9 +24,11 @@ class AppSettings extends ChangeNotifier {
       final savedLang = prefs.getString('house-lang'),
           savedTheme = prefs.getString('house-theme');
       lang = AppLang.values.where((l) => l.name == savedLang).firstOrNull ??
-          (PlatformDispatcher.instance.locale.languageCode == 'zh'
-              ? AppLang.zh
-              : AppLang.kk);
+          switch (PlatformDispatcher.instance.locale.languageCode) {
+            'zh' => AppLang.zh,
+            'ru' => AppLang.ru,
+            _ => AppLang.kk,
+          };
       theme = ThemeChoice.values.where((t) => t.name == savedTheme).firstOrNull ??
           ThemeChoice.auto;
     } catch (_) {
@@ -63,10 +67,22 @@ class AppScope extends InheritedNotifier<AppSettings> {
       AppSettings.instance;
 }
 
-bool get isKk => AppSettings.instance.lang == AppLang.kk;
+/// Cyrillic interface: Kazakh, or Russian falling back to Kazakh where only
+/// Chinese and Kazakh text exist.
+bool get isKk => AppSettings.instance.lang != AppLang.zh;
 
-/// Every interface string is written as a Chinese / Kazakh pair.
+bool get isRu => AppSettings.instance.lang == AppLang.ru;
+
+/// Every design-tool string is written as a Chinese / Kazakh pair.
 String tr(String zh, String kk) => isKk ? kk : zh;
+
+/// Platform strings come in all three languages.
+String tr3(String zh, String kk, String ru) =>
+    switch (AppSettings.instance.lang) {
+      AppLang.zh => zh,
+      AppLang.kk => kk,
+      AppLang.ru => ru,
+    };
 
 /// Kazakh writes decimals with a comma.
 String dec(String number) => isKk ? number.replaceAll('.', ',') : number;

@@ -454,14 +454,49 @@ class MockBackend implements PlatformRepositories {
         }).toList()
           ..sort((a, b) => (b.publishedAt ?? b.createdAt)
               .compareTo(a.publishedAt ?? a.createdAt));
-        return list;
+        return list.map(_redact).toList();
       });
 
   @override
   Future<Demand?> demand(String id) => _read(() {
         final d = demands[id];
-        return d != null && _demandVisible(d) ? d : null;
+        return d != null && _demandVisible(d) ? _redact(d) : null;
       });
+
+  /// The exact address only reaches the owner, or a partner the owner
+  /// granted it to in a confirmed agreement.
+  Demand _redact(Demand d) {
+    final me = currentId;
+    if (me == d.ownerId) return d;
+    final granted = me != null &&
+        cooperations.values.any((c) =>
+            c.demandId == d.id &&
+            c.providerId == me &&
+            c.status != CooperationStatus.notFormed &&
+            c.status != CooperationStatus.pending &&
+            c.agreement.shareExactAddress);
+    if (granted) return d;
+    return d.copyWith(versions: [
+      for (final v in d.versions)
+        DemandVersion(
+            no: v.no,
+            title: v.title,
+            trades: v.trades,
+            region: v.region,
+            locality: v.locality,
+            budget: v.budget,
+            createdAt: v.createdAt,
+            startDate: v.startDate,
+            durationDays: v.durationDays,
+            description: v.description,
+            photoCount: v.photoCount,
+            siteNotes: v.siteNotes,
+            hire: v.hire,
+            contract: v.contract,
+            snapshotId: v.snapshotId,
+            visibility: v.visibility)
+    ]);
+  }
 
   @override
   Future<List<Demand>> myDemands() =>

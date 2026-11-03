@@ -100,6 +100,10 @@ void main() {
       final d = await publishAsOwner(b);
       expect(d.status, DemandStatus.open);
       expect(d.expiresAt, isNotNull);
+      b.signInAs(SeedIds.mason);
+      expect((await b.demand(d.id))!.current.exactAddress, isEmpty);
+      b.signInAs(SeedIds.owner);
+      expect((await b.demand(d.id))!.current.exactAddress, isNotEmpty);
       final view = await b.publicView(d.shareToken);
       expect(view!.available, isTrue);
       expect(view.title, '车库砌墙');

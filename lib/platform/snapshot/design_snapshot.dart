@@ -24,7 +24,9 @@ class DesignExtract {
       required this.buildingArea,
       required this.width,
       required this.depth,
-      required this.floors});
+      required this.floors,
+      this.rooms = 0,
+      this.estimatedCost});
 
   /// Quantities of the chosen stages, measured from the design.
   final List<QtyItem> lines;
@@ -35,6 +37,10 @@ class DesignExtract {
   /// Footprint, mm.
   final int width, depth;
   final int floors;
+
+  /// Rooms over all floors and the estimate's grand total in tenge.
+  final int rooms;
+  final int? estimatedCost;
 }
 
 /// Quantities for [stages] (all stages when empty). [nameOf] names a takeoff
@@ -61,7 +67,9 @@ DesignExtract extractDesign(HouseDocument doc, List<String> stages,
       buildingArea: estimate.buildingArea,
       width: doc.footprint.width,
       depth: doc.footprint.depth,
-      floors: doc.floors.length);
+      floors: doc.floors.length,
+      rooms: doc.floors.fold(0, (n, f) => n + f.rooms.length),
+      estimatedCost: estimate.total.round());
 }
 
 double _round(double v) => (v * 100).roundToDouble() / 100;

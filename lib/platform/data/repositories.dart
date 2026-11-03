@@ -219,6 +219,30 @@ abstract interface class BackupRepository {
       String? expectedPreviousUpdatedAt});
 }
 
+abstract interface class PostRepository {
+  Future<List<HousePost>> feed(FeedFilter filter);
+  Future<HousePost?> post(String id);
+  Future<List<HousePost>> myPosts();
+  Future<List<HousePost>> postsBy(String accountId);
+
+  /// Publishes a design. The snapshot must belong to the caller.
+  Future<HousePost> publishPost(HousePost draft);
+  Future<HousePost> updatePost(HousePost post);
+  Future<void> hidePost(String id);
+
+  /// Toggles the like; returns the new state.
+  Future<bool> toggleLike(String postId);
+  Future<bool> liked(String postId);
+  Future<List<String>> likedPosts();
+
+  Future<List<PostComment>> comments(String postId);
+  Future<PostComment> comment(String postId, String text, {int? rating});
+  Future<void> deleteComment(String id);
+
+  /// Open demands recruiting for this house.
+  Future<List<Demand>> demandsForPost(String postId);
+}
+
 abstract interface class ModerationRepository {
   Future<void> report(ReportTarget target, String targetId, String reason);
   Future<List<Demand>> reviewQueue();
@@ -243,4 +267,5 @@ abstract interface class PlatformRepositories
         NotificationRepository,
         SnapshotRepository,
         BackupRepository,
+        PostRepository,
         ModerationRepository {}

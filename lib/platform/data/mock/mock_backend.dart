@@ -53,6 +53,10 @@ class MockBackend implements PlatformRepositories {
   final snapshots = <String, DesignSnapshot>{};
   final backupsByAccount = <String, Map<String, BackupRecord>>{};
   final reportsById = <String, Report>{};
+  final posts = <String, HousePost>{};
+  final commentsById = <String, PostComment>{};
+  final likes = <String, Set<String>>{}; // postId -> account ids
+  final _commentTimes = <String, List<DateTime>>{};
   final auditLog = <AuditEntry>[];
   final _favourites = <String, Set<String>>{};
   final _blocks = <String, Set<String>>{};
@@ -1572,6 +1576,241 @@ class MockBackend implements PlatformRepositories {
         designUpdatedAt: designUpdatedAt);
     notify();
   }
+
+  // ─────────────────────────── house posts ───────────────────────────
+
+  bool _postVisible(HousePost p) {
+    if (p.ownerId == currentId) return true;
+    final owner = accounts[p.ownerId];
+    if (owner == null || owner.deleted) return false;
+    if (currentId != null && _isBlocked(currentId!, p.ownerId)) return false;
+    return p.status == PostStatus.published;
+  }
+
+  @override
+  Future<List<HousePost>> feed(FeedFilter f) => _read(() {
+        final q = f.query.trim().toLowerCase();
+        final list = posts.values.where((p) {
+          if (!_postVisible(p) || p.status != PostStatus.published)
+            return false;
+          if (f.region != null && p.region != f.region) return false;
+          if (f.openForBuilders && !p.openForBuilders) return false;
+          if (q.isNotEmpty &&
+              !p.title.toLowerCase().contains(q) &&
+              !p.story.toLowerCase().contains(q)) return false;
+          return true;
+        }).toList();
+        switch (f.sort) {
+          case FeedSort.newest:
+            list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          case FeedSort.popular:
+            list.sort((a, b) => (b.likeCount * 2 + b.commentCount)
+                .compareTo(a.likeCount * 2 + a.commentCount));
+          case FeedSort.topRated:
+            list.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+        }
+        return list;
+      });
+
+  @override
+  Future<HousePost?> post(String id) => _read(() {
+        final p = posts[id];
+        return p == null || !_postVisible(p) ? null : p;
+      });
+
+  @override
+  Future<List<HousePost>> myPosts() =>
+      _read(() => posts.values.where((p) => p.ownerId == _me).toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt)));
+
+  @override
+  Future<List<HousePost>> postsBy(String accountId) => _read(() => posts.values
+      .where((p) => p.ownerId == accountId && _postVisible(p))
+      .toList()
+    ..sort((a, b) => b.createdAt.compareTo(a.createdAt)));
+
+  @override
+  Future<HousePost> publishPost(HousePost d) => _io(() {
+        final me = _me;
+        _requireActive();
+        final snap = snapshots[d.snapshotId];
+        if (snap == null || snap.ownerId != me)
+          throw const ApiFailure(ApiCodes.forbidden, 'snapshot');
+        if (d.title.trim().isEmpty)
+          throw const ApiFailure(ApiCodes.invalidInput, 'title');
+        final word = bannedWordIn('${d.title} ${d.story}');
+        if (word != null)
+          throw ApiFailure(ApiCodes.invalidInput, 'banned:$word');
+        final id = newId('post');
+        return posts[id] = HousePost(
+            id: id,
+            ownerId: me,
+            projectId: d.projectId,
+            snapshotId: d.snapshotId,
+            title: d.title.trim(),
+            story: d.story.trim(),
+            region: d.region,
+            createdAt: now,
+            updatedAt: now,
+            area: d.area,
+            floors: d.floors,
+            rooms: d.rooms,
+            estimatedCost: d.estimatedCost,
+            tags: d.tags,
+            openForBuilders: d.openForBuilders,
+            preview: d.preview ?? snap.preview);
+      });
+
+  @override
+  Future<HousePost> updatePost(HousePost p) => _io(() {
+        final old = posts[p.id];
+        if (old == null) throw const ApiFailure(ApiCodes.notFound);
+        if (old.ownerId != _me) throw const ApiFailure(ApiCodes.forbidden);
+        final word = bannedWordIn('${p.title} ${p.story}');
+        if (word != null)
+          throw ApiFailure(ApiCodes.invalidInput, 'banned:$word');
+        return posts[p.id] = old.copyWith(
+            title: p.title.trim(),
+            story: p.story.trim(),
+            region: p.region,
+            tags: p.tags,
+            openForBuilders: p.openForBuilders,
+            updatedAt: now);
+      });
+
+  @override
+  Future<void> hidePost(String id) => _io(() {
+        final p = posts[id];
+        if (p == null) throw const ApiFailure(ApiCodes.notFound);
+        if (p.ownerId != _me && !_meAccount.isAdmin)
+          throw const ApiFailure(ApiCodes.forbidden);
+        posts[id] = p.copyWith(status: PostStatus.hidden, updatedAt: now);
+      });
+
+  @override
+  Future<bool> toggleLike(String postId) => _io(() {
+        final me = _me;
+        final p = posts[postId];
+        if (p == null || !_postVisible(p))
+          throw const ApiFailure(ApiCodes.notFound);
+        final set = likes.putIfAbsent(postId, () => {});
+        final on = !set.remove(me);
+        if (on) set.add(me);
+        posts[postId] = p.copyWith(likeCount: set.length);
+        if (on && p.ownerId != me)
+          notice(p.ownerId, NoticeKind.postLiked, RefType.post, postId,
+              title: p.title);
+        return on;
+      });
+
+  @override
+  Future<bool> liked(String postId) => _read(
+      () => currentId != null && (likes[postId]?.contains(currentId) ?? false));
+
+  @override
+  Future<List<String>> likedPosts() => _read(() => [
+        for (final e in likes.entries)
+          if (currentId != null && e.value.contains(currentId)) e.key
+      ]);
+
+  @override
+  Future<List<PostComment>> comments(String postId) => _read(() {
+        final p = posts[postId];
+        if (p == null || !_postVisible(p)) return const [];
+        return commentsById.values
+            .where((c) =>
+                c.postId == postId &&
+                !(accounts[c.authorId]?.deleted ?? true) &&
+                (currentId == null || !_isBlocked(currentId!, c.authorId)))
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      });
+
+  @override
+  Future<PostComment> comment(String postId, String text, {int? rating}) =>
+      _io(() {
+        final me = _me;
+        _requireActive();
+        final p = posts[postId];
+        if (p == null || !_postVisible(p))
+          throw const ApiFailure(ApiCodes.notFound);
+        if (text.trim().isEmpty && rating == null)
+          throw const ApiFailure(ApiCodes.invalidInput, 'empty');
+        if (rating != null && (rating < 1 || rating > 5))
+          throw const ApiFailure(ApiCodes.invalidInput, 'rating');
+        if (rating != null && p.ownerId == me)
+          throw const ApiFailure(ApiCodes.invalidState, 'own');
+        final word = bannedWordIn(text);
+        if (word != null)
+          throw ApiFailure(ApiCodes.invalidInput, 'banned:$word');
+        final times = _commentTimes.putIfAbsent(me, () => [])
+          ..removeWhere((t) => now.difference(t) > const Duration(minutes: 1));
+        if (times.length >= 10) throw const ApiFailure(ApiCodes.rateLimited);
+        times.add(now);
+        // One rating per person: a new rating replaces the old one.
+        var sum = p.ratingSum, count = p.ratingCount;
+        if (rating != null) {
+          final prev = commentsById.values
+              .where((c) =>
+                  c.postId == postId && c.authorId == me && c.rating != null)
+              .toList();
+          for (final c in prev) {
+            sum -= c.rating!;
+            count--;
+            commentsById.remove(c.id);
+          }
+          sum += rating;
+          count++;
+        }
+        final id = newId('cmt');
+        final c = commentsById[id] = PostComment(
+            id: id,
+            postId: postId,
+            authorId: me,
+            text: text.trim(),
+            rating: rating,
+            createdAt: now);
+        posts[postId] = p.copyWith(
+            commentCount:
+                commentsById.values.where((c) => c.postId == postId).length,
+            ratingSum: sum,
+            ratingCount: count);
+        if (p.ownerId != me)
+          notice(p.ownerId, NoticeKind.postCommented, RefType.post, postId,
+              title: p.title);
+        return c;
+      });
+
+  @override
+  Future<void> deleteComment(String id) => _io(() {
+        final c = commentsById[id];
+        if (c == null) throw const ApiFailure(ApiCodes.notFound);
+        final p = posts[c.postId]!;
+        if (c.authorId != _me && p.ownerId != _me && !_meAccount.isAdmin)
+          throw const ApiFailure(ApiCodes.forbidden);
+        commentsById.remove(id);
+        posts[p.id] = p.copyWith(
+            commentCount:
+                commentsById.values.where((x) => x.postId == p.id).length,
+            ratingSum: c.rating == null ? null : p.ratingSum - c.rating!,
+            ratingCount: c.rating == null ? null : p.ratingCount - 1);
+      });
+
+  @override
+  Future<List<Demand>> demandsForPost(String postId) => _read(() {
+        final p = posts[postId];
+        if (p == null || !_postVisible(p)) return const [];
+        return demands.values
+            .where((d) =>
+                d.ownerId == p.ownerId &&
+                (d.current.snapshotId == p.snapshotId ||
+                    d.designProjectId == p.projectId) &&
+                _demandVisible(d) &&
+                d.status != DemandStatus.draft &&
+                d.status != DemandStatus.rejected)
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      });
 
   // ─────────────────────────── moderation ───────────────────────────
 

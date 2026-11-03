@@ -1,5 +1,6 @@
 import '../../domain/models.dart';
 import 'mock_backend.dart';
+import '../../snapshot/design_snapshot.dart';
 
 /// Ids of the seeded demo accounts; developer tools sign in as them.
 abstract final class SeedIds {
@@ -61,6 +62,7 @@ void seedMockData(MockBackend b) {
       id: 'prof_team',
       ownerId: SeedIds.team,
       kind: ProfileKind.team,
+      role: ProRole.contractor,
       name: 'Нұрлан Құрылыс 施工队',
       trades: const ['general', 'mason', 'concrete', 'rebar'],
       regions: const ['almaty', 'talgar', 'kaskelen', 'esik'],
@@ -91,6 +93,7 @@ void seedMockData(MockBackend b) {
       id: 'prof_roof',
       ownerId: SeedIds.roofTeam,
       kind: ProfileKind.team,
+      role: ProRole.contractor,
       name: 'Алатау 屋面队',
       trades: const ['roofer', 'carpenter', 'general'],
       regions: const ['esik', 'talgar', 'almaty'],
@@ -114,6 +117,7 @@ void seedMockData(MockBackend b) {
         DemandVersion(
             no: 1,
             title: '130 平米住宅砌墙',
+            snapshotId: 'snap_aigerim',
             trades: const ['mason'],
             region: 'talgar',
             locality: '塔尔加尔 · 北区',
@@ -440,6 +444,165 @@ void seedMockData(MockBackend b) {
       kind: MessageKind.text,
       text: '好的，周六 10 点到。',
       sentAt: ago(0, 2));
+
+  // Snapshots and house posts: the feed everyone sees first.
+  DesignSnapshot snap(String id, String owner, String project, String name,
+          String summary, List<QtyItem> lines) =>
+      DesignSnapshot(
+          id: id,
+          ownerId: owner,
+          projectId: project,
+          projectName: name,
+          designUpdatedAt: ago(6).toIso8601String(),
+          extractedAt: ago(6),
+          stages: snapshotStages,
+          lines: lines,
+          summary: summary);
+  const q = QtySource.design;
+  b.snapshots['snap_aigerim'] = snap('snap_aigerim', SeedIds.owner, 'seed_p1',
+      '塔尔加尔一层砖房', '12 × 11 m，一层，130 m²，4 个房间', const [
+    QtyItem(
+        name: '条形基础混凝土', quantity: 28, unit: 'm3', source: q, stage: 'found'),
+    QtyItem(name: '外墙砌筑', quantity: 62, unit: 'm3', source: q, stage: 'walls'),
+    QtyItem(name: '内墙砌筑', quantity: 21, unit: 'm3', source: q, stage: 'walls'),
+    QtyItem(name: '屋面', quantity: 168, unit: 'm2', source: q, stage: 'roof'),
+  ]);
+  b.snapshots['snap_dinara'] = snap('snap_dinara', SeedIds.owner2, 'seed_p2',
+      '卡斯克连两层别墅', '14 × 12 m，两层，290 m²，7 个房间，带车库', const [
+    QtyItem(
+        name: '条形基础混凝土', quantity: 46, unit: 'm3', source: q, stage: 'found'),
+    QtyItem(name: '外墙砌筑', quantity: 128, unit: 'm3', source: q, stage: 'walls'),
+    QtyItem(name: '楼板', quantity: 168, unit: 'm2', source: q, stage: 'walls'),
+    QtyItem(name: '屋面', quantity: 210, unit: 'm2', source: q, stage: 'roof'),
+  ]);
+  b.snapshots['snap_team'] = snap('snap_team', SeedIds.team, 'seed_p3',
+      '伊西克紧凑型住宅', '10 × 9 m，一层，86 m²，3 个房间', const [
+    QtyItem(
+        name: '条形基础混凝土', quantity: 19, unit: 'm3', source: q, stage: 'found'),
+    QtyItem(name: '外墙砌筑', quantity: 44, unit: 'm3', source: q, stage: 'walls'),
+    QtyItem(name: '屋面', quantity: 118, unit: 'm2', source: q, stage: 'roof'),
+  ]);
+  b.snapshots['snap_erlan'] = snap('snap_erlan', SeedIds.electrician, 'seed_p4',
+      '阿拉木图郊区一层半', '11 × 10 m，一层加阁楼，150 m²，5 个房间', const [
+    QtyItem(
+        name: '条形基础混凝土', quantity: 25, unit: 'm3', source: q, stage: 'found'),
+    QtyItem(name: '外墙砌筑', quantity: 58, unit: 'm3', source: q, stage: 'walls'),
+    QtyItem(name: '屋面', quantity: 172, unit: 'm2', source: q, stage: 'roof'),
+  ]);
+
+  HousePost post(String id, String owner, String snapId, String title,
+          String story, String region,
+          {required double area,
+          required int floors,
+          required int rooms,
+          required int cost,
+          required int days,
+          List<String> tags = const [],
+          bool open = true,
+          int likes = 0}) =>
+      HousePost(
+          id: id,
+          ownerId: owner,
+          projectId: b.snapshots[snapId]!.projectId,
+          snapshotId: snapId,
+          title: title,
+          story: story,
+          region: region,
+          createdAt: ago(days),
+          updatedAt: ago(days),
+          area: area,
+          floors: floors,
+          rooms: rooms,
+          estimatedCost: cost,
+          tags: tags,
+          openForBuilders: open,
+          likeCount: likes);
+  b.posts['post_aigerim'] = post('post_aigerim', SeedIds.owner, 'snap_aigerim',
+      '给父母盖的一层砖房', '父母年纪大了，想要一层、没有台阶的房子。客厅朝南，两个卧室朝东。基础已经打好，现在找砌墙的师傅。', 'talgar',
+      area: 130,
+      floors: 1,
+      rooms: 4,
+      cost: 18500000,
+      days: 6,
+      tags: const ['one_floor', 'brick'],
+      likes: 3);
+  b.posts['post_dinara'] = post(
+      'post_dinara',
+      SeedIds.owner2,
+      'snap_dinara',
+      '两层别墅，带车库和露台',
+      '一家五口住。一楼公共空间，二楼四个卧室。想明年春天开工，先听听大家的意见，预算是不是合理。',
+      'kaskelen',
+      area: 290,
+      floors: 2,
+      rooms: 7,
+      cost: 52000000,
+      days: 12,
+      tags: const ['two_floors', 'garage', 'large'],
+      likes: 5);
+  b.posts['post_team'] = post(
+      'post_team',
+      SeedIds.team,
+      'snap_team',
+      '86 平米紧凑型住宅方案（可承建）',
+      '我们施工队做过三栋这个户型，工期 70 天左右。分享出来给预算有限的家庭参考，欢迎直接联系。',
+      'esik',
+      area: 86,
+      floors: 1,
+      rooms: 3,
+      cost: 11800000,
+      days: 20,
+      tags: const ['one_floor', 'budget'],
+      open: false,
+      likes: 2);
+  b.posts['post_erlan'] = post('post_erlan', SeedIds.electrician, 'snap_erlan',
+      '一层半带阁楼，自己画的第一版', '第一次用软件画房子，阁楼想做两个孩子的房间。不确定楼梯位置合不合理，请大家看看。', 'almaty',
+      area: 150,
+      floors: 2,
+      rooms: 5,
+      cost: 23000000,
+      days: 2,
+      tags: const ['brick'],
+      likes: 1);
+  b.likes['post_aigerim'] = {SeedIds.mason, SeedIds.team, SeedIds.owner2};
+  b.likes['post_dinara'] = {
+    SeedIds.mason,
+    SeedIds.team,
+    SeedIds.owner,
+    SeedIds.roofTeam,
+    SeedIds.electrician
+  };
+  b.likes['post_team'] = {SeedIds.owner, SeedIds.owner2};
+  b.likes['post_erlan'] = {SeedIds.owner};
+
+  void cmt(String id, String postId, String author, String text, int days,
+      {int? rating}) {
+    b.commentsById[id] = PostComment(
+        id: id,
+        postId: postId,
+        authorId: author,
+        text: text,
+        createdAt: ago(days),
+        rating: rating);
+    final p = b.posts[postId]!;
+    b.posts[postId] = p.copyWith(
+        commentCount: p.commentCount + 1,
+        ratingSum: p.ratingSum + (rating ?? 0),
+        ratingCount: p.ratingCount + (rating == null ? 0 : 1));
+  }
+
+  cmt('cmt1', 'post_aigerim', SeedIds.mason, '布局很实用。外墙 300 加气块冬天够用，建议内墙也做 200。',
+      5,
+      rating: 5);
+  cmt('cmt2', 'post_aigerim', SeedIds.team,
+      '基础 28 方混凝土对 130 平米来说偏少，建议复核一下地基宽度。', 4,
+      rating: 4);
+  cmt('cmt3', 'post_dinara', SeedIds.roofTeam,
+      '双坡屋面 210 平米，金属瓦大概 3 周。预算里屋面部分合理。', 10,
+      rating: 4);
+  cmt('cmt4', 'post_dinara', SeedIds.owner, '很漂亮，二楼卫生间最好和一楼上下对齐，省管道。', 9,
+      rating: 5);
+  cmt('cmt5', 'post_erlan', SeedIds.owner2, '楼梯放客厅角落会更省空间。', 1);
 
   // One report waiting for the moderator.
   b.reportsById['rep_seed'] = Report(

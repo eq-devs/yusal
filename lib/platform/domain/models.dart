@@ -37,6 +37,11 @@ class Account {
 
 enum ProfileKind { individual, team }
 
+/// What a professional does on the platform: a worker takes paid work,
+/// a contractor leads a crew and takes contracts, an engineer or
+/// designer checks and improves designs.
+enum ProRole { worker, contractor, engineer }
+
 enum Availability { now, fromDate, notTaking }
 
 enum ProfileStatus { active, hidden }
@@ -87,9 +92,11 @@ class ServiceProfile {
       this.bio = '',
       this.works = const [],
       this.status = ProfileStatus.active,
-      this.showPhone = false});
+      this.showPhone = false,
+      this.role = ProRole.worker});
   final String id, ownerId, name, bio;
   final ProfileKind kind;
+  final ProRole role;
   final List<String> trades, regions;
   final Availability availability;
   final DateTime? availableFrom;
@@ -774,9 +781,11 @@ enum NoticeKind {
   reviewRejected,
   demandChanged,
   applicationNotSelected,
+  postLiked,
+  postCommented,
 }
 
-enum RefType { demand, application, cooperation, conversation, profile }
+enum RefType { demand, application, cooperation, conversation, profile, post }
 
 class AppNotification {
   const AppNotification(
@@ -902,6 +911,132 @@ class AuditEntry {
   final String by, action, targetId, reason;
   final DateTime at;
 }
+
+// ─────────────────────────── house posts ───────────────────────────
+
+enum PostStatus { published, hidden }
+
+/// A house design someone shares with everyone: the heart of the feed.
+/// Others look, like, rate and comment; the owner can recruit builders
+/// for exactly this house, and professionals can offer to build it.
+class HousePost {
+  const HousePost(
+      {required this.id,
+      required this.ownerId,
+      required this.projectId,
+      required this.snapshotId,
+      required this.title,
+      required this.story,
+      required this.region,
+      required this.createdAt,
+      required this.updatedAt,
+      this.area = 0,
+      this.floors = 1,
+      this.rooms = 0,
+      this.estimatedCost,
+      this.tags = const [],
+      this.openForBuilders = true,
+      this.status = PostStatus.published,
+      this.likeCount = 0,
+      this.commentCount = 0,
+      this.ratingSum = 0,
+      this.ratingCount = 0,
+      this.preview});
+  final String id, ownerId, projectId, snapshotId, title, story, region;
+  final DateTime createdAt, updatedAt;
+
+  /// m² over all floors, number of floors and rooms, measured from the design.
+  final double area;
+  final int floors, rooms;
+
+  /// Estimated building cost in tenge, from the design's estimate.
+  final int? estimatedCost;
+  final List<String> tags;
+
+  /// The owner welcomes builders to apply and quote for this house.
+  final bool openForBuilders;
+  final PostStatus status;
+  final int likeCount, commentCount, ratingSum, ratingCount;
+  final List<int>? preview;
+
+  double? get rating => ratingCount == 0 ? null : ratingSum / ratingCount;
+
+  HousePost copyWith(
+          {String? title,
+          String? story,
+          String? region,
+          bool? openForBuilders,
+          PostStatus? status,
+          int? likeCount,
+          int? commentCount,
+          int? ratingSum,
+          int? ratingCount,
+          DateTime? updatedAt,
+          List<String>? tags}) =>
+      HousePost(
+          id: id,
+          ownerId: ownerId,
+          projectId: projectId,
+          snapshotId: snapshotId,
+          title: title ?? this.title,
+          story: story ?? this.story,
+          region: region ?? this.region,
+          createdAt: createdAt,
+          updatedAt: updatedAt ?? this.updatedAt,
+          area: area,
+          floors: floors,
+          rooms: rooms,
+          estimatedCost: estimatedCost,
+          tags: tags ?? this.tags,
+          openForBuilders: openForBuilders ?? this.openForBuilders,
+          status: status ?? this.status,
+          likeCount: likeCount ?? this.likeCount,
+          commentCount: commentCount ?? this.commentCount,
+          ratingSum: ratingSum ?? this.ratingSum,
+          ratingCount: ratingCount ?? this.ratingCount,
+          preview: preview);
+}
+
+/// A comment on a house post, optionally with a 1–5 rating. One rating
+/// per person per house; the text can be edited by its author.
+class PostComment {
+  const PostComment(
+      {required this.id,
+      required this.postId,
+      required this.authorId,
+      required this.text,
+      required this.createdAt,
+      this.rating});
+  final String id, postId, authorId, text;
+  final DateTime createdAt;
+  final int? rating;
+}
+
+/// Feed ordering.
+enum FeedSort { newest, popular, topRated }
+
+class FeedFilter {
+  const FeedFilter(
+      {this.region,
+      this.sort = FeedSort.newest,
+      this.query = '',
+      this.openForBuilders = false});
+  final String? region;
+  final FeedSort sort;
+  final String query;
+  final bool openForBuilders;
+}
+
+const postTags = [
+  'one_floor',
+  'two_floors',
+  'brick',
+  'wood',
+  'sip',
+  'garage',
+  'budget',
+  'large'
+];
 
 // ───────────────────────────── dictionaries ─────────────────────────────
 

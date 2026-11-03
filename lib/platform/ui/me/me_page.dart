@@ -6,6 +6,9 @@ import '../backup/backup_page.dart';
 import '../cards.dart';
 import '../chat/inbox_page.dart';
 import '../demand/demand_detail_page.dart';
+import '../discover/discover_page.dart';
+import '../home/house_card.dart';
+import '../home/post_page.dart';
 import '../l10n.dart';
 import '../profile/profile_edit_page.dart';
 import '../profile/profile_page.dart';
@@ -109,7 +112,39 @@ class MePage extends StatelessWidget {
                               ]),
                             if (account != null) ...[
                               SectionTitle(
-                                  tr3('接活名片', 'Профильдер', 'Профили мастера')),
+                                  tr3('我发布的房子', 'Үйлерім', 'Мои дома')),
+                              Live<List<HousePost>>(
+                                  load: (r) => r.myPosts(),
+                                  builder: (context, list) => list.isEmpty
+                                      ? Text(
+                                          tr3(
+                                              '还没有发布过设计。在“设计”里点分享图标即可发布到首页。',
+                                              'Әлі жарияланбаған.',
+                                              'Пока ничего не опубликовано.'),
+                                          style: TextStyle(color: t.muted))
+                                      : SizedBox(
+                                          height: 300,
+                                          child: ListView.separated(
+                                              scrollDirection: Axis.horizontal,
+                                              itemCount: list.length,
+                                              separatorBuilder: (_, __) =>
+                                                  const SizedBox(width: 12),
+                                              itemBuilder: (context, i) => SizedBox(
+                                                  width: 220,
+                                                  child: HouseCard(
+                                                      compact: true,
+                                                      post: list[i],
+                                                      onTap: () => pushPage<void>(context, (_) => PostPage(postId: list[i].id))))))),
+                              SectionTitle(tr3(
+                                  '入驻接活', 'Кәсіби профиль', 'Профиль мастера')),
+                              Text(
+                                  tr3(
+                                      '工人、包工头或工程师：建一张名片，房主就能找到你。',
+                                      'Жұмысшы, мердігер не инженер: профиль жасаңыз.',
+                                      'Рабочий, прораб или инженер: создайте профиль, и вас найдут.'),
+                                  style:
+                                      TextStyle(color: t.muted, fontSize: 13)),
+                              const SizedBox(height: 8),
                               Live<List<ServiceProfile>>(
                                   load: (r) => r.myProfiles(),
                                   builder: (context, list) => Column(children: [
@@ -123,20 +158,49 @@ class MePage extends StatelessWidget {
                                                       context,
                                                       (_) => ProfilePage(
                                                           profileId: p.id)))),
-                                        OutlinedButton.icon(
-                                            onPressed: () => pushPage<void>(
-                                                context,
-                                                (_) => const ProfileEditPage()),
-                                            icon: const Icon(Icons.add),
-                                            label: Text(list.isEmpty
-                                                ? tr3(
-                                                    '完善接活名片（个人或团队）',
-                                                    'Профиль жасау',
-                                                    'Создать профиль')
-                                                : tr3('再建一个名片', 'Тағы профиль',
-                                                    'Ещё профиль'))),
+                                        if (list.isEmpty)
+                                          Wrap(
+                                              spacing: 8,
+                                              runSpacing: 8,
+                                              children: [
+                                                for (final r in ProRole.values)
+                                                  OutlinedButton.icon(
+                                                      onPressed: () => pushPage<
+                                                              void>(
+                                                          context,
+                                                          (_) =>
+                                                              ProfileEditPage(
+                                                                  role: r)),
+                                                      icon: Icon(switch (r) {
+                                                        ProRole.worker => Icons
+                                                            .handyman_outlined,
+                                                        ProRole.contractor =>
+                                                          Icons.groups_outlined,
+                                                        ProRole.engineer => Icons
+                                                            .architecture_outlined,
+                                                      }),
+                                                      label:
+                                                          Text(proRoleName(r))),
+                                              ])
+                                        else
+                                          OutlinedButton.icon(
+                                              onPressed: () => pushPage<void>(
+                                                  context,
+                                                  (_) =>
+                                                      const ProfileEditPage()),
+                                              icon: const Icon(Icons.add),
+                                              label: Text(tr3(
+                                                  '再建一个名片',
+                                                  'Тағы профиль',
+                                                  'Ещё профиль'))),
                                       ])),
                               const SizedBox(height: 12),
+                              tile(
+                                  Icons.work_outline,
+                                  tr3('接活大厅：找活、找人', 'Жұмыс орталығы',
+                                      'Биржа: работа и мастера'),
+                                  () => pushPage<void>(context,
+                                      (_) => const DiscoverPage(pushed: true))),
                               tile(
                                   Icons.assignment_outlined,
                                   tr3('我的报名与报价', 'Өтінімдерім', 'Мои отклики'),

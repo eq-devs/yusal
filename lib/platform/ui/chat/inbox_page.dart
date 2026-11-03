@@ -3,6 +3,7 @@ import '../../../app/settings.dart';
 import '../../domain/models.dart';
 import '../coop/coop_page.dart';
 import '../demand/demand_detail_page.dart';
+import '../home/post_page.dart';
 import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
@@ -179,6 +180,8 @@ IconData noticeIcon(NoticeKind k) => switch (k) {
         Icons.cancel_outlined,
       NoticeKind.endRequest || NoticeKind.ended => Icons.flag_outlined,
       NoticeKind.reviewReceived => Icons.star_outline,
+      NoticeKind.postLiked => Icons.favorite_border,
+      NoticeKind.postCommented => Icons.chat_bubble_outline,
       NoticeKind.outcomeFollowUp => Icons.help_outline,
       _ => Icons.notifications_none,
     };
@@ -191,5 +194,6 @@ Future<void> openNotice(BuildContext context, AppNotification n) =>
         pushPage<void>(context, (_) => CooperationPage(cooperationId: n.refId)),
       RefType.conversation =>
         pushPage<void>(context, (_) => ChatPage(conversationId: n.refId)),
+      RefType.post => pushPage<void>(context, (_) => PostPage(postId: n.refId)),
       _ => pushPage<void>(context, (_) => DemandDetailPage(demandId: n.refId)),
     };

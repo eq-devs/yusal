@@ -8,6 +8,7 @@ import 'package:yusal/platform/data/mock/mock_backend.dart';
 import 'package:yusal/platform/data/mock/mock_clock.dart';
 import 'package:yusal/platform/data/mock/mock_seed.dart';
 import 'package:yusal/platform/ui/demand/demand_detail_page.dart';
+import 'package:yusal/platform/ui/home/post_page.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
 
@@ -32,24 +33,38 @@ Future<MockBackend> launch(WidgetTester t, {String? as}) async {
 }
 
 void main() {
-  testWidgets('opens on discover with the seeded open demands', (t) async {
+  testWidgets('opens on the feed of designed houses', (t) async {
     await launch(t);
-    expect(find.text('发现'), findsWidgets);
-    expect(find.text('130 平米住宅砌墙'), findsOneWidget);
-    expect(find.text('找两名瓦工，按天结算'), findsOneWidget);
+    expect(find.text('看看大家设计的房子'), findsOneWidget);
+    expect(find.text('给父母盖的一层砖房'), findsOneWidget);
+    expect(find.text('两层别墅，带车库和露台'), findsOneWidget);
   });
 
-  testWidgets('a demand opens its detail with the apply action', (t) async {
-    await launch(t, as: SeedIds.electrician);
-    await t.tap(find.text('找两名瓦工，按天结算'));
+  testWidgets('a house opens with its facts, demands and reviews', (t) async {
+    await launch(t, as: SeedIds.roofTeam);
+    await t.tap(find.text('给父母盖的一层砖房'));
+    await t.pumpAndSettle();
+    expect(find.byType(PostPage), findsOneWidget);
+    expect(find.text('130 m²'), findsOneWidget);
+    expect(find.text('130 平米住宅砌墙'), findsOneWidget);
+    expect(find.text('去报名 / 报价'), findsOneWidget);
+    await t.tap(find.text('130 平米住宅砌墙'));
     await t.pumpAndSettle();
     expect(find.byType(DemandDetailPage), findsOneWidget);
-    expect(find.text('报名'), findsWidgets);
   });
 
-  testWidgets('the projects tab keeps the design home', (t) async {
+  testWidgets('the owner sees the recruit action on their own house',
+      (t) async {
+    await launch(t, as: SeedIds.owner2);
+    await t.tap(find.text('两层别墅，带车库和露台'));
+    await t.pumpAndSettle();
+    expect(find.text('招人'), findsOneWidget);
+    expect(find.text('这是你的设计'), findsOneWidget);
+  });
+
+  testWidgets('the design tab keeps the design home', (t) async {
     await launch(t);
-    await t.tap(find.text('我的项目').last);
+    await t.tap(find.text('设计').last);
     await t.pumpAndSettle();
     expect(find.text('自建房设计工具'), findsOneWidget);
   });

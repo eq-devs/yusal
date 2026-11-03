@@ -16,8 +16,8 @@ void main() {
       initialRoom: true,
       timestamp: '2026-10-01T00:00:00Z',
       newId: next);
-  UndoableDesignState run(UndoableDesignState s, String kind,
-      Map<String, dynamic> args) {
+  UndoableDesignState run(
+      UndoableDesignState s, String kind, Map<String, dynamic> args) {
     final result = executeCommand(s, DesignCommand(kind, args),
         CommandContext(newId: next, now: () => '2026-10-01T00:00:00Z'));
     expect(result, isA<Applied>(),
@@ -48,8 +48,11 @@ void main() {
       'x': 1000,
       'y': 2000
     });
-    s = run(s, 'SetRoomInfo',
-        {'roomId': s.floors.first.rooms.first.id, 'note': '朝南', 'labelArea': 1700});
+    s = run(s, 'SetRoomInfo', {
+      'roomId': s.floors.first.rooms.first.id,
+      'note': '朝南',
+      'labelArea': 1700
+    });
     s = run(s, 'SetFoundation', {'field': 'width', 'value': 500});
     s = run(s, 'AddIssue', {
       'title': '检查冻深',
@@ -66,8 +69,8 @@ void main() {
     final item = loaded.document!.extras.furniture.single;
     expect((item.width, item.depth, item.height), (2000, 1600, 500));
     expect(loaded.document!.extras.foundation.width, 500);
-    expect(loaded.document!.extras.issues.single.areas.single,
-        (0, 0, 10000, 400));
+    expect(
+        loaded.document!.extras.issues.single.areas.single, (0, 0, 10000, 400));
   });
 
   test('geometry commands keep extras; removed rooms drop their notes', () {

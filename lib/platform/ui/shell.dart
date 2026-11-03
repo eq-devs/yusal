@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../app/settings.dart';
 import 'backup/backup_page.dart';
-import 'discover/discover_page.dart';
+import 'chat/inbox_page.dart';
+import 'home/home_page.dart';
 import 'me/me_page.dart';
 import 'projects/projects_page.dart';
 import 'theme.dart';
@@ -36,8 +37,9 @@ class _PlatformShellState extends State<PlatformShell> {
             child: Builder(
                 builder: (context) => Scaffold(
                     body: IndexedStack(index: tab, children: [
-                      const DiscoverPage(),
+                      HomePage(onDesign: () => setState(() => tab = 1)),
                       ProjectsPage(drafting: drafting, reload: reload),
+                      const InboxPage(),
                       const MePage(),
                     ]),
                     bottomNavigationBar: NavigationBar(
@@ -45,12 +47,17 @@ class _PlatformShellState extends State<PlatformShell> {
                         onDestinationSelected: (i) => setState(() => tab = i),
                         destinations: [
                           NavigationDestination(
-                              icon: const Icon(Icons.search),
-                              label: tr3('发现', 'Іздеу', 'Поиск')),
+                              icon: const Icon(Icons.home_outlined),
+                              selectedIcon: const Icon(Icons.home),
+                              label: tr3('首页', 'Басты', 'Главная')),
                           NavigationDestination(
-                              icon: const Icon(Icons.home_work_outlined),
-                              selectedIcon: const Icon(Icons.home_work),
-                              label: tr3('我的项目', 'Жобалар', 'Проекты')),
+                              icon: const Icon(Icons.architecture_outlined),
+                              selectedIcon: const Icon(Icons.architecture),
+                              label: tr3('设计', 'Жоба', 'Проект')),
+                          NavigationDestination(
+                              icon: const Icon(Icons.chat_bubble_outline),
+                              selectedIcon: const Icon(Icons.chat_bubble),
+                              label: tr3('消息', 'Хабар', 'Чаты')),
                           NavigationDestination(
                               icon: const Icon(Icons.person_outline),
                               selectedIcon: const Icon(Icons.person),

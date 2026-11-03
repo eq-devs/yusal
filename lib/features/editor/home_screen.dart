@@ -527,8 +527,8 @@ class _HouseHomeState extends State<HouseHome> {
                       ])),
                   if (widget.onFindBuilders != null)
                     IconButton(
-                        tooltip: tr('找施工方', 'Мердігер іздеу'),
-                        icon: const Icon(Icons.engineering_outlined),
+                        tooltip: tr('发布到首页', 'Басты бетке жариялау'),
+                        icon: const Icon(Icons.ios_share_outlined),
                         onPressed: () => widget.onFindBuilders!(entry)),
                   if (widget.onBackup != null)
                     IconButton(

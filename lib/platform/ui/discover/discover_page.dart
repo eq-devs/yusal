@@ -13,7 +13,10 @@ import '../widgets.dart';
 
 /// First tab: "find work / find people" with search and filters.
 class DiscoverPage extends StatefulWidget {
-  const DiscoverPage({super.key});
+  const DiscoverPage({super.key, this.pushed = false});
+
+  /// Opened from the home banner rather than as a tab: shows a back button.
+  final bool pushed;
   @override
   State<DiscoverPage> createState() => _DiscoverPageState();
 }
@@ -230,6 +233,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
               });
             });
     return Scaffold(
+        appBar: widget.pushed
+            ? AppBar(title: Text(tr3('接活大厅', 'Жұмыс орталығы', 'Биржа работы')))
+            : null,
         floatingActionButton: people
             ? null
             : FloatingActionButton.extended(

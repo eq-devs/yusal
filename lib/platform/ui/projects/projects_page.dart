@@ -5,7 +5,7 @@ import '../../domain/models.dart';
 import '../backup/backup_page.dart';
 import '../cards.dart';
 import '../demand/demand_detail_page.dart';
-import '../demand/from_design_page.dart';
+import '../home/publish_post_page.dart';
 import '../demand/publish_page.dart';
 import '../l10n.dart';
 import '../scope.dart';
@@ -27,7 +27,7 @@ class ProjectsPage extends StatelessWidget {
         length: 3,
         child: Scaffold(
             appBar: AppBar(
-                title: Text(tr3('我的项目', 'Жобаларым', 'Мои проекты'),
+                title: Text(tr3('我的设计', 'Жобаларым', 'Мои проекты'),
                     style: const TextStyle(
                         fontSize: 24, fontWeight: FontWeight.w800)),
                 bottom: TabBar(tabs: [
@@ -42,7 +42,7 @@ class ProjectsPage extends StatelessWidget {
                       store: context.projectStore,
                       reload: reload,
                       onFindBuilders: (entry) => pushPage<void>(
-                          context, (_) => FromDesignPage(entry: entry)),
+                          context, (_) => PublishPostPage(entry: entry)),
                       onBackup: (entry) => pushPage<void>(
                           context, (_) => BackupPage(highlight: entry.id)))),
               const _MyDemands(),

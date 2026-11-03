@@ -3,13 +3,17 @@ import '../../../app/settings.dart';
 import '../../domain/models.dart';
 import '../l10n.dart';
 import '../scope.dart';
+import '../theme.dart';
 import '../widgets.dart';
 
 /// Create or edit an individual or team service profile. Only the name,
 /// trades, regions, kind and availability are required.
 class ProfileEditPage extends StatefulWidget {
-  const ProfileEditPage({super.key, this.profile});
+  const ProfileEditPage({super.key, this.profile, this.role});
   final ServiceProfile? profile;
+
+  /// Preselected role when joining as a professional.
+  final ProRole? role;
   @override
   State<ProfileEditPage> createState() => _ProfileEditPageState();
 }
@@ -22,6 +26,7 @@ class _PriceRow {
 
 class _ProfileEditPageState extends State<ProfileEditPage> {
   ProfileKind kind = ProfileKind.individual;
+  late ProRole role = widget.role ?? ProRole.worker;
   final name = TextEditingController(),
       experience = TextEditingController(),
       teamSize = TextEditingController(),
@@ -40,6 +45,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     final p = widget.profile;
     if (p == null) return;
     kind = p.kind;
+    role = p.role;
     name.text = p.name;
     experience.text = p.experienceYears?.toString() ?? '';
     teamSize.text = p.teamSize?.toString() ?? '';
@@ -82,6 +88,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         id: old?.id ?? '',
         ownerId: old?.ownerId ?? '',
         kind: kind,
+        role: role,
         name: name.text,
         trades: trades,
         regions: regions,
@@ -138,6 +145,20 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               'Түйіндеме керек емес, қалғанын кейін толтырасыз.',
               'Резюме не нужно: сначала главное, остальное потом.')),
           const SizedBox(height: 16),
+          Text(tr3('我是', 'Мен', 'Я'),
+              style: TextStyle(color: YTokens.of(context).muted)),
+          const SizedBox(height: 6),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final r in ProRole.values)
+              FilterPill(
+                  label: proRoleName(r),
+                  selected: role == r,
+                  onTap: () => setState(() {
+                        role = r;
+                        if (r == ProRole.contractor) kind = ProfileKind.team;
+                      })),
+          ]),
+          const SizedBox(height: 14),
           Wrap(spacing: 8, children: [
             for (final k in ProfileKind.values)
               FilterPill(

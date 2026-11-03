@@ -276,8 +276,7 @@ void main() {
     expect(session.files.writeCount, 1);
     expect(t.takeException(), isNull);
   });
-  testWidgets(
-      'switching page during a stroke cancels the interrupted preview',
+  testWidgets('switching page during a stroke cancels the interrupted preview',
       (t) async {
     final doc = initial(), session = await mount(t, doc);
     await t.tap(find.byTooltip('墙体'));
@@ -344,8 +343,7 @@ void main() {
     expect(t.takeException(), isNull);
   });
   for (final size in [const Size(320, 568), const Size(844, 390)]) {
-    testWidgets(
-        'every page and reduced motion fit $size with large text',
+    testWidgets('every page and reduced motion fit $size with large text',
         (t) async {
       t.view.physicalSize = size;
       t.view.devicePixelRatio = 1;

@@ -151,6 +151,30 @@ String availabilityName(ServiceProfile p) => switch (p.availability) {
       Availability.notTaking => tr3('暂不接活', 'Қазір алмайды', 'Не берёт заказы'),
     };
 
+String proRoleName(ProRole r) => switch (r) {
+      ProRole.worker => tr3('工人', 'Жұмысшы', 'Рабочий'),
+      ProRole.contractor => tr3('包工头 / 施工队', 'Мердігер', 'Прораб / бригада'),
+      ProRole.engineer => tr3('工程师 / 设计师', 'Инженер', 'Инженер / дизайнер'),
+    };
+
+String postTagName(String code) => switch (code) {
+      'one_floor' => tr3('一层', 'Бір қабат', 'Один этаж'),
+      'two_floors' => tr3('两层', 'Екі қабат', 'Два этажа'),
+      'brick' => tr3('砖混', 'Кірпіш', 'Кирпич'),
+      'wood' => tr3('木结构', 'Ағаш', 'Дерево'),
+      'sip' => tr3('SIP 板', 'SIP', 'SIP-панели'),
+      'garage' => tr3('带车库', 'Гараж', 'С гаражом'),
+      'budget' => tr3('经济型', 'Үнемді', 'Бюджетный'),
+      'large' => tr3('大户型', 'Үлкен', 'Большой'),
+      _ => code,
+    };
+
+String feedSortName(FeedSort s) => switch (s) {
+      FeedSort.newest => tr3('最新', 'Жаңа', 'Новые'),
+      FeedSort.popular => tr3('最热', 'Танымал', 'Популярные'),
+      FeedSort.topRated => tr3('评分最高', 'Үздік', 'Лучшие'),
+    };
+
 String profileKindName(ProfileKind k) => switch (k) {
       ProfileKind.individual => tr3('个人', 'Жеке', 'Частный мастер'),
       ProfileKind.team => tr3('团队', 'Бригада', 'Бригада'),
@@ -202,6 +226,10 @@ String noticeText(AppNotification n) {
   return switch (n.kind) {
     NoticeKind.newApplication =>
       tr3('$t 收到新的报名／报价', '$t жаңа өтінім келді', '$t новый отклик'),
+    NoticeKind.postLiked =>
+      tr3('有人赞了你的房子 $t', '$t үйіңіз ұнады', 'Ваш дом $t понравился'),
+    NoticeKind.postCommented =>
+      tr3('你的房子 $t 收到新评价', '$t жаңа пікір', 'Новый отзыв о доме $t'),
     NoticeKind.confirmRequest => tr3('$t 对方发起合作约定，请确认', '$t келісімді растаңыз',
         '$t вам предложили соглашение'),
     NoticeKind.cooperationConfirmed => tr3(

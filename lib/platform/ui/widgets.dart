@@ -50,7 +50,10 @@ class ActionBar extends StatelessWidget {
             top: false,
             child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                // heightFactor keeps the bar as tall as its content; a plain
+                // Center would take the whole screen as a bottom bar.
                 child: Center(
+                    heightFactor: 1,
                     child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 720),
                         child: child)))));
@@ -177,12 +180,12 @@ class Avatar extends StatelessWidget {
   final double size;
   final bool team;
   static const _colors = [
-    Color(0xffFF385C),
-    Color(0xff008489),
-    Color(0xffE07912),
-    Color(0xff6B4FBB),
-    Color(0xff428BFF),
-    Color(0xff00A699),
+    Color(0xffA3673B),
+    Color(0xff6F8F5A),
+    Color(0xffB8641B),
+    Color(0xff7A5C8E),
+    Color(0xff4C6E8A),
+    Color(0xff8C6A4A),
   ];
   @override
   Widget build(BuildContext context) {
@@ -500,11 +503,11 @@ class Cover extends StatelessWidget {
   final Widget? child;
   final ImageProvider? image;
   static const _pairs = [
-    (Color(0xffFFE3E8), Color(0xffFFC2CD)),
-    (Color(0xffE3F4F4), Color(0xffB8E2E3)),
-    (Color(0xffFFF1DE), Color(0xffFFD9A8)),
-    (Color(0xffECE8FA), Color(0xffD3CBF3)),
-    (Color(0xffE6F0FF), Color(0xffC5DAFF)),
+    (Color(0xffF3E3D3), Color(0xffD9B897)),
+    (Color(0xffE7E9DC), Color(0xffC3CBAE)),
+    (Color(0xffF6E6D6), Color(0xffE4B98F)),
+    (Color(0xffEDE4EC), Color(0xffCDB9CF)),
+    (Color(0xffE2E8EC), Color(0xffB7C7D3)),
   ];
   @override
   Widget build(BuildContext context) {

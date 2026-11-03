@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import '../../app/settings.dart';
 import '../../app/tokens.dart';
 
-/// Platform look, after the visual language of Airbnb: white pages, one
-/// coral accent, large bold titles, rounded cards with soft shadows and
-/// pill-shaped filters. Only the style is borrowed, no assets or brand.
+/// Platform look, after the visual language of Airbnb: light pages, one
+/// accent, large bold titles, rounded cards with soft shadows and
+/// pill-shaped filters, in wood and soil colours. Only the style is
+/// borrowed, no assets or brand.
 @immutable
 class YTokens extends ThemeExtension<YTokens> {
   const YTokens({
@@ -43,39 +44,39 @@ class YTokens extends ThemeExtension<YTokens> {
   final bool dark;
 
   static const light = YTokens(
-      bg: Color(0xffFFFFFF),
-      surface: Color(0xffF7F7F7),
+      bg: Color(0xffFFFDFA),
+      surface: Color(0xffF5EFE7),
       card: Color(0xffFFFFFF),
-      ink: Color(0xff222222),
-      muted: Color(0xff6A6A6A),
-      faint: Color(0xffB0B0B0),
-      line: Color(0xffEBEBEB),
-      accent: Color(0xffFF385C),
+      ink: Color(0xff2A211B),
+      muted: Color(0xff74675C),
+      faint: Color(0xffB9ADA1),
+      line: Color(0xffEBE2D7),
+      accent: Color(0xff9C5B33),
       accentInk: Color(0xffFFFFFF),
-      accentSoft: Color(0xffFFF0F3),
-      ok: Color(0xff008A05),
-      warn: Color(0xffC13515),
-      crit: Color(0xffC13515),
-      info: Color(0xff428BFF),
-      shadow: Color(0x1F000000),
+      accentSoft: Color(0xffF6EADF),
+      ok: Color(0xff3F7D4E),
+      warn: Color(0xffB7791F),
+      crit: Color(0xffB3412E),
+      info: Color(0xff4A7194),
+      shadow: Color(0x1A3A2616),
       dark: false);
 
   static const night = YTokens(
-      bg: Color(0xff121212),
-      surface: Color(0xff1E1E1E),
-      card: Color(0xff1A1A1A),
-      ink: Color(0xffF2F2F2),
-      muted: Color(0xffA8A8A8),
-      faint: Color(0xff6A6A6A),
-      line: Color(0xff2E2E2E),
-      accent: Color(0xffFF5A75),
-      accentInk: Color(0xffFFFFFF),
-      accentSoft: Color(0xff3A1A21),
-      ok: Color(0xff4CC157),
-      warn: Color(0xffFF8A65),
-      crit: Color(0xffFF6B6B),
-      info: Color(0xff7DB3FF),
-      shadow: Color(0x66000000),
+      bg: Color(0xff16120F),
+      surface: Color(0xff221C17),
+      card: Color(0xff1D1814),
+      ink: Color(0xffF3ECE4),
+      muted: Color(0xffB3A597),
+      faint: Color(0xff6E6258),
+      line: Color(0xff332A23),
+      accent: Color(0xffD29A6C),
+      accentInk: Color(0xff1C130C),
+      accentSoft: Color(0xff3A2A1E),
+      ok: Color(0xff7BC48C),
+      warn: Color(0xffE3AE5B),
+      crit: Color(0xffE57A64),
+      info: Color(0xff8FB4D6),
+      shadow: Color(0x80000000),
       dark: true);
 
   static YTokens of(BuildContext context) =>

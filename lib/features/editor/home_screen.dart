@@ -5,13 +5,15 @@ class HouseHome extends StatefulWidget {
       {super.key,
       this.store,
       this.onFindBuilders,
+      this.onShare,
       this.onBackup,
       this.reload});
   final ProjectStore? store;
 
-  /// Platform hooks: publish a demand from a design and back it up. The
+  /// Platform hooks: publish a demand from a design, show it on the home
+  /// feed and back it up. The
   /// design tool works without them.
-  final void Function(ProjectEntry entry)? onFindBuilders, onBackup;
+  final void Function(ProjectEntry entry)? onFindBuilders, onShare, onBackup;
 
   /// Fires when designs were added from outside, e.g. restored backups.
   final Listenable? reload;
@@ -525,6 +527,11 @@ class _HouseHomeState extends State<HouseHome> {
                             '${m(doc.footprint.width)} × ${m(doc.footprint.depth)} $unitM · ${doc.floors.length} ${tr('层', 'қабат')}',
                             style: mono(size: 12, color: t.muted)),
                       ])),
+                  if (widget.onShare != null)
+                    IconButton(
+                        tooltip: tr('发布到首页', 'Басты бетке жариялау'),
+                        icon: const Icon(Icons.public),
+                        onPressed: () => widget.onShare!(entry)),
                   if (widget.onFindBuilders != null)
                     IconButton(
                         tooltip: tr('找施工方', 'Мердігер іздеу'),

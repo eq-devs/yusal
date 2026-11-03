@@ -919,6 +919,9 @@ const tradeCodes = [
   'tiler',
   'laborer',
   'general',
+  'foreman',
+  'engineer',
+  'designer',
 ];
 
 /// Pilot region: Almaty and its surroundings.
@@ -933,3 +936,121 @@ const regionCodes = [
 
 /// Price unit codes.
 const priceUnits = ['total', 'day', 'm3', 'm2', 'm', 'pcs', 't', 'hour'];
+
+// ──────────────────────────── design showcase ────────────────────────────
+
+/// Style tags a showcase can carry, see `styleName` in the interface.
+const showcaseStyles = [
+  'kazakh',
+  'modern',
+  'wood',
+  'brick',
+  'compact',
+  'family'
+];
+
+/// A house design its owner made public: others browse it, like it, rate
+/// and comment on it, and builders apply to the demands it links to.
+class Showcase {
+  const Showcase(
+      {required this.id,
+      required this.ownerId,
+      required this.projectId,
+      required this.title,
+      required this.story,
+      required this.region,
+      required this.styles,
+      required this.houseText,
+      required this.width,
+      required this.depth,
+      required this.floors,
+      required this.rooms,
+      required this.area,
+      required this.createdAt,
+      this.likes = 0,
+      this.ratingSum = 0,
+      this.ratingCount = 0,
+      this.commentCount = 0,
+      this.openDemandIds = const []});
+  final String id, ownerId, projectId, title, story, region;
+  final List<String> styles;
+
+  /// The design itself (.house text), frozen at publish time.
+  final String houseText;
+
+  /// Footprint, mm.
+  final int width, depth;
+  final int floors, rooms;
+
+  /// Building area over all floors, m².
+  final double area;
+  final DateTime createdAt;
+
+  /// Filled in by the backend on every read.
+  final int likes, ratingSum, ratingCount, commentCount;
+
+  /// Open demands published from this design, newest first.
+  final List<String> openDemandIds;
+
+  double? get rating => ratingCount == 0 ? null : ratingSum / ratingCount;
+  bool get hiring => openDemandIds.isNotEmpty;
+
+  Showcase withStats(
+          {required int likes,
+          required int ratingSum,
+          required int ratingCount,
+          required int commentCount,
+          required List<String> openDemandIds}) =>
+      Showcase(
+          id: id,
+          ownerId: ownerId,
+          projectId: projectId,
+          title: title,
+          story: story,
+          region: region,
+          styles: styles,
+          houseText: houseText,
+          width: width,
+          depth: depth,
+          floors: floors,
+          rooms: rooms,
+          area: area,
+          createdAt: createdAt,
+          likes: likes,
+          ratingSum: ratingSum,
+          ratingCount: ratingCount,
+          commentCount: commentCount,
+          openDemandIds: openDemandIds);
+}
+
+/// A comment on a showcase; [rating] 1–5 when the author also rated it.
+class ShowcaseComment {
+  const ShowcaseComment(
+      {required this.id,
+      required this.showcaseId,
+      required this.authorId,
+      required this.text,
+      required this.createdAt,
+      this.rating});
+  final String id, showcaseId, authorId, text;
+  final int? rating;
+  final DateTime createdAt;
+}
+
+enum ShowcaseSort { latest, popular, topRated }
+
+class ShowcaseFilter {
+  const ShowcaseFilter(
+      {this.style,
+      this.floors,
+      this.hiringOnly = false,
+      this.query = '',
+      this.sort = ShowcaseSort.latest});
+  final String? style;
+
+  /// 1 or 2; null for any.
+  final int? floors;
+  final bool hiringOnly;
+  final String query;
+  final ShowcaseSort sort;
+}

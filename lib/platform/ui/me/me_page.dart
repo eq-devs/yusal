@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../join/join_page.dart';
+import '../showcase/my_showcases_page.dart';
 import '../../../app/settings.dart';
 import '../../domain/models.dart';
 import '../apply/apply_page.dart';
@@ -138,6 +140,18 @@ class MePage extends StatelessWidget {
                                       ])),
                               const SizedBox(height: 12),
                               tile(
+                                  Icons.engineering_outlined,
+                                  tr3('入驻：工人 / 包工头 / 工程师', 'Шебер болып қосылу',
+                                      'Стать мастером / прорабом / инженером'),
+                                  () => pushPage<void>(
+                                      context, (_) => const JoinPage())),
+                              tile(
+                                  Icons.photo_library_outlined,
+                                  tr3('我发布的设计', 'Жарияланған жобаларым',
+                                      'Мои опубликованные проекты'),
+                                  () => pushPage<void>(
+                                      context, (_) => const MyShowcasesPage())),
+                              tile(
                                   Icons.assignment_outlined,
                                   tr3('我的报名与报价', 'Өтінімдерім', 'Мои отклики'),
                                   () => pushPage<void>(context,
@@ -165,6 +179,15 @@ class MePage extends StatelessWidget {
                                     tr3('审核后台', 'Модерация', 'Модерация'),
                                     () => pushPage<void>(
                                         context, (_) => const AdminPage())),
+                            ],
+                            if (account == null) ...[
+                              const SizedBox(height: 16),
+                              tile(
+                                  Icons.engineering_outlined,
+                                  tr3('入驻：工人 / 包工头 / 工程师', 'Шебер болып қосылу',
+                                      'Стать мастером / прорабом / инженером'),
+                                  () => pushPage<void>(
+                                      context, (_) => const JoinPage())),
                             ],
                             SectionTitle(tr3('设置', 'Баптаулар', 'Настройки')),
                             Text(tr3('语言', 'Тіл', 'Язык'),

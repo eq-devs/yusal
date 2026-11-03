@@ -8,8 +8,13 @@ import '../widgets.dart';
 /// Create or edit an individual or team service profile. Only the name,
 /// trades, regions, kind and availability are required.
 class ProfileEditPage extends StatefulWidget {
-  const ProfileEditPage({super.key, this.profile});
+  const ProfileEditPage(
+      {super.key, this.profile, this.kind, this.trades = const []});
   final ServiceProfile? profile;
+
+  /// Starting choices for a new profile, from the "join as" page.
+  final ProfileKind? kind;
+  final List<String> trades;
   @override
   State<ProfileEditPage> createState() => _ProfileEditPageState();
 }
@@ -38,7 +43,11 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
   void initState() {
     super.initState();
     final p = widget.profile;
-    if (p == null) return;
+    if (p == null) {
+      kind = widget.kind ?? kind;
+      trades = [...widget.trades];
+      return;
+    }
     kind = p.kind;
     name.text = p.name;
     experience.text = p.experienceYears?.toString() ?? '';

@@ -51,6 +51,8 @@ class ActionBar extends StatelessWidget {
             child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
                 child: Center(
+                    // Only as tall as the bar, not the whole page.
+                    heightFactor: 1,
                     child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 720),
                         child: child)))));
@@ -500,11 +502,11 @@ class Cover extends StatelessWidget {
   final Widget? child;
   final ImageProvider? image;
   static const _pairs = [
-    (Color(0xffFFE3E8), Color(0xffFFC2CD)),
-    (Color(0xffE3F4F4), Color(0xffB8E2E3)),
-    (Color(0xffFFF1DE), Color(0xffFFD9A8)),
-    (Color(0xffECE8FA), Color(0xffD3CBF3)),
-    (Color(0xffE6F0FF), Color(0xffC5DAFF)),
+    (Color(0xffF3E6D8), Color(0xffE2C7A8)),
+    (Color(0xffE8EDE1), Color(0xffCBD6BC)),
+    (Color(0xffF5E9DC), Color(0xffE7CDB0)),
+    (Color(0xffEFE4DA), Color(0xffD9C2AE)),
+    (Color(0xffE9E3D6), Color(0xffD2C6AE)),
   ];
   @override
   Widget build(BuildContext context) {

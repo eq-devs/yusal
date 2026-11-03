@@ -110,6 +110,7 @@ void seedMockData(MockBackend b) {
       expiresAt: now.add(const Duration(days: 26)),
       shareToken: 'share_wall',
       followUpsSent: 1,
+      designProjectId: 'proj_seed_kz',
       versions: [
         DemandVersion(
             no: 1,
@@ -158,6 +159,7 @@ void seedMockData(MockBackend b) {
       publishedAt: ago(1),
       expiresAt: now.add(const Duration(days: 29)),
       shareToken: 'share_hire',
+      designProjectId: 'proj_seed_kz',
       versions: [
         DemandVersion(
             no: 1,

@@ -85,3 +85,22 @@ DesignSnapshot buildSnapshot(
         lines: lines,
         summary: summary,
         preview: preview);
+
+/// Size facts shown on a showcase card.
+({int width, int depth, int floors, int rooms, double area}) showcaseFacts(
+    HouseDocument doc) {
+  double area;
+  try {
+    area = estimateCost(doc, deriveHouse(doc), currency: Currency.kzt)
+        .buildingArea;
+  } catch (_) {
+    area = doc.footprint.width * doc.footprint.depth * doc.floors.length / 1e6;
+  }
+  return (
+    width: doc.footprint.width,
+    depth: doc.footprint.depth,
+    floors: doc.floors.length,
+    rooms: doc.floors.fold(0, (n, f) => n + f.rooms.length),
+    area: _round(area)
+  );
+}

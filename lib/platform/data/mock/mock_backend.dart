@@ -5,6 +5,7 @@ import '../../domain/rules.dart';
 import '../repositories.dart';
 import 'mock_clock.dart';
 import 'mock_seed.dart';
+import 'mock_showcase_seed.dart';
 
 /// In-memory stand-in for the platform backend. It enforces the same
 /// permissions and state rules a real server must: the client can never
@@ -18,7 +19,10 @@ class MockBackend implements PlatformRepositories {
       this.autoReviewDelay = const Duration(milliseconds: 900),
       bool seed = true})
       : clock = clock ?? MockClock() {
-    if (seed) seedMockData(this);
+    if (seed) {
+      seedMockData(this);
+      seedShowcases(this);
+    }
   }
 
   final MockClock clock;
@@ -54,6 +58,13 @@ class MockBackend implements PlatformRepositories {
   final backupsByAccount = <String, Map<String, BackupRecord>>{};
   final reportsById = <String, Report>{};
   final auditLog = <AuditEntry>[];
+  final showcasesById = <String, Showcase>{};
+  final showcaseComments = <String, ShowcaseComment>{};
+  final _likes = <String, Set<String>>{};
+
+  /// Who liked a showcase; the seed fills it directly.
+  Set<String> likes(String showcaseId) =>
+      _likes.putIfAbsent(showcaseId, () => {});
   final _favourites = <String, Set<String>>{};
   final _blocks = <String, Set<String>>{};
   final _lastRead = <String, DateTime>{};
@@ -1677,5 +1688,196 @@ class MockBackend implements PlatformRepositories {
   Future<List<AuditEntry>> audit() => _read(() {
         _requireAdmin();
         return auditLog.reversed.toList();
+      });
+
+  // ─────────────────────────── showcases ───────────────────────────
+
+  Showcase _withStats(Showcase s) {
+    final rated = showcaseComments.values
+        .where((c) => c.showcaseId == s.id && c.rating != null);
+    final open = demands.values
+        .where((d) =>
+            d.ownerId == s.ownerId &&
+            d.designProjectId == s.projectId &&
+            d.status == DemandStatus.open)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return s.withStats(
+        likes: _likes[s.id]?.length ?? 0,
+        ratingSum: rated.fold(0, (sum, c) => sum + c.rating!),
+        ratingCount: rated.length,
+        commentCount:
+            showcaseComments.values.where((c) => c.showcaseId == s.id).length,
+        openDemandIds: [for (final d in open) d.id]);
+  }
+
+  bool _showcaseVisible(Showcase s) {
+    final owner = accounts[s.ownerId];
+    if (owner == null || owner.deleted) return false;
+    final me = currentId;
+    return me == null || !_isBlocked(me, s.ownerId);
+  }
+
+  @override
+  Future<List<Showcase>> showcases(ShowcaseFilter f) => _read(() {
+        final q = f.query.trim().toLowerCase();
+        final list = [
+          for (final s in showcasesById.values)
+            if (_showcaseVisible(s) &&
+                (f.style == null || s.styles.contains(f.style)) &&
+                (f.floors == null ||
+                    (f.floors! >= 2 ? s.floors >= 2 : s.floors == f.floors)) &&
+                (q.isEmpty ||
+                    s.title.toLowerCase().contains(q) ||
+                    s.story.toLowerCase().contains(q)))
+              _withStats(s)
+        ].where((s) => !f.hiringOnly || s.hiring).toList();
+        switch (f.sort) {
+          case ShowcaseSort.latest:
+            list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          case ShowcaseSort.popular:
+            list.sort((a, b) =>
+                (b.likes + b.commentCount).compareTo(a.likes + a.commentCount));
+          case ShowcaseSort.topRated:
+            list.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+        }
+        return list;
+      });
+
+  @override
+  Future<Showcase?> showcase(String id) => _read(() {
+        final s = showcasesById[id];
+        return s == null || !_showcaseVisible(s) ? null : _withStats(s);
+      });
+
+  @override
+  Future<List<Showcase>> showcasesOf(String accountId) => _read(() => [
+        for (final s in showcasesById.values)
+          if (s.ownerId == accountId && _showcaseVisible(s)) _withStats(s)
+      ]..sort((a, b) => b.createdAt.compareTo(a.createdAt)));
+
+  @override
+  Future<Showcase> publishShowcase(
+          {required String projectId,
+          required String title,
+          required String story,
+          required String region,
+          required List<String> styles,
+          required String houseText,
+          required int width,
+          required int depth,
+          required int floors,
+          required int rooms,
+          required double area}) =>
+      _io(() {
+        final me = _me;
+        _requireActive();
+        if (title.trim().isEmpty || houseText.isEmpty)
+          throw const ApiFailure(ApiCodes.invalidInput);
+        final existing = showcasesById.values
+            .where((s) => s.ownerId == me && s.projectId == projectId)
+            .firstOrNull;
+        final s = Showcase(
+            id: existing?.id ?? newId('show'),
+            ownerId: me,
+            projectId: projectId,
+            title: title.trim(),
+            story: story.trim(),
+            region: region,
+            styles: styles,
+            houseText: houseText,
+            width: width,
+            depth: depth,
+            floors: floors,
+            rooms: rooms,
+            area: area,
+            createdAt: existing?.createdAt ?? now);
+        showcasesById[s.id] = s;
+        return _withStats(s);
+      });
+
+  @override
+  Future<void> removeShowcase(String id) => _io(() {
+        final s = showcasesById[id];
+        if (s == null) throw const ApiFailure(ApiCodes.notFound);
+        if (s.ownerId != _me) throw const ApiFailure(ApiCodes.forbidden);
+        showcasesById.remove(id);
+        showcaseComments.removeWhere((_, c) => c.showcaseId == id);
+        _likes.remove(id);
+      });
+
+  @override
+  Future<Set<String>> likedShowcases() => _read(() => {
+        for (final e in _likes.entries)
+          if (currentId != null && e.value.contains(currentId)) e.key
+      });
+
+  @override
+  Future<void> toggleLike(String showcaseId) => _io(() {
+        final me = _me;
+        if (showcasesById[showcaseId] == null)
+          throw const ApiFailure(ApiCodes.notFound);
+        final set = _likes.putIfAbsent(showcaseId, () => {});
+        if (!set.remove(me)) set.add(me);
+      });
+
+  @override
+  Future<List<ShowcaseComment>> comments(String showcaseId) => _read(() {
+        // Newest first; among equal times the later-written one first.
+        final list = [
+          for (final (i, c) in showcaseComments.values.indexed)
+            if (c.showcaseId == showcaseId &&
+                (currentId == null || !_isBlocked(currentId!, c.authorId)))
+              (i, c)
+        ]..sort((a, b) {
+            final byTime = b.$2.createdAt.compareTo(a.$2.createdAt);
+            return byTime != 0 ? byTime : b.$1.compareTo(a.$1);
+          });
+        return [for (final (_, c) in list) c];
+      });
+
+  @override
+  Future<ShowcaseComment> addComment(String showcaseId, String text,
+          {int? rating}) =>
+      _io(() {
+        final me = _me;
+        _requireActive();
+        final s = showcasesById[showcaseId];
+        if (s == null || !_showcaseVisible(s))
+          throw const ApiFailure(ApiCodes.notFound);
+        if (rating != null && (rating < 1 || rating > 5))
+          throw const ApiFailure(ApiCodes.invalidInput);
+        if (rating != null && s.ownerId == me)
+          throw const ApiFailure(ApiCodes.ownDemand);
+        if (text.trim().isEmpty && rating == null)
+          throw const ApiFailure(ApiCodes.invalidInput);
+        if (rating != null) {
+          // One rating per person: earlier ones keep their words only.
+          for (final c in showcaseComments.values.toList()) {
+            if (c.showcaseId == showcaseId &&
+                c.authorId == me &&
+                c.rating != null) {
+              if (c.text.isEmpty) {
+                showcaseComments.remove(c.id);
+              } else {
+                showcaseComments[c.id] = ShowcaseComment(
+                    id: c.id,
+                    showcaseId: c.showcaseId,
+                    authorId: c.authorId,
+                    text: c.text,
+                    createdAt: c.createdAt);
+              }
+            }
+          }
+        }
+        final c = ShowcaseComment(
+            id: newId('cmt'),
+            showcaseId: showcaseId,
+            authorId: me,
+            text: text.trim(),
+            rating: rating,
+            createdAt: now);
+        showcaseComments[c.id] = c;
+        return c;
       });
 }

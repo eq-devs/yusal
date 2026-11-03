@@ -205,6 +205,35 @@ abstract interface class SnapshotRepository {
   Future<DesignSnapshot?> snapshot(String id);
 }
 
+abstract interface class ShowcaseRepository {
+  Future<List<Showcase>> showcases(ShowcaseFilter filter);
+  Future<Showcase?> showcase(String id);
+  Future<List<Showcase>> showcasesOf(String accountId);
+
+  /// Publishes (or, for the same project, updates) the caller's design.
+  Future<Showcase> publishShowcase(
+      {required String projectId,
+      required String title,
+      required String story,
+      required String region,
+      required List<String> styles,
+      required String houseText,
+      required int width,
+      required int depth,
+      required int floors,
+      required int rooms,
+      required double area});
+  Future<void> removeShowcase(String id);
+  Future<Set<String>> likedShowcases();
+  Future<void> toggleLike(String showcaseId);
+  Future<List<ShowcaseComment>> comments(String showcaseId);
+
+  /// One rating per person and showcase: a later rating replaces it. The
+  /// owner may comment but not rate their own design.
+  Future<ShowcaseComment> addComment(String showcaseId, String text,
+      {int? rating});
+}
+
 /// Result of comparing a local design with its cloud backup.
 enum BackupState { none, inSync, localNewer, cloudNewer, diverged }
 
@@ -243,4 +272,5 @@ abstract interface class PlatformRepositories
         NotificationRepository,
         SnapshotRepository,
         BackupRepository,
-        ModerationRepository {}
+        ModerationRepository,
+        ShowcaseRepository {}

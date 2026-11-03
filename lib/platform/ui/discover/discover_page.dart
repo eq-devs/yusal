@@ -11,7 +11,7 @@ import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
 
-/// First tab: "find work / find people" with search and filters.
+/// Work board: builders find houses that are hiring, owners find builders.
 class DiscoverPage extends StatefulWidget {
   const DiscoverPage({super.key});
   @override
@@ -246,11 +246,11 @@ class _DiscoverPageState extends State<DiscoverPage> {
                               padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
                               child: Row(children: [
                                 Expanded(
-                                    child: Text('Yusal',
-                                        style: TextStyle(
+                                    child: Text(
+                                        tr3('招工 · 找活', 'Жұмыс', 'Работа'),
+                                        style: const TextStyle(
                                             fontSize: 26,
                                             fontWeight: FontWeight.w800,
-                                            color: t.accent,
                                             letterSpacing: -0.5))),
                                 const InboxButton(),
                               ]))),

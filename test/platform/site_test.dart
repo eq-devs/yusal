@@ -106,7 +106,10 @@ void main() {
     t.view.physicalSize = const Size(1200, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    final b = backend()..signInAs(SeedIds.owner);
+    final b = backend();
+    final c = await t.runAsync(() => liveContract(b));
+    await t.runAsync(() => b.logWork(c!.id, 3));
+    b.signInAs(SeedIds.owner);
     await t.pumpWidget(ProviderScope(
         child: HouseApp(
             repos: b, store: ProjectStore(fileSystem: MemoryFiles()))));
@@ -185,5 +188,39 @@ void main() {
       final p = await b.postForDemand('dem_wall');
       expect(p?.id, 'post_aigerim');
     });
-  });
+  
+    test('a taken scope leaves "recruiting" and shows under who builds',
+        () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner2);
+      expect((await b.demandsForPost('post_aigerim')).map((d) => d.id),
+          contains('dem_wall'));
+      await liveContract(b);
+      b.signInAs(SeedIds.owner2);
+      expect((await b.demandsForPost('post_aigerim')).map((d) => d.id),
+          isNot(contains('dem_wall')));
+    });
+
+    test('reading quotes notifies once, not on every reload', () async {
+      final b = backend()..signInAs(SeedIds.owner);
+      var n = 0;
+      b.changes.addListener(() => n++);
+      await b.applicationsFor('dem_wall');
+      final first = n;
+      await b.applicationsFor('dem_wall');
+      expect(first, greaterThan(0));
+      expect(n, first);
+    });
+
+    test('the next step points at inspections waiting for me', () async {
+      final b = backend();
+      final c = await liveContract(b);
+      await b.requestMilestone(c.id, 0);
+      b.signInAs(SeedIds.owner);
+      final h = (await loadMyHouses(b, ProjectStore(fileSystem: MemoryFiles())))
+          .firstWhere((h) => h.cooperations.isNotEmpty);
+      expect(h.nextStep(SeedIds.owner), contains('验收'));
+      expect(h.needsMe(SeedIds.owner), isTrue);
+    });
+});
 }

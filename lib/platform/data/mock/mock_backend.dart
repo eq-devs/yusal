@@ -826,16 +826,22 @@ class MockBackend implements PlatformRepositories {
       });
 
   @override
-  Future<List<Application>> applicationsFor(String demandId) => _io(() {
+  Future<List<Application>> applicationsFor(String demandId) => _read(() {
         final d = _owned(demandId);
         final list = applications.values
             .where((a) => a.demandId == d.id)
             .toList()
           ..sort((a, b) => b.current.createdAt.compareTo(a.current.createdAt));
+        var marked = false;
         for (final a in list) {
-          if (!a.readByOwner)
+          if (!a.readByOwner) {
             applications[a.id] = a.copyWith(readByOwner: true);
+            marked = true;
+          }
         }
+        // Only a real change notifies, or a page that reloads on changes
+        // would mark, notify and reload forever.
+        if (marked) notify();
         return [for (final a in list) applications[a.id]!];
       });
 
@@ -2031,6 +2037,15 @@ class MockBackend implements PlatformRepositories {
         return null;
       });
 
+  /// A scope someone already took on: it shows under "who is building"
+  /// rather than as still recruiting. Hiring can keep adding workers.
+  bool _taken(Demand d) =>
+      d.type == DemandType.contract &&
+      cooperations.values.any((c) =>
+          c.demandId == d.id &&
+          (c.status == CooperationStatus.confirmed ||
+              c.status == CooperationStatus.ended));
+
   @override
   Future<List<Demand>> demandsForPost(String postId) => _read(() {
         final p = posts[postId];
@@ -2042,7 +2057,8 @@ class MockBackend implements PlatformRepositories {
                     d.designProjectId == p.projectId) &&
                 _demandVisible(d) &&
                 d.status != DemandStatus.draft &&
-                d.status != DemandStatus.rejected)
+                d.status != DemandStatus.rejected &&
+                !_taken(d))
             .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       });

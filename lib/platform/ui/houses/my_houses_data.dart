@@ -13,11 +13,15 @@ class MyHouse {
       required this.name,
       this.projectId,
       this.preview,
+      this.postId,
       List<Demand>? demands})
       : demands = demands ?? [];
   final String key, name;
   final String? projectId;
   final List<int>? preview;
+
+  /// My public house page, if I published one.
+  final String? postId;
   final List<Demand> demands;
   final cooperations = <Cooperation>[];
   final quotes = <String, ({int total, int unread})>{};
@@ -47,10 +51,32 @@ class MyHouse {
               !c.pendingChange!.confirmedBy.contains(me)))
       .length;
 
+  /// Whether the next step is mine to take now.
+  bool needsMe(String me) =>
+      pendingConfirm(me) > 0 ||
+      newQuotes > 0 ||
+      cooperations.any((c) =>
+          c.milestones.any((m) => m.status == MilestoneStatus.requested) ||
+          c.workLogs.any((w) => !w.confirmed));
+
   /// The single most useful next step, in plain words.
   String nextStep(String me) {
     if (pendingConfirm(me) > 0)
       return tr3('有合作约定待你确认', 'Келісімді растаңыз', 'Подтвердите соглашение');
+    final inspections = cooperations
+        .expand((c) => c.milestones)
+        .where((m) => m.status == MilestoneStatus.requested)
+        .length;
+    if (inspections > 0)
+      return tr3('$inspections 个节点等你验收', 'Кезеңді қабылдаңыз',
+          'Этапов к приёмке: $inspections');
+    final days = cooperations
+        .expand((c) => c.workLogs)
+        .where((w) => !w.confirmed)
+        .length;
+    if (days > 0)
+      return tr3('$days 天记工等你确认', '$days күн расталмады',
+          'Дней к подтверждению: $days');
     if (newQuotes > 0)
       return tr3('$newQuotes 个新报价，去比较', '$newQuotes жаңа ұсыныс',
           'Новых предложений: $newQuotes');
@@ -109,7 +135,8 @@ Future<List<MyHouse>> loadMyHouses(
                   : null) ??
               d.current.title,
           projectId: design == null ? null : pid,
-          preview: design?.preview ?? post?.preview ?? snap?.preview);
+          preview: design?.preview ?? post?.preview ?? snap?.preview,
+          postId: post?.id);
     }
     h.demands.add(d);
     final c = counts[d.id];

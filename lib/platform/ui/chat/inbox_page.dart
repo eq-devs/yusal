@@ -34,6 +34,29 @@ class InboxButton extends StatelessWidget {
   }
 }
 
+/// The Messages tab icon with the unread count of chats and notices.
+class InboxNavIcon extends StatelessWidget {
+  const InboxNavIcon({super.key, this.selected = false});
+  final bool selected;
+  @override
+  Widget build(BuildContext context) {
+    final icon = Icon(selected ? Icons.chat_bubble : Icons.chat_bubble_outline);
+    final t = YTokens.of(context);
+    return OnChange(
+        builder: (context) => context.repos.currentAccount == null
+            ? icon
+            : Live<int>(
+                load: (r) async =>
+                    await r.unreadMessages() + await r.unreadNotifications(),
+                loading: icon,
+                builder: (context, unread) => Badge(
+                    isLabelVisible: unread > 0,
+                    backgroundColor: t.accent,
+                    label: Text(unread > 99 ? '99+' : '$unread'),
+                    child: icon)));
+  }
+}
+
 /// Message centre: conversations and system notices.
 class InboxPage extends StatelessWidget {
   const InboxPage({super.key});

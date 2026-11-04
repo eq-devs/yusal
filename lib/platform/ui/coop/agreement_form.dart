@@ -3,6 +3,7 @@ import '../../../app/settings.dart';
 import '../../domain/models.dart';
 import '../l10n.dart';
 import '../scope.dart';
+import '../theme.dart';
 import '../widgets.dart';
 
 /// Terms of a cooperation agreement ("合作约定"). Used to invite the chosen
@@ -204,9 +205,18 @@ class _AgreementFormState extends State<AgreementForm> {
               trailing: const Icon(Icons.event),
               onTap: () => pickDate(false)),
           const SizedBox(height: 8),
-          _field(payment, tr3('付款节点', 'Төлем кезеңдері', 'Порядок оплаты'),
-              hint: tr3('例如：开工 30%，完工 70%', 'Мысалы: 30% / 70%',
-                  'Напр.: 30% старт, 70% по завершении')),
+          _field(payment, tr3('付款约定（可空）', 'Төлем тәртібі', 'Порядок оплаты'),
+              hint: tr3('例如：每个节点验收后付对应比例', 'Мысалы: әр кезеңнен кейін',
+                  'Напр.: после приёмки каждого этапа')),
+          Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                  tr3(
+                      '验收节点默认 4 段：基础 20%、主体 40%、屋顶 25%、完工 15%。发起后、对方确认前都能在合作页修改。Yusal 只记录验收，不代收代付。',
+                      'Әдепкі 4 кезең. Растағанға дейін өзгертуге болады. Yusal төлем қабылдамайды.',
+                      'По умолчанию 4 этапа, их можно изменить до подтверждения. Yusal не принимает платежи.'),
+                  style: TextStyle(
+                      fontSize: 12, color: YTokens.of(context).muted))),
           _field(materials,
               tr3('材料与工具责任', 'Материал мен құрал', 'Материалы и инструмент')),
           _field(

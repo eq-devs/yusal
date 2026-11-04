@@ -133,8 +133,9 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
                                 controller: rows[i].percent,
                                 keyboardType: TextInputType.number,
                                 onChanged: (_) => setState(() {}),
-                                decoration: const InputDecoration(
-                                    labelText: '%', suffixText: '%'))),
+                                decoration: InputDecoration(
+                                    labelText: tr3('比例', 'Үлес', 'Доля'),
+                                    suffixText: '%'))),
                         IconButton(
                             tooltip: tr3('删除', 'Жою', 'Удалить'),
                             onPressed: rows.length <= 1

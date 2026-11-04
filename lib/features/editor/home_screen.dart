@@ -381,10 +381,11 @@ class _HouseHomeState extends State<HouseHome> {
                         : tr('自建房设计工具', 'Үй жобалау құралы'),
                     style: const TextStyle(
                         fontSize: 22, fontWeight: FontWeight.w700)),
-                Text(
-                    tr('定长宽 · 拖出隔墙 · 放门窗 · 看 3D',
-                        'өлшем · қабырға · есік-терезе · 3D'),
-                    style: mono(size: 12, color: t.muted)),
+                if (!embedded)
+                  Text(
+                      tr('定长宽 · 拖出隔墙 · 放门窗 · 看 3D',
+                          'өлшем · қабырға · есік-терезе · 3D'),
+                      style: mono(size: 12, color: t.muted)),
               ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
             if (!embedded)

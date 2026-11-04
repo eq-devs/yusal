@@ -7,6 +7,7 @@ import '../coop/coop_page.dart';
 import '../demand/applications_page.dart';
 import '../demand/demand_detail_page.dart';
 import '../demand/publish_page.dart';
+import '../home/post_page.dart';
 import '../house_progress.dart';
 import '../l10n.dart';
 import '../scope.dart';
@@ -65,6 +66,15 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: display(size: 20)),
+                  actions: [
+                    if (h.postId != null)
+                      IconButton(
+                          key: const Key('workspace-house-page'),
+                          tooltip: tr3('房子页', 'Үй беті', 'Страница дома'),
+                          onPressed: () => pushPage<void>(
+                              context, (_) => PostPage(postId: h.postId!)),
+                          icon: const Icon(Icons.public)),
+                  ],
                   bottom: PreferredSize(
                       preferredSize: const Size.fromHeight(118),
                       child: Column(children: [
@@ -79,7 +89,7 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
                                       HouseStage.building => 3,
                                       HouseStage.done => 2,
                                     }))),
-                        TabBar(controller: tabs, isScrollable: true, tabs: [
+                        TabBar(controller: tabs, tabs: [
                           Tab(text: tr3('找人', 'Іздеу', 'Поиск')),
                           Tab(
                               text:
@@ -152,11 +162,15 @@ class _QuotesTab extends StatelessWidget {
             Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     title: Text(d.current.title,
                         style: const TextStyle(fontWeight: FontWeight.w700)),
                     subtitle: Text(
                         tr3(
-                            '${house.quotes[d.id]!.total} 份 · ${house.quotes[d.id]!.unread} 份未看',
+                            house.quotes[d.id]!.unread > 0
+                                ? '${house.quotes[d.id]!.total} 份报价，${house.quotes[d.id]!.unread} 份新的 · 点开逐项比较'
+                                : '${house.quotes[d.id]!.total} 份报价 · 点开逐项比较',
                             '${house.quotes[d.id]!.total} ұсыныс',
                             '${house.quotes[d.id]!.total} предложений, новых ${house.quotes[d.id]!.unread}'),
                         style: TextStyle(color: t.muted)),
@@ -191,6 +205,8 @@ class _CoopTab extends StatelessWidget {
             Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     title: Text(demandTitle(c.demandId),
                         style: const TextStyle(fontWeight: FontWeight.w700)),
                     subtitle: Text(cooperationStatusName(c),

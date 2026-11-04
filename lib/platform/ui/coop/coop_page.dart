@@ -183,6 +183,12 @@ class _CoopView extends StatelessWidget {
           ]);
         }
         actions.add(Wrap(spacing: 8, runSpacing: 8, children: [
+          if (me == c.providerId)
+            FilledButton.icon(
+                key: const Key('coop-log-today'),
+                onPressed: () => logToday(context, c),
+                icon: const Icon(Icons.event_available_outlined, size: 18),
+                label: Text(tr3('今天记工', 'Бүгінді жазу', 'Отметить день'))),
           if (change == null && data.demand != null)
             OutlinedButton(
                 onPressed: () async {
@@ -193,16 +199,17 @@ class _CoopView extends StatelessWidget {
                         tr3('变更已发送', 'Жіберілді', 'Отправлено'));
                 },
                 child: Text(tr3('提出变更', 'Өзгеріс ұсыну', 'Изменить условия'))),
-          OutlinedButton(
-              onPressed: () async {
-                final text = await askText(
-                    context, tr3('记录施工进度（可选）', 'Барыс', 'Ход работ'));
-                if (text != null && context.mounted)
-                  await run(() => repos.addUpdate(c.id, text),
-                      tr3('已记录', 'Жазылды', 'Записано'));
-              },
-              child: Text(tr3('记录进度', 'Барысты жазу', 'Отметить ход работ'))),
-          FilledButton(
+          if (me != c.providerId)
+            OutlinedButton(
+                onPressed: () async {
+                  final text = await askText(
+                      context, tr3('记录施工进度（可选）', 'Барыс', 'Ход работ'));
+                  if (text != null && context.mounted)
+                    await run(() => repos.addUpdate(c.id, text),
+                        tr3('已记录', 'Жазылды', 'Записано'));
+                },
+                child: Text(tr3('记录进度', 'Барысты жазу', 'Отметить ход работ'))),
+          TextButton(
               onPressed: () async {
                 final note = await askText(context,
                     tr3('请求结束合作', 'Аяқтауды сұрау', 'Завершить сотрудничество'),
@@ -408,7 +415,7 @@ class _AgreementCard extends StatelessWidget {
               '${fmtDay(g.startDate)} → ${fmtDay(g.endDate)}'),
           if (g.paymentTerms.isNotEmpty)
             InfoRow(
-                tr3('付款节点', 'Төлем', 'Оплата') +
+                tr3('付款约定', 'Төлем', 'Оплата') +
                     mark(g.paymentTerms, previous?.paymentTerms),
                 g.paymentTerms),
           if (g.materialsResponsibility.isNotEmpty)

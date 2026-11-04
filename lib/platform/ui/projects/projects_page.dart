@@ -101,7 +101,8 @@ class _HousesView extends StatelessWidget {
   }
 }
 
-/// To-do strip and the houses that have demands, quotes or cooperations.
+/// To-do strip (things only I can unblock: confirmations, inspections,
+/// work days; new quotes show on the house cards) and the houses that have demands, quotes or cooperations.
 class _ActiveHouses extends StatelessWidget {
   const _ActiveHouses({required this.houses});
   final List<MyHouse> houses;
@@ -117,15 +118,6 @@ class _ActiveHouses extends StatelessWidget {
               '«${h.name}»: подтвердите соглашение'),
           h,
           2
-        ));
-      if (h.newQuotes > 0)
-        todos.add((
-          tr3(
-              '「${h.name}」${h.newQuotes} 个新报价待比较',
-              '«${h.name}»: ${h.newQuotes} жаңа ұсыныс',
-              '«${h.name}»: новых предложений ${h.newQuotes}'),
-          h,
-          1
         ));
       final inspections = h.cooperations
           .expand((c) => c.milestones)
@@ -219,7 +211,12 @@ class _ActiveHouses extends StatelessWidget {
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
-                                                    color: t.muted,
+                                                    color: h.needsMe(me)
+                                                        ? t.accent
+                                                        : t.muted,
+                                                    fontWeight: h.newQuotes > 0
+                                                        ? FontWeight.w600
+                                                        : null,
                                                     fontSize: 12)),
                                           ])),
                                     ])))));

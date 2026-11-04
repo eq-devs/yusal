@@ -65,6 +65,9 @@ class SiteSection extends StatelessWidget {
     final owner = me == c.ownerId, pro = me == c.providerId;
     final live = c.status == CooperationStatus.confirmed;
     final amount = c.agreement.amount;
+    // Inspections go in order: only the first open point can be requested.
+    final current =
+        c.milestones.indexWhere((m) => m.status != MilestoneStatus.accepted);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (c.milestones.isNotEmpty) ...[
         Text(
@@ -84,9 +87,10 @@ class SiteSection extends StatelessWidget {
               key: Key('milestone-$i'),
               milestone: c.milestones[i],
               amount: amount,
+              current: live && i == current,
               onRequest: pro &&
                       live &&
-                      c.milestones[i].status != MilestoneStatus.accepted &&
+                      i == current &&
                       c.milestones[i].status != MilestoneStatus.requested
                   ? () => _request(context, i)
                   : null,
@@ -184,7 +188,8 @@ Future<void> logToday(BuildContext context, Cooperation c) async {
       title: tr3('今天记工', 'Бүгінгі жұмыс', 'Рабочий день'),
       hint: tr3('今天干了什么（可以用键盘上的麦克风说）', 'Бүгін не істелді',
           'Что сделано сегодня (можно надиктовать)'),
-      headcount: c.workLogs.firstOrNull?.headcount ?? 1);
+      headcount: c.workLogs.firstOrNull?.headcount ??
+          (c.agreement.headcount ?? 0).clamp(1, 99));
   if (r == null || !context.mounted) return;
   await attempt(
       context,
@@ -323,11 +328,15 @@ class _MilestoneTile extends StatelessWidget {
       {super.key,
       required this.milestone,
       required this.amount,
+      this.current = false,
       this.onRequest,
       this.onAccept,
       this.onDispute});
   final Milestone milestone;
   final int? amount;
+
+  /// The point the crew is working towards now.
+  final bool current;
   final VoidCallback? onRequest, onAccept, onDispute;
   @override
   Widget build(BuildContext context) {
@@ -337,8 +346,11 @@ class _MilestoneTile extends StatelessWidget {
       MilestoneStatus.accepted => t.ok,
       MilestoneStatus.requested => t.accent,
       MilestoneStatus.disputed => t.warn,
-      MilestoneStatus.planned => t.faint,
+      MilestoneStatus.planned => current ? t.accent : t.faint,
     };
+    final label = current && m.status == MilestoneStatus.planned
+        ? tr3('进行中', 'Жүріп жатыр', 'В работе')
+        : milestoneStatusName(m.status);
     return Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
@@ -359,7 +371,7 @@ class _MilestoneTile extends StatelessWidget {
                         ? '${m.percent}%'
                         : '${m.percent}% · ${money(amount! * m.percent ~/ 100)}',
                     style: TextStyle(color: t.muted)),
-                StatusPill(milestoneStatusName(m.status), color: color),
+                StatusPill(label, color: color),
               ]),
           const SizedBox(height: 2),
           Text(m.criteria.isEmpty ? milestoneCriteria(m.key) : m.criteria,

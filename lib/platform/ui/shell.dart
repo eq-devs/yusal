@@ -100,8 +100,9 @@ class _PlatformShellState extends State<PlatformShell> {
                                   selectedIcon: const Icon(Icons.home_work),
                                   label: tr3('我的房子', 'Үйлерім', 'Мои дома')),
                               NavigationDestination(
-                                  icon: const Icon(Icons.chat_bubble_outline),
-                                  selectedIcon: const Icon(Icons.chat_bubble),
+                                  icon: const InboxNavIcon(),
+                                  selectedIcon:
+                                      const InboxNavIcon(selected: true),
                                   label: tr3('消息', 'Хабар', 'Чаты')),
                               NavigationDestination(
                                   icon: const Icon(Icons.person_outline),

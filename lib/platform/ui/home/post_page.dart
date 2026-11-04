@@ -388,20 +388,26 @@ class PostPage extends StatelessWidget {
                                               : null),
                                       if (demands.isEmpty)
                                         Text(
-                                            mine
+                                            build != null &&
+                                                    build.builders.isNotEmpty
                                                 ? tr3(
-                                                    '还没有为这栋房子发布过需求。点“招人”，工程量会从设计里自动带出来。',
-                                                    'Әлі тапсырыс жоқ. «Іздеу» басыңыз.',
-                                                    'Заявок пока нет. Нажмите «Найти», объёмы подставятся из проекта.')
-                                                : p.openForBuilders
+                                                    '已发布的阶段都有人在做了。需要下一个阶段时再招人。',
+                                                    'Барлық кезеңнің орындаушысы бар.',
+                                                    'На все этапы уже есть исполнители.')
+                                                : mine
                                                     ? tr3(
-                                                        '设计者正在找施工方，但还没发布具体需求。可以先私信。',
-                                                        'Иесі құрылысшы іздейді. Жазып көріңіз.',
-                                                        'Автор ищет строителей, но заявки ещё нет. Напишите ему.')
-                                                    : tr3(
-                                                        '暂时没有在招的人。',
-                                                        'Қазір іздемейді.',
-                                                        'Сейчас никого не ищет.'),
+                                                        '还没有为这栋房子发布过需求。点“招人”，工程量会从设计里自动带出来。',
+                                                        'Әлі тапсырыс жоқ. «Іздеу» басыңыз.',
+                                                        'Заявок пока нет. Нажмите «Найти», объёмы подставятся из проекта.')
+                                                    : p.openForBuilders
+                                                        ? tr3(
+                                                            '设计者正在找施工方，但还没发布具体需求。可以先私信。',
+                                                            'Иесі құрылысшы іздейді. Жазып көріңіз.',
+                                                            'Автор ищет строителей, но заявки ещё нет. Напишите ему.')
+                                                        : tr3(
+                                                            '暂时没有在招的人。',
+                                                            'Қазір іздемейді.',
+                                                            'Сейчас никого не ищет.'),
                                             style: TextStyle(color: t.muted)),
                                       for (final d in demands)
                                         Padding(
@@ -449,6 +455,7 @@ class PostPage extends StatelessWidget {
                   open: open,
                   canReuse: snap?.planJson != null,
                   recruit: snap == null ? null : recruit,
+                  building: build != null && build.builders.isNotEmpty,
                   contact: contact));
         });
   }
@@ -464,6 +471,7 @@ class PostPage extends StatelessWidget {
       required List<Demand> open,
       required bool canReuse,
       required VoidCallback? recruit,
+      bool building = false,
       required VoidCallback contact}) {
     final t = YTokens.of(context);
     Future<void> openDemand() async {
@@ -482,14 +490,18 @@ class PostPage extends StatelessWidget {
     if (mine) {
       if (open.isEmpty && recruit == null) return null;
       summary = open.isEmpty
-          ? tr3('还没为它找人', 'Әлі ешкім ізделмейді', 'Пока никого не ищете')
+          ? building
+              ? tr3('施工中', 'Құрылыс жүріп жатыр', 'Идёт стройка')
+              : tr3('还没为它找人', 'Әлі ешкім ізделмейді', 'Пока никого не ищете')
           : tr3('在招 ${open.length} 个阶段', '${open.length} кезең ашық',
               'Открыто этапов: ${open.length}');
       main = FilledButton(
           key: const Key('post-main-action'),
           onPressed: open.isEmpty ? recruit : openDemand,
           child: Text(open.isEmpty
-              ? tr3('为这栋房子找人', 'Адам іздеу', 'Найти мастеров')
+              ? building
+                  ? tr3('招下一个阶段', 'Келесі кезең', 'Следующий этап')
+                  : tr3('为这栋房子找人', 'Адам іздеу', 'Найти мастеров')
               : tr3('管理找人', 'Іздеуді басқару', 'Управлять поиском')));
     } else if (isPro && (open.isNotEmpty || post.openForBuilders)) {
       summary = open.isNotEmpty

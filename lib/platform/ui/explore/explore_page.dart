@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../app/settings.dart';
-import '../chat/inbox_page.dart';
 import '../discover/discover_page.dart';
 import '../home/home_page.dart';
 import '../scope.dart';
@@ -100,7 +99,6 @@ class _ExplorePageState extends State<ExplorePage> {
                               Expanded(
                                   child:
                                       Text('Yusal', style: wordmark(t.accent))),
-                              const InboxButton(),
                               IconButton(
                                   key: const Key('explore-create'),
                                   tooltip: tr3('发布', 'Жариялау', 'Создать'),

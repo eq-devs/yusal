@@ -1,3 +1,4 @@
+import '../../../app/settings.dart';
 import '../../../core/commands/house_templates.dart';
 import '../../domain/models.dart';
 import 'mock_backend.dart';
@@ -117,7 +118,7 @@ void seedMockData(MockBackend b) {
       versions: [
         DemandVersion(
             no: 1,
-            title: '130 平米住宅砌墙',
+            title: '120 平米住宅砌墙',
             snapshotId: 'snap_aigerim',
             trades: const ['mason'],
             region: 'talgar',
@@ -341,7 +342,7 @@ void seedMockData(MockBackend b) {
             note: '可以带自己的瓦刀和水平尺。'),
       ]);
   b.notice(SeedIds.owner, NoticeKind.newApplication, RefType.demand, 'dem_wall',
-      title: '130 平米住宅砌墙');
+      title: '120 平米住宅砌墙');
   b.notice(SeedIds.owner, NoticeKind.newApplication, RefType.demand, 'dem_hire',
       title: '找两名瓦工，按天结算');
 
@@ -452,16 +453,32 @@ void seedMockData(MockBackend b) {
       String summary, List<QtyItem> lines) {
     var counter = 0;
     final kind = id == 'snap_erlan' || id == 'snap_dinara' ? 'two' : 'three';
-    final doc = createTemplate(kind, ago(6).toUtc().toIso8601String(), () => 'demo${counter++}');
+    final doc = createTemplate(
+        kind, ago(6).toUtc().toIso8601String(), () => 'demo${counter++}');
     final facts = extractDesign(doc, snapshotStages);
     demoFacts[id] = facts;
-    final frozen = buildSnapshot(projectId: project, doc: doc, stages: snapshotStages,
-        lines: lines, summary: '${facts.width / 1000} × ${facts.depth / 1000} m · ${facts.floors} floors · DEMO');
-    return DesignSnapshot(id: id, ownerId: owner, projectId: project,
-        projectName: '$name · DEMO', designUpdatedAt: doc.meta.updatedAt,
-        extractedAt: ago(6), stages: snapshotStages, lines: lines,
-        summary: frozen.summary, planJson: frozen.planJson);
+    final frozen = buildSnapshot(
+        projectId: project,
+        doc: doc,
+        stages: snapshotStages,
+        lines: lines,
+        summary: tr3(
+            '${facts.width / 1000} × ${facts.depth / 1000} 米 · ${facts.floors} 层 · 建筑面积 ${facts.buildingArea.toStringAsFixed(0)} ㎡',
+            '${facts.width / 1000} × ${facts.depth / 1000} м · ${facts.floors} қабат · ${facts.buildingArea.toStringAsFixed(0)} м²',
+            '${facts.width / 1000} × ${facts.depth / 1000} м · этажей: ${facts.floors} · ${facts.buildingArea.toStringAsFixed(0)} м²'));
+    return DesignSnapshot(
+        id: id,
+        ownerId: owner,
+        projectId: project,
+        projectName: name,
+        designUpdatedAt: doc.meta.updatedAt,
+        extractedAt: ago(6),
+        stages: snapshotStages,
+        lines: lines,
+        summary: frozen.summary,
+        planJson: frozen.planJson);
   }
+
   const q = QtySource.design;
   b.snapshots['snap_aigerim'] = snap('snap_aigerim', SeedIds.owner, 'seed_p1',
       '塔尔加尔一层砖房', '12 × 11 m，一层，130 m²，4 个房间', const [
@@ -548,7 +565,7 @@ void seedMockData(MockBackend b) {
       'post_team',
       SeedIds.team,
       'snap_team',
-      '86 平米紧凑型住宅方案（可承建）',
+      '120 平米紧凑型住宅方案（可承建）',
       '我们施工队做过三栋这个户型，工期 70 天左右。分享出来给预算有限的家庭参考，欢迎直接联系。',
       'esik',
       area: 86,
@@ -599,7 +616,7 @@ void seedMockData(MockBackend b) {
       5,
       rating: 5);
   cmt('cmt2', 'post_aigerim', SeedIds.team,
-      '基础 28 方混凝土对 130 平米来说偏少，建议复核一下地基宽度。', 4,
+      '基础 28 方混凝土对 120 平米来说偏少，建议复核一下地基宽度。', 4,
       rating: 4);
   cmt('cmt3', 'post_dinara', SeedIds.roofTeam,
       '双坡屋面 210 平米，金属瓦大概 3 周。预算里屋面部分合理。', 10,

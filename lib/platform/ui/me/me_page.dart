@@ -4,7 +4,6 @@ import '../../domain/models.dart';
 import '../apply/apply_page.dart';
 import '../backup/backup_page.dart';
 import '../cards.dart';
-import '../chat/inbox_page.dart';
 import '../demand/demand_detail_page.dart';
 import '../home/house_card.dart';
 import '../home/post_page.dart';
@@ -48,7 +47,6 @@ class MePage extends StatelessWidget {
                               Expanded(
                                   child: Text(tr3('我的', 'Менің', 'Профиль'),
                                       style: display(size: 28))),
-                              const InboxButton(),
                             ]),
                             const SizedBox(height: 16),
                             if (account == null)

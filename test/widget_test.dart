@@ -46,16 +46,16 @@ void main() {
   testWidgets('a house opens with its facts, demands and reviews', (t) async {
     await launch(t, as: SeedIds.roofTeam);
     // A pro opens Discover on "work"; houses are one segment away.
-    expect(find.text('130 平米住宅砌墙'), findsWidgets);
+    expect(find.text('120 平米住宅砌墙'), findsWidgets);
     await t.tap(find.byKey(const Key('explore-seg-0')));
     await t.pumpAndSettle();
     await t.tap(find.text('给父母盖的一层砖房'));
     await t.pumpAndSettle();
     expect(find.byType(PostPage), findsOneWidget);
     expect(find.text('120 m²'), findsOneWidget);
-    expect(find.text('130 平米住宅砌墙'), findsOneWidget);
+    expect(find.text('120 平米住宅砌墙'), findsOneWidget);
     expect(find.text('去报名 / 报价'), findsOneWidget);
-    await t.tap(find.text('130 平米住宅砌墙'));
+    await t.tap(find.text('120 平米住宅砌墙'));
     await t.pumpAndSettle();
     expect(find.byType(DemandDetailPage), findsOneWidget);
   });

@@ -126,7 +126,23 @@ class _JobCard extends StatelessWidget {
     } else {
       status = a!.needsReconfirm
           ? tr3('需求已修改，待重新确认报价', 'Тапсырыс өзгерді', 'Заявка изменилась')
-          : applicationStatusName(a.status);
+          : [
+              applicationStatusName(a.status),
+              if (a.current.total != null)
+                tr3(
+                    '报价 ${money(a.current.total!.round())}',
+                    'Ұсыныс ${money(a.current.total!.round())}',
+                    'Цена ${money(a.current.total!.round())}')
+              else if (a.current.expectedWage != null)
+                tr3(
+                    '期望 ${money(a.current.expectedWage!)} / 天',
+                    '${money(a.current.expectedWage!)} / күн',
+                    '${money(a.current.expectedWage!)} / день'),
+              if (a.status == ApplicationStatus.submitted)
+                a.readByOwner
+                    ? tr3('业主已看', 'Көрді', 'Просмотрено')
+                    : tr3('业主未看', 'Әлі көрмеді', 'Не просмотрено'),
+            ].join(' · ');
     }
     return Card(
         margin: const EdgeInsets.only(bottom: 12),

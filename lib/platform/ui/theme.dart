@@ -95,6 +95,26 @@ class YTokens extends ThemeExtension<YTokens> {
 
 const yRadius = 14.0;
 
+/// Big titles and house names: the serif display face, with the UI sans
+/// and system CJK fonts as fallback for Chinese.
+TextStyle display(
+        {double size = 24,
+        FontWeight weight = FontWeight.w600,
+        Color? color,
+        double height = 1.15}) =>
+    TextStyle(
+        fontFamily: fontDisplay,
+        fontFamilyFallback: const [fontBody, ...bodyFallback],
+        fontSize: size,
+        fontWeight: weight,
+        color: color,
+        height: height,
+        letterSpacing: -0.2);
+
+/// The wordmark.
+TextStyle wordmark(Color color) =>
+    display(size: 26, weight: FontWeight.w700, color: color);
+
 ThemeData buildPlatformTheme(YTokens t) {
   final scheme = ColorScheme(
       brightness: t.dark ? Brightness.dark : Brightness.light,

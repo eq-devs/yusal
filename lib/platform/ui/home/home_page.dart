@@ -53,11 +53,7 @@ class _HomePageState extends State<HomePage> {
                                     Row(children: [
                                       Expanded(
                                           child: Text('Yusal',
-                                              style: TextStyle(
-                                                  fontSize: 26,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: t.accent,
-                                                  letterSpacing: -0.5))),
+                                              style: wordmark(t.accent))),
                                       const InboxButton(),
                                     ]),
                                     const SizedBox(height: 4),
@@ -66,9 +62,7 @@ class _HomePageState extends State<HomePage> {
                                             '看看大家设计的房子',
                                             'Адамдар жобалаған үйлер',
                                             'Дома, которые спроектировали люди'),
-                                        style: const TextStyle(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.w800)),
+                                        style: display(size: 24)),
                                     const SizedBox(height: 12),
                                     // Search pill, Airbnb style.
                                     Material(

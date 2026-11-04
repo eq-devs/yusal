@@ -28,8 +28,7 @@ class ProjectsPage extends StatelessWidget {
         child: Scaffold(
             appBar: AppBar(
                 title: Text(tr3('我的设计', 'Жобаларым', 'Мои проекты'),
-                    style: const TextStyle(
-                        fontSize: 24, fontWeight: FontWeight.w800)),
+                    style: display(size: 24)),
                 bottom: TabBar(tabs: [
                   Tab(text: tr3('设计', 'Жобалар', 'Проекты')),
                   Tab(text: tr3('我发布的需求', 'Тапсырыстарым', 'Мои заявки')),

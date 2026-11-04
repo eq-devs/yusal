@@ -25,12 +25,24 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   fonts:
-    - family: NotoSans
+    - family: Onest
       fonts:
-        - asset: assets/fonts/NotoSans-Regular.ttf
-        - asset: assets/fonts/NotoSans-Medium.ttf
+        - asset: assets/fonts/Onest-400.ttf
+        - asset: assets/fonts/Onest-500.ttf
           weight: 500
-        - asset: assets/fonts/NotoSans-Bold.ttf
+        - asset: assets/fonts/Onest-600.ttf
+          weight: 600
+        - asset: assets/fonts/Onest-700.ttf
+          weight: 700
+        - asset: assets/fonts/Onest-800.ttf
+          weight: 800
+    - family: Lora
+      fonts:
+        - asset: assets/fonts/Lora-500.ttf
+          weight: 500
+        - asset: assets/fonts/Lora-600.ttf
+          weight: 600
+        - asset: assets/fonts/Lora-700.ttf
           weight: 700
     - family: PlexMono
       fonts:

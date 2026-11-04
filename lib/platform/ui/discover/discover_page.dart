@@ -253,11 +253,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                               child: Row(children: [
                                 Expanded(
                                     child: Text('Yusal',
-                                        style: TextStyle(
-                                            fontSize: 26,
-                                            fontWeight: FontWeight.w800,
-                                            color: t.accent,
-                                            letterSpacing: -0.5))),
+                                        style: wordmark(t.accent))),
                                 const InboxButton(),
                               ]))),
                       SliverToBoxAdapter(child: search),

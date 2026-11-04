@@ -48,9 +48,7 @@ class MePage extends StatelessWidget {
                             Row(children: [
                               Expanded(
                                   child: Text(tr3('我的', 'Менің', 'Профиль'),
-                                      style: const TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.w800))),
+                                      style: display(size: 28))),
                               const InboxButton(),
                             ]),
                             const SizedBox(height: 16),

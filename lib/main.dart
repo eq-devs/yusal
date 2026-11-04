@@ -4,6 +4,8 @@ import 'app/settings.dart';
 import 'app/tokens.dart';
 import 'platform/data/mock/mock_backend.dart';
 import 'platform/data/repositories.dart';
+import 'platform/ui/home/post_page.dart';
+import 'platform/ui/links.dart';
 import 'platform/ui/scope.dart';
 import 'platform/ui/shell.dart';
 import 'render2d/project_preview.dart';
@@ -54,6 +56,18 @@ class _HouseAppState extends State<HouseApp> {
                   ThemeChoice.night => ThemeMode.dark
                 },
                 builder: (context, child) => AppScope(child: child!),
-                home: const PlatformShell()));
+                // `/h/<id>` is a shared house: open it directly, signed in
+                // or not. Everything else is the app shell.
+                onGenerateRoute: _route,
+                // One route for the opening address, not one per path
+                // segment, so a shared house has nothing underneath it.
+                onGenerateInitialRoutes: (name) =>
+                    [_route(RouteSettings(name: name))]));
       });
+
+  static Route<dynamic> _route(RouteSettings settings) {
+    final id = houseIdFromRoute(settings.name);
+    return platformRoute(
+        (_) => id == null ? const PlatformShell() : PostPage(postId: id));
+  }
 }

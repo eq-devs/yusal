@@ -1,5 +1,6 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../app/settings.dart';
 import '../../data/repositories.dart';
 import '../../domain/models.dart';
@@ -8,8 +9,10 @@ import '../chat/chat_page.dart';
 import '../demand/demand_detail_page.dart';
 import '../demand/publish_page.dart';
 import '../l10n.dart';
+import '../links.dart';
 import '../profile/profile_page.dart';
 import '../scope.dart';
+import '../shell.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'house_card.dart';
@@ -74,6 +77,35 @@ class PostPage extends StatelessWidget {
             (_) => PublishPage(snapshot: snap, designProjectId: p.projectId));
       }
 
+      Future<void> share() async {
+        final link = houseLink(p.id);
+        final c = await pickOne<String>(
+            context, tr3('分享这栋房子', 'Үймен бөлісу', 'Поделиться домом'), [
+          ('copy', tr3('复制链接', 'Сілтемені көшіру', 'Скопировать ссылку')),
+          ('share', tr3('通过其他应用分享', 'Басқа қолданбамен бөлісу',
+              'Отправить через…')),
+        ]);
+        if (c == null || !context.mounted) return;
+        if (c == 'copy') {
+          await Clipboard.setData(ClipboardData(text: link));
+          if (context.mounted)
+            toast(
+                context,
+                tr3('已复制，任何人打开都能看', 'Көшірілді, кез келген адам аша алады',
+                    'Скопировано, откроется у любого'));
+        } else {
+          try {
+            await SharePlus.instance
+                .share(ShareParams(text: '${p.title}\n$link'));
+          } catch (_) {
+            await Clipboard.setData(ClipboardData(text: link));
+            if (context.mounted)
+              toast(context, tr3('此设备不支持系统分享，已复制链接', 'Сілтеме көшірілді',
+                  'Ссылка скопирована'));
+          }
+        }
+      }
+
       Future<void> more() async {
         final c = await pickOne<String>(context, p.title, [
           if (mine) ('edit', tr3('修改标题和说明', 'Өңдеу', 'Изменить описание')),
@@ -127,13 +159,27 @@ class PostPage extends StatelessWidget {
         }
       }
 
+      final fromLink = !Navigator.of(context).canPop();
       return Scaffold(
           body: CustomScrollView(slivers: [
             SliverAppBar(
                 pinned: true,
                 expandedHeight: 280,
                 backgroundColor: t.bg,
+                // Opened from a shared link: no page to go back to, so
+                // offer the home feed instead.
+                leading: fromLink
+                    ? IconButton(
+                        tooltip: tr3('首页', 'Басты бет', 'Главная'),
+                        icon: const Icon(Icons.home_outlined),
+                        onPressed: () => Navigator.of(context).pushReplacement(
+                            platformRoute((_) => const PlatformShell())))
+                    : null,
                 actions: [
+                  IconButton(
+                      tooltip: tr3('分享', 'Бөлісу', 'Поделиться'),
+                      icon: const Icon(Icons.ios_share),
+                      onPressed: share),
                   IconButton(
                       icon: Icon(liked ? Icons.favorite : Icons.favorite_border,
                           color: liked ? t.accent : null),
@@ -159,10 +205,7 @@ class PostPage extends StatelessWidget {
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(p.title,
-                                      style: const TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w800)),
+                                  Text(p.title, style: display(size: 26)),
                                   const SizedBox(height: 4),
                                   Text(houseFacts(p),
                                       style: TextStyle(

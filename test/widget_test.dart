@@ -17,8 +17,11 @@ MockBackend mock() => MockBackend(
     latency: Duration.zero,
     autoReviewDelay: Duration.zero);
 
-Future<MockBackend> launch(WidgetTester t, {String? as}) async {
+Future<MockBackend> launch(WidgetTester t,
+    {String? as, String route = '/'}) async {
   SharedPreferences.setMockInitialValues({});
+  t.binding.platformDispatcher.defaultRouteNameTestValue = route;
+  addTearDown(t.binding.platformDispatcher.clearDefaultRouteNameTestValue);
   AppSettings.instance.lang = AppLang.zh;
   t.view.physicalSize = const Size(1200, 2400);
   t.view.devicePixelRatio = 1;
@@ -51,6 +54,24 @@ void main() {
     await t.tap(find.text('130 平米住宅砌墙'));
     await t.pumpAndSettle();
     expect(find.byType(DemandDetailPage), findsOneWidget);
+  });
+
+  testWidgets('a shared house link opens the house for a signed-out visitor',
+      (t) async {
+    await launch(t, route: '/h/post_aigerim');
+    expect(find.byType(PostPage), findsOneWidget);
+    expect(find.text('给父母盖的一层砖房'), findsOneWidget);
+    expect(find.text('130 m²'), findsOneWidget);
+    expect(find.byIcon(Icons.ios_share), findsOneWidget);
+    // No page to go back to: a home button leads to the feed.
+    await t.tap(find.byTooltip('首页'));
+    await t.pumpAndSettle();
+    expect(find.text('看看大家设计的房子'), findsOneWidget);
+  });
+
+  testWidgets('an unknown link falls back to the feed', (t) async {
+    await launch(t, route: '/h/nope');
+    expect(find.text('这栋房子已经不可见'), findsOneWidget);
   });
 
   testWidgets('the owner sees the recruit action on their own house',

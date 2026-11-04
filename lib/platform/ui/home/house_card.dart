@@ -71,9 +71,9 @@ class HouseCard extends StatelessWidget {
                 child: Text(p.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: compact ? 15 : 16,
-                        fontWeight: FontWeight.w700,
+                    style: display(
+                        size: compact ? 16 : 18,
+                        weight: FontWeight.w600,
                         color: t.ink))),
             if (p.rating != null) ...[
               Icon(Icons.star, size: 15, color: t.ink),

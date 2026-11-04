@@ -106,7 +106,12 @@ class Tokens extends ThemeExtension<Tokens> {
       other is Tokens && t >= 0.5 ? other : this;
 }
 
-const fontBody = 'NotoSans';
+/// UI text: Onest, a geometric sans with full Kazakh and Russian Cyrillic.
+const fontBody = 'Onest';
+
+/// Page titles and house names: Lora, a warm serif in the spirit of
+/// architecture and interior editorials; also covers Kazakh Cyrillic.
+const fontDisplay = 'Lora';
 const fontMono = 'PlexMono';
 const bodyFallback = [
   'PingFang SC',

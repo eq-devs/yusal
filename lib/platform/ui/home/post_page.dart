@@ -483,19 +483,32 @@ class _CommentBoxState extends State<_CommentBox> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             for (var i = 1; i <= 5; i++)
-              IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: Icon(
-                      i <= (rating ?? 0) ? Icons.star : Icons.star_border,
-                      color: t.accent),
-                  onPressed: () =>
-                      setState(() => rating = rating == i ? null : i)),
+              InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () =>
+                      setState(() => rating = rating == i ? null : i),
+                  child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                          i <= (rating ?? 0) ? Icons.star : Icons.star_border,
+                          size: 24,
+                          color: t.accent))),
             const SizedBox(width: 6),
-            Text(
-                rating == null
-                    ? tr3('打个分', 'Бағалаңыз', 'Поставьте оценку')
-                    : ['', '不推荐', '一般', '还行', '不错', '很好'][rating!],
-                style: TextStyle(color: t.muted, fontSize: 13)),
+            Expanded(
+                child: Text(
+                    rating == null
+                        ? tr3('打个分', 'Бағалаңыз', 'Оценка')
+                        : [
+                            '',
+                            tr3('不推荐', 'Ұсынбаймын', 'Не советую'),
+                            tr3('一般', 'Орташа', 'Так себе'),
+                            tr3('还行', 'Жақсы', 'Нормально'),
+                            tr3('不错', 'Өте жақсы', 'Хорошо'),
+                            tr3('很好', 'Керемет', 'Отлично'),
+                          ][rating!],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: t.muted, fontSize: 13))),
           ]),
           Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Expanded(
@@ -547,15 +560,18 @@ class _CommentTile extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                           Row(children: [
-                            Text(deletedName(a),
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w700)),
+                            Flexible(
+                                child: Text(deletedName(a),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700))),
                             if (pro != null) ...[
                               const SizedBox(width: 6),
                               StatusPill(proRoleName(pro.role),
                                   color: t.accent),
                             ],
-                            const Spacer(),
+                            const SizedBox(width: 8),
                             Text(ago(c.createdAt, context.now),
                                 style: TextStyle(color: t.faint, fontSize: 12)),
                           ]),

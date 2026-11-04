@@ -10,6 +10,7 @@ class MemoryFiles implements ProjectFileSystem {
   String? index;
   final previews = <String, List<int>>{};
   bool failWrites = false;
+  bool failIndex = false;
   int writeCount = 0;
   @override
   Future<List<String>> ids() async => documents.keys.toList();
@@ -38,6 +39,7 @@ class MemoryFiles implements ProjectFileSystem {
   Future<String?> readIndex() async => index;
   @override
   Future<void> writeIndex(String text) async {
+    if (failIndex) throw const StorageFailure('NO_SPACE', 'Index full');
     index = text;
   }
 }
@@ -92,6 +94,19 @@ void main() {
     await store.saveProject(id, doc);
     expect(
         (await store.listProjects()).single.document.meta.name, doc.meta.name);
+  });
+  test('index failure leaves saved documents readable with a warning',
+      () async {
+    final files = MemoryFiles()..failIndex = true;
+    final store = ProjectStore(fileSystem: files);
+    final id = await store.createProject(doc);
+    expect(store.indexWarning, isNotNull);
+    expect((await store.listProjects()).single.id, id);
+    await store.saveProject(id, doc);
+    expect((await store.openProject(id)).meta.name, doc.meta.name);
+    files.failIndex = false;
+    await store.rebuildIndex();
+    expect(store.indexWarning, isNull);
   });
   test('known oversized imports are rejected without reading their stream',
       () async {

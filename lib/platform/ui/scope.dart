@@ -14,9 +14,11 @@ class PlatformScope extends InheritedWidget {
       {super.key,
       required this.repos,
       required this.store,
+      this.isDemo = false,
       required super.child});
   final PlatformRepositories repos;
   final ProjectStore store;
+  final bool isDemo;
 
   static PlatformScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<PlatformScope>();
@@ -26,12 +28,13 @@ class PlatformScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(PlatformScope old) =>
-      repos != old.repos || store != old.store;
+      repos != old.repos || store != old.store || isDemo != old.isDemo;
 }
 
 extension PlatformContext on BuildContext {
   PlatformRepositories get repos => PlatformScope.of(this).repos;
   ProjectStore get projectStore => PlatformScope.of(this).store;
+  bool get isDemo => PlatformScope.of(this).isDemo;
 
   /// The mock backend, for developer tools only.
   MockBackend? get mock {
@@ -56,11 +59,19 @@ class Live<T> extends StatefulWidget {
       required this.load,
       required this.builder,
       this.error,
+      this.reloadKey,
+      this.refreshError,
       this.loading});
   final Future<T> Function(PlatformRepositories repos) load;
   final Widget Function(BuildContext context, T data) builder;
   final Widget Function(BuildContext context, Object error)? error;
   final Widget? loading;
+
+  /// Stable identity of the query. Null preserves legacy rebuild loading.
+  final Object? reloadKey;
+
+  /// Must return the same layout protocol (box or sliver) as [builder].
+  final Widget Function(BuildContext, T, Object, VoidCallback)? refreshError;
   @override
   State<Live<T>> createState() => _LiveState<T>();
 }
@@ -71,6 +82,7 @@ class _LiveState<T> extends State<Live<T>> {
   Object? _error;
   bool _loaded = false;
   int _generation = 0;
+  String? _accountId;
 
   @override
   void didChangeDependencies() {
@@ -79,6 +91,10 @@ class _LiveState<T> extends State<Live<T>> {
     if (!identical(repos, _repos)) {
       _repos?.changes.removeListener(_reload);
       _repos = repos;
+      _data = null;
+      _loaded = false;
+      _error = null;
+      _accountId = repos.currentAccount?.id;
       repos.changes.addListener(_reload);
       _reload();
     }
@@ -87,7 +103,9 @@ class _LiveState<T> extends State<Live<T>> {
   @override
   void didUpdateWidget(covariant Live<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _reload();
+    if (widget.reloadKey == null || widget.reloadKey != oldWidget.reloadKey) {
+      _reload();
+    }
   }
 
   @override
@@ -97,6 +115,15 @@ class _LiveState<T> extends State<Live<T>> {
   }
 
   Future<void> _reload() async {
+    final accountId = _repos!.currentAccount?.id;
+    if (accountId != _accountId) {
+      _accountId = accountId;
+      setState(() {
+        _data = null;
+        _error = null;
+        _loaded = false;
+      });
+    }
     final generation = ++_generation;
     try {
       final data = await widget.load(_repos!);
@@ -124,6 +151,9 @@ class _LiveState<T> extends State<Live<T>> {
                   padding: EdgeInsets.all(32),
                   child: CircularProgressIndicator()));
     if (_error != null) {
+      if (_data != null && widget.refreshError != null) {
+        return widget.refreshError!(context, _data as T, _error!, _reload);
+      }
       return widget.error?.call(context, _error!) ??
           Center(
               child: Padding(

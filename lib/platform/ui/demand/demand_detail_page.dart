@@ -8,6 +8,7 @@ import '../cards.dart';
 import '../chat/chat_page.dart';
 import '../coop/coop_page.dart';
 import '../l10n.dart';
+import '../design/plan_viewer.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -45,7 +46,7 @@ class DemandDetailPage extends StatelessWidget {
               await r.account(d.ownerId),
               d.current.snapshotId == null
                   ? null
-                  : await r.snapshot(d.current.snapshotId!),
+                  : await r.snapshot(d.current.snapshotId!, demandId: d.id),
               me == null || mine
                   ? const []
                   : (await r.myApplications())
@@ -351,6 +352,7 @@ class _DemandDetail extends StatelessWidget {
       AttachmentVisibility vis, bool mine) {
     final t = YTokens.of(context);
     return [
+      PlanAttachment(snapshot: s, hidden: !vis.plan && !mine),
       SectionTitle(tr3('设计附件', 'Жоба тіркемесі', 'Проект')),
       YCard(
           child:

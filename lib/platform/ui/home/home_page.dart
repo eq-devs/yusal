@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../app/settings.dart';
 import '../../domain/models.dart';
@@ -24,20 +25,41 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   FeedFilter filter = const FeedFilter();
   final search = TextEditingController();
+  Timer? _searchTimer;
+  int _retry = 0;
+
+  void searchChanged(String value) {
+    _searchTimer?.cancel();
+    _searchTimer = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      setState(() => filter = FeedFilter(
+          region: filter.region,
+          sort: filter.sort,
+          openForBuilders: filter.openForBuilders,
+          query: value.trim()));
+    });
+  }
 
   @override
   void dispose() {
+    _searchTimer?.cancel();
     search.dispose();
     super.dispose();
   }
 
-  void set(FeedFilter f) => setState(() => filter = f);
+  void set(FeedFilter f) {
+    _searchTimer?.cancel();
+    setState(() => filter = FeedFilter(
+        region: f.region,
+        sort: f.sort,
+        openForBuilders: f.openForBuilders,
+        query: search.text.trim()));
+  }
 
   @override
   Widget build(BuildContext context) {
     AppScope.watch(context);
     final t = YTokens.of(context);
-    final wide = MediaQuery.sizeOf(context).width >= 700;
     return Scaffold(
         body: SafeArea(
             child: Center(
@@ -80,15 +102,7 @@ class _HomePageState extends State<HomePage> {
                                               Expanded(
                                                   child: TextField(
                                                       controller: search,
-                                                      onChanged: (v) => set(
-                                                          FeedFilter(
-                                                              region: filter
-                                                                  .region,
-                                                              sort: filter.sort,
-                                                              openForBuilders:
-                                                                  filter
-                                                                      .openForBuilders,
-                                                              query: v)),
+                                                      onChanged: searchChanged,
                                                       decoration: InputDecoration(
                                                           border:
                                                               InputBorder.none,
@@ -107,19 +121,46 @@ class _HomePageState extends State<HomePage> {
                                     SingleChildScrollView(
                                         scrollDirection: Axis.horizontal,
                                         child: Row(children: [
-                                          for (final s in FeedSort.values)
-                                            Padding(
-                                                padding: const EdgeInsets.only(
-                                                    right: 8),
-                                                child: FilterPill(
-                                                    label: feedSortName(s),
-                                                    selected: filter.sort == s,
-                                                    onTap: () => set(FeedFilter(
-                                                        region: filter.region,
-                                                        sort: s,
-                                                        query: filter.query,
-                                                        openForBuilders: filter
-                                                            .openForBuilders)))),
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(right: 8),
+                                            child: PopupMenuButton<FeedSort>(
+                                              tooltip: tr3('排序', 'Сұрыптау',
+                                                  'Сортировка'),
+                                              initialValue: filter.sort,
+                                              onSelected: (sort) => set(
+                                                  FeedFilter(
+                                                      region: filter.region,
+                                                      sort: sort,
+                                                      openForBuilders: filter
+                                                          .openForBuilders)),
+                                              itemBuilder: (_) => [
+                                                for (final sort
+                                                    in FeedSort.values)
+                                                  CheckedPopupMenuItem(
+                                                      value: sort,
+                                                      checked:
+                                                          sort == filter.sort,
+                                                      child: Text(
+                                                          feedSortName(sort)))
+                                              ],
+                                              child: Padding(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 14),
+                                                  child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Text(feedSortName(
+                                                            filter.sort)),
+                                                        const Icon(
+                                                            Icons.expand_more,
+                                                            size: 18)
+                                                      ])),
+                                            ),
+                                          ),
                                           Padding(
                                               padding: const EdgeInsets.only(
                                                   right: 8),
@@ -170,6 +211,27 @@ class _HomePageState extends State<HomePage> {
                                     _ProBanner(),
                                   ]))),
                       Live<(List<HousePost>, Set<String>)>(
+                          reloadKey: (
+                            filter.region,
+                            filter.sort,
+                            filter.query,
+                            filter.openForBuilders,
+                            _retry
+                          ),
+                          error: (context, error) => SliverToBoxAdapter(
+                              child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: EmptyState(
+                                      icon: Icons.wifi_off_outlined,
+                                      title: tr3(
+                                          '暂时无法加载房子',
+                                          'Үйлерді жүктеу мүмкін болмады',
+                                          'Не удалось загрузить дома'),
+                                      action: OutlinedButton(
+                                          onPressed: () =>
+                                              setState(() => _retry++),
+                                          child: Text(tr3(
+                                              '重试', 'Қайталау', 'Повторить')))))),
                           load: (r) async => (
                                 await r.feed(filter),
                                 (await r.likedPosts()).toSet()
@@ -177,57 +239,72 @@ class _HomePageState extends State<HomePage> {
                           loading: const SliverToBoxAdapter(
                               child: Padding(
                                   padding: EdgeInsets.all(40),
-                                  child: Center(
-                                      child: CircularProgressIndicator()))),
-                          builder: (context, data) {
-                            final (posts, liked) = data;
-                            if (posts.isEmpty)
-                              return SliverToBoxAdapter(
-                                  child: EmptyState(
-                                      icon: Icons.home_outlined,
-                                      title: tr3('还没有符合条件的房子', 'Үй табылмады',
-                                          'Домов не найдено'),
-                                      body: tr3(
-                                          '换个筛选，或者发布你自己的设计。',
-                                          'Сүзгіні өзгертіңіз.',
-                                          'Измените фильтр или опубликуйте свой проект.')));
-                            Widget card(HousePost p) => HouseCard(
-                                post: p,
-                                liked: liked.contains(p.id),
-                                onLike: () => attempt(context,
-                                    () => context.repos.toggleLike(p.id)),
-                                onTap: () => pushPage<void>(
-                                    context, (_) => PostPage(postId: p.id)));
-                            if (wide)
-                              return SliverPadding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                      20, 16, 20, 100),
-                                  sliver: SliverGrid(
-                                      gridDelegate:
-                                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                                              maxCrossAxisExtent: 340,
-                                              mainAxisSpacing: 24,
-                                              crossAxisSpacing: 20,
-                                              mainAxisExtent: 380),
-                                      delegate: SliverChildBuilderDelegate(
-                                          (context, i) => card(posts[i]),
-                                          childCount: posts.length)));
-                            return SliverPadding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(20, 16, 20, 100),
-                                sliver: SliverList.separated(
-                                    itemCount: posts.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 28),
-                                    itemBuilder: (context, i) =>
-                                        card(posts[i])));
-                          }),
+                                  child: Center(child: CircularProgressIndicator()))),
+                          refreshError: (context, data, error, retry) => SliverMainAxisGroup(slivers: [
+                                SliverToBoxAdapter(
+                                    child: Padding(
+                                        padding: const EdgeInsets.all(20),
+                                        child: Wrap(
+                                            spacing: 12,
+                                            crossAxisAlignment:
+                                                WrapCrossAlignment.center,
+                                            children: [
+                                              Text(tr3(
+                                                  '刷新失败，正在显示上次结果',
+                                                  'Жаңарту сәтсіз, алдыңғы нәтиже көрсетілді',
+                                                  'Не удалось обновить. Показаны прошлые результаты.')),
+                                              OutlinedButton(
+                                                  onPressed: retry,
+                                                  child: Text(tr3('重试',
+                                                      'Қайталау', 'Повторить')))
+                                            ]))),
+                                feed(context, data),
+                              ]),
+                          builder: feed),
                     ])))),
         floatingActionButton: FloatingActionButton.extended(
             onPressed: widget.onDesign,
             icon: const Icon(Icons.architecture),
             label:
                 Text(tr3('设计我的房子', 'Үйімді жобалау', 'Спроектировать дом'))));
+  }
+
+  Widget feed(BuildContext context, (List<HousePost>, Set<String>) data) {
+    final wide = MediaQuery.sizeOf(context).width >= 700;
+
+    final (posts, liked) = data;
+    if (posts.isEmpty)
+      return SliverToBoxAdapter(
+          child: EmptyState(
+              icon: Icons.home_outlined,
+              title: tr3('还没有符合条件的房子', 'Үй табылмады', 'Домов не найдено'),
+              body: tr3('换个筛选，或者发布你自己的设计。', 'Сүзгіні өзгертіңіз.',
+                  'Измените фильтр или опубликуйте свой проект.')));
+    Widget card(HousePost p) => HouseCard(
+        post: p,
+        liked: liked.contains(p.id),
+        onLike: () => attempt(context, () => context.repos.toggleLike(p.id)),
+        onTap: () => pushPage<void>(context, (_) => PostPage(postId: p.id)));
+    if (wide)
+      return SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+          sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  // Larger text needs wider cards, not only taller rows.
+                  maxCrossAxisExtent: 340 * MediaQuery.textScalerOf(context).scale(1),
+                  mainAxisSpacing: 24,
+                  crossAxisSpacing: 20,
+                  mainAxisExtent: 440 +
+                      (MediaQuery.textScalerOf(context).scale(100) - 100) * 2),
+              delegate: SliverChildBuilderDelegate(
+                  (context, i) => card(posts[i]),
+                  childCount: posts.length)));
+    return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+        sliver: SliverList.separated(
+            itemCount: posts.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 28),
+            itemBuilder: (context, i) => card(posts[i])));
   }
 }
 
@@ -249,10 +326,8 @@ class _ProBanner extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                   child: Text(
-                      tr3(
-                          '我是工人 / 包工头 / 工程师：看看谁在找人',
-                          'Мен құрылысшымын: кім іздейді',
-                          'Я строитель: кто ищет мастеров'),
+                      tr3('找人／找活 · 查看专业人士与施工需求', 'Маман / жұмыс табу',
+                          'Найти мастера или работу'),
                       style: const TextStyle(
                           fontWeight: FontWeight.w600, fontSize: 14))),
               Icon(Icons.chevron_right, color: t.muted),

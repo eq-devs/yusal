@@ -7,6 +7,7 @@ import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../unsaved_changes_guard.dart';
 import 'demand_detail_page.dart';
 
 /// Publish wizard for both demand types: type → work → time and budget →
@@ -65,6 +66,56 @@ class _PublishPageState extends State<PublishPage> {
   bool get editing => widget.editing != null;
   bool get fromDesign => widget.snapshot != null || _snapshotId != null;
   String? _snapshotId;
+  late String _initialDraft;
+  bool _busy = false;
+  List<TextEditingController> get _controllers => [
+        title,
+        locality,
+        address,
+        description,
+        siteNotes,
+        headcount,
+        wage,
+        days,
+        duration,
+        targetDays,
+        budgetMin,
+        budgetMax,
+        budgetAmount
+      ];
+  String get _draft => [
+        for (final c in _controllers) c.text,
+        type,
+        role,
+        trades.join(','),
+        region,
+        photos,
+        payMode,
+        wageNegotiable,
+        wageUnit,
+        food,
+        tools,
+        settle,
+        scopeKind,
+        stages.join(','),
+        quantities.map((q) => '${q.name}:${q.quantity}:${q.unit}').join('|'),
+        materials,
+        quoteDeadline,
+        startDate,
+        budgetMode,
+        budgetBasis,
+        visibility.quantities,
+        visibility.plan,
+        visibility.render
+      ].join('\u0000');
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -125,6 +176,7 @@ class _PublishPageState extends State<PublishPage> {
       description.text = s.summary;
       step = 1;
     }
+    _initialDraft = _draft;
   }
 
   static List<String> _tradesFor(List<String> stages) => {
@@ -234,6 +286,16 @@ class _PublishPageState extends State<PublishPage> {
   }
 
   Future<void> submit() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await _submit();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _submit() async {
     final repos = context.repos;
     final result = await attempt(context, () async {
       if (widget.snapshot != null && _snapshotId == null) {
@@ -268,6 +330,16 @@ class _PublishPageState extends State<PublishPage> {
   }
 
   Future<void> saveDraftOnly() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await _saveDraftOnly();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _saveDraftOnly() async {
     final d = await attempt(context, () async {
       if (widget.snapshot != null && _snapshotId == null)
         _snapshotId = (await context.repos.saveSnapshot(widget.snapshot!)).id;
@@ -297,62 +369,67 @@ class _PublishPageState extends State<PublishPage> {
       _privacyStep,
       _previewStep
     ];
-    return Scaffold(
-        appBar: AppBar(
-            title: Text(editing
-                ? tr3('修改需求', 'Тапсырысты өзгерту', 'Изменить заявку')
-                : fromDesign
-                    ? tr3('从设计发布', 'Жобадан жариялау', 'Из проекта')
-                    : tr3('发布需求', 'Тапсырыс беру', 'Новая заявка')),
-            actions: [
-              if (!editing && step > 0)
+    return UnsavedChangesGuard(
+        hasChanges: () => _draft != _initialDraft,
+        isBusy: () => _busy,
+        changes: Listenable.merge(_controllers),
+        child: Scaffold(
+            appBar: AppBar(
+                title: Text(editing
+                    ? tr3('修改需求', 'Тапсырысты өзгерту', 'Изменить заявку')
+                    : fromDesign
+                        ? tr3('从设计发布', 'Жобадан жариялау', 'Из проекта')
+                        : tr3('发布需求', 'Тапсырыс беру', 'Новая заявка')),
+                actions: [
+                  if (!editing && step > 0)
+                    TextButton(
+                        onPressed: saveDraftOnly,
+                        child: Text(tr3('存草稿', 'Сақтау', 'Черновик'))),
+                ],
+                bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(4),
+                    child: LinearProgressIndicator(
+                        value: (step + 1) / (last + 1),
+                        minHeight: 4,
+                        backgroundColor: t.line,
+                        color: t.ink))),
+            body: SafeArea(
+                top: false,
+                child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 720),
+                        child: ListView(
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                            children: [
+                              pages[step](context),
+                              if (error != null) ...[
+                                const SizedBox(height: 14),
+                                Hint(error!, warn: true),
+                              ],
+                            ])))),
+            bottomNavigationBar: ActionBar(
+                child: Row(children: [
+              if (step > (editing || widget.snapshot != null ? 1 : 0))
                 TextButton(
-                    onPressed: saveDraftOnly,
-                    child: Text(tr3('存草稿', 'Сақтау', 'Черновик'))),
-            ],
-            bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(4),
-                child: LinearProgressIndicator(
-                    value: (step + 1) / (last + 1),
-                    minHeight: 4,
-                    backgroundColor: t.line,
-                    color: t.ink))),
-        body: SafeArea(
-            top: false,
-            child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 720),
-                    child: ListView(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                        children: [
-                          pages[step](context),
-                          if (error != null) ...[
-                            const SizedBox(height: 14),
-                            Hint(error!, warn: true),
-                          ],
-                        ])))),
-        bottomNavigationBar: ActionBar(
-            child: Row(children: [
-          if (step > (editing || widget.snapshot != null ? 1 : 0))
-            TextButton(
-                onPressed: () => setState(() {
-                      error = null;
-                      step--;
-                    }),
-                child: Text(tr3('返回', 'Артқа', 'Назад'))),
-          const Spacer(),
-          if (step < last)
-            FilledButton(
-                onPressed: next, child: Text(tr3('下一步', 'Келесі', 'Далее')))
-          else
-            BusyButton(
-                expand: false,
-                label: editing && widget.editing!.status != DemandStatus.draft
-                    ? tr3('发布新版本', 'Жаңа нұсқа', 'Опубликовать версию')
-                    : tr3('提交发布', 'Жариялау', 'Опубликовать'),
-                onPressed: submit),
-        ])));
+                    onPressed: () => setState(() {
+                          error = null;
+                          step--;
+                        }),
+                    child: Text(tr3('返回', 'Артқа', 'Назад'))),
+              const Spacer(),
+              if (step < last)
+                FilledButton(
+                    onPressed: next, child: Text(tr3('下一步', 'Келесі', 'Далее')))
+              else
+                BusyButton(
+                    expand: false,
+                    label:
+                        editing && widget.editing!.status != DemandStatus.draft
+                            ? tr3('发布新版本', 'Жаңа нұсқа', 'Опубликовать версию')
+                            : tr3('提交发布', 'Жариялау', 'Опубликовать'),
+                    onPressed: submit),
+            ]))));
   }
 
   Widget _heading(String text, [String? sub]) {

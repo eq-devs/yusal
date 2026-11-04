@@ -41,6 +41,7 @@ class _HouseAppState extends State<HouseApp> {
         return PlatformScope(
             repos: repos,
             store: store,
+            isDemo: repos is MockBackend,
             child: MaterialApp(
                 title: 'Yusal',
                 debugShowCheckedModeBanner: false,

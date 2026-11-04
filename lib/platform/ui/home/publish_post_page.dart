@@ -9,6 +9,7 @@ import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../unsaved_changes_guard.dart';
 import 'post_page.dart';
 
 /// Shares a local design to the feed: a title, a few words, the region,
@@ -29,6 +30,15 @@ class _PublishPostPageState extends State<PublishPostPage> {
   bool openForBuilders = true;
   final tags = <String>{};
   DesignExtract? extract;
+  late String _initialDraft;
+  bool _busy = false;
+  String get _draft => [
+        title.text,
+        story.text,
+        region,
+        openForBuilders,
+        (tags.toList()..sort()).join(',')
+      ].join('\u0000');
 
   @override
   void initState() {
@@ -41,6 +51,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
     } catch (_) {
       extract = null;
     }
+    _initialDraft = _draft;
   }
 
   @override
@@ -51,6 +62,16 @@ class _PublishPostPageState extends State<PublishPostPage> {
   }
 
   Future<void> publish() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await _publish();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _publish() async {
     if (title.text.trim().isEmpty) {
       toast(context, tr3('请填标题', 'Атауын жазыңыз', 'Введите название'));
       return;
@@ -101,91 +122,100 @@ class _PublishPostPageState extends State<PublishPostPage> {
     final t = YTokens.of(context);
     final e = extract;
     final preview = widget.entry.preview;
-    return PageScaffold(
-        title: tr3('发布到首页', 'Басты бетке', 'Опубликовать'),
-        bottom: ActionBar(
-            child: Row(children: [
-          Expanded(
-              child: Text(
-                  tr3('发布后所有人可见，随时可以下架。', 'Барлығы көреді, жасыруға болады.',
-                      'Увидят все; можно скрыть.'),
-                  style: TextStyle(color: t.muted, fontSize: 13))),
-          BusyButton(
-              expand: false,
-              onPressed: publish,
-              label: tr3('发布', 'Жариялау', 'Опубликовать')),
-        ])),
-        body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Cover(
-              icon: Icons.home_outlined,
-              seed: widget.entry.id,
-              height: 200,
-              image: preview == null
-                  ? null
-                  : MemoryImage(Uint8List.fromList(preview))),
-          if (e != null)
-            Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Text(
-                    '${e.buildingArea.toStringAsFixed(0)} m² · ${e.floors} ${tr3('层', 'қабат', 'эт.')} · ${e.rooms} ${tr3('个房间', 'бөлме', 'комн.')}${e.estimatedCost == null ? '' : ' · ≈ ${money(e.estimatedCost)}'}',
-                    style: TextStyle(color: t.muted)))
-          else
-            Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Hint(
-                    tr3('无法从这个设计算出面积和造价，只发布平面图和说明。', 'Есептеу мүмкін емес.',
-                        'Не удалось посчитать площадь и стоимость.'),
-                    warn: true)),
-          const SizedBox(height: 18),
-          TextField(
-              controller: title,
-              maxLength: 40,
-              decoration: InputDecoration(
-                  labelText: tr3('标题', 'Атауы', 'Название'),
-                  hintText: tr3('比如：给父母盖的一层砖房', 'Мысалы: ата-анама үй',
-                      'Например: дом для родителей'))),
-          const SizedBox(height: 12),
-          TextField(
-              controller: story,
-              minLines: 3,
-              maxLines: 8,
-              maxLength: 600,
-              decoration: InputDecoration(
-                  labelText: tr3('说明（可选）', 'Сипаттама', 'Описание'),
-                  hintText: tr3(
-                      '给谁住、为什么这么设计、想听大家什么意见…',
-                      'Кім тұрады, неге осылай…',
-                      'Для кого, почему так, что хотите услышать…'),
-                  alignLabelWithHint: true)),
-          SectionTitle(tr3('地区', 'Аймақ', 'Район'), top: 8),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final c in regionCodes)
-              FilterPill(
-                  label: regionName(c),
-                  selected: region == c,
-                  onTap: () => setState(() => region = c)),
-          ]),
-          SectionTitle(tr3('标签', 'Тегтер', 'Теги')),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final c in postTags)
-              FilterPill(
-                  label: postTagName(c),
-                  selected: tags.contains(c),
-                  onTap: () => setState(
-                      () => tags.contains(c) ? tags.remove(c) : tags.add(c))),
-          ]),
-          const SizedBox(height: 16),
-          SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: openForBuilders,
-              onChanged: (v) => setState(() => openForBuilders = v),
-              title: Text(tr3('欢迎施工方联系我', 'Құрылысшылар жаза алады',
-                  'Строители могут написать мне')),
-              subtitle: Text(tr3(
-                  '首页会标出“正在找施工方”。具体需求可以之后在房子页里发布。',
-                  'Бетте белгі болады.',
-                  'На карточке появится пометка; заявку можно создать позже.'))),
-          const SizedBox(height: 40),
-        ]));
+    return UnsavedChangesGuard(
+        hasChanges: () => _draft != _initialDraft,
+        isBusy: () => _busy,
+        changes: Listenable.merge([title, story]),
+        child: PageScaffold(
+            title: tr3('发布到首页', 'Басты бетке', 'Опубликовать'),
+            bottom: Row(children: [
+              Expanded(
+                  child: Text(
+                      tr3(
+                          '发布后所有人可查看各楼层图纸；不含私人备注，随时可下架。',
+                          'Қабат жоспарлары жарияланады, жеке жазбаларсыз. Жасыруға болады.',
+                          'Планы этажей доступны всем, без личных заметок. Можно скрыть.'),
+                      style: TextStyle(color: t.muted, fontSize: 13))),
+              BusyButton(
+                  expand: false,
+                  onPressed: publish,
+                  label: tr3('发布', 'Жариялау', 'Опубликовать')),
+            ]),
+            body: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Cover(
+                      icon: Icons.home_outlined,
+                      seed: widget.entry.id,
+                      height: 200,
+                      image: preview == null
+                          ? null
+                          : MemoryImage(Uint8List.fromList(preview))),
+                  if (e != null)
+                    Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Text(
+                            '${e.buildingArea.toStringAsFixed(0)} m² · ${e.floors} ${tr3('层', 'қабат', 'эт.')} · ${e.rooms} ${tr3('个房间', 'бөлме', 'комн.')}${e.estimatedCost == null ? '' : ' · ≈ ${money(e.estimatedCost)}'}',
+                            style: TextStyle(color: t.muted)))
+                  else
+                    Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Hint(
+                            tr3(
+                                '无法从这个设计算出面积和造价，只发布平面图和说明。',
+                                'Есептеу мүмкін емес.',
+                                'Не удалось посчитать площадь и стоимость.'),
+                            warn: true)),
+                  const SizedBox(height: 18),
+                  TextField(
+                      controller: title,
+                      maxLength: 40,
+                      decoration: InputDecoration(
+                          labelText: tr3('标题', 'Атауы', 'Название'),
+                          hintText: tr3('比如：给父母盖的一层砖房', 'Мысалы: ата-анама үй',
+                              'Например: дом для родителей'))),
+                  const SizedBox(height: 12),
+                  TextField(
+                      controller: story,
+                      minLines: 3,
+                      maxLines: 8,
+                      maxLength: 600,
+                      decoration: InputDecoration(
+                          labelText: tr3('说明（可选）', 'Сипаттама', 'Описание'),
+                          hintText: tr3(
+                              '给谁住、为什么这么设计、想听大家什么意见…',
+                              'Кім тұрады, неге осылай…',
+                              'Для кого, почему так, что хотите услышать…'),
+                          alignLabelWithHint: true)),
+                  SectionTitle(tr3('地区', 'Аймақ', 'Район'), top: 8),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    for (final c in regionCodes)
+                      FilterPill(
+                          label: regionName(c),
+                          selected: region == c,
+                          onTap: () => setState(() => region = c)),
+                  ]),
+                  SectionTitle(tr3('标签', 'Тегтер', 'Теги')),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    for (final c in postTags)
+                      FilterPill(
+                          label: postTagName(c),
+                          selected: tags.contains(c),
+                          onTap: () => setState(() =>
+                              tags.contains(c) ? tags.remove(c) : tags.add(c))),
+                  ]),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: openForBuilders,
+                      onChanged: (v) => setState(() => openForBuilders = v),
+                      title: Text(tr3('欢迎施工方联系我', 'Құрылысшылар жаза алады',
+                          'Строители могут написать мне')),
+                      subtitle: Text(tr3(
+                          '首页会标出“正在找施工方”。具体需求可以之后在房子页里发布。',
+                          'Бетте белгі болады.',
+                          'На карточке появится пометка; заявку можно создать позже.'))),
+                  const SizedBox(height: 40),
+                ])));
   }
 }

@@ -1,3 +1,4 @@
+import '../../../core/commands/house_templates.dart';
 import '../../domain/models.dart';
 import 'mock_backend.dart';
 import '../../snapshot/design_snapshot.dart';
@@ -446,18 +447,21 @@ void seedMockData(MockBackend b) {
       sentAt: ago(0, 2));
 
   // Snapshots and house posts: the feed everyone sees first.
+  final demoFacts = <String, DesignExtract>{};
   DesignSnapshot snap(String id, String owner, String project, String name,
-          String summary, List<QtyItem> lines) =>
-      DesignSnapshot(
-          id: id,
-          ownerId: owner,
-          projectId: project,
-          projectName: name,
-          designUpdatedAt: ago(6).toIso8601String(),
-          extractedAt: ago(6),
-          stages: snapshotStages,
-          lines: lines,
-          summary: summary);
+      String summary, List<QtyItem> lines) {
+    var counter = 0;
+    final kind = id == 'snap_erlan' || id == 'snap_dinara' ? 'two' : 'three';
+    final doc = createTemplate(kind, ago(6).toUtc().toIso8601String(), () => 'demo${counter++}');
+    final facts = extractDesign(doc, snapshotStages);
+    demoFacts[id] = facts;
+    final frozen = buildSnapshot(projectId: project, doc: doc, stages: snapshotStages,
+        lines: lines, summary: '${facts.width / 1000} × ${facts.depth / 1000} m · ${facts.floors} floors · DEMO');
+    return DesignSnapshot(id: id, ownerId: owner, projectId: project,
+        projectName: '$name · DEMO', designUpdatedAt: doc.meta.updatedAt,
+        extractedAt: ago(6), stages: snapshotStages, lines: lines,
+        summary: frozen.summary, planJson: frozen.planJson);
+  }
   const q = QtySource.design;
   b.snapshots['snap_aigerim'] = snap('snap_aigerim', SeedIds.owner, 'seed_p1',
       '塔尔加尔一层砖房', '12 × 11 m，一层，130 m²，4 个房间', const [
@@ -510,9 +514,9 @@ void seedMockData(MockBackend b) {
           region: region,
           createdAt: ago(days),
           updatedAt: ago(days),
-          area: area,
-          floors: floors,
-          rooms: rooms,
+          area: demoFacts[snapId]!.buildingArea,
+          floors: demoFacts[snapId]!.floors,
+          rooms: demoFacts[snapId]!.rooms,
           estimatedCost: cost,
           tags: tags,
           openForBuilders: open,

@@ -7,6 +7,7 @@ import '../cards.dart';
 import '../demand/demand_detail_page.dart';
 import '../home/publish_post_page.dart';
 import '../demand/publish_page.dart';
+import '../demand/from_design_page.dart';
 import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
@@ -27,7 +28,7 @@ class ProjectsPage extends StatelessWidget {
         length: 3,
         child: Scaffold(
             appBar: AppBar(
-                title: Text(tr3('我的设计', 'Жобаларым', 'Мои проекты'),
+                title: Text(tr3('我的项目', 'Жобаларым', 'Мои проекты'),
                     style: display(size: 24)),
                 bottom: TabBar(tabs: [
                   Tab(text: tr3('设计', 'Жобалар', 'Проекты')),
@@ -40,8 +41,10 @@ class ProjectsPage extends StatelessWidget {
                   child: HouseHome(
                       store: context.projectStore,
                       reload: reload,
-                      onFindBuilders: (entry) => pushPage<void>(
+                      onPublishPost: (entry) => pushPage<void>(
                           context, (_) => PublishPostPage(entry: entry)),
+                      onFindBuilders: (entry) => pushPage<void>(
+                          context, (_) => FromDesignPage(entry: entry)),
                       onBackup: (entry) => pushPage<void>(
                           context, (_) => BackupPage(highlight: entry.id)))),
               const _MyDemands(),
@@ -113,8 +116,14 @@ class _MyDemands extends StatelessWidget {
                       ])));
 }
 
-class MyCooperations extends StatelessWidget {
+class MyCooperations extends StatefulWidget {
   const MyCooperations({super.key});
+  @override
+  State<MyCooperations> createState() => _MyCooperationsState();
+}
+
+class _MyCooperationsState extends State<MyCooperations> {
+  int _retry = 0;
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
@@ -124,10 +133,27 @@ class MyCooperations extends StatelessWidget {
                 text: tr3('登录后查看合作记录', 'Кіріңіз',
                     'Войдите, чтобы видеть сотрудничество'))
             : Live<List<(Cooperation, String)>>(
-                load: (r) async => [
-                      for (final c in await r.myCooperations())
-                        (c, (await r.demand(c.demandId))?.current.title ?? '')
-                    ],
+                reloadKey: ('my-cooperations', _retry),
+                load: (r) async {
+                  final cooperations = await r.myCooperations();
+                  final titles = <String, String>{};
+                  await Future.wait(cooperations
+                      .map((c) => c.demandId)
+                      .toSet()
+                      .map((id) async {
+                    try {
+                      titles[id] = (await r.demand(id))?.current.title ??
+                          tr3('需求已不可见', 'Тапсырыс қолжетімсіз',
+                              'Заявка недоступна');
+                    } catch (_) {
+                      titles[id] = tr3('标题暂不可用', 'Атауы уақытша қолжетімсіз',
+                          'Название временно недоступно');
+                    }
+                  }));
+                  return [
+                    for (final c in cooperations) (c, titles[c.demandId]!)
+                  ];
+                },
                 builder: (context, list) => list.isEmpty
                     ? EmptyState(
                         icon: Icons.handshake_outlined,
@@ -140,6 +166,13 @@ class MyCooperations extends StatelessWidget {
                     : ListView(
                         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
                         children: [
+                            Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton.icon(
+                                    onPressed: () => setState(() => _retry++),
+                                    icon: const Icon(Icons.refresh),
+                                    label: Text(
+                                        tr3('刷新', 'Жаңарту', 'Обновить')))),
                             for (final (c, title) in list)
                               Padding(
                                   padding: const EdgeInsets.only(bottom: 12),

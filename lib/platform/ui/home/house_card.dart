@@ -49,7 +49,7 @@ class HouseCard extends StatelessWidget {
                           customBorder: const CircleBorder(),
                           onTap: onLike,
                           child: Padding(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(14),
                               child: Icon(
                                   liked
                                       ? Icons.favorite
@@ -82,6 +82,9 @@ class HouseCard extends StatelessWidget {
                   style: TextStyle(fontSize: 14, color: t.ink)),
             ],
           ]),
+          if (p.rating == null)
+            Text(tr3('暂无评价', 'Пікір жоқ', 'Нет оценок'),
+                style: TextStyle(fontSize: 12, color: t.muted)),
           const SizedBox(height: 2),
           Text(houseFacts(p), style: TextStyle(color: t.muted, fontSize: 14)),
           if (p.estimatedCost != null)
@@ -103,6 +106,7 @@ class HouseCard extends StatelessWidget {
             Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Live<Account?>(
+                    reloadKey: p.ownerId,
                     load: (r) => r.account(p.ownerId),
                     loading: const SizedBox(height: 24),
                     builder: (context, a) => Row(children: [

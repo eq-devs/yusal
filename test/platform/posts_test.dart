@@ -27,6 +27,12 @@ HousePost draft(String snapshotId,
         rooms: 4);
 
 void main() {
+  test('visitor can read a public standalone post snapshot', () async {
+    final b = backend();
+    expect(await b.snapshot('snap_erlan'), isNotNull);
+    expect((await b.snapshot('snap_erlan'))!.planJson, isNotNull);
+  });
+
   test('the feed shows seeded houses to a visitor, newest first', () async {
     final b = backend();
     final feed = await b.feed(const FeedFilter());

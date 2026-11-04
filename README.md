@@ -1,4 +1,17 @@
-# Yusal · 自建房设计工具
+# Yusal · 房屋设计、作品展示与施工找人
+
+当前入口：**首页 · 项目 · 消息 · 我的**。以房屋项目为中心，保留离线设计；发布作品与找施工方是独立操作，询价不要求先公开作品。
+
+平台账号、聊天、作品、需求、报价与备份目前使用内存模拟后端，重启会重置；本地 `.house` 设计独立持久保存。真实后端尚未接入。
+
+- 当前产品方向：[产品重定位](docs/PRODUCT_REPOSITION.md)
+- 本轮目标与验证状态：[优化 Goal](docs/superpowers/plans/2026-11-04-yusal-goal.md)
+- 本轮计划：[优化计划](docs/superpowers/plans/2026-11-04-yusal-optimization.md)
+- 验证记录：[优化报告](docs/OPTIMIZATION_RESULT_2026-11-04.md)
+
+以下是设计工具的功能说明与历史版本记录，不代表本轮已重新完成所有验收。
+
+## 自建房设计工具
 
 Flutter house planning app for web, iOS and Android. Dimensions are integer millimeters in `.house` files; the editor displays meters.
 

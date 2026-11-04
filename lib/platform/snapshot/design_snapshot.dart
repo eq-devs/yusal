@@ -1,5 +1,6 @@
 import '../../core/analysis/cost_estimate.dart';
 import '../../core/document/house_document.dart';
+import '../../core/serialization/house_codec.dart';
 import '../../core/geometry/derived_house.dart';
 import '../domain/models.dart';
 
@@ -92,4 +93,14 @@ DesignSnapshot buildSnapshot(
         stages: stages,
         lines: lines,
         summary: summary,
-        preview: preview);
+        preview: preview,
+        planJson: encodeHouse(HouseDocument(
+          schemaVersion: doc.schemaVersion,
+          meta: doc.meta,
+          defaults: doc.defaults,
+          footprint: doc.footprint,
+          axes: doc.axes,
+          floors: doc.floors,
+          roof: doc.roof,
+          mainEntranceOpeningId: doc.mainEntranceOpeningId,
+        )));

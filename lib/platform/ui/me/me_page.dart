@@ -89,7 +89,7 @@ class MePage extends StatelessWidget {
                                               fontSize: 22,
                                               fontWeight: FontWeight.w700)),
                                       Text(
-                                          '${maskPhone(account.phone)} · ${tr3('手机号已验证', 'Телефон расталған', 'Телефон подтверждён')}',
+                                          '${maskPhone(account.phone)} · ${context.isDemo ? tr3('演示账号', 'Демо аккаунт', 'Демо-аккаунт') : tr3('手机号已验证', 'Телефон расталған', 'Телефон подтверждён')}',
                                           style: TextStyle(color: t.muted)),
                                     ])),
                                 IconButton(
@@ -212,7 +212,7 @@ class MePage extends StatelessWidget {
                               tile(
                                   Icons.cloud_outlined,
                                   tr3('设计备份与恢复', 'Сақтық көшірме',
-                                      'Резервные копии'),
+                                      context.isDemo ? 'Демо-копии' : 'Резервные копии'),
                                   () => pushPage<void>(
                                       context, (_) => const BackupPage())),
                               tile(

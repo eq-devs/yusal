@@ -5,6 +5,7 @@ import '../../../app/settings.dart';
 import '../../data/repositories.dart';
 import '../../domain/models.dart';
 import '../l10n.dart';
+import '../design/plan_viewer.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -152,6 +153,8 @@ class _PublicPreview extends StatelessWidget {
             Text(v.description),
           ],
           if (v.snapshot != null) ...[
+            PlanAttachment(
+                snapshot: v.snapshot, hidden: v.snapshot?.planJson == null && v.snapshot?.preview == null),
             const SizedBox(height: 12),
             if (v.snapshot!.preview != null)
               ClipRRect(

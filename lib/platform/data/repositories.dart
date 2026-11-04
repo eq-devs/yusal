@@ -202,7 +202,8 @@ abstract interface class NotificationRepository {
 
 abstract interface class SnapshotRepository {
   Future<DesignSnapshot> saveSnapshot(DesignSnapshot snapshot);
-  Future<DesignSnapshot?> snapshot(String id);
+  Future<DesignSnapshot?> snapshot(String id,
+      {String? postId, String? demandId});
 }
 
 /// Result of comparing a local design with its cloud backup.

@@ -773,7 +773,8 @@ class MockBackend implements PlatformRepositories {
         stages: s.stages,
         lines: v.quantities ? s.lines : const [],
         summary: s.summary,
-        preview: v.plan ? s.preview : null);
+        preview: v.plan ? s.preview : null,
+        planJson: v.plan ? s.planJson : null);
   }
 
   @override
@@ -1511,14 +1512,33 @@ class MockBackend implements PlatformRepositories {
             stages: s.stages,
             lines: s.lines,
             summary: s.summary,
-            preview: s.preview);
+            preview: s.preview,
+            planJson: s.planJson);
       });
 
   @override
-  Future<DesignSnapshot?> snapshot(String id) => _read(() {
+  Future<DesignSnapshot?> snapshot(String id,
+          {String? postId, String? demandId}) =>
+      _read(() {
         final s = snapshots[id];
         if (s == null) return null;
+        if (postId != null) {
+          final p = posts[postId];
+          if (p == null || p.snapshotId != id || !_postVisible(p)) return null;
+          return _publicSnapshot(id, const AttachmentVisibility());
+        }
+        if (demandId != null) {
+          final d = demands[demandId];
+          if (d == null || d.current.snapshotId != id || !_demandVisible(d))
+            return null;
+          return s.ownerId == currentId
+              ? s
+              : _publicSnapshot(id, d.current.visibility);
+        }
         if (s.ownerId == currentId) return s;
+        if (posts.values.any((p) => p.snapshotId == id && _postVisible(p))) {
+          return _publicSnapshot(id, const AttachmentVisibility());
+        }
         final d = demands.values
             .where((d) => d.current.snapshotId == id && _demandVisible(d))
             .firstOrNull;

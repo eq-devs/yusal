@@ -832,7 +832,8 @@ class DesignSnapshot {
       required this.stages,
       required this.lines,
       required this.summary,
-      this.preview});
+      this.preview,
+      this.planJson});
   final String id, ownerId, projectId, projectName;
   final String designUpdatedAt;
   final DateTime extractedAt;
@@ -844,6 +845,9 @@ class DesignSnapshot {
 
   /// Plan thumbnail bytes (WebP/PNG) when the design has one.
   final List<int>? preview;
+
+  /// Frozen public geometry only; excludes private notes, specs and budget.
+  final String? planJson;
 }
 
 class BackupRecord {

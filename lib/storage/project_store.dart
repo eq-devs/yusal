@@ -21,7 +21,12 @@ class ProjectStore {
   final Map<String, String> corruptProjects = {};
   List<ProjectEntry> _entries = [];
 
-  Future<void> _index() => files.writeIndex(jsonEncode([
+  /// The index is rebuildable; failure must not hide readable source files.
+  String? indexWarning;
+
+  Future<void> _index() async {
+    try {
+      await files.writeIndex(jsonEncode([
         for (final entry in _entries)
           {
             'projectId': entry.id,
@@ -32,6 +37,11 @@ class ProjectStore {
         for (final entry in corruptProjects.entries)
           {'projectId': entry.key, 'failure': entry.value},
       ]));
+      indexWarning = null;
+    } catch (_) {
+      indexWarning = 'INDEX_WRITE_FAILED';
+    }
+  }
 
   Future<HouseDocument> openProject(String id) async {
     final text = await files.read(id);

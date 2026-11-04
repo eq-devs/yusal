@@ -1,6 +1,8 @@
-# Yusal 平台 MVP：实际做了什么、部署到哪了
+# Yusal 平台 MVP：历史交付记录
 
-更新：2026-11-04。分支 `claude/project-thread-wuq5me`，PR #1。
+此文保留之前的测试和部署记录，不是本轮优化的验收结论。当前结果见 [本轮优化报告](OPTIMIZATION_RESULT_2026-11-04.md)。
+
+历史更新：2026-11-04。分支 `claude/project-thread-wuq5me`，PR #1。
 
 ## 1. 一句话
 
@@ -13,7 +15,7 @@
 | 首页（作品流） | 搜索胶囊、排序（最新 / 最热 / 评分）、地区、“正在找施工方”筛选；卡片 = 平面图 + 地区 / 面积 / 层数 / 房间数 + 预估造价 + 作者 + 赞 / 评论数；悬浮按钮“设计我的房子” | `lib/platform/ui/home/home_page.dart`、`house_card.dart` |
 | 房子页 | 分享（公开链接，任何人无需登录可打开）；大图 → 标题与事实 → 作者（私信）→ 故事 → 设计数据 → 这栋房子在招谁 → 评论（带 1–5 星）。访客底部“去报名 / 报价”或“我能建这栋房子”；房主底部“招人” | `lib/platform/ui/home/post_page.dart` |
 | 发布设计 | 从“我的设计”或编辑器一键发布：标题、说明、地区、标签、是否欢迎施工方；面积、层数、房间数、造价从设计自动算出 | `lib/platform/ui/home/publish_post_page.dart`、`lib/platform/snapshot/design_snapshot.dart` |
-| 招人 / 承包 | 从房子页发布需求，工程量从快照带出；报名、报价、对比、录用、合作约定、结束、评价（沿用首轮 MVP） | `lib/platform/ui/publish/`、`demands/`、`deals/` |
+| 招人 / 承包 | 从房子页发布需求，工程量从快照带出；报名、报价、对比、录用、合作约定、结束、评价（沿用首轮 MVP） | `lib/platform/ui/demand/`、`apply/`、`coop/` |
 | 入驻 | 我的 → “入驻接活”选工人 / 包工头 / 工程师，再填名片；接活大厅降为一个入口 | `lib/platform/ui/profile/profile_edit_page.dart`、`discover/discover_page.dart` |
 | 消息 | 聊天与通知（点赞、评论、报名、合作等），点通知直达房子 / 需求 | `lib/platform/ui/chat/` |
 | 我的 | 我发布的房子、入驻、接活大厅、备份、外观（自动 / 日间 / 夜间）、语言、开发者工具、审核后台 | `lib/platform/ui/me/` |

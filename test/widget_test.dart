@@ -48,7 +48,7 @@ void main() {
     await t.tap(find.text('给父母盖的一层砖房'));
     await t.pumpAndSettle();
     expect(find.byType(PostPage), findsOneWidget);
-    expect(find.text('130 m²'), findsOneWidget);
+    expect(find.text('120 m²'), findsOneWidget);
     expect(find.text('130 平米住宅砌墙'), findsOneWidget);
     expect(find.text('去报名 / 报价'), findsOneWidget);
     await t.tap(find.text('130 平米住宅砌墙'));
@@ -61,7 +61,7 @@ void main() {
     await launch(t, route: '/h/post_aigerim');
     expect(find.byType(PostPage), findsOneWidget);
     expect(find.text('给父母盖的一层砖房'), findsOneWidget);
-    expect(find.text('130 m²'), findsOneWidget);
+    expect(find.text('120 m²'), findsOneWidget);
     expect(find.byIcon(Icons.ios_share), findsOneWidget);
     // No page to go back to: a home button leads to the feed.
     await t.tap(find.byTooltip('首页'));
@@ -85,7 +85,7 @@ void main() {
 
   testWidgets('the design tab keeps the design home', (t) async {
     await launch(t);
-    await t.tap(find.text('设计').last);
+    await t.tap(find.text('项目').last);
     await t.pumpAndSettle();
     expect(find.text('自建房设计工具'), findsOneWidget);
   });

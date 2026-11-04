@@ -64,7 +64,9 @@ class BackupPage extends StatelessWidget {
     final t = YTokens.of(context);
     final store = context.projectStore;
     return PageScaffold(
-        title: tr3('备份与恢复', 'Сақтық көшірме', 'Резервные копии'),
+        title: context.isDemo
+            ? tr3('模拟备份与恢复', 'Демо көшірме', 'Демо-копии')
+            : tr3('备份与恢复', 'Сақтық көшірме', 'Резервные копии'),
         body: OnChange(
             builder: (context) => context.repos.currentAccount == null
                 ? EmptyState(
@@ -92,6 +94,13 @@ class BackupPage extends StatelessWidget {
                     builder: (context, rows) => Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              if (context.isDemo)
+                                Hint(
+                                    tr3(
+                                        '模拟备份只存在当前运行内存，重启后消失。请导出设计文件保留副本。',
+                                        'Демо көшірме тек жадта, қайта іске қосқанда өшеді. Жоба файлын экспорттаңыз.',
+                                        'Демо-копии хранятся в памяти и исчезнут при перезапуске. Экспортируйте файл проекта.'),
+                                    warn: true),
                               Hint(tr3(
                                   '本地保存和自动保存照常工作，不登录也能离线编辑。备份是手动的，不是实时同步；两边都改过时会让你选择，不会静默覆盖。',
                                   'Жергілікті сақтау әрдайым жұмыс істейді. Көшірме қолмен жасалады.',

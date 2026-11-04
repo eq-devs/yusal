@@ -38,12 +38,25 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  void dispose() {
+    phone.dispose();
+    code.dispose();
+    name.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     final mock = context.mock;
     return PageScaffold(
         title: tr3('登录或注册', 'Кіру не тіркелу', 'Вход или регистрация'),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          if (context.isDemo)
+            Hint(tr3(
+                '演示登录：不会发送短信，也不会验证真实手机号。平台数据重启后重置。',
+                'Демо кіру: SMS жіберілмейді, нақты телефон расталмайды. Деректер қайта іске қосқанда өшеді.',
+                'Демо-вход: SMS не отправляется, номер не проверяется. Данные сбрасываются при перезапуске.')),
           const SizedBox(height: 8),
           Text(
               tr3('欢迎来到 Yusal', 'Yusal-ға қош келдіңіз',

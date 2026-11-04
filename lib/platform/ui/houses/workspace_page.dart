@@ -113,12 +113,12 @@ class _FindTab extends StatelessWidget {
               child: DemandCard(
                   compact: true,
                   demand: d,
-                  trailing: Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: StatusPill(demandStatusName(d.status),
-                          color: d.status == DemandStatus.open
-                              ? YTokens.of(context).ok
-                              : null)),
+                  trailing: d.status == DemandStatus.open
+                      ? Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: StatusPill(demandStatusName(d.status),
+                              color: YTokens.of(context).ok))
+                      : null,
                   onTap: () => pushPage<void>(
                       context, (_) => DemandDetailPage(demandId: d.id)))),
         OutlinedButton.icon(

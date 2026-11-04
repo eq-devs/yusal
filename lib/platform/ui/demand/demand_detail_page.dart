@@ -15,6 +15,7 @@ import '../widgets.dart';
 import 'applications_page.dart';
 import 'publish_page.dart';
 import 'share_page.dart';
+import '../home/post_page.dart';
 
 class _DetailData {
   _DetailData(this.demand, this.owner, this.snapshot, this.myApps, this.coops,
@@ -112,7 +113,34 @@ class _DemandDetail extends StatelessWidget {
           image: data.snapshot?.preview == null
               ? null
               : MemoryImage(Uint8List.fromList(data.snapshot!.preview!))),
-      const SizedBox(height: 18),
+      Live<HousePost?>(
+          reloadKey: ('post-for', d.id),
+          load: (r) => r.postForDemand(d.id),
+          loading: const SizedBox(height: 18),
+          error: (_, __) => const SizedBox(height: 18),
+          builder: (context, post) => post == null
+              ? const SizedBox(height: 18)
+              : Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: InkWell(
+                      key: const Key('demand-house-link'),
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => pushPage<void>(
+                          context, (_) => PostPage(postId: post.id)),
+                      child: Row(children: [
+                        Icon(Icons.home_outlined, size: 18, color: t.accent),
+                        const SizedBox(width: 6),
+                        Expanded(
+                            child: Text(
+                                tr3('属于：${post.title}', 'Үй: ${post.title}',
+                                    'Дом: ${post.title}'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: t.accent,
+                                    fontWeight: FontWeight.w600))),
+                        Icon(Icons.chevron_right, color: t.accent),
+                      ])))),
       Wrap(spacing: 8, runSpacing: 6, children: [
         StatusPill(demandTypeName(d.type), color: t.accent),
         StatusPill(demandStatusName(d.status),

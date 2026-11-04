@@ -1243,7 +1243,7 @@ class MockBackend implements PlatformRepositories {
 
   @override
   Future<Cooperation> requestMilestone(String cooperationId, int index,
-          {String note = '', int photos = 0}) =>
+          {String note = '', List<List<int>> photos = const []}) =>
       _io(() {
         final me = _me;
         final c = _coop(cooperationId);
@@ -1258,12 +1258,46 @@ class MockBackend implements PlatformRepositories {
         list[index] = m.copyWith(
             status: MilestoneStatus.requested,
             note: note.trim(),
-            photoCount: photos,
+            photos: photos.take(9).toList(),
             requestedAt: now);
         notice(
             c.ownerId, NoticeKind.milestoneRequested, RefType.cooperation, c.id,
             title: _title(c));
         return cooperations[c.id] = c.copyWith(milestones: list);
+      });
+
+  @override
+  Future<Cooperation> setMilestones(
+          String cooperationId, List<Milestone> plan) =>
+      _io(() {
+        final me = _me;
+        final c = _coop(cooperationId);
+        if (c.status != CooperationStatus.pending)
+          throw const ApiFailure(ApiCodes.invalidState, 'confirmed');
+        if (plan.isEmpty || plan.length > 8)
+          throw const ApiFailure(ApiCodes.invalidInput, 'count');
+        if (plan.any((m) => m.percent < 0) ||
+            plan.fold(0, (s, m) => s + m.percent) != 100)
+          throw const ApiFailure(ApiCodes.invalidInput, 'percent');
+        if (plan.map((m) => m.key).toSet().length != plan.length ||
+            plan.any((m) => m.key.trim().isEmpty || m.key == 'c:'))
+          throw const ApiFailure(ApiCodes.invalidInput, 'name');
+        final g = c.agreements.first;
+        cooperations[c.id] = c.copyWith(milestones: [
+          for (final m in plan)
+            Milestone(
+                key: m.key.trim(),
+                percent: m.percent,
+                criteria: m.criteria.trim(),
+                due: m.due)
+        ], agreements: [
+          g.copyWith(confirmedBy: {me}),
+          ...c.agreements.skip(1)
+        ]);
+        notice(c.otherSide(me), NoticeKind.confirmRequest, RefType.cooperation,
+            c.id,
+            title: _title(c));
+        return cooperations[c.id]!;
       });
 
   @override
@@ -1295,7 +1329,7 @@ class MockBackend implements PlatformRepositories {
 
   @override
   Future<Cooperation> logWork(String cooperationId, int headcount,
-          {String note = '', int photos = 0}) =>
+          {String note = '', List<List<int>> photos = const []}) =>
       _io(() {
         final me = _me;
         final c = _coop(cooperationId);
@@ -1311,7 +1345,7 @@ class MockBackend implements PlatformRepositories {
             day: day,
             headcount: headcount,
             note: note.trim(),
-            photoCount: photos);
+            photos: photos.take(9).toList());
         notice(c.ownerId, NoticeKind.workLogged, RefType.cooperation, c.id,
             title: _title(c));
         return cooperations[c.id] = c.copyWith(workLogs: [log, ...rest]);
@@ -1802,6 +1836,7 @@ class MockBackend implements PlatformRepositories {
             region: p.region,
             tags: p.tags,
             openForBuilders: p.openForBuilders,
+            showBuild: p.showBuild,
             updatedAt: now);
       });
 
@@ -1935,6 +1970,65 @@ class MockBackend implements PlatformRepositories {
                 commentsById.values.where((x) => x.postId == p.id).length,
             ratingSum: c.rating == null ? null : p.ratingSum - c.rating!,
             ratingCount: c.rating == null ? null : p.ratingCount - 1);
+      });
+
+  /// Demands belonging to a post's house, any status.
+  Iterable<Demand> _postDemands(HousePost p) => demands.values.where((d) =>
+      d.ownerId == p.ownerId &&
+      (d.current.snapshotId == p.snapshotId ||
+          d.designProjectId == p.projectId));
+
+  @override
+  Future<PostBuild?> postBuild(String postId) => _read(() {
+        final p = posts[postId];
+        if (p == null || !_postVisible(p)) return null;
+        if (!p.showBuild && currentId != p.ownerId) return null;
+        final ids = _postDemands(p).map((d) => d.id).toSet();
+        final coops = cooperations.values
+            .where((c) =>
+                ids.contains(c.demandId) &&
+                (c.status == CooperationStatus.confirmed ||
+                    c.status == CooperationStatus.ended))
+            .toList()
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        if (coops.isEmpty) return null;
+        var agreed = 0, accepted = 0;
+        final builders =
+            <({ServiceProfile profile, String scope, bool ended})>[];
+        for (final c in coops) {
+          final amount = c.agreement.amount;
+          if (amount != null) {
+            agreed += amount;
+            accepted += c.milestones.isEmpty
+                ? (c.status == CooperationStatus.ended ? amount : 0)
+                : amount * c.acceptedPercent ~/ 100;
+          }
+          final prof = profiles[c.profileId];
+          if (prof == null || prof.status != ProfileStatus.active) continue;
+          builders.add((
+            profile: prof,
+            scope: demands[c.demandId]?.current.title ?? '',
+            ended: c.status == CooperationStatus.ended
+          ));
+        }
+        return PostBuild(
+            builders: builders,
+            agreedAmount: agreed,
+            acceptedAmount: accepted,
+            finished: coops.every((c) => c.status == CooperationStatus.ended));
+      });
+
+  @override
+  Future<HousePost?> postForDemand(String demandId) => _read(() {
+        final d = demands[demandId];
+        if (d == null) return null;
+        for (final p in posts.values)
+          if (_postVisible(p) &&
+              p.ownerId == d.ownerId &&
+              (d.current.snapshotId == p.snapshotId ||
+                  (d.designProjectId != null &&
+                      d.designProjectId == p.projectId))) return p;
+        return null;
       });
 
   @override

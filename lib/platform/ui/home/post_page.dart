@@ -38,7 +38,8 @@ class PostPage extends StatelessWidget {
               List<Demand>,
               List<PostComment>,
               DesignSnapshot?,
-              bool
+              bool,
+              PostBuild?
             )>(
         reloadKey: postId,
         load: (r) async {
@@ -50,7 +51,8 @@ class PostPage extends StatelessWidget {
               const <Demand>[],
               const <PostComment>[],
               null,
-              false
+              false,
+              null
             );
           return (
             p,
@@ -58,11 +60,12 @@ class PostPage extends StatelessWidget {
             await r.demandsForPost(postId),
             await r.comments(postId),
             await r.snapshot(p.snapshotId, postId: p.id),
-            r.currentAccount != null && (await r.myProfiles()).isNotEmpty
+            r.currentAccount != null && (await r.myProfiles()).isNotEmpty,
+            await r.postBuild(postId)
           );
         },
         builder: (context, data) {
-          final (p, liked, demands, comments, snap, isPro) = data;
+          final (p, liked, demands, comments, snap, isPro, build) = data;
           if (p == null)
             return PageScaffold(
                 title: '',
@@ -158,6 +161,15 @@ class PostPage extends StatelessWidget {
                           'Больше не ищу строителей')
                       : tr3('标记为正在找施工方', 'Құрылысшы іздеймін', 'Ищу строителей')
                 ),
+              if (mine)
+                (
+                  'build',
+                  p.showBuild
+                      ? tr3('不再公开谁在建和花费', 'Құрылысшыларды жасыру',
+                          'Скрыть строителей и расходы')
+                      : tr3('公开谁在建和花费', 'Құрылысшыларды көрсету',
+                          'Показать строителей и расходы')
+                ),
               if (mine) ('hide', tr3('下架这栋房子', 'Жасыру', 'Скрыть')),
               if (!mine) ('report', tr3('举报', 'Шағымдану', 'Пожаловаться')),
             ]);
@@ -181,6 +193,15 @@ class PostPage extends StatelessWidget {
                     context,
                     () => context.repos.updatePost(
                         p.copyWith(openForBuilders: !p.openForBuilders)));
+              case 'build':
+                await attempt(
+                    context,
+                    () => context.repos
+                        .updatePost(p.copyWith(showBuild: !p.showBuild)),
+                    success: p.showBuild
+                        ? tr3('已不再公开', 'Жасырылды', 'Скрыто')
+                        : tr3('访客现在能看到谁在建、已验收多少', 'Көрсетілді',
+                            'Теперь видно, кто строит и сколько принято'));
               case 'hide':
                 if (await confirmDialog(
                         context, tr3('下架这栋房子？', 'Жасыру?', 'Скрыть дом?'),
@@ -294,7 +315,11 @@ class PostPage extends StatelessWidget {
                                                 color: t.accent)),
                                       const SizedBox(height: 16),
                                       HouseProgress(
-                                          stage: stageFromDemands(demands)),
+                                          stage: build?.finished == true
+                                              ? HouseStage.done
+                                              : build != null
+                                                  ? HouseStage.building
+                                                  : stageFromDemands(demands)),
                                       const Divider(height: 32),
                                       // Owner.
                                       Live<Account?>(
@@ -389,6 +414,11 @@ class PostPage extends StatelessWidget {
                                                     context,
                                                     (_) => DemandDetailPage(
                                                         demandId: d.id)))),
+                                      if (build != null)
+                                        _BuildSection(
+                                            info: build,
+                                            mine: mine,
+                                            shown: p.showBuild),
                                       // Reviews.
                                       SectionTitle(
                                           '${tr3('评价', 'Пікірлер', 'Отзывы')} · ${comments.length}'),
@@ -500,6 +530,58 @@ class PostPage extends StatelessWidget {
       const SizedBox(width: 12),
       Flexible(child: main),
     ]));
+  }
+}
+
+/// "谁在建这栋房子": the pros on it and what has been inspected so far.
+class _BuildSection extends StatelessWidget {
+  const _BuildSection(
+      {required this.info, required this.mine, required this.shown});
+  final PostBuild info;
+  final bool mine, shown;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    final b = info;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      SectionTitle(b.finished
+          ? tr3('谁建了这栋房子', 'Бұл үйді кім салды', 'Кто построил этот дом')
+          : tr3('谁在建这栋房子', 'Бұл үйді кім салып жатыр', 'Кто строит этот дом')),
+      if (mine && !shown)
+        Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Hint(tr3(
+                '只有你能看到这一段。可以在右上角“…”里公开给访客。',
+                'Мұны тек сіз көресіз.',
+                'Видите только вы. Откройте через «…».'))),
+      if (b.agreedAmount > 0)
+        Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+                tr3(
+                    '已验收 ${money(b.acceptedAmount)} / 约定 ${money(b.agreedAmount)}',
+                    '${money(b.acceptedAmount)} / ${money(b.agreedAmount)} қабылданды',
+                    'Принято ${money(b.acceptedAmount)} из ${money(b.agreedAmount)}'),
+                style: const TextStyle(fontWeight: FontWeight.w600))),
+      for (final x in b.builders)
+        ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Avatar(x.profile.name, size: 40),
+            title: Text(x.profile.name,
+                style: const TextStyle(fontWeight: FontWeight.w700)),
+            subtitle: Text(
+                '${x.scope} · ${x.ended ? tr3('已完工', 'Аяқталды', 'Завершено') : tr3('施工中', 'Жүріп жатыр', 'В работе')}',
+                style: TextStyle(color: t.muted)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => pushPage<void>(
+                context, (_) => ProfilePage(profileId: x.profile.id))),
+      Text(
+          tr3(
+              '金额来自双方确认的约定和节点验收记录，Yusal 不经手付款。',
+              'Сомалар келісім мен қабылдау жазбаларынан.',
+              'Суммы из соглашений и записей приёмки; Yusal не принимает платежи.'),
+          style: TextStyle(color: t.faint, fontSize: 12)),
+    ]);
   }
 }
 

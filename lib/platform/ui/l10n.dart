@@ -365,6 +365,7 @@ String milestoneName(String key) => switch (key) {
       'walls' => tr3('主体', 'Қабырғалар', 'Стены'),
       'roof' => tr3('屋顶', 'Шатыр', 'Кровля'),
       'finish' => tr3('完工', 'Аяқтау', 'Сдача'),
+      final k when k.startsWith('c:') => k.substring(2),
       final k => k,
     };
 

@@ -163,7 +163,11 @@ abstract interface class CooperationRepository {
 
   /// The pro asks the owner to inspect a milestone (with photos).
   Future<Cooperation> requestMilestone(String cooperationId, int index,
-      {String note = '', int photos = 0});
+      {String note = '', List<List<int>> photos = const []});
+
+  /// Replans the inspection points while the agreement is still waiting
+  /// for confirmation. Shares must add up to 100. Both sides confirm again.
+  Future<Cooperation> setMilestones(String cooperationId, List<Milestone> plan);
 
   /// The owner accepts a requested milestone or raises a problem (note
   /// required). Only records the inspection; no money moves.
@@ -173,7 +177,7 @@ abstract interface class CooperationRepository {
 
   /// The pro logs today's crew on site; one entry per day, latest wins.
   Future<Cooperation> logWork(String cooperationId, int headcount,
-      {String note = '', int photos = 0});
+      {String note = '', List<List<int>> photos = const []});
 
   /// The owner confirms a logged day.
   Future<Cooperation> confirmWork(String cooperationId, String logId);
@@ -267,6 +271,13 @@ abstract interface class PostRepository {
 
   /// Open demands recruiting for this house.
   Future<List<Demand>> demandsForPost(String postId);
+
+  /// Who builds this house and how far it got. Null unless the owner
+  /// chose to show it (the owner always sees it).
+  Future<PostBuild?> postBuild(String postId);
+
+  /// The public house a demand belongs to, if its owner published one.
+  Future<HousePost?> postForDemand(String demandId);
 }
 
 abstract interface class ModerationRepository {

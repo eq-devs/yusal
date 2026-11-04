@@ -22,7 +22,7 @@ class MyHouse {
   final cooperations = <Cooperation>[];
   final quotes = <String, ({int total, int unread})>{};
 
-  bool get hasDesign => projectId != null;
+  bool get hasDesign => !key.startsWith('demand:');
   int get quoteCount => quotes.values.fold(0, (s, c) => s + c.total);
   int get newQuotes => quotes.values.fold(0, (s, c) => s + c.unread);
 
@@ -82,17 +82,35 @@ Future<List<MyHouse>> loadMyHouses(
       .toList();
   final counts = await r.myQuoteCounts();
   final byKey = <String, MyHouse>{};
+  final snaps = <String, DesignSnapshot?>{};
   for (final d in demands) {
-    final pid = d.designProjectId;
+    final sid = d.current.snapshotId;
+    DesignSnapshot? snap;
+    if (sid != null) {
+      snap = snaps.containsKey(sid)
+          ? snaps[sid]
+          : snaps[sid] = await _quiet(() => r.snapshot(sid, demandId: d.id));
+    }
+    // One house per design: the linked project, else the design the
+    // published extract came from, else the demand on its own.
+    final pid = d.designProjectId ?? snap?.projectId;
     final design = pid == null ? null : designs[pid];
     final key = pid ?? 'demand:${d.id}';
-    final h = byKey.putIfAbsent(
-        key,
-        () => MyHouse(
-            key: key,
-            name: design?.document.meta.name ?? d.current.title,
-            projectId: pid,
-            preview: design?.preview));
+    var h = byKey[key];
+    if (h == null) {
+      final post =
+          design == null ? await _quiet(() => r.postForDemand(d.id)) : null;
+      h = byKey[key] = MyHouse(
+          key: key,
+          name: design?.document.meta.name ??
+              post?.title ??
+              (snap?.projectName.isNotEmpty == true
+                  ? snap!.projectName
+                  : null) ??
+              d.current.title,
+          projectId: design == null ? null : pid,
+          preview: design?.preview ?? post?.preview ?? snap?.preview);
+    }
     h.demands.add(d);
     final c = counts[d.id];
     if (c != null) h.quotes[d.id] = c;
@@ -103,6 +121,14 @@ Future<List<MyHouse>> loadMyHouses(
   final list = byKey.values.toList()
     ..sort((a, b) => _latest(b).compareTo(_latest(a)));
   return list;
+}
+
+Future<T?> _quiet<T>(Future<T?> Function() f) async {
+  try {
+    return await f();
+  } catch (_) {
+    return null;
+  }
 }
 
 DateTime _latest(MyHouse h) => h.demands

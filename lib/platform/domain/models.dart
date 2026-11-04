@@ -639,17 +639,40 @@ class Milestone {
       this.criteria = '',
       this.due,
       this.status = MilestoneStatus.planned,
-      this.photoCount = 0,
+      this.photos = const [],
       this.note = '',
       this.answeredAt,
       this.requestedAt});
-  final String key, criteria, note;
-  final int percent, photoCount;
+
+  /// A built-in point ("foundation", "walls", "roof", "finish") or a
+  /// custom one written as "c:<name>".
+  final String key;
+  final String criteria, note;
+  final int percent;
+
+  /// Photos attached to the latest inspection request (compressed JPEG/WebP).
+  final List<List<int>> photos;
   final DateTime? due, requestedAt, answeredAt;
   final MilestoneStatus status;
+  int get photoCount => photos.length;
+
+  /// Same point with a new plan (name, share, criteria, date).
+  Milestone replan(
+          {String? key, int? percent, String? criteria, DateTime? due}) =>
+      Milestone(
+          key: key ?? this.key,
+          percent: percent ?? this.percent,
+          criteria: criteria ?? this.criteria,
+          due: due ?? this.due,
+          status: status,
+          photos: photos,
+          note: note,
+          requestedAt: requestedAt,
+          answeredAt: answeredAt);
+
   Milestone copyWith(
           {MilestoneStatus? status,
-          int? photoCount,
+          List<List<int>>? photos,
           String? note,
           DateTime? requestedAt,
           DateTime? answeredAt}) =>
@@ -659,7 +682,7 @@ class Milestone {
           criteria: criteria,
           due: due,
           status: status ?? this.status,
-          photoCount: photoCount ?? this.photoCount,
+          photos: photos ?? this.photos,
           note: note ?? this.note,
           requestedAt: requestedAt ?? this.requestedAt,
           answeredAt: answeredAt ?? this.answeredAt);
@@ -674,19 +697,21 @@ class WorkLog {
       required this.day,
       required this.headcount,
       this.note = '',
-      this.photoCount = 0,
+      this.photos = const [],
       this.confirmed = false});
   final String id, by, note;
   final DateTime day;
-  final int headcount, photoCount;
+  final int headcount;
+  final List<List<int>> photos;
   final bool confirmed;
+  int get photoCount => photos.length;
   WorkLog confirm() => WorkLog(
       id: id,
       by: by,
       day: day,
       headcount: headcount,
       note: note,
-      photoCount: photoCount,
+      photos: photos,
       confirmed: true);
 }
 
@@ -1034,6 +1059,7 @@ class HousePost {
       this.ratingSum = 0,
       this.ratingCount = 0,
       this.reuseCount = 0,
+      this.showBuild = false,
       this.preview});
   final String id, ownerId, projectId, snapshotId, title, story, region;
   final DateTime createdAt, updatedAt;
@@ -1053,6 +1079,10 @@ class HousePost {
 
   /// How many people started their own house from this design.
   final int reuseCount;
+
+  /// The owner shows who is building this house and what has been
+  /// inspected and paid out so far.
+  final bool showBuild;
   final List<int>? preview;
 
   double? get rating => ratingCount == 0 ? null : ratingSum / ratingCount;
@@ -1068,6 +1098,7 @@ class HousePost {
           int? ratingSum,
           int? ratingCount,
           int? reuseCount,
+          bool? showBuild,
           DateTime? updatedAt,
           List<String>? tags}) =>
       HousePost(
@@ -1092,7 +1123,27 @@ class HousePost {
           ratingSum: ratingSum ?? this.ratingSum,
           ratingCount: ratingCount ?? this.ratingCount,
           reuseCount: reuseCount ?? this.reuseCount,
+          showBuild: showBuild ?? this.showBuild,
           preview: preview);
+}
+
+/// Who builds a house and how far it got, as shown on its public page.
+class PostBuild {
+  const PostBuild(
+      {required this.builders,
+      required this.agreedAmount,
+      required this.acceptedAmount,
+      required this.finished});
+
+  /// One entry per confirmed or ended cooperation: the pro's card and the
+  /// stage of the house they took on.
+  final List<({ServiceProfile profile, String scope, bool ended})> builders;
+
+  /// Sums over agreements with a known amount, in tenge.
+  final int agreedAmount, acceptedAmount;
+
+  /// Every cooperation ended by both sides.
+  final bool finished;
 }
 
 /// A comment on a house post, optionally with a 1–5 rating. One rating

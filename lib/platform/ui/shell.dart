@@ -28,11 +28,13 @@ class _PlatformShellState extends State<PlatformShell> {
   late int tab = widget.initialTab;
   final reload = ReloadNotifier();
   final segment = ValueNotifier<int?>(null);
+  final newDesign = ReloadNotifier();
 
   @override
   void dispose() {
     reload.dispose();
     segment.dispose();
+    newDesign.dispose();
     super.dispose();
   }
 
@@ -48,6 +50,12 @@ class _PlatformShellState extends State<PlatformShell> {
                   if (exploreSegment != null) segment.value = exploreSegment;
                 }),
             drafting: drafting,
+            newDesign: () {
+              setState(() => tab = ShellTab.houses);
+              // Let the houses tab build before opening its picker.
+              WidgetsBinding.instance
+                  .addPostFrameCallback((_) => newDesign.bump());
+            },
             child: PlatformTheme(
                 child: Builder(
                     builder: (context) => Scaffold(
@@ -70,7 +78,10 @@ class _PlatformShellState extends State<PlatformShell> {
                           Expanded(
                               child: IndexedStack(index: tab, children: [
                             ExplorePage(segment: segment),
-                            ProjectsPage(drafting: drafting, reload: reload),
+                            ProjectsPage(
+                                drafting: drafting,
+                                reload: reload,
+                                createRequest: newDesign),
                             const InboxPage(),
                             const MePage(),
                           ])),
@@ -107,9 +118,13 @@ class ShellNav extends InheritedWidget {
       {super.key,
       required this.go,
       required this.drafting,
+      required this.newDesign,
       required super.child});
   final void Function(int tab, {int? exploreSegment}) go;
   final ThemeData drafting;
+
+  /// Opens My houses with the template picker for a new design.
+  final VoidCallback newDesign;
 
   static ShellNav? maybeOf(BuildContext context) =>
       context.getInheritedWidgetOfExactType<ShellNav>();

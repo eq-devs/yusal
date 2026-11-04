@@ -20,16 +20,24 @@ import '../houses/workspace_page.dart';
 /// workspace, then the design list. People with a pro card also get
 /// "我接的活".
 class ProjectsPage extends StatelessWidget {
-  const ProjectsPage({super.key, required this.drafting, required this.reload});
+  const ProjectsPage(
+      {super.key,
+      required this.drafting,
+      required this.reload,
+      this.createRequest});
 
   /// The design tool keeps its own drafting look.
   final ThemeData drafting;
   final Listenable reload;
 
+  /// "＋ → draw from scratch" opens the template picker.
+  final Listenable? createRequest;
+
   @override
   Widget build(BuildContext context) {
     AppScope.watch(context);
-    final houses = _HousesView(drafting: drafting, reload: reload);
+    final houses = _HousesView(
+        drafting: drafting, reload: reload, createRequest: createRequest);
     final title =
         Text(tr3('我的房子', 'Үйлерім', 'Мои дома'), style: display(size: 24));
     return OnChange(
@@ -57,9 +65,11 @@ class ProjectsPage extends StatelessWidget {
 }
 
 class _HousesView extends StatelessWidget {
-  const _HousesView({required this.drafting, required this.reload});
+  const _HousesView(
+      {required this.drafting, required this.reload, this.createRequest});
   final ThemeData drafting;
   final Listenable reload;
+  final Listenable? createRequest;
   @override
   Widget build(BuildContext context) {
     final store = context.projectStore;
@@ -80,6 +90,7 @@ class _HousesView extends StatelessWidget {
               child: HouseHome(
                   store: store,
                   reload: reload,
+                  createRequest: createRequest,
                   onPublishPost: (entry) => pushPage<void>(
                       context, (_) => PublishPostPage(entry: entry)),
                   onFindBuilders: (entry) => pushPage<void>(

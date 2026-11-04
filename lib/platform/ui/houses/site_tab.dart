@@ -6,6 +6,7 @@ import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'my_houses_data.dart';
+import '../photos.dart';
 
 /// The building-site tab of a house: each confirmed cooperation with its
 /// inspection points and daily work log.
@@ -132,7 +133,17 @@ class SiteSection extends StatelessWidget {
                 color: w.confirmed ? t.ok : t.faint),
             title: Text(
                 '${fmtDay(w.day)} · ${tr3('到场 ${w.headcount} 人', '${w.headcount} адам', '${w.headcount} чел.')}${w.photoCount > 0 ? ' · 📷${w.photoCount}' : ''}'),
-            subtitle: w.note.isEmpty ? null : Text(w.note),
+            subtitle: w.note.isEmpty && w.photos.isEmpty
+                ? null
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                        if (w.note.isNotEmpty) Text(w.note),
+                        if (w.photos.isNotEmpty)
+                          Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: PhotoStrip(photos: w.photos, size: 52)),
+                      ]),
             trailing: owner && !w.confirmed
                 ? TextButton(
                     onPressed: () => attempt(
@@ -143,15 +154,16 @@ class SiteSection extends StatelessWidget {
   }
 
   Future<void> _request(BuildContext context, int i) async {
-    final note = await askText(
-        context,
-        tr3('申请「${milestoneName(cooperation.milestones[i].key)}」验收',
+    final r = await composeSiteEntry(context,
+        title: tr3('申请「${milestoneName(cooperation.milestones[i].key)}」验收',
             'Қабылдауды сұрау', 'Попросить принять этап'),
-        hint: tr3('做了什么、照片在哪里（可选）', 'Не істелді', 'Что сделано'),
-        required: false);
-    if (note == null || !context.mounted) return;
-    await attempt(context,
-        () => context.repos.requestMilestone(cooperation.id, i, note: note),
+        hint: tr3('做了什么，按验收标准拍几张照片', 'Не істелді, фото қосыңыз',
+            'Что сделано; добавьте фото по критериям'));
+    if (r == null || !context.mounted) return;
+    await attempt(
+        context,
+        () => context.repos.requestMilestone(cooperation.id, i,
+            note: r.note, photos: r.photos),
         success: tr3('已通知房主来验收', 'Иесіне хабарланды', 'Владелец уведомлён'));
   }
 
@@ -166,16 +178,144 @@ class SiteSection extends StatelessWidget {
   }
 }
 
-/// "今天记工": crew on site today, with an optional note.
+/// "今天记工": crew on site today, with photos and an optional note.
 Future<void> logToday(BuildContext context, Cooperation c) async {
-  final last = c.workLogs.firstOrNull?.headcount ?? 1;
-  final text = await askText(
-      context, tr3('今天到场几人？', 'Бүгін неше адам?', 'Сколько человек сегодня?'),
-      initial: "$last", lines: 1);
-  final n = int.tryParse(text?.trim() ?? '');
-  if (n == null || !context.mounted) return;
-  await attempt(context, () => context.repos.logWork(c.id, n),
+  final r = await composeSiteEntry(context,
+      title: tr3('今天记工', 'Бүгінгі жұмыс', 'Рабочий день'),
+      hint: tr3('今天干了什么（可以用键盘上的麦克风说）', 'Бүгін не істелді',
+          'Что сделано сегодня (можно надиктовать)'),
+      headcount: c.workLogs.firstOrNull?.headcount ?? 1);
+  if (r == null || !context.mounted) return;
+  await attempt(
+      context,
+      () => context.repos
+          .logWork(c.id, r.headcount!, note: r.note, photos: r.photos),
       success: tr3('已记工，房主会收到确认提醒', 'Жазылды', 'Записано'));
+}
+
+typedef SiteEntry = ({String note, List<List<int>> photos, int? headcount});
+
+/// Bottom sheet for a site entry: optional crew count, note and photos.
+Future<SiteEntry?> composeSiteEntry(BuildContext context,
+        {required String title, required String hint, int? headcount}) =>
+    showModalBottomSheet<SiteEntry>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => PlatformTheme(
+            child: _SiteEntrySheet(
+                title: title, hint: hint, headcount: headcount)));
+
+class _SiteEntrySheet extends StatefulWidget {
+  const _SiteEntrySheet(
+      {required this.title, required this.hint, this.headcount});
+  final String title, hint;
+  final int? headcount;
+  @override
+  State<_SiteEntrySheet> createState() => _SiteEntrySheetState();
+}
+
+class _SiteEntrySheetState extends State<_SiteEntrySheet> {
+  late int? people = widget.headcount;
+  final note = TextEditingController();
+  final photos = <List<int>>[];
+  bool picking = false;
+
+  @override
+  void dispose() {
+    note.dispose();
+    super.dispose();
+  }
+
+  Future<void> addPhotos() async {
+    setState(() => picking = true);
+    final more = await pickPhotos(context, max: maxSitePhotos - photos.length);
+    if (!mounted) return;
+    setState(() {
+      photos.addAll(more);
+      picking = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    return Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 0, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+        child: SafeArea(
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+              Text(widget.title, style: display(size: 20)),
+              if (people != null) ...[
+                const SizedBox(height: 14),
+                Row(children: [
+                  Expanded(
+                      child: Text(
+                          tr3('今天到场', 'Бүгін келді', 'Сегодня на объекте'),
+                          style: const TextStyle(fontWeight: FontWeight.w600))),
+                  IconButton.outlined(
+                      key: const Key('people-minus'),
+                      onPressed: people! > 1
+                          ? () => setState(() => people = people! - 1)
+                          : null,
+                      icon: const Icon(Icons.remove)),
+                  SizedBox(
+                      width: 56,
+                      child: Text(
+                          tr3('$people 人', '$people адам', '$people чел.'),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 16))),
+                  IconButton.outlined(
+                      key: const Key('people-plus'),
+                      onPressed: people! < 200
+                          ? () => setState(() => people = people! + 1)
+                          : null,
+                      icon: const Icon(Icons.add)),
+                ]),
+              ],
+              const SizedBox(height: 14),
+              TextField(
+                  controller: note,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: InputDecoration(hintText: widget.hint)),
+              const SizedBox(height: 12),
+              PhotoStrip(
+                  photos: photos,
+                  onRemove: (i) => setState(() => photos.removeAt(i))),
+              if (photos.isNotEmpty) const SizedBox(height: 8),
+              Row(children: [
+                OutlinedButton.icon(
+                    onPressed: picking || photos.length >= maxSitePhotos
+                        ? null
+                        : addPhotos,
+                    icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                    label: Text(tr3(
+                        '加照片 ${photos.length}/$maxSitePhotos',
+                        'Фото ${photos.length}/$maxSitePhotos',
+                        'Фото ${photos.length}/$maxSitePhotos'))),
+                const Spacer(),
+                FilledButton(
+                    key: const Key('site-entry-submit'),
+                    onPressed: () => Navigator.pop(context, (
+                          note: note.text.trim(),
+                          photos: List<List<int>>.of(photos),
+                          headcount: people
+                        )),
+                    child: Text(tr3('提交', 'Жіберу', 'Отправить'))),
+              ]),
+              Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                      tr3('照片只给合作双方看。', 'Фотоны тек екі жақ көреді.',
+                          'Фото видят только стороны соглашения.'),
+                      style: TextStyle(color: t.faint, fontSize: 12))),
+            ])));
+  }
 }
 
 class _MilestoneTile extends StatelessWidget {
@@ -228,6 +368,17 @@ class _MilestoneTile extends StatelessWidget {
             Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(m.note, style: const TextStyle(fontSize: 13))),
+          if (m.photos.isNotEmpty)
+            Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: PhotoStrip(photos: m.photos, size: 52)),
+          if (m.due != null)
+            Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                    tr3('预计 ${fmtDay(m.due)}', 'Мерзімі ${fmtDay(m.due)}',
+                        'Срок ${fmtDay(m.due)}'),
+                    style: TextStyle(color: t.muted, fontSize: 12))),
           if (onRequest != null || onAccept != null)
             Padding(
                 padding: const EdgeInsets.only(top: 8),

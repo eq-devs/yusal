@@ -7,7 +7,8 @@ class HouseHome extends StatefulWidget {
       this.onFindBuilders,
       this.onPublishPost,
       this.onBackup,
-      this.reload});
+      this.reload,
+      this.createRequest});
   final ProjectStore? store;
 
   /// Platform hooks: publish a demand from a design and back it up. The
@@ -18,6 +19,9 @@ class HouseHome extends StatefulWidget {
 
   /// Fires when designs were added from outside, e.g. restored backups.
   final Listenable? reload;
+
+  /// Fires when another screen asks to start a new design (template picker).
+  final Listenable? createRequest;
   @override
   State<HouseHome> createState() => _HouseHomeState();
 }
@@ -62,6 +66,7 @@ class _HouseHomeState extends State<HouseHome> {
   void initState() {
     super.initState();
     widget.reload?.addListener(refresh);
+    widget.createRequest?.addListener(_onCreateRequest);
     refresh().then((_) => reopenLast());
     if (!kIsWeb) {
       importChannel.setMethodCallHandler((call) async {
@@ -84,6 +89,7 @@ class _HouseHomeState extends State<HouseHome> {
   @override
   void dispose() {
     widget.reload?.removeListener(refresh);
+    widget.createRequest?.removeListener(_onCreateRequest);
     if (!kIsWeb) importChannel.setMethodCallHandler(null);
     super.dispose();
   }
@@ -145,6 +151,10 @@ class _HouseHomeState extends State<HouseHome> {
         setState(() => error = tr('暂时无法读取设计，请稍后重试',
             'Жобаларды оқу мүмкін болмады, кейін қайталаңыз'));
     }
+  }
+
+  void _onCreateRequest() {
+    if (mounted) createFromTemplate();
   }
 
   Future<void> open(ProjectEntry entry) async {
@@ -352,6 +362,9 @@ class _HouseHomeState extends State<HouseHome> {
     final app = AppScope.watch(context);
     final t = Tokens.of(context);
     final width = MediaQuery.sizeOf(context).width;
+    // Inside the platform's "My houses" tab, language and theme live in
+    // "Me"; the header only names the list and offers import.
+    final embedded = widget.onFindBuilders != null;
     final header = Wrap(
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.end,
@@ -362,7 +375,10 @@ class _HouseHomeState extends State<HouseHome> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(tr('自建房设计工具', 'Үй жобалау құралы'),
+                Text(
+                    embedded
+                        ? tr('我的设计', 'Жобаларым')
+                        : tr('自建房设计工具', 'Үй жобалау құралы'),
                     style: const TextStyle(
                         fontSize: 22, fontWeight: FontWeight.w700)),
                 Text(
@@ -371,23 +387,25 @@ class _HouseHomeState extends State<HouseHome> {
                     style: mono(size: 12, color: t.muted)),
               ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
-            Seg<AppLang>(
-                label: 'Тіл / 语言',
-                value: app.lang,
-                items: const [
-                  (AppLang.kk, 'Қазақша'),
-                  (AppLang.ru, 'Русский'),
-                  (AppLang.zh, '中文')
-                ],
-                onChanged: app.setLang),
-            Seg<ThemeChoice>(
-                value: app.theme,
-                items: [
-                  (ThemeChoice.auto, tr('◐ 自动', '◐ Авто')),
-                  (ThemeChoice.day, tr('☀ 日间', '☀ Күндіз')),
-                  (ThemeChoice.night, tr('☾ 夜间', '☾ Түн')),
-                ],
-                onChanged: app.setTheme),
+            if (!embedded)
+              Seg<AppLang>(
+                  label: 'Тіл / 语言',
+                  value: app.lang,
+                  items: const [
+                    (AppLang.kk, 'Қазақша'),
+                    (AppLang.ru, 'Русский'),
+                    (AppLang.zh, '中文')
+                  ],
+                  onChanged: app.setLang),
+            if (!embedded)
+              Seg<ThemeChoice>(
+                  value: app.theme,
+                  items: [
+                    (ThemeChoice.auto, tr('◐ 自动', '◐ Авто')),
+                    (ThemeChoice.day, tr('☀ 日间', '☀ Күндіз')),
+                    (ThemeChoice.night, tr('☾ 夜间', '☾ Түн')),
+                  ],
+                  onChanged: app.setTheme),
             Btn(
                 label: tr('导入', 'Импорт'),
                 icon: Icons.file_open_outlined,

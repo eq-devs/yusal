@@ -19,11 +19,7 @@ Future<void> showCreateSheet(BuildContext context) async {
   final nav = ShellNav.maybeOf(context);
   switch (choice) {
     case 0:
-      nav?.go(ShellTab.houses);
-      toast(
-          context,
-          tr3('点“新建”选一个模板，直接输入长宽就能开始', 'Үлгі таңдап, бастаңыз',
-              'Выберите шаблон и начните'));
+      nav?.newDesign();
     case 1:
       nav?.go(ShellTab.explore, exploreSegment: ExploreSegment.houses);
     case 2:

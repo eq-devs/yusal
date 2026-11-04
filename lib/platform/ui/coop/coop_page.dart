@@ -9,6 +9,7 @@ import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import '../houses/site_tab.dart';
+import 'milestone_editor.dart';
 import 'agreement_form.dart';
 import 'review_page.dart';
 
@@ -296,10 +297,18 @@ class _CoopView extends StatelessWidget {
           ...actions,
           if (c.milestones.isNotEmpty &&
               c.status == CooperationStatus.pending) ...[
-            SectionTitle(tr3('验收节点', 'Қабылдау кезеңдері', 'Этапы приёмки')),
+            SectionTitle(tr3('验收节点', 'Қабылдау кезеңдері', 'Этапы приёмки'),
+                trailing: TextButton.icon(
+                    key: const Key('edit-milestones'),
+                    onPressed: () => pushPage<void>(
+                        context, (_) => MilestoneEditorPage(cooperation: c)),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: Text(tr3('修改', 'Өзгерту', 'Изменить')))),
             for (final m in c.milestones)
-              Text(
-                  '· ${milestoneName(m.key)} ${m.percent}% — ${milestoneCriteria(m.key)}'),
+              Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                      '· ${milestoneName(m.key)} ${m.percent}%${c.agreement.amount == null ? '' : ' (${money(c.agreement.amount! * m.percent ~/ 100)})'}${m.due == null ? '' : ' · ${fmtDay(m.due)}'} — ${m.criteria.isEmpty ? milestoneCriteria(m.key) : m.criteria}')),
           ],
           if (c.status == CooperationStatus.confirmed ||
               c.status == CooperationStatus.ended) ...[

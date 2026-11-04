@@ -91,7 +91,7 @@ void main() {
     await launch(t);
     await t.tap(find.text('我的房子').last);
     await t.pumpAndSettle();
-    expect(find.text('自建房设计工具'), findsOneWidget);
+    expect(find.text('我的设计'), findsOneWidget);
   });
 
   testWidgets('the me tab switches language to Russian', (t) async {

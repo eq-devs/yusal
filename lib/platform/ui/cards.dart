@@ -71,6 +71,15 @@ class DemandCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(color: t.muted, fontSize: 14)),
+      if ((v.contract?.quantities.length ?? 0) > 0)
+        Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: StatusPill(
+                tr3(
+                    '按清单报价 · ${v.contract!.quantities.length} 项',
+                    'Тізім бойынша · ${v.contract!.quantities.length}',
+                    'По смете · ${v.contract!.quantities.length} поз.'),
+                color: t.accent)),
       const SizedBox(height: 6),
       Text.rich(TextSpan(children: [
         TextSpan(

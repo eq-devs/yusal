@@ -123,4 +123,67 @@ void main() {
     expect(find.byType(HouseWorkspacePage), findsOneWidget);
     expect(find.text('施工'), findsWidgets);
   });
+
+  group('overnight polish', () {
+    test('milestones can be replanned only while pending', () async {
+      final b = backend()..signInAs(SeedIds.owner);
+      final coop = await b.invite('app_team_wall', terms());
+      const plan = [
+        Milestone(key: 'foundation', percent: 30),
+        Milestone(key: 'c:门窗', percent: 70, criteria: '门窗装好'),
+      ];
+      await expectLater(
+          b.setMilestones(coop.id, const [Milestone(key: 'a', percent: 90)]),
+          throwsA(isA<ApiFailure>()));
+      await expectLater(
+          b.setMilestones(coop.id, const [
+            Milestone(key: 'a', percent: 50),
+            Milestone(key: 'a', percent: 50),
+          ]),
+          throwsA(isA<ApiFailure>()));
+      final c = await b.setMilestones(coop.id, plan);
+      expect(c.milestones.map((m) => m.key), ['foundation', 'c:门窗']);
+      expect(c.agreement.confirmedBy, {SeedIds.owner});
+      b.signInAs(SeedIds.team);
+      final live = await b.confirm(coop.id);
+      expect(live.milestones.last.percent, 70);
+      await expectLater(
+          b.setMilestones(coop.id, plan), throwsA(isA<ApiFailure>()));
+    });
+
+    test('site photos are kept, at most nine', () async {
+      final b = backend();
+      final c = await liveContract(b);
+      final photo = [1, 2, 3];
+      final r = await b.requestMilestone(c.id, 0, photos: [photo, photo]);
+      expect(r.milestones.first.photoCount, 2);
+      final l = await b.logWork(c.id, 3, photos: [photo]);
+      expect(l.workLogs.first.photoCount, 1);
+      final many = await b.logWork(c.id, 3, photos: List.filled(12, photo));
+      expect(many.workLogs.first.photoCount, 9);
+    });
+
+    test('who is building: owner always, visitors only when shown', () async {
+      final b = backend();
+      await liveContract(b);
+      b.signInAs(SeedIds.owner);
+      final mine = await b.postBuild('post_aigerim');
+      expect(mine, isNotNull);
+      expect(mine!.builders, isNotEmpty);
+      expect(mine.agreedAmount, 900000);
+      b.signInAs(SeedIds.owner2);
+      expect(await b.postBuild('post_aigerim'), isNull);
+      b.signInAs(SeedIds.owner);
+      final post = b.posts['post_aigerim']!;
+      await b.updatePost(post.copyWith(showBuild: true));
+      b.signInAs(SeedIds.owner2);
+      expect(await b.postBuild('post_aigerim'), isNotNull);
+    });
+
+    test('a demand knows the house it belongs to', () async {
+      final b = backend()..signInAs(SeedIds.team);
+      final p = await b.postForDemand('dem_wall');
+      expect(p?.id, 'post_aigerim');
+    });
+  });
 }

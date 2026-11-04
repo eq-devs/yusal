@@ -8,6 +8,7 @@ import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../houses/site_tab.dart';
 import 'agreement_form.dart';
 import 'review_page.dart';
 
@@ -293,6 +294,19 @@ class _CoopView extends StatelessWidget {
                       'Соглашение (версия ${g.version})')),
           const SizedBox(height: 16),
           ...actions,
+          if (c.milestones.isNotEmpty &&
+              c.status == CooperationStatus.pending) ...[
+            SectionTitle(tr3('验收节点', 'Қабылдау кезеңдері', 'Этапы приёмки')),
+            for (final m in c.milestones)
+              Text(
+                  '· ${milestoneName(m.key)} ${m.percent}% — ${milestoneCriteria(m.key)}'),
+          ],
+          if (c.status == CooperationStatus.confirmed ||
+              c.status == CooperationStatus.ended) ...[
+            SectionTitle(
+                tr3('施工与验收', 'Құрылыс және қабылдау', 'Стройка и приёмка')),
+            SiteSection(cooperation: c),
+          ],
           if (c.updates.isNotEmpty) ...[
             SectionTitle(tr3('施工进度', 'Жұмыс барысы', 'Ход работ')),
             for (final u in c.updates.reversed)

@@ -17,6 +17,8 @@ import '../shell.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'house_card.dart';
+import 'reuse.dart';
+import '../house_progress.dart';
 
 /// One house: the plan, the facts, the story, the people recruiting for
 /// it, and what others think. The owner recruits from here; a
@@ -35,23 +37,32 @@ class PostPage extends StatelessWidget {
               bool,
               List<Demand>,
               List<PostComment>,
-              DesignSnapshot?
+              DesignSnapshot?,
+              bool
             )>(
         reloadKey: postId,
         load: (r) async {
           final p = await r.post(postId);
           if (p == null)
-            return (null, false, const <Demand>[], const <PostComment>[], null);
+            return (
+              null,
+              false,
+              const <Demand>[],
+              const <PostComment>[],
+              null,
+              false
+            );
           return (
             p,
             await r.liked(postId),
             await r.demandsForPost(postId),
             await r.comments(postId),
-            await r.snapshot(p.snapshotId, postId: p.id)
+            await r.snapshot(p.snapshotId, postId: p.id),
+            r.currentAccount != null && (await r.myProfiles()).isNotEmpty
           );
         },
         builder: (context, data) {
-          final (p, liked, demands, comments, snap) = data;
+          final (p, liked, demands, comments, snap, isPro) = data;
           if (p == null)
             return PageScaffold(
                 title: '',
@@ -274,6 +285,16 @@ class PostPage extends StatelessWidget {
                                                   for (final tag in p.tags)
                                                     StatusPill(postTagName(tag))
                                                 ])),
+                                      if (p.reuseCount > 0)
+                                        Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 10),
+                                            child: StatusPill(
+                                                reusedTimes(p.reuseCount),
+                                                color: t.accent)),
+                                      const SizedBox(height: 16),
+                                      HouseProgress(
+                                          stage: stageFromDemands(demands)),
                                       const Divider(height: 32),
                                       // Owner.
                                       Live<Account?>(
@@ -330,7 +351,7 @@ class PostPage extends StatelessWidget {
                                       _Facts(post: p, snapshot: snap),
                                       // Recruiting.
                                       SectionTitle(
-                                          tr3('为这栋房子找人', 'Осы үйге адам іздеу',
+                                          tr3('这栋房子在招谁', 'Бұл үйге кім керек',
                                               'Кто нужен для этого дома'),
                                           trailing: mine && snap != null
                                               ? TextButton.icon(
@@ -390,40 +411,95 @@ class PostPage extends StatelessWidget {
                                                 mine || c.authorId == me?.id),
                                     ]))))),
               ]),
-              bottomNavigationBar: mine || open.isEmpty && !p.openForBuilders
-                  ? null
-                  : ActionBar(
-                      child: Row(children: [
-                      Expanded(
-                          child: Text(
-                              open.isNotEmpty
-                                  ? tr3(
-                                      '在招 ${open.length} 个需求',
-                                      '${open.length} тапсырыс',
-                                      'Открыто заявок: ${open.length}')
-                                  : tr3('设计者在找施工方', 'Құрылысшы іздейді',
-                                      'Ищет строителей'),
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600))),
-                      FilledButton(
-                          onPressed: open.length == 1
-                              ? () => pushPage<void>(
-                                  context,
-                                  (_) =>
-                                      DemandDetailPage(demandId: open.first.id))
-                              : open.isEmpty
-                                  ? contact
-                                  : () => pushPage<void>(
-                                      context,
-                                      (_) => DemandDetailPage(
-                                          demandId: open.first.id)),
-                          child: Text(open.isEmpty
-                              ? tr3('我能建这栋房子', 'Мен сала аламын',
-                                  'Я могу построить')
-                              : tr3(
-                                  '去报名 / 报价', 'Өтінім беру', 'Откликнуться'))),
-                    ])));
+              bottomNavigationBar: _bottomBar(context,
+                  post: p,
+                  mine: mine,
+                  isPro: isPro,
+                  liked: liked,
+                  open: open,
+                  canReuse: snap?.planJson != null,
+                  recruit: snap == null ? null : recruit,
+                  contact: contact));
         });
+  }
+
+  /// One fixed action bar whose main button depends on who is looking:
+  /// the owner manages recruiting, a pro quotes, a visitor starts their own
+  /// house from this one.
+  Widget? _bottomBar(BuildContext context,
+      {required HousePost post,
+      required bool mine,
+      required bool isPro,
+      required bool liked,
+      required List<Demand> open,
+      required bool canReuse,
+      required VoidCallback? recruit,
+      required VoidCallback contact}) {
+    final t = YTokens.of(context);
+    Future<void> openDemand() async {
+      final d = open.length == 1
+          ? open.first
+          : await pickOne<Demand>(
+              context,
+              tr3('选一个阶段', 'Кезеңді таңдаңыз', 'Выберите этап'),
+              [for (final d in open) (d, d.current.title)]);
+      if (d != null && context.mounted)
+        await pushPage<void>(context, (_) => DemandDetailPage(demandId: d.id));
+    }
+
+    final String summary;
+    final Widget main;
+    if (mine) {
+      if (open.isEmpty && recruit == null) return null;
+      summary = open.isEmpty
+          ? tr3('还没为它找人', 'Әлі ешкім ізделмейді', 'Пока никого не ищете')
+          : tr3('在招 ${open.length} 个阶段', '${open.length} кезең ашық',
+              'Открыто этапов: ${open.length}');
+      main = FilledButton(
+          key: const Key('post-main-action'),
+          onPressed: open.isEmpty ? recruit : openDemand,
+          child: Text(open.isEmpty
+              ? tr3('为这栋房子找人', 'Адам іздеу', 'Найти мастеров')
+              : tr3('管理找人', 'Іздеуді басқару', 'Управлять поиском')));
+    } else if (isPro && (open.isNotEmpty || post.openForBuilders)) {
+      summary = open.isNotEmpty
+          ? tr3('${open.length} 个阶段在招人', '${open.length} кезең ашық',
+              'Открыто этапов: ${open.length}')
+          : tr3('房主在找施工方', 'Құрылысшы іздейді', 'Ищет строителей');
+      main = FilledButton(
+          key: const Key('post-main-action'),
+          onPressed: open.isEmpty ? contact : openDemand,
+          child: Text(open.isEmpty
+              ? tr3('我能建这栋房子', 'Мен сала аламын', 'Я могу построить')
+              : tr3('去报名 / 报价', 'Өтінім беру', 'Откликнуться')));
+    } else {
+      if (!canReuse) return null;
+      return ActionBar(
+          child: Row(children: [
+        IconButton.outlined(
+            tooltip: tr3('收藏', 'Сақтау', 'Сохранить'),
+            onPressed: () =>
+                attempt(context, () => context.repos.toggleLike(post.id)),
+            icon: Icon(liked ? Icons.favorite : Icons.favorite_border,
+                color: liked ? t.accent : null)),
+        const SizedBox(width: 12),
+        Expanded(
+            child: FilledButton.icon(
+                key: const Key('post-main-action'),
+                onPressed: () => startFromPost(context, post),
+                icon: const Icon(Icons.content_copy_outlined, size: 18),
+                label: Text(startFromThis(),
+                    maxLines: 1, overflow: TextOverflow.ellipsis))),
+      ]));
+    }
+    return ActionBar(
+        child: Row(children: [
+      Expanded(
+          child: Text(summary,
+              style: const TextStyle(fontWeight: FontWeight.w600))),
+      const SizedBox(width: 12),
+      Flexible(child: main),
+    ]));
   }
 }
 
@@ -533,8 +609,7 @@ class _CommentBoxState extends State<_CommentBox> {
             for (var i = 1; i <= 5; i++)
               InkWell(
                   borderRadius: BorderRadius.circular(16),
-                  onTap: () =>
-                      setState(() => rating = rating == i ? null : i),
+                  onTap: () => setState(() => rating = rating == i ? null : i),
                   child: Padding(
                       padding: const EdgeInsets.all(4),
                       child: Icon(

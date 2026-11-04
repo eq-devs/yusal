@@ -228,6 +228,16 @@ String noticeText(AppNotification n) {
       tr3('$t 收到新的报名／报价', '$t жаңа өтінім келді', '$t новый отклик'),
     NoticeKind.postLiked =>
       tr3('有人赞了你的房子 $t', '$t үйіңіз ұнады', 'Ваш дом $t понравился'),
+    NoticeKind.milestoneRequested => tr3('$t 师傅申请节点验收',
+        '$t кезеңді қабылдау сұралды', '$t мастер просит принять этап'),
+    NoticeKind.milestoneAnswered => tr3('$t 房主回复了节点验收',
+        '$t кезең бойынша жауап', '$t владелец ответил по этапу'),
+    NoticeKind.workLogged => tr3('$t 今天的记工已提交，请确认', '$t бүгінгі жұмыс жазылды',
+        '$t записан рабочий день, подтвердите'),
+    NoticeKind.postReused => tr3(
+        '有人用你的房子 $t 开始了自己的设计',
+        '$t жобаңыз негізінде жаңа үй басталды',
+        'По вашему дому $t начали новый проект'),
     NoticeKind.postCommented =>
       tr3('你的房子 $t 收到新评价', '$t жаңа пікір', 'Новый отзыв о доме $t'),
     NoticeKind.confirmRequest => tr3('$t 对方发起合作约定，请确认', '$t келісімді растаңыз',
@@ -348,3 +358,35 @@ String numText(double v) =>
 String deletedName(Account? a) => a == null || a.deleted
     ? tr3('已注销用户', 'Жойылған пайдаланушы', 'Удалённый пользователь')
     : a.displayName;
+
+/// Inspection points: foundation, walls, roof, finish.
+String milestoneName(String key) => switch (key) {
+      'foundation' => tr3('基础', 'Іргетас', 'Фундамент'),
+      'walls' => tr3('主体', 'Қабырғалар', 'Стены'),
+      'roof' => tr3('屋顶', 'Шатыр', 'Кровля'),
+      'finish' => tr3('完工', 'Аяқтау', 'Сдача'),
+      final k => k,
+    };
+
+/// What the owner checks at each point, unless the agreement says more.
+String milestoneCriteria(String key) => switch (key) {
+      'foundation' => tr3(
+          '尺寸与图纸一致、养护满 7 天',
+          'Өлшемдер сызбаға сай, 7 күн күтім',
+          'Размеры по чертежу, уход 7 дней'),
+      'walls' =>
+        tr3('墙体到顶、过梁就位', 'Қабырғалар тұрғызылды', 'Стены до верха, перемычки'),
+      'roof' =>
+        tr3('封顶、防水完成', 'Шатыр мен гидрооқшаулау', 'Кровля и гидроизоляция'),
+      'finish' => tr3('清理完毕、双方确认', 'Тазаланды, екі жақ растады',
+          'Уборка, подтверждение сторон'),
+      _ => '',
+    };
+
+String milestoneStatusName(MilestoneStatus s) => switch (s) {
+      MilestoneStatus.planned => tr3('未开始', 'Басталмады', 'Не начат'),
+      MilestoneStatus.requested =>
+        tr3('待验收', 'Қабылдау күтілуде', 'Ждёт приёмки'),
+      MilestoneStatus.accepted => tr3('已验收', 'Қабылданды', 'Принят'),
+      MilestoneStatus.disputed => tr3('有问题', 'Ескерту бар', 'Есть замечания'),
+    };

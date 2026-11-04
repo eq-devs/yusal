@@ -13,16 +13,23 @@ import '../widgets.dart';
 
 /// First tab: "find work / find people" with search and filters.
 class DiscoverPage extends StatefulWidget {
-  const DiscoverPage({super.key, this.pushed = false});
+  const DiscoverPage(
+      {super.key, this.pushed = false, this.embedded = false, this.people});
 
   /// Opened from the home banner rather than as a tab: shows a back button.
   final bool pushed;
+
+  /// Shown as a segment of Discover: no header and no work/people switch.
+  final bool embedded;
+
+  /// Fixed list when embedded: people (true) or work (false).
+  final bool? people;
   @override
   State<DiscoverPage> createState() => _DiscoverPageState();
 }
 
 class _DiscoverPageState extends State<DiscoverPage> {
-  bool people = false;
+  late bool people = widget.people ?? false;
   final query = TextEditingController();
   DemandType? type;
   String? trade, region;
@@ -236,34 +243,41 @@ class _DiscoverPageState extends State<DiscoverPage> {
         appBar: widget.pushed
             ? AppBar(title: Text(tr3('接活大厅', 'Жұмыс орталығы', 'Биржа работы')))
             : null,
-        floatingActionButton: people
+        floatingActionButton: people || widget.embedded
             ? null
             : FloatingActionButton.extended(
                 onPressed: publish,
                 icon: const Icon(Icons.add),
                 label: Text(tr3('发布需求', 'Тапсырыс беру', 'Разместить заявку'))),
         body: SafeArea(
+            top: !widget.embedded,
             child: Center(
                 child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1180),
                     child: CustomScrollView(slivers: [
-                      SliverToBoxAdapter(
-                          child: Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
-                              child: Row(children: [
-                                Expanded(
-                                    child: Text('Yusal',
-                                        style: wordmark(t.accent))),
-                                const InboxButton(),
-                              ]))),
+                      if (!widget.embedded)
+                        SliverToBoxAdapter(
+                            child: Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(20, 12, 8, 12),
+                                child: Row(children: [
+                                  Expanded(
+                                      child: Text('Yusal',
+                                          style: wordmark(t.accent))),
+                                  const InboxButton(),
+                                ]))),
+                      if (widget.embedded)
+                        const SliverToBoxAdapter(child: SizedBox(height: 14)),
                       SliverToBoxAdapter(child: search),
                       const SliverToBoxAdapter(child: SizedBox(height: 12)),
-                      SliverToBoxAdapter(
-                          child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              child: toggle)),
-                      const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                      if (!widget.embedded) ...[
+                        SliverToBoxAdapter(
+                            child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 20),
+                                child: toggle)),
+                        const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                      ],
                       SliverToBoxAdapter(child: filters),
                       SliverPadding(
                           padding: const EdgeInsets.fromLTRB(20, 18, 20, 96),

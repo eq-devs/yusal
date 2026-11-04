@@ -810,6 +810,22 @@ class MockBackend implements PlatformRepositories {
   // ───────────────────────── applications ─────────────────────────
 
   @override
+  Future<Map<String, ({int total, int unread})>> myQuoteCounts() => _read(() {
+        final me = _me;
+        final out = <String, ({int total, int unread})>{};
+        for (final a in applications.values) {
+          final d = demands[a.demandId];
+          if (d == null || d.ownerId != me) continue;
+          if (a.status == ApplicationStatus.withdrawn ||
+              a.status == ApplicationStatus.notSelected) continue;
+          final c = out[d.id] ?? (total: 0, unread: 0);
+          out[d.id] =
+              (total: c.total + 1, unread: c.unread + (a.readByOwner ? 0 : 1));
+        }
+        return out;
+      });
+
+  @override
   Future<List<Application>> applicationsFor(String demandId) => _io(() {
         final d = _owned(demandId);
         final list = applications.values
@@ -1035,6 +1051,8 @@ class MockBackend implements PlatformRepositories {
               _agreementFrom(
                   terms, 1, me, d.current.no, AgreementStatus.proposed)
             ],
+            milestones:
+                d.type == DemandType.contract ? defaultMilestones : const [],
             createdAt: now);
         applications[a.id] =
             a.copyWith(status: ApplicationStatus.pendingConfirm);
@@ -1220,6 +1238,95 @@ class MockBackend implements PlatformRepositories {
         return cooperations[c.id] = c.copyWith(updates: [
           ...c.updates,
           ProgressUpdate(by: me, at: now, text: text.trim())
+        ]);
+      });
+
+  @override
+  Future<Cooperation> requestMilestone(String cooperationId, int index,
+          {String note = '', int photos = 0}) =>
+      _io(() {
+        final me = _me;
+        final c = _coop(cooperationId);
+        if (c.status != CooperationStatus.confirmed || me != c.providerId)
+          throw const ApiFailure(ApiCodes.invalidState);
+        if (index < 0 || index >= c.milestones.length)
+          throw const ApiFailure(ApiCodes.invalidInput, 'milestone');
+        final m = c.milestones[index];
+        if (m.status == MilestoneStatus.accepted)
+          throw const ApiFailure(ApiCodes.invalidState, 'accepted');
+        final list = [...c.milestones];
+        list[index] = m.copyWith(
+            status: MilestoneStatus.requested,
+            note: note.trim(),
+            photoCount: photos,
+            requestedAt: now);
+        notice(
+            c.ownerId, NoticeKind.milestoneRequested, RefType.cooperation, c.id,
+            title: _title(c));
+        return cooperations[c.id] = c.copyWith(milestones: list);
+      });
+
+  @override
+  Future<Cooperation> answerMilestone(
+          String cooperationId, int index, bool accept,
+          {String note = ''}) =>
+      _io(() {
+        final me = _me;
+        final c = _coop(cooperationId);
+        if (me != c.ownerId) throw const ApiFailure(ApiCodes.forbidden);
+        if (index < 0 || index >= c.milestones.length)
+          throw const ApiFailure(ApiCodes.invalidInput, 'milestone');
+        final m = c.milestones[index];
+        if (m.status != MilestoneStatus.requested)
+          throw const ApiFailure(ApiCodes.invalidState);
+        if (!accept && note.trim().isEmpty)
+          throw const ApiFailure(ApiCodes.invalidInput, 'note');
+        final list = [...c.milestones];
+        list[index] = m.copyWith(
+            status:
+                accept ? MilestoneStatus.accepted : MilestoneStatus.disputed,
+            note: accept ? m.note : note.trim(),
+            answeredAt: now);
+        notice(c.providerId, NoticeKind.milestoneAnswered, RefType.cooperation,
+            c.id,
+            title: _title(c));
+        return cooperations[c.id] = c.copyWith(milestones: list);
+      });
+
+  @override
+  Future<Cooperation> logWork(String cooperationId, int headcount,
+          {String note = '', int photos = 0}) =>
+      _io(() {
+        final me = _me;
+        final c = _coop(cooperationId);
+        if (c.status != CooperationStatus.confirmed || me != c.providerId)
+          throw const ApiFailure(ApiCodes.invalidState);
+        if (headcount < 1 || headcount > 200)
+          throw const ApiFailure(ApiCodes.invalidInput, 'headcount');
+        final day = DateTime.utc(now.year, now.month, now.day);
+        final rest = c.workLogs.where((w) => w.day != day);
+        final log = WorkLog(
+            id: newId('wl'),
+            by: me,
+            day: day,
+            headcount: headcount,
+            note: note.trim(),
+            photoCount: photos);
+        notice(c.ownerId, NoticeKind.workLogged, RefType.cooperation, c.id,
+            title: _title(c));
+        return cooperations[c.id] = c.copyWith(workLogs: [log, ...rest]);
+      });
+
+  @override
+  Future<Cooperation> confirmWork(String cooperationId, String logId) =>
+      _io(() {
+        final me = _me;
+        final c = _coop(cooperationId);
+        if (me != c.ownerId) throw const ApiFailure(ApiCodes.forbidden);
+        if (!c.workLogs.any((w) => w.id == logId))
+          throw const ApiFailure(ApiCodes.notFound);
+        return cooperations[c.id] = c.copyWith(workLogs: [
+          for (final w in c.workLogs) w.id == logId ? w.confirm() : w
         ]);
       });
 
@@ -1705,6 +1812,20 @@ class MockBackend implements PlatformRepositories {
         if (p.ownerId != _me && !_meAccount.isAdmin)
           throw const ApiFailure(ApiCodes.forbidden);
         posts[id] = p.copyWith(status: PostStatus.hidden, updatedAt: now);
+      });
+
+  @override
+  Future<String?> reusePost(String postId) => _io(() {
+        final p = posts[postId];
+        if (p == null || !_postVisible(p))
+          throw const ApiFailure(ApiCodes.notFound);
+        final plan = snapshots[p.snapshotId]?.planJson;
+        if (plan == null) throw const ApiFailure(ApiCodes.notFound, 'plan');
+        posts[postId] = p.copyWith(reuseCount: p.reuseCount + 1);
+        if (p.ownerId != currentId)
+          notice(p.ownerId, NoticeKind.postReused, RefType.post, postId,
+              title: p.title);
+        return plan;
       });
 
   @override

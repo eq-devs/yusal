@@ -10,14 +10,19 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'house_card.dart';
 import 'post_page.dart';
+import 'reuse.dart';
 
 /// First tab: houses people designed, newest first. Look, like, rate,
 /// comment; owners recruit from their house, professionals offer to build.
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, this.onDesign});
+  const HomePage({super.key, this.onDesign, this.embedded = false});
 
   /// Jumps to the design tab (the "design your own" call to action).
   final VoidCallback? onDesign;
+
+  /// Shown as the "houses" segment of Discover, which owns the header,
+  /// the create button and the links to work and people.
+  final bool embedded;
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -62,6 +67,7 @@ class _HomePageState extends State<HomePage> {
     final t = YTokens.of(context);
     return Scaffold(
         body: SafeArea(
+            top: !widget.embedded,
             child: Center(
                 child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1100),
@@ -72,18 +78,25 @@ class _HomePageState extends State<HomePage> {
                               child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(children: [
-                                      Expanded(
-                                          child: Text('Yusal',
-                                              style: wordmark(t.accent))),
-                                      const InboxButton(),
-                                    ]),
-                                    const SizedBox(height: 4),
+                                    if (!widget.embedded) ...[
+                                      Row(children: [
+                                        Expanded(
+                                            child: Text('Yusal',
+                                                style: wordmark(t.accent))),
+                                        const InboxButton(),
+                                      ]),
+                                      const SizedBox(height: 4),
+                                    ],
                                     Text(
-                                        tr3(
-                                            '看看大家设计的房子',
-                                            'Адамдар жобалаған үйлер',
-                                            'Дома, которые спроектировали люди'),
+                                        widget.embedded
+                                            ? tr3(
+                                                '挑一套，用它开始你的房子',
+                                                'Үлгі таңдап, өз үйіңізді бастаңыз',
+                                                'Выберите дом и начните свой с него')
+                                            : tr3(
+                                                '看看大家设计的房子',
+                                                'Адамдар жобалаған үйлер',
+                                                'Дома, которые спроектировали люди'),
                                         style: display(size: 24)),
                                     const SizedBox(height: 12),
                                     // Search pill, Airbnb style.
@@ -207,8 +220,10 @@ class _HomePageState extends State<HomePage> {
                                                           .openForBuilders));
                                               }),
                                         ])),
-                                    const SizedBox(height: 8),
-                                    _ProBanner(),
+                                    if (!widget.embedded) ...[
+                                      const SizedBox(height: 8),
+                                      _ProBanner(),
+                                    ],
                                   ]))),
                       Live<(List<HousePost>, Set<String>)>(
                           reloadKey: (
@@ -262,11 +277,13 @@ class _HomePageState extends State<HomePage> {
                               ]),
                           builder: feed),
                     ])))),
-        floatingActionButton: FloatingActionButton.extended(
-            onPressed: widget.onDesign,
-            icon: const Icon(Icons.architecture),
-            label:
-                Text(tr3('设计我的房子', 'Үйімді жобалау', 'Спроектировать дом'))));
+        floatingActionButton: widget.embedded
+            ? null
+            : FloatingActionButton.extended(
+                onPressed: widget.onDesign,
+                icon: const Icon(Icons.architecture),
+                label: Text(
+                    tr3('设计我的房子', 'Үйімді жобалау', 'Спроектировать дом'))));
   }
 
   Widget feed(BuildContext context, (List<HousePost>, Set<String>) data) {
@@ -284,6 +301,7 @@ class _HomePageState extends State<HomePage> {
         post: p,
         liked: liked.contains(p.id),
         onLike: () => attempt(context, () => context.repos.toggleLike(p.id)),
+        onReuse: () => startFromPost(context, p),
         onTap: () => pushPage<void>(context, (_) => PostPage(postId: p.id)));
     if (wide)
       return SliverPadding(
@@ -291,11 +309,13 @@ class _HomePageState extends State<HomePage> {
           sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                   // Larger text needs wider cards, not only taller rows.
-                  maxCrossAxisExtent: 340 * MediaQuery.textScalerOf(context).scale(1),
+                  maxCrossAxisExtent:
+                      340 * MediaQuery.textScalerOf(context).scale(1),
                   mainAxisSpacing: 24,
                   crossAxisSpacing: 20,
-                  mainAxisExtent: 440 +
-                      (MediaQuery.textScalerOf(context).scale(100) - 100) * 2),
+                  mainAxisExtent: 520 +
+                      (MediaQuery.textScalerOf(context).scale(100) - 100) *
+                          2.6),
               delegate: SliverChildBuilderDelegate(
                   (context, i) => card(posts[i]),
                   childCount: posts.length)));

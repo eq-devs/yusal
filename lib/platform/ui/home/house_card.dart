@@ -16,11 +16,15 @@ class HouseCard extends StatelessWidget {
       required this.onTap,
       this.liked = false,
       this.onLike,
+      this.onReuse,
       this.compact = false});
   final HousePost post;
   final VoidCallback onTap;
   final bool liked, compact;
   final VoidCallback? onLike;
+
+  /// "Start from this one": copies the plan into my houses.
+  final VoidCallback? onReuse;
 
   @override
   Widget build(BuildContext context) {
@@ -128,6 +132,26 @@ class HouseCard extends StatelessWidget {
                           Text('${p.commentCount}',
                               style: TextStyle(color: t.muted, fontSize: 13)),
                         ]))),
+          if (onReuse != null)
+            Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    children: [
+                      Text(
+                          p.reuseCount == 0
+                              ? tr3('可以直接拿来改', 'Өзгертуге болады',
+                                  'Можно взять за основу')
+                              : reusedTimes(p.reuseCount),
+                          style: TextStyle(color: t.muted, fontSize: 13)),
+                      TextButton.icon(
+                          onPressed: onReuse,
+                          icon:
+                              const Icon(Icons.content_copy_outlined, size: 16),
+                          label: Text(startFromThis())),
+                    ])),
         ]));
   }
 }
@@ -144,3 +168,10 @@ String houseFacts(HousePost p) => [
       if (p.rooms > 0)
         tr3('${p.rooms} 个房间', '${p.rooms} бөлме', '${p.rooms} комн.'),
     ].join(' · ');
+
+/// The main action on a public design.
+String startFromThis() => tr3('用这套开始', 'Осыдан бастау', 'Начать с этого');
+
+/// "已被复用 23 次"
+String reusedTimes(int n) =>
+    tr3('已被复用 $n 次', '$n рет қолданылды', 'Взяли за основу: $n');

@@ -97,6 +97,23 @@ class ComparePage extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Hint(compareIssueText(i), warn: true)),
           const SizedBox(height: 16),
+          if (quotes.any((a) => a.current.lines.isNotEmpty)) ...[
+            Text(
+                tr3('按同一张清单逐项对比', 'Бір тізім бойынша салыстыру',
+                    'Построчно по одной смете'),
+                style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(
+                tr3('每行最低价标绿；“未报”表示这位师傅没填这一项。', 'Ең төмені жасыл.',
+                    'Минимум по строке выделен зелёным; «нет» — позиция не указана.'),
+                style: TextStyle(color: t.muted, fontSize: 13)),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+                key: const Key('line-compare'),
+                scrollDirection: Axis.horizontal,
+                child: _LineTable(quotes: quotes, nameOf: nameOf)),
+            const SizedBox(height: 24),
+          ],
           SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Table(
@@ -138,5 +155,77 @@ class ComparePage extends StatelessWidget {
                       ]),
                   ])),
         ]));
+  }
+}
+
+/// One row per bill-of-quantities line, one column per quote; the lowest
+/// line total is marked, a missing line says so. Totals at the bottom.
+class _LineTable extends StatelessWidget {
+  const _LineTable({required this.quotes, required this.nameOf});
+  final List<Application> quotes;
+  final String Function(Application) nameOf;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    final names = <String>[];
+    final unitOf = <String, String>{};
+    final qtyOf = <String, double>{};
+    for (final a in quotes)
+      for (final l in a.current.lines)
+        if (!names.contains(l.name)) {
+          names.add(l.name);
+          unitOf[l.name] = l.unit;
+          qtyOf[l.name] = l.quantity;
+        }
+    QuoteLine? lineOf(Application a, String n) =>
+        a.current.lines.where((l) => l.name == n).firstOrNull;
+    Widget cell(String text, {Color? color, bool bold = false}) => Padding(
+        padding: const EdgeInsets.all(10),
+        child: Text(text,
+            style: TextStyle(
+                fontSize: 13,
+                color: color,
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w400)));
+    return Table(
+        defaultColumnWidth: const FixedColumnWidth(130),
+        columnWidths: const {0: FixedColumnWidth(150)},
+        border: TableBorder(
+            horizontalInside: BorderSide(color: t.line),
+            bottom: BorderSide(color: t.line),
+            top: BorderSide(color: t.line)),
+        children: [
+          TableRow(children: [
+            cell(tr3('项目', 'Позиция', 'Позиция'), color: t.muted),
+            for (final a in quotes) cell(nameOf(a), bold: true),
+          ]),
+          for (final n in names)
+            TableRow(children: [
+              cell('$n · ${numText(qtyOf[n]!)} ${unitLabel(unitOf[n]!)}'),
+              ...() {
+                final totals = [for (final a in quotes) lineOf(a, n)?.total];
+                final present = totals.whereType<double>();
+                final min = present.isEmpty
+                    ? null
+                    : present.reduce((x, y) => x < y ? x : y);
+                return [
+                  for (final v in totals)
+                    v == null
+                        ? cell(tr3('未报', 'жоқ', 'нет'), color: t.faint)
+                        : cell(money(v.round()),
+                            color: present.length > 1 && v == min ? t.ok : null,
+                            bold: present.length > 1 && v == min),
+                ];
+              }(),
+            ]),
+          TableRow(children: [
+            cell(tr3('合计', 'Барлығы', 'Итого'), bold: true),
+            for (final a in quotes)
+              cell(
+                  a.current.total == null
+                      ? tr3('需现场确认', 'Орында', 'Замер')
+                      : money(a.current.total),
+                  bold: true),
+          ]),
+        ]);
   }
 }

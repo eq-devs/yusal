@@ -38,13 +38,17 @@ Future<MockBackend> launch(WidgetTester t,
 void main() {
   testWidgets('opens on the feed of designed houses', (t) async {
     await launch(t);
-    expect(find.text('看看大家设计的房子'), findsOneWidget);
+    expect(find.text('挑一套，用它开始你的房子'), findsOneWidget);
     expect(find.text('给父母盖的一层砖房'), findsOneWidget);
     expect(find.text('两层别墅，带车库和露台'), findsOneWidget);
   });
 
   testWidgets('a house opens with its facts, demands and reviews', (t) async {
     await launch(t, as: SeedIds.roofTeam);
+    // A pro opens Discover on "work"; houses are one segment away.
+    expect(find.text('130 平米住宅砌墙'), findsWidgets);
+    await t.tap(find.byKey(const Key('explore-seg-0')));
+    await t.pumpAndSettle();
     await t.tap(find.text('给父母盖的一层砖房'));
     await t.pumpAndSettle();
     expect(find.byType(PostPage), findsOneWidget);
@@ -66,7 +70,7 @@ void main() {
     // No page to go back to: a home button leads to the feed.
     await t.tap(find.byTooltip('首页'));
     await t.pumpAndSettle();
-    expect(find.text('看看大家设计的房子'), findsOneWidget);
+    expect(find.text('挑一套，用它开始你的房子'), findsOneWidget);
   });
 
   testWidgets('an unknown link falls back to the feed', (t) async {
@@ -85,7 +89,7 @@ void main() {
 
   testWidgets('the design tab keeps the design home', (t) async {
     await launch(t);
-    await t.tap(find.text('项目').last);
+    await t.tap(find.text('我的房子').last);
     await t.pumpAndSettle();
     expect(find.text('自建房设计工具'), findsOneWidget);
   });

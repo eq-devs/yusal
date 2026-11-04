@@ -127,6 +127,10 @@ class PublicDemandView {
 abstract interface class ApplicationRepository {
   /// The publisher's view of all applications of one demand.
   Future<List<Application>> applicationsFor(String demandId);
+
+  /// Per demand of mine: active sign-ups/quotes and how many I haven't
+  /// opened yet. Does not mark anything read.
+  Future<Map<String, ({int total, int unread})>> myQuoteCounts();
   Future<List<Application>> myApplications();
   Future<Application?> application(String id);
 
@@ -156,6 +160,23 @@ abstract interface class CooperationRepository {
   Future<Cooperation> confirmEnd(String cooperationId);
   Future<Cooperation> disputeEnd(String cooperationId, String note);
   Future<Cooperation> addUpdate(String cooperationId, String text);
+
+  /// The pro asks the owner to inspect a milestone (with photos).
+  Future<Cooperation> requestMilestone(String cooperationId, int index,
+      {String note = '', int photos = 0});
+
+  /// The owner accepts a requested milestone or raises a problem (note
+  /// required). Only records the inspection; no money moves.
+  Future<Cooperation> answerMilestone(
+      String cooperationId, int index, bool accept,
+      {String note = ''});
+
+  /// The pro logs today's crew on site; one entry per day, latest wins.
+  Future<Cooperation> logWork(String cooperationId, int headcount,
+      {String note = '', int photos = 0});
+
+  /// The owner confirms a logged day.
+  Future<Cooperation> confirmWork(String cooperationId, String logId);
   Future<Cooperation?> cooperation(String id);
   Future<List<Cooperation>> myCooperations();
   Future<List<Cooperation>> cooperationsFor(String demandId);
@@ -230,6 +251,10 @@ abstract interface class PostRepository {
   Future<HousePost> publishPost(HousePost draft);
   Future<HousePost> updatePost(HousePost post);
   Future<void> hidePost(String id);
+
+  /// Counts someone starting their own house from this design and tells
+  /// the author. Works signed out; returns the frozen plan to copy.
+  Future<String?> reusePost(String postId);
 
   /// Toggles the like; returns the new state.
   Future<bool> toggleLike(String postId);

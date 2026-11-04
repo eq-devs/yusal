@@ -181,6 +181,11 @@ IconData noticeIcon(NoticeKind k) => switch (k) {
       NoticeKind.endRequest || NoticeKind.ended => Icons.flag_outlined,
       NoticeKind.reviewReceived => Icons.star_outline,
       NoticeKind.postLiked => Icons.favorite_border,
+      NoticeKind.postReused => Icons.content_copy_outlined,
+      NoticeKind.milestoneRequested ||
+      NoticeKind.milestoneAnswered =>
+        Icons.fact_check_outlined,
+      NoticeKind.workLogged => Icons.event_available_outlined,
       NoticeKind.postCommented => Icons.chat_bubble_outline,
       NoticeKind.outcomeFollowUp => Icons.help_outline,
       _ => Icons.notifications_none,

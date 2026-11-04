@@ -3,17 +3,22 @@ import '../../../app/settings.dart';
 import '../../../features/house_editor.dart';
 import '../../domain/models.dart';
 import '../backup/backup_page.dart';
-import '../cards.dart';
 import '../demand/demand_detail_page.dart';
 import '../home/publish_post_page.dart';
-import '../demand/publish_page.dart';
 import '../demand/from_design_page.dart';
 import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../house_progress.dart';
+import '../houses/my_houses_data.dart';
+import '../houses/my_jobs.dart';
+import '../houses/workspace_page.dart';
 
-/// Second tab: my designs, the demands I published and my cooperations.
+/// Second tab, "我的房子": where each of my houses stands. A to-do strip on
+/// top, the houses with platform activity as cards that open their
+/// workspace, then the design list. People with a pro card also get
+/// "我接的活".
 class ProjectsPage extends StatelessWidget {
   const ProjectsPage({super.key, required this.drafting, required this.reload});
 
@@ -24,32 +29,191 @@ class ProjectsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AppScope.watch(context);
-    return DefaultTabController(
-        length: 3,
-        child: Scaffold(
-            appBar: AppBar(
-                title: Text(tr3('我的项目', 'Жобаларым', 'Мои проекты'),
-                    style: display(size: 24)),
-                bottom: TabBar(tabs: [
-                  Tab(text: tr3('设计', 'Жобалар', 'Проекты')),
-                  Tab(text: tr3('我发布的需求', 'Тапсырыстарым', 'Мои заявки')),
-                  Tab(text: tr3('合作', 'Келісімдер', 'Сотрудничество')),
-                ])),
-            body: TabBarView(children: [
-              Theme(
-                  data: drafting,
-                  child: HouseHome(
-                      store: context.projectStore,
-                      reload: reload,
-                      onPublishPost: (entry) => pushPage<void>(
-                          context, (_) => PublishPostPage(entry: entry)),
-                      onFindBuilders: (entry) => pushPage<void>(
-                          context, (_) => FromDesignPage(entry: entry)),
-                      onBackup: (entry) => pushPage<void>(
-                          context, (_) => BackupPage(highlight: entry.id)))),
-              const _MyDemands(),
-              const MyCooperations(),
-            ])));
+    final houses = _HousesView(drafting: drafting, reload: reload);
+    final title =
+        Text(tr3('我的房子', 'Үйлерім', 'Мои дома'), style: display(size: 24));
+    return OnChange(
+        builder: (context) => Live<bool>(
+            reloadKey: ('is-pro', context.repos.currentAccount?.id),
+            load: (r) async =>
+                r.currentAccount != null && (await r.myProfiles()).isNotEmpty,
+            loading: Scaffold(appBar: AppBar(title: title), body: houses),
+            builder: (context, pro) => !pro
+                ? Scaffold(appBar: AppBar(title: title), body: houses)
+                : DefaultTabController(
+                    length: 2,
+                    child: Scaffold(
+                        appBar: AppBar(
+                            title: title,
+                            bottom: TabBar(tabs: [
+                              Tab(text: tr3('我的房子', 'Үйлерім', 'Мои дома')),
+                              Tab(
+                                  text:
+                                      tr3('我接的活', 'Жұмыстарым', 'Моя работа')),
+                            ])),
+                        body: TabBarView(
+                            children: [houses, const MyJobsView()])))));
+  }
+}
+
+class _HousesView extends StatelessWidget {
+  const _HousesView({required this.drafting, required this.reload});
+  final ThemeData drafting;
+  final Listenable reload;
+  @override
+  Widget build(BuildContext context) {
+    final store = context.projectStore;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (context.repos.currentAccount != null)
+        ListenableBuilder(
+            listenable: reload,
+            builder: (context, _) => Live<List<MyHouse>>(
+                load: (r) => loadMyHouses(r, store),
+                loading: const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                builder: (context, list) => list.isEmpty
+                    ? const SizedBox.shrink()
+                    : _ActiveHouses(houses: list))),
+      Expanded(
+          child: Theme(
+              data: drafting,
+              child: HouseHome(
+                  store: store,
+                  reload: reload,
+                  onPublishPost: (entry) => pushPage<void>(
+                      context, (_) => PublishPostPage(entry: entry)),
+                  onFindBuilders: (entry) => pushPage<void>(
+                      context, (_) => FromDesignPage(entry: entry)),
+                  onBackup: (entry) => pushPage<void>(
+                      context, (_) => BackupPage(highlight: entry.id))))),
+    ]);
+  }
+}
+
+/// To-do strip and the houses that have demands, quotes or cooperations.
+class _ActiveHouses extends StatelessWidget {
+  const _ActiveHouses({required this.houses});
+  final List<MyHouse> houses;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    final me = context.repos.currentAccount?.id ?? '';
+    final todos = <(String, MyHouse, int)>[];
+    for (final h in houses) {
+      if (h.pendingConfirm(me) > 0)
+        todos.add((
+          tr3('「${h.name}」有合作约定待你确认', '«${h.name}»: келісімді растаңыз',
+              '«${h.name}»: подтвердите соглашение'),
+          h,
+          2
+        ));
+      if (h.newQuotes > 0)
+        todos.add((
+          tr3(
+              '「${h.name}」${h.newQuotes} 个新报价待比较',
+              '«${h.name}»: ${h.newQuotes} жаңа ұсыныс',
+              '«${h.name}»: новых предложений ${h.newQuotes}'),
+          h,
+          1
+        ));
+      final inspections = h.cooperations
+          .expand((c) => c.milestones)
+          .where((m) => m.status == MilestoneStatus.requested)
+          .length;
+      if (inspections > 0)
+        todos.add((
+          tr3(
+              '「${h.name}」$inspections 个节点待验收',
+              '«${h.name}»: кезеңді қабылдаңыз',
+              '«${h.name}»: этапов к приёмке $inspections'),
+          h,
+          3
+        ));
+      final days = h.cooperations
+          .expand((c) => c.workLogs)
+          .where((w) => !w.confirmed)
+          .length;
+      if (days > 0)
+        todos.add((
+          tr3('「${h.name}」$days 天记工待确认', '«${h.name}»: $days күн расталмады',
+              '«${h.name}»: дней к подтверждению $days'),
+          h,
+          3
+        ));
+    }
+    void open(MyHouse h, int tab) => pushPage<void>(
+        context, (_) => HouseWorkspacePage(houseKey: h.key, initialTab: tab));
+    return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          if (todos.isNotEmpty)
+            Container(
+                key: const Key('todo-strip'),
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                    border:
+                        Border(left: BorderSide(color: t.accent, width: 3))),
+                child: Material(
+                    color: t.surface,
+                    child: Column(children: [
+                      for (final (text, h, tab) in todos.take(4))
+                        ListTile(
+                            dense: true,
+                            leading:
+                                Icon(Icons.circle, size: 10, color: t.accent),
+                            title: Text(text),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => open(h, tab)),
+                    ]))),
+          SizedBox(
+              height: 104,
+              child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: houses.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, i) {
+                    final h = houses[i];
+                    return SizedBox(
+                        width: 290,
+                        child: Card(
+                            margin: EdgeInsets.zero,
+                            child: InkWell(
+                                key: Key('house-card-${h.key}'),
+                                borderRadius: BorderRadius.circular(yRadius),
+                                onTap: () => open(h, 0),
+                                child: Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: Row(children: [
+                                      HouseThumb(house: h, size: 80),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                          child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                            Text(h.name,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.w700)),
+                                            const SizedBox(height: 4),
+                                            StatusPill(houseStageName(h.stage),
+                                                color: t.accent),
+                                            const SizedBox(height: 4),
+                                            Text(h.nextStep(me),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                    color: t.muted,
+                                                    fontSize: 12)),
+                                          ])),
+                                    ])))));
+                  })),
+        ]));
   }
 }
 
@@ -64,56 +228,6 @@ class SignInPrompt extends StatelessWidget {
       action: FilledButton(
           onPressed: () => requireLogin(context),
           child: Text(tr3('登录', 'Кіру', 'Войти'))));
-}
-
-class _MyDemands extends StatelessWidget {
-  const _MyDemands();
-  @override
-  Widget build(BuildContext context) => OnChange(
-      builder: (context) => context.repos.currentAccount == null
-          ? SignInPrompt(
-              text: tr3('登录后查看你发布的需求', 'Тапсырыстарыңызды көру үшін кіріңіз',
-                  'Войдите, чтобы видеть свои заявки'))
-          : Live<List<Demand>>(
-              load: (r) => r.myDemands(),
-              builder: (context, list) => ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
-                      children: [
-                        FilledButton.icon(
-                            onPressed: () => pushPage<void>(
-                                context, (_) => const PublishPage()),
-                            icon: const Icon(Icons.add),
-                            label: Text(
-                                tr3('发布需求', 'Тапсырыс беру', 'Новая заявка'))),
-                        const SizedBox(height: 16),
-                        if (list.isEmpty)
-                          EmptyState(
-                              icon: Icons.post_add,
-                              title: tr3('还没有发布需求', 'Әзірге тапсырыс жоқ',
-                                  'Заявок пока нет'),
-                              body: tr3(
-                                  '可以直接发布，也可以在“设计”里从某个设计找施工方。',
-                                  'Тікелей не жобадан жариялаңыз.',
-                                  'Опубликуйте сразу или из проекта.')),
-                        for (final d in list)
-                          Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: DemandCard(
-                                  compact: true,
-                                  demand: d,
-                                  trailing: d.status == DemandStatus.open
-                                      ? Padding(
-                                          padding:
-                                              const EdgeInsets.only(left: 8),
-                                          child: StatusPill(
-                                              demandStatusName(d.status),
-                                              color: YTokens.of(context).ok))
-                                      : null,
-                                  onTap: () => pushPage<void>(
-                                      context,
-                                      (_) =>
-                                          DemandDetailPage(demandId: d.id)))),
-                      ])));
 }
 
 class MyCooperations extends StatefulWidget {

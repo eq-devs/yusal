@@ -627,6 +627,77 @@ class ProgressUpdate {
   final DateTime at;
 }
 
+enum MilestoneStatus { planned, requested, accepted, disputed }
+
+/// A payment and inspection point of a contract: what must be done, what
+/// share of the amount it unlocks and when. Yusal only records the
+/// inspection; money moves outside the app until escrow exists.
+class Milestone {
+  const Milestone(
+      {required this.key,
+      required this.percent,
+      this.criteria = '',
+      this.due,
+      this.status = MilestoneStatus.planned,
+      this.photoCount = 0,
+      this.note = '',
+      this.answeredAt,
+      this.requestedAt});
+  final String key, criteria, note;
+  final int percent, photoCount;
+  final DateTime? due, requestedAt, answeredAt;
+  final MilestoneStatus status;
+  Milestone copyWith(
+          {MilestoneStatus? status,
+          int? photoCount,
+          String? note,
+          DateTime? requestedAt,
+          DateTime? answeredAt}) =>
+      Milestone(
+          key: key,
+          percent: percent,
+          criteria: criteria,
+          due: due,
+          status: status ?? this.status,
+          photoCount: photoCount ?? this.photoCount,
+          note: note ?? this.note,
+          requestedAt: requestedAt ?? this.requestedAt,
+          answeredAt: answeredAt ?? this.answeredAt);
+}
+
+/// A day on site logged by the pro: how many people came, photos and a
+/// note. The owner confirms it, which settles wage questions later.
+class WorkLog {
+  const WorkLog(
+      {required this.id,
+      required this.by,
+      required this.day,
+      required this.headcount,
+      this.note = '',
+      this.photoCount = 0,
+      this.confirmed = false});
+  final String id, by, note;
+  final DateTime day;
+  final int headcount, photoCount;
+  final bool confirmed;
+  WorkLog confirm() => WorkLog(
+      id: id,
+      by: by,
+      day: day,
+      headcount: headcount,
+      note: note,
+      photoCount: photoCount,
+      confirmed: true);
+}
+
+/// Default inspection points for a house: foundation, walls, roof, done.
+const defaultMilestones = [
+  Milestone(key: 'foundation', percent: 20),
+  Milestone(key: 'walls', percent: 40),
+  Milestone(key: 'roof', percent: 25),
+  Milestone(key: 'finish', percent: 15),
+];
+
 class Cooperation {
   const Cooperation(
       {required this.id,
@@ -641,7 +712,9 @@ class Cooperation {
       this.endRequest,
       this.endKind,
       this.endedAt,
-      this.updates = const []});
+      this.updates = const [],
+      this.milestones = const [],
+      this.workLogs = const []});
   final String id, demandId, applicationId, ownerId, providerId, profileId;
   final CooperationStatus status;
   final List<Agreement> agreements;
@@ -650,6 +723,13 @@ class Cooperation {
   final EndKind? endKind;
   final DateTime? endedAt;
   final List<ProgressUpdate> updates;
+  final List<Milestone> milestones;
+  final List<WorkLog> workLogs;
+
+  /// Share of the agreed amount whose milestones the owner accepted.
+  int get acceptedPercent => milestones
+      .where((m) => m.status == MilestoneStatus.accepted)
+      .fold(0, (s, m) => s + m.percent);
 
   /// The agreement in force, or the first one while still pending.
   Agreement get agreement =>
@@ -673,7 +753,9 @@ class Cooperation {
           bool clearEndRequest = false,
           EndKind? endKind,
           DateTime? endedAt,
-          List<ProgressUpdate>? updates}) =>
+          List<ProgressUpdate>? updates,
+          List<Milestone>? milestones,
+          List<WorkLog>? workLogs}) =>
       Cooperation(
           id: id,
           demandId: demandId,
@@ -687,7 +769,9 @@ class Cooperation {
           endRequest: clearEndRequest ? null : endRequest ?? this.endRequest,
           endKind: endKind ?? this.endKind,
           endedAt: endedAt ?? this.endedAt,
-          updates: updates ?? this.updates);
+          updates: updates ?? this.updates,
+          milestones: milestones ?? this.milestones,
+          workLogs: workLogs ?? this.workLogs);
 }
 
 // ──────────────────────────────── reviews ────────────────────────────────
@@ -783,6 +867,10 @@ enum NoticeKind {
   applicationNotSelected,
   postLiked,
   postCommented,
+  postReused,
+  milestoneRequested,
+  milestoneAnswered,
+  workLogged,
 }
 
 enum RefType { demand, application, cooperation, conversation, profile, post }
@@ -945,6 +1033,7 @@ class HousePost {
       this.commentCount = 0,
       this.ratingSum = 0,
       this.ratingCount = 0,
+      this.reuseCount = 0,
       this.preview});
   final String id, ownerId, projectId, snapshotId, title, story, region;
   final DateTime createdAt, updatedAt;
@@ -961,6 +1050,9 @@ class HousePost {
   final bool openForBuilders;
   final PostStatus status;
   final int likeCount, commentCount, ratingSum, ratingCount;
+
+  /// How many people started their own house from this design.
+  final int reuseCount;
   final List<int>? preview;
 
   double? get rating => ratingCount == 0 ? null : ratingSum / ratingCount;
@@ -975,6 +1067,7 @@ class HousePost {
           int? commentCount,
           int? ratingSum,
           int? ratingCount,
+          int? reuseCount,
           DateTime? updatedAt,
           List<String>? tags}) =>
       HousePost(
@@ -998,6 +1091,7 @@ class HousePost {
           commentCount: commentCount ?? this.commentCount,
           ratingSum: ratingSum ?? this.ratingSum,
           ratingCount: ratingCount ?? this.ratingCount,
+          reuseCount: reuseCount ?? this.reuseCount,
           preview: preview);
 }
 

@@ -32,7 +32,7 @@ void main() {
     await t.pumpWidget(
         ProviderScope(child: HouseApp(repos: backend, store: store)));
     await t.pumpAndSettle();
-    await t.tap(find.text('项目').last);
+    await t.tap(find.text('我的房子').last);
     await t.pumpAndSettle();
     await t.tap(find.byTooltip('项目操作'));
     await t.pumpAndSettle();

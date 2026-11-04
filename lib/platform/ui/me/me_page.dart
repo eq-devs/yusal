@@ -6,7 +6,6 @@ import '../backup/backup_page.dart';
 import '../cards.dart';
 import '../chat/inbox_page.dart';
 import '../demand/demand_detail_page.dart';
-import '../discover/discover_page.dart';
 import '../home/house_card.dart';
 import '../home/post_page.dart';
 import '../l10n.dart';
@@ -194,25 +193,18 @@ class MePage extends StatelessWidget {
                                       ])),
                               const SizedBox(height: 12),
                               tile(
-                                  Icons.work_outline,
-                                  tr3('接活大厅：找活、找人', 'Жұмыс орталығы',
-                                      'Биржа: работа и мастера'),
-                                  () => pushPage<void>(context,
-                                      (_) => const DiscoverPage(pushed: true))),
-                              tile(
-                                  Icons.assignment_outlined,
-                                  tr3('我的报名与报价', 'Өтінімдерім', 'Мои отклики'),
-                                  () => pushPage<void>(context,
-                                      (_) => const MyApplicationsPage())),
-                              tile(
                                   Icons.favorite_border,
                                   tr3('收藏', 'Таңдаулы', 'Избранное'),
                                   () => pushPage<void>(
                                       context, (_) => const FavouritesPage())),
                               tile(
                                   Icons.cloud_outlined,
-                                  tr3('设计备份与恢复', 'Сақтық көшірме',
-                                      context.isDemo ? 'Демо-копии' : 'Резервные копии'),
+                                  tr3(
+                                      '设计备份与恢复',
+                                      'Сақтық көшірме',
+                                      context.isDemo
+                                          ? 'Демо-копии'
+                                          : 'Резервные копии'),
                                   () => pushPage<void>(
                                       context, (_) => const BackupPage())),
                               tile(

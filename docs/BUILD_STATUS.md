@@ -48,13 +48,13 @@ flutter test      # 218 个用例全部通过
 | 目标 | 状态 |
 | --- | --- |
 | Pixel 8 Pro | 已安装 0.4.0 新版（手机系统语言为哈萨克语，界面随之显示哈语；可在“我的 → 语言”切换） |
-| Web（Firebase Hosting，项目 `yusal-web`） | 线上 https://yusal-web.web.app 仍是上一版 MVP。新版已在 Mac 上构建到 `build/web`，发布命令在远程会话里被安全检查拦住，需要在 Mac 上手动执行： |
+| Web（Firebase Hosting，项目 `yusal-web`） | 新版已发布到 https://yusal-web.web.app （2026-11-04，version.json 0.4.0 build 4，与本地 `build/web` 哈希一致） |
+
+发布命令（在 Mac 仓库根目录）：
 
 ```
-cd /Users/estai/Desktop/eq/yusal && firebase deploy --only hosting
+flutter build web --release && firebase deploy --only hosting
 ```
-
-或在 Claude Code 的 `permissions.allow` 里加入 `"Bash(firebase deploy:*)"` 后再让我执行。
 
 ## 7. 还没做的
 

@@ -84,6 +84,11 @@ class PostPage extends StatelessWidget {
               : MemoryImage(Uint8List.fromList(p.preview!));
           final open =
               demands.where((d) => d.status == DemandStatus.open).toList();
+          // Floor count is already on the fact sheet.
+          final shownTags = [
+            for (final tag in p.tags)
+              if (tag != 'one_floor' && tag != 'two_floors') tag
+          ];
 
           Future<void> contact() async {
             if (!await requireLogin(context) || !context.mounted) return;
@@ -278,7 +283,7 @@ class PostPage extends StatelessWidget {
                                     children: [
                                       Text(p.title, style: display(size: 26)),
                                       const SizedBox(height: 4),
-                                      Text(houseFacts(p),
+                                      Text(regionName(p.region),
                                           style: TextStyle(
                                               color: t.muted, fontSize: 15)),
                                       const SizedBox(height: 6),
@@ -299,7 +304,7 @@ class PostPage extends StatelessWidget {
                                         Text('${p.likeCount}',
                                             style: TextStyle(color: t.muted)),
                                       ]),
-                                      if (p.tags.isNotEmpty)
+                                      if (shownTags.isNotEmpty)
                                         Padding(
                                             padding:
                                                 const EdgeInsets.only(top: 10),
@@ -307,7 +312,7 @@ class PostPage extends StatelessWidget {
                                                 spacing: 6,
                                                 runSpacing: 6,
                                                 children: [
-                                                  for (final tag in p.tags)
+                                                  for (final tag in shownTags)
                                                     StatusPill(postTagName(tag))
                                                 ])),
                                       if (p.reuseCount > 0)
@@ -318,12 +323,30 @@ class PostPage extends StatelessWidget {
                                                 reusedTimes(p.reuseCount),
                                                 color: t.accent)),
                                       const SizedBox(height: 16),
+                                      _FactSheet(post: p, snapshot: snap),
+                                      const SizedBox(height: 20),
                                       HouseProgress(
                                           stage: build?.finished == true
                                               ? HouseStage.done
                                               : build != null
                                                   ? HouseStage.building
                                                   : stageFromDemands(demands)),
+                                      if (open.isNotEmpty)
+                                        Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 12),
+                                            child: Row(children: [
+                                              Icon(Icons.campaign_outlined,
+                                                  size: 18, color: t.accent),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                  child: Text(
+                                                      '${tr3('正在招', 'Іздеуде', 'Ищут')}：${open.map((d) => d.current.title).join('、')}',
+                                                      style: TextStyle(
+                                                          color: t.accent,
+                                                          fontWeight:
+                                                              FontWeight.w600))),
+                                            ])),
                                       const Divider(height: 32),
                                       // Owner.
                                       Live<Account?>(
@@ -375,9 +398,12 @@ class PostPage extends StatelessWidget {
                                       ],
                                       PlanAttachment(snapshot: snap),
                                       // Facts from the design.
-                                      SectionTitle(tr3('设计数据', 'Жоба деректері',
-                                          'Данные проекта')),
-                                      _Facts(post: p, snapshot: snap),
+                                      if (snap != null &&
+                                          snap.lines.isNotEmpty) ...[
+                                        SectionTitle(tr3('工程量', 'Көлемдер',
+                                            'Объёмы работ')),
+                                        _Quantities(snapshot: snap),
+                                      ],
                                       // Recruiting.
                                       SectionTitle(
                                           tr3('这栋房子在招谁', 'Бұл үйге кім керек',
@@ -601,8 +627,10 @@ class _BuildSection extends StatelessWidget {
   }
 }
 
-class _Facts extends StatelessWidget {
-  const _Facts({required this.post, required this.snapshot});
+/// The house at a glance, right under the title: size, floors, rooms,
+/// footprint and the estimate, so a visitor never has to scroll for them.
+class _FactSheet extends StatelessWidget {
+  const _FactSheet({required this.post, required this.snapshot});
   final HousePost post;
   final DesignSnapshot? snapshot;
   @override
@@ -618,10 +646,13 @@ class _Facts extends StatelessWidget {
               const SizedBox(height: 4),
               Text(value,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w800, fontSize: 16)),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      fontFeatures: [FontFeature.tabularFigures()])),
               Text(label, style: TextStyle(color: t.muted, fontSize: 12)),
             ])));
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    final summary = snapshot?.summary ?? '';
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Row(children: [
         cell(Icons.square_foot, '${post.area.round()} m²',
             tr3('建筑面积', 'Ауданы', 'Площадь')),
@@ -633,19 +664,40 @@ class _Facts extends StatelessWidget {
             tr3('房间', 'Бөлме', 'Комнат')),
       ]),
       if (post.estimatedCost != null)
+        Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+                color: t.accentSoft, borderRadius: BorderRadius.circular(12)),
+            child: Row(children: [
+              Icon(Icons.payments_outlined, color: t.accent),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: Text(tr3('预估造价', 'Болжамды құн', 'Оценка стоимости'),
+                      style: TextStyle(color: t.muted))),
+              Text('≈ ${money(post.estimatedCost)}',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      fontFeatures: [FontFeature.tabularFigures()])),
+            ])),
+      if (summary.isNotEmpty)
         Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: InfoRow(tr3('预估造价', 'Болжамды құн', 'Оценка стоимости'),
-                '≈ ${money(post.estimatedCost)}',
-                icon: Icons.payments_outlined)),
-      if (snapshot != null && snapshot!.summary.isNotEmpty)
-        Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(snapshot!.summary,
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(summary,
                 style: TextStyle(color: t.muted, fontSize: 13))),
-      if (snapshot != null && snapshot!.lines.isNotEmpty) ...[
-        const SizedBox(height: 10),
-        for (final l in snapshot!.lines.take(6))
+    ]);
+  }
+}
+
+/// The first lines of the design's bill of quantities.
+class _Quantities extends StatelessWidget {
+  const _Quantities({required this.snapshot});
+  final DesignSnapshot snapshot;
+  @override
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        for (final l in snapshot.lines.take(6))
           Padding(
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(children: [
@@ -658,9 +710,7 @@ class _Facts extends StatelessWidget {
                     style: const TextStyle(
                         fontWeight: FontWeight.w600, fontSize: 14)),
               ])),
-      ],
-    ]);
-  }
+      ]);
 }
 
 /// Rate and say something. One rating per person; a new one replaces it.

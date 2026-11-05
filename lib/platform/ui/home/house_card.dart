@@ -90,9 +90,6 @@ class HouseCard extends StatelessWidget {
                   style: TextStyle(fontSize: 14, color: t.ink)),
             ],
           ]),
-          if (p.rating == null)
-            Text(tr3('暂无评价', 'Пікір жоқ', 'Нет оценок'),
-                style: TextStyle(fontSize: 12, color: t.muted)),
           const SizedBox(height: 2),
           Text(houseFacts(p), style: TextStyle(color: t.muted, fontSize: 14)),
           if (p.estimatedCost != null)

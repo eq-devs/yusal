@@ -187,4 +187,36 @@ void main() {
     expect(scoped, isTrue);
     expect(StaggerScope.of(ctx), isFalse);
   });
+
+  testWidgets('MotionIndexedStack builds pages lazily and keeps them',
+      (tester) async {
+    Widget page(String name) => Text(name);
+    Widget build(int i) =>
+        _app(MotionIndexedStack(index: i, children: [page('a'), page('b')]));
+    await tester.pumpWidget(build(0));
+    expect(find.text('a'), findsOneWidget);
+    expect(find.text('b', skipOffstage: false), findsNothing);
+    await tester.pumpWidget(build(1));
+    await tester.pumpAndSettle();
+    expect(find.text('b'), findsOneWidget);
+    await tester.pumpWidget(build(0));
+    await tester.pumpAndSettle();
+    expect(find.text('a'), findsOneWidget);
+  });
+
+  testWidgets('MotionTabView follows its TabController', (tester) async {
+    await tester.pumpWidget(_app(DefaultTabController(
+        length: 2,
+        child: Column(children: [
+          const TabBar(tabs: [Tab(text: 'one'), Tab(text: 'two')]),
+          const Expanded(
+              child: MotionTabView(
+                  children: [Text('page one'), Text('page two')])),
+        ]))));
+    expect(find.text('page one'), findsOneWidget);
+    await tester.tap(find.text('two'));
+    await tester.pumpAndSettle();
+    expect(find.text('page two'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -15,6 +15,7 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'my_houses_data.dart';
 import 'site_tab.dart';
+import '../../../motion/motion.dart';
 
 /// One house's workspace: where it stands, and every demand, quote and
 /// cooperation for it in one place. Tabs: find people, quotes, cooperation,
@@ -100,7 +101,7 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
                           Tab(text: tr3('施工', 'Құрылыс', 'Стройка')),
                         ]),
                       ]))),
-              body: TabBarView(controller: tabs, children: [
+              body: MotionTabView(controller: tabs, children: [
                 _FindTab(house: h),
                 _QuotesTab(house: h),
                 _CoopTab(house: h),

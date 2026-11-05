@@ -6,6 +6,7 @@ import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../../../motion/motion.dart';
 
 /// Minimal moderation back office: demand review, reports and the audit
 /// log. Every decision records who, when and why.
@@ -25,7 +26,7 @@ class AdminPage extends StatelessWidget {
                   Tab(text: tr3('操作记录', 'Журнал', 'Журнал')),
                 ])),
             body:
-                const TabBarView(children: [_Queue(), _Reports(), _Audit()])));
+                const MotionTabView(children: [_Queue(), _Reports(), _Audit()])));
   }
 }
 

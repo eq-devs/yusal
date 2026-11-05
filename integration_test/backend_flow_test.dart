@@ -8,11 +8,7 @@
 //
 // Screenshots of key screens go to E2E_SHOTS, else the app's temp folder
 // under `test-screens/`; the path is printed at the end.
-import 'dart:io';
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -26,92 +22,7 @@ import 'package:yusal/platform/ui/home/post_page.dart';
 import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 
-const api = String.fromEnvironment('YUSAL_API');
-const devLogin = bool.fromEnvironment('YUSAL_DEV_LOGIN');
-
-/// Where screenshots go. On an iOS simulator this can be a folder on the
-/// Mac, e.g. `--dart-define=E2E_SHOTS=$PWD/test-screens`.
-const shotsDir = String.fromEnvironment('E2E_SHOTS');
-
-final _shotKey = GlobalKey();
-late Directory _shots;
-
-/// Saves what is on screen as `<name>.png`.
-Future<void> shot(WidgetTester t, String name) async {
-  await t.pumpAndSettle();
-  await t.runAsync(() async {
-    final boundary =
-        _shotKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-    final image = await boundary.toImage(pixelRatio: 2);
-    final png = await image.toByteData(format: ui.ImageByteFormat.png);
-    await File('${_shots.path}/$name.png')
-        .writeAsBytes(png!.buffer.asUint8List());
-  });
-}
-
-/// Pumps until [finder] shows up (network calls finish off the test clock).
-Future<void> waitFor(
-  WidgetTester t,
-  Finder finder, {
-  Duration timeout = const Duration(seconds: 20),
-}) async {
-  final end = DateTime.now().add(timeout);
-  while (finder.evaluate().isEmpty) {
-    if (DateTime.now().isAfter(end)) {
-      throw TestFailure('Timed out waiting for $finder');
-    }
-    await t.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 100)),
-    );
-    await t.pump(const Duration(milliseconds: 100));
-  }
-  await t.pumpAndSettle();
-}
-
-/// Lets in-flight requests finish, then settles.
-Future<void> idle(WidgetTester t, [int ms = 600]) async {
-  await t.runAsync(() => Future<void>.delayed(Duration(milliseconds: ms)));
-  await t.pumpAndSettle();
-}
-
-Future<void> tapIt(WidgetTester t, Finder f) async {
-  await t.ensureVisible(f);
-  await t.pumpAndSettle();
-  await t.tap(f);
-  await idle(t);
-}
-
-Future<void> tab(WidgetTester t, String label) async {
-  await t.tap(
-    find.descendant(of: find.byType(NavigationBar), matching: find.text(label)),
-  );
-  await idle(t);
-}
-
-Future<void> signIn(WidgetTester t, HttpBackend repos, String name) async {
-  await tab(t, '我的');
-  await tapIt(t, find.widgetWithText(FilledButton, '登录或注册'));
-  await waitFor(t, find.byKey(const Key('dev-login-name')));
-  await t.enterText(find.byKey(const Key('dev-login-name')), name);
-  await tapIt(t, find.byKey(const Key('dev-login')));
-  await waitFor(t, find.byTooltip('改称呼'));
-  expect(repos.currentAccount?.displayName, name);
-}
-
-Future<void> signOut(WidgetTester t, HttpBackend repos) async {
-  await tab(t, '我的');
-  await t.scrollUntilVisible(find.text('退出登录'), 300,
-      scrollable: find.byType(Scrollable).hitTestable().first);
-  await tapIt(t, find.text('退出登录'));
-  expect(repos.currentAccount, isNull);
-}
-
-/// Back to the shell's root, whatever is pushed on top.
-Future<void> home(WidgetTester t) async {
-  final nav = t.state<NavigatorState>(find.byType(Navigator).first);
-  nav.popUntil((r) => r.isFirst);
-  await idle(t);
-}
+import 'e2e_support.dart';
 
 Future<void> openPost(WidgetTester t, String title) async {
   await home(t);
@@ -119,7 +30,13 @@ Future<void> openPost(WidgetTester t, String title) async {
   await waitFor(t, find.text(title));
   await tapIt(t, find.text(title).first);
   await waitFor(t, find.byType(PostPage));
-  await idle(t);
+  // The page shows its body once the post, critiques, linked demands and
+  // build have all loaded.
+  await waitFor(
+      t,
+      find.byWidgetPredicate((w) =>
+          w.key == const Key('post-main-action') ||
+          w.key == const Key('post-ready-to-build')));
 }
 
 void main() {
@@ -128,16 +45,7 @@ void main() {
   testWidgets('sign in, publish, feed, like, critique, reply, backup, rename', (
     t,
   ) async {
-    expect(api, isNotEmpty, reason: 'run with --dart-define=YUSAL_API=...');
-    expect(
-      devLogin,
-      isTrue,
-      reason: 'run with --dart-define=YUSAL_DEV_LOGIN=true',
-    );
-    _shots = Directory(shotsDir.isEmpty
-        ? '${Directory.systemTemp.path}/test-screens'
-        : shotsDir)
-      ..createSync(recursive: true);
+    requireBackend();
 
     final run = DateTime.now().millisecondsSinceEpoch.toString();
     final ana = 'Ana $run', bek = 'Bek $run';
@@ -172,7 +80,7 @@ void main() {
     try {
       await t.pumpWidget(
         RepaintBoundary(
-          key: _shotKey,
+          key: shotKey,
           child: ProviderScope(
             child: HouseApp(repos: repos, store: store),
           ),
@@ -249,6 +157,7 @@ void main() {
       await signOut(t, repos);
       await signIn(t, repos, ana);
       await openPost(t, title);
+      await waitFor(t, find.byKey(Key('critique-reply-${critique.id}')));
       await tapIt(t, find.byKey(Key('critique-reply-${critique.id}')));
       await t.enterText(
         find.descendant(
@@ -340,7 +249,7 @@ void main() {
       // ignore: avoid_print
       print(
         'E2E_RUN=$run POST_ID=${post.id} ANA_ID=$anaId '
-        'PROJECT_ID=$projectId SCREENS=${_shots.path}',
+        'PROJECT_ID=$projectId SCREENS=${shotsFolder().path}',
       );
       expect(t.takeException(), isNull);
     } catch (_) {

@@ -58,4 +58,32 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('open'), findsOneWidget);
   });
+  testWidgets('a form that becomes dirty while typing asks before leaving',
+      (t) async {
+    AppSettings.instance.lang = AppLang.zh;
+    final title = TextEditingController(), story = TextEditingController();
+    addTearDown(title.dispose);
+    addTearDown(story.dispose);
+    await t.pumpWidget(MaterialApp(
+        home: Builder(
+            builder: (context) => TextButton(
+                onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                        builder: (_) => UnsavedChangesGuard(
+                            hasChanges: () => title.text.isNotEmpty,
+                            // A new merged listenable on every build, as the
+                            // publish pages pass it.
+                            changes: Listenable.merge([title, story]),
+                            child: Scaffold(
+                                appBar: AppBar(),
+                                body: TextField(controller: title))))),
+                child: const Text('open')))));
+    await t.tap(find.text('open'));
+    await t.pumpAndSettle();
+    await t.enterText(find.byType(TextField), '草稿');
+    await t.pumpAndSettle();
+    await t.pageBack();
+    await t.pumpAndSettle();
+    expect(find.text('继续编辑'), findsOneWidget);
+  });
 }

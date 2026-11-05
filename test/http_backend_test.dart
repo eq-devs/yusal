@@ -174,4 +174,15 @@ void main() {
             .having((e) => e.code, 'code', ApiCodes.notSignedIn)));
     expect(await backend.likedPosts(), isEmpty);
   });
+
+  test('signed out, polled lists fail without a request', () async {
+    final before = api.requests.length;
+    for (final call in [backend.conversations, backend.myPosts]) {
+      await expectLater(
+          call(),
+          throwsA(isA<ApiFailure>()
+              .having((e) => e.code, 'code', ApiCodes.notSignedIn)));
+    }
+    expect(api.requests.length, before);
+  });
 }

@@ -35,7 +35,7 @@ void main() {
               repos: MockBackend(latency: Duration.zero), store: store)));
       await t.pumpAndSettle();
       expect(find.textContaining('演示模式'), findsOneWidget);
-      await t.tap(find.text('项目').last);
+      await t.tap(find.text('我的房子').last);
       await t.pumpAndSettle();
       final row = find
           .ancestor(
@@ -55,7 +55,14 @@ void main() {
       await t.pumpAndSettle();
       await t.tap(find.text('发布作品'));
       await t.pumpAndSettle();
-      await t.enterText(find.byType(TextField).first, '保留的草稿');
+      await t.enterText(
+          find
+              .descendant(
+                  of: find.byType(PublishPostPage),
+                  matching: find.byType(TextField))
+              .first,
+          '保留的草稿');
+      await t.pumpAndSettle();
       await t.pageBack();
       await t.pumpAndSettle();
       await t.tap(find.text('继续编辑'));

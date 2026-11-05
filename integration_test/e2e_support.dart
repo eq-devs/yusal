@@ -7,6 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/platform/data/http/http_backend.dart';
+import 'package:yusal/platform/ui/demand/demand_detail_page.dart';
+import 'package:yusal/platform/ui/demand/publish_page.dart';
+import 'package:yusal/platform/ui/profile/profile_edit_page.dart';
 
 const api = String.fromEnvironment('YUSAL_API');
 const devLogin = bool.fromEnvironment('YUSAL_DEV_LOGIN');
@@ -102,6 +105,7 @@ Future<void> open(WidgetTester t, Widget page) async {
 }
 
 Future<void> signIn(WidgetTester t, HttpBackend repos, String name) async {
+  if (repos.currentAccount != null) await signOut(t, repos);
   await home(t);
   await tab(t, '我的');
   await tapIt(t, find.widgetWithText(FilledButton, '登录或注册'));
@@ -132,4 +136,50 @@ Future<void> answerDialog(WidgetTester t, String text) async {
 Future<void> pickManyOne(WidgetTester t, String label) async {
   await tapIt(t, find.text(label).last);
   await tapIt(t, find.text('完成'));
+}
+
+/// Creates a mason profile in Almaty through the profile form.
+Future<void> createProfile(WidgetTester t, String name) async {
+  await home(t);
+  await open(t, const ProfileEditPage());
+  await waitFor(t, find.text('创建接活名片'));
+  await t.enterText(find.widgetWithText(TextField, '姓名'), name);
+  await tapIt(t, find.text('工种').first);
+  await pickManyOne(t, '瓦工／砌墙');
+  await tapIt(t, find.text('服务地区').first);
+  await pickManyOne(t, '阿拉木图');
+  await tapIt(t, find.widgetWithText(FilledButton, '保存'));
+  await idle(t, 1000);
+}
+
+/// Publishes a demand through the wizard: a contract by default, or a hire
+/// of [headcount] masons at [wage] ₸ a day. Ends on its detail page.
+Future<void> publishDemand(WidgetTester t, String title,
+    {bool hire = false, int headcount = 1, int wage = 15000}) async {
+  await home(t);
+  await open(t, const PublishPage());
+  await waitFor(t, find.text('下一步'));
+  if (hire) await tapIt(t, find.text('招人干活'));
+  await tapIt(t, find.text('下一步'));
+  await tapIt(t, find.text('工种').first);
+  await pickManyOne(t, '瓦工／砌墙');
+  await tapIt(t, find.text('地区').first);
+  await tapIt(t, find.text('阿拉木图').last);
+  if (hire) {
+    final people = find.widgetWithText(TextField, '需要人数');
+    await scrollTo(t, people);
+    await t.enterText(people, '$headcount');
+    final pay = find.widgetWithText(TextField, '工资（₸）');
+    await scrollTo(t, pay);
+    await t.enterText(pay, '$wage');
+  }
+  final titleField = find.widgetWithText(TextField, '标题');
+  await scrollTo(t, titleField);
+  await t.enterText(titleField, title);
+  await t.pumpAndSettle();
+  for (var i = 0; i < 6 && find.text('提交发布').evaluate().isEmpty; i++) {
+    await tapIt(t, find.text('下一步'));
+  }
+  await tapIt(t, find.text('提交发布'));
+  await waitFor(t, find.byType(DemandDetailPage));
 }

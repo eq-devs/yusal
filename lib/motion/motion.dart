@@ -10,6 +10,7 @@ import 'package:motor/motor.dart' as motor;
 
 import 'motion_tokens.dart';
 
+export 'motion_stack.dart';
 export 'motion_tokens.dart';
 
 /// Fades a row in and lifts it [Motion.rise] px, [Motion.staggerStep] after

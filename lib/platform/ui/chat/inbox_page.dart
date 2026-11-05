@@ -9,6 +9,7 @@ import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'chat_page.dart';
+import '../../../motion/motion.dart';
 
 /// Envelope button with the unread count of chats and notices together.
 class InboxButton extends StatelessWidget {
@@ -79,7 +80,7 @@ class InboxPage extends StatelessWidget {
                   Tab(text: tr3('会话', 'Чаттар', 'Чаты')),
                   Tab(text: tr3('通知', 'Хабарламалар', 'Уведомления')),
                 ])),
-            body: const TabBarView(children: [_Conversations(), _Notices()])));
+            body: const MotionTabView(children: [_Conversations(), _Notices()])));
   }
 }
 

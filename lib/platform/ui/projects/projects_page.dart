@@ -15,6 +15,7 @@ import '../house_progress.dart';
 import '../houses/my_houses_data.dart';
 import '../houses/my_jobs.dart';
 import '../houses/workspace_page.dart';
+import '../../../motion/motion.dart';
 
 /// Second tab, "我的房子": where each of my houses stands. A to-do strip on
 /// top, the houses with platform activity as cards that open their
@@ -60,7 +61,7 @@ class ProjectsPage extends StatelessWidget {
                                   text:
                                       tr3('我接的活', 'Жұмыстарым', 'Моя работа')),
                             ])),
-                        body: TabBarView(
+                        body: MotionTabView(
                             children: [houses, const MyJobsView()])))));
   }
 }

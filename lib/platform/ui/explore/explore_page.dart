@@ -5,6 +5,7 @@ import '../home/home_page.dart';
 import '../scope.dart';
 import '../theme.dart';
 import 'create_sheet.dart';
+import '../../../motion/motion.dart';
 
 /// Segments of Discover, in order.
 abstract final class ExploreSegment {
@@ -120,7 +121,7 @@ class _ExplorePageState extends State<ExplorePage> {
                                 ])),
                           ])))),
               Expanded(
-                  child: IndexedStack(index: current, children: const [
+                  child: MotionIndexedStack(index: current, children: const [
                 HomePage(embedded: true),
                 DiscoverPage(embedded: true, people: false),
                 DiscoverPage(embedded: true, people: true),

@@ -7,6 +7,7 @@ import 'me/me_page.dart';
 import 'projects/projects_page.dart';
 import 'theme.dart';
 import 'scope.dart';
+import '../../motion/motion.dart';
 
 /// Tabs of the app shell, in order.
 abstract final class ShellTab {
@@ -76,7 +77,7 @@ class _PlatformShellState extends State<PlatformShell> {
                                             color:
                                                 YTokens.of(context).muted)))),
                           Expanded(
-                              child: IndexedStack(index: tab, children: [
+                              child: MotionIndexedStack(index: tab, children: [
                             ExplorePage(segment: segment),
                             ProjectsPage(
                                 drafting: drafting,

@@ -12,12 +12,15 @@ dependencies:
     sdk: flutter
   flutter_image_compress: ^2.5.1
   flutter_riverpod: ^2.6.1
+  google_sign_in: ^7.2.0
+  http: ^1.5.0
   indexd_stack_dev: ^0.4.0
   motor: ^1.1.0
   path_provider: ^2.1.6
   pdf: ^3.12.0
   share_plus: ^13.3.0
   shared_preferences: ^2.5.5
+  sign_in_with_apple: ^7.0.1
   uuid: ^4.6.0
 dev_dependencies:
   integration_test:

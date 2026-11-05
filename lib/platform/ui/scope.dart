@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../app/settings.dart';
 import '../../storage/project_store.dart';
+import '../data/http/http_backend.dart';
 import '../data/mock/mock_backend.dart';
 import '../data/repositories.dart';
 import 'l10n.dart';
@@ -37,10 +38,11 @@ extension PlatformContext on BuildContext {
   ProjectStore get projectStore => PlatformScope.of(this).store;
   bool get isDemo => PlatformScope.of(this).isDemo;
 
-  /// The mock backend, for developer tools only.
+  /// The mock backend, for developer tools only. Null against the real
+  /// backend, even though [HttpBackend] still serves some parts in memory.
   MockBackend? get mock {
     final r = repos;
-    return r is MockBackend ? r : null;
+    return r is MockBackend && r is! HttpBackend ? r : null;
   }
 
   DateTime get now => mock?.now ?? DateTime.now();

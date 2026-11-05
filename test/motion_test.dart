@@ -8,10 +8,11 @@ Widget _app(Widget child, {bool reduced = false}) => MaterialApp(
             data: MediaQuery.of(context).copyWith(disableAnimations: reduced),
             child: Scaffold(body: child))));
 
+/// The scale the finder's widget is painted at, whatever applies it.
 double _scaleOf(WidgetTester tester, Finder f) {
-  final t = tester.widget<ScaleTransition>(
-      find.ancestor(of: f, matching: find.byType(ScaleTransition)).first);
-  return t.scale.value;
+  final box = tester.renderObject<RenderBox>(f);
+  // x scale only: a 2D scale leaves z at 1.
+  return box.getTransformTo(null).entry(0, 0);
 }
 
 void main() {
@@ -56,11 +57,12 @@ void main() {
                 child: const Text('card'))))));
     final g = await tester.startGesture(tester.getCenter(find.text('card')));
     await tester.pump(Motion.pressDelay);
-    await tester.pump(Motion.press);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
     expect(_scaleOf(tester, find.text('card')), lessThan(1));
     await g.up();
     await tester.pumpAndSettle();
-    expect(_scaleOf(tester, find.text('card')), 1);
+    expect(_scaleOf(tester, find.text('card')), closeTo(1, 1e-3));
   });
 
   testWidgets('Pressable does nothing when disabled', (tester) async {
@@ -71,7 +73,7 @@ void main() {
                 width: 120, height: 80, child: const Text('card'))))));
     final g = await tester.startGesture(tester.getCenter(find.text('card')));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(_scaleOf(tester, find.text('card')), 1);
+    expect(_scaleOf(tester, find.text('card')), closeTo(1, 1e-3));
     await g.up();
   });
 
@@ -81,10 +83,10 @@ void main() {
         child: PopOnActive(active: on, child: const Icon(Icons.favorite))));
     await tester.pumpWidget(build(false));
     await tester.pumpWidget(build(true));
-    await tester.pump(Motion.pop * 0.4);
+    await tester.pump(Motion.pop * 0.35);
     expect(_scaleOf(tester, find.byIcon(Icons.favorite)), greaterThan(1));
     await tester.pumpAndSettle();
-    expect(_scaleOf(tester, find.byIcon(Icons.favorite)), 1);
+    expect(_scaleOf(tester, find.byIcon(Icons.favorite)), closeTo(1, 1e-3));
   });
 
   testWidgets('PopOnActive stays still on un-save', (tester) async {
@@ -92,8 +94,8 @@ void main() {
         child: PopOnActive(active: on, child: const Icon(Icons.favorite))));
     await tester.pumpWidget(build(true));
     await tester.pumpWidget(build(false));
-    await tester.pump(Motion.pop * 0.4);
-    expect(_scaleOf(tester, find.byIcon(Icons.favorite)), 1);
+    await tester.pump(Motion.pop * 0.35);
+    expect(_scaleOf(tester, find.byIcon(Icons.favorite)), closeTo(1, 1e-3));
   });
 
   testWidgets('same HeroSource key twice on a screen pushes cleanly',

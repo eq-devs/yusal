@@ -10,8 +10,14 @@ import '../widgets.dart';
 /// dimensions. Each dimension can be left out.
 class ReviewPage extends StatefulWidget {
   const ReviewPage(
-      {super.key, required this.cooperationId, required this.otherName});
+      {super.key,
+      required this.cooperationId,
+      required this.otherName,
+      this.ratingPro = true});
   final String cooperationId, otherName;
+
+  /// The owner rates the pro's work; the pro rates the owner.
+  final bool ratingPro;
   @override
   State<ReviewPage> createState() => _ReviewPageState();
 }
@@ -53,7 +59,9 @@ class _ReviewPageState extends State<ReviewPage> {
                   'Оценивайте только то, что видели. Отзывы откроются одновременно.'),
               style: TextStyle(color: t.muted)),
           const SizedBox(height: 16),
-          for (final d in reviewDimensions) ...[
+          for (final d in widget.ratingPro
+              ? proReviewDimensions
+              : ownerReviewDimensions) ...[
             Text(dimensionName(d),
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             Row(children: [

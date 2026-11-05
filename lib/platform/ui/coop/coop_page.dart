@@ -121,6 +121,14 @@ class _CoopView extends StatelessWidget {
                   '${nameOf(r.by)} аяқтауды сұрады',
                   '${nameOf(r.by)} просит завершить'),
               warn: true),
+          if (c.milestones
+              .any((m) => m.status != MilestoneStatus.accepted)) ...[
+            const SizedBox(height: 8),
+            Hint(tr3(
+                '还有 ${c.milestones.where((m) => m.status != MilestoneStatus.accepted).length} 个验收节点没确认（已验收 ${c.acceptedPercent}%）。确认结束后记录会定格在这里，先看看施工页再决定。',
+                'Қабылданбаған кезеңдер бар (${c.acceptedPercent}%).',
+                'Есть непринятые этапы (принято ${c.acceptedPercent}%).')),
+          ],
           const SizedBox(height: 8),
           BusyButton(
               label: tr3('确认结束', 'Аяқтауды растау', 'Подтвердить завершение'),
@@ -245,7 +253,8 @@ class _CoopView extends StatelessWidget {
                   context,
                   (_) => ReviewPage(
                       cooperationId: c.id,
-                      otherName: nameOf(c.otherSide(me))))),
+                      otherName: nameOf(c.otherSide(me)),
+                      ratingPro: iAmOwner))),
         ]);
       }
     }

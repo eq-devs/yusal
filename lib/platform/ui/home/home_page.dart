@@ -119,6 +119,10 @@ class _HomePageState extends State<HomePage> {
                                                       decoration: InputDecoration(
                                                           border:
                                                               InputBorder.none,
+                                                          enabledBorder:
+                                                              InputBorder.none,
+                                                          focusedBorder:
+                                                              InputBorder.none,
                                                           filled: false,
                                                           hintText: tr3(
                                                               '搜索房子、地区',

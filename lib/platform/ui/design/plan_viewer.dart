@@ -8,12 +8,59 @@ import '../../../render2d/floor_plan_painter.dart';
 import '../../../render3d/scene_view.dart';
 import '../../domain/models.dart';
 import '../../../app/settings.dart';
+import '../scope.dart';
 import '../widgets.dart';
 
 HouseDocument? _document(DesignSnapshot? snapshot) {
   final text = snapshot?.planJson;
   if (text == null) return null;
   return loadHouse(utf8.encode(text)).document;
+}
+
+/// The ground-floor plan as a cover, for houses published without a
+/// picture. Loads the snapshot once and keeps the parsed plan; shows
+/// nothing (the cover's placeholder) while loading or if unavailable.
+class PlanCover extends StatelessWidget {
+  const PlanCover(
+      {super.key, required this.snapshotId, this.postId, this.demandId});
+  final String snapshotId;
+  final String? postId, demandId;
+
+  static final _cache = <String, HouseDocument?>{};
+
+  @override
+  Widget build(BuildContext context) => Live<HouseDocument?>(
+      reloadKey: 'plan-cover:$snapshotId',
+      load: (r) async {
+        if (_cache.containsKey(snapshotId)) return _cache[snapshotId];
+        try {
+          final snap =
+              await r.snapshot(snapshotId, postId: postId, demandId: demandId);
+          return _cache[snapshotId] = _document(snap);
+        } catch (_) {
+          return null;
+        }
+      },
+      loading: const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      builder: (context, doc) {
+        if (doc == null || doc.floors.isEmpty) return const SizedBox.shrink();
+        final derived = deriveHouse(doc).floors.first;
+        final rooms = doc.floors.first.rooms;
+        return ColoredBox(
+            color: const Color(0xfff6f7f3),
+            child: CustomPaint(
+                painter: FloorPlanPainter(
+                    derived.base,
+                    {for (final r in rooms) r.id: ''},
+                    {for (final r in rooms) r.id: roomColors[r.type]!},
+                    openings: derived.openings,
+                    stairs: derived.stairs,
+                    furniture: doc.extras.furniture,
+                    showDimensions: false,
+                    showLabels: false,
+                    viewportInsets: const EdgeInsets.all(18))));
+      });
 }
 
 /// Shared public entry point. Never opens the editor or writes local projects.

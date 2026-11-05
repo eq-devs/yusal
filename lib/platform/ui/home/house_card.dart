@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../app/settings.dart';
+import '../design/plan_viewer.dart';
 import '../../domain/models.dart';
 import '../l10n.dart';
 import '../scope.dart';
@@ -41,7 +42,10 @@ class HouseCard extends StatelessWidget {
                 icon: Icons.home_outlined,
                 seed: p.id,
                 height: compact ? 150 : 230,
-                image: image),
+                image: image,
+                child: image == null && p.snapshotId.isNotEmpty
+                    ? PlanCover(snapshotId: p.snapshotId, postId: p.id)
+                    : null),
             if (onLike != null)
               Positioned(
                   top: 10,

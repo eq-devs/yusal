@@ -117,12 +117,22 @@ class _JobCard extends StatelessWidget {
       final next = c.milestones
           .where((m) => m.status != MilestoneStatus.accepted)
           .firstOrNull;
-      status = c.status == CooperationStatus.confirmed && next != null
-          ? tr3(
-              '${milestoneName(next.key)}进行中 · 已记工 ${c.workLogs.length} 天',
-              '${milestoneName(next.key)} · ${c.workLogs.length} күн',
-              '${milestoneName(next.key)} · ${c.workLogs.length} дн.')
-          : cooperationStatusName(c);
+      final me = context.repos.currentAccount?.id;
+      final asked = c.status == CooperationStatus.confirmed &&
+          c.endRequest != null &&
+          c.endRequest!.dispute == null;
+      status = asked
+          ? c.endRequest!.by == me
+              ? tr3('已请求结束，等业主确认', 'Аяқтау сұралды',
+                  'Ждём подтверждения завершения')
+              : tr3('业主请求结束，等你确认', 'Иесі аяқтауды сұрады',
+                  'Заказчик просит завершить')
+          : c.status == CooperationStatus.confirmed && next != null
+              ? tr3(
+                  '${milestoneName(next.key)}进行中 · 已记工 ${c.workLogs.length} 天',
+                  '${milestoneName(next.key)} · ${c.workLogs.length} күн',
+                  '${milestoneName(next.key)} · ${c.workLogs.length} дн.')
+              : cooperationStatusName(c);
     } else {
       status = a!.needsReconfirm
           ? tr3('需求已修改，待重新确认报价', 'Тапсырыс өзгерді', 'Заявка изменилась')

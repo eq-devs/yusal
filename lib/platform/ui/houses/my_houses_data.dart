@@ -51,9 +51,19 @@ class MyHouse {
               !c.pendingChange!.confirmedBy.contains(me)))
       .length;
 
+  /// The other side asked to end and waits for my answer.
+  int endAsks(String me) => cooperations
+      .where((c) =>
+          c.status == CooperationStatus.confirmed &&
+          c.endRequest != null &&
+          c.endRequest!.by != me &&
+          c.endRequest!.dispute == null)
+      .length;
+
   /// Whether the next step is mine to take now.
   bool needsMe(String me) =>
       pendingConfirm(me) > 0 ||
+      endAsks(me) > 0 ||
       newQuotes > 0 ||
       cooperations.any((c) =>
           c.milestones.any((m) => m.status == MilestoneStatus.requested) ||
@@ -63,6 +73,9 @@ class MyHouse {
   String nextStep(String me) {
     if (pendingConfirm(me) > 0)
       return tr3('有合作约定待你确认', 'Келісімді растаңыз', 'Подтвердите соглашение');
+    if (endAsks(me) > 0)
+      return tr3(
+          '对方请求结束合作，等你确认', 'Аяқтауды растаңыз', 'Подтвердите завершение');
     final inspections = cooperations
         .expand((c) => c.milestones)
         .where((m) => m.status == MilestoneStatus.requested)

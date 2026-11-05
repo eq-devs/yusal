@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../app/settings.dart';
 import '../domain/models.dart';
+import 'design/plan_viewer.dart';
 import 'l10n.dart';
 import 'scope.dart';
 import 'theme.dart';
@@ -101,8 +102,13 @@ class DemandCard extends StatelessWidget {
               Cover(
                   icon: demandIcon(demand),
                   seed: demand.id,
-                  height: 150,
+                  // Without a drawing the cover is only decoration.
+                  height: v.snapshotId == null ? 96 : 150,
                   child: Stack(children: [
+                    if (v.snapshotId != null)
+                      Positioned.fill(
+                          child: PlanCover(
+                              snapshotId: v.snapshotId!, demandId: demand.id)),
                     Positioned(
                         left: 12,
                         top: 12,

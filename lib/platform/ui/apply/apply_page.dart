@@ -69,6 +69,13 @@ class _ApplyPageState extends State<ApplyPage> {
     }
     availableFrom = d.current.startDate;
     acceptsOffer = d.current.hire?.wage != null;
+    // Start from what the owner asked for; the pro narrows it if needed.
+    if (c != null) {
+      scope.text = c.stages.isEmpty
+          ? scopeKindName(c.scopeKind)
+          : c.stages.map(stageLabel).join('、');
+      if (c.targetDays != null) days.text = '${c.targetDays}';
+    }
     final e = widget.existing;
     if (e != null) {
       final v = e.current;

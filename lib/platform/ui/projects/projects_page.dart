@@ -119,6 +119,13 @@ class _ActiveHouses extends StatelessWidget {
           h,
           2
         ));
+      if (h.endAsks(me) > 0)
+        todos.add((
+          tr3('「${h.name}」对方请求结束合作', '«${h.name}»: аяқтауды растаңыз',
+              '«${h.name}»: подтвердите завершение'),
+          h,
+          2
+        ));
       final inspections = h.cooperations
           .expand((c) => c.milestones)
           .where((m) => m.status == MilestoneStatus.requested)

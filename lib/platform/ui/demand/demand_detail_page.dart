@@ -112,7 +112,10 @@ class _DemandDetail extends StatelessWidget {
           height: 190,
           image: data.snapshot?.preview == null
               ? null
-              : MemoryImage(Uint8List.fromList(data.snapshot!.preview!))),
+              : MemoryImage(Uint8List.fromList(data.snapshot!.preview!)),
+          child: data.snapshot?.preview == null && d.current.snapshotId != null
+              ? PlanCover(snapshotId: d.current.snapshotId!, demandId: d.id)
+              : null),
       Live<HousePost?>(
           reloadKey: ('post-for', d.id),
           load: (r) => r.postForDemand(d.id),

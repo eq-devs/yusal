@@ -802,7 +802,19 @@ class Cooperation {
 // ──────────────────────────────── reviews ────────────────────────────────
 
 /// Review dimensions: on-time payment, clear scope, communication, work.
-const reviewDimensions = ['payment', 'scope', 'communication', 'work'];
+const reviewDimensions = [
+  'payment',
+  'scope',
+  'communication',
+  'work',
+  'quality',
+  'time',
+  'site'
+];
+
+/// What an owner rates a pro on, and what a pro rates an owner on.
+const proReviewDimensions = ['quality', 'time', 'communication', 'site'];
+const ownerReviewDimensions = ['payment', 'scope', 'communication'];
 
 class Review {
   const Review(

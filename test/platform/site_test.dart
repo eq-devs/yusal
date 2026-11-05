@@ -188,7 +188,7 @@ void main() {
       final p = await b.postForDemand('dem_wall');
       expect(p?.id, 'post_aigerim');
     });
-  
+
     test('a taken scope leaves "recruiting" and shows under who builds',
         () async {
       final b = backend();
@@ -222,5 +222,29 @@ void main() {
       expect(h.nextStep(SeedIds.owner), contains('验收'));
       expect(h.needsMe(SeedIds.owner), isTrue);
     });
-});
+
+    test('an end request waits for the other side in my houses', () async {
+      final b = backend();
+      final c = await liveContract(b);
+      await b.requestEnd(c.id, '完工');
+      b.signInAs(SeedIds.owner);
+      final h = (await loadMyHouses(b, ProjectStore(fileSystem: MemoryFiles())))
+          .firstWhere((h) => h.cooperations.isNotEmpty);
+      expect(h.endAsks(SeedIds.owner), 1);
+      expect(h.nextStep(SeedIds.owner), contains('结束'));
+    });
+
+    test('owners rate work, pros rate owners, on their own dimensions',
+        () async {
+      final b = backend();
+      final c = await liveContract(b);
+      await b.requestEnd(c.id, '');
+      b.signInAs(SeedIds.owner);
+      await b.confirmEnd(c.id);
+      await b.submitReview(c.id, {'quality': 5, 'time': 4}, '');
+      b.signInAs(SeedIds.team);
+      await b.submitReview(c.id, {'payment': 5}, '');
+      expect(proReviewDimensions, isNot(contains('payment')));
+    });
+  });
 }

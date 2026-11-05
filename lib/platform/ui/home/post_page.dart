@@ -260,7 +260,11 @@ class PostPage extends StatelessWidget {
                                 icon: Icons.home_outlined,
                                 seed: p.id,
                                 height: 300,
-                                image: image)))),
+                                image: image,
+                                child: image == null && p.snapshotId.isNotEmpty
+                                    ? PlanCover(
+                                        snapshotId: p.snapshotId, postId: p.id)
+                                    : null)))),
                 SliverToBoxAdapter(
                     child: Center(
                         child: ConstrainedBox(

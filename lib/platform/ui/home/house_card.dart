@@ -107,7 +107,11 @@ class HouseCard extends StatelessWidget {
                           text:
                               ' ${tr3('预估造价', 'болжамды құн', 'оценка стоимости')}',
                           style: TextStyle(color: t.muted)),
-                    ]))),
+                    ]),
+                    // One line, so long labels (Russian) cannot push the
+                    // card past a fixed-height list such as the Me tab.
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis)),
           if (!compact)
             Padding(
                 padding: const EdgeInsets.only(top: 8),

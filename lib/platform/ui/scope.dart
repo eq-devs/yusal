@@ -7,6 +7,7 @@ import '../data/repositories.dart';
 import 'l10n.dart';
 import 'auth/login_page.dart';
 import 'theme.dart';
+import 'widgets.dart';
 import '../../motion/motion.dart';
 
 /// Gives every platform page the repositories (mock today) and the local
@@ -228,4 +229,17 @@ Future<bool> requireLogin(BuildContext context) async {
   final ok = await Navigator.of(context)
       .push<bool>(platformRoute((_) => const LoginPage()));
   return ok == true;
+}
+
+/// Asks for the phone number that chats share on request; true once saved.
+Future<bool> editPhone(BuildContext context) async {
+  final me = context.repos.currentAccount;
+  if (me == null) return false;
+  final phone = await askText(
+      context, tr3('手机号', 'Телефон нөмірі', 'Номер телефона'),
+      hint: '+7 700 000 00 00', initial: me.phone, required: false, lines: 1);
+  if (phone == null || !context.mounted) return false;
+  final saved = await attempt(context, () => context.repos.updatePhone(phone),
+      success: tr3('已保存', 'Сақталды', 'Сохранено'));
+  return saved != null;
 }

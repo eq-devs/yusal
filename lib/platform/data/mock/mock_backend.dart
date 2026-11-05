@@ -231,6 +231,17 @@ class MockBackend implements PlatformRepositories {
       });
 
   @override
+  Future<Account> updatePhone(String phone) => _io(() {
+        final p = normalisePhone(phone);
+        final digits = p.replaceAll('+', '').length;
+        if (p.isNotEmpty && (digits < 10 || digits > 15))
+          throw const ApiFailure(ApiCodes.invalidInput, 'phone');
+        final a = _meAccount.copyWith(phone: p);
+        accounts[a.id] = a;
+        return a;
+      });
+
+  @override
   Future<void> deleteAccount() => _io(() {
         final me = _me;
         accounts[me] = accounts[me]!.copyWith(deleted: true);
@@ -1601,6 +1612,8 @@ class MockBackend implements PlatformRepositories {
         final c = _conv(conversationId);
         if (_isBlocked(me, c.otherSide(me)))
           throw const ApiFailure(ApiCodes.blocked);
+        if (_meAccount.phone.isEmpty)
+          throw const ApiFailure(ApiCodes.invalidInput, 'phone');
         return addMessage(c.id, me, MessageKind.phoneShared,
             text: _meAccount.phone);
       });

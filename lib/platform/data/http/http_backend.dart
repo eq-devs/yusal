@@ -184,6 +184,14 @@ class HttpBackend extends MockBackend {
   }
 
   @override
+  Future<Account> updatePhone(String phone) async {
+    final a = _setMe(await _call('PATCH', '/client/auth/me',
+        body: {'phone': phone}) as Map<String, dynamic>);
+    notify();
+    return a;
+  }
+
+  @override
   Future<void> deleteAccount() async {
     await _call('DELETE', '/client/auth/account');
     final me = currentId;

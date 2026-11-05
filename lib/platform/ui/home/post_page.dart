@@ -526,8 +526,10 @@ class PostPage extends StatelessWidget {
       // to building when the author is ready.
       summary = post.commentCount == 0
           ? tr3('等大家点评', 'Пікір күтілуде', 'Ждём отзывов')
-          : tr3('${post.commentCount} 条点评', '${post.commentCount} пікір',
-              'Отзывов: ${post.commentCount}');
+          // commentCount includes replies, unlike the critiques header.
+          : tr3('${post.commentCount} 条点评和回复',
+              '${post.commentCount} пікір мен жауап',
+              'Отзывов и ответов: ${post.commentCount}');
       main = FilledButton(
           key: const Key('post-ready-to-build'),
           onPressed: recruit == null

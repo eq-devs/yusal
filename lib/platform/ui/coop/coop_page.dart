@@ -135,16 +135,19 @@ class _CoopView extends StatelessWidget {
               onPressed: () => run(() => repos.confirmEnd(c.id),
                   tr3('合作已结束', 'Аяқталды', 'Завершено'))),
           const SizedBox(height: 8),
-          BusyButton(
-              outlined: true,
-              label: tr3('提出异议', 'Қарсылық', 'Оспорить'),
-              onPressed: () async {
-                final note =
-                    await askText(context, tr3('异议说明', 'Қарсылық', 'Причина'));
-                if (note != null && context.mounted)
-                  await run(() => repos.disputeEnd(c.id, note),
-                      tr3('已提交异议', 'Жіберілді', 'Отправлено'));
-              }),
+          // Not a BusyButton: it would spin behind the dialog while the
+          // reason is being typed.
+          SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                  onPressed: () async {
+                    final note = await askText(
+                        context, tr3('异议说明', 'Қарсылық', 'Причина'));
+                    if (note != null && context.mounted)
+                      await run(() => repos.disputeEnd(c.id, note),
+                          tr3('已提交异议', 'Жіберілді', 'Отправлено'));
+                  },
+                  child: Text(tr3('提出异议', 'Қарсылық', 'Оспорить')))),
         ]);
       } else if (r != null && r.dispute == null) {
         actions.add(Hint(tr3(

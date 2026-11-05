@@ -23,10 +23,11 @@ class Account {
   /// What others see once the account is deleted.
   String get publicName => deleted ? '—' : displayName;
 
-  Account copyWith({String? displayName, bool? deleted, bool? restricted}) =>
+  Account copyWith(
+          {String? displayName, String? phone, bool? deleted, bool? restricted}) =>
       Account(
           id: id,
-          phone: phone,
+          phone: phone ?? this.phone,
           displayName: displayName ?? this.displayName,
           createdAt: createdAt,
           phoneVerified: phoneVerified,

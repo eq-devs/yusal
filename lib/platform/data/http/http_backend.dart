@@ -7,17 +7,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models.dart';
 import '../mock/mock_backend.dart';
 import '../repositories.dart';
+import 'codec.dart';
 
-/// Talks to the real Go backend (`eq-devs/yusal-api`) for what it already
-/// serves: sign-in and accounts, design snapshots, house posts with likes
-/// and critiques, and cloud backup. Everything else (profiles, demands,
-/// quotes, cooperations, chat, notifications, moderation) still runs on the
-/// in-memory [MockBackend] it extends, under the real account id, until the
-/// server has those modules.
+/// Talks to the real Go backend (`eq-devs/yusal-api`) for every repository:
+/// accounts, snapshots, posts, backups, profiles, demands, quotes,
+/// cooperations, reviews, chat, notifications and moderation. It extends
+/// [MockBackend] only for the shared plumbing (the change notifier and the
+/// account cache screens read synchronously); no data is served from it.
 class HttpBackend extends MockBackend {
-  HttpBackend(this.baseUrl, {http.Client? client, super.seed})
+  HttpBackend(this.baseUrl, {http.Client? client, bool seed = false})
       : _http = client ?? http.Client(),
-        super(latency: Duration.zero);
+        super(latency: Duration.zero, seed: seed);
 
   /// e.g. `https://api.example.com`, no trailing slash.
   final String baseUrl;
@@ -161,14 +161,7 @@ class HttpBackend extends MockBackend {
     return a;
   }
 
-  static Account _account(Map<String, dynamic> u) => Account(
-      id: u['id'] as String,
-      phone: '',
-      phoneVerified: false,
-      displayName: u['display_name'] as String? ?? '',
-      deleted: u['deleted'] == true || u['status'] == 'deleted',
-      restricted: u['status'] == 'blocked',
-      createdAt: DateTime.parse(u['created_at'] as String));
+  static Account _account(Map<String, dynamic> u) => accountFrom(u);
 
   @override
   Future<void> requestCode(String phone) async =>
@@ -260,8 +253,6 @@ class HttpBackend extends MockBackend {
       if (s.planJson != null) 'plan_json': s.planJson,
     });
     final saved = _snapshot(data as Map<String, dynamic>);
-    // Demands (still mock-served) attach snapshots by id.
-    snapshots[saved.id] = saved;
     notify();
     return saved;
   }
@@ -270,7 +261,8 @@ class HttpBackend extends MockBackend {
   Future<DesignSnapshot?> snapshot(String id,
       {String? postId, String? demandId}) async {
     if (demandId != null) {
-      return super.snapshot(id, postId: postId, demandId: demandId);
+      final j = await _maybe('/client/demands/$demandId/snapshot');
+      return j == null ? null : _snapshot(j);
     }
     try {
       return _snapshot(
@@ -543,4 +535,553 @@ class HttpBackend extends MockBackend {
     notify();
     return c;
   }
+
+  // ───────────────────────────── helpers ─────────────────────────────
+
+  /// GET that answers null for NOT_FOUND.
+  Future<Map<String, dynamic>?> _maybe(String path) async {
+    try {
+      return await _call('GET', path) as Map<String, dynamic>?;
+    } on ApiFailure catch (e) {
+      if (e.code == ApiCodes.notFound) return null;
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _list(String path,
+          {Map<String, String>? query}) async =>
+      [for (final j in await _call('GET', path, query: query) as List) j as Map<String, dynamic>];
+
+  /// A write: calls, then tells listening screens to reload.
+  Future<dynamic> _write(String method, String path, {Object? body}) async {
+    final data = await _call(method, path, body: body);
+    notify();
+    return data;
+  }
+
+  /// Loads accounts the screens will name, once each.
+  Future<void> _names(Iterable<String> ids) => Future.wait([
+        for (final id in ids.toSet())
+          if (id.isNotEmpty && !accounts.containsKey(id))
+            account(id).then((_) {}, onError: (Object _) {})
+      ]);
+
+  Future<ServiceProfile> _profile(Future<dynamic> f) async =>
+      profileFrom(await f as Map<String, dynamic>);
+  Future<Demand> _demand(Future<dynamic> f) async =>
+      demandFrom(await f as Map<String, dynamic>);
+  Future<Application> _app(Future<dynamic> f) async =>
+      applicationFrom(await f as Map<String, dynamic>);
+  Future<Cooperation> _coop(Future<dynamic> f) async =>
+      cooperationFrom(await f as Map<String, dynamic>);
+
+  // ───────────────────────────── profiles ─────────────────────────────
+
+  @override
+  Future<List<ServiceProfile>> myProfiles() async {
+    if (currentId == null) throw const ApiFailure(ApiCodes.notSignedIn);
+    return [for (final j in await _list('/client/me/profiles')) profileFrom(j)];
+  }
+
+  @override
+  Future<ServiceProfile?> profile(String id) async {
+    final j = await _maybe('/client/profiles/$id');
+    if (j == null) return null;
+    final p = profileFrom(j);
+    await _names([p.ownerId]);
+    return p;
+  }
+
+  @override
+  Future<List<ServiceProfile>> profilesOf(String accountId) async => [
+        for (final j in await _list('/client/accounts/$accountId/profiles'))
+          profileFrom(j)
+      ];
+
+  @override
+  Future<List<ServiceProfile>> searchProfiles(ProfileFilter f) async {
+    final list = [
+      for (final j in await _list('/client/profiles', query: {
+        if (f.kind != null) 'kind': f.kind!.name,
+        if (f.trade != null) 'trade': f.trade!,
+        if (f.region != null) 'region': f.region!,
+        if (f.availableNow) 'available_now': 'true',
+        if (f.query.trim().isNotEmpty) 'q': f.query.trim(),
+      }))
+        profileFrom(j)
+    ];
+    await _names(list.map((p) => p.ownerId));
+    return list;
+  }
+
+  @override
+  Future<ServiceProfile> saveProfile(ServiceProfile p) =>
+      _profile(_write('POST', '/client/profiles', body: profileJson(p)));
+
+  @override
+  Future<ServiceProfile> confirmAvailability(String profileId) => _profile(
+      _write('POST', '/client/profiles/$profileId/confirm-availability'));
+
+  @override
+  Future<ProfileStats> stats(String profileId) async => statsFrom(
+      await _call('GET', '/client/profiles/$profileId/stats')
+          as Map<String, dynamic>);
+
+  @override
+  Future<Set<String>> favourites() async {
+    if (currentId == null) return {};
+    return {
+      for (final id in await _call('GET', '/client/me/favourites') as List)
+        id as String
+    };
+  }
+
+  @override
+  Future<void> toggleFavourite(String id) async {
+    await _write('POST', '/client/favourites/$id/toggle');
+  }
+
+  // ───────────────────────────── demands ─────────────────────────────
+
+  @override
+  Future<List<Demand>> searchDemands(DemandFilter f) async {
+    final list = [
+      for (final j in await _list('/client/demands', query: {
+        if (f.type != null) 'type': f.type!.name,
+        if (f.trade != null) 'trade': f.trade!,
+        if (f.region != null) 'region': f.region!,
+        if (f.query.trim().isNotEmpty) 'q': f.query.trim(),
+        if (f.includeInactive) 'include_inactive': 'true',
+      }))
+        demandFrom(j)
+    ];
+    await _names(list.map((d) => d.ownerId));
+    return list;
+  }
+
+  @override
+  Future<Demand?> demand(String id) async {
+    final j = await _maybe('/client/demands/$id');
+    if (j == null) return null;
+    final d = demandFrom(j);
+    await _names([d.ownerId]);
+    return d;
+  }
+
+  @override
+  Future<List<Demand>> myDemands() async =>
+      [for (final j in await _list('/client/me/demands')) demandFrom(j)];
+
+  @override
+  Future<Demand> saveDraft(DemandType type, DemandVersion draft,
+          {PublisherRole role = PublisherRole.owner,
+          String? existingId,
+          String? designProjectId}) =>
+      _demand(_write('POST', '/client/demands', body: {
+        'type': type.name,
+        'version': versionJson(draft),
+        'publisher_role': role.name,
+        if (existingId != null) 'existing_id': existingId,
+        if (designProjectId != null) 'design_project_id': designProjectId,
+      }));
+
+  @override
+  Future<Demand> publish(String demandId) =>
+      _demand(_write('POST', '/client/demands/$demandId/publish'));
+
+  @override
+  Future<Demand> revise(String demandId, DemandVersion next) => _demand(_write(
+      'POST', '/client/demands/$demandId/revise',
+      body: {'version': versionJson(next)}));
+
+  @override
+  Future<Demand> pause(String demandId) =>
+      _demand(_write('POST', '/client/demands/$demandId/pause'));
+
+  @override
+  Future<Demand> resume(String demandId) =>
+      _demand(_write('POST', '/client/demands/$demandId/resume'));
+
+  @override
+  Future<Demand> renew(String demandId) =>
+      _demand(_write('POST', '/client/demands/$demandId/renew'));
+
+  @override
+  Future<Demand> markFound(String demandId, OutcomeKind outcome) => _demand(
+      _write('POST', '/client/demands/$demandId/found',
+          body: {'outcome': outcome.name}));
+
+  @override
+  Future<Demand> close(String demandId, String reason) => _demand(_write(
+      'POST', '/client/demands/$demandId/close',
+      body: {'reason': reason}));
+
+  @override
+  Future<Demand> recordOutcome(String demandId, OutcomeKind outcome) =>
+      _demand(_write('POST', '/client/demands/$demandId/outcome',
+          body: {'outcome': outcome.name}));
+
+  @override
+  Future<Demand> setShareRevoked(String demandId, bool revoked) => _demand(
+      _write('POST', '/client/demands/$demandId/share',
+          body: {'revoked': revoked}));
+
+  @override
+  Future<PublicDemandView?> publicView(String shareToken) async {
+    final token = Uri.encodeComponent(shareToken);
+    final j = await _maybe('/client/share/$token');
+    if (j == null) return null;
+    DesignSnapshot? snap;
+    if (j['available'] == true && j['snapshot_id'] != null) {
+      final s = await _maybe('/client/share/$token/snapshot');
+      if (s != null) snap = _snapshot(s);
+    }
+    return publicViewFrom(j, snap);
+  }
+
+  // ─────────────────────────── applications ───────────────────────────
+
+  @override
+  Future<Map<String, ({int total, int unread})>> myQuoteCounts() async {
+    final m = await _call('GET', '/client/me/quote-counts') as Map<String, dynamic>;
+    return {
+      for (final e in m.entries)
+        e.key: (
+          total: ((e.value as Map)['total'] as num).toInt(),
+          unread: ((e.value as Map)['unread'] as num).toInt()
+        )
+    };
+  }
+
+  @override
+  Future<List<Application>> applicationsFor(String demandId) async {
+    final list = [
+      for (final j in await _list('/client/demands/$demandId/applications'))
+        applicationFrom(j)
+    ];
+    await _names(list.map((a) => a.applicantId));
+    return list;
+  }
+
+  @override
+  Future<List<Application>> myApplications() async => [
+        for (final j in await _list('/client/me/applications'))
+          applicationFrom(j)
+      ];
+
+  @override
+  Future<Application?> application(String id) async {
+    if (currentId == null) return null;
+    final j = await _maybe('/client/applications/$id');
+    return j == null ? null : applicationFrom(j);
+  }
+
+  @override
+  Future<Application> submit(
+          {required String demandId,
+          required String profileId,
+          required ApplicationVersion version,
+          required String requestId}) =>
+      _app(_write('POST', '/client/applications', body: {
+        'demand_id': demandId,
+        'profile_id': profileId,
+        'version': appVersionJson(version),
+        'request_id': requestId,
+      }));
+
+  @override
+  Future<Application> withdraw(String applicationId) =>
+      _app(_write('POST', '/client/applications/$applicationId/withdraw'));
+
+  @override
+  Future<Application> markNotSelected(String applicationId) =>
+      _app(_write('POST', '/client/applications/$applicationId/not-selected'));
+
+  // ─────────────────────────── cooperations ───────────────────────────
+
+  String _c(String id) => '/client/cooperations/$id';
+
+  @override
+  Future<Cooperation> invite(String applicationId, Agreement terms) => _coop(
+      _write('POST', '/client/applications/$applicationId/invite',
+          body: agreementJson(terms)));
+
+  @override
+  Future<Cooperation> confirm(String id) =>
+      _coop(_write('POST', '${_c(id)}/confirm'));
+
+  @override
+  Future<Cooperation> decline(String id) =>
+      _coop(_write('POST', '${_c(id)}/decline'));
+
+  @override
+  Future<Cooperation> revoke(String id) =>
+      _coop(_write('POST', '${_c(id)}/revoke'));
+
+  @override
+  Future<Cooperation> proposeChange(String id, Agreement terms) =>
+      _coop(_write('POST', '${_c(id)}/change', body: agreementJson(terms)));
+
+  @override
+  Future<Cooperation> answerChange(String id, bool accept) => _coop(
+      _write('POST', '${_c(id)}/change/answer', body: {'accept': accept}));
+
+  @override
+  Future<Cooperation> requestEnd(String id, String note) =>
+      _coop(_write('POST', '${_c(id)}/end-request', body: {'note': note}));
+
+  @override
+  Future<Cooperation> confirmEnd(String id) =>
+      _coop(_write('POST', '${_c(id)}/end-confirm'));
+
+  @override
+  Future<Cooperation> disputeEnd(String id, String note) =>
+      _coop(_write('POST', '${_c(id)}/end-dispute', body: {'note': note}));
+
+  @override
+  Future<Cooperation> addUpdate(String id, String text) =>
+      _coop(_write('POST', '${_c(id)}/updates', body: {'text': text}));
+
+  @override
+  Future<Cooperation> requestMilestone(String id, int index,
+          {String note = '', List<List<int>> photos = const []}) =>
+      _coop(_write('POST', '${_c(id)}/milestones/$index/request',
+          body: {'note': note, 'photos': photosJson(photos)}));
+
+  @override
+  Future<Cooperation> setMilestones(String id, List<Milestone> plan) =>
+      _coop(_write('PUT', '${_c(id)}/milestones',
+          body: {'milestones': [for (final m in plan) milestoneJson(m)]}));
+
+  @override
+  Future<Cooperation> answerMilestone(String id, int index, bool accept,
+          {String note = ''}) =>
+      _coop(_write('POST', '${_c(id)}/milestones/$index/answer',
+          body: {'accept': accept, 'note': note}));
+
+  @override
+  Future<Cooperation> logWork(String id, int headcount,
+          {String note = '', List<List<int>> photos = const []}) =>
+      _coop(_write('POST', '${_c(id)}/work-logs', body: {
+        'headcount': headcount,
+        'note': note,
+        'photos': photosJson(photos),
+      }));
+
+  @override
+  Future<Cooperation> confirmWork(String id, String logId) =>
+      _coop(_write('POST', '${_c(id)}/work-logs/$logId/confirm'));
+
+  @override
+  Future<Cooperation?> cooperation(String id) async {
+    if (currentId == null) return null;
+    final j = await _maybe(_c(id));
+    if (j == null) return null;
+    final c = cooperationFrom(j);
+    await _names([c.ownerId, c.providerId]);
+    return c;
+  }
+
+  @override
+  Future<List<Cooperation>> myCooperations() async {
+    final list = [
+      for (final j in await _list('/client/me/cooperations')) cooperationFrom(j)
+    ];
+    await _names(list.expand((c) => [c.ownerId, c.providerId]));
+    return list;
+  }
+
+  @override
+  Future<List<Cooperation>> cooperationsFor(String demandId) async => [
+        for (final j in await _list('/client/demands/$demandId/cooperations'))
+          cooperationFrom(j)
+      ];
+
+  // ───────────────────────────── reviews ─────────────────────────────
+
+  @override
+  Future<Review> submitReview(
+          String cooperationId, Map<String, int> scores, String text) async =>
+      reviewFrom(await _write('POST', '${_c(cooperationId)}/reviews',
+          body: {'scores': scores, 'text': text}) as Map<String, dynamic>);
+
+  @override
+  Future<List<Review>> reviewsFor(String cooperationId) async => [
+        for (final j in await _list('${_c(cooperationId)}/reviews'))
+          reviewFrom(j)
+      ];
+
+  @override
+  Future<List<Review>> reviewsAbout(String accountId) async {
+    final list = [
+      for (final j in await _list('/client/accounts/$accountId/reviews'))
+        reviewFrom(j)
+    ];
+    await _names(list.map((r) => r.authorId));
+    return list;
+  }
+
+  // ─────────────────────────────── chat ───────────────────────────────
+
+  @override
+  Future<List<Conversation>> conversations() async {
+    final list = [
+      for (final j in await _list('/client/conversations')) conversationFrom(j)
+    ];
+    await _names(list.expand((c) => c.participants));
+    return list;
+  }
+
+  @override
+  Future<Conversation> openConversation(String otherAccountId,
+      {String? demandId}) async {
+    final c = conversationFrom(await _write('POST', '/client/conversations',
+        body: {
+          'account_id': otherAccountId,
+          if (demandId != null) 'demand_id': demandId,
+        }) as Map<String, dynamic>);
+    await _names(c.participants);
+    return c;
+  }
+
+  @override
+  Future<List<ChatMessage>> messages(String conversationId) async => [
+        for (final j
+            in await _list('/client/conversations/$conversationId/messages'))
+          messageFrom(j)
+      ];
+
+  @override
+  Future<ChatMessage> send(String conversationId, MessageKind kind,
+          {String text = '', String? refId}) async =>
+      messageFrom(await _write(
+          'POST', '/client/conversations/$conversationId/messages',
+          body: {
+            'kind': kind.name,
+            'text': text,
+            if (refId != null) 'ref_id': refId,
+          }) as Map<String, dynamic>);
+
+  @override
+  Future<ChatMessage> resend(String messageId) async => messageFrom(
+      await _write('POST', '/client/messages/$messageId/resend')
+          as Map<String, dynamic>);
+
+  @override
+  Future<void> markConversationRead(String conversationId) async {
+    await _write('POST', '/client/conversations/$conversationId/read');
+  }
+
+  @override
+  Future<void> block(String accountId) async {
+    await _write('POST', '/client/blocks', body: {'account_id': accountId});
+  }
+
+  @override
+  Future<void> unblock(String accountId) async {
+    await _write('DELETE', '/client/blocks/$accountId');
+  }
+
+  @override
+  Future<Set<String>> blocked() async {
+    if (currentId == null) return {};
+    return {for (final id in await _call('GET', '/client/blocks') as List) id as String};
+  }
+
+  @override
+  Future<ChatMessage> sharePhone(String conversationId) async => messageFrom(
+      await _write('POST', '/client/conversations/$conversationId/share-phone')
+          as Map<String, dynamic>);
+
+  @override
+  Future<int> unreadMessages() async {
+    if (currentId == null) return 0;
+    final j = await _call('GET', '/client/messages/unread-count') as Map<String, dynamic>;
+    return (j['count'] as num).toInt();
+  }
+
+  // ─────────────────────────── notifications ───────────────────────────
+
+  @override
+  Future<List<AppNotification>> notifications() async {
+    if (currentId == null) throw const ApiFailure(ApiCodes.notSignedIn);
+    return [for (final j in await _list('/client/notifications')) noticeFrom(j)];
+  }
+
+  @override
+  Future<int> unreadNotifications() async {
+    if (currentId == null) return 0;
+    final j = await _call('GET', '/client/notifications/unread-count')
+        as Map<String, dynamic>;
+    return (j['count'] as num).toInt();
+  }
+
+  @override
+  Future<void> markRead(String id) async {
+    await _write('POST', '/client/notifications/$id/read');
+  }
+
+  @override
+  Future<void> markAllRead() async {
+    await _write('POST', '/client/notifications/read-all');
+  }
+
+  // ─────────────────────── posts ↔ demands ───────────────────────
+
+  @override
+  Future<List<Demand>> demandsForPost(String postId) async =>
+      [for (final j in await _list('/client/posts/$postId/demands')) demandFrom(j)];
+
+  @override
+  Future<PostBuild?> postBuild(String postId) async {
+    final j = await _call('GET', '/client/posts/$postId/build');
+    if (j == null) return null;
+    final b = postBuildFrom(j as Map<String, dynamic>);
+    await _names(b.builders.map((x) => x.profile.ownerId));
+    return b;
+  }
+
+  @override
+  Future<HousePost?> postForDemand(String demandId) async {
+    final j = await _call('GET', '/client/demands/$demandId/post');
+    if (j == null) return null;
+    return (await _posts([j])).single;
+  }
+
+  // ───────────────────────────── moderation ─────────────────────────────
+
+  @override
+  Future<void> report(ReportTarget target, String targetId, String reason) async {
+    await _write('POST', '/client/reports',
+        body: {'target': target.name, 'target_id': targetId, 'reason': reason});
+  }
+
+  @override
+  Future<List<Demand>> reviewQueue() async =>
+      [for (final j in await _list('/client/admin/review-queue')) demandFrom(j)];
+
+  @override
+  Future<void> approve(String demandId) async {
+    await _write('POST', '/client/admin/demands/$demandId/approve');
+  }
+
+  @override
+  Future<void> reject(String demandId, String reason) async {
+    await _write('POST', '/client/admin/demands/$demandId/reject',
+        body: {'reason': reason});
+  }
+
+  @override
+  Future<List<Report>> reports() async =>
+      [for (final j in await _list('/client/admin/reports')) reportFrom(j)];
+
+  @override
+  Future<void> resolveReport(String reportId, bool upheld, String note) async {
+    await _write('POST', '/client/admin/reports/$reportId/resolve',
+        body: {'upheld': upheld, 'note': note});
+  }
+
+  @override
+  Future<List<AuditEntry>> audit() async =>
+      [for (final j in await _list('/client/admin/audit')) auditFrom(j)];
 }

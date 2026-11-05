@@ -209,7 +209,10 @@ IconData noticeIcon(NoticeKind k) => switch (k) {
       NoticeKind.milestoneAnswered =>
         Icons.fact_check_outlined,
       NoticeKind.workLogged => Icons.event_available_outlined,
-      NoticeKind.postCommented => Icons.chat_bubble_outline,
+      NoticeKind.postCommented ||
+      NoticeKind.commentReplied =>
+        Icons.chat_bubble_outline,
+      NoticeKind.commentHelpful => Icons.thumb_up_alt_outlined,
       NoticeKind.outcomeFollowUp => Icons.help_outline,
       _ => Icons.notifications_none,
     };

@@ -41,6 +41,7 @@ class _HomePageState extends State<HomePage> {
           region: filter.region,
           sort: filter.sort,
           openForBuilders: filter.openForBuilders,
+          askingFeedback: filter.askingFeedback,
           query: value.trim()));
     });
   }
@@ -58,6 +59,7 @@ class _HomePageState extends State<HomePage> {
         region: f.region,
         sort: f.sort,
         openForBuilders: f.openForBuilders,
+        askingFeedback: f.askingFeedback,
         query: search.text.trim()));
   }
 
@@ -150,7 +152,9 @@ class _HomePageState extends State<HomePage> {
                                                       region: filter.region,
                                                       sort: sort,
                                                       openForBuilders: filter
-                                                          .openForBuilders)),
+                                                          .openForBuilders,
+                                                      askingFeedback: filter
+                                                          .askingFeedback)),
                                               itemBuilder: (_) => [
                                                 for (final sort
                                                     in FeedSort.values)
@@ -194,6 +198,24 @@ class _HomePageState extends State<HomePage> {
                                                       query: filter.query,
                                                       openForBuilders: !filter
                                                           .openForBuilders)))),
+                                          Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 8),
+                                              child: FilterPill(
+                                                  key: const Key(
+                                                      'feed-asking-feedback'),
+                                                  label: tr3(
+                                                      '求点评',
+                                                      'Пікір сұрайды',
+                                                      'Просят отзывы'),
+                                                  selected:
+                                                      filter.askingFeedback,
+                                                  onTap: () => set(FeedFilter(
+                                                      region: filter.region,
+                                                      sort: filter.sort,
+                                                      query: filter.query,
+                                                      askingFeedback: !filter
+                                                          .askingFeedback)))),
                                           FilterPill(
                                               label: filter.region == null
                                                   ? tr3('地区', 'Аймақ', 'Район')
@@ -221,7 +243,9 @@ class _HomePageState extends State<HomePage> {
                                                       sort: filter.sort,
                                                       query: filter.query,
                                                       openForBuilders: filter
-                                                          .openForBuilders));
+                                                          .openForBuilders,
+                                                      askingFeedback: filter
+                                                          .askingFeedback));
                                               }),
                                         ])),
                                     if (!widget.embedded) ...[
@@ -235,6 +259,7 @@ class _HomePageState extends State<HomePage> {
                             filter.sort,
                             filter.query,
                             filter.openForBuilders,
+                            filter.askingFeedback,
                             _retry
                           ),
                           error: (context, error) => SliverToBoxAdapter(

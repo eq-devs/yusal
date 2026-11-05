@@ -1762,6 +1762,7 @@ class MockBackend implements PlatformRepositories {
             return false;
           if (f.region != null && p.region != f.region) return false;
           if (f.openForBuilders && !p.openForBuilders) return false;
+          if (f.askingFeedback && !_asksFeedback(p)) return false;
           if (q.isNotEmpty &&
               !p.title.toLowerCase().contains(q) &&
               !p.story.toLowerCase().contains(q)) return false;
@@ -1825,6 +1826,7 @@ class MockBackend implements PlatformRepositories {
             estimatedCost: d.estimatedCost,
             tags: d.tags,
             openForBuilders: d.openForBuilders,
+            focus: _focus(d.focus),
             preview: d.preview ?? snap.preview);
       });
 
@@ -1843,8 +1845,21 @@ class MockBackend implements PlatformRepositories {
             tags: p.tags,
             openForBuilders: p.openForBuilders,
             showBuild: p.showBuild,
+            focus: _focus(p.focus),
             updatedAt: now);
       });
+
+  /// Shared to hear opinions: not looking for builders, and not a pro's
+  /// showcase (a pro sharing their own design without asking anything).
+  bool _asksFeedback(HousePost p) =>
+      !p.openForBuilders &&
+      (p.focus.isNotEmpty ||
+          !profiles.values.any((x) =>
+              x.ownerId == p.ownerId && x.status == ProfileStatus.active));
+
+  /// Known topics only, at most three, in the order given.
+  List<String> _focus(List<String> f) =>
+      f.where(feedbackTopics.contains).toSet().take(3).toList();
 
   @override
   Future<void> hidePost(String id) => _io(() {
@@ -1909,13 +1924,26 @@ class MockBackend implements PlatformRepositories {
       });
 
   @override
-  Future<PostComment> comment(String postId, String text, {int? rating}) =>
+  Future<PostComment> comment(String postId, String text,
+          {int? rating, String? topic, String? parentId}) =>
       _io(() {
         final me = _me;
         _requireActive();
         final p = posts[postId];
         if (p == null || !_postVisible(p))
           throw const ApiFailure(ApiCodes.notFound);
+        final parent = parentId == null ? null : commentsById[parentId];
+        if (parentId != null &&
+            (parent == null ||
+                parent.postId != postId ||
+                parent.parentId != null))
+          throw const ApiFailure(ApiCodes.notFound, 'parent');
+        if (parent != null && (rating != null || topic != null))
+          throw const ApiFailure(ApiCodes.invalidInput, 'reply');
+        if (parent != null && text.trim().isEmpty)
+          throw const ApiFailure(ApiCodes.invalidInput, 'empty');
+        if (topic != null && !feedbackTopics.contains(topic))
+          throw const ApiFailure(ApiCodes.invalidInput, 'topic');
         if (text.trim().isEmpty && rating == null)
           throw const ApiFailure(ApiCodes.invalidInput, 'empty');
         if (rating != null && (rating < 1 || rating > 5))
@@ -1939,7 +1967,11 @@ class MockBackend implements PlatformRepositories {
           for (final c in prev) {
             sum -= c.rating!;
             count--;
-            commentsById.remove(c.id);
+            // Keep a critique others replied to; only its rating moves.
+            if (commentsById.values.any((r) => r.parentId == c.id))
+              commentsById[c.id] = c.copyWith(clearRating: true);
+            else
+              commentsById.remove(c.id);
           }
           sum += rating;
           count++;
@@ -1951,6 +1983,8 @@ class MockBackend implements PlatformRepositories {
             authorId: me,
             text: text.trim(),
             rating: rating,
+            topic: topic,
+            parentId: parentId,
             createdAt: now);
         posts[postId] = p.copyWith(
             commentCount:
@@ -1960,7 +1994,27 @@ class MockBackend implements PlatformRepositories {
         if (p.ownerId != me)
           notice(p.ownerId, NoticeKind.postCommented, RefType.post, postId,
               title: p.title);
+        if (parent != null && parent.authorId != me)
+          notice(
+              parent.authorId, NoticeKind.commentReplied, RefType.post, postId,
+              title: p.title);
         return c;
+      });
+
+  @override
+  Future<PostComment> markHelpful(String commentId, bool helpful) => _io(() {
+        final me = _me;
+        final c = commentsById[commentId];
+        if (c == null) throw const ApiFailure(ApiCodes.notFound);
+        final p = posts[c.postId]!;
+        if (p.ownerId != me) throw const ApiFailure(ApiCodes.forbidden);
+        if (c.parentId != null || c.authorId == me)
+          throw const ApiFailure(ApiCodes.invalidState);
+        final next = commentsById[c.id] = c.copyWith(helpful: helpful);
+        if (helpful && !c.helpful)
+          notice(c.authorId, NoticeKind.commentHelpful, RefType.post, p.id,
+              title: p.title);
+        return next;
       });
 
   @override
@@ -1971,6 +2025,7 @@ class MockBackend implements PlatformRepositories {
         if (c.authorId != _me && p.ownerId != _me && !_meAccount.isAdmin)
           throw const ApiFailure(ApiCodes.forbidden);
         commentsById.remove(id);
+        commentsById.removeWhere((_, r) => r.parentId == id);
         posts[p.id] = p.copyWith(
             commentCount:
                 commentsById.values.where((x) => x.postId == p.id).length,

@@ -80,4 +80,43 @@ void main() {
     expect(backend.submissions, 1);
     expect(t.takeException(), isNull);
   });
+
+  testWidgets('publishing defaults to asking for feedback with chosen topics',
+      (t) async {
+    AppSettings.instance.lang = AppLang.zh;
+    t.view.physicalSize = const Size(1000, 2400);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final backend = MockBackend(latency: Duration.zero)
+      ..signInAs(SeedIds.owner);
+    final store = ProjectStore(fileSystem: MemoryFiles());
+    var seq = 0;
+    final doc = createHouse(
+        name: '求点评测试',
+        width: 10000,
+        depth: 12000,
+        columns: 1,
+        rows: 1,
+        timestamp: '2026-11-04T00:00:00Z',
+        newId: () => 'fb_${seq++}');
+    final id = await store.createProject(doc);
+    await t.pumpWidget(PlatformScope(
+        repos: backend,
+        store: store,
+        isDemo: true,
+        child: MaterialApp(
+            builder: (_, child) => AppScope(child: child!),
+            home: PublishPostPage(entry: ProjectEntry(id, doc)))));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('focus-layout')));
+    await t.tap(find.byKey(const Key('focus-cost')));
+    await t.pump();
+    await t.enterText(find.byType(TextField).first, '想听听意见');
+    await t.tap(find.text('发布'));
+    await t.pumpAndSettle();
+    final post = backend.posts.values.singleWhere((p) => p.title == '想听听意见');
+    expect(post.openForBuilders, isFalse);
+    expect(post.focus, ['layout', 'cost']);
+    expect(find.byKey(const Key('feedback-ask')), findsOneWidget);
+  });
 }

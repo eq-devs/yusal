@@ -14,14 +14,21 @@ class MyHouse {
       this.projectId,
       this.preview,
       this.postId,
+      this.comments = 0,
+      this.sharedAt,
       List<Demand>? demands})
       : demands = demands ?? [];
   final String key, name;
   final String? projectId;
   final List<int>? preview;
 
-  /// My public house page, if I published one.
+  /// My public house page, if I published one, with its critiques.
   final String? postId;
+  int comments;
+  DateTime? sharedAt;
+
+  /// Shared only to hear opinions: nothing to manage but the house page.
+  bool get shareOnly => demands.isEmpty && postId != null;
   final List<Demand> demands;
   final cooperations = <Cooperation>[];
   final quotes = <String, ({int total, int unread})>{};
@@ -93,6 +100,10 @@ class MyHouse {
     if (newQuotes > 0)
       return tr3('$newQuotes 个新报价，去比较', '$newQuotes жаңа ұсыныс',
           'Новых предложений: $newQuotes');
+    if (shareOnly)
+      return comments == 0
+          ? tr3('已分享，等大家点评', 'Пікір күтілуде', 'Ждём отзывов')
+          : tr3('$comments 条点评，去看看', '$comments пікір', 'Отзывов: $comments');
     return switch (stage) {
       HouseStage.design => hasDesign
           ? tr3('设计好了就为它找人', 'Дайын болса, адам іздеңіз',
@@ -155,6 +166,22 @@ Future<List<MyHouse>> loadMyHouses(
     final c = counts[d.id];
     if (c != null) h.quotes[d.id] = c;
   }
+  // Houses I shared: attach critiques to the house they belong to, or
+  // list a shared-only design as its own house.
+  for (final p in await _quiet(r.myPosts) ?? const <HousePost>[]) {
+    if (p.status != PostStatus.published) continue;
+    final existing = byKey[p.projectId] ??
+        byKey.values.where((h) => h.postId == p.id).firstOrNull;
+    final h = existing ??
+        (byKey[p.projectId] = MyHouse(
+            key: p.projectId,
+            name: designs[p.projectId]?.document.meta.name ?? p.title,
+            projectId: designs.containsKey(p.projectId) ? p.projectId : null,
+            preview: designs[p.projectId]?.preview ?? p.preview,
+            postId: p.id));
+    h.comments = p.commentCount;
+    h.sharedAt = p.updatedAt;
+  }
   for (final h in byKey.values)
     for (final d in h.demands)
       h.cooperations.addAll(await r.cooperationsFor(d.id));
@@ -173,4 +200,4 @@ Future<T?> _quiet<T>(Future<T?> Function() f) async {
 
 DateTime _latest(MyHouse h) => h.demands
     .map((d) => d.current.createdAt)
-    .fold(DateTime(2000), (a, b) => a.isAfter(b) ? a : b);
+    .fold(h.sharedAt ?? DateTime(2000), (a, b) => a.isAfter(b) ? a : b);

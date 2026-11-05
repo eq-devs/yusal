@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../app/settings.dart';
-import '../../data/repositories.dart';
 import '../../domain/models.dart';
 import '../cards.dart';
 import '../design/plan_viewer.dart';
@@ -16,6 +15,7 @@ import '../scope.dart';
 import '../shell.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'critiques.dart';
 import 'house_card.dart';
 import 'reuse.dart';
 import '../house_progress.dart';
@@ -318,12 +318,20 @@ class PostPage extends StatelessWidget {
                                                 reusedTimes(p.reuseCount),
                                                 color: t.accent)),
                                       const SizedBox(height: 16),
-                                      HouseProgress(
-                                          stage: build?.finished == true
-                                              ? HouseStage.done
-                                              : build != null
-                                                  ? HouseStage.building
-                                                  : stageFromDemands(demands)),
+                                      // Shared to hear opinions: the ask
+                                      // replaces the build progress.
+                                      if (!p.openForBuilders &&
+                                          demands.isEmpty &&
+                                          build == null)
+                                        FeedbackAsk(post: p)
+                                      else
+                                        HouseProgress(
+                                            stage: build?.finished == true
+                                                ? HouseStage.done
+                                                : build != null
+                                                    ? HouseStage.building
+                                                    : stageFromDemands(
+                                                        demands)),
                                       const Divider(height: 32),
                                       // Owner.
                                       Live<Account?>(
@@ -378,77 +386,68 @@ class PostPage extends StatelessWidget {
                                       SectionTitle(tr3('设计数据', 'Жоба деректері',
                                           'Данные проекта')),
                                       _Facts(post: p, snapshot: snap),
-                                      // Recruiting.
-                                      SectionTitle(
-                                          tr3('这栋房子在招谁', 'Бұл үйге кім керек',
-                                              'Кто нужен для этого дома'),
-                                          trailing: mine && snap != null
-                                              ? TextButton.icon(
-                                                  onPressed: recruit,
-                                                  icon: const Icon(Icons.add,
-                                                      size: 18),
-                                                  label: Text(tr3(
-                                                      '招人', 'Іздеу', 'Найти')))
-                                              : null),
-                                      if (demands.isEmpty)
-                                        Text(
-                                            build != null &&
-                                                    build.builders.isNotEmpty
-                                                ? tr3(
-                                                    '已发布的阶段都有人在做了。需要下一个阶段时再招人。',
-                                                    'Барлық кезеңнің орындаушысы бар.',
-                                                    'На все этапы уже есть исполнители.')
-                                                : mine
-                                                    ? tr3(
-                                                        '还没有为这栋房子发布过需求。点“招人”，工程量会从设计里自动带出来。',
-                                                        'Әлі тапсырыс жоқ. «Іздеу» басыңыз.',
-                                                        'Заявок пока нет. Нажмите «Найти», объёмы подставятся из проекта.')
-                                                    : p.openForBuilders
-                                                        ? tr3(
-                                                            '设计者正在找施工方，但还没发布具体需求。可以先私信。',
-                                                            'Иесі құрылысшы іздейді. Жазып көріңіз.',
-                                                            'Автор ищет строителей, но заявки ещё нет. Напишите ему.')
-                                                        : tr3(
-                                                            '暂时没有在招的人。',
-                                                            'Қазір іздемейді.',
-                                                            'Сейчас никого не ищет.'),
-                                            style: TextStyle(color: t.muted)),
-                                      for (final d in demands)
-                                        Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: 10),
-                                            child: DemandCard(
-                                                compact: true,
-                                                demand: d,
-                                                onTap: () => pushPage<void>(
-                                                    context,
-                                                    (_) => DemandDetailPage(
-                                                        demandId: d.id)))),
+                                      // Recruiting; a house shared only to
+                                      // hear opinions skips it.
+                                      if (p.openForBuilders ||
+                                          demands.isNotEmpty ||
+                                          build != null) ...[
+                                        SectionTitle(
+                                            tr3('这栋房子在招谁', 'Бұл үйге кім керек',
+                                                'Кто нужен для этого дома'),
+                                            trailing: mine && snap != null
+                                                ? TextButton.icon(
+                                                    onPressed: recruit,
+                                                    icon: const Icon(Icons.add,
+                                                        size: 18),
+                                                    label: Text(tr3('招人',
+                                                        'Іздеу', 'Найти')))
+                                                : null),
+                                        if (demands.isEmpty)
+                                          Text(
+                                              build != null &&
+                                                      build.builders.isNotEmpty
+                                                  ? tr3(
+                                                      '已发布的阶段都有人在做了。需要下一个阶段时再招人。',
+                                                      'Барлық кезеңнің орындаушысы бар.',
+                                                      'На все этапы уже есть исполнители.')
+                                                  : mine
+                                                      ? tr3(
+                                                          '还没有为这栋房子发布过需求。点“招人”，工程量会从设计里自动带出来。',
+                                                          'Әлі тапсырыс жоқ. «Іздеу» басыңыз.',
+                                                          'Заявок пока нет. Нажмите «Найти», объёмы подставятся из проекта.')
+                                                      : p.openForBuilders
+                                                          ? tr3(
+                                                              '设计者正在找施工方，但还没发布具体需求。可以先私信。',
+                                                              'Иесі құрылысшы іздейді. Жазып көріңіз.',
+                                                              'Автор ищет строителей, но заявки ещё нет. Напишите ему.')
+                                                          : tr3(
+                                                              '暂时没有在招的人。',
+                                                              'Қазір іздемейді.',
+                                                              'Сейчас никого не ищет.'),
+                                              style: TextStyle(color: t.muted)),
+                                        for (final d in demands)
+                                          Padding(
+                                              padding: const EdgeInsets.only(
+                                                  bottom: 10),
+                                              child: DemandCard(
+                                                  compact: true,
+                                                  demand: d,
+                                                  onTap: () => pushPage<void>(
+                                                      context,
+                                                      (_) => DemandDetailPage(
+                                                          demandId: d.id)))),
+                                      ],
                                       if (build != null)
                                         _BuildSection(
                                             info: build,
                                             mine: mine,
                                             shown: p.showBuild),
-                                      // Reviews.
-                                      SectionTitle(
-                                          '${tr3('评价', 'Пікірлер', 'Отзывы')} · ${comments.length}'),
-                                      if (!mine) _CommentBox(post: p),
-                                      if (comments.isEmpty)
-                                        Padding(
-                                            padding:
-                                                const EdgeInsets.only(top: 8),
-                                            child: Text(
-                                                tr3(
-                                                    '还没有评价。第一个说说看法吧。',
-                                                    'Әлі пікір жоқ.',
-                                                    'Отзывов пока нет.'),
-                                                style:
-                                                    TextStyle(color: t.muted))),
-                                      for (final c in comments)
-                                        _CommentTile(
-                                            comment: c,
-                                            canDelete:
-                                                mine || c.authorId == me?.id),
+                                      // Critiques.
+                                      CritiqueSection(
+                                          post: p,
+                                          comments: comments,
+                                          mine: mine,
+                                          meId: me?.id),
                                     ]))))),
               ]),
               bottomNavigationBar: _bottomBar(context,
@@ -491,7 +490,27 @@ class PostPage extends StatelessWidget {
 
     final String summary;
     final Widget main;
-    if (mine) {
+    if (mine && !post.openForBuilders && open.isEmpty && !building) {
+      // Shared to hear opinions: show how it is going and offer the step
+      // to building when the author is ready.
+      summary = post.commentCount == 0
+          ? tr3('等大家点评', 'Пікір күтілуде', 'Ждём отзывов')
+          : tr3('${post.commentCount} 条点评', '${post.commentCount} пікір',
+              'Отзывов: ${post.commentCount}');
+      main = FilledButton(
+          key: const Key('post-ready-to-build'),
+          onPressed: recruit == null
+              ? null
+              : () async {
+                  final ok = await attempt(
+                      context,
+                      () => context.repos
+                          .updatePost(post.copyWith(openForBuilders: true)));
+                  if (ok != null) recruit();
+                },
+          child: Text(tr3('准备开建？为它找人', 'Салуға дайынсыз ба?',
+              'Готовы строить? Найти мастеров')));
+    } else if (mine) {
       if (open.isEmpty && recruit == null) return null;
       summary = open.isEmpty
           ? building
@@ -664,155 +683,3 @@ class _Facts extends StatelessWidget {
 }
 
 /// Rate and say something. One rating per person; a new one replaces it.
-class _CommentBox extends StatefulWidget {
-  const _CommentBox({required this.post});
-  final HousePost post;
-  @override
-  State<_CommentBox> createState() => _CommentBoxState();
-}
-
-class _CommentBoxState extends State<_CommentBox> {
-  final text = TextEditingController();
-  int? rating;
-  bool busy = false;
-
-  @override
-  void dispose() {
-    text.dispose();
-    super.dispose();
-  }
-
-  Future<void> send() async {
-    if (text.text.trim().isEmpty && rating == null) return;
-    if (!await requireLogin(context) || !mounted) return;
-    setState(() => busy = true);
-    try {
-      await context.repos.comment(widget.post.id, text.text, rating: rating);
-      text.clear();
-      setState(() => rating = null);
-    } on ApiFailure catch (f) {
-      if (mounted) toast(context, failureText(f));
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = YTokens.of(context);
-    return YCard(
-        color: t.surface,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            for (var i = 1; i <= 5; i++)
-              InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => setState(() => rating = rating == i ? null : i),
-                  child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(
-                          i <= (rating ?? 0) ? Icons.star : Icons.star_border,
-                          size: 24,
-                          color: t.accent))),
-            const SizedBox(width: 6),
-            Expanded(
-                child: Text(
-                    rating == null
-                        ? tr3('打个分', 'Бағалаңыз', 'Оценка')
-                        : [
-                            '',
-                            tr3('不推荐', 'Ұсынбаймын', 'Не советую'),
-                            tr3('一般', 'Орташа', 'Так себе'),
-                            tr3('还行', 'Жақсы', 'Нормально'),
-                            tr3('不错', 'Өте жақсы', 'Хорошо'),
-                            tr3('很好', 'Керемет', 'Отлично'),
-                          ][rating!],
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: t.muted, fontSize: 13))),
-          ]),
-          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Expanded(
-                child: TextField(
-                    controller: text,
-                    minLines: 1,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                        hintText: tr3('说说布局、造价、施工上的看法…', 'Пікіріңіз…',
-                            'Что думаете о планировке, цене, стройке…')))),
-            const SizedBox(width: 8),
-            FilledButton(
-                onPressed: busy ? null : send,
-                child: Text(tr3('发布', 'Жіберу', 'Отправить'))),
-          ]),
-        ]));
-  }
-}
-
-class _CommentTile extends StatelessWidget {
-  const _CommentTile({required this.comment, required this.canDelete});
-  final PostComment comment;
-  final bool canDelete;
-  @override
-  Widget build(BuildContext context) {
-    final t = YTokens.of(context);
-    final c = comment;
-    return Padding(
-        padding: const EdgeInsets.only(top: 16),
-        child: Live<(Account?, List<ServiceProfile>)>(
-            load: (r) async =>
-                (await r.account(c.authorId), await r.profilesOf(c.authorId)),
-            builder: (context, data) {
-              final (a, profiles) = data;
-              final pro = profiles.firstOrNull;
-              return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    InkWell(
-                        onTap: pro == null
-                            ? null
-                            : () => pushPage<void>(
-                                context, (_) => ProfilePage(profileId: pro.id)),
-                        child: Avatar(a?.displayName ?? '',
-                            size: 36, team: pro?.kind == ProfileKind.team)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                          Row(children: [
-                            Flexible(
-                                child: Text(deletedName(a),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w700))),
-                            if (pro != null) ...[
-                              const SizedBox(width: 6),
-                              StatusPill(proRoleName(pro.role),
-                                  color: t.accent),
-                            ],
-                            const SizedBox(width: 8),
-                            Text(ago(c.createdAt, context.now),
-                                style: TextStyle(color: t.faint, fontSize: 12)),
-                          ]),
-                          if (c.rating != null)
-                            Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: Stars(c.rating!.toDouble())),
-                          if (c.text.isNotEmpty)
-                            Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(c.text,
-                                    style: const TextStyle(height: 1.4))),
-                        ])),
-                    if (canDelete)
-                      IconButton(
-                          visualDensity: VisualDensity.compact,
-                          icon: Icon(Icons.close, size: 16, color: t.faint),
-                          onPressed: () => attempt(context,
-                              () => context.repos.deleteComment(c.id))),
-                  ]);
-            }));
-  }
-}

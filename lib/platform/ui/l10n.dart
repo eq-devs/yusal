@@ -242,7 +242,11 @@ String noticeText(AppNotification n) {
         '$t жобаңыз негізінде жаңа үй басталды',
         'По вашему дому $t начали новый проект'),
     NoticeKind.postCommented =>
-      tr3('你的房子 $t 收到新评价', '$t жаңа пікір', 'Новый отзыв о доме $t'),
+      tr3('你的房子 $t 收到新点评', '$t жаңа пікір', 'Новый отзыв о доме $t'),
+    NoticeKind.commentReplied =>
+      tr3('$t 有人回复了你的点评', '$t пікіріңізге жауап', 'Ответ на ваш отзыв: $t'),
+    NoticeKind.commentHelpful => tr3('作者觉得你对 $t 的点评有用',
+        '$t авторы пікіріңізді пайдалы деді', 'Автор $t отметил ваш отзыв полезным'),
     NoticeKind.confirmRequest => tr3('$t 对方发起合作约定，请确认', '$t келісімді растаңыз',
         '$t вам предложили соглашение'),
     NoticeKind.cooperationConfirmed => tr3(
@@ -393,4 +397,14 @@ String milestoneStatusName(MilestoneStatus s) => switch (s) {
         tr3('待验收', 'Қабылдау күтілуде', 'Ждёт приёмки'),
       MilestoneStatus.accepted => tr3('已验收', 'Қабылданды', 'Принят'),
       MilestoneStatus.disputed => tr3('有问题', 'Ескерту бар', 'Есть замечания'),
+    };
+
+String feedbackTopicName(String k) => switch (k) {
+      'layout' => tr3('布局', 'Жоспар', 'Планировка'),
+      'light' => tr3('采光朝向', 'Жарық', 'Свет и ориентация'),
+      'cost' => tr3('造价', 'Құны', 'Стоимость'),
+      'structure' => tr3('结构', 'Құрылым', 'Конструкция'),
+      'look' => tr3('外观', 'Сыртқы түрі', 'Внешний вид'),
+      'warmth' => tr3('保暖', 'Жылу', 'Утепление'),
+      _ => k,
     };

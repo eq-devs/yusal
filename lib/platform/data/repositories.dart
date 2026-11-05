@@ -266,8 +266,14 @@ abstract interface class PostRepository {
   Future<List<String>> likedPosts();
 
   Future<List<PostComment>> comments(String postId);
-  Future<PostComment> comment(String postId, String text, {int? rating});
+  /// A critique (optionally rated and about one [feedbackTopics] entry) or,
+  /// with [parentId], a reply to one. Replies carry no rating or topic.
+  Future<PostComment> comment(String postId, String text,
+      {int? rating, String? topic, String? parentId});
   Future<void> deleteComment(String id);
+
+  /// The house's author marks a critique as useful (or takes it back).
+  Future<PostComment> markHelpful(String commentId, bool helpful);
 
   /// Open demands recruiting for this house.
   Future<List<Demand>> demandsForPost(String postId);

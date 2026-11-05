@@ -904,6 +904,8 @@ enum NoticeKind {
   applicationNotSelected,
   postLiked,
   postCommented,
+  commentReplied,
+  commentHelpful,
   postReused,
   milestoneRequested,
   milestoneAnswered,
@@ -1072,6 +1074,7 @@ class HousePost {
       this.ratingCount = 0,
       this.reuseCount = 0,
       this.showBuild = false,
+      this.focus = const [],
       this.preview});
   final String id, ownerId, projectId, snapshotId, title, story, region;
   final DateTime createdAt, updatedAt;
@@ -1084,8 +1087,12 @@ class HousePost {
   final int? estimatedCost;
   final List<String> tags;
 
-  /// The owner welcomes builders to apply and quote for this house.
+  /// The owner welcomes builders to apply and quote for this house. When
+  /// off, the house is shared to hear opinions ("求点评").
   final bool openForBuilders;
+
+  /// Up to three [feedbackTopics] the author most wants opinions on.
+  final List<String> focus;
   final PostStatus status;
   final int likeCount, commentCount, ratingSum, ratingCount;
 
@@ -1112,6 +1119,7 @@ class HousePost {
           int? reuseCount,
           bool? showBuild,
           DateTime? updatedAt,
+          List<String>? focus,
           List<String>? tags}) =>
       HousePost(
           id: id,
@@ -1136,6 +1144,7 @@ class HousePost {
           ratingCount: ratingCount ?? this.ratingCount,
           reuseCount: reuseCount ?? this.reuseCount,
           showBuild: showBuild ?? this.showBuild,
+          focus: focus ?? this.focus,
           preview: preview);
 }
 
@@ -1167,11 +1176,45 @@ class PostComment {
       required this.authorId,
       required this.text,
       required this.createdAt,
-      this.rating});
+      this.rating,
+      this.topic,
+      this.parentId,
+      this.helpful = false});
   final String id, postId, authorId, text;
   final DateTime createdAt;
   final int? rating;
+
+  /// Which aspect the critique is about, one of [feedbackTopics].
+  final String? topic;
+
+  /// Set on a reply; replies are one level deep and carry no rating.
+  final String? parentId;
+
+  /// The house's author found this useful; it is shown first.
+  final bool helpful;
+
+  PostComment copyWith({bool? helpful, int? rating, bool clearRating = false}) =>
+      PostComment(
+          id: id,
+          postId: postId,
+          authorId: authorId,
+          text: text,
+          createdAt: createdAt,
+          rating: clearRating ? null : rating ?? this.rating,
+          topic: topic,
+          parentId: parentId,
+          helpful: helpful ?? this.helpful);
 }
+
+/// Aspects an author can ask about and a critique can address.
+const feedbackTopics = [
+  'layout',
+  'light',
+  'cost',
+  'structure',
+  'look',
+  'warmth'
+];
 
 /// Feed ordering.
 enum FeedSort { newest, popular, topRated }
@@ -1181,11 +1224,15 @@ class FeedFilter {
       {this.region,
       this.sort = FeedSort.newest,
       this.query = '',
-      this.openForBuilders = false});
+      this.openForBuilders = false,
+      this.askingFeedback = false});
   final String? region;
   final FeedSort sort;
   final String query;
   final bool openForBuilders;
+
+  /// Only houses shared to hear opinions, not (yet) looking for builders.
+  final bool askingFeedback;
 }
 
 const postTags = [

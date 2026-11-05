@@ -4,6 +4,7 @@ import '../../../features/house_editor.dart';
 import '../../domain/models.dart';
 import '../backup/backup_page.dart';
 import '../demand/demand_detail_page.dart';
+import '../home/post_page.dart';
 import '../home/publish_post_page.dart';
 import '../demand/from_design_page.dart';
 import '../l10n.dart';
@@ -152,7 +153,10 @@ class _ActiveHouses extends StatelessWidget {
         ));
     }
     void open(MyHouse h, int tab) => pushPage<void>(
-        context, (_) => HouseWorkspacePage(houseKey: h.key, initialTab: tab));
+        context,
+        (_) => h.shareOnly
+            ? PostPage(postId: h.postId!)
+            : HouseWorkspacePage(houseKey: h.key, initialTab: tab));
     return Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
         child:
@@ -211,7 +215,11 @@ class _ActiveHouses extends StatelessWidget {
                                                     fontWeight:
                                                         FontWeight.w700)),
                                             const SizedBox(height: 4),
-                                            StatusPill(houseStageName(h.stage),
+                                            StatusPill(
+                                                h.shareOnly
+                                                    ? tr3('已分享', 'Бөлісілді',
+                                                        'Опубликован')
+                                                    : houseStageName(h.stage),
                                                 color: t.accent),
                                             const SizedBox(height: 4),
                                             Text(h.nextStep(me),

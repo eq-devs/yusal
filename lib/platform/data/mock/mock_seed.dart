@@ -520,6 +520,7 @@ void seedMockData(MockBackend b) {
           required int days,
           List<String> tags = const [],
           bool open = true,
+          List<String> focus = const [],
           int likes = 0}) =>
       HousePost(
           id: id,
@@ -537,6 +538,7 @@ void seedMockData(MockBackend b) {
           estimatedCost: cost,
           tags: tags,
           openForBuilders: open,
+          focus: focus,
           likeCount: likes);
   b.posts['post_aigerim'] = post('post_aigerim', SeedIds.owner, 'snap_aigerim',
       '给父母盖的一层砖房', '父母年纪大了，想要一层、没有台阶的房子。客厅朝南，两个卧室朝东。基础已经打好，现在找砌墙的师傅。', 'talgar',
@@ -560,6 +562,8 @@ void seedMockData(MockBackend b) {
       cost: 52000000,
       days: 12,
       tags: const ['two_floors', 'garage', 'large'],
+      open: false,
+      focus: const ['cost', 'layout'],
       likes: 5);
   b.posts['post_team'] = post(
       'post_team',
@@ -584,6 +588,8 @@ void seedMockData(MockBackend b) {
       cost: 23000000,
       days: 2,
       tags: const ['brick'],
+      open: false,
+      focus: const ['layout', 'structure'],
       likes: 1);
   b.likes['post_aigerim'] = {SeedIds.mason, SeedIds.team, SeedIds.owner2};
   b.likes['post_dinara'] = {
@@ -597,14 +603,17 @@ void seedMockData(MockBackend b) {
   b.likes['post_erlan'] = {SeedIds.owner};
 
   void cmt(String id, String postId, String author, String text, int days,
-      {int? rating}) {
+      {int? rating, String? topic, String? parent, bool helpful = false}) {
     b.commentsById[id] = PostComment(
         id: id,
         postId: postId,
         authorId: author,
         text: text,
         createdAt: ago(days),
-        rating: rating);
+        rating: rating,
+        topic: topic,
+        parentId: parent,
+        helpful: helpful);
     final p = b.posts[postId]!;
     b.posts[postId] = p.copyWith(
         commentCount: p.commentCount + 1,
@@ -620,10 +629,16 @@ void seedMockData(MockBackend b) {
       rating: 4);
   cmt('cmt3', 'post_dinara', SeedIds.roofTeam,
       '双坡屋面 210 平米，金属瓦大概 3 周。预算里屋面部分合理。', 10,
-      rating: 4);
+      rating: 4, topic: 'cost');
   cmt('cmt4', 'post_dinara', SeedIds.owner, '很漂亮，二楼卫生间最好和一楼上下对齐，省管道。', 9,
-      rating: 5);
-  cmt('cmt5', 'post_erlan', SeedIds.owner2, '楼梯放客厅角落会更省空间。', 1);
+      rating: 5, topic: 'layout', helpful: true);
+  cmt('cmt4r', 'post_dinara', SeedIds.owner2, '好建议，我把二楼卫生间挪到楼梯旁边。', 8,
+      parent: 'cmt4');
+  cmt('cmt5', 'post_erlan', SeedIds.owner2, '楼梯放客厅角落会更省空间。', 1,
+      topic: 'layout');
+  cmt('cmt6', 'post_erlan', SeedIds.mason,
+      '阁楼层高要留够 2.4 米的地方才能放床，屋架坡度可能要调陡。', 1,
+      topic: 'structure');
 
   // One report waiting for the moderator.
   b.reportsById['rep_seed'] = Report(

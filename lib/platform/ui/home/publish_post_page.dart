@@ -27,7 +27,10 @@ class _PublishPostPageState extends State<PublishPostPage> {
       TextEditingController(text: widget.entry.document.meta.name);
   final story = TextEditingController();
   String region = regionCodes.first;
-  bool openForBuilders = true;
+
+  /// Default: share to hear opinions; building is one tap away later.
+  bool openForBuilders = false;
+  final focus = <String>[];
   final tags = <String>{};
   DesignExtract? extract;
   late String _initialDraft;
@@ -37,6 +40,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
         story.text,
         region,
         openForBuilders,
+        focus.join(','),
         (tags.toList()..sort()).join(',')
       ].join('\u0000');
 
@@ -106,6 +110,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
           estimatedCost: e?.estimatedCost,
           tags: tags.toList(),
           openForBuilders: openForBuilders,
+          focus: openForBuilders ? const [] : List.of(focus),
           preview: widget.entry.preview));
     });
     if (!mounted) return;
@@ -166,6 +171,70 @@ class _PublishPostPageState extends State<PublishPostPage> {
                                 'Есептеу мүмкін емес.',
                                 'Не удалось посчитать площадь и стоимость.'),
                             warn: true)),
+                  SectionTitle(tr3('你想要什么？', 'Не қалайсыз?', 'Чего вы хотите?'),
+                      top: 18),
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(
+                        child: _IntentCard(
+                            key: const Key('intent-feedback'),
+                            selected: !openForBuilders,
+                            icon: Icons.forum_outlined,
+                            title:
+                                tr3('听听大家意见', 'Пікір тыңдау', 'Узнать мнения'),
+                            body: tr3('只分享，收点评和建议', 'Тек бөлісу',
+                                'Просто поделиться и получить советы'),
+                            onTap: () =>
+                                setState(() => openForBuilders = false))),
+                    const SizedBox(width: 10),
+                    Expanded(
+                        child: _IntentCard(
+                            key: const Key('intent-build'),
+                            selected: openForBuilders,
+                            icon: Icons.construction,
+                            title: tr3('准备盖，找施工方', 'Салуға дайын',
+                                'Строю, ищу мастеров'),
+                            body: tr3(
+                                '标出“正在找施工方”，之后发具体需求',
+                                'Құрылысшы іздеймін',
+                                'Пометка «ищет строителей»'),
+                            onTap: () =>
+                                setState(() => openForBuilders = true))),
+                  ]),
+                  if (!openForBuilders) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                        tr3(
+                            '最想请大家看哪些方面？（最多 3 个，可不选）',
+                            'Нені көрсін? (3-ке дейін)',
+                            'На что обратить внимание? (до 3)'),
+                        style: TextStyle(color: t.muted, fontSize: 13)),
+                    const SizedBox(height: 6),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      for (final k in feedbackTopics)
+                        FilterPill(
+                            key: Key('focus-$k'),
+                            label: feedbackTopicName(k),
+                            selected: focus.contains(k),
+                            onTap: () => setState(() {
+                                  if (focus.contains(k))
+                                    focus.remove(k);
+                                  else if (focus.length < 3)
+                                    focus.add(k);
+                                  else
+                                    toast(
+                                        context,
+                                        tr3('最多选 3 个', 'Ең көбі 3',
+                                            'Не больше 3'));
+                                })),
+                    ]),
+                    const SizedBox(height: 4),
+                    Text(
+                        tr3(
+                            '想盖的时候，在房子页点“准备开建？”就能找人，点评都会保留。',
+                            'Кейін «Салуға дайынсыз ба?» басыңыз.',
+                            'Когда решите строить — нажмите «Готовы строить?».'),
+                        style: TextStyle(color: t.faint, fontSize: 12)),
+                  ],
                   const SizedBox(height: 18),
                   TextField(
                       controller: title,
@@ -204,18 +273,47 @@ class _PublishPostPageState extends State<PublishPostPage> {
                           onTap: () => setState(() =>
                               tags.contains(c) ? tags.remove(c) : tags.add(c))),
                   ]),
-                  const SizedBox(height: 16),
-                  SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: openForBuilders,
-                      onChanged: (v) => setState(() => openForBuilders = v),
-                      title: Text(tr3('欢迎施工方联系我', 'Құрылысшылар жаза алады',
-                          'Строители могут написать мне')),
-                      subtitle: Text(tr3(
-                          '首页会标出“正在找施工方”。具体需求可以之后在房子页里发布。',
-                          'Бетте белгі болады.',
-                          'На карточке появится пометка; заявку можно создать позже.'))),
                   const SizedBox(height: 40),
                 ])));
+  }
+}
+
+class _IntentCard extends StatelessWidget {
+  const _IntentCard(
+      {super.key,
+      required this.selected,
+      required this.icon,
+      required this.title,
+      required this.body,
+      required this.onTap});
+  final bool selected;
+  final IconData icon;
+  final String title, body;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    return Material(
+        color: selected ? t.accent.withValues(alpha: 0.08) : t.card,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(yRadius),
+            side: BorderSide(
+                color: selected ? t.accent : t.line, width: selected ? 2 : 1)),
+        child: InkWell(
+            borderRadius: BorderRadius.circular(yRadius),
+            onTap: onTap,
+            child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(icon, color: selected ? t.accent : t.muted),
+                      const SizedBox(height: 6),
+                      Text(title,
+                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text(body,
+                          style: TextStyle(color: t.muted, fontSize: 12)),
+                    ]))));
   }
 }

@@ -71,6 +71,15 @@ class HouseCard extends StatelessWidget {
                   child: StatusPill(
                       tr3('正在找施工方', 'Құрылысшы іздейді', 'Ищет строителей'),
                       color: t.accent,
+                      filled: true))
+            else if (p.focus.isNotEmpty)
+              Positioned(
+                  left: 10,
+                  top: 10,
+                  child: StatusPill(
+                      tr3('求点评 · ${p.focus.map(feedbackTopicName).join('、')}',
+                          'Пікір сұрайды', 'Просит отзывы'),
+                      color: t.ink,
                       filled: true)),
           ]),
           const SizedBox(height: 10),
@@ -91,7 +100,13 @@ class HouseCard extends StatelessWidget {
             ],
           ]),
           if (p.rating == null)
-            Text(tr3('暂无评价', 'Пікір жоқ', 'Нет оценок'),
+            Text(
+                p.commentCount > 0
+                    ? tr3('${p.commentCount} 条点评', '${p.commentCount} пікір',
+                        'Отзывов: ${p.commentCount}')
+                    : p.openForBuilders
+                        ? tr3('暂无评价', 'Пікір жоқ', 'Нет оценок')
+                        : tr3('等你来点评', 'Пікір қалдырыңыз', 'Оставьте отзыв'),
                 style: TextStyle(fontSize: 12, color: t.muted)),
           const SizedBox(height: 2),
           Text(houseFacts(p), style: TextStyle(color: t.muted, fontSize: 14)),

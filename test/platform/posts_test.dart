@@ -4,6 +4,9 @@ import 'package:yusal/platform/data/mock/mock_clock.dart';
 import 'package:yusal/platform/data/mock/mock_seed.dart';
 import 'package:yusal/platform/data/repositories.dart';
 import 'package:yusal/platform/domain/models.dart';
+import 'package:yusal/platform/ui/houses/my_houses_data.dart';
+import 'package:yusal/storage/project_store.dart';
+import '../storage_test.dart' show MemoryFiles;
 
 MockBackend backend() => MockBackend(
     clock: MockClock(DateTime.utc(2026, 11, 3, 9)),
@@ -159,5 +162,62 @@ void main() {
     expect((await b.feed(const FeedFilter())).any((p) => p.id == 'post_erlan'),
         isFalse);
     expect(await b.post('post_erlan'), isNull);
+  });
+
+  group('sharing to hear opinions', () {
+    test('the feed can show only houses asking for feedback', () async {
+      final b = backend();
+      final asking = await b.feed(const FeedFilter(askingFeedback: true));
+      expect(asking.map((p) => p.id).toSet(), {'post_dinara', 'post_erlan'});
+    });
+
+    test('critiques carry a topic; replies thread under them', () async {
+      final b = backend()..signInAs(SeedIds.mason);
+      final c = await b.comment('post_erlan', '楼梯太陡', topic: 'structure');
+      await expectLater(b.comment('post_erlan', 'x', topic: 'nope'),
+          throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.electrician);
+      final r = await b.comment('post_erlan', '谢谢，我改缓一点', parentId: c.id);
+      expect(r.parentId, c.id);
+      await expectLater(b.comment('post_erlan', '回复的回复', parentId: r.id),
+          throwsA(isA<ApiFailure>()));
+      await expectLater(b.comment('post_erlan', '', parentId: c.id),
+          throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.mason);
+      expect(
+          (await b.notifications())
+              .any((n) => n.kind == NoticeKind.commentReplied),
+          isTrue);
+    });
+
+    test('only the author marks a critique useful', () async {
+      final b = backend()..signInAs(SeedIds.mason);
+      final c = await b.comment('post_erlan', '阁楼要留够层高');
+      await expectLater(b.markHelpful(c.id, true), throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.electrician);
+      expect((await b.markHelpful(c.id, true)).helpful, isTrue);
+      b.signInAs(SeedIds.mason);
+      expect(
+          (await b.notifications())
+              .any((n) => n.kind == NoticeKind.commentHelpful),
+          isTrue);
+    });
+
+    test('deleting a critique removes its replies', () async {
+      final b = backend()..signInAs(SeedIds.owner2);
+      await b.deleteComment('cmt4');
+      expect((await b.comments('post_dinara')).any((c) => c.id == 'cmt4r'),
+          isFalse);
+    });
+
+    test('a shared-only house shows up in my houses', () async {
+      final b = backend()..signInAs(SeedIds.electrician);
+      final houses =
+          await loadMyHouses(b, ProjectStore(fileSystem: MemoryFiles()));
+      final h = houses.singleWhere((h) => h.postId == 'post_erlan');
+      expect(h.shareOnly, isTrue);
+      expect(h.comments, greaterThan(0));
+      expect(h.nextStep(SeedIds.electrician), contains('点评'));
+    });
   });
 }

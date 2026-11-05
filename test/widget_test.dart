@@ -78,13 +78,14 @@ void main() {
     expect(find.text('这栋房子已经不可见'), findsOneWidget);
   });
 
-  testWidgets('the owner sees the recruit action on their own house',
-      (t) async {
+  testWidgets('the owner of a shared house can move on to building', (t) async {
     await launch(t, as: SeedIds.owner2);
     await t.tap(find.text('两层别墅，带车库和露台'));
     await t.pumpAndSettle();
-    expect(find.text('招人'), findsOneWidget);
+    expect(find.byKey(const Key('feedback-ask')), findsOneWidget);
+    expect(find.text('准备开建？为它找人'), findsOneWidget);
     expect(find.text('这是你的设计'), findsOneWidget);
+    expect(find.text('作者觉得有用'), findsOneWidget);
   });
 
   testWidgets('the design tab keeps the design home', (t) async {

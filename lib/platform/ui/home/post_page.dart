@@ -19,13 +19,18 @@ import 'critiques.dart';
 import 'house_card.dart';
 import 'reuse.dart';
 import '../house_progress.dart';
+import '../../../motion/motion.dart';
 
 /// One house: the plan, the facts, the story, the people recruiting for
 /// it, and what others think. The owner recruits from here; a
 /// professional applies or writes from here.
 class PostPage extends StatelessWidget {
-  const PostPage({super.key, required this.postId});
+  const PostPage({super.key, required this.postId, this.preview});
   final String postId;
+
+  /// The post as the list already had it: lets the page show its cover
+  /// (and catch the shared-element flight) before the rest has loaded.
+  final HousePost? preview;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +47,7 @@ class PostPage extends StatelessWidget {
               PostBuild?
             )>(
         reloadKey: postId,
+        loading: preview == null ? null : _PostSkeleton(post: preview!),
         load: (r) async {
           final p = await r.post(postId);
           if (p == null)
@@ -250,26 +256,25 @@ class PostPage extends StatelessWidget {
                           icon: const Icon(Icons.ios_share),
                           onPressed: share),
                       IconButton(
-                          icon: Icon(
-                              liked ? Icons.favorite : Icons.favorite_border,
-                              color: liked ? t.accent : null),
-                          onPressed: () => attempt(
-                              context, () => context.repos.toggleLike(p.id))),
+                          icon: PopOnActive(
+                              active: liked,
+                              child: Icon(
+                                  liked
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: liked ? t.accent : null)),
+                          onPressed: () {
+                            if (!liked) HapticFeedback.lightImpact();
+                            attempt(
+                                context, () => context.repos.toggleLike(p.id));
+                          }),
                       IconButton(
                           icon: const Icon(Icons.more_horiz), onPressed: more),
                     ],
                     flexibleSpace: FlexibleSpaceBar(
                         background: Padding(
                             padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                            child: Cover(
-                                icon: Icons.home_outlined,
-                                seed: p.id,
-                                height: 300,
-                                image: image,
-                                child: image == null && p.snapshotId.isNotEmpty
-                                    ? PlanCover(
-                                        snapshotId: p.snapshotId, postId: p.id)
-                                    : null)))),
+                            child: _PostCover(post: p, image: image)))),
                 SliverToBoxAdapter(
                     child: Center(
                         child: ConstrainedBox(
@@ -569,10 +574,14 @@ class PostPage extends StatelessWidget {
           child: Row(children: [
         IconButton.outlined(
             tooltip: tr3('收藏', 'Сақтау', 'Сохранить'),
-            onPressed: () =>
-                attempt(context, () => context.repos.toggleLike(post.id)),
-            icon: Icon(liked ? Icons.favorite : Icons.favorite_border,
-                color: liked ? t.accent : null)),
+            onPressed: () {
+              if (!liked) HapticFeedback.lightImpact();
+              attempt(context, () => context.repos.toggleLike(post.id));
+            },
+            icon: PopOnActive(
+                active: liked,
+                child: Icon(liked ? Icons.favorite : Icons.favorite_border,
+                    color: liked ? t.accent : null))),
         const SizedBox(width: 12),
         Expanded(
             child: FilledButton.icon(
@@ -733,3 +742,54 @@ class _Quantities extends StatelessWidget {
 }
 
 /// Rate and say something. One rating per person; a new one replaces it.
+
+/// The house page's cover: where a tapped list card's picture lands.
+class _PostCover extends StatelessWidget {
+  const _PostCover({required this.post, this.image});
+  final HousePost post;
+  final ImageProvider? image;
+  @override
+  Widget build(BuildContext context) => HeroTarget(
+      heroKey: houseHeroKey(post.id),
+      child: Cover(
+          icon: Icons.home_outlined,
+          seed: post.id,
+          height: 300,
+          image: image,
+          child: image == null && post.snapshotId.isNotEmpty
+              ? PlanCover(snapshotId: post.snapshotId, postId: post.id)
+              : null));
+}
+
+/// While the house loads: the same app bar and cover, so the page does
+/// not jump when the rest arrives.
+class _PostSkeleton extends StatelessWidget {
+  const _PostSkeleton({required this.post});
+  final HousePost post;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    final image = post.preview == null
+        ? null
+        : MemoryImage(Uint8List.fromList(post.preview!));
+    return Scaffold(
+        body: CustomScrollView(slivers: [
+      SliverAppBar(
+          pinned: true,
+          expandedHeight: 280,
+          backgroundColor: t.bg,
+          flexibleSpace: FlexibleSpaceBar(
+              background: _PostCover(post: post, image: image))),
+      SliverToBoxAdapter(
+          child: Center(
+              child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 120),
+                      child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(post.title,
+                              style: display(size: 26))))))),
+    ]));
+  }
+}

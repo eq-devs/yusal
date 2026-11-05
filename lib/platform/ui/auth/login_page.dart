@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/settings.dart';
 import '../../data/mock/mock_backend.dart';
 import '../../data/mock/mock_seed.dart';
@@ -122,6 +123,7 @@ class _LoginPageState extends State<LoginPage> {
                   title: Text(label),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
+                    HapticFeedback.selectionClick();
                     mock.signInAs(id);
                     Navigator.pop(context, true);
                   }),

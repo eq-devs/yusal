@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../motion/motion.dart';
 import '../../app/settings.dart';
 import '../domain/models.dart';
 import 'design/plan_viewer.dart';
@@ -92,9 +94,11 @@ class DemandCard extends StatelessWidget {
       ])),
     ]);
     if (compact) return YCard(onTap: onTap, child: info);
-    return InkWell(
+    return Pressable(
+        child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(yRadius),
+        splashFactory: NoSplash.splashFactory,
         child: Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child:
@@ -139,21 +143,30 @@ class DemandCard extends StatelessWidget {
                           top: 4,
                           child: IconButton(
                               tooltip: tr3('收藏', 'Таңдаулы', 'В избранное'),
-                              onPressed: onFavourite,
-                              icon: Icon(
-                                  favourite == true
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  color: favourite == true
-                                      ? t.accent
-                                      : Colors.white,
-                                  shadows: const [
-                                    Shadow(blurRadius: 6, color: Colors.black38)
-                                  ]))),
+                              onPressed: () {
+                                if (favourite != true) {
+                                  HapticFeedback.lightImpact();
+                                }
+                                onFavourite!();
+                              },
+                              icon: PopOnActive(
+                                  active: favourite == true,
+                                  child: Icon(
+                                      favourite == true
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: favourite == true
+                                          ? t.accent
+                                          : Colors.white,
+                                      shadows: const [
+                                        Shadow(
+                                            blurRadius: 6,
+                                            color: Colors.black38)
+                                      ])))),
                   ])),
               const SizedBox(height: 10),
               info,
-            ])));
+            ]))));
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../app/settings.dart';
 import '../../app/tokens.dart';
+import '../../motion/motion.dart';
 
 /// Platform look, after the visual language of Airbnb (large bold titles,
 /// rounded cards with soft shadows, pill filters, one accent) but in the
@@ -150,7 +151,9 @@ ThemeData buildPlatformTheme(YTokens t) {
       dividerColor: t.line,
       splashFactory: InkSparkle.splashFactory,
       // The design tool's palette stays available to shared widgets.
-      extensions: [t, t.dark ? Tokens.night : Tokens.light]);
+      extensions: [t, t.dark ? Tokens.night : Tokens.light],
+      // iOS-style horizontal slide everywhere, with swipe-back.
+      pageTransitionsTheme: motionPageTransitions);
   final pill = RoundedRectangleBorder(borderRadius: BorderRadius.circular(10));
   return base.copyWith(
       textTheme: base.textTheme.apply(bodyColor: t.ink, displayColor: t.ink),

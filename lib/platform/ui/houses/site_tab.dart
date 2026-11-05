@@ -7,6 +7,7 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'my_houses_data.dart';
 import '../photos.dart';
+import '../../../motion/motion.dart';
 
 /// The building-site tab of a house: each confirmed cooperation with its
 /// inspection points and daily work log.
@@ -203,7 +204,7 @@ typedef SiteEntry = ({String note, List<List<int>> photos, int? headcount});
 /// Bottom sheet for a site entry: optional crew count, note and photos.
 Future<SiteEntry?> composeSiteEntry(BuildContext context,
         {required String title, required String hint, int? headcount}) =>
-    showModalBottomSheet<SiteEntry>(
+    showMotionSheet<SiteEntry>(
         context: context,
         isScrollControlled: true,
         showDragHandle: true,

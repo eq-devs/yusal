@@ -10,7 +10,7 @@ extension _UtilityTool on _HouseEditorState {
       ];
 
   Future<void> chooseUtility() async {
-    final choice = await showModalBottomSheet<Object>(
+    final choice = await showMotionSheet<Object>(
         context: context,
         isScrollControlled: true,
         builder: (context) {
@@ -196,7 +196,7 @@ extension _UtilityTool on _HouseEditorState {
         children: [
           KvGrid([
             Kv(utilityName(u.kind), tr('类型', 'Түрі'), onTap: () async {
-              final kind = await showModalBottomSheet<UtilityKind>(
+              final kind = await showMotionSheet<UtilityKind>(
                   context: context,
                   builder: (context) => SafeArea(
                           child: ListView(shrinkWrap: true, children: [

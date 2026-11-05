@@ -43,7 +43,7 @@ extension _SiteTab on _HouseEditorState {
   }
 
   Future<void> addSiteItem() async {
-    final kind = await showModalBottomSheet<SiteKind>(
+    final kind = await showMotionSheet<SiteKind>(
         context: context,
         builder: (context) => SafeArea(
                 child: Padding(

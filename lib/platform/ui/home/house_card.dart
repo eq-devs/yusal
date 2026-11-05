@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/settings.dart';
 import '../design/plan_viewer.dart';
 import '../../domain/models.dart';
@@ -7,6 +7,7 @@ import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../../../motion/motion.dart';
 
 /// A house in the feed: the plan as a big picture, then the facts a
 /// visitor scans first (where, how big, what it costs) and who made it.
@@ -33,19 +34,25 @@ class HouseCard extends StatelessWidget {
     final p = post;
     final image =
         p.preview == null ? null : MemoryImage(Uint8List.fromList(p.preview!));
-    return InkWell(
+    return HeroTapArea(
+        child: Pressable(
+        child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(yRadius),
+        splashFactory: NoSplash.splashFactory,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Stack(children: [
-            Cover(
-                icon: Icons.home_outlined,
-                seed: p.id,
-                height: compact ? 150 : 230,
-                image: image,
-                child: image == null && p.snapshotId.isNotEmpty
-                    ? PlanCover(snapshotId: p.snapshotId, postId: p.id)
-                    : null),
+            HeroSource(
+                heroKey: houseHeroKey(p.id),
+                borderRadius: BorderRadius.circular(yRadius),
+                child: Cover(
+                    icon: Icons.home_outlined,
+                    seed: p.id,
+                    height: compact ? 150 : 230,
+                    image: image,
+                    child: image == null && p.snapshotId.isNotEmpty
+                        ? PlanCover(snapshotId: p.snapshotId, postId: p.id)
+                        : null)),
             if (onLike != null)
               Positioned(
                   top: 10,
@@ -55,15 +62,20 @@ class HouseCard extends StatelessWidget {
                       shape: const CircleBorder(),
                       child: InkWell(
                           customBorder: const CircleBorder(),
-                          onTap: onLike,
+                          onTap: () {
+                            if (!liked) HapticFeedback.lightImpact();
+                            onLike!();
+                          },
                           child: Padding(
                               padding: const EdgeInsets.all(14),
-                              child: Icon(
-                                  liked
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  size: 20,
-                                  color: liked ? t.accent : t.ink))))),
+                              child: PopOnActive(
+                                  active: liked,
+                                  child: Icon(
+                                      liked
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      size: 20,
+                                      color: liked ? t.accent : t.ink)))))),
             if (p.openForBuilders)
               Positioned(
                   left: 10,
@@ -181,9 +193,12 @@ class HouseCard extends StatelessWidget {
                         Text(reusedTimes(p.reuseCount),
                             style: TextStyle(color: t.muted, fontSize: 13)),
                     ])),
-        ]));
+        ]))));
   }
 }
+
+/// Shared-element key of a house's cover, list card → house page.
+String houseHeroKey(String postId) => 'house:$postId';
 
 /// "塔尔加尔 · 130 m² · 一层 · 4 个房间"
 String houseFacts(HousePost p) => [

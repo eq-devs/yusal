@@ -286,7 +286,7 @@ extension _SelectionCards on _HouseEditorState {
       notify(tr('没有可以合并的相邻房间', 'Біріктіретін көрші бөлме жоқ'));
       return;
     }
-    final target = await showModalBottomSheet<String>(
+    final target = await showMotionSheet<String>(
         context: context,
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [

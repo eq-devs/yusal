@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import '../../../app/settings.dart';
 import '../../domain/models.dart';
@@ -177,7 +178,10 @@ class _ApplyPageState extends State<ApplyPage> {
         success: hire
             ? tr3('报名已发送', 'Өтінім жіберілді', 'Отклик отправлен')
             : tr3('报价已发送', 'Ұсыныс жіберілді', 'Предложение отправлено'));
-    if (ok != null && mounted) Navigator.pop(context);
+    if (ok != null && mounted) {
+      HapticFeedback.lightImpact();
+      Navigator.pop(context);
+    }
   }
 
   Widget _field(TextEditingController c, String label,

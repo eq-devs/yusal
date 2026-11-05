@@ -31,7 +31,7 @@ extension _CompareCard on _HouseEditorState {
           'Басқа жоба жоқ, алдымен «Жаңа нұсқа ретінде көшіру»'));
       return;
     }
-    final id = await showModalBottomSheet<String>(
+    final id = await showMotionSheet<String>(
         context: context,
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [

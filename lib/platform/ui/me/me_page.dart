@@ -40,9 +40,15 @@ class MePage extends StatelessWidget {
               child: Center(
                   child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 760),
-                      child: ListView(
+                      // Built in one go, not lazily: the sections load
+                      // their own data, and a lazy list rebuilt (and
+                      // reloaded) the ones at the edge of its cache over and
+                      // over while their height changed.
+                      child: SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-                          children: [
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
                             Row(children: [
                               Expanded(
                                   child: Text(tr3('我的', 'Менің', 'Профиль'),
@@ -315,7 +321,7 @@ class MePage extends StatelessWidget {
                                     'Yusal не гарантирует оплату и качество работ.'),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(color: t.faint, fontSize: 12)),
-                          ])))));
+                          ]))))));
     });
   }
 }

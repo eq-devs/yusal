@@ -397,8 +397,10 @@ class HttpBackend extends MockBackend {
   }
 
   @override
-  Future<List<HousePost>> myPosts() async =>
-      _posts(await _call('GET', '/client/me/posts') as List);
+  Future<List<HousePost>> myPosts() async {
+    if (currentId == null) throw const ApiFailure(ApiCodes.notSignedIn);
+    return _posts(await _call('GET', '/client/me/posts') as List);
+  }
 
   @override
   Future<List<HousePost>> postsBy(String accountId) async =>
@@ -925,6 +927,8 @@ class HttpBackend extends MockBackend {
 
   @override
   Future<List<Conversation>> conversations() async {
+    // Polled by the shell; signed out there is nothing to ask the server.
+    if (currentId == null) throw const ApiFailure(ApiCodes.notSignedIn);
     final list = [
       for (final j in await _list('/client/conversations')) conversationFrom(j)
     ];

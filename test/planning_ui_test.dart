@@ -121,8 +121,10 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('确定'));
     await t.pumpAndSettle();
-    expect(find.byWidgetPredicate(
-        (w) => w is CustomPaint && w.painter is SitePlanPainter), findsOneWidget);
+    expect(
+        find.byWidgetPredicate(
+            (w) => w is CustomPaint && w.painter is SitePlanPainter),
+        findsOneWidget);
     await t.tap(find.text('添加设施'));
     await t.pumpAndSettle();
     await t.tap(find.text('牲畜棚'));

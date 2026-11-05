@@ -540,7 +540,7 @@ class ScenePainter extends CustomPainter {
           TextSpan(
               text: title,
               style: const TextStyle(
-                  fontFamily: 'NotoSans',
+                  fontFamily: 'Onest',
                   fontFamilyFallback: ['PingFang SC', 'Noto Sans SC'],
                   color: Colors.white,
                   fontSize: 12,

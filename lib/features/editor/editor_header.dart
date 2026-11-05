@@ -49,7 +49,11 @@ extension _EditorHeader on _HouseEditorState {
     final language = Seg<AppLang>(
         label: 'Тіл / 语言',
         value: app.lang,
-        items: const [(AppLang.kk, 'Қазақша'), (AppLang.zh, '中文')],
+        items: const [
+          (AppLang.kk, 'Қазақша'),
+          (AppLang.ru, 'Русский'),
+          (AppLang.zh, '中文')
+        ],
         onChanged: app.setLang);
     final theme = Seg<ThemeChoice>(
         value: app.theme,
@@ -211,7 +215,7 @@ extension _EditorHeader on _HouseEditorState {
                 if (value == 'size') footprintOptions();
                 if (value == 'floors') floorOptions();
                 if (value == 'lang')
-                  app.setLang(app.lang == AppLang.kk ? AppLang.zh : AppLang.kk);
+                  app.setLang(app.lang == AppLang.zh ? AppLang.kk : AppLang.zh);
                 if (value == 'theme')
                   app.setTheme(ThemeChoice
                       .values[(app.theme.index + 1) % ThemeChoice.values.length]);
@@ -239,7 +243,7 @@ extension _EditorHeader on _HouseEditorState {
                         child: Text(tr('导出 .house', '.house файлын шығару'))),
                     PopupMenuItem(
                         value: 'lang',
-                        child: Text(app.lang == AppLang.kk ? '中文' : 'Қазақша')),
+                        child: Text(app.lang == AppLang.zh ? 'Қазақша' : '中文')),
                     PopupMenuItem(
                         value: 'theme',
                         child: Text(switch (app.theme) {

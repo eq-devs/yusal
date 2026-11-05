@@ -891,26 +891,26 @@ class _HouseEditorState extends State<HouseEditor>
   Future<void> saveOnce() async {
     final doc = history.present;
     var failed = false;
-    saving = true;
+    if (mounted) setState(() => saving = true);
     try {
       await widget.store.saveProject(widget.entry.id, doc);
       if (mounted)
         setState(() {
           dirty = history.present != doc;
-          status = dirty ? '未保存' : '已保存';
+          status = dirty ? '未保存' : widget.store.indexWarning != null ? '已保存，索引待恢复' : '已保存';
         });
     } catch (_) {
       failed = true;
       if (mounted) {
         final firstFailure = status != '保存失败';
         setState(() => status = '保存失败');
-        if (firstFailure) notify(tr('没能保存到本机，请检查存储空间；稍后会自动再试，也可点右上角保存', 'Құрылғыға сақталмады, жадты тексеріңіз; кейін өзі қайта көреді, не «Сақтау» батырмасын басыңыз'));
+        if (firstFailure) notify(tr3('没能保存到本机，请检查存储空间；稍后会自动重试，也可导出备份', 'Құрылғыға сақталмады, жадты тексеріңіз; кейін қайталанады, файлды экспорттауға болады', 'Не удалось сохранить. Проверьте место; повторим автоматически. Можно экспортировать файл'));
       }
     } finally {
       saving = false;
       if (failed && mounted)
         timer = Timer(const Duration(seconds: 5), save);
-      else if (dirty && history.present != doc)
+      else if (mounted && dirty && history.present != doc)
         timer = Timer(const Duration(milliseconds: 1500), save);
     }
   }
@@ -3247,11 +3247,12 @@ class _HouseEditorState extends State<HouseEditor>
           Flexible(
               child: Text(
                   saving
-                      ? tr('保存中', 'Сақталуда')
+                      ? tr3('保存中', 'Сақталуда', 'Сохранение')
                       : switch (status) {
-                          '已保存' => tr('已保存', 'Сақталды'),
-                          '未保存' => tr('未保存', 'Сақталмаған'),
-                          '保存失败' => tr('保存失败', 'Сақталмады'),
+                          '已保存' => tr3('已保存', 'Сақталды', 'Сохранено'),
+                          '已保存，索引待恢复' => tr3('设计已保存，索引待恢复', 'Жоба сақталды, индекс қалпына келеді', 'Проект сохранён, индекс требует восстановления'),
+                          '未保存' => tr3('未保存', 'Сақталмаған', 'Не сохранено'),
+                          '保存失败' => tr3('保存失败', 'Сақталмады', 'Ошибка сохранения'),
                           _ => status
                         },
                   maxLines: 1,

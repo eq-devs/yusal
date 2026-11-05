@@ -42,7 +42,8 @@ void main() {
     return (store: store, id: id);
   }
 
-  Future<HouseDocument> saved(WidgetTester t, ProjectStore store, String id) async {
+  Future<HouseDocument> saved(
+      WidgetTester t, ProjectStore store, String id) async {
     await t.pump(const Duration(milliseconds: 1600));
     await t.pumpAndSettle();
     return store.openProject(id);
@@ -67,7 +68,8 @@ void main() {
         'boil': '锅炉房'
       });
 
-  testWidgets('a tapped room shows its card; drawing area and note are edited there',
+  testWidgets(
+      'a tapped room shows its card; drawing area and note are edited there',
       (t) async {
     final s = await mount(t, plain());
     await t.tapAt(at(t, 3000, 5000));
@@ -93,7 +95,8 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('furniture is placed from the palette, dragged, turned and deleted',
+  testWidgets(
+      'furniture is placed from the palette, dragged, turned and deleted',
       (t) async {
     final s = await mount(t, plain());
     await t.tap(find.byTooltip('家具'));
@@ -109,11 +112,14 @@ void main() {
     // The selected piece follows a drag in browse mode.
     await t.tap(find.text('结束'));
     await t.pumpAndSettle();
-    final g = await t.startGesture(at(t, sofa.x + sofa.width / 2, sofa.y + sofa.depth / 2));
+    final g = await t
+        .startGesture(at(t, sofa.x + sofa.width / 2, sofa.y + sofa.depth / 2));
     await t.pump();
-    await g.moveTo(at(t, sofa.x + sofa.width / 2 + 1000, sofa.y + sofa.depth / 2));
+    await g
+        .moveTo(at(t, sofa.x + sofa.width / 2 + 1000, sofa.y + sofa.depth / 2));
     await t.pump();
-    await g.moveTo(at(t, sofa.x + sofa.width / 2 + 2000, sofa.y + sofa.depth / 2));
+    await g
+        .moveTo(at(t, sofa.x + sofa.width / 2 + 2000, sofa.y + sofa.depth / 2));
     await t.pump();
     await g.up();
     await t.pumpAndSettle();
@@ -130,7 +136,8 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('the tape measure reads the distance between two taps', (t) async {
+  testWidgets('the tape measure reads the distance between two taps',
+      (t) async {
     await mount(t, plain());
     await t.tap(find.text('测距'));
     await t.pumpAndSettle();

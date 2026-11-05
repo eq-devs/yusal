@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../app/settings.dart';
+import '../../data/http/http_backend.dart';
 import '../../data/mock/mock_backend.dart';
+import '../../data/repositories.dart';
 import '../../data/mock/mock_seed.dart';
 import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'social_sign_in.dart';
 
-/// Phone sign-in. Pops `true` once signed in so the caller continues the
+/// Sign-in: Google / Apple against the real backend, phone code on the
+/// demo backend. Pops `true` once signed in so the caller continues the
 /// action that needed an account (publish, apply, contact, back up).
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,6 +42,59 @@ class _LoginPageState extends State<LoginPage> {
     if (account != null && mounted) Navigator.pop(context, true);
   }
 
+  /// Google / Apple through the native SDK, then the backend.
+  Future<void> social(HttpBackend api, String provider) async {
+    final account = await attempt(context, () async {
+      ({String idToken, String? name})? r;
+      try {
+        r = provider == 'apple'
+            ? await SocialSignIn.apple()
+            : await SocialSignIn.google();
+      } catch (e) {
+        throw ApiFailure(ApiCodes.network, '$e');
+      }
+      if (r == null) return null; // cancelled
+      return api.signInWithProvider(provider, r.idToken, name: r.name);
+    });
+    if (account != null && mounted) Navigator.pop(context, true);
+  }
+
+  Widget _socialBody(BuildContext context, HttpBackend api) {
+    final t = YTokens.of(context);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const SizedBox(height: 8),
+      Text(
+          tr3('欢迎来到 Yusal', 'Yusal-ға қош келдіңіз',
+              'Добро пожаловать в Yusal'),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 6),
+      Text(
+          tr3(
+              '浏览不需要登录。发布、点评、报名、联系和云备份时需要登录。',
+              'Қарау үшін кіру керек емес. Жариялау, пікір, өтінім, байланыс және сақтық көшірме үшін кіріңіз.',
+              'Смотреть можно без входа. Для публикации, отзывов, откликов, связи и резервных копий нужно войти.'),
+          style: TextStyle(color: t.muted, height: 1.4)),
+      const SizedBox(height: 20),
+      if (SocialSignIn.appleAvailable) ...[
+        BusyButton(
+            label: tr3('通过 Apple 登录', 'Apple арқылы кіру', 'Войти через Apple'),
+            icon: Icons.apple,
+            onPressed: () => social(api, 'apple')),
+        const SizedBox(height: 12),
+      ],
+      if (SocialSignIn.googleAvailable)
+        BusyButton(
+            label:
+                tr3('通过 Google 登录', 'Google арқылы кіру', 'Войти через Google'),
+            icon: Icons.account_circle_outlined,
+            outlined: SocialSignIn.appleAvailable,
+            onPressed: () => social(api, 'google')),
+      if (!SocialSignIn.appleAvailable && !SocialSignIn.googleAvailable)
+        Hint(tr3('请在手机 App 中登录。', 'Телефондағы қолданбада кіріңіз.',
+            'Войдите в мобильном приложении.')),
+    ]);
+  }
+
   @override
   void dispose() {
     phone.dispose();
@@ -48,6 +105,12 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final repos = context.repos;
+    if (repos is HttpBackend) {
+      return PageScaffold(
+          title: tr3('登录或注册', 'Кіру не тіркелу', 'Вход или регистрация'),
+          body: _socialBody(context, repos));
+    }
     final t = YTokens.of(context);
     final mock = context.mock;
     return PageScaffold(

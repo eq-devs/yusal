@@ -141,3 +141,22 @@ See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conforman
 独立墙段至少 0.30 米，精确坐标以整数毫米保存。当前支持矩形外形和正交墙，斜墙、任意外轮廓不在本轮交付范围。手机上的吸附以屏幕距离计算，细微调整可使用数字输入。
 
 研究、取舍、证据范围与代码自评见 [UX_IMPLEMENTATION_PLAN.md](docs/UX_IMPLEMENTATION_PLAN.md)。最终验证及构建记录见 [DELIVERY_REPORT.md](docs/DELIVERY_REPORT.md)。
+
+## 连接真实后端（yusal-api）
+
+不带参数运行时用内存里的演示后端。连接 Go 后端：
+
+```bash
+flutter run \
+  --dart-define=YUSAL_API=https://<后端地址> \
+  --dart-define=GOOGLE_SERVER_CLIENT_ID=<Web 客户端 ID> \
+  --dart-define=GOOGLE_IOS_CLIENT_ID=<iOS 客户端 ID>
+```
+
+`HttpBackend`（`lib/platform/data/http/http_backend.dart`）把登录和账号、设计快照、发布的房子（点赞、点评）、云备份交给后端；名片、需求、报价、合作、聊天、通知、审核暂时仍在内存里运行，用的是真实账号 ID，等后端有了对应模块再切过去。
+
+登录只有 Google 和 Apple，第一次接入需要：
+
+1. Google Cloud Console 为 Yusal 建 OAuth 客户端：Web（作为 `GOOGLE_SERVER_CLIENT_ID`，也要写进后端的 `GOOGLE_CLIENT_IDS`）、iOS（bundle ID 与 Xcode 一致）、Android（包名 + 签名 SHA-1）。
+2. iOS：在 `ios/Runner/Info.plist` 的 `CFBundleURLTypes` 里加 iOS 客户端 ID 的反写形式（`com.googleusercontent.apps.xxxx`）。
+3. Apple：在 Xcode 给 Runner 打开 “Sign in with Apple” capability；后端 `APPLE_CLIENT_IDS` 填 bundle ID。

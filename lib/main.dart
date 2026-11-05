@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/settings.dart';
 import 'app/tokens.dart';
+import 'platform/data/http/http_backend.dart';
 import 'platform/data/mock/mock_backend.dart';
 import 'platform/data/repositories.dart';
 import 'platform/ui/home/post_page.dart';
@@ -11,16 +12,27 @@ import 'platform/ui/shell.dart';
 import 'render2d/project_preview.dart';
 import 'storage/project_store.dart';
 
+/// Real backend address, e.g. `--dart-define=YUSAL_API=https://api.example.com`.
+/// Empty: the in-memory demo backend.
+const apiBaseUrl = String.fromEnvironment('YUSAL_API');
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppSettings.instance.load();
-  runApp(const ProviderScope(child: HouseApp()));
+  PlatformRepositories? repos;
+  if (apiBaseUrl.isNotEmpty) {
+    final api = HttpBackend(apiBaseUrl);
+    await api.restore();
+    repos = api;
+  }
+  runApp(ProviderScope(child: HouseApp(repos: repos)));
 }
 
 class HouseApp extends StatefulWidget {
   const HouseApp({super.key, this.repos, this.store});
 
-  /// Platform backend; the in-memory mock until a real server exists.
+  /// Platform backend: [HttpBackend] when built with YUSAL_API, else the
+  /// in-memory mock.
   final PlatformRepositories? repos;
   final ProjectStore? store;
 
@@ -41,7 +53,7 @@ class _HouseAppState extends State<HouseApp> {
         return PlatformScope(
             repos: repos,
             store: store,
-            isDemo: repos is MockBackend,
+            isDemo: repos is MockBackend && repos is! HttpBackend,
             child: MaterialApp(
                 title: 'Yusal',
                 debugShowCheckedModeBanner: false,

@@ -59,6 +59,19 @@ class _LoginPageState extends State<LoginPage> {
     if (account != null && mounted) Navigator.pop(context, true);
   }
 
+  /// Development sign-in by name. Shown only in builds made with
+  /// `--dart-define=YUSAL_DEV_LOGIN=true`; the backend must run with
+  /// DEV_LOGIN=true. For local runs and simulators, never for release.
+  static const _devLogin = bool.fromEnvironment('YUSAL_DEV_LOGIN');
+
+  Future<void> devSignIn(HttpBackend api) async {
+    final n = name.text.trim();
+    if (n.isEmpty) return;
+    final account = await attempt(
+        context, () => api.signInWithProvider('dev', n, name: n));
+    if (account != null && mounted) Navigator.pop(context, true);
+  }
+
   Widget _socialBody(BuildContext context, HttpBackend api) {
     final t = YTokens.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -92,6 +105,19 @@ class _LoginPageState extends State<LoginPage> {
       if (!SocialSignIn.appleAvailable && !SocialSignIn.googleAvailable)
         Hint(tr3('请在手机 App 中登录。', 'Телефондағы қолданбада кіріңіз.',
             'Войдите в мобильном приложении.')),
+      if (_devLogin) ...[
+        const SectionTitle('开发登录 · Dev', top: 28),
+        TextField(
+            key: const Key('dev-login-name'),
+            controller: name,
+            decoration: const InputDecoration(labelText: 'Name')),
+        const SizedBox(height: 12),
+        BusyButton(
+            key: const Key('dev-login'),
+            label: 'Dev sign in',
+            outlined: true,
+            onPressed: () => devSignIn(api)),
+      ],
     ]);
   }
 

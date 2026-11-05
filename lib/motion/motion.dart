@@ -5,6 +5,9 @@ import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:cue/cue.dart' as cue;
+import 'package:motor/motor.dart' as motor;
+
 import 'motion_tokens.dart';
 
 export 'motion_tokens.dart';
@@ -89,8 +92,8 @@ class StaggerScope extends InheritedWidget {
 }
 
 /// [showModalBottomSheet] with the settle curve, a content fade, rows that
-/// may stagger in, and a light tick on open. Pass `haptic: false` where the
-/// caller already gives haptic feedback.
+/// may stagger in. Opening a sheet is not a confirmation, so there is no
+/// haptic unless a caller asks with `haptic: true`.
 Future<T?> showMotionSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -113,7 +116,7 @@ Future<T?> showMotionSheet<T>({
   Offset? anchorPoint,
   AnimationStyle? sheetAnimationStyle,
   bool? requestFocus,
-  bool haptic = true,
+  bool haptic = false,
 }) {
   final reduced = Motion.reduced(context);
   if (haptic) HapticFeedback.selectionClick();
@@ -184,11 +187,8 @@ class Pressable extends StatefulWidget {
   State<Pressable> createState() => _PressableState();
 }
 
-class _PressableState extends State<Pressable>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this);
-  late final Animation<double> _scale =
-      Tween<double>(begin: 1, end: Motion.pressScale).animate(_c);
+class _PressableState extends State<Pressable> {
+  bool _pressed = false;
   Timer? _wait;
   Offset? _origin;
 
@@ -197,9 +197,7 @@ class _PressableState extends State<Pressable>
     _origin = e.position;
     _wait?.cancel();
     _wait = Timer(Motion.pressDelay, () {
-      if (mounted) {
-        _c.animateTo(1, duration: Motion.press, curve: Curves.easeOut);
-      }
+      if (mounted) setState(() => _pressed = true);
     });
   }
 
@@ -212,29 +210,34 @@ class _PressableState extends State<Pressable>
     _origin = null;
     _wait?.cancel();
     _wait = null;
-    if (_c.value > 0) {
-      _c.animateBack(0, duration: Motion.base, curve: Motion.settle);
-    }
+    if (_pressed) setState(() => _pressed = false);
   }
 
   @override
   void dispose() {
     _wait?.cancel();
-    _c.dispose();
     super.dispose();
   }
 
+  // A spring, not a timed tween: a quick press-release-press picks up
+  // from wherever the card is, with its velocity.
   @override
   Widget build(BuildContext context) => Listener(
       onPointerDown: _down,
       onPointerMove: _move,
       onPointerUp: _up,
       onPointerCancel: _up,
-      child: ScaleTransition(scale: _scale, child: widget.child));
+      child: motor.SingleMotionBuilder(
+          motion: Motion.quickSpring,
+          value: _pressed ? Motion.pressScale : 1.0,
+          child: widget.child,
+          builder: (context, scale, child) =>
+              Transform.scale(scale: scale, child: child)));
 }
 
 /// The app's one bounce: when [active] turns true (saved), the child hops
-/// 1 → 1.18 → 1 once. The caller adds `HapticFeedback.lightImpact()`.
+/// 1 → [Motion.popScale] → 1 once. Un-saving stays still. The caller adds
+/// `HapticFeedback.lightImpact()`.
 class PopOnActive extends StatefulWidget {
   const PopOnActive({super.key, required this.active, required this.child});
   final bool active;
@@ -243,42 +246,33 @@ class PopOnActive extends StatefulWidget {
   State<PopOnActive> createState() => _PopOnActiveState();
 }
 
-class _PopOnActiveState extends State<PopOnActive>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: Motion.pop);
-  late final Animation<double> _scale = TweenSequence<double>([
-    TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 1.18)
-            .chain(CurveTween(curve: Curves.easeOut)),
-        weight: 40),
-    TweenSequenceItem(
-        tween: Tween(begin: 1.18, end: 1.0)
-            .chain(CurveTween(curve: Motion.settle)),
-        weight: 60),
-  ]).animate(_c);
+class _PopOnActiveState extends State<PopOnActive> {
+  int _hops = 0;
 
   @override
   void didUpdateWidget(PopOnActive old) {
     super.didUpdateWidget(old);
-    if (widget.active && !old.active && !Motion.reduced(context)) {
-      _c.forward(from: 0);
-    }
+    if (widget.active && !old.active && !Motion.reduced(context)) _hops++;
   }
 
+  // Cue's keyframes: up quickly, then a smooth spring back to rest.
   @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) =>
-      ScaleTransition(scale: _scale, child: widget.child);
+  Widget build(BuildContext context) => cue.Cue.onChange(
+      value: _hops,
+      skipFirstAnimation: true,
+      acts: [
+        cue.ScaleAct.keyframed(
+            frames: cue.Keyframes<double>.fractional(const [
+          cue.FKeyframe(1.0, at: 0),
+          cue.FKeyframe(Motion.popScale, at: 0.35, curve: Curves.easeOut),
+          cue.FKeyframe(1.0, at: 1, curve: Curves.easeOutCubic),
+        ], duration: Motion.pop)),
+      ],
+      child: widget.child);
 }
 
 /// One control changing state (apply → applied): cross-fade with a
-/// 0.94 → 1 settle. Key the child by its state:
+/// [Motion.switchScale] → 1 settle. Key the child by its state:
 /// `StateSwitcher(child: KeyedSubtree(key: ValueKey(state), child: ...))`.
 class StateSwitcher extends StatelessWidget {
   const StateSwitcher({super.key, required this.child});
@@ -297,7 +291,8 @@ class StateSwitcher extends StatelessWidget {
             child: reduced
                 ? child
                 : ScaleTransition(
-                    scale: Tween<double>(begin: 0.94, end: 1).animate(a),
+                    scale: Tween<double>(begin: Motion.switchScale, end: 1)
+                        .animate(a),
                     child: child)),
         child: child);
   }
@@ -514,7 +509,7 @@ Widget _shuttle(
           child: child));
 }
 
-/// iOS-style horizontal slide with swipe-back, on every platform. Under
+/// iOS and macOS: the native horizontal slide with swipe-back. Under
 /// reduce motion it becomes a plain fade.
 class MotionPageTransitionsBuilder extends CupertinoPageTransitionsBuilder {
   const MotionPageTransitionsBuilder();
@@ -536,8 +531,41 @@ class MotionPageTransitionsBuilder extends CupertinoPageTransitionsBuilder {
   }
 }
 
+/// Android and the rest: the new page fades in while drifting 12px from
+/// the right on the spring curve; the page underneath stays still. The
+/// full-width iOS slide with parallax felt too strong on Android, whose
+/// system back gesture owns the screen edge anyway.
+class SoftPageTransitionsBuilder extends PageTransitionsBuilder {
+  const SoftPageTransitionsBuilder();
+
+  static const double _shift = 12;
+
+  @override
+  Widget buildTransitions<T>(
+      PageRoute<T> route,
+      BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+      Widget child) {
+    final reduced = Motion.reduced(context);
+    final t = CurvedAnimation(
+        parent: animation, curve: Motion.settle, reverseCurve: Curves.easeIn);
+    final faded = FadeTransition(opacity: t, child: child);
+    if (reduced) return faded;
+    return AnimatedBuilder(
+        animation: t,
+        child: faded,
+        builder: (context, child) => t.value >= 1
+            ? child!
+            : Transform.translate(
+                offset: Offset(_shift * (1 - t.value), 0), child: child));
+  }
+}
+
 /// The page transitions to put in `ThemeData.pageTransitionsTheme`.
 final motionPageTransitions = PageTransitionsTheme(builders: {
   for (final p in TargetPlatform.values)
-    p: const MotionPageTransitionsBuilder(),
+    p: p == TargetPlatform.iOS || p == TargetPlatform.macOS
+        ? const MotionPageTransitionsBuilder()
+        : const SoftPageTransitionsBuilder(),
 });

@@ -113,18 +113,26 @@ class HouseCard extends StatelessWidget {
           if (p.estimatedCost != null)
             Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: RichText(
-                    text: TextSpan(
+                child: Text.rich(
+                    TextSpan(
                         style: TextStyle(color: t.ink, fontSize: 14),
                         children: [
-                      TextSpan(
-                          text: '≈ ${money(p.estimatedCost)}',
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
-                      TextSpan(
-                          text:
-                              ' ${tr3('预估造价', 'болжамды құн', 'оценка стоимости')}',
-                          style: TextStyle(color: t.muted)),
-                    ]))),
+                          TextSpan(
+                              text: '≈ ${money(p.estimatedCost)}',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontFeatures: [
+                                    FontFeature.tabularFigures()
+                                  ])),
+                          TextSpan(
+                              text:
+                                  ' ${tr3('预估造价', 'болжамды құн', 'оценка стоимости')}',
+                              style: TextStyle(color: t.muted)),
+                        ]),
+                    // One line, so long labels (Russian) cannot push the
+                    // card past a fixed-height list such as the Me tab.
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis)),
           if (!compact)
             Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -158,18 +166,20 @@ class HouseCard extends StatelessWidget {
                     alignment: WrapAlignment.spaceBetween,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     spacing: 8,
+                    runSpacing: 4,
                     children: [
-                      Text(
-                          p.reuseCount == 0
-                              ? tr3('可以直接拿来改', 'Өзгертуге болады',
-                                  'Можно взять за основу')
-                              : reusedTimes(p.reuseCount),
-                          style: TextStyle(color: t.muted, fontSize: 13)),
-                      TextButton.icon(
+                      OutlinedButton.icon(
                           onPressed: onReuse,
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: t.accent,
+                              side: BorderSide(color: t.accent),
+                              visualDensity: VisualDensity.compact),
                           icon:
                               const Icon(Icons.content_copy_outlined, size: 16),
                           label: Text(startFromThis())),
+                      if (p.reuseCount > 0)
+                        Text(reusedTimes(p.reuseCount),
+                            style: TextStyle(color: t.muted, fontSize: 13)),
                     ])),
         ]));
   }

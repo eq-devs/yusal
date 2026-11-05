@@ -86,7 +86,11 @@ class MePage extends StatelessWidget {
                                               fontSize: 22,
                                               fontWeight: FontWeight.w700)),
                                       Text(
-                                          '${maskPhone(account.phone)} · ${context.isDemo ? tr3('演示账号', 'Демо аккаунт', 'Демо-аккаунт') : tr3('手机号已验证', 'Телефон расталған', 'Телефон подтверждён')}',
+                                          context.isDemo
+                                              ? '${maskPhone(account.phone)} · ${tr3('演示账号', 'Демо аккаунт', 'Демо-аккаунт')}'
+                                              : account.phone.isEmpty
+                                                  ? tr3('未填写手机号', 'Телефон көрсетілмеген', 'Телефон не указан')
+                                                  : maskPhone(account.phone),
                                           style: TextStyle(color: t.muted)),
                                     ])),
                                 IconButton(
@@ -205,6 +209,16 @@ class MePage extends StatelessWidget {
                                           : 'Резервные копии'),
                                   () => pushPage<void>(
                                       context, (_) => const BackupPage())),
+                              if (!context.isDemo)
+                                tile(
+                                    Icons.phone_outlined,
+                                    tr3('手机号', 'Телефон нөмірі',
+                                        'Номер телефона'),
+                                    () => editPhone(context),
+                                    sub: tr3(
+                                        '只在你在聊天里主动分享时对方才能看到',
+                                        'Чатта өзіңіз бөліскенде ғана көрінеді',
+                                        'Виден, только когда вы делитесь им в чате')),
                               tile(
                                   Icons.block,
                                   tr3('隐私与拉黑', 'Құпиялық',
@@ -306,7 +320,7 @@ class MePage extends StatelessWidget {
   }
 }
 
-String maskPhone(String phone) => phone.length < 6
+String maskPhone(String phone) => phone.length < 8
     ? phone
     : '${phone.substring(0, phone.length - 7)}***${phone.substring(phone.length - 4)}';
 

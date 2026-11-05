@@ -86,6 +86,9 @@ class FakeApi {
         return ok(tokens());
       case ('GET', '/client/auth/me'):
         return ok(user);
+      case ('PATCH', '/client/auth/me'):
+        final body = jsonDecode(r.body) as Map<String, dynamic>;
+        return ok({...user, ...body});
       case ('GET', '/client/posts'):
         return ok({'items': [postJson], 'total': 1, 'page': 1, 'page_size': 100});
       case ('GET', '/client/posts/p1/preview'):
@@ -165,6 +168,17 @@ void main() {
         throwsA(isA<ApiFailure>()
             .having((e) => e.code, 'code', ApiCodes.conflict)));
     expect(await backend.post('missing'), isNull);
+  });
+
+  test('saving the phone patches the account and updates the session',
+      () async {
+    await backend.signInWithProvider('google', 'id-token');
+    final a = await backend.updatePhone('+77015550011');
+    expect(a.phone, '+77015550011');
+    expect(backend.currentAccount?.phone, '+77015550011');
+    final patch = api.requests.last;
+    expect(patch.method, 'PATCH');
+    expect(jsonDecode(patch.body), {'phone': '+77015550011'});
   });
 
   test('signed out, protected calls report notSignedIn', () async {

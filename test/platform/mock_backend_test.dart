@@ -82,6 +82,20 @@ void main() {
               (e) => (e as ApiFailure).code == ApiCodes.notSignedIn)));
     });
 
+    test('the chat phone can be changed, cleared and must look like one',
+        () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final a = await b.updatePhone('+7 (701) 555-00-11');
+      expect(a.phone, '+77015550011');
+      expect(b.currentAccount?.phone, '+77015550011');
+      await expectLater(
+          b.updatePhone('12345'),
+          throwsA(predicate(
+              (e) => (e as ApiFailure).code == ApiCodes.invalidInput)));
+      expect((await b.updatePhone('')).phone, '');
+    });
+
     test('deleting an account takes its demands down', () async {
       final b = backend();
       b.signInAs(SeedIds.owner);

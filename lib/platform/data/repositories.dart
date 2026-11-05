@@ -47,6 +47,9 @@ abstract interface class AuthRepository {
   Future<void> signOut();
   Future<Account> updateName(String name);
 
+  /// The number shown when the caller shares it in a chat; "" clears it.
+  Future<Account> updatePhone(String phone);
+
   /// Takes profiles and open demands down; cooperation records stay, shown
   /// with an anonymous name.
   Future<void> deleteAccount();

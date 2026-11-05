@@ -105,6 +105,12 @@ class _ChatPageState extends State<ChatPage> {
               () => repos.send(widget.conversationId, MessageKind.demandCard,
                   refId: id));
       case 'phone':
+        if (repos.currentAccount?.phone.isEmpty ?? true) {
+          if (!await editPhone(context) ||
+              !mounted ||
+              (repos.currentAccount?.phone.isEmpty ?? true)) return;
+        }
+        if (!mounted) return;
         if (await confirmDialog(context,
                 tr3('展示电话号码？', 'Телефонды көрсету?', 'Показать телефон?'),
                 body: tr3(

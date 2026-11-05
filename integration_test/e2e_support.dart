@@ -66,6 +66,15 @@ Future<void> idle(WidgetTester t, [int ms = 600]) async {
 }
 
 Future<void> tapIt(WidgetTester t, Finder f) async {
+  // A toast from the previous step can float over the bottom of the page.
+  if (find.byType(SnackBar).evaluate().isNotEmpty) {
+    for (final m in find.byType(ScaffoldMessenger).evaluate()) {
+      (m as StatefulElement).state is ScaffoldMessengerState
+          ? (m.state as ScaffoldMessengerState).clearSnackBars()
+          : null;
+    }
+    await t.pumpAndSettle();
+  }
   await t.ensureVisible(f);
   await t.pumpAndSettle();
   await t.tap(f);

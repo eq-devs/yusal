@@ -87,7 +87,7 @@ void main() {
         findsOneWidget);
   });
 
-  testWidgets('＋ offers four ways in and "find people" opens the form',
+  testWidgets('＋ offers three owner ways in plus joining as a pro and "find people" opens the form',
       (t) async {
     await launch(t, as: SeedIds.owner);
     await t.tap(find.byKey(const Key('explore-create')));

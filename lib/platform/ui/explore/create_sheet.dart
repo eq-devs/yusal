@@ -35,32 +35,33 @@ class _CreateSheet extends StatelessWidget {
   const _CreateSheet();
   @override
   Widget build(BuildContext context) {
+    // Owners' three ways in, the easiest first: most people start from a
+    // house someone already drew. Joining as a pro is a separate, quieter
+    // link so it does not compete with them.
     final options = [
       (
-        Icons.architecture,
-        tr3('从零画', 'Нөлден сызу', 'С нуля'),
-        tr3('模板起步，输长宽就行', 'Үлгіден бастаңыз', 'Шаблон и размеры'),
-      ),
-      (
+        1,
         Icons.collections_outlined,
         tr3('从图纸库挑一套', 'Кітапханадан таңдау', 'Из библиотеки'),
         tr3('用别人的房子改', 'Біреудің үйін өзгерту', 'Взять чужой дом за основу'),
       ),
       (
+        0,
+        Icons.architecture,
+        tr3('从零画', 'Нөлден сызу', 'С нуля'),
+        tr3('模板起步，输长宽就行', 'Үлгіден бастаңыз', 'Шаблон и размеры'),
+      ),
+      (
+        2,
         Icons.construction,
         tr3('直接找人', 'Адам іздеу', 'Найти мастера'),
         tr3('不用图纸，填需求', 'Сызбасыз тапсырыс', 'Без чертежа'),
       ),
-      (
-        Icons.badge_outlined,
-        tr3('入驻接活', 'Жұмыс алу', 'Стать мастером'),
-        tr3('工人 / 包工头 / 工程师', 'Шебер / бригада / инженер',
-            'Мастер, бригада, инженер'),
-      ),
     ];
+    final t = YTokens.of(context);
     return SafeArea(
         child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,20 +72,32 @@ class _CreateSheet extends StatelessWidget {
                       style: display(size: 22)),
                   const SizedBox(height: 14),
                   LayoutBuilder(builder: (context, c) {
-                    final cols = c.maxWidth >= 560 ? 4 : 2;
+                    final cols = c.maxWidth >= 560 ? 3 : 1;
                     final w = (c.maxWidth - 12 * (cols - 1)) / cols;
-                    return Wrap(spacing: 12, runSpacing: 12, children: [
-                      for (var i = 0; i < options.length; i++)
+                    return Wrap(spacing: 12, runSpacing: 10, children: [
+                      for (final (i, o) in options.indexed)
                         SizedBox(
                             width: w,
                             child: _OptionCard(
-                                key: Key('create-option-$i'),
-                                icon: options[i].$1,
-                                title: options[i].$2,
-                                body: options[i].$3,
-                                onTap: () => Navigator.of(context).pop(i))),
+                                key: Key('create-option-${o.$1}'),
+                                icon: o.$2,
+                                title: o.$3,
+                                body: o.$4,
+                                recommended: i == 0,
+                                row: cols == 1,
+                                onTap: () => Navigator.of(context).pop(o.$1))),
                     ]);
                   }),
+                  const SizedBox(height: 6),
+                  Center(
+                      child: TextButton(
+                          key: const Key('create-option-3'),
+                          onPressed: () => Navigator.of(context).pop(3),
+                          child: Text(
+                              tr3('我是工人 / 包工头 / 工程师：入驻接活',
+                                  'Шеберсіз бе? Жұмыс алу',
+                                  'Вы мастер? Получать заказы'),
+                              style: TextStyle(color: t.muted)))),
                 ])));
   }
 }
@@ -95,32 +108,62 @@ class _OptionCard extends StatelessWidget {
       required this.icon,
       required this.title,
       required this.body,
-      required this.onTap});
+      required this.onTap,
+      this.recommended = false,
+      this.row = false});
   final IconData icon;
   final String title, body;
   final VoidCallback onTap;
+  final bool recommended;
+
+  /// Icon beside the text (narrow screens, one card per line) instead of
+  /// above it.
+  final bool row;
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
+    final text = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Wrap(
+          spacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(title,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+            if (recommended)
+              Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                      color: t.accent,
+                      borderRadius: BorderRadius.circular(20)),
+                  child: Text(tr3('推荐', 'Ұсынамыз', 'Совет'),
+                      style: TextStyle(
+                          color: t.accentInk,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700))),
+          ]),
+      const SizedBox(height: 2),
+      Text(body, style: TextStyle(color: t.muted, fontSize: 13)),
+    ]);
+    final icon = Icon(this.icon, color: t.accent, size: 28);
     return Material(
-        color: t.surface,
+        color: recommended ? t.accentSoft : t.surface,
         borderRadius: BorderRadius.circular(yRadius),
         child: InkWell(
             borderRadius: BorderRadius.circular(yRadius),
             onTap: onTap,
             child: Padding(
                 padding: const EdgeInsets.all(14),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(icon, color: t.accent, size: 28),
-                      const SizedBox(height: 10),
-                      Text(title,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 15)),
-                      const SizedBox(height: 2),
-                      Text(body,
-                          style: TextStyle(color: t.muted, fontSize: 13)),
-                    ]))));
+                child: row
+                    ? Row(children: [
+                        icon,
+                        const SizedBox(width: 14),
+                        Expanded(child: text),
+                        Icon(Icons.chevron_right, color: t.faint),
+                      ])
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [icon, const SizedBox(height: 10), text]))));
   }
 }

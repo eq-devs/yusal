@@ -212,6 +212,7 @@ class ProfileCard extends StatelessWidget {
                         style: TextStyle(fontSize: 12, color: t.muted)),
                   ],
                 ]),
+                _TrackRecord(profile: p),
                 if (p.refPrices.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -222,5 +223,60 @@ class ProfileCard extends StatelessWidget {
                 ],
               ])),
         ]));
+  }
+}
+
+/// What a pro has shown on Yusal: average rating from reviews about them,
+/// and how many works, of which how many came from jobs on the platform.
+/// Nothing is shown for a pro with no record yet.
+class _TrackRecord extends StatelessWidget {
+  const _TrackRecord({required this.profile});
+  final ServiceProfile profile;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    final p = profile;
+    final onPlatform =
+        p.works.where((w) => w.source == WorkSource.platform).length;
+    return Live<List<Review>>(
+        reloadKey: p.ownerId,
+        load: (r) => r.reviewsAbout(p.ownerId),
+        loading: const SizedBox.shrink(),
+        builder: (context, reviews) {
+          final scores = [
+            for (final r in reviews)
+              if (r.scores.isNotEmpty)
+                r.scores.values.reduce((a, b) => a + b) / r.scores.length
+          ];
+          final parts = [
+            if (p.works.isNotEmpty)
+              tr3('${p.works.length} 个作品', '${p.works.length} жұмыс',
+                  'Работ: ${p.works.length}'),
+            if (onPlatform > 0)
+              tr3('$onPlatform 个平台合作', 'Платформада: $onPlatform',
+                  'На платформе: $onPlatform'),
+          ];
+          if (scores.isEmpty && parts.isEmpty) return const SizedBox.shrink();
+          return Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(children: [
+                if (scores.isNotEmpty) ...[
+                  Icon(Icons.star, size: 15, color: t.ink),
+                  const SizedBox(width: 3),
+                  Text(
+                      '${(scores.reduce((a, b) => a + b) / scores.length).toStringAsFixed(1)} (${scores.length})',
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: [FontFeature.tabularFigures()])),
+                  if (parts.isNotEmpty) const SizedBox(width: 8),
+                ],
+                Flexible(
+                    child: Text(parts.join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 13, color: t.muted))),
+              ]));
+        });
   }
 }

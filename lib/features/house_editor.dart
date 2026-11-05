@@ -44,6 +44,7 @@ import '../core/analysis/site_analysis.dart';
 import '../core/analysis/utility_plan.dart';
 import '../render2d/planning_names.dart';
 import '../render2d/site_plan_painter.dart';
+import '../motion/motion.dart';
 
 part 'editor/editor_header.dart';
 part 'editor/plan_tab.dart';
@@ -420,7 +421,7 @@ class _HouseEditorState extends State<HouseEditor>
     final depth = TextEditingController(
         text: (history.present.footprint.depth / 1000).toStringAsFixed(2));
     String? error;
-    await showModalBottomSheet<void>(
+    await showMotionSheet<void>(
         context: context,
         isScrollControlled: true,
         builder: (context) => StatefulBuilder(
@@ -527,7 +528,7 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   Future<void> moreTools() async {
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showMotionSheet<String>(
         context: context,
         isScrollControlled: true,
         builder: (context) => SafeArea(
@@ -1289,7 +1290,8 @@ class _HouseEditorState extends State<HouseEditor>
         persist: false,
         action: undo == null
             ? null
-            : SnackBarAction(label: tr('撤销', 'Болдырмау'), onPressed: undo)));
+            : SnackBarAction(label: tr('撤销', 'Болдырмау'), onPressed: undo)),
+        snackBarAnimationStyle: Motion.toastStyle);
   }
 
   /// Forget a start point or selection that the document no longer has.
@@ -1387,7 +1389,7 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   Future<void> floorOptions() async {
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showMotionSheet<String>(
         context: context,
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
@@ -1450,7 +1452,7 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   Future<void> settings() async {
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showMotionSheet<String>(
         context: context,
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
@@ -1509,7 +1511,7 @@ class _HouseEditorState extends State<HouseEditor>
       final overhang =
           await length(tr('屋檐伸出', 'Карниз шығыңқылығы'), history.present.roof.overhang ?? 500);
       if (overhang == null) return;
-      final direction = await showModalBottomSheet<String>(
+      final direction = await showMotionSheet<String>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
@@ -1548,7 +1550,7 @@ class _HouseEditorState extends State<HouseEditor>
         'windowHeight': tr('默认窗高', 'Әдепкі терезе биіктігі'),
         'windowSill': tr('默认窗台高度', 'Әдепкі терезе алды биіктігі')
       };
-      final field = await showModalBottomSheet<String>(
+      final field = await showMotionSheet<String>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
@@ -1566,7 +1568,7 @@ class _HouseEditorState extends State<HouseEditor>
       }
     }
     if (choice == 'north') {
-      final value = await showModalBottomSheet<int>(
+      final value = await showMotionSheet<int>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
@@ -1583,7 +1585,7 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   Future<void> grid() async {
-    final selected = await showModalBottomSheet<Object>(
+    final selected = await showMotionSheet<Object>(
         context: context,
         builder: (context) => SafeArea(
             child: SizedBox(
@@ -1610,7 +1612,7 @@ class _HouseEditorState extends State<HouseEditor>
               ? history.present.footprint.width ~/ 2
               : history.present.footprint.depth ~/ 2);
       if (value != null) {
-        final scope = await showModalBottomSheet<String>(
+        final scope = await showMotionSheet<String>(
             context: context,
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [
@@ -1630,7 +1632,7 @@ class _HouseEditorState extends State<HouseEditor>
       }
     }
     if (selected is ResolvedAxis) {
-      final operation = await showModalBottomSheet<String>(
+      final operation = await showMotionSheet<String>(
         context: context,
         builder: (context) => SafeArea(
             child: ListView(shrinkWrap: true, children: [
@@ -1802,7 +1804,7 @@ class _HouseEditorState extends State<HouseEditor>
             () => showWallContext(wall, attachmentOnWall(wall, point, size)));
         return;
       }
-      final choice = await showModalBottomSheet<String>(
+      final choice = await showMotionSheet<String>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
@@ -1892,7 +1894,7 @@ class _HouseEditorState extends State<HouseEditor>
       });
     final stair = floor.stairs.where((s) => s.id == id).firstOrNull;
     if (stair != null) {
-      final choice = await showModalBottomSheet<String>(
+      final choice = await showMotionSheet<String>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
@@ -2332,7 +2334,7 @@ class _HouseEditorState extends State<HouseEditor>
     if (selectedDrawnAnchor == null) return;
     final choice = directThickness
         ? 'thickness'
-        : await showModalBottomSheet<String>(
+        : await showMotionSheet<String>(
             context: context,
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [

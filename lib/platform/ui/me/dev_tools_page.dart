@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../data/mock/mock_seed.dart';
 import '../l10n.dart';
 import '../scope.dart';
@@ -77,7 +78,10 @@ class DevToolsPage extends StatelessWidget {
                                 color:
                                     mock.currentId == id ? t.accent : t.muted),
                             title: Text(label),
-                            onTap: () => mock.signInAs(id)),
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              mock.signInAs(id);
+                            }),
                     ])));
   }
 }

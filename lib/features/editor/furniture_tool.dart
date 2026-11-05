@@ -4,7 +4,7 @@ part of '../house_editor.dart';
 /// the selected piece, its corner grip (size) or its turn grip (90°).
 /// The tape measure lives here too: two taps, distance in millimetres.
 extension _FurnitureTool on _HouseEditorState {
-  Future<FurnitureKind?> pickFurnitureKind() => showModalBottomSheet<FurnitureKind>(
+  Future<FurnitureKind?> pickFurnitureKind() => showMotionSheet<FurnitureKind>(
       context: context,
       isScrollControlled: true,
       builder: (context) {

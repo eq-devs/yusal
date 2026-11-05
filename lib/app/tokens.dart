@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'settings.dart';
+import '../motion/motion.dart';
 
 /// Drafting-table palette: a cool grey desk, white sheets, dark wall cuts
 /// and one amber accent. Every screen and painter reads colours from here.
@@ -164,7 +165,9 @@ ThemeData buildTheme(Tokens t) {
       scaffoldBackgroundColor: t.bg,
       canvasColor: t.panel,
       dividerColor: t.line,
-      extensions: [t]);
+      extensions: [t],
+      // iOS-style horizontal slide everywhere, with swipe-back.
+      pageTransitionsTheme: motionPageTransitions);
   final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(8), side: BorderSide(color: t.line));
   return base.copyWith(

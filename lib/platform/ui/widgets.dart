@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/settings.dart';
 import 'theme.dart';
+import '../../motion/motion.dart';
 
 /// Shared building blocks of the platform pages.
 
@@ -76,18 +78,21 @@ class YCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
-    return Container(
-        decoration: BoxDecoration(
-            color: color ?? t.card,
-            borderRadius: BorderRadius.circular(yRadius),
-            border: Border.all(color: t.line),
-            boxShadow: shadow ? t.softShadow : null),
-        child: Material(
-            type: MaterialType.transparency,
-            child: InkWell(
+    return Pressable(
+        enabled: onTap != null,
+        child: Container(
+            decoration: BoxDecoration(
+                color: color ?? t.card,
                 borderRadius: BorderRadius.circular(yRadius),
-                onTap: onTap,
-                child: Padding(padding: padding, child: child))));
+                border: Border.all(color: t.line),
+                boxShadow: shadow ? t.softShadow : null),
+            child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                    borderRadius: BorderRadius.circular(yRadius),
+                    splashFactory: NoSplash.splashFactory,
+                    onTap: onTap,
+                    child: Padding(padding: padding, child: child)))));
   }
 }
 
@@ -347,11 +352,15 @@ class _BusyButtonState extends State<BusyButton> {
   }
 }
 
+/// A sheet row that staggers in when its sheet first opens.
+Widget _staggered(BuildContext context, int i, Widget row) =>
+    StaggerScope.of(context) ? Stagger(index: i + 1, child: row) : row;
+
 /// Bottom-sheet picker for one value.
 Future<T?> pickOne<T>(
     BuildContext context, String title, List<(T, String)> options,
     {T? selected}) {
-  return showModalBottomSheet<T>(
+  return showMotionSheet<T>(
       context: context,
       isScrollControlled: true,
       builder: (context) => PlatformTheme(
@@ -367,13 +376,19 @@ Future<T?> pickOne<T>(
                             style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.w700)),
                         const SizedBox(height: 8),
-                        for (final (value, label) in options)
-                          ListTile(
-                              title: Text(label),
-                              trailing: value == selected
-                                  ? const Icon(Icons.check)
-                                  : null,
-                              onTap: () => Navigator.pop(context, value)),
+                        for (final (i, (value, label)) in options.indexed)
+                          _staggered(
+                              context,
+                              i,
+                              ListTile(
+                                  title: Text(label),
+                                  trailing: value == selected
+                                      ? const Icon(Icons.check)
+                                      : null,
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    Navigator.pop(context, value);
+                                  })),
                       ])))));
 }
 
@@ -381,7 +396,7 @@ Future<T?> pickOne<T>(
 Future<List<T>?> pickMany<T>(BuildContext context, String title,
     List<(T, String)> options, List<T> selected) {
   final chosen = {...selected};
-  return showModalBottomSheet<List<T>>(
+  return showMotionSheet<List<T>>(
       context: context,
       isScrollControlled: true,
       builder: (context) => PlatformTheme(

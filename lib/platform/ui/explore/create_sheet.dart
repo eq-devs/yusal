@@ -6,11 +6,12 @@ import '../scope.dart';
 import '../shell.dart';
 import '../theme.dart';
 import 'explore_page.dart';
+import '../../../motion/motion.dart';
 
 /// "＋": the four ways in. Draw from scratch, start from someone's plan,
 /// find people without a drawing, or join as a pro.
 Future<void> showCreateSheet(BuildContext context) async {
-  final choice = await showModalBottomSheet<int>(
+  final choice = await showMotionSheet<int>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
@@ -74,9 +75,12 @@ class _CreateSheet extends StatelessWidget {
                   LayoutBuilder(builder: (context, c) {
                     final cols = c.maxWidth >= 560 ? 3 : 1;
                     final w = (c.maxWidth - 12 * (cols - 1)) / cols;
+                    final stagger = StaggerScope.of(context);
+                    Widget row(int i, Widget c) =>
+                        stagger ? Stagger(index: i + 1, child: c) : c;
                     return Wrap(spacing: 12, runSpacing: 10, children: [
                       for (final (i, o) in options.indexed)
-                        SizedBox(
+                        row(i, SizedBox(
                             width: w,
                             child: _OptionCard(
                                 key: Key('create-option-${o.$1}'),
@@ -85,7 +89,7 @@ class _CreateSheet extends StatelessWidget {
                                 body: o.$4,
                                 recommended: i == 0,
                                 row: cols == 1,
-                                onTap: () => Navigator.of(context).pop(o.$1))),
+                                onTap: () => Navigator.of(context).pop(o.$1)))),
                     ]);
                   }),
                   const SizedBox(height: 6),
@@ -147,11 +151,13 @@ class _OptionCard extends StatelessWidget {
       Text(body, style: TextStyle(color: t.muted, fontSize: 13)),
     ]);
     final icon = Icon(this.icon, color: t.accent, size: 28);
-    return Material(
+    return Pressable(
+        child: Material(
         color: recommended ? t.accentSoft : t.surface,
         borderRadius: BorderRadius.circular(yRadius),
         child: InkWell(
             borderRadius: BorderRadius.circular(yRadius),
+            splashFactory: NoSplash.splashFactory,
             onTap: onTap,
             child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -164,6 +170,6 @@ class _OptionCard extends StatelessWidget {
                       ])
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [icon, const SizedBox(height: 10), text]))));
+                        children: [icon, const SizedBox(height: 10), text])))));
   }
 }

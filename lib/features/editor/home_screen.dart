@@ -96,7 +96,8 @@ class _HouseHomeState extends State<HouseHome> {
 
   void message(String text) {
     if (mounted)
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)),
+          snackBarAnimationStyle: Motion.toastStyle);
   }
 
   Future<void> receiveFile(Object? payload) async {
@@ -181,7 +182,7 @@ class _HouseHomeState extends State<HouseHome> {
 
   Future<void> createFromTemplate([String? chosen]) async {
     final key = chosen ??
-        await showModalBottomSheet<String>(
+        await showMotionSheet<String>(
             context: context,
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [

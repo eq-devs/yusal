@@ -331,7 +331,8 @@ class _HomePageState extends State<HomePage> {
         liked: liked.contains(p.id),
         onLike: () => attempt(context, () => context.repos.toggleLike(p.id)),
         onReuse: () => startFromPost(context, p),
-        onTap: () => pushPage<void>(context, (_) => PostPage(postId: p.id)));
+        onTap: () => pushPage<void>(
+            context, (_) => PostPage(postId: p.id, preview: p)));
     if (wide)
       return SliverPadding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),

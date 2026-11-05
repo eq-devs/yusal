@@ -178,6 +178,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
     ]);
     final list = people
         ? Live<List<ServiceProfile>>(
+            fadeIn: true,
             load: (r) => r.searchProfiles(ProfileFilter(
                 kind: kind,
                 trade: trade,
@@ -201,6 +202,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                   (_) => ProfilePage(profileId: p.id)))),
                   ]))
         : Live<(List<Demand>, Set<String>)>(
+            fadeIn: true,
             load: (r) async => (
                   await r.searchDemands(DemandFilter(
                       type: type,

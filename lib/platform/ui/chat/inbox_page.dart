@@ -89,6 +89,7 @@ class _Conversations extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     return Live<List<(Conversation, Account?)>>(
+        fadeIn: true,
         load: (r) async {
           final me = r.currentAccount?.id ?? '';
           return [
@@ -160,6 +161,7 @@ class _Notices extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     return Live<List<AppNotification>>(
+        fadeIn: true,
         load: (r) => r.notifications(),
         builder: (context, list) => list.isEmpty
             ? EmptyState(

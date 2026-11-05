@@ -16,6 +16,7 @@ import 'applications_page.dart';
 import 'publish_page.dart';
 import 'share_page.dart';
 import '../home/post_page.dart';
+import '../../../motion/motion.dart';
 
 class _DetailData {
   _DetailData(this.demand, this.owner, this.snapshot, this.myApps, this.coops,
@@ -277,9 +278,12 @@ class _DemandDetail extends StatelessWidget {
             onPressed: contact,
             icon: const Icon(Icons.chat_bubble_outline)),
         const SizedBox(width: 6),
-        FilledButton(
-            onPressed: myApp != null || accepting ? apply : null,
-            child: Text(label)),
+        StateSwitcher(
+            child: KeyedSubtree(
+                key: ValueKey(myApp != null),
+                child: FilledButton(
+                    onPressed: myApp != null || accepting ? apply : null,
+                    child: Text(label)))),
       ]);
     }
 

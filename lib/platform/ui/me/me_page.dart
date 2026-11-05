@@ -129,7 +129,7 @@ class MePage extends StatelessWidget {
                                                   child: HouseCard(
                                                       compact: true,
                                                       post: list[i],
-                                                      onTap: () => pushPage<void>(context, (_) => PostPage(postId: list[i].id))))))),
+                                                      onTap: () => pushPage<void>(context, (_) => PostPage(postId: list[i].id, preview: list[i]))))))),
                               SectionTitle(tr3(
                                   '入驻接活', 'Кәсіби профиль', 'Профиль мастера')),
                               Text(

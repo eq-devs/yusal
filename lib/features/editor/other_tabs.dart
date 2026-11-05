@@ -280,7 +280,7 @@ extension _OtherTabs on _HouseEditorState {
       if (name == null || !mounted) return;
       final thickness = await askMm(tr('厚度', 'Қалыңдығы'), l.thickness);
       if (thickness == null || !mounted) return;
-      final material = await showModalBottomSheet<LayerMaterial>(
+      final material = await showMotionSheet<LayerMaterial>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
@@ -764,7 +764,7 @@ extension _OtherTabs on _HouseEditorState {
               },
               color: p.status == 'ok' ? null : t.crit,
               onTap: () async {
-                final kind = await showModalBottomSheet<OpeningKind>(
+                final kind = await showMotionSheet<OpeningKind>(
                     context: context,
                     builder: (context) => SafeArea(
                             child: ListView(shrinkWrap: true, children: [

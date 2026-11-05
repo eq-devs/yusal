@@ -6,6 +6,7 @@ import '../data/repositories.dart';
 import 'l10n.dart';
 import 'auth/login_page.dart';
 import 'theme.dart';
+import '../../motion/motion.dart';
 
 /// Gives every platform page the repositories (mock today) and the local
 /// design store.
@@ -61,11 +62,15 @@ class Live<T> extends StatefulWidget {
       this.error,
       this.reloadKey,
       this.refreshError,
-      this.loading});
+      this.loading,
+      this.fadeIn = false});
   final Future<T> Function(PlatformRepositories repos) load;
   final Widget Function(BuildContext context, T data) builder;
   final Widget Function(BuildContext context, Object error)? error;
   final Widget? loading;
+
+  /// Cross-fade from [loading] to the content. Box layouts only.
+  final bool fadeIn;
 
   /// Stable identity of the query. Null preserves legacy rebuild loading.
   final Object? reloadKey;
@@ -144,6 +149,14 @@ class _LiveState<T> extends State<Live<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final child = _build(context);
+    if (!widget.fadeIn) return child;
+    return FadeSwitcher(
+        child: KeyedSubtree(
+            key: ValueKey(_loaded ? 'loaded' : 'loading'), child: child));
+  }
+
+  Widget _build(BuildContext context) {
     if (!_loaded)
       return widget.loading ??
           const Center(
@@ -183,7 +196,8 @@ class OnChange extends StatelessWidget {
 void toast(BuildContext context, String text) {
   final m = ScaffoldMessenger.maybeOf(context);
   m?.hideCurrentSnackBar();
-  m?.showSnackBar(SnackBar(content: Text(text)));
+  m?.showSnackBar(SnackBar(content: Text(text)),
+      snackBarAnimationStyle: Motion.toastStyle);
 }
 
 /// Runs a backend call, showing a localized message on failure. A missing

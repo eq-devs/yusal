@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/settings.dart';
@@ -5,6 +6,7 @@ import 'app/tokens.dart';
 import 'platform/data/http/http_backend.dart';
 import 'platform/data/mock/mock_backend.dart';
 import 'platform/data/repositories.dart';
+import 'platform/push/push_setup.dart';
 import 'platform/ui/home/post_page.dart';
 import 'platform/ui/links.dart';
 import 'platform/ui/scope.dart';
@@ -16,6 +18,9 @@ import 'storage/project_store.dart';
 /// Empty: the in-memory demo backend.
 const apiBaseUrl = String.fromEnvironment('YUSAL_API');
 
+/// The app's navigator, for opening what a tapped push points to.
+final appNavigator = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppSettings.instance.load();
@@ -24,6 +29,8 @@ Future<void> main() async {
     final api = HttpBackend(apiBaseUrl);
     await api.restore();
     repos = api;
+    // Push only with the real backend; the demo never touches Firebase.
+    unawaited(PushSetup(api, appNavigator).start());
   }
   runApp(ProviderScope(child: HouseApp(repos: repos)));
 }
@@ -55,6 +62,7 @@ class _HouseAppState extends State<HouseApp> {
             store: store,
             isDemo: repos is MockBackend && repos is! HttpBackend,
             child: MaterialApp(
+                navigatorKey: appNavigator,
                 title: 'Yusal',
                 debugShowCheckedModeBanner: false,
                 theme: buildTheme(settings.theme == ThemeChoice.night

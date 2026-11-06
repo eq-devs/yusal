@@ -4,6 +4,10 @@
 //     --dart-define=YUSAL_API=http://localhost:8080 \
 //     --dart-define=YUSAL_DEV_LOGIN=true \
 //     --dart-define=E2E_SHOTS=$PWD/test-screens
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,6 +30,31 @@ import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 
 import 'e2e_support.dart';
+
+/// Stands in for the gallery: returns one generated photo.
+class FakeGallery extends FileSelectorPlatform {
+  FakeGallery(this.photo);
+  final Uint8List photo;
+  @override
+  Future<List<XFile>> openFiles(
+          {List<XTypeGroup>? acceptedTypeGroups,
+          String? initialDirectory,
+          String? confirmButtonText}) async =>
+      [XFile.fromData(photo, name: 'site.png', mimeType: 'image/png')];
+}
+
+/// A small PNG drawn on the spot.
+Future<Uint8List> sitePhoto() async {
+  final rec = ui.PictureRecorder();
+  final c = Canvas(rec);
+  c.drawRect(const Rect.fromLTWH(0, 0, 320, 240),
+      Paint()..color = const Color(0xffb5651d));
+  c.drawRect(const Rect.fromLTWH(40, 60, 240, 120),
+      Paint()..color = const Color(0xffeeeeee));
+  final img = await rec.endRecording().toImage(320, 240);
+  final png = await img.toByteData(format: ui.ImageByteFormat.png);
+  return png!.buffer.asUint8List();
+}
 
 Future<T> io<T>(WidgetTester t, Future<T> Function() f) async =>
     (await t.runAsync(f)) as T;
@@ -239,10 +268,18 @@ void main() {
       await scrollTap(t, find.text('申请验收').first);
       await submitSiteEntry(t, '基础完成 $run');
       await scrollTap(t, find.byKey(const Key('log-work')));
+      // The day's log comes with a site photo from the "gallery".
+      final photo = await io(t, sitePhoto);
+      FileSelectorPlatform.instance = FakeGallery(photo);
+      await waitFor(t, find.byKey(const Key('site-entry-submit')));
+      await tapIt(t, find.textContaining('加照片'));
+      await idle(t, 1500);
+      expect(find.textContaining('加照片 1/'), findsOneWidget);
       await submitSiteEntry(t, '今天砌了一层 $run');
       coop = (await io(t, () => repos.cooperation(coop.id)))!;
       expect(coop.milestones.first.status, MilestoneStatus.requested);
       expect(coop.workLogs, hasLength(1));
+      expect(coop.workLogs.single.photos, hasLength(1));
       await shot(t, 'm11-milestone-and-log');
 
       // ── 6. Owner accepts the inspection, confirms the day, asks to end ──
@@ -256,6 +293,11 @@ void main() {
       coop = (await io(t, () => repos.cooperation(coop.id)))!;
       expect(coop.milestones.first.status, MilestoneStatus.accepted);
       expect(coop.workLogs.single.confirmed, isTrue);
+      // The owner gets the worker's photo back from the server (/media).
+      expect(coop.workLogs.single.photos.single, isNotEmpty);
+      await scrollTo(t, find.textContaining('📷1'));
+      expect(find.textContaining('📷1'), findsOneWidget);
+      await shot(t, 'm11b-owner-sees-photo');
       await scrollTap(t, find.text('请求结束'));
       await answerDialog(t, '工程完成 $run');
       await idle(t, 1000);

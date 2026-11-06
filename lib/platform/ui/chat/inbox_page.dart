@@ -223,11 +223,15 @@ IconData noticeIcon(NoticeKind k) => switch (k) {
 /// Opens the object a notice points to; closed or missing objects show
 /// their own clear state on the target page.
 Future<void> openNotice(BuildContext context, AppNotification n) =>
-    switch (n.refType) {
+    openRef(context, n.refType, n.refId);
+
+/// Opens the page for a referenced object (notices and tapped pushes).
+Future<void> openRef(BuildContext context, RefType type, String id) =>
+    switch (type) {
       RefType.cooperation =>
-        pushPage<void>(context, (_) => CooperationPage(cooperationId: n.refId)),
+        pushPage<void>(context, (_) => CooperationPage(cooperationId: id)),
       RefType.conversation =>
-        pushPage<void>(context, (_) => ChatPage(conversationId: n.refId)),
-      RefType.post => pushPage<void>(context, (_) => PostPage(postId: n.refId)),
-      _ => pushPage<void>(context, (_) => DemandDetailPage(demandId: n.refId)),
+        pushPage<void>(context, (_) => ChatPage(conversationId: id)),
+      RefType.post => pushPage<void>(context, (_) => PostPage(postId: id)),
+      _ => pushPage<void>(context, (_) => DemandDetailPage(demandId: id)),
     };

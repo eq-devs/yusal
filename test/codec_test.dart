@@ -90,6 +90,39 @@ void main() {
     expect(c.milestones.single.status, MilestoneStatus.requested);
   });
 
+  test('cooperation photos given as /media/ paths come from the media map',
+      () {
+    final j = {
+      'id': 'c1',
+      'demand_id': 'd1',
+      'application_id': 'a1',
+      'owner_id': 'o',
+      'provider_id': 'p',
+      'profile_id': 'pr',
+      'status': 'confirmed',
+      'created_at': ts(t),
+      'agreements': [],
+      'milestones': [
+        {'key': 'walls', 'percent': 40, 'status': 'requested', 'photos': ['/media/a', '/media/missing']}
+      ],
+      'work_logs': [
+        {'id': 'w1', 'by': 'p', 'day': ts(t), 'headcount': 2, 'photos': ['/media/b']}
+      ],
+      'updates': [],
+    };
+    expect(cooperationMedia(j), ['/media/a', '/media/missing', '/media/b']);
+    final c = cooperationFrom(j, media: {
+      '/media/a': [1],
+      '/media/b': [2]
+    });
+    expect(c.milestones.single.photos, [
+      [1]
+    ]);
+    expect(c.workLogs.single.photos, [
+      [2]
+    ]);
+  });
+
   test('profile JSON keeps what the server needs', () {
     final p = ServiceProfile(
         id: '',

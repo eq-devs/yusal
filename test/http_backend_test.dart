@@ -49,6 +49,23 @@ class FakeApi {
     'updated_at': '2026-11-05T10:00:00Z',
   };
 
+  static final coopJson = {
+    'id': 'c1',
+    'demand_id': 'd1',
+    'application_id': 'a1',
+    'owner_id': 'u1',
+    'provider_id': 'u2',
+    'profile_id': 'pr',
+    'status': 'confirmed',
+    'created_at': '2026-11-05T10:00:00Z',
+    'agreements': [],
+    'milestones': [
+      {'key': 'walls', 'percent': 40, 'status': 'requested', 'photos': ['/media/m1']}
+    ],
+    'work_logs': [],
+    'updates': [],
+  };
+
   http.Response ok(Object? data, [int status = 200]) => http.Response(
       jsonEncode({'success': true, 'data': data, 'msg': '', 'code': ''}),
       status,
@@ -86,6 +103,13 @@ class FakeApi {
         return ok(tokens());
       case ('GET', '/client/auth/me'):
         return ok(user);
+      case ('POST', '/client/devices'):
+      case ('DELETE', '/client/devices'):
+        return ok('ok');
+      case ('GET', '/client/cooperations/c1'):
+        return ok(coopJson);
+      case ('GET', '/media/m1'):
+        return http.Response.bytes([7, 8], 200);
       case ('PATCH', '/client/auth/me'):
         final body = jsonDecode(r.body) as Map<String, dynamic>;
         return ok({...user, ...body});
@@ -179,6 +203,30 @@ void main() {
     final patch = api.requests.last;
     expect(patch.method, 'PATCH');
     expect(jsonDecode(patch.body), {'phone': '+77015550011'});
+  });
+
+  test('the push token registers at sign-in and is dropped at sign-out',
+      () async {
+    await backend.setPushToken('fcm-1', platform: 'ios', language: 'ru');
+    expect(api.requests.where((r) => r.url.path == '/client/devices'), isEmpty);
+    await backend.signInWithProvider('google', 'id-token');
+    await Future<void>.delayed(Duration.zero);
+    final reg = api.requests.singleWhere((r) => r.url.path == '/client/devices');
+    expect(reg.method, 'POST');
+    expect(jsonDecode(reg.body),
+        {'token': 'fcm-1', 'platform': 'ios', 'language': 'ru'});
+    await backend.signOut();
+    final drop = api.requests.last;
+    expect((drop.method, drop.url.path), ('DELETE', '/client/devices'));
+    expect(backend.currentAccount, isNull);
+  });
+
+  test('cooperation photos are fetched from /media once', () async {
+    await backend.signInWithProvider('google', 'id-token');
+    final c = await backend.cooperation('c1');
+    expect(c!.milestones.single.photos.single, [7, 8]);
+    await backend.cooperation('c1');
+    expect(api.requests.where((r) => r.url.path == '/media/m1'), hasLength(1));
   });
 
   test('signed out, protected calls report notSignedIn', () async {

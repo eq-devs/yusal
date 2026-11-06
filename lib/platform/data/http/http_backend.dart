@@ -149,6 +149,7 @@ class HttpBackend extends MockBackend {
     await _save();
     final account = _setMe(data['user'] as Map<String, dynamic>);
     notify();
+    unawaited(_registerDevice());
     return account;
   }
 
@@ -173,7 +174,45 @@ class HttpBackend extends MockBackend {
       throw const ApiFailure(ApiCodes.invalidState, 'phone sign-in');
 
   @override
-  Future<void> signOut() => _forget();
+  Future<void> signOut() async {
+    final token = _pushToken;
+    if (token != null && _access != null) {
+      try {
+        await _call('DELETE', '/client/devices', body: {'token': token});
+      } on ApiFailure {
+        // Offline: the server drops the token once FCM calls it dead.
+      }
+    }
+    await _forget();
+  }
+
+  // ─────────────────────────────── push ───────────────────────────────
+
+  String? _pushToken, _pushPlatform, _pushLanguage;
+
+  /// The device's FCM token, from the push setup; registered now if signed
+  /// in, else at the next sign-in. [language] is zh / kk / ru.
+  Future<void> setPushToken(String token,
+      {required String platform, required String language}) async {
+    _pushToken = token;
+    _pushPlatform = platform;
+    _pushLanguage = language;
+    await _registerDevice();
+  }
+
+  Future<void> _registerDevice() async {
+    final token = _pushToken;
+    if (token == null || currentId == null) return;
+    try {
+      await _call('POST', '/client/devices', body: {
+        'token': token,
+        'platform': _pushPlatform,
+        'language': _pushLanguage,
+      });
+    } on ApiFailure {
+      // Retried at the next sign-in or token refresh.
+    }
+  }
 
   @override
   Future<Account> updateName(String name) async {
@@ -583,7 +622,27 @@ class HttpBackend extends MockBackend {
   Future<Application> _app(Future<dynamic> f) async =>
       applicationFrom(await f as Map<String, dynamic>);
   Future<Cooperation> _coop(Future<dynamic> f) async =>
-      cooperationFrom(await f as Map<String, dynamic>);
+      _coopFrom(await f as Map<String, dynamic>);
+
+  /// Photo bytes by `/media/` path; photos never change, so fetched once.
+  final _media = <String, List<int>>{};
+
+  Future<Cooperation> _coopFrom(Map<String, dynamic> j) async {
+    await Future.wait([
+      for (final path in cooperationMedia(j).toSet())
+        if (!_media.containsKey(path)) _loadMedia(path)
+    ]);
+    return cooperationFrom(j, media: _media);
+  }
+
+  Future<void> _loadMedia(String path) async {
+    try {
+      final res = await _send('GET', path, auth: false);
+      if (res.statusCode == 200) _media[path] = res.bodyBytes;
+    } on ApiFailure {
+      // Shown without that photo; retried on the next load.
+    }
+  }
 
   // ───────────────────────────── profiles ─────────────────────────────
 
@@ -887,25 +946,25 @@ class HttpBackend extends MockBackend {
     if (currentId == null) return null;
     final j = await _maybe(_c(id));
     if (j == null) return null;
-    final c = cooperationFrom(j);
+    final c = await _coopFrom(j);
     await _names([c.ownerId, c.providerId]);
     return c;
   }
 
   @override
   Future<List<Cooperation>> myCooperations() async {
-    final list = [
-      for (final j in await _list('/client/me/cooperations')) cooperationFrom(j)
-    ];
+    final list = await Future.wait(
+        [for (final j in await _list('/client/me/cooperations')) _coopFrom(j)]);
     await _names(list.expand((c) => [c.ownerId, c.providerId]));
     return list;
   }
 
   @override
-  Future<List<Cooperation>> cooperationsFor(String demandId) async => [
+  Future<List<Cooperation>> cooperationsFor(String demandId) async =>
+      Future.wait([
         for (final j in await _list('/client/demands/$demandId/cooperations'))
-          cooperationFrom(j)
-      ];
+          _coopFrom(j)
+      ]);
 
   // ───────────────────────────── reviews ─────────────────────────────
 

@@ -21,8 +21,22 @@ T _enum<T extends Enum>(List<T> values, Object? v, T fallback) {
   return fallback;
 }
 
-List<List<int>> _photos(Object? v) =>
-    [for (final p in v as List? ?? const []) base64Decode(p as String)];
+/// Photos arrive as `/media/<id>` paths (bytes looked up in [media], which
+/// the backend fills before mapping) or, from older records, as base64.
+List<List<int>> _photos(Object? v, [Map<String, List<int>> media = const {}]) => [
+      for (final p in (v as List? ?? const []).cast<String>())
+        if (!p.startsWith('/media/'))
+          base64Decode(p)
+        else if (media[p] != null)
+          media[p]!
+    ];
+
+/// The `/media/` paths a cooperation's photos point to.
+Iterable<String> cooperationMedia(Map<String, dynamic> j) => [
+      for (final m in [..._maps(j['milestones']), ..._maps(j['work_logs'])])
+        for (final p in (m['photos'] as List? ?? const []).cast<String>())
+          if (p.startsWith('/media/')) p
+    ];
 List<String> photosJson(List<List<int>> p) => [for (final b in p) base64Encode(b)];
 
 Map<String, dynamic> _drop(Map<String, dynamic> m) =>
@@ -392,13 +406,14 @@ Map<String, dynamic> agreementJson(Agreement a) => _drop({
       'share_exact_address': a.shareExactAddress,
     });
 
-Milestone _milestone(Map<String, dynamic> j) => Milestone(
+Milestone _milestone(Map<String, dynamic> j, Map<String, List<int>> media) =>
+    Milestone(
     key: j['key'] as String? ?? '',
     percent: _i(j['percent']) ?? 0,
     criteria: j['criteria'] as String? ?? '',
     due: _t(j['due']),
     status: _enum(MilestoneStatus.values, j['status'], MilestoneStatus.planned),
-    photos: _photos(j['photos']),
+    photos: _photos(j['photos'], media),
     note: j['note'] as String? ?? '',
     requestedAt: _t(j['requested_at']),
     answeredAt: _t(j['answered_at']));
@@ -410,7 +425,8 @@ Map<String, dynamic> milestoneJson(Milestone m) => _drop({
       'due': ts(m.due),
     });
 
-Cooperation cooperationFrom(Map<String, dynamic> j) {
+Cooperation cooperationFrom(Map<String, dynamic> j,
+    {Map<String, List<int>> media = const {}}) {
   final r = j['end_request'] as Map<String, dynamic>?;
   return Cooperation(
       id: j['id'] as String,
@@ -441,7 +457,9 @@ Cooperation cooperationFrom(Map<String, dynamic> j) {
               at: _tt(u['at']),
               text: u['text'] as String? ?? '')
       ],
-      milestones: [for (final m in _maps(j['milestones'])) _milestone(m)],
+      milestones: [
+        for (final m in _maps(j['milestones'])) _milestone(m, media)
+      ],
       workLogs: [
         for (final w in _maps(j['work_logs']))
           WorkLog(
@@ -450,7 +468,7 @@ Cooperation cooperationFrom(Map<String, dynamic> j) {
               day: _tt(w['day']),
               headcount: _i(w['headcount']) ?? 1,
               note: w['note'] as String? ?? '',
-              photos: _photos(w['photos']),
+              photos: _photos(w['photos'], media),
               confirmed: w['confirmed'] == true)
       ]);
 }

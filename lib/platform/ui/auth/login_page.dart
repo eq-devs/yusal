@@ -64,8 +64,19 @@ class _LoginPageState extends State<LoginPage> {
   /// DEV_LOGIN=true. For local runs and simulators, never for release.
   static const _devLogin = bool.fromEnvironment('YUSAL_DEV_LOGIN');
 
-  Future<void> devSignIn(HttpBackend api) async {
-    final n = name.text.trim();
+  /// One-tap test accounts; the backend sets each up with its role on first
+  /// sign-in (see yusal-api router.DevPersonas). Names must match there.
+  static const testPersonas = [
+    ('Test Owner', '房主', Icons.home_outlined),
+    ('Test Worker', '工人', Icons.construction_outlined),
+    ('Test Contractor', '包工头 · 团队', Icons.groups_outlined),
+    ('Test Engineer', '工程师', Icons.architecture_outlined),
+    ('Test Admin', '管理员', Icons.admin_panel_settings_outlined),
+    ('Test Restricted', '受限账号', Icons.block_outlined),
+  ];
+
+  Future<void> devSignIn(HttpBackend api, [String? persona]) async {
+    final n = (persona ?? name.text).trim();
     if (n.isEmpty) return;
     final account = await attempt(
         context, () => api.signInWithProvider('dev', n, name: n));
@@ -117,6 +128,17 @@ class _LoginPageState extends State<LoginPage> {
             label: 'Dev sign in',
             outlined: true,
             onPressed: () => devSignIn(api)),
+        const SizedBox(height: 16),
+        Text('测试账号 · Test accounts', style: TextStyle(color: t.muted)),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final (id, label, icon) in testPersonas)
+            ActionChip(
+                key: Key('test-login-$id'),
+                avatar: Icon(icon, size: 18),
+                label: Text(label),
+                onPressed: () => devSignIn(api, id)),
+        ]),
       ],
     ]);
   }

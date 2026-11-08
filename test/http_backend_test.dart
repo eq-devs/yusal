@@ -15,6 +15,9 @@ class FakeApi {
   int accessVersion = 1;
   bool expireNextAccess = false;
 
+  /// Answers /auth/refresh with this status (e.g. 502 while the server is down).
+  int? refreshStatus;
+
   static const user = {
     'id': 'u1',
     'display_name': 'Ана',
@@ -96,6 +99,9 @@ class FakeApi {
       case ('POST', '/auth/oauth/google'):
         return ok({...tokens(), 'user': user, 'is_new': true});
       case ('POST', '/auth/refresh'):
+        if (refreshStatus case final status?) {
+          return http.Response('Bad Gateway', status);
+        }
         final body = jsonDecode(r.body) as Map<String, dynamic>;
         if (!(body['refresh_token'] as String).startsWith('r')) {
           return fail(401, 'INVALID_TOKEN');
@@ -160,6 +166,35 @@ void main() {
     final mine = await backend.myPosts();
     expect(mine.single.id, 'p1');
     expect(api.requests.where((r) => r.url.path == '/auth/refresh'), hasLength(1));
+  });
+
+  test('a server that is down at startup does not sign the user out',
+      () async {
+    await backend.signInWithProvider('google', 'id-token');
+    api.refreshStatus = 502;
+    final offline = HttpBackend('https://api.test',
+        client: MockClient(api.handle), seed: false);
+    await offline.restore();
+    expect(offline.currentAccount, isNull);
+
+    api.refreshStatus = null;
+    final later = HttpBackend('https://api.test',
+        client: MockClient(api.handle), seed: false);
+    await later.restore();
+    expect(later.currentAccount?.id, 'u1');
+  });
+
+  test('a rejected refresh token signs the user out', () async {
+    await backend.signInWithProvider('google', 'id-token');
+    api.refreshStatus = 401;
+    final next = HttpBackend('https://api.test',
+        client: MockClient(api.handle), seed: false);
+    await next.restore();
+    api.refreshStatus = null;
+    final later = HttpBackend('https://api.test',
+        client: MockClient(api.handle), seed: false);
+    await later.restore();
+    expect(later.currentAccount, isNull);
   });
 
   test('feed maps posts and loads their thumbnails', () async {

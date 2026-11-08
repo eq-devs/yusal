@@ -40,17 +40,24 @@ Future<List<List<int>>> pickPhotos(BuildContext context,
   return out;
 }
 
-/// JPEG at most 1280 px on the long side; the original if compression is
-/// not available on this platform and the file is small enough.
+/// The server refuses photos above 1 MB (yusal-api `maxPhotoBytes`).
+const maxPhotoBytes = 1 << 20;
+
+/// JPEG at most 1280 px on the long side (smaller again if that is still
+/// over [maxPhotoBytes]); the original if compression is not available on
+/// this platform and the file is small enough to upload.
 Future<List<int>> shrinkPhoto(Uint8List raw) async {
   try {
-    final small = await FlutterImageCompress.compressWithList(raw,
-        minWidth: 1280, minHeight: 1280, quality: 78);
-    if (small.isNotEmpty) return small;
+    for (final (side, quality) in const [(1280, 78), (960, 60)]) {
+      final small = await FlutterImageCompress.compressWithList(raw,
+          minWidth: side, minHeight: side, quality: quality);
+      if (small.isEmpty) break;
+      if (small.length <= maxPhotoBytes) return small;
+    }
   } catch (e) {
     if (kDebugMode) debugPrint('photo compress: $e');
   }
-  if (raw.length > 2 * 1024 * 1024) throw StateError('too large');
+  if (raw.length > maxPhotoBytes) throw StateError('too large');
   return raw;
 }
 

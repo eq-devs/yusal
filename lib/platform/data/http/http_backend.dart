@@ -90,9 +90,15 @@ class HttpBackend extends MockBackend {
   Future<bool> _refreshTokens() async {
     final res = await _send('POST', '/auth/refresh',
         body: {'refresh_token': _refresh}, auth: false);
-    if (res.statusCode != 200) {
+    if (res.statusCode == 401 || res.statusCode == 403) {
+      // The refresh token is expired or the account is gone: sign out.
       await _forget();
       return false;
+    }
+    if (res.statusCode != 200) {
+      // The server is down or restarting (a proxy answers 502/503): keep the
+      // saved session for the next try instead of signing the user out.
+      throw ApiFailure(ApiCodes.network, 'HTTP ${res.statusCode}');
     }
     _takeTokens(_decode(res) as Map<String, dynamic>);
     await _save();

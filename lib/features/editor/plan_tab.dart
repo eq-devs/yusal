@@ -30,7 +30,9 @@ extension _PlanTab on _HouseEditorState {
           const SizedBox(height: 8),
           toolRow(),
           const SizedBox(height: 6),
-          layerRow(),
+          // Phones: one scrolling line instead of a wrapped block, so the
+          // drawing keeps the height.
+          if (wide) layerRow() else fadeRow(layerChips()),
           hintRow(),
         ]);
     if (compact) {
@@ -254,12 +256,11 @@ extension _PlanTab on _HouseEditorState {
                 ]))));
   }
 
-  Widget toolRow() => SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(children: [
-        for (final w in toolButtons())
-          Padding(padding: const EdgeInsets.only(right: 6), child: w)
-      ]));
+  Widget toolRow() => fadeRow(toolButtons());
+
+  /// A horizontally scrolling line whose right edge fades out while more
+  /// is hidden there, so the cut-off tools read as "swipe for more".
+  Widget fadeRow(List<Widget> children) => FadeRow(children: children);
 
   List<Widget> toolButtons() {
     return <Widget>[
@@ -307,7 +308,10 @@ extension _PlanTab on _HouseEditorState {
     ];
   }
 
-  Widget layerRow() => Wrap(spacing: 8, runSpacing: 6, children: [
+  Widget layerRow() =>
+      Wrap(spacing: 8, runSpacing: 6, children: layerChips());
+
+  List<Widget> layerChips() => [
         PillToggle(
             label: tr('家具', 'Жиһаз'),
             selected: showFurniture,
@@ -353,7 +357,7 @@ extension _PlanTab on _HouseEditorState {
                   browse = !v;
                   placementHint = null;
                 })),
-      ]);
+      ];
 
   Widget hintRow() {
     final t = Tokens.of(context);
@@ -430,4 +434,59 @@ class _HatchPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HatchPainter old) => old.color != color;
+}
+
+/// A horizontally scrolling line whose right edge fades out while more is
+/// hidden there, so cut-off tools read as "swipe for more".
+class FadeRow extends StatefulWidget {
+  const FadeRow({super.key, required this.children});
+  final List<Widget> children;
+  @override
+  State<FadeRow> createState() => _FadeRowState();
+}
+
+class _FadeRowState extends State<FadeRow> {
+  final controller = ScrollController();
+  bool more = false;
+
+  void check() {
+    if (!controller.hasClients) return;
+    final p = controller.position;
+    final next = p.pixels < p.maxScrollExtent - 4;
+    if (next != more) setState(() => more = next);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    controller.addListener(check);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) check();
+    });
+    final row = SingleChildScrollView(
+        controller: controller,
+        scrollDirection: Axis.horizontal,
+        child: Row(children: [
+          for (final w in widget.children)
+            Padding(padding: const EdgeInsets.only(right: 6), child: w)
+        ]));
+    if (!more) return row;
+    return ShaderMask(
+        blendMode: BlendMode.dstIn,
+        shaderCallback: (r) => const LinearGradient(
+                colors: [Colors.black, Colors.black, Colors.transparent],
+                stops: [0, 0.86, 1])
+            .createShader(r),
+        child: row);
+  }
 }

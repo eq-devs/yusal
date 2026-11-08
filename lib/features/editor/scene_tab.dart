@@ -30,7 +30,31 @@ extension _SceneTab on _HouseEditorState {
                   : (source) => update(() => scenePicked = source))),
       if (scenePicked != null && !walk)
         Positioned(left: 10, top: 10, right: 10, child: pickedChip()),
+      // Within thumb reach on the stage itself: frame the house again
+      // after turning or zooming away (CAD viewers' "zoom to fit").
+      if (!walk)
+        Positioned(
+            right: 8,
+            bottom: 8,
+            child: Material(
+                color: t.panel.withValues(alpha: 0.92),
+                shape: CircleBorder(side: BorderSide(color: t.line)),
+                child: IconButton(
+                    key: const ValueKey('scene-fit'),
+                    tooltip: tr('适配画面', 'Экранға сыйғызу'),
+                    onPressed: refitScene,
+                    icon: const Icon(Icons.fit_screen_outlined, size: 22)))),
     ]));
+    if (phoneTools)
+      return Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: stage),
+                const SizedBox(height: 6),
+                ...(walk ? phoneWalkControls() : phoneOrbitControls()),
+              ]));
     final controls = walk ? walkControls() : orbitControls();
     if (compact)
       return Padding(
@@ -164,27 +188,15 @@ extension _SceneTab on _HouseEditorState {
     }
   }
 
-  List<Widget> orbitControls() {
-    final t = Tokens.of(context);
+  void setScene(SceneSettings v) => update(() => sceneSettings = v);
+
+  /// Frame the current preset view again.
+  void refitScene() => update(() => sceneViewToken++);
+
+  List<Widget> sceneToggles() {
     final s = sceneSettings;
-    void set(SceneSettings v) => update(() => sceneSettings = v);
-    final hour = s.hour;
-    final hh = '${hour.floor().toString().padLeft(2, '0')}:${((hour % 1) * 60).round().toString().padLeft(2, '0')}';
-    final north = (360 - history.present.footprint.northAngleDeg) % 360;
-    final floors = history.present.floors;
-    Widget labelled(String text, Widget child) => Wrap(
-            spacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(text, style: TextStyle(fontSize: 13, color: t.muted)),
-              child,
-            ]);
+    final set = setScene;
     return [
-      Wrap(
-          spacing: 8,
-          runSpacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
             PillToggle(
                 label: tr('屋顶', 'Шатыр'),
                 selected: s.roof,
@@ -206,57 +218,64 @@ extension _SceneTab on _HouseEditorState {
                 label: tr('剖切', 'Кесу'),
                 selected: s.cut,
                 onChanged: (v) => set(s.copyWith(cut: v))),
-            labelled(
-                tr('剖切高度', 'Кесу биіктігі'),
-                SizedBox(
-                    width: 150,
-                    child: Slider(
-                        min: 0.3,
-                        max: math.max(3.0, derived.height / 1000),
-                        value: s.cutHeight.clamp(
-                            0.3, math.max(3.0, derived.height / 1000)),
-                        onChanged: (v) =>
-                            set(s.copyWith(cutHeight: v, cut: true))))),
-            Text('${dec(s.cutHeight.toStringAsFixed(2))} $unitM',
-                style: mono(size: 12)),
-          ]),
-      const SizedBox(height: 6),
-      Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(tr('视角', 'Көрініс'),
-                style: TextStyle(fontSize: 13, color: t.muted)),
-            for (final (key, zh, kk) in const [
-              ('iso', '鸟瞰', 'Жоғарыдан'),
-              ('front', '正面(入口)', 'Алдынан (кіреберіс)'),
-              ('back', '背面', 'Артынан'),
-              ('side', '侧面', 'Бүйірінен'),
-              ('top', '顶视', 'Үстінен'),
-            ])
-              Btn(
-                  label: tr(zh, kk),
-                  primary: sceneView == key,
-                  onPressed: () => update(() {
-                        sceneView = key;
-                        sceneViewToken++;
-                      })),
-            IconButton(
-                tooltip: '恢复视角'.trKey('Көріністі қалпына келтіру'),
-                visualDensity: VisualDensity.compact,
-                onPressed: () => update(() {
-                      sceneView = 'iso';
-                      sceneViewToken++;
-                    }),
-                icon: const Icon(Icons.center_focus_strong, size: 20)),
-          ]),
-      const SizedBox(height: 6),
-      Wrap(
-          spacing: 12,
-          runSpacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
+    ];
+  }
+
+  List<Widget> viewButtons() => [
+        for (final (key, zh, kk) in const [
+          ('iso', '鸟瞰', 'Жоғарыдан'),
+          ('front', '正面', 'Алдынан'),
+          ('back', '背面', 'Артынан'),
+          ('side', '侧面', 'Бүйірінен'),
+          ('top', '顶视', 'Үстінен'),
+        ])
+          Btn(
+              label: tr(zh, kk),
+              primary: sceneView == key,
+              onPressed: () => update(() {
+                    sceneView = key;
+                    sceneViewToken++;
+                  })),
+      ];
+
+  /// Cut height; shown only while the cut is on, so it never reads as a
+  /// setting that does something with the cut off.
+  Widget cutSlider(double width) {
+    final t = Tokens.of(context);
+    final s = sceneSettings;
+    final top = math.max(3.0, derived.height / 1000);
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Text(tr('剖切高度', 'Кесу биіктігі'),
+          style: TextStyle(fontSize: 13, color: t.muted)),
+      SizedBox(
+          width: width,
+          child: Slider(
+              key: const ValueKey('cut-height'),
+              min: 0.3,
+              max: top,
+              value: s.cutHeight.clamp(0.3, top),
+              onChanged: (v) => setScene(s.copyWith(cutHeight: v, cut: true)))),
+      Text('${dec(s.cutHeight.toStringAsFixed(2))} $unitM',
+          style: mono(size: 12)),
+    ]);
+  }
+
+  /// Sun time, north and floors shown: set once, rarely touched.
+  List<Widget> lightControls(void Function(SceneSettings) set) {
+    final t = Tokens.of(context);
+    final s = sceneSettings;
+    final hour = s.hour;
+    final hh = '${hour.floor().toString().padLeft(2, '0')}:${((hour % 1) * 60).round().toString().padLeft(2, '0')}';
+    final north = (360 - history.present.footprint.northAngleDeg) % 360;
+    final floors = history.present.floors;
+    Widget labelled(String text, Widget child) => Wrap(
+            spacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(text, style: TextStyle(fontSize: 13, color: t.muted)),
+              child,
+            ]);
+    return [
             labelled(
                 tr('日照时间', 'Күн уақыты'),
                 SizedBox(
@@ -296,7 +315,102 @@ extension _SceneTab on _HouseEditorState {
                           (i, displayFloorName(floors[i].name))
                       ],
                       onChanged: (v) => set(s.copyWith(maxFloor: v)))),
+    ];
+  }
+
+  /// Phones: the stage takes the screen; under it one row of views and
+  /// one row of switches (Hick: two short choices instead of a page of
+  /// controls). Sun, north and floors move to a sheet.
+  List<Widget> phoneOrbitControls() {
+    final s = sceneSettings;
+    return [
+      fadeRow(viewButtons()),
+      const SizedBox(height: 6),
+      // "更多" stays in place at the end, never scrolled out of reach.
+      Row(children: [
+        Expanded(child: fadeRow(sceneToggles())),
+        const SizedBox(width: 4),
+        IconButton.outlined(
+            key: const ValueKey('scene-more'),
+            tooltip: tr('更多设置', 'Басқа баптаулар'),
+            onPressed: sceneMoreSheet,
+            icon: const Icon(Icons.tune, size: 20)),
+      ]),
+      if (s.cut) cutSlider(170),
+    ];
+  }
+
+  /// Phones walking: one row of places to go and the floor switch.
+  List<Widget> phoneWalkControls() {
+    final c = walkControls();
+    final go = c.first as Wrap;
+    return [
+      fadeRow(go.children.skip(1).toList()),
+      if (history.present.floors.length > 1) c[1],
+    ];
+  }
+
+  void sceneMoreSheet() {
+    final t = Tokens.of(context);
+    showMotionSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (context) => StatefulBuilder(builder: (context, setSheet) {
+              void set(SceneSettings v) {
+                setScene(v);
+                setSheet(() {});
+              }
+
+              return SafeArea(
+                  child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                                spacing: 12,
+                                runSpacing: 8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: lightControls(set)),
+                            const SizedBox(height: 10),
+                            Text(
+                                tr('单指拖动旋转 · 双指缩放/平移/扭转 · 剖切可看墙内门窗 · 点物体可回到 2D 编辑',
+                                    'Бір саусақпен айналдырыңыз · екі саусақпен үлкейтіңіз/жылжытыңыз · кесу арқылы есік-терезені көріңіз · нысанды басып 2D-де өзгертіңіз'),
+                                style: TextStyle(fontSize: 12, color: t.muted)),
+                          ])));
+            }));
+  }
+
+  List<Widget> orbitControls() {
+    final t = Tokens.of(context);
+    final s = sceneSettings;
+    final set = setScene;
+    return [
+      Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ...sceneToggles(),
+            if (s.cut) cutSlider(150),
           ]),
+      const SizedBox(height: 6),
+      Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(tr('视角', 'Көрініс'),
+                style: TextStyle(fontSize: 13, color: t.muted)),
+            ...viewButtons(),
+          ]),
+      const SizedBox(height: 6),
+      Wrap(
+          spacing: 12,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: lightControls(set)),
       Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(

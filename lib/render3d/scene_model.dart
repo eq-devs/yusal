@@ -150,6 +150,24 @@ class SceneModel {
   /// the camera does.
   late final BspTree bsp = BspTree.build(faces);
   Vec3 get center => Vec3(width / 2, height / 3, depth / 2);
+
+  /// Corners of the box around everything above ground, for framing views.
+  late final (Vec3, Vec3) bounds = () {
+    var lo = const Vec3(double.infinity, double.infinity, double.infinity);
+    var hi = const Vec3(-double.infinity, -double.infinity, -double.infinity);
+    for (final f in faces) {
+      if (f.layer == Layer3.buried || f.layer == Layer3.ground) continue;
+      for (final p in f.points) {
+        lo = Vec3(math.min(lo.x, p.x), math.min(lo.y, p.y), math.min(lo.z, p.z));
+        hi = Vec3(math.max(hi.x, p.x), math.max(hi.y, p.y), math.max(hi.z, p.z));
+      }
+    }
+    if (!lo.x.isFinite) {
+      lo = Vec3(0, groundLevel, 0);
+      hi = Vec3(width, math.max(height, 1), depth);
+    }
+    return (lo, hi);
+  }();
 }
 
 /// Palette after the drafting page's three.js materials.
@@ -351,6 +369,21 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
     }
     // Walls, split around openings by the core.
     final walls = wallsOf(g.base, spec);
+    // Wall pieces of the floor above that stand on this one: a wall top
+    // under them is hidden, and its edge would show as a light line.
+    final above = [
+      if (f < visibleFloors)
+        for (final e in derived.scene3d
+            .where((e) => e.floorIndex == f + 1 && e.kind == 'WallPiece'))
+          (
+            PlanRect(
+                e.vertices.map((v) => v.x).reduce(math.min),
+                e.vertices.map((v) => v.y).reduce(math.min),
+                e.vertices.map((v) => v.x).reduce(math.max),
+                e.vertices.map((v) => v.y).reduce(math.max)),
+            e.vertices.map((v) => v.z).reduce(math.min) / 1000
+          )
+    ];
     for (final e in derived.scene3d
         .where((e) => e.floorIndex == f && e.kind == 'WallPiece')) {
       final xs = e.vertices.map((v) => v.x), ys = e.vertices.map((v) => v.y),
@@ -369,10 +402,17 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
               WallRole.partition => Mat.part,
               _ => Mat.wall
             };
+      final covered = above.any((a) =>
+          (a.$2 - z1).abs() < slab + 0.02 &&
+          a.$1.left <= r.left + 1 &&
+          a.$1.right >= r.right - 1 &&
+          a.$1.bottom <= r.bottom + 1 &&
+          a.$1.top >= r.top - 1);
       planBox(r, z0, z1, color,
           alpha: e.materialRole == 'wallTemporary' ? 0.45 : 1,
           source: source,
           floor: f,
+          top: !covered,
           interior: info?.role != WallRole.exterior);
       if (z0 - elevation < 0.3 && z1 - elevation > 0.3)
         colliders.add(Collider(px(r.left), pz(r.top), px(r.right), pz(r.bottom), f));

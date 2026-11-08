@@ -439,7 +439,7 @@ void main() {
     expect(find.byType(SceneView), findsOneWidget);
     expect(find.textContaining('双指缩放'), findsOneWidget);
     expect(t.widget<SceneView>(find.byType(SceneView)).viewToken, 0);
-    await t.tap(find.byTooltip('恢复视角'));
+    await t.tap(find.byTooltip('适配画面'));
     await t.pumpAndSettle();
     expect(t.widget<SceneView>(find.byType(SceneView)).viewToken, 1);
     expect(t.takeException(), isNull);

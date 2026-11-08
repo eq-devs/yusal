@@ -4,6 +4,7 @@ import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/core/house_core.dart';
 import 'package:yusal/features/house_editor.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
+import 'package:yusal/render3d/scene_view.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
 
@@ -116,5 +117,27 @@ void main() {
     expect(find.text('更多工具'), findsNothing, reason: 'the sheet closed');
     expect(find.byTooltip('拖动划房'), findsOneWidget,
         reason: 'the active tool shows in the row');
+  });
+
+  testWidgets('the phone 3D page gives the stage the screen and folds settings away',
+      (t) async {
+    await mount(t, initial(), size: const Size(390, 844));
+    await t.ensureVisible(find.byKey(const ValueKey('tab-ext')));
+    await t.tap(find.byKey(const ValueKey('tab-ext')));
+    await t.pumpAndSettle();
+    final stage = t.getSize(find.byType(SceneView));
+    expect(stage.height, greaterThan(844 * 0.45));
+    // The cut height only shows with the cut on.
+    expect(find.byKey(const ValueKey('cut-height')), findsNothing);
+    await t.tap(find.text('剖切'));
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('cut-height')), findsOneWidget);
+    // Sun and north live in a sheet.
+    expect(find.text('日照时间'), findsNothing);
+    await t.ensureVisible(find.byKey(const ValueKey('scene-more')));
+    await t.tap(find.byKey(const ValueKey('scene-more')));
+    await t.pumpAndSettle();
+    expect(find.text('日照时间'), findsOneWidget);
+    expect(t.takeException(), isNull);
   });
 }

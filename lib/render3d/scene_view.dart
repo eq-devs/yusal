@@ -67,10 +67,14 @@ class Camera {
 }
 
 /// Orbit pose of a preset view: iso (default), front, back, side or top.
+///
+/// The direction is fixed per view; the distance is the closest at which
+/// the whole house fits a viewport of [aspect] (width / height) with a
+/// margin, so every view fills the screen the same way on a phone or a
+/// desktop (as "zoom to fit" does in CAD viewers).
 ({Vec3 target, double distance, double yaw, double pitch}) viewPose(
-    SceneModel model, String view) {
-  final size = math.max(model.width, model.depth) / 13;
-  final c = model.center;
+    SceneModel model, String view,
+    {double aspect = 1.5}) {
   final front = model.frontZ;
   final (x, y, z) = switch (view) {
     'front' => (1.5, 3.2, 25.0 * front),
@@ -79,14 +83,29 @@ class Camera {
     'top' => (0.0, 34.0, 0.01),
     _ => (15.0, 12.0, 19.0 * front),
   };
-  final offset = Vec3(x, y, z) * math.max(0.6, size);
-  final distance = offset.length;
-  return (
-    target: Vec3(c.x, view == 'top' ? 0 : 1.4, c.z),
-    distance: distance,
-    yaw: math.atan2(offset.x, offset.z),
-    pitch: math.asin((offset.y / distance).clamp(-1.0, 1.0))
-  );
+  final dir = Vec3(x, y, z).unit;
+  final yaw = math.atan2(dir.x, dir.z);
+  final pitch = math.asin(dir.y.clamp(-1.0, 1.0));
+  final (lo, hi) = model.bounds;
+  final target = Vec3((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, (lo.z + hi.z) / 2);
+  // The camera basis for this direction, as orbitCamera builds it.
+  final cam = orbitCamera(target, yaw, pitch, 1);
+  const fov = 42 * math.pi / 180;
+  final tanV = math.tan(fov / 2) * 0.86;
+  final tanH = tanV * aspect.clamp(0.4, 3.0);
+  var distance = 2.0;
+  for (final cx in [lo.x, hi.x])
+    for (final cy in [lo.y, hi.y])
+      for (final cz in [lo.z, hi.z]) {
+        final d = Vec3(cx, cy, cz) - target;
+        final along = d.dot(cam.forward);
+        distance = math.max(
+            distance,
+            math.max(d.dot(cam.right).abs() / tanH,
+                    d.dot(cam.up).abs() / tanV) -
+                along);
+      }
+  return (target: target, distance: distance, yaw: yaw, pitch: pitch);
 }
 
 /// Camera looking at [target] from [distance] at [yaw] and [pitch].
@@ -128,6 +147,16 @@ class ScenePainter extends CustomPainter {
       this.selected,
       this.fast = false,
       super.repaint});
+  ScenePainter withCamera(Camera c) => ScenePainter(
+      model: model,
+      camera: c,
+      settings: settings,
+      northAngleDeg: northAngleDeg,
+      walk: walk,
+      labels: labels,
+      selected: selected,
+      fast: fast);
+
   final SceneModel model;
   final Camera camera;
   final SceneSettings settings;
@@ -367,13 +396,18 @@ class ScenePainter extends CustomPainter {
       final toEye = camera.eye - pts.first;
       var n = f.normal;
       final facing = n.dot(toEye);
+      // A face seen edge-on covers no area, but its seam-closing hairline
+      // would still draw a light line across the wall in front of it.
+      if (facing.abs() < 0.012 * toEye.length) return;
       if (facing <= 0) {
         if (!f.doubleSided && f.alpha >= 1 && !(cutY.isFinite)) return;
         n = n * -1;
       }
+      // Shade by the whole face, not the fragment, so the pieces a BSP
+      // split leaves share one colour and no seams show between them.
       var centre = const Vec3(0, 0, 0);
-      for (final p in pts) centre = centre + p;
-      centre = centre * (1 / pts.length);
+      for (final p in f.points) centre = centre + p;
+      centre = centre * (1 / f.points.length);
       // With the roof on, the inside is only seen through glass: draw it
       // before the shell so walls and roof always cover it.
       final shell = !walk && roofOn && !cutY.isFinite;
@@ -383,7 +417,13 @@ class ScenePainter extends CustomPainter {
         Layer3.floorSurface => 3,
         Layer3.covering => f.interior && shell ? 6 : 4,
         Layer3.ceiling => 5,
-        Layer3.sorted => f.interior && shell ? 6 : 7,
+        // A roof seen from above caps the walls under it: wall tops that
+        // meet the slope along its edges must not show through.
+        Layer3.sorted => f.interior && shell
+            ? 6
+            : f.covering && shell && facing > 0
+                ? 8
+                : 7,
       };
       final alpha = f.glow && night ? 0.62 : f.alpha;
       final before = items.length;
@@ -462,14 +502,35 @@ class ScenePainter extends CustomPainter {
       }
     }
     drawGround();
-    if (labels && !walk && (settings.cut || !roofOn))
+    if (labels && !walk && (settings.cut || !roofOn)) {
+      // Nearest rooms first; a tag that would cover one already placed
+      // tries just above or below, and is left out if neither is free
+      // (map labels thin out the same way).
+      final tags = <(Offset, double, Label3)>[];
       for (final l in model.labels) {
         if (l.floorIndex > settings.maxFloor) continue;
         final at = Vec3(l.at.x, math.min(l.at.y, cutY - 0.2), l.at.z);
-        final s = project(camera.toCamera(at), size, focal);
+        final c = camera.toCamera(at);
+        final s = project(c, size, focal);
         if (s == null) continue;
-        drawTag(canvas, s, l.title, l.subtitle);
+        tags.add((s, c.z, l));
       }
+      tags.sort((a, b) => a.$2.compareTo(b.$2));
+      final placed = <Rect>[];
+      for (final (s, _, l) in tags) {
+        final t = tagPainter(l.title, l.subtitle);
+        final w = t.width + 16, h = t.height + 8;
+        for (final dy in [0.0, -h * 0.6, h * 0.6]) {
+          final box = Rect.fromCenter(
+              center: s.translate(0, dy), width: w, height: h);
+          if (placed.any((p) => p.inflate(2).overlaps(box))) continue;
+          if (!(Offset.zero & size).inflate(-2).contains(box.center)) break;
+          placed.add(box);
+          drawTag(canvas, box, t);
+          break;
+        }
+      }
+    }
   }
 
   /// A face with a textile pattern, split into a small grid so the
@@ -548,8 +609,8 @@ class ScenePainter extends CustomPainter {
       ? Color.from(alpha: 1, red: c.r * 0.22, green: c.g * 0.25, blue: c.b * 0.32)
       : Color.from(alpha: 1, red: c.r * 0.95, green: c.g * 0.95, blue: c.b * 0.92);
 
-  void drawTag(Canvas canvas, Offset at, String title, String sub) {
-    final t = TextPainter(
+  TextPainter tagPainter(String title, String sub) =>
+      TextPainter(
         text: TextSpan(children: [
           TextSpan(
               text: title,
@@ -568,9 +629,9 @@ class ScenePainter extends CustomPainter {
         ]),
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr)
-      ..layout();
-    final box = Rect.fromCenter(
-        center: at, width: t.width + 16, height: t.height + 8);
+        ..layout();
+
+  void drawTag(Canvas canvas, Rect box, TextPainter t) {
     canvas.drawRRect(RRect.fromRectAndRadius(box, const Radius.circular(8)),
         Paint()..color = const Color(0xd11C2326));
     t.paint(canvas, box.topLeft + const Offset(8, 4));
@@ -707,9 +768,16 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
         areaUnit: widget.areaUnit);
   }
 
+  /// The camera still shows a preset view as framed, untouched: when the
+  /// view changes size (rotating the phone, opening a panel) it is framed
+  /// again for the new shape.
+  bool framed = false;
+
   void applyView(String view) {
+    framed = true;
     if (spin.isActive) stopSpin();
-    final pose = viewPose(model, view);
+    final pose = viewPose(model, view,
+        aspect: viewSize.isEmpty ? 1.5 : viewSize.width / viewSize.height);
     target = pose.target;
     distance = pose.distance;
     yaw = pose.yaw;
@@ -727,9 +795,11 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
       return;
     }
     floor = widget.walkFloor.clamp(0, model.elevations.length - 1);
-    // Outside the front, looking at the house.
+    // Outside the front, far enough back to see the whole front (at 4 m
+    // the wall filled the view and gave no sense of where one stood).
+    final back = math.max(8.0, model.width * 0.75);
     wx = model.width / 2;
-    wz = model.frontZ > 0 ? model.depth + 4 : -4;
+    wz = model.frontZ > 0 ? model.depth + back : -back;
     wYaw = model.frontZ > 0 ? 0 : math.pi;
     wPitch = 0;
   }
@@ -889,6 +959,7 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
         // Keys (W A S D, arrows) go to the view the user last touched.
         onPointerDown: (_) {
           touching++;
+          framed = false;
           stopSpin();
           if (widget.walk && !focusNode.hasFocus) focusNode.requestFocus();
         },
@@ -896,6 +967,7 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
         onPointerCancel: (_) => release(),
         onPointerSignal: (e) {
           if (e is PointerScrollEvent && !widget.walk) {
+            framed = false;
             stopSpin();
             setState(() => zoomAt(e.localPosition,
                 distance * (e.scrollDelta.dy > 0 ? 1.12 : 1 / 1.12)));
@@ -938,7 +1010,13 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
               if (!spin.isActive) spin.start();
             },
             child: LayoutBuilder(builder: (context, c) {
-              viewSize = c.biggest;
+              if (c.biggest != viewSize) {
+                viewSize = c.biggest;
+                if (framed && !widget.walk) {
+                  applyView(widget.view);
+                  painter = painter!.withCamera(camera);
+                }
+              }
               return CustomPaint(painter: painter, size: Size.infinite);
             })));
     return KeyboardListener(

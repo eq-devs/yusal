@@ -262,49 +262,76 @@ extension _PlanTab on _HouseEditorState {
   /// is hidden there, so the cut-off tools read as "swipe for more".
   Widget fadeRow(List<Widget> children) => FadeRow(children: children);
 
-  List<Widget> toolButtons() {
-    return <Widget>[
-      basicTool(Icons.pan_tool_outlined, tr('浏览', 'Шолу'), browse, () {
+  /// Every plan tool with a key; the phone row shows the common ones.
+  /// Phones get six tools in the row, like the four-to-six modes of
+  /// RoomSketcher, magicplan and Planner 5D; the rest sit in "更多工具".
+  bool get phoneTools => !compact && MediaQuery.sizeOf(context).width < 600;
+
+  static const secondaryTools = {
+    'split': ['split'],
+    'box': ['box'],
+    'utility': ['placeUtility'],
+    'selectWall': ['selectWall', 'editWall'],
+    'resize': ['resize'],
+  };
+
+  List<Widget> toolButtons() => [
+        for (final (key, widget) in keyedTools())
+          if (!phoneTools ||
+              !secondaryTools.containsKey(key) ||
+              secondaryTools[key]!.contains(tool))
+            widget
+      ];
+
+  /// The tools the phone row leaves out, for the "更多工具" sheet.
+  List<Widget> secondaryToolButtons() => [
+        for (final (key, widget) in keyedTools())
+          if (secondaryTools.containsKey(key)) widget
+      ];
+
+  List<(String, Widget)> keyedTools() {
+    return [
+      ('browse', basicTool(Icons.pan_tool_outlined, tr('浏览', 'Шолу'), browse, () {
         tool = 'browse';
         browse = true;
-      }),
-      basicTool(Icons.add_outlined, '墙体', tool == 'drawWall', startWallDrawing),
+      })),
+      ('wall', basicTool(Icons.add_outlined, '墙体', tool == 'drawWall', startWallDrawing)),
       if (tool == 'drawWall')
-        basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
+        ('freeWall', basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
           drawingOrigin = null;
           placingWallStart = true;
           placementHint = tr('在空白处拖出独立墙，或点一下选起点',
               'Бос жерден қабырға тартыңыз немесе бастауды басыңыз');
-        }),
-      basicTool(Icons.vertical_split_outlined, '拉线分房', tool == 'split', () {
+        })),
+      ('split', basicTool(Icons.vertical_split_outlined, '拉线分房', tool == 'split', () {
         view3d = false;
         browse = false;
         tool = 'split';
-      }),
-      basicTool(Icons.crop_square, '拖动划房', tool == 'box', () {
+      })),
+      ('box', basicTool(Icons.crop_square, '拖动划房', tool == 'box', () {
         view3d = false;
         browse = false;
         tool = 'box';
         brush = RoomType.custom;
-      }),
-      openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门'),
-      openingTool(OpeningKind.window, Icons.window_outlined, '拖入窗'),
-      basicTool(Icons.chair_outlined, '家具', tool == 'placeFurniture',
-          chooseFurniture),
-      basicTool(Icons.electrical_services_outlined, '水电',
-          tool == 'placeUtility', chooseUtility),
-      basicTool(Icons.view_week_outlined, '墙体调整',
+      })),
+      ('door', openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门')),
+      ('window', openingTool(OpeningKind.window, Icons.window_outlined, '拖入窗')),
+      ('furniture', basicTool(Icons.chair_outlined, '家具', tool == 'placeFurniture',
+          chooseFurniture)),
+      ('utility', basicTool(Icons.electrical_services_outlined, '水电',
+          tool == 'placeUtility', chooseUtility)),
+      ('selectWall', basicTool(Icons.view_week_outlined, '墙体调整',
           tool == 'selectWall' || tool == 'editWall', () {
         view3d = false;
         tool = 'selectWall';
         browse = false;
-      }),
-      basicTool(Icons.open_in_full, '房屋尺寸', tool == 'resize', () {
+      })),
+      ('resize', basicTool(Icons.open_in_full, '房屋尺寸', tool == 'resize', () {
         view3d = false;
         browse = false;
         tool = 'resize';
-      }),
-      basicTool(Icons.more_horiz, '更多工具', false, moreTools),
+      })),
+      ('more', basicTool(Icons.more_horiz, '更多工具', false, moreTools)),
     ];
   }
 

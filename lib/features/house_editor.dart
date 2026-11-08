@@ -541,6 +541,19 @@ class _HouseEditorState extends State<HouseEditor>
                       child: Text(tr('更多工具', 'Басқа құралдар'),
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w600))),
+                  if (phoneTools)
+                    Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Wrap(spacing: 8, runSpacing: 8, children: [
+                          // A tool picked here closes the sheet.
+                          for (final w in secondaryToolButtons())
+                            Listener(
+                                onPointerUp: (_) => Future.microtask(() {
+                                      if (context.mounted)
+                                        Navigator.maybePop(context);
+                                    }),
+                                child: w)
+                        ])),
                   for (final entry in {
                     'fit': tr('恢复画布视角', 'Көріністі қалпына келтіру'),
                     'grid': tr('网格', 'Тор'),
@@ -852,8 +865,17 @@ class _HouseEditorState extends State<HouseEditor>
     WidgetsBinding.instance.addObserver(this);
   }
 
+  double lastCanvasZoom = 1;
+
+  /// A pure pan only moves the cached drawing; rebuild the editor (grip
+  /// sizes, hit radii, the wall menu's position) when the zoom changes or a
+  /// floating menu has to follow the wall.
   void onCanvasTransformChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    final zoom = canvasZoom;
+    if (zoom == lastCanvasZoom && menuWall == null) return;
+    lastCanvasZoom = zoom;
+    setState(() {});
   }
 
   void derive() {
@@ -1141,6 +1163,7 @@ class _HouseEditorState extends State<HouseEditor>
     editCommand = null;
     editArgs = null;
     drawConnected = false;
+    alignGuide = null;
     resetPreview();
     spatialDocument = null;
     spatialBase = null;
@@ -1976,6 +1999,19 @@ class _HouseEditorState extends State<HouseEditor>
   Offset? gestureScreen;
   bool drawConnected = false;
 
+  /// Dashed alignment guide for the end being dragged (world mm).
+  (Offset, Offset)? alignGuide;
+
+  (Offset, Offset)? guideFor(WallEndSnap snap) {
+    final v = snap.aligned;
+    if (v == null) return null;
+    final w = base.axes.v.last.pos.toDouble(), d = base.axes.h.last.pos.toDouble();
+    // The end lies on an existing wall line across the drawing direction.
+    return snap.horizontal
+        ? (Offset(v, 0), Offset(v, d))
+        : (Offset(0, v), Offset(w, v));
+  }
+
   /// Wall whose nearby action menu is open, and the pressed point on it.
   WallSegment? menuWall;
   Offset? menuPoint;
@@ -2059,6 +2095,7 @@ class _HouseEditorState extends State<HouseEditor>
     }
     final world = painter.worldPoint(local, size);
     editDown = Offset(world.x, world.y);
+    alignGuide = null;
     editPreviewStart = null;
     editPreviewEnd = null;
     editCommand = null;
@@ -2105,6 +2142,7 @@ class _HouseEditorState extends State<HouseEditor>
           skipAlong: {(vertical ? moving.dy : moving.dx).round()});
       if (snap.connected && !drawConnected) HapticFeedback.selectionClick();
       drawConnected = snap.connected;
+      alignGuide = guideFor(snap);
       editPreviewStart = wallGrip == 'start' ? snap.end : editStart;
       editPreviewEnd = wallGrip == 'end' ? snap.end : editEnd;
       editCommand = 'UpdateDrawnWall';
@@ -2114,6 +2152,7 @@ class _HouseEditorState extends State<HouseEditor>
       final across = vertical ? delta.dx : delta.dy,
           along = vertical ? delta.dy : delta.dx;
       drawConnected = false;
+      alignGuide = null;
       if (across.abs() >= along.abs()) {
         // Sideways: walls that end on this one stretch along with it.
         var position = carrier + across, best = 14 * pixel;
@@ -2730,6 +2769,7 @@ class _HouseEditorState extends State<HouseEditor>
     }
     drawingEnd = null;
     drawConnected = false;
+    alignGuide = null;
     spatialError = null;
     spatialDocument = null;
     spatialBase = null;
@@ -2757,6 +2797,7 @@ class _HouseEditorState extends State<HouseEditor>
       HapticFeedback.selectionClick();
     drawingEnd = snap.end;
     drawConnected = snap.connected;
+    alignGuide = guideFor(snap);
     if ((drawingEnd! - drawingOrigin!).distance < 300) {
       resetPreview();
       spatialDocument = null;
@@ -3868,8 +3909,11 @@ class _HouseEditorState extends State<HouseEditor>
                                                       : message);
                                                 }
                                               },
+                                              // Its own layer: panning the
+                                              // sheet moves the cached picture
+                                              // instead of redrawing the plan.
                                               builder: (context, candidates, rejected) =>
-                                                  CustomPaint(
+                                                  RepaintBoundary(child: CustomPaint(
                                                       key: canvasKey,
                                                       size: size,
                                                       painter: FloorPlanPainter(
@@ -3906,6 +3950,13 @@ class _HouseEditorState extends State<HouseEditor>
                                                                       ? editPreviewEnd
                                                                       : null,
                                                           draftConnected: drawConnected,
+                                                          guides: [
+                                                            if (alignGuide case final g?
+                                                                when (tool == 'drawWall' && drawingStrokeActive && drawingEnd != null) ||
+                                                                    wallGrip == 'start' ||
+                                                                    wallGrip == 'end')
+                                                              g
+                                                          ],
                                                           coach: coachArrow(size),
                                                           draft: tool == 'drawWall' && drawingEnd != null && drawingOrigin != null ? PlanRect(math.min(drawingOrigin!.dx, drawingEnd!.dx), math.min(drawingOrigin!.dy, drawingEnd!.dy), math.max(drawingOrigin!.dx, drawingEnd!.dx), math.max(drawingOrigin!.dy, drawingEnd!.dy)) : spatialPreview,
                                                           showGridDimensions: tool == 'grid',
@@ -3938,6 +3989,6 @@ class _HouseEditorState extends State<HouseEditor>
                                                           highlights: highlights,
                                                           pulse: pulse,
                                                           measure: measurePoints,
-                                                          preview: List.of(stroke)))))));
+                                                          preview: List.of(stroke))))))));
                             });
 }

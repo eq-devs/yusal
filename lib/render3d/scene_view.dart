@@ -126,6 +126,7 @@ class ScenePainter extends CustomPainter {
       required this.walk,
       required this.labels,
       this.selected,
+      this.fast = false,
       super.repaint});
   final SceneModel model;
   final Camera camera;
@@ -133,6 +134,11 @@ class ScenePainter extends CustomPainter {
   final int northAngleDeg;
   final bool walk, labels;
   final SourceRef? selected;
+
+  /// While a finger turns or zooms the view: skip sun shadows and draw
+  /// textile patterns as plain colour, then draw everything when it rests
+  /// (the "interactive quality" switch of CAD and map viewers).
+  final bool fast;
   List<_Item> items = [];
 
   /// Layer and source of each drawn item, for tests.
@@ -312,7 +318,7 @@ class ScenePainter extends CustomPainter {
     }
 
     // Sun shadows of the house on the ground.
-    if (!night && light.y > 0.05 && !walk) {
+    if (!night && light.y > 0.05 && !walk && !fast) {
       final shadow = Path()..fillType = PathFillType.nonZero;
       for (final f in model.faces) {
         if (!f.castsShadow || f.layer != Layer3.sorted || !visible(f)) continue;
@@ -381,7 +387,7 @@ class ScenePainter extends CustomPainter {
       };
       final alpha = f.glow && night ? 0.62 : f.alpha;
       final before = items.length;
-      if (f.textile != null && frag.uv != null && !clipped) {
+      if (f.textile != null && frag.uv != null && !clipped && !fast) {
         addTextured(f, pts, frag.uv!, n, (centre - camera.eye).length, light,
             layer, size, focal);
       } else {
@@ -626,6 +632,10 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   /// Orbit speed (radians per second) left by a flick, decaying to rest.
   double spinYaw = 0, spinPitch = 0;
   late final Ticker spin = createTicker(coast);
+
+  /// Fingers or buttons down on the view.
+  int touching = 0;
+  bool get interacting => touching > 0 || spin.isActive;
   Duration spinLast = Duration.zero;
 
   // Walk state: world position, look angles.
@@ -806,7 +816,18 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   void stopSpin() {
     spinYaw = 0;
     spinPitch = 0;
-    if (spin.isActive) spin.stop();
+    if (spin.isActive) {
+      spin.stop();
+      // Back to full quality once the coasting ends.
+      if (mounted && touching == 0) setState(() {});
+    }
+  }
+
+  void release() {
+    touching = math.max(0, touching - 1);
+    // Redraw in full now; a flick that starts coasting right after redraws
+    // plainly again from its own frames.
+    if (mounted && !interacting) setState(() {});
   }
 
   /// Let a flick keep turning the house for a moment (inertia).
@@ -862,13 +883,17 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
         northAngleDeg: widget.doc.footprint.northAngleDeg,
         walk: widget.walk,
         labels: true,
-        selected: widget.selected);
+        selected: widget.selected,
+        fast: !widget.walk && interacting);
     final view = Listener(
         // Keys (W A S D, arrows) go to the view the user last touched.
         onPointerDown: (_) {
+          touching++;
           stopSpin();
           if (widget.walk && !focusNode.hasFocus) focusNode.requestFocus();
         },
+        onPointerUp: (_) => release(),
+        onPointerCancel: (_) => release(),
         onPointerSignal: (e) {
           if (e is PointerScrollEvent && !widget.walk) {
             stopSpin();

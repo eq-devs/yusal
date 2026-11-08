@@ -87,4 +87,18 @@ void main() {
     await t.pump(const Duration(milliseconds: 200));
     expect(s.yaw, rest);
   });
+  testWidgets('turning the view draws plainly, then in full at rest',
+      (t) async {
+    final s = await mount(t);
+    expect(s.painter!.fast, isFalse);
+    final g = await t.startGesture(t.getCenter(find.byType(SceneView)));
+    for (var i = 0; i < 3; i++) {
+      await g.moveBy(const Offset(30, 0));
+      await t.pump();
+    }
+    expect(s.painter!.fast, isTrue, reason: 'no shadows or patterns mid-drag');
+    await g.up();
+    await t.pumpAndSettle();
+    expect(s.painter!.fast, isFalse);
+  });
 }

@@ -39,6 +39,7 @@ class FloorPlanPainter extends CustomPainter {
       this.draftLabel,
       this.draftConnected = false,
       this.draftEnd,
+      this.guides = const [],
       this.coach,
       this.viewport,
       this.viewportInsets = EdgeInsets.zero,
@@ -63,6 +64,9 @@ class FloorPlanPainter extends CustomPainter {
   final FloorBase base;
   final PlanRect? focus, draft, wallHandle, editableWall;
   final Offset? wallSeed, draftEnd;
+
+  /// Alignment guides (world mm), drawn as dashed lines: pairs of points.
+  final List<(Offset, Offset)> guides;
   final bool draftConnected;
 
   /// First-use guide: a dashed arrow from a wall attachment into the house.
@@ -741,6 +745,18 @@ class FloorPlanPainter extends CustomPainter {
             font: 13,
             color: tone);
       }
+    }
+    for (final (ga, gb) in guides) {
+      final a = point(ga.dx, ga.dy, size), b = point(gb.dx, gb.dy, size);
+      final length = (b - a).distance;
+      if (length < 1) continue;
+      final dir = (b - a) / length;
+      final pen = Paint()
+        ..color = t.accent.withValues(alpha: 0.85)
+        ..strokeWidth = px(1.5);
+      final dash = px(6), gap = px(5);
+      for (var d = 0.0; d < length; d += dash + gap)
+        canvas.drawLine(a + dir * d, a + dir * math.min(length, d + dash), pen);
     }
     if (draftEnd != null) {
       final end = point(draftEnd!.dx, draftEnd!.dy, size);

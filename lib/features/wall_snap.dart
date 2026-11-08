@@ -8,10 +8,16 @@ import '../core/geometry/floor_base.dart';
 /// editor can tell the user that the new wall joins the existing layout.
 class WallEndSnap {
   const WallEndSnap(this.end,
-      {required this.horizontal, this.connected = false});
+      {required this.horizontal, this.connected = false, this.aligned});
   final Offset end;
   final bool horizontal;
   final bool connected;
+
+  /// Position (mm) of the existing wall line the free end lined up with,
+  /// when it snapped by alignment rather than by joining a wall or to the
+  /// grid; the editor draws it as a dashed guide, like the tracking lines
+  /// of SketchUp, Space Designer 3D and Houzz Pro.
+  final double? aligned;
 }
 
 double _along(WallSegment w, Offset p) => w.axis.dir == AxisDir.H ? p.dx : p.dy;
@@ -100,7 +106,8 @@ WallEndSnap snapWallEnd(FloorBase base, Offset origin, Offset raw,
   return WallEndSnap(end,
       horizontal: horizontal,
       connected:
-          endJoinsWall(base, end, horizontal: horizontal, ignore: ignore));
+          endJoinsWall(base, end, horizontal: horizontal, ignore: ignore),
+      aligned: aligned);
 }
 
 /// The physical wall nearest to [p] within [tolerance] (world millimetres).

@@ -59,6 +59,13 @@ void main() {
   }
 
   Future<void> tool(WidgetTester t, String name) async {
+    // On phones the less common tools sit in the "更多工具" sheet.
+    if (find.byTooltip(name).evaluate().isEmpty) {
+      await t.ensureVisible(find.byTooltip('更多工具'));
+      await t.pumpAndSettle();
+      await t.tap(find.byTooltip('更多工具'));
+      await t.pumpAndSettle();
+    }
     await t.ensureVisible(find.byTooltip(name));
     await t.pumpAndSettle();
     await t.tap(find.byTooltip(name));

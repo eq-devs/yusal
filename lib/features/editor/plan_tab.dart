@@ -7,7 +7,7 @@ extension _PlanTab on _HouseEditorState {
     final t = Tokens.of(context);
     final card = selectionCard();
     final surface = Sheet(
-        child: Stack(children: [
+        child: Stack(key: planSheetKey, children: [
       Positioned.fill(child: planCanvas()),
       Positioned(top: 10, right: 10, child: zoomButtons()),
       if (wide || card == null || panelCollapsed)
@@ -20,6 +20,7 @@ extension _PlanTab on _HouseEditorState {
             bottom: 8,
             child: LayoutBuilder(builder: (context, c) => card)),
       if (wallMenuCard() case final menu?) menu,
+      if (loupe() case final l?) l,
     ]));
     final bars = Column(
         key: barsKey,
@@ -109,6 +110,66 @@ extension _PlanTab on _HouseEditorState {
                 compareCard(),
               ]))),
     ]);
+  }
+
+  /// Follow a dragging finger on a touch screen (not a mouse or pen, which
+  /// do not hide what they point at).
+  void trackLoupe(PointerMoveEvent e) {
+    final dragging = !cancelledStroke &&
+        pointers.length == 1 &&
+        e.kind == PointerDeviceKind.touch &&
+        (wallGesture == 'draw' ||
+            wallGesture == 'edit' ||
+            wallGesture == 'opening' ||
+            draggingAxis != null ||
+            draggingOpening != null ||
+            furnitureGrip != null ||
+            utilityDown != null ||
+            (spatialTool && spatialStart != null));
+    final moved = gestureScreen == null ||
+        (e.position - gestureScreen!).distance > 8;
+    final next = dragging && moved ? e.position : null;
+    if (next != loupeAt) update(() => loupeAt = next);
+  }
+
+  /// A round magnifier above the finger, like the text loupe on phones and
+  /// the precision cursor of mobile CAD apps: the snapped end, the length
+  /// label and nearby walls stay visible under the thumb.
+  Widget? loupe() {
+    final at = loupeAt;
+    final box = planSheetKey.currentContext?.findRenderObject() as RenderBox?;
+    if (at == null || box == null || !box.hasSize) return null;
+    final local = box.globalToLocal(at);
+    const size = 118.0, lift = 96.0;
+    // Above the finger; beside it when the finger is near the top edge.
+    var centre = local - const Offset(0, lift);
+    if (centre.dy < size / 2 + 4)
+      centre = local +
+          Offset(local.dx > box.size.width / 2 ? -lift : lift, 0);
+    centre = Offset(
+        centre.dx.clamp(size / 2 + 4, math.max(size / 2 + 4, box.size.width - size / 2 - 4)),
+        centre.dy.clamp(size / 2 + 4, math.max(size / 2 + 4, box.size.height - size / 2 - 4)));
+    final t = Tokens.of(context);
+    return Positioned(
+        left: centre.dx - size / 2,
+        top: centre.dy - size / 2,
+        child: IgnorePointer(
+            child: RawMagnifier(
+                key: const ValueKey('plan-loupe'),
+                size: const Size(size, size),
+                magnificationScale: 2,
+                focalPointOffset: local - centre,
+                decoration: MagnifierDecoration(
+                    shape: CircleBorder(
+                        side: BorderSide(color: t.accent, width: 2)),
+                    shadows: const [
+                      BoxShadow(
+                          color: Color(0x33000000),
+                          blurRadius: 10,
+                          offset: Offset(0, 3))
+                    ]),
+                child: Center(
+                    child: Icon(Icons.add, size: 18, color: t.accent)))));
   }
 
   Widget zoomButtons() {

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/services.dart';
 import '../core/house_core.dart';
 import '../core/commands/room_commands.dart';
@@ -789,6 +790,11 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   Offset? downPoint;
+
+  /// Screen point of a finger that is dragging a wall, door, room edge or
+  /// piece of furniture: a magnifier shows what the finger covers.
+  Offset? loupeAt;
+  final planSheetKey = GlobalKey();
   int floorIndex = 0;
   RoomType brush = RoomType.living;
   bool browse = true, erase = false, dirty = false, saving = false;
@@ -2097,6 +2103,7 @@ class _HouseEditorState extends State<HouseEditor>
           forceHorizontal: !vertical,
           ignore: own,
           skipAlong: {(vertical ? moving.dy : moving.dx).round()});
+      if (snap.connected && !drawConnected) HapticFeedback.selectionClick();
       drawConnected = snap.connected;
       editPreviewStart = wallGrip == 'start' ? snap.end : editStart;
       editPreviewEnd = wallGrip == 'end' ? snap.end : editEnd;
@@ -2746,6 +2753,8 @@ class _HouseEditorState extends State<HouseEditor>
         pixel = 1 / (painter.scale(size) * canvasZoom);
     final snap = snapWallEnd(base, drawingOrigin!, Offset(world.x, world.y),
         connectRadius: 22 * pixel, alignRadius: 14 * pixel);
+    if (snap.end != drawingEnd && snap.connected && !drawConnected)
+      HapticFeedback.selectionClick();
     drawingEnd = snap.end;
     drawConnected = snap.connected;
     if ((drawingEnd! - drawingOrigin!).distance < 300) {
@@ -3485,6 +3494,7 @@ class _HouseEditorState extends State<HouseEditor>
                                                   e.localPosition, size));
                                           },
                                           onPointerMove: (e) {
+                                            trackLoupe(e);
                                             if (wallHoldScreen != null &&
                                                 (e.position - wallHoldScreen!)
                                                         .distance >
@@ -3556,6 +3566,7 @@ class _HouseEditorState extends State<HouseEditor>
                                                   e.localPosition, size));
                                           },
                                           onPointerCancel: (e) {
+                                            loupeAt = null;
                                             pointers.remove(e.pointer);
                                             setState(() {
                                               stroke.clear();
@@ -3567,6 +3578,8 @@ class _HouseEditorState extends State<HouseEditor>
                                             lastPoint = null;
                                           },
                                           onPointerUp: (e) {
+                                            if (loupeAt != null)
+                                              setState(() => loupeAt = null);
                                             wallHoldTimer?.cancel();
                                             final gesture = wallGesture;
                                             wallGesture = null;

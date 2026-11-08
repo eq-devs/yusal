@@ -104,6 +104,9 @@ class _Item {
   final Path path;
   final Color color;
   final double depth;
+
+  /// Position in the BSP back-to-front walk; −1 for items outside it.
+  int order = -1;
   final int layer;
   final SourceRef? source;
   final double stroke;
@@ -335,24 +338,31 @@ class ScenePainter extends CustomPainter {
       items.add(_Item(shadow, Colors.black.withValues(alpha: 0.22), 0, 2, null));
     }
 
-    for (final f in model.faces) {
-      if (!visible(f)) continue;
-      if (f.layer == Layer3.buried && !foundation) continue;
-      if (f.layer == Layer3.ceiling && !walk) continue;
-      var pts = f.points;
+    // Faces come out of the BSP tree farthest first, so overlapping faces
+    // keep their true order from every angle (no flicker while orbiting).
+    var order = 0;
+    model.bsp.backToFront(camera.eye, (frag) {
+      final f = frag.face;
+      if (!visible(f)) return;
+      if (f.layer == Layer3.buried && !foundation) return;
+      if (f.layer == Layer3.ceiling && !walk) return;
+      var pts = frag.points;
+      var clipped = false;
       if (cutY.isFinite && f.floorIndex >= 0) {
-        if (pts.every((p) => p.y > cutY)) continue;
-        if (pts.any((p) => p.y > cutY))
+        if (pts.every((p) => p.y > cutY)) return;
+        if (pts.any((p) => p.y > cutY)) {
           pts = clip(pts, (p) => cutY - p.y);
-        if (pts.length < 3) continue;
+          clipped = true;
+        }
+        if (pts.length < 3) return;
       } else if (cutY.isFinite && f.floorIndex < 0) {
-        continue;
+        return;
       }
       final toEye = camera.eye - pts.first;
       var n = f.normal;
       final facing = n.dot(toEye);
       if (facing <= 0) {
-        if (!f.doubleSided && f.alpha >= 1 && !(cutY.isFinite)) continue;
+        if (!f.doubleSided && f.alpha >= 1 && !(cutY.isFinite)) return;
         n = n * -1;
       }
       var centre = const Vec3(0, 0, 0);
@@ -367,23 +377,19 @@ class ScenePainter extends CustomPainter {
         Layer3.floorSurface => 3,
         Layer3.covering => f.interior && shell ? 6 : 4,
         Layer3.ceiling => 5,
-        // The roof sits on the walls: drawn after them it hides their tops,
-        // which large sloped faces lose to in a depth sort.
-        Layer3.sorted => f.interior && shell
-            ? 6
-            : f.covering && shell
-                ? 8
-                : 7,
+        Layer3.sorted => f.interior && shell ? 6 : 7,
       };
       final alpha = f.glow && night ? 0.62 : f.alpha;
-      if (f.textile != null && f.uv != null && identical(pts, f.points)) {
-        addTextured(f, pts, n, (centre - camera.eye).length, light, layer, size,
-            focal);
-        continue;
+      final before = items.length;
+      if (f.textile != null && frag.uv != null && !clipped) {
+        addTextured(f, pts, frag.uv!, n, (centre - camera.eye).length, light,
+            layer, size, focal);
+      } else {
+        addPoly(pts, shade(f, n, (centre - camera.eye).length, light), alpha,
+            layer, f.source);
       }
-      addPoly(pts, shade(f, n, (centre - camera.eye).length, light), alpha,
-          layer, f.source);
-    }
+      for (var i = before; i < items.length; i++) items[i].order = order++;
+    });
     if (foundation)
       for (final l in model.lines) {
         var a = camera.toCamera(l.a), b = camera.toCamera(l.b);
@@ -402,12 +408,15 @@ class ScenePainter extends CustomPainter {
     items.sort((a, b) {
       final l = a.layer.compareTo(b.layer);
       if (l != 0) return l;
-      return b.depth.compareTo(a.depth);
+      // The foundation layer mixes faces with rebar lines: by depth.
+      if (a.layer == 0 || a.order < 0 || b.order < 0)
+        return b.depth.compareTo(a.depth);
+      return a.order.compareTo(b.order);
     });
     final fill = Paint()..isAntiAlias = true;
     final edge = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.6;
+      ..strokeWidth = 1.1;
     var groundDrawn = false;
     void drawGround() {
       if (groundDrawn) return;
@@ -460,10 +469,9 @@ class ScenePainter extends CustomPainter {
   /// A face with a textile pattern, split into a small grid so the
   /// per-triangle (affine) texture mapping stays close to perspective;
   /// each cell is clipped with its texture coordinates and tinted by light.
-  void addTextured(Face3 f, List<Vec3> pts, Vec3 n, double distance,
-      Vec3 light, int layer, Size size, double focal) {
+  void addTextured(Face3 f, List<Vec3> pts, List<Offset> uv, Vec3 n,
+      double distance, Vec3 light, int layer, Size size, double focal) {
     final image = textileImage(f.textile!, f.textileVariant);
-    final uv = f.uv!;
     final quad = pts.length == 4;
     final longest = quad
         ? math.max((pts[1] - pts[0]).length, (pts[3] - pts[0]).length)
@@ -604,13 +612,21 @@ class SceneView extends StatefulWidget {
   State<SceneView> createState() => SceneViewState();
 }
 
-class SceneViewState extends State<SceneView>
-    with SingleTickerProviderStateMixin {
+class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   late SceneModel model;
   Object? modelKey;
   double yaw = 0, pitch = 0, distance = 20;
   Vec3 target = const Vec3(0, 0, 0);
   double startDistance = 20;
+
+  /// Size of the view at the last layout, for finger-exact pan and zoom.
+  Size viewSize = const Size(400, 400);
+  double startRotation = 0;
+
+  /// Orbit speed (radians per second) left by a flick, decaying to rest.
+  double spinYaw = 0, spinPitch = 0;
+  late final Ticker spin = createTicker(coast);
+  Duration spinLast = Duration.zero;
 
   // Walk state: world position, look angles.
   double wx = 0, wz = 0, wYaw = 0, wPitch = 0;
@@ -639,6 +655,7 @@ class SceneViewState extends State<SceneView>
   @override
   void dispose() {
     ticker.dispose();
+    spin.dispose();
     focusNode.dispose();
     super.dispose();
   }
@@ -681,6 +698,7 @@ class SceneViewState extends State<SceneView>
   }
 
   void applyView(String view) {
+    if (spin.isActive) stopSpin();
     final pose = viewPose(model, view);
     target = pose.target;
     distance = pose.distance;
@@ -760,6 +778,57 @@ class SceneViewState extends State<SceneView>
     });
   }
 
+  /// Pixels to world metres at the orbit target's depth.
+  double get metresPerPixel {
+    final focal = viewSize.height / 2 / math.tan(42 * math.pi / 180 / 2);
+    return distance / focal;
+  }
+
+  /// Move the target so the content under the fingers follows them
+  /// exactly, as in map and CAD viewers.
+  void panBy(Offset delta) {
+    final cam = orbitCamera(target, yaw, pitch, distance);
+    final k = metresPerPixel;
+    target = target - cam.right * (delta.dx * k) + cam.up * (delta.dy * k);
+  }
+
+  /// Zoom to [next] keeping the point under [focal] (view-local) still.
+  void zoomAt(Offset focal, double next) {
+    next = next.clamp(3.0, 90.0);
+    final cam = orbitCamera(target, yaw, pitch, distance);
+    final f = viewSize.height / 2 / math.tan(cam.fov / 2);
+    final dx = focal.dx - viewSize.width / 2,
+        dy = focal.dy - viewSize.height / 2;
+    target = target + (cam.right * dx - cam.up * dy) * ((distance - next) / f);
+    distance = next;
+  }
+
+  void stopSpin() {
+    spinYaw = 0;
+    spinPitch = 0;
+    if (spin.isActive) spin.stop();
+  }
+
+  /// Let a flick keep turning the house for a moment (inertia).
+  void coast(Duration now) {
+    final dt = spinLast == Duration.zero
+        ? 1 / 60
+        : math.min(0.05, (now - spinLast).inMicroseconds / 1e6);
+    spinLast = now;
+    final decay = math.exp(-5 * dt);
+    spinYaw *= decay;
+    spinPitch *= decay;
+    if (spinYaw.abs() < 0.02 && spinPitch.abs() < 0.02) {
+      stopSpin();
+      return;
+    }
+    setState(() {
+      yaw += spinYaw * dt;
+      pitch = (pitch + spinPitch * dt)
+          .clamp(5 * math.pi / 180, 89.5 * math.pi / 180);
+    });
+  }
+
   Camera get camera {
     if (widget.walk) {
       final eyeY = (floor < model.elevations.length ? model.elevations[floor] : 0) + 1.6;
@@ -797,17 +866,23 @@ class SceneViewState extends State<SceneView>
     final view = Listener(
         // Keys (W A S D, arrows) go to the view the user last touched.
         onPointerDown: (_) {
+          stopSpin();
           if (widget.walk && !focusNode.hasFocus) focusNode.requestFocus();
         },
         onPointerSignal: (e) {
-          if (e is PointerScrollEvent && !widget.walk)
-            setState(() => distance =
-                (distance * (e.scrollDelta.dy > 0 ? 1.12 : 1 / 1.12))
-                    .clamp(3.0, 90.0));
+          if (e is PointerScrollEvent && !widget.walk) {
+            stopSpin();
+            setState(() => zoomAt(e.localPosition,
+                distance * (e.scrollDelta.dy > 0 ? 1.12 : 1 / 1.12)));
+          }
         },
         child: GestureDetector(
             onTapUp: (d) => widget.onPick?.call(painter?.pick(d.localPosition)),
-            onScaleStart: (_) => startDistance = distance,
+            onScaleStart: (_) {
+              stopSpin();
+              startDistance = distance;
+              startRotation = 0;
+            },
             onScaleUpdate: (d) => setState(() {
                   if (widget.walk) {
                     wYaw -= d.focalPointDelta.dx * 0.006;
@@ -820,15 +895,27 @@ class SceneViewState extends State<SceneView>
                     pitch = (pitch + d.focalPointDelta.dy * 0.006)
                         .clamp(5 * math.pi / 180, 89.5 * math.pi / 180);
                   } else {
-                    distance = (startDistance / d.scale).clamp(3.0, 90.0);
-                    final cam = camera;
-                    final k = distance / 600;
-                    target = target -
-                        cam.right * (d.focalPointDelta.dx * k) +
-                        cam.up * (d.focalPointDelta.dy * k);
+                    // Two fingers: pan with the fingers, pinch about the
+                    // point between them, twist to turn the house.
+                    panBy(d.focalPointDelta);
+                    zoomAt(d.localFocalPoint, startDistance / d.scale);
+                    yaw += d.rotation - startRotation;
+                    startRotation = d.rotation;
                   }
                 }),
-            child: CustomPaint(painter: painter, size: Size.infinite)));
+            onScaleEnd: (d) {
+              if (widget.walk || d.pointerCount > 0) return;
+              final v = d.velocity.pixelsPerSecond;
+              if (v.distance < 250) return;
+              spinYaw = -v.dx * 0.008;
+              spinPitch = v.dy * 0.006;
+              spinLast = Duration.zero;
+              if (!spin.isActive) spin.start();
+            },
+            child: LayoutBuilder(builder: (context, c) {
+              viewSize = c.biggest;
+              return CustomPaint(painter: painter, size: Size.infinite);
+            })));
     return KeyboardListener(
         focusNode: focusNode,
         autofocus: widget.walk,

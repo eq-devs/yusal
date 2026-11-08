@@ -5,6 +5,7 @@ import '../core/analysis/site_analysis.dart';
 import '../core/document/house_document.dart';
 import '../core/geometry/derived_house.dart';
 import '../core/geometry/floor_base.dart';
+import 'bsp.dart';
 import 'textures.dart';
 
 /// World space for the 3D views, in metres: x to the right of the plan,
@@ -144,6 +145,10 @@ class SceneModel {
   /// +1 when the main entrance is on the bottom edge of the plan (+z side),
   /// −1 on the top edge; the "front" view looks at that side.
   final double frontZ;
+
+  /// Built on first use and kept with the model: the faces never move, only
+  /// the camera does.
+  late final BspTree bsp = BspTree.build(faces);
   Vec3 get center => Vec3(width / 2, height / 3, depth / 2);
 }
 

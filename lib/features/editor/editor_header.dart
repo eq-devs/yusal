@@ -93,6 +93,7 @@ extension _EditorHeader on _HouseEditorState {
         tooltip: '更多操作'.trKey('Басқа әрекеттер'),
         onSelected: (value) {
           if (value == 'checks') showTab('iss');
+          if (value == 'roof') chooseRoof();
           if (value == 'settings') settings();
           if (value == 'export') export();
           if (value == 'pdf') exportDrawings();
@@ -108,6 +109,8 @@ extension _EditorHeader on _HouseEditorState {
                 .values[(app.theme.index + 1) % ThemeChoice.values.length]);
         },
         itemBuilder: (context) => [
+              PopupMenuItem(
+                  value: 'roof', child: Text(tr('屋顶样式', 'Шатыр түрі'))),
               PopupMenuItem(
                   value: 'checks', child: Text(tr('设计检查', 'Жобаны тексеру'))),
               PopupMenuItem(
@@ -219,6 +222,7 @@ extension _EditorHeader on _HouseEditorState {
               tooltip: '更多操作'.trKey('Басқа әрекеттер'),
               onSelected: (value) {
                 if (value == 'checks') showTab('iss');
+          if (value == 'roof') chooseRoof();
                 if (value == 'settings') settings();
                 if (value == 'export') export();
                 if (value == 'pdf') exportDrawings();
@@ -238,6 +242,9 @@ extension _EditorHeader on _HouseEditorState {
                       .values[(app.theme.index + 1) % ThemeChoice.values.length]);
               },
               itemBuilder: (context) => [
+                    PopupMenuItem(
+                        value: 'roof',
+                        child: Text(tr('屋顶样式', 'Шатыр түрі'))),
                     PopupMenuItem(
                         value: 'checks',
                         child: Text(tr('设计检查', 'Жобаны тексеру'))),

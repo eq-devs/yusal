@@ -158,8 +158,10 @@ class _HouseHomeState extends State<HouseHome> {
     }
   }
 
+  /// "＋ → 从零画" opens the size dialog straight away: one step to a
+  /// house, not two choosers in a row.
   void _onCreateRequest() {
-    if (mounted) createFromTemplate();
+    if (mounted) create();
   }
 
   Future<void> open(ProjectEntry entry) async {
@@ -344,6 +346,7 @@ class _HouseHomeState extends State<HouseHome> {
     const columns = 1, rows = 1;
     String? validation;
     var sketchRequested = sketch;
+    var roof = 'gable';
     double? parse(TextEditingController c) {
       final v = double.tryParse(c.text.replaceAll(',', '.'));
       return v == null || !v.isFinite ? null : v;
@@ -407,6 +410,32 @@ class _HouseHomeState extends State<HouseHome> {
                                   child: size(depth,
                                       tr('进深（上下）', 'Ұзындығы (жоғары-төмен)'))),
                             ]),
+                            const SizedBox(height: 12),
+                            // The roof is chosen up front and can be
+                            // changed any time later.
+                            Text(tr('屋顶', 'Шатыр'),
+                                style: TextStyle(
+                                    fontSize: 12.5, color: t.muted)),
+                            const SizedBox(height: 4),
+                            Wrap(spacing: 6, runSpacing: 6, children: [
+                              for (final style in roofStyles)
+                                ChoiceChip(
+                                    key: ValueKey('new-roof-$style'),
+                                    avatar: RoofIcon(style,
+                                        size: 14,
+                                        color: roof == style ? t.accent : t.ink),
+                                    showCheckmark: false,
+                                    selectedColor:
+                                        t.accent.withValues(alpha: 0.14),
+                                    side: BorderSide(
+                                        color: roof == style ? t.accent : t.line),
+                                    label: Text(roofStyleName(style),
+                                        style: TextStyle(color: t.ink)),
+                                    visualDensity: VisualDensity.compact,
+                                    selected: roof == style,
+                                    onSelected: (_) =>
+                                        setDialog(() => roof = style)),
+                            ]),
                             Padding(
                                 padding: const EdgeInsets.only(top: 10),
                                 child: Text(
@@ -449,7 +478,7 @@ class _HouseHomeState extends State<HouseHome> {
                               }
                               Navigator.pop(
                                   context,
-                                  createHouse(
+                                  withRoof(createHouse(
                                       name: name.text,
                                       width: (w * 1000).round(),
                                       depth: (d * 1000).round(),
@@ -459,7 +488,8 @@ class _HouseHomeState extends State<HouseHome> {
                                       timestamp: DateTime.now()
                                           .toUtc()
                                           .toIso8601String(),
-                                      newId: () => const Uuid().v4()));
+                                      newId: () => const Uuid().v4()),
+                                      roof));
                             },
                             child: Text(tr('开始设计', 'Бастау')))
                       ]);
@@ -469,15 +499,17 @@ class _HouseHomeState extends State<HouseHome> {
       final dimensions = await Navigator.of(context).push<FootprintDimensions>(
           MaterialPageRoute(builder: (_) => const FootprintSketch()));
       if (dimensions == null) return;
-      doc = createHouse(
-          name: name.text,
-          width: dimensions.width,
-          depth: dimensions.depth,
-          columns: 1,
-          rows: 1,
-          initialRoom: true,
-          timestamp: DateTime.now().toUtc().toIso8601String(),
-          newId: () => const Uuid().v4());
+      doc = withRoof(
+          createHouse(
+              name: name.text,
+              width: dimensions.width,
+              depth: dimensions.depth,
+              columns: 1,
+              rows: 1,
+              initialRoom: true,
+              timestamp: DateTime.now().toUtc().toIso8601String(),
+              newId: () => const Uuid().v4()),
+          roof);
     }
     if (doc == null) return;
     try {

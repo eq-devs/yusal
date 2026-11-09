@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/core/house_core.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
 import 'package:yusal/features/house_editor.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/render3d/scene_view.dart';
@@ -44,7 +45,8 @@ void main() {
   Offset point(WidgetTester t, double x, double y) =>
       t.getTopLeft(canvas) + painter(t).point(x, y, t.getSize(canvas));
 
-  Future<void> mount(WidgetTester t, HouseDocument doc, {Size? size}) async {
+  Future<(ProjectStore, String)> mount(WidgetTester t, HouseDocument doc,
+      {Size? size}) async {
     if (size != null) {
       t.view.physicalSize = size;
       t.view.devicePixelRatio = 1;
@@ -60,6 +62,14 @@ void main() {
       await t.pumpWidget(const SizedBox.shrink());
       await t.pumpAndSettle();
     });
+    return (store, id);
+  }
+
+  Future<HouseDocument> saved(
+      WidgetTester t, (ProjectStore, String) session) async {
+    await t.pump(const Duration(milliseconds: 1600));
+    await t.pumpAndSettle();
+    return session.$1.openProject(session.$2);
   }
 
   testWidgets('panning the plan moves the drawing without rebuilding it',
@@ -129,6 +139,8 @@ void main() {
     expect(stage.height, greaterThan(844 * 0.45));
     // The cut height only shows with the cut on.
     expect(find.byKey(const ValueKey('cut-height')), findsNothing);
+    await t.ensureVisible(find.text('剖切'));
+    await t.pumpAndSettle();
     await t.tap(find.text('剖切'));
     await t.pumpAndSettle();
     expect(find.byKey(const ValueKey('cut-height')), findsOneWidget);
@@ -138,6 +150,40 @@ void main() {
     await t.tap(find.byKey(const ValueKey('scene-more')));
     await t.pumpAndSettle();
     expect(find.text('日照时间'), findsOneWidget);
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('a door added on a wall lands where tapped and deletes from the top of its card',
+      (t) async {
+    final session = await mount(t, initial(), size: const Size(390, 844));
+    await t.tapAt(point(t, 6000, 120));
+    await t.pumpAndSettle();
+    expect(find.text('在点的位置加'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('wall-sheet-door')));
+    await t.pumpAndSettle();
+    final house = deriveHouse(await saved(t, session));
+    final door = house.floors.first.openings.single;
+    expect((door.start + door.end) / 2, closeTo(6000, 60),
+        reason: 'centred on the tap, not 200 mm from a corner');
+    // Selected at once; on a phone the card is folded and delete is on top.
+    expect(find.byKey(const ValueKey('selection-delete')), findsOneWidget);
+    expect(find.text('宽 mm'), findsNothing, reason: 'details folded');
+    await t.tap(find.byKey(const ValueKey('selection-delete')));
+    await t.pumpAndSettle();
+    expect((await saved(t, session)).floors.first.openings, isEmpty);
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('the roof style changes from the editor menu', (t) async {
+    final session = await mount(t, initial(), size: const Size(390, 844));
+    expect((await saved(t, session)).roof.type, RoofType.gable);
+    await t.tap(find.byTooltip('更多操作'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('屋顶样式'));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('roof-hip')));
+    await t.pumpAndSettle();
+    expect((await saved(t, session)).roof.type, RoofType.hip);
     expect(t.takeException(), isNull);
   });
 }

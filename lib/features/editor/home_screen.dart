@@ -26,13 +26,17 @@ class HouseHome extends StatefulWidget {
   State<HouseHome> createState() => _HouseHomeState();
 }
 
-/// Template names: key → (Chinese, Kazakh).
+/// Templates: key → (Chinese, Kazakh, size in metres).
 const _templateNames = {
-  'kz': ('哈萨克乡村住宅 · 10 × 13 米', 'Қазақ ауыл үйі · 10 × 13 м'),
-  'three': ('一层三间 · 12 × 10 米', 'Бір қабат, үш бөлме · 12 × 10 м'),
-  'five': ('一层五间 · 15 × 10 米', 'Бір қабат, бес бөлме · 15 × 10 м'),
-  'two': ('两层住宅 · 12 × 10 米', 'Екі қабатты үй · 12 × 10 м'),
+  'kz': ('哈萨克乡村住宅', 'Қазақ ауыл үйі', '10 × 13'),
+  'three': ('一层三间', 'Бір қабат, үш бөлме', '12 × 10'),
+  'five': ('一层五间', 'Бір қабат, бес бөлме', '15 × 10'),
+  'two': ('两层住宅', 'Екі қабатты үй', '12 × 10'),
 };
+
+/// Common plot-friendly sizes (width × depth, metres) offered when a
+/// design starts from its size.
+const _sizePresets = [(8, 10), (10, 12), (12, 10), (10, 13), (15, 10)];
 
 /// Room names of the village-house template in the current language.
 Map<String, String> kazakhTemplateNames() => isKk
@@ -180,18 +184,150 @@ class _HouseHomeState extends State<HouseHome> {
     return createTemplate(key, now, () => const Uuid().v4());
   }
 
+  /// Template drawings for the start sheet, built once.
+  static final _templatePreviews = <String, (HouseDocument, DerivedHouse)>{};
+
+  Widget templatePreview(String key) {
+    final t = Tokens.of(context);
+    try {
+      final (doc, derived) = _templatePreviews.putIfAbsent(key, () {
+        final d = key == 'kz'
+            ? createKazakhTemplate('2026-01-01T00:00:00Z',
+                () => 'preview${_featuredIds++}',
+                names: kazakhTemplateNames())
+            : createTemplate(
+                key, '2026-01-01T00:00:00Z', () => 'preview${_featuredIds++}');
+        return (d, deriveHouse(d));
+      });
+      return CustomPaint(
+          painter: FloorPlanPainter(derived.floors.first.base,
+              {for (final r in doc.floors.first.rooms) r.id: ''}, const {},
+              openings: derived.floors.first.openings,
+              tokens: t,
+              showDimensions: false,
+              showLabels: false,
+              viewportInsets: const EdgeInsets.all(6)));
+    } catch (_) {
+      return Icon(Icons.other_houses_outlined, color: t.muted);
+    }
+  }
+
+  /// How to start: from a size, by sketching the outline, or from a
+  /// template shown as its plan (Planner 5D, Floorplanner and 酷家乐 all
+  /// open with this choice instead of a blank sheet or a bare list).
   Future<void> createFromTemplate([String? chosen]) async {
     final key = chosen ??
         await showMotionSheet<String>(
             context: context,
-            builder: (context) => SafeArea(
-                    child: ListView(shrinkWrap: true, children: [
-                  for (final entry in _templateNames.entries)
-                    ListTile(
-                        title: Text(tr(entry.value.$1, entry.value.$2)),
-                        onTap: () => Navigator.pop(context, entry.key))
-                ])));
+            isScrollControlled: true,
+            builder: (context) {
+              final t = Tokens.of(context);
+              Widget way(String key, IconData icon, String title, String sub) =>
+                  Material(
+                      color: t.panel,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: t.line)),
+                      child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => Navigator.pop(context, key),
+                          child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(children: [
+                                Icon(icon, color: t.accent),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                    child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                      Text(title,
+                                          style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700)),
+                                      Text(sub,
+                                          style: TextStyle(
+                                              fontSize: 12.5,
+                                              color: t.muted)),
+                                    ])),
+                                Icon(Icons.chevron_right, color: t.muted),
+                              ]))));
+              Widget template(MapEntry<String, (String, String, String)> e) =>
+                  Material(
+                      color: t.panel,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: t.line)),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                          onTap: () => Navigator.pop(context, e.key),
+                          child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    AspectRatio(
+                                        aspectRatio: 1.25,
+                                        child: templatePreview(e.key)),
+                                    const SizedBox(height: 6),
+                                    Text(tr(e.value.$1, e.value.$2),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w700)),
+                                    Text('${e.value.$3} $unitM',
+                                        style: mono(size: 12, color: t.muted)),
+                                  ]))));
+              return SafeArea(
+                  child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                          maxHeight: MediaQuery.sizeOf(context).height * 0.88),
+                      child: ListView(
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                          children: [
+                            Text(tr('怎么开始？', 'Қалай бастаймыз?'),
+                                style: const TextStyle(
+                                    fontSize: 20, fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 4),
+                            Text(
+                                tr('都可以随时改：墙、房间、门窗都能拖动调整。',
+                                    'Кейін бәрін өзгертуге болады.'),
+                                style: TextStyle(color: t.muted)),
+                            const SizedBox(height: 12),
+                            way(
+                                'blank',
+                                Icons.crop_square,
+                                tr('按长宽新建', 'Өлшеммен бастау'),
+                                tr('输入面宽和进深，得到一个空房子',
+                                    'Ені мен ұзындығын енгізіңіз')),
+                            const SizedBox(height: 8),
+                            way(
+                                'sketch',
+                                Icons.gesture,
+                                tr('在画布上拖出外形', 'Пішінді сызып беру'),
+                                tr('用手指拉出房子的大小',
+                                    'Үйдің өлшемін саусақпен тартыңыз')),
+                            const SizedBox(height: 16),
+                            Text(tr('或者从模板改', 'Немесе үлгіден'),
+                                style: const TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 8),
+                            LayoutBuilder(builder: (context, c) {
+                              final columns =
+                                  math.max(2, (c.maxWidth / 220).floor());
+                              final w =
+                                  (c.maxWidth - 10 * (columns - 1)) / columns;
+                              return Wrap(spacing: 10, runSpacing: 10, children: [
+                                for (final e in _templateNames.entries)
+                                  SizedBox(width: w, child: template(e)),
+                              ]);
+                            }),
+                          ])));
+            });
     if (key == null) return;
+    if (key == 'blank') return create();
+    if (key == 'sketch') return create(sketch: true);
     try {
       final doc = buildTemplate(key);
       final id = await store.createProject(doc);
@@ -201,98 +337,133 @@ class _HouseHomeState extends State<HouseHome> {
     }
   }
 
-  Future<void> create() async {
+  Future<void> create({bool sketch = false}) async {
     final name = TextEditingController(text: tr('我的房屋', 'Менің үйім')),
-        width = TextEditingController(text: '12.00'),
-        depth = TextEditingController(text: '10.00');
+        width = TextEditingController(text: '12'),
+        depth = TextEditingController(text: '10');
     const columns = 1, rows = 1;
     String? validation;
-    var sketchRequested = false;
-    var doc = await showDialog<HouseDocument>(
-        context: context,
-        builder: (context) => StatefulBuilder(
-            builder: (context, setDialog) => AlertDialog(
-                    title: Text(tr('新建设计', 'Жаңа жоба')),
-                    content: SingleChildScrollView(
-                        child:
-                            Column(mainAxisSize: MainAxisSize.min, children: [
+    var sketchRequested = sketch;
+    double? parse(TextEditingController c) {
+      final v = double.tryParse(c.text.replaceAll(',', '.'));
+      return v == null || !v.isFinite ? null : v;
+    }
+
+    var doc = sketch
+        ? null
+        : await showDialog<HouseDocument>(
+            context: context,
+            builder: (context) => StatefulBuilder(builder: (context, setDialog) {
+                  final t = Tokens.of(context);
+                  final w = parse(width), d = parse(depth);
+                  Widget size(TextEditingController c, String label) =>
                       TextField(
-                          controller: name,
-                          decoration: InputDecoration(
-                              labelText: tr('设计名称', 'Жоба атауы'))),
-                      const SizedBox(height: 10),
-                      TextField(
-                          controller: width,
+                          controller: c,
+                          onChanged: (_) => setDialog(() => validation = null),
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
                           decoration: InputDecoration(
-                              labelText:
-                                  tr('宽（米，左右方向）', 'Ені (м, солдан оңға)'))),
-                      const SizedBox(height: 10),
-                      TextField(
-                          controller: depth,
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration: InputDecoration(
-                              labelText: tr('长（米，上下方向）',
-                                  'Ұзындығы (м, төменнен жоғары)'))),
-                      Padding(
-                          padding: const EdgeInsets.only(top: 12),
-                          child: Text(tr('进去后，从墙上的 ＋ 拖出隔墙。',
-                              'Ішке кірген соң қабырғадағы ＋ белгісінен ішкі қабырға тартыңыз.'))),
-                      if (validation != null)
-                        Text(validation!,
-                            style: TextStyle(
-                                color: Theme.of(context).colorScheme.error))
-                    ])),
-                    actions: [
-                      TextButton.icon(
-                          onPressed: () {
-                            sketchRequested = true;
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.gesture),
-                          label: Text(tr('在画布上拖出外形', 'Пішінді сызып беру'))),
-                      TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(tr('取消', 'Болдырмау'))),
-                      FilledButton(
-                          onPressed: () {
-                            final w = double.tryParse(
-                                    width.text.replaceAll(',', '.')),
-                                d = double.tryParse(
-                                    depth.text.replaceAll(',', '.'));
-                            if (w == null ||
-                                d == null ||
-                                !w.isFinite ||
-                                !d.isFinite ||
-                                w < 3 ||
-                                w > 100 ||
-                                d < 3 ||
-                                d > 100 ||
-                                w * 1000 / columns < 300 ||
-                                d * 1000 / rows < 300) {
-                              setDialog(() => validation = tr(
-                                  '宽和长都要在 3 到 100 米之间',
-                                  'Ені мен ұзындығы 3–100 м аралығында болуы керек'));
-                              return;
-                            }
-                            Navigator.pop(
-                                context,
-                                createHouse(
-                                    name: name.text,
-                                    width: (w * 1000).round(),
-                                    depth: (d * 1000).round(),
-                                    columns: columns,
-                                    rows: rows,
-                                    initialRoom: true,
-                                    timestamp: DateTime.now()
-                                        .toUtc()
-                                        .toIso8601String(),
-                                    newId: () => const Uuid().v4()));
-                          },
-                          child: Text(tr('开始设计', 'Бастау')))
-                    ])));
+                              labelText: label, suffixText: unitM));
+                  return AlertDialog(
+                      title: Text(tr('新建设计', 'Жаңа жоба')),
+                      content: SingleChildScrollView(
+                          child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            TextField(
+                                controller: name,
+                                decoration: InputDecoration(
+                                    labelText: tr('设计名称', 'Жоба атауы'))),
+                            const SizedBox(height: 12),
+                            // Live outline: the numbers become a shape.
+                            Center(
+                                child: SizedBox(
+                                    width: 150,
+                                    height: 110,
+                                    child: CustomPaint(
+                                        painter: _SizePreviewPainter(
+                                            w, d, t.accent, t.ink, t.muted)))),
+                            const SizedBox(height: 8),
+                            Wrap(spacing: 6, runSpacing: 6, children: [
+                              for (final (pw, pd) in _sizePresets)
+                                ChoiceChip(
+                                    label: Text('$pw×$pd'),
+                                    visualDensity: VisualDensity.compact,
+                                    selected: w == pw && d == pd,
+                                    onSelected: (_) => setDialog(() {
+                                          width.text = '$pw';
+                                          depth.text = '$pd';
+                                          validation = null;
+                                        })),
+                            ]),
+                            const SizedBox(height: 10),
+                            Row(children: [
+                              Expanded(
+                                  child: size(width,
+                                      tr('面宽（左右）', 'Ені (солдан оңға)'))),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                  child: size(depth,
+                                      tr('进深（上下）', 'Ұзындығы (жоғары-төмен)'))),
+                            ]),
+                            Padding(
+                                padding: const EdgeInsets.only(top: 10),
+                                child: Text(
+                                    tr('进去后，从墙上的 ＋ 拖出隔墙。',
+                                        'Ішке кірген соң қабырғадағы ＋ белгісінен ішкі қабырға тартыңыз.'),
+                                    style: TextStyle(
+                                        fontSize: 12.5, color: t.muted))),
+                            if (validation != null)
+                              Text(validation!,
+                                  style: TextStyle(
+                                      color:
+                                          Theme.of(context).colorScheme.error))
+                          ])),
+                      actions: [
+                        TextButton.icon(
+                            onPressed: () {
+                              sketchRequested = true;
+                              Navigator.pop(context);
+                            },
+                            icon: const Icon(Icons.gesture),
+                            label: Text(tr('在画布上拖出外形', 'Пішінді сызып беру'))),
+                        TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(tr('取消', 'Болдырмау'))),
+                        FilledButton(
+                            onPressed: () {
+                              final w = parse(width), d = parse(depth);
+                              if (w == null ||
+                                  d == null ||
+                                  w < 3 ||
+                                  w > 100 ||
+                                  d < 3 ||
+                                  d > 100 ||
+                                  w * 1000 / columns < 300 ||
+                                  d * 1000 / rows < 300) {
+                                setDialog(() => validation = tr(
+                                    '宽和长都要在 3 到 100 米之间',
+                                    'Ені мен ұзындығы 3–100 м аралығында болуы керек'));
+                                return;
+                              }
+                              Navigator.pop(
+                                  context,
+                                  createHouse(
+                                      name: name.text,
+                                      width: (w * 1000).round(),
+                                      depth: (d * 1000).round(),
+                                      columns: columns,
+                                      rows: rows,
+                                      initialRoom: true,
+                                      timestamp: DateTime.now()
+                                          .toUtc()
+                                          .toIso8601String(),
+                                      newId: () => const Uuid().v4()));
+                            },
+                            child: Text(tr('开始设计', 'Бастау')))
+                      ]);
+                }));
     // The controllers stay alive until the dialog exit animation completes.
     if (sketchRequested && mounted) {
       final dimensions = await Navigator.of(context).push<FootprintDimensions>(
@@ -707,3 +878,51 @@ class _HouseHomeState extends State<HouseHome> {
 }
 
 var _featuredIds = 0;
+
+/// The house outline at scale with its two sizes and the floor area.
+class _SizePreviewPainter extends CustomPainter {
+  const _SizePreviewPainter(this.w, this.d, this.accent, this.ink, this.muted);
+  final double? w, d;
+  final Color accent, ink, muted;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = this.w, d = this.d;
+    if (w == null || d == null || w <= 0 || d <= 0) return;
+    const pad = 22.0;
+    final k = math.min((size.width - pad * 2) / w, (size.height - pad * 2) / d);
+    final rect = Rect.fromCenter(
+        center: size.center(Offset.zero) + const Offset(6, -4),
+        width: w * k,
+        height: d * k);
+    canvas.drawRect(rect, Paint()..color = accent.withValues(alpha: 0.12));
+    canvas.drawRect(
+        rect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3
+          ..color = ink);
+    void label(String text, Offset at, {bool vertical = false, double size = 11}) {
+      final tp = TextPainter(
+          text: TextSpan(
+              text: text,
+              style: TextStyle(fontSize: size, color: vertical || size < 12 ? muted : ink)),
+          textDirection: TextDirection.ltr)
+        ..layout();
+      canvas.save();
+      canvas.translate(at.dx, at.dy);
+      if (vertical) canvas.rotate(-math.pi / 2);
+      tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
+      canvas.restore();
+    }
+
+    String m(double v) => v == v.roundToDouble() ? '${v.round()}' : v.toStringAsFixed(1);
+    label('${m(w)} m', Offset(rect.center.dx, rect.top - 9));
+    label('${m(d)} m', Offset(rect.left - 10, rect.center.dy), vertical: true);
+    label('${(w * d).toStringAsFixed(0)} m²', rect.center, size: 13);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SizePreviewPainter old) =>
+      old.w != w || old.d != d || old.accent != accent;
+}

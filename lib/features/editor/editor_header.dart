@@ -102,6 +102,10 @@ extension _EditorHeader on _HouseEditorState {
             showTab('qty');
             chooseCompare();
           }
+          if (value == 'lang') chooseLanguage();
+          if (value == 'theme')
+            app.setTheme(ThemeChoice
+                .values[(app.theme.index + 1) % ThemeChoice.values.length]);
         },
         itemBuilder: (context) => [
               PopupMenuItem(
@@ -122,7 +126,21 @@ extension _EditorHeader on _HouseEditorState {
                   child: Text(tr('导出本层平面图 PNG', 'Қабат жоспарын PNG ету'))),
               PopupMenuItem(
                   value: 'export',
-                  child: Text(tr('导出 .house', '.house файлын шығару')))
+                  child: Text(tr('导出 .house', '.house файлын шығару'))),
+              // On phones language and theme live here, not in the header,
+              // so the drawing gets the room.
+              if (!wide) ...[
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                    value: 'lang', child: Text('Тіл / Язык / 语言')),
+                PopupMenuItem(
+                    value: 'theme',
+                    child: Text(switch (app.theme) {
+                      ThemeChoice.auto => tr('☀ 日间', '☀ Күндіз'),
+                      ThemeChoice.day => tr('☾ 夜间', '☾ Түн'),
+                      ThemeChoice.night => tr('◐ 自动', '◐ Авто'),
+                    })),
+              ],
             ]);
     final back = BackButton(color: t.ink);
     if (wide)
@@ -146,7 +164,10 @@ extension _EditorHeader on _HouseEditorState {
           ]));
     return Padding(
         padding: const EdgeInsets.fromLTRB(0, 4, 4, 0),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
+        child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           Row(children: [back, Expanded(child: title), history_, more]),
           SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -157,10 +178,6 @@ extension _EditorHeader on _HouseEditorState {
                 sizeButton,
                 saveButton,
                 saveIndicator(),
-                const SizedBox(width: 8),
-                language,
-                const SizedBox(width: 8),
-                theme,
               ])),
         ]));
   }
@@ -253,6 +270,25 @@ extension _EditorHeader on _HouseEditorState {
                         })),
                   ]),
         ]));
+  }
+
+  Future<void> chooseLanguage() async {
+    final app = AppSettings.instance;
+    final lang = await showMotionSheet<AppLang>(
+        context: context,
+        builder: (context) => SafeArea(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+              for (final (value, label) in const [
+                (AppLang.kk, 'Қазақша'),
+                (AppLang.ru, 'Русский'),
+                (AppLang.zh, '中文')
+              ])
+                ListTile(
+                    title: Text(label),
+                    trailing: value == app.lang ? const Icon(Icons.check) : null,
+                    onTap: () => Navigator.pop(context, value)),
+            ])));
+    if (lang != null) app.setLang(lang);
   }
 
   void selectFloor(int value) => update(() {

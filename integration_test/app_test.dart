@@ -31,7 +31,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('也可以从示例开始'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('一层三间 · 12 × 10 米'));
+    await tester.tap(find.text('一层三间'));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     // Wait for native WebP encoding and the route transition.
     for (var i = 0;

@@ -7,7 +7,7 @@ extension _PlanTab on _HouseEditorState {
     final t = Tokens.of(context);
     final card = selectionCard();
     final surface = Sheet(
-        child: Stack(children: [
+        child: Stack(key: planSheetKey, children: [
       Positioned.fill(child: planCanvas()),
       Positioned(top: 10, right: 10, child: zoomButtons()),
       if (wide || card == null || panelCollapsed)
@@ -20,6 +20,7 @@ extension _PlanTab on _HouseEditorState {
             bottom: 8,
             child: LayoutBuilder(builder: (context, c) => card)),
       if (wallMenuCard() case final menu?) menu,
+      if (loupe() case final l?) l,
     ]));
     final bars = Column(
         key: barsKey,
@@ -29,7 +30,9 @@ extension _PlanTab on _HouseEditorState {
           const SizedBox(height: 8),
           toolRow(),
           const SizedBox(height: 6),
-          layerRow(),
+          // Phones: one scrolling line instead of a wrapped block, so the
+          // drawing keeps the height.
+          if (wide) layerRow() else fadeRow(layerChips()),
           hintRow(),
         ]);
     if (compact) {
@@ -109,6 +112,66 @@ extension _PlanTab on _HouseEditorState {
                 compareCard(),
               ]))),
     ]);
+  }
+
+  /// Follow a dragging finger on a touch screen (not a mouse or pen, which
+  /// do not hide what they point at).
+  void trackLoupe(PointerMoveEvent e) {
+    final dragging = !cancelledStroke &&
+        pointers.length == 1 &&
+        e.kind == PointerDeviceKind.touch &&
+        (wallGesture == 'draw' ||
+            wallGesture == 'edit' ||
+            wallGesture == 'opening' ||
+            draggingAxis != null ||
+            draggingOpening != null ||
+            furnitureGrip != null ||
+            utilityDown != null ||
+            (spatialTool && spatialStart != null));
+    final moved = gestureScreen == null ||
+        (e.position - gestureScreen!).distance > 8;
+    final next = dragging && moved ? e.position : null;
+    if (next != loupeAt) update(() => loupeAt = next);
+  }
+
+  /// A round magnifier above the finger, like the text loupe on phones and
+  /// the precision cursor of mobile CAD apps: the snapped end, the length
+  /// label and nearby walls stay visible under the thumb.
+  Widget? loupe() {
+    final at = loupeAt;
+    final box = planSheetKey.currentContext?.findRenderObject() as RenderBox?;
+    if (at == null || box == null || !box.hasSize) return null;
+    final local = box.globalToLocal(at);
+    const size = 118.0, lift = 96.0;
+    // Above the finger; beside it when the finger is near the top edge.
+    var centre = local - const Offset(0, lift);
+    if (centre.dy < size / 2 + 4)
+      centre = local +
+          Offset(local.dx > box.size.width / 2 ? -lift : lift, 0);
+    centre = Offset(
+        centre.dx.clamp(size / 2 + 4, math.max(size / 2 + 4, box.size.width - size / 2 - 4)),
+        centre.dy.clamp(size / 2 + 4, math.max(size / 2 + 4, box.size.height - size / 2 - 4)));
+    final t = Tokens.of(context);
+    return Positioned(
+        left: centre.dx - size / 2,
+        top: centre.dy - size / 2,
+        child: IgnorePointer(
+            child: RawMagnifier(
+                key: const ValueKey('plan-loupe'),
+                size: const Size(size, size),
+                magnificationScale: 2,
+                focalPointOffset: local - centre,
+                decoration: MagnifierDecoration(
+                    shape: CircleBorder(
+                        side: BorderSide(color: t.accent, width: 2)),
+                    shadows: const [
+                      BoxShadow(
+                          color: Color(0x33000000),
+                          blurRadius: 10,
+                          offset: Offset(0, 3))
+                    ]),
+                child: Center(
+                    child: Icon(Icons.add, size: 18, color: t.accent)))));
   }
 
   Widget zoomButtons() {
@@ -193,60 +256,89 @@ extension _PlanTab on _HouseEditorState {
                 ]))));
   }
 
-  Widget toolRow() => SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(children: [
-        for (final w in toolButtons())
-          Padding(padding: const EdgeInsets.only(right: 6), child: w)
-      ]));
+  Widget toolRow() => fadeRow(toolButtons());
 
-  List<Widget> toolButtons() {
-    return <Widget>[
-      basicTool(Icons.pan_tool_outlined, tr('浏览', 'Шолу'), browse, () {
+  /// A horizontally scrolling line whose right edge fades out while more
+  /// is hidden there, so the cut-off tools read as "swipe for more".
+  Widget fadeRow(List<Widget> children) => FadeRow(children: children);
+
+  /// Every plan tool with a key; the phone row shows the common ones.
+  /// Phones get six tools in the row, like the four-to-six modes of
+  /// RoomSketcher, magicplan and Planner 5D; the rest sit in "更多工具".
+  bool get phoneTools => !compact && MediaQuery.sizeOf(context).width < 600;
+
+  static const secondaryTools = {
+    'split': ['split'],
+    'box': ['box'],
+    'utility': ['placeUtility'],
+    'selectWall': ['selectWall', 'editWall'],
+    'resize': ['resize'],
+  };
+
+  List<Widget> toolButtons() => [
+        for (final (key, widget) in keyedTools())
+          if (!phoneTools ||
+              !secondaryTools.containsKey(key) ||
+              secondaryTools[key]!.contains(tool))
+            widget
+      ];
+
+  /// The tools the phone row leaves out, for the "更多工具" sheet.
+  List<Widget> secondaryToolButtons() => [
+        for (final (key, widget) in keyedTools())
+          if (secondaryTools.containsKey(key)) widget
+      ];
+
+  List<(String, Widget)> keyedTools() {
+    return [
+      ('browse', basicTool(Icons.pan_tool_outlined, tr('浏览', 'Шолу'), browse, () {
         tool = 'browse';
         browse = true;
-      }),
-      basicTool(Icons.add_outlined, '墙体', tool == 'drawWall', startWallDrawing),
+      })),
+      ('wall', basicTool(Icons.add_outlined, '墙体', tool == 'drawWall', startWallDrawing)),
       if (tool == 'drawWall')
-        basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
+        ('freeWall', basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
           drawingOrigin = null;
           placingWallStart = true;
           placementHint = tr('在空白处拖出独立墙，或点一下选起点',
               'Бос жерден қабырға тартыңыз немесе бастауды басыңыз');
-        }),
-      basicTool(Icons.vertical_split_outlined, '拉线分房', tool == 'split', () {
+        })),
+      ('split', basicTool(Icons.vertical_split_outlined, '拉线分房', tool == 'split', () {
         view3d = false;
         browse = false;
         tool = 'split';
-      }),
-      basicTool(Icons.crop_square, '拖动划房', tool == 'box', () {
+      })),
+      ('box', basicTool(Icons.crop_square, '拖动划房', tool == 'box', () {
         view3d = false;
         browse = false;
         tool = 'box';
         brush = RoomType.custom;
-      }),
-      openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门'),
-      openingTool(OpeningKind.window, Icons.window_outlined, '拖入窗'),
-      basicTool(Icons.chair_outlined, '家具', tool == 'placeFurniture',
-          chooseFurniture),
-      basicTool(Icons.electrical_services_outlined, '水电',
-          tool == 'placeUtility', chooseUtility),
-      basicTool(Icons.view_week_outlined, '墙体调整',
+      })),
+      ('door', openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门')),
+      ('window', openingTool(OpeningKind.window, Icons.window_outlined, '拖入窗')),
+      ('furniture', basicTool(Icons.chair_outlined, '家具', tool == 'placeFurniture',
+          chooseFurniture)),
+      ('utility', basicTool(Icons.electrical_services_outlined, '水电',
+          tool == 'placeUtility', chooseUtility)),
+      ('selectWall', basicTool(Icons.view_week_outlined, '墙体调整',
           tool == 'selectWall' || tool == 'editWall', () {
         view3d = false;
         tool = 'selectWall';
         browse = false;
-      }),
-      basicTool(Icons.open_in_full, '房屋尺寸', tool == 'resize', () {
+      })),
+      ('resize', basicTool(Icons.open_in_full, '房屋尺寸', tool == 'resize', () {
         view3d = false;
         browse = false;
         tool = 'resize';
-      }),
-      basicTool(Icons.more_horiz, '更多工具', false, moreTools),
+      })),
+      ('more', basicTool(Icons.more_horiz, '更多工具', false, moreTools)),
     ];
   }
 
-  Widget layerRow() => Wrap(spacing: 8, runSpacing: 6, children: [
+  Widget layerRow() =>
+      Wrap(spacing: 8, runSpacing: 6, children: layerChips());
+
+  List<Widget> layerChips() => [
         PillToggle(
             label: tr('家具', 'Жиһаз'),
             selected: showFurniture,
@@ -292,7 +384,7 @@ extension _PlanTab on _HouseEditorState {
                   browse = !v;
                   placementHint = null;
                 })),
-      ]);
+      ];
 
   Widget hintRow() {
     final t = Tokens.of(context);
@@ -369,4 +461,59 @@ class _HatchPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HatchPainter old) => old.color != color;
+}
+
+/// A horizontally scrolling line whose right edge fades out while more is
+/// hidden there, so cut-off tools read as "swipe for more".
+class FadeRow extends StatefulWidget {
+  const FadeRow({super.key, required this.children});
+  final List<Widget> children;
+  @override
+  State<FadeRow> createState() => _FadeRowState();
+}
+
+class _FadeRowState extends State<FadeRow> {
+  final controller = ScrollController();
+  bool more = false;
+
+  void check() {
+    if (!controller.hasClients) return;
+    final p = controller.position;
+    final next = p.pixels < p.maxScrollExtent - 4;
+    if (next != more) setState(() => more = next);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    controller.addListener(check);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) check();
+    });
+    final row = SingleChildScrollView(
+        controller: controller,
+        scrollDirection: Axis.horizontal,
+        child: Row(children: [
+          for (final w in widget.children)
+            Padding(padding: const EdgeInsets.only(right: 6), child: w)
+        ]));
+    if (!more) return row;
+    return ShaderMask(
+        blendMode: BlendMode.dstIn,
+        shaderCallback: (r) => const LinearGradient(
+                colors: [Colors.black, Colors.black, Colors.transparent],
+                stops: [0, 0.86, 1])
+            .createShader(r),
+        child: row);
+  }
 }

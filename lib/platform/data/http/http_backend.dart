@@ -15,7 +15,10 @@ import 'codec.dart';
 /// [MockBackend] only for the shared plumbing (the change notifier and the
 /// account cache screens read synchronously); no data is served from it.
 class HttpBackend extends MockBackend {
-  HttpBackend(this.baseUrl, {http.Client? client, bool seed = false})
+  HttpBackend(this.baseUrl,
+      {http.Client? client,
+      bool seed = false,
+      this.timeout = const Duration(seconds: 45)})
       : _http = client ?? http.Client(),
         super(latency: Duration.zero, seed: seed);
 
@@ -24,6 +27,13 @@ class HttpBackend extends MockBackend {
   final http.Client _http;
 
   static const _refreshKey = 'yusal_api.refresh_token';
+
+  /// How long one request may take before it fails as a network error, so a
+  /// server that stops answering mid-request never leaves a spinner forever.
+  final Duration timeout;
+
+  /// The refresh in flight, shared by every request that got a 401 at once.
+  Future<bool>? _refreshing;
 
   String? _access;
   String? _refresh;
@@ -37,7 +47,8 @@ class HttpBackend extends MockBackend {
       {Object? body, Map<String, String>? query, bool auth = true}) async {
     final res = await _send(method, path, body: body, query: query, auth: auth);
     if (res.statusCode == 401 && auth && _refresh != null) {
-      if (await _refreshTokens()) {
+      if (await (_refreshing ??=
+          _refreshTokens().whenComplete(() => _refreshing = null))) {
         return _decode(
             await _send(method, path, body: body, query: query, auth: auth));
       }
@@ -59,7 +70,10 @@ class HttpBackend extends MockBackend {
       req.body = jsonEncode(body);
     }
     try {
-      return await http.Response.fromStream(await _http.send(req));
+      return await _http
+          .send(req)
+          .then(http.Response.fromStream)
+          .timeout(timeout);
     } catch (e) {
       throw ApiFailure(ApiCodes.network, '$e');
     }
@@ -90,9 +104,15 @@ class HttpBackend extends MockBackend {
   Future<bool> _refreshTokens() async {
     final res = await _send('POST', '/auth/refresh',
         body: {'refresh_token': _refresh}, auth: false);
-    if (res.statusCode != 200) {
+    if (res.statusCode == 401 || res.statusCode == 403) {
+      // The refresh token is expired or the account is gone: sign out.
       await _forget();
       return false;
+    }
+    if (res.statusCode != 200) {
+      // The server is down or restarting (a proxy answers 502/503): keep the
+      // saved session for the next try instead of signing the user out.
+      throw ApiFailure(ApiCodes.network, 'HTTP ${res.statusCode}');
     }
     _takeTokens(_decode(res) as Map<String, dynamic>);
     await _save();
@@ -124,8 +144,23 @@ class HttpBackend extends MockBackend {
   // ─────────────────────────────── auth ───────────────────────────────
 
   /// Signs back in with the refresh token saved on this device, if any.
-  /// Call once at startup; failures just leave the user signed out.
-  Future<void> restore() async {
+  /// Call once at startup. A revoked session leaves the user signed out; when
+  /// the server cannot be reached the saved session is kept and tried again
+  /// a few times in the background ([retryDelays]), so the user is signed
+  /// back in once the server answers without restarting the app.
+  Future<void> restore() => _restore(0);
+
+  /// Waits between background restore attempts while the server is down.
+  List<Duration> retryDelays = const [
+    Duration(seconds: 5),
+    Duration(seconds: 15),
+    Duration(seconds: 30),
+    Duration(minutes: 1),
+    Duration(minutes: 2),
+  ];
+
+  Future<void> _restore(int attempt) async {
+    if (currentId != null) return;
     final prefs = await SharedPreferences.getInstance();
     _refresh = prefs.getString(_refreshKey);
     if (_refresh == null) return;
@@ -133,8 +168,12 @@ class HttpBackend extends MockBackend {
       if (!await _refreshTokens()) return;
       _setMe(await _call('GET', '/client/auth/me') as Map<String, dynamic>);
       notify();
-    } on ApiFailure {
-      // Offline or revoked: stay signed out, keep nothing.
+      // A late restore may come after the push setup handed over its token.
+      unawaited(_registerDevice());
+    } on ApiFailure catch (e) {
+      if (e.code == ApiCodes.network && attempt < retryDelays.length) {
+        Timer(retryDelays[attempt], () => unawaited(_restore(attempt + 1)));
+      }
     }
   }
 

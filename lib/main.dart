@@ -27,7 +27,9 @@ Future<void> main() async {
   PlatformRepositories? repos;
   if (apiBaseUrl.isNotEmpty) {
     final api = HttpBackend(apiBaseUrl);
-    await api.restore();
+    // Don't hold the first frame on a slow or sleeping server: the session
+    // keeps restoring in the background and shows up when it is back.
+    await api.restore().timeout(const Duration(seconds: 6), onTimeout: () {});
     repos = api;
     // Push only with the real backend; the demo never touches Firebase.
     unawaited(PushSetup(api, appNavigator).start());

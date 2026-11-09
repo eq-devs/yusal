@@ -152,7 +152,10 @@ class MePage extends StatelessWidget {
                               const SizedBox(height: 8),
                               Live<List<ServiceProfile>>(
                                   load: (r) => r.myProfiles(),
-                                  builder: (context, list) => Column(children: [
+                                  builder: (context, list) => Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
                                         for (final p in list)
                                           Padding(
                                               padding: const EdgeInsets.only(

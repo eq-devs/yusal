@@ -31,26 +31,51 @@ Future<List<List<int>>> pickPhotos(BuildContext context,
     return const [];
   }
   final out = <List<int>>[];
+  var skipped = 0;
   for (final f in files.take(max)) {
     try {
       final raw = await f.readAsBytes();
       out.add(await shrinkPhoto(raw));
-    } catch (_) {}
+    } catch (_) {
+      skipped++;
+    }
+  }
+  // Say what was left out instead of silently dropping photos.
+  final over = files.length > max ? files.length - max : 0;
+  if (context.mounted && (skipped > 0 || over > 0)) {
+    toast(
+        context,
+        [
+          if (skipped > 0)
+            tr3('$skipped 张照片无法读取或太大', '$skipped фото оқылмады не тым үлкен',
+                '$skipped фото не удалось прочитать или они слишком большие'),
+          if (over > 0)
+            tr3('这次只能再加 $max 张，$over 张没有加入',
+                'Тағы $max фото ғана қосуға болады, $over қосылмады',
+                'Можно добавить ещё $max фото, $over не добавлено'),
+        ].join(' · '));
   }
   return out;
 }
 
-/// JPEG at most 1280 px on the long side; the original if compression is
-/// not available on this platform and the file is small enough.
+/// The server refuses photos above 1 MB (yusal-api `maxPhotoBytes`).
+const maxPhotoBytes = 1 << 20;
+
+/// JPEG at most 1280 px on the long side (smaller again if that is still
+/// over [maxPhotoBytes]); the original if compression is not available on
+/// this platform and the file is small enough to upload.
 Future<List<int>> shrinkPhoto(Uint8List raw) async {
   try {
-    final small = await FlutterImageCompress.compressWithList(raw,
-        minWidth: 1280, minHeight: 1280, quality: 78);
-    if (small.isNotEmpty) return small;
+    for (final (side, quality) in const [(1280, 78), (960, 60)]) {
+      final small = await FlutterImageCompress.compressWithList(raw,
+          minWidth: side, minHeight: side, quality: quality);
+      if (small.isEmpty) break;
+      if (small.length <= maxPhotoBytes) return small;
+    }
   } catch (e) {
     if (kDebugMode) debugPrint('photo compress: $e');
   }
-  if (raw.length > 2 * 1024 * 1024) throw StateError('too large');
+  if (raw.length > maxPhotoBytes) throw StateError('too large');
   return raw;
 }
 

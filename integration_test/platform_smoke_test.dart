@@ -37,6 +37,14 @@ void main() {
       expect(find.textContaining('演示模式'), findsOneWidget);
       await t.tap(find.text('我的房子').last);
       await t.pumpAndSettle();
+      // The design list is read from disk off the test clock.
+      for (var i = 0;
+          i < 50 && find.text('Yusal smoke test').evaluate().isEmpty;
+          i++) {
+        await t.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await t.pump();
+      }
       final row = find
           .ancestor(
               of: find.text('Yusal smoke test'), matching: find.byType(Row))

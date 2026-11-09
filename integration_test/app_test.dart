@@ -1,18 +1,32 @@
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/main.dart' as app;
+import 'package:yusal/platform/ui/projects/projects_page.dart';
+import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/core/house_core.dart';
 import 'package:yusal/core/geometry/derived_house.dart';
 
-/// Start the app in Chinese so the finders below match.
-Future<void> startApp() async {
+// Runs on a phone or simulator: flutter test integration_test -d <device>.
+// Without one, on Linux: flutter create --platforms=linux . (not committed),
+// install libgtk-3-dev and xdg-user-dirs, then
+// xvfb-run -a flutter test integration_test/app_test.dart -d linux
+// (desktop has no WebP encoder, so the preview checks are skipped there).
+
+/// Start the app in Chinese so the finders below match, on the design home
+/// (the app opens on 发现). The previous test leaves its design open, and
+/// the app would reopen it: forget it first.
+Future<void> startApp(WidgetTester tester) async {
   (await SharedPreferences.getInstance()).setString('house-lang', 'zh');
+  await LastOpenProject.write(null);
   app.main();
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('我的房子').last);
 }
 
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
@@ -23,40 +37,72 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
 
 const tab3d = ValueKey('tab-ext');
 
+/// Creating a design writes it to disk before the editor opens: wait for
+/// the editor's tabs.
+Future<void> waitForEditor(WidgetTester tester) async {
+  for (var i = 0; i < 50 && find.byKey(tab3d).evaluate().isEmpty; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+  await tester.pumpAndSettle();
+}
+
+/// Open a design from 最近设计 on the 我的房子 tab. The list builds lazily,
+/// so scroll to it; the other tabs stay in the tree, so look only inside
+/// the houses page.
+Future<void> openDesign(WidgetTester tester, String name) async {
+  await tester.tap(find.text('我的房子').last);
+  await tester.pumpAndSettle();
+  final page = find.byType(ProjectsPage);
+  final card = find.descendant(of: page, matching: find.text(name));
+  await tester.scrollUntilVisible(card.first, 200,
+      scrollable:
+          find.descendant(of: page, matching: find.byType(Scrollable)).first);
+  await tester.pumpAndSettle();
+  await tester.tap(card.first);
+}
+
+/// The name field of the new-design dialog (the home page behind it has a
+/// search field of its own).
+final nameField = find.widgetWithText(TextField, '设计名称');
+
+/// Preview images are WebP from flutter_image_compress, which has no
+/// desktop implementation: on a desktop run the preview is left out.
+final nativePreview = Platform.isAndroid || Platform.isIOS || Platform.isMacOS;
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   testWidgets('create template, show 3D, persist preview and reopen',
       (tester) async {
-    await startApp();
+    await startApp(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('也可以从示例开始'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('一层三间'));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     // Wait for native WebP encoding and the route transition.
-    for (var i = 0;
-        i < 50 && find.byKey(tab3d).evaluate().isEmpty;
-        i++) {
+    for (var i = 0; i < 50 && find.byKey(tab3d).evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(find.text('一层三间'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tapVisible(tester, find.byKey(tab3d));
     await tester.pumpAndSettle();
-    expect(find.byTooltip('恢复视角'), findsOneWidget);
-    await tester.tap(find.byTooltip('恢复视角'));
+    expect(find.byTooltip('适配画面'), findsOneWidget);
+    await tester.tap(find.byTooltip('适配画面'));
     await tester.pumpAndSettle();
     final store = ProjectStore();
     final projects = await store.listProjects();
     final created = projects.firstWhere((p) => p.document.meta.name == '一层三间');
     expect(created.document.floors.first.rooms.length, 3);
-    expect(created.preview, isNotNull,
-        reason: 'Native WebP preview must be saved');
-    expect(created.preview!.take(4), [82, 73, 70, 70]); // RIFF
+    if (nativePreview) {
+      expect(created.preview, isNotNull,
+          reason: 'Native WebP preview must be saved');
+      expect(created.preview!.take(4), [82, 73, 70, 70]); // RIFF
+    }
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(find.text('最近设计'), findsOneWidget);
-    await tester.tap(find.text('一层三间').first);
+    await openDesign(tester, '一层三间');
     await tester.pumpAndSettle();
     expect(find.byKey(tab3d), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -66,16 +112,14 @@ void main() {
   });
   testWidgets('direct dimensions, partitions, door, 3D and native reopen',
       (tester) async {
-    await startApp();
+    await startApp(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('新建设计'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, '交互改造验收');
+    await tester.enterText(nameField, '交互改造验收');
     await tester.tap(find.text('开始设计'));
     await tester.pumpAndSettle();
-    for (var i = 0;
-        i < 50 && find.byKey(tab3d).evaluate().isEmpty;
-        i++) {
+    for (var i = 0; i < 50 && find.byKey(tab3d).evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(find.byKey(tab3d), findsOneWidget);
@@ -121,24 +165,24 @@ void main() {
         projects.firstWhere((p) => p.document.meta.name == '交互改造验收');
     expect(created.document.floors.first.rooms.length, 3);
     expect(created.document.floors.first.openings.length, 1);
-    expect(created.preview, isNotNull);
+    if (nativePreview) expect(created.preview, isNotNull);
     await tapVisible(tester, find.byKey(tab3d));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('交互改造验收').first);
+    await openDesign(tester, '交互改造验收');
     await tester.pumpAndSettle();
     expect(find.byKey(tab3d), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   testWidgets('blank canvas sketch creates the exact exterior dimensions',
       (tester) async {
-    await startApp();
+    await startApp(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('新建设计'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, '外形草绘验收');
+    await tester.enterText(nameField, '外形草绘验收');
     await tester.ensureVisible(find.text('在画布上拖出外形'));
     await tester.tap(find.text('在画布上拖出外形'));
     await tester.pumpAndSettle();
@@ -152,9 +196,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('使用这个外形'));
     await tester.pumpAndSettle();
-    for (var i = 0;
-        i < 50 && find.byKey(tab3d).evaluate().isEmpty;
-        i++) {
+    for (var i = 0; i < 50 && find.byKey(tab3d).evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(find.byKey(tab3d), findsOneWidget);
@@ -168,13 +210,14 @@ void main() {
   testWidgets(
       'floating tools, continuous walls, hosted door and native v2 reopen',
       (tester) async {
-    await startApp();
+    await startApp(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('新建设计'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, '浮层绘墙验收');
+    await tester.enterText(nameField, '浮层绘墙验收');
     await tester.tap(find.text('开始设计'));
     await tester.pumpAndSettle();
+    await waitForEditor(tester);
     final canvas = find.byWidgetPredicate(
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     Offset point(double x, double y) {
@@ -228,27 +271,28 @@ void main() {
     final opening = deriveHouse(entry.document).floors.first.openings.single;
     expect(opening.status, 'ok');
     expect(opening.axis.pos, 4500);
-    expect(entry.preview, isNotNull);
+    if (nativePreview) expect(entry.preview, isNotNull);
     await tapVisible(tester, find.byKey(tab3d));
     await tester.pumpAndSettle();
-    expect(find.byTooltip('恢复视角'), findsOneWidget);
+    expect(find.byTooltip('适配画面'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('浮层绘墙验收').first);
+    await openDesign(tester, '浮层绘墙验收');
     await tester.pumpAndSettle();
     expect(find.byTooltip('墙体'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   testWidgets('fixed wall attachments and long-press editing on native touch',
       (tester) async {
-    await startApp();
+    await startApp(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.text('新建设计'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, '接点长按验收');
+    await tester.enterText(nameField, '接点长按验收');
     await tester.tap(find.text('开始设计'));
     await tester.pumpAndSettle();
+    await waitForEditor(tester);
     final canvas = find.byWidgetPredicate(
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     Offset point(double x, double y) {
@@ -308,7 +352,7 @@ void main() {
         true);
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('接点长按验收').first);
+    await openDesign(tester, '接点长按验收');
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });

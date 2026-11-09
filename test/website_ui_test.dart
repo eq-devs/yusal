@@ -129,7 +129,7 @@ void main() {
     await t.pumpAndSettle();
     doc = await saved(t, s.store, s.id);
     expect(doc.extras.furniture.single.width, sofa.depth);
-    await t.tap(find.text('删除'));
+    await t.tap(find.byKey(const ValueKey('selection-delete')));
     await t.pumpAndSettle();
     doc = await saved(t, s.store, s.id);
     expect(doc.extras.furniture, isEmpty);

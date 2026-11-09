@@ -8,7 +8,8 @@ extension _SelectionCards on _HouseEditorState {
     if (view3d) return null;
     final g = derived.floors[floorIndex];
     if (selectedUtilityId != null) {
-      final u = floorUtilities.where((u) => u.id == selectedUtilityId).firstOrNull;
+      final u =
+          floorUtilities.where((u) => u.id == selectedUtilityId).firstOrNull;
       if (u != null) return utilityCard(u);
     }
     if (selectedFurnitureId != null) {
@@ -38,18 +39,30 @@ extension _SelectionCards on _HouseEditorState {
       {required Widget title,
       String? subtitle,
       required List<Widget> children,
-      String? summary}) {
+      String? summary,
+      List<Widget> actions = const [],
+      String? deleteLabel,
+      VoidCallback? onDelete}) {
     final t = Tokens.of(context);
     final wide = wideLayout;
+    // Delete sits in the header, where it is always in reach, like the
+    // trash can of a selection toolbar; the common actions sit right under
+    // it in one row, so neither hides below the fold of a folded card.
     final head = Row(children: [
       Expanded(child: title),
+      if (onDelete != null)
+        IconButton(
+            key: const ValueKey('selection-delete'),
+            tooltip: deleteLabel ?? tr('删除', 'Жою'),
+            visualDensity: VisualDensity.compact,
+            onPressed: onDelete,
+            icon: Icon(Icons.delete_outline, size: 20, color: t.crit)),
       if (!wide)
         IconButton(
             tooltip: panelCollapsed ? tr('展开', 'Ашу') : tr('收起', 'Жию'),
             visualDensity: VisualDensity.compact,
             onPressed: () => update(() => panelCollapsed = !panelCollapsed),
-            icon: Icon(
-                panelCollapsed ? Icons.expand_less : Icons.expand_more,
+            icon: Icon(panelCollapsed ? Icons.expand_less : Icons.expand_more,
                 size: 20)),
       IconButton(
           tooltip: tr('关闭', 'Жабу'),
@@ -62,7 +75,7 @@ extension _SelectionCards on _HouseEditorState {
         mainAxisSize: MainAxisSize.min,
         children: [
           head,
-          if (subtitle != null)
+          if (subtitle != null && (wide || !panelCollapsed))
             Text(subtitle, style: TextStyle(fontSize: 12, color: t.muted)),
           if (!wide && panelCollapsed && summary != null)
             Padding(
@@ -71,7 +84,13 @@ extension _SelectionCards on _HouseEditorState {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: mono(size: 12, color: t.muted))),
+          if (actions.isNotEmpty && !wide)
+            Padding(
+                padding: const EdgeInsets.only(top: 6, bottom: 4),
+                child: fadeRow(actions)),
           if (wide || !panelCollapsed) ...children,
+          if (actions.isNotEmpty && wide)
+            Wrap(spacing: 8, runSpacing: 8, children: actions),
         ]);
     final sheet = Container(
         padding: const EdgeInsets.fromLTRB(16, 8, 8, 12),
@@ -154,13 +173,11 @@ extension _SelectionCards on _HouseEditorState {
     final area = stats.area / 1e6;
     final label = info.labelArea == null ? null : info.labelArea! / 100;
     return panel(
-        title: titleText(name,
-            onTap: () async {
-              final value = await askText(tr('房间名称', 'Бөлме атауы'), name);
-              if (value != null && value.trim().isNotEmpty)
-                action('RenameRoom', {'roomId': room.id, 'value': value.trim()});
-            },
-            tag: TagPill(roomTypeName(room.type), t.chk)),
+        title: titleText(name, onTap: () async {
+          final value = await askText(tr('房间名称', 'Бөлме атауы'), name);
+          if (value != null && value.trim().isNotEmpty)
+            action('RenameRoom', {'roomId': room.id, 'value': value.trim()});
+        }, tag: TagPill(roomTypeName(room.type), t.chk)),
         subtitle: other,
         summary:
             '${stats.clearWidth.round()} × ${stats.clearDepth.round()} · ${dec(area.toStringAsFixed(1))} $unitM2',
@@ -170,7 +187,10 @@ extension _SelectionCards on _HouseEditorState {
                 tr('净尺寸 mm', 'Таза өлшем, мм')),
             Kv('${dec(area.toStringAsFixed(1))} $unitM2',
                 tr('按尺寸计算', 'Өлшем бойынша есеп')),
-            Kv(label == null ? '—' : '${dec(label.toStringAsFixed(label % 1 == 0 ? 0 : 1))} $unitM2',
+            Kv(
+                label == null
+                    ? '—'
+                    : '${dec(label.toStringAsFixed(label % 1 == 0 ? 0 : 1))} $unitM2',
                 tr('图纸标注', 'Сызбадағы белгі'), onTap: () async {
               final text = await promptText(context,
                   title: tr('图纸标注面积', 'Сызбадағы аудан'),
@@ -183,18 +203,16 @@ extension _SelectionCards on _HouseEditorState {
               final v = double.tryParse(text.replaceAll(',', '.'));
               action('SetRoomInfo', {
                 'roomId': room.id,
-                'labelArea': v == null || text.trim().isEmpty
-                    ? null
-                    : (v * 100).round()
+                'labelArea':
+                    v == null || text.trim().isEmpty ? null : (v * 100).round()
               });
             }),
-            Kv(
-                '${stats.windows.length} ${tr('扇', 'дана')} · ${dec((stats.windowArea / 1e6).toStringAsFixed(2))} $unitM2',
+            Kv('${stats.windows.length} ${tr('扇', 'дана')} · ${dec((stats.windowArea / 1e6).toStringAsFixed(2))} $unitM2',
                 tr('窗面积', 'Терезе ауданы')),
-            Kv(
-                ratio == null ? '1 : ∞' : '1 : ${dec(ratio.toStringAsFixed(1))}',
+            Kv(ratio == null ? '1 : ∞' : '1 : ${dec(ratio.toStringAsFixed(1))}',
                 tr('窗地比 (居室宜 ≥ 1:7)', 'Терезе/еден (тұрғын ≥ 1:7)'),
-                color: habitable && (ratio == null || ratio > 7) ? t.warn : null),
+                color:
+                    habitable && (ratio == null || ratio > 7) ? t.warn : null),
             Kv('${dec((stats.volume / 1e9).toStringAsFixed(1))} $unitM3',
                 '${tr('房间容积 (层高', 'Бөлме көлемі (биіктігі')} ${m2dp(floor.height)})'),
           ]),
@@ -305,7 +323,8 @@ extension _SelectionCards on _HouseEditorState {
       final proceed = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-                  title: Text(tr('合并这两个房间？', 'Екі бөлмені біріктіру керек пе?')),
+                  title:
+                      Text(tr('合并这两个房间？', 'Екі бөлмені біріктіру керек пе?')),
                   content: Text(coreMessage(preview.conflict.message)),
                   actions: [
                     TextButton(
@@ -347,9 +366,8 @@ extension _SelectionCards on _HouseEditorState {
         .whereType<Room>()
         .toList()
       ..sort((x, y) {
-        double area(Room r) => g.base.roomGeometry
-            .firstWhere((s) => s.id == r.id)
-            .clearArea;
+        double area(Room r) =>
+            g.base.roomGeometry.firstWhere((s) => s.id == r.id).clearArea;
         return area(x).compareTo(area(y));
       });
     final kind = openingKindName(p.opening);
@@ -367,7 +385,9 @@ extension _SelectionCards on _HouseEditorState {
       return isKk
           ? '${displayRoomName(rooms[0])} – ${displayRoomName(rooms[1])} ${kind.toLowerCase()}'
           : '${displayRoomName(rooms[0])}-${displayRoomName(rooms[1])} $kind';
-    return room == null ? kind : (isKk ? '$room ${kind.toLowerCase()}' : '$room $kind');
+    return room == null
+        ? kind
+        : (isKk ? '$room ${kind.toLowerCase()}' : '$room $kind');
   }
 
   Widget openingCard(OpeningPlacement p) {
@@ -384,17 +404,69 @@ extension _SelectionCards on _HouseEditorState {
     }
 
     return panel(
-        title: titleText(openingLabel(p, floorIndex),
-            onTap: () async {
-              final value = await askText(tr('名称 / 位置', 'Атауы / орны'),
-                  history.present.extras.openingLabels[o.id] ?? '');
-              if (value != null)
-                action('SetOpeningLabel', {'openingId': o.id, 'value': value});
-            },
-            tag: TagPill(openingKindName(o), isDoor ? t.accent : t.chk)),
+        title: titleText(openingLabel(p, floorIndex), onTap: () async {
+          final value = await askText(tr('名称 / 位置', 'Атауы / орны'),
+              history.present.extras.openingLabels[o.id] ?? '');
+          if (value != null)
+            action('SetOpeningLabel', {'openingId': o.id, 'value': value});
+        }, tag: TagPill(openingKindName(o), isDoor ? t.accent : t.chk)),
         subtitle: tr('也可以直接在图上拖动它，换位置或换到别的墙上',
             'Сызбада сүйреп, орнын не қабырғасын ауыстыруға болады'),
         summary: '${o.width} × ${o.height} $unitMm',
+        deleteLabel: tr('删除${openingKindName(o)}', '${openingKindName(o)} жою'),
+        onDelete: () {
+          final before = history.present;
+          update(clearSelection);
+          action('DeleteOpening', {'openingId': o.id});
+          if (history.present != before)
+            notify(
+                tr('已删除${openingKindName(o)}', '${openingKindName(o)} жойылды'),
+                undo: undo);
+        },
+        actions: [
+          for (final kind in OpeningKind.values)
+            if (kind != o.kind)
+              Btn(
+                  label: '${tr('换成', '→')} ${switch (kind) {
+                    OpeningKind.door => tr('门', 'есік'),
+                    OpeningKind.window => tr('窗', 'терезе'),
+                    OpeningKind.sliding => tr('推拉门', 'сырғымалы есік'),
+                  }}',
+                  icon: Icons.swap_horiz,
+                  onPressed: () => action(
+                      'SetOpeningKind', {'openingId': o.id, 'kind': kind})),
+          if (o is DoorOpening) ...[
+            Btn(
+                label: tr('门轴换边', 'Топсаны ауыстыру'),
+                icon: Icons.flip,
+                onPressed: () => action('FlipDoor', {
+                      'openingId': o.id,
+                      'hinge': o.hinge == Hinge.start ? 'end' : 'start'
+                    })),
+            Btn(
+                label: tr('换开门方向', 'Ашылу бағыты'),
+                icon: Icons.swap_vert,
+                onPressed: () => action('FlipDoor', {
+                      'openingId': o.id,
+                      'opensTo': o.opensTo == OpeningSide.positiveSide
+                          ? 'negativeSide'
+                          : 'positiveSide'
+                    })),
+            if (history.present.mainEntranceOpeningId != o.id)
+              Btn(
+                  label: tr('设为大门', 'Басты кіреберіс'),
+                  icon: Icons.home_outlined,
+                  onPressed: () =>
+                      action('SetMainEntrance', {'openingId': o.id})),
+          ],
+          Btn(
+              label: tr('放到墙中间', 'Қабырға ортасына'),
+              icon: Icons.format_align_center,
+              onPressed: () => action('MoveOpening', {
+                    'openingId': o.id,
+                    'position': {'type': 'center'}
+                  })),
+        ],
         children: [
           KvGrid([
             Kv('${o.width}', tr('宽 mm', 'Ені, мм'),
@@ -403,12 +475,17 @@ extension _SelectionCards on _HouseEditorState {
                 onTap: () => resize('height', tr('高度', 'Биіктігі'), o.height)),
             if (!isDoor)
               Kv('${o.sill}', tr('窗台 mm', 'Терезе алды, мм'),
-                  onTap: () => resize('sill', tr('窗台高度', 'Терезе алды'), o.sill)),
-            Kv(offset == null ? '—' : '$offset',
-                vertical ? tr('距墙下端 mm', 'Төменгі шетінен, мм') : tr('距墙左端 mm', 'Сол шетінен, мм'),
-                onTap: () async {
+                  onTap: () =>
+                      resize('sill', tr('窗台高度', 'Терезе алды'), o.sill)),
+            Kv(
+                offset == null ? '—' : '$offset',
+                vertical
+                    ? tr('距墙下端 mm', 'Төменгі шетінен, мм')
+                    : tr('距墙左端 mm', 'Сол шетінен, мм'), onTap: () async {
               final v = await askMm(
-                  vertical ? tr('距墙下端', 'Төменгі шетінен') : tr('距墙左端', 'Сол шетінен'),
+                  vertical
+                      ? tr('距墙下端', 'Төменгі шетінен')
+                      : tr('距墙左端', 'Сол шетінен'),
                   offset ?? 0);
               if (v != null)
                 action('MoveOpening', {
@@ -420,62 +497,6 @@ extension _SelectionCards on _HouseEditorState {
                 tr('朝向', 'Бағыты')),
             Kv(dec((o.width * o.height / 1e6).toStringAsFixed(2)),
                 '${tr('面积', 'Ауданы')} $unitM2'),
-          ]),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            Btn(
-                label: tr('放到墙中间', 'Қабырға ортасына'),
-                icon: Icons.format_align_center,
-                onPressed: () => action('MoveOpening', {
-                      'openingId': o.id,
-                      'position': {'type': 'center'}
-                    })),
-            for (final kind in OpeningKind.values)
-              if (kind != o.kind)
-                Btn(
-                    label: '${tr('换成', '→')} ${switch (kind) {
-                      OpeningKind.door => tr('门', 'есік'),
-                      OpeningKind.window => tr('窗', 'терезе'),
-                      OpeningKind.sliding => tr('推拉门', 'сырғымалы есік'),
-                    }}',
-                    icon: Icons.swap_horiz,
-                    onPressed: () => action(
-                        'SetOpeningKind', {'openingId': o.id, 'kind': kind})),
-            if (o is DoorOpening) ...[
-              Btn(
-                  label: tr('门轴换边', 'Топсаны ауыстыру'),
-                  icon: Icons.flip,
-                  onPressed: () => action('FlipDoor', {
-                        'openingId': o.id,
-                        'hinge': o.hinge == Hinge.start ? 'end' : 'start'
-                      })),
-              Btn(
-                  label: tr('换开门方向', 'Ашылу бағыты'),
-                  icon: Icons.swap_vert,
-                  onPressed: () => action('FlipDoor', {
-                        'openingId': o.id,
-                        'opensTo': o.opensTo == OpeningSide.positiveSide
-                            ? 'negativeSide'
-                            : 'positiveSide'
-                      })),
-              if (history.present.mainEntranceOpeningId != o.id)
-                Btn(
-                    label: tr('设为大门', 'Басты кіреберіс'),
-                    icon: Icons.home_outlined,
-                    onPressed: () =>
-                        action('SetMainEntrance', {'openingId': o.id})),
-            ],
-            Btn(
-                label: tr('删除', 'Жою'),
-                icon: Icons.delete_outline,
-                danger: true,
-                onPressed: () {
-                  final before = history.present;
-                  update(clearSelection);
-                  action('DeleteOpening', {'openingId': o.id});
-                  if (history.present != before)
-                    notify(tr('已删除${openingKindName(o)}', '${openingKindName(o)} жойылды'),
-                        undo: undo);
-                }),
           ]),
         ]);
   }
@@ -496,16 +517,56 @@ extension _SelectionCards on _HouseEditorState {
       FurnitureKind.sandyq,
     }.contains(f.kind);
     return panel(
-        title: titleText(name,
-            onTap: () async {
-              final value = await askText(tr('名称', 'Атауы'), f.label ?? '');
-              if (value != null)
-                action('UpdateFurniture', {'furnitureId': f.id, 'label': value});
-            },
-            tag: TagPill(furnitureName(f.kind), t.rug)),
+        title: titleText(name, onTap: () async {
+          final value = await askText(tr('名称', 'Атауы'), f.label ?? '');
+          if (value != null)
+            action('UpdateFurniture', {'furnitureId': f.id, 'label': value});
+        }, tag: TagPill(furnitureName(f.kind), t.rug)),
         subtitle: tr('拖动移动 · 拖右下角圆点改大小 · 拖上方圆圈旋转',
             'Сүйреп жылжытыңыз · оң төменгі нүкте — өлшем · жоғарғы шеңбер — бұру'),
         summary: '${f.width} × ${f.depth} × ${f.height} $unitMm',
+        deleteLabel: tr('删除$name', '$name жою'),
+        onDelete: () {
+          update(clearSelection);
+          action('DeleteFurniture', {'furnitureId': f.id});
+          notify(tr('已删除$name', '$name жойылды'), undo: undo);
+        },
+        actions: [
+          Btn(
+              label: tr('旋转 90°', '90° бұру'),
+              icon: Icons.rotate_90_degrees_ccw,
+              onPressed: () =>
+                  action('RotateFurniture', {'furnitureId': f.id})),
+          Btn(
+              label: tr('复制', 'Көшіру'),
+              icon: Icons.copy_all_outlined,
+              onPressed: () {
+                final id = const Uuid().v4();
+                action('AddFurniture', {
+                  'id': id,
+                  'floorId': f.floorId,
+                  'kind': f.kind,
+                  'x': f.x + 300,
+                  'y': f.y - 300,
+                  'width': f.width,
+                  'depth': f.depth,
+                  'height': f.height,
+                  'elevation': f.elevation,
+                  'variant': f.variant,
+                  if (f.label != null) 'label': f.label,
+                });
+                update(() => selectedFurnitureId = id);
+              }),
+          Btn(
+              label: tr('换类型', 'Түрін ауыстыру'),
+              icon: Icons.category_outlined,
+              onPressed: () async {
+                final kind = await pickFurnitureKind();
+                if (kind != null)
+                  action(
+                      'UpdateFurniture', {'furnitureId': f.id, 'kind': kind});
+              }),
+        ],
         children: [
           KvGrid([
             Kv('${f.width}', tr('宽 mm', 'Ені, мм'),
@@ -515,8 +576,8 @@ extension _SelectionCards on _HouseEditorState {
             Kv('${f.height}', tr('高 mm', 'Биіктігі, мм'),
                 onTap: () => edit('height', tr('高度', 'Биіктігі'), f.height)),
             Kv('${f.elevation}', tr('离地 mm', 'Еденнен, мм'),
-                onTap: () => edit('elevation', tr('离地高度', 'Еденнен биіктігі'),
-                    f.elevation)),
+                onTap: () => edit(
+                    'elevation', tr('离地高度', 'Еденнен биіктігі'), f.elevation)),
             Kv('${f.x}', tr('距左墙 mm', 'Сол жақтан, мм'),
                 onTap: () => edit('x', tr('距左侧外边', 'Сол жақтан'), f.x)),
             Kv('${f.y}', tr('距下墙 mm', 'Төменнен, мм'),
@@ -536,51 +597,6 @@ extension _SelectionCards on _HouseEditorState {
                         onSelected: (_) => action('UpdateFurniture',
                             {'furnitureId': f.id, 'variant': v})),
                 ])),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            Btn(
-                label: tr('旋转 90°', '90° бұру'),
-                icon: Icons.rotate_90_degrees_ccw,
-                onPressed: () =>
-                    action('RotateFurniture', {'furnitureId': f.id})),
-            Btn(
-                label: tr('复制', 'Көшіру'),
-                icon: Icons.copy_all_outlined,
-                onPressed: () {
-                  final id = const Uuid().v4();
-                  action('AddFurniture', {
-                    'id': id,
-                    'floorId': f.floorId,
-                    'kind': f.kind,
-                    'x': f.x + 300,
-                    'y': f.y - 300,
-                    'width': f.width,
-                    'depth': f.depth,
-                    'height': f.height,
-                    'elevation': f.elevation,
-                    'variant': f.variant,
-                    if (f.label != null) 'label': f.label,
-                  });
-                  update(() => selectedFurnitureId = id);
-                }),
-            Btn(
-                label: tr('换类型', 'Түрін ауыстыру'),
-                icon: Icons.category_outlined,
-                onPressed: () async {
-                  final kind = await pickFurnitureKind();
-                  if (kind != null)
-                    action('UpdateFurniture',
-                        {'furnitureId': f.id, 'kind': kind});
-                }),
-            Btn(
-                label: tr('删除', 'Жою'),
-                icon: Icons.delete_outline,
-                danger: true,
-                onPressed: () {
-                  update(clearSelection);
-                  action('DeleteFurniture', {'furnitureId': f.id});
-                  notify(tr('已删除$name', '$name жойылды'), undo: undo);
-                }),
-          ]),
         ]);
   }
 
@@ -593,7 +609,8 @@ extension _SelectionCards on _HouseEditorState {
     final openings = g.openings.length;
     return InfoCard(
         title: tr('整栋房屋', 'Бүкіл үй'),
-        subtitle: tr('点房间、门窗或家具查看和修改', 'Бөлмені, есік-терезені не жиһазды басып өзгертіңіз'),
+        subtitle: tr('点房间、门窗或家具查看和修改',
+            'Бөлмені, есік-терезені не жиһазды басып өзгертіңіз'),
         children: [
           KvGrid([
             Kv('${dec((doc.footprint.width * doc.footprint.depth / 1e6).toStringAsFixed(1))} $unitM2',
@@ -609,13 +626,16 @@ extension _SelectionCards on _HouseEditorState {
               if (v != null)
                 action('SetFloorHeight', {'floorId': floor.id, 'value': v});
             }),
-            Kv('${doc.defaults.outerWallThickness}', tr('外墙厚 mm', 'Сыртқы қабырға, мм'),
-                onTap: () async {
+            Kv('${doc.defaults.outerWallThickness}',
+                tr('外墙厚 mm', 'Сыртқы қабырға, мм'), onTap: () async {
               final v = await askMm(tr('外墙厚度', 'Сыртқы қабырға қалыңдығы'),
                   doc.defaults.outerWallThickness);
               if (v != null)
-                action('SetDefault', {'field': 'outerWallThickness', 'value': v});
+                action(
+                    'SetDefault', {'field': 'outerWallThickness', 'value': v});
             }),
+            Kv(roofStyleName(roofStyle), tr('屋顶', 'Шатыр'),
+                onTap: chooseRoof),
           ]),
           if (showUtilities) utilitySummary(),
           for (final room in floor.rooms)

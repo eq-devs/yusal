@@ -47,6 +47,7 @@ import '../render2d/planning_names.dart';
 import '../render2d/site_plan_painter.dart';
 import '../motion/motion.dart';
 
+part 'editor/roof_picker.dart';
 part 'editor/editor_header.dart';
 part 'editor/plan_tab.dart';
 part 'editor/selection_cards.dart';
@@ -1298,9 +1299,13 @@ class _HouseEditorState extends State<HouseEditor>
 
   void placeOpening(Map<String, dynamic> arguments) {
     final before = history.present;
+    final ids = {for (final o in floor.openings) o.id};
     action('AddOpening', arguments);
-    if (history.present != before)
-      notify(
+    if (history.present == before) return;
+    // Select it at once: its card says how to change or delete it.
+    final added = floor.openings.where((o) => !ids.contains(o.id)).firstOrNull;
+    if (added != null) selectOpening(added);
+    notify(
           tr('已放置${openingNames[arguments['kind']]} · 可以直接拖动它调整位置',
               '${openingNames[arguments['kind']]} қойылды · оны сүйреп жылжытуға болады'),
           undo: undo);
@@ -1820,7 +1825,9 @@ class _HouseEditorState extends State<HouseEditor>
         clearSelection();
         clearWallSelection();
         selectedFurnitureId = piece.id;
-        panelCollapsed = false;
+        // Phones: the card starts folded to its name and actions, so the
+        // piece stays in view; details unfold on demand.
+        panelCollapsed = phoneTools;
         placementHint = null;
       });
       return;
@@ -1833,23 +1840,40 @@ class _HouseEditorState extends State<HouseEditor>
             () => showWallContext(wall, attachmentOnWall(wall, point, size)));
         return;
       }
+      // Tapping an outside wall: add an opening right here, or change the
+      // wall itself. Two labelled groups instead of one mixed list.
+      final t = Tokens.of(context);
+      Widget heading(String text) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+          child: Text(text,
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: t.muted)));
+      Widget item(String key, IconData icon, String label) => ListTile(
+          key: ValueKey('wall-sheet-$key'),
+          leading: Icon(icon),
+          title: Text(label),
+          onTap: () => Navigator.pop(context, key));
       final choice = await showMotionSheet<String>(
           context: context,
+          showDragHandle: true,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
-                for (final entry in {
-                  'door': tr('门', 'Есік'),
-                  'window': tr('窗', 'Терезе'),
-                  'sliding': tr('推拉门', 'Сырғымалы есік'),
-                  if (wall.axis.kind != 'boundary') 'move': tr('拖动这段墙', 'Қабырғаны сүйреу'),
-                  if (wall.axis.kind != 'boundary') 'position': tr('精确调整这段墙', 'Қабырғаны дәл орналастыру'),
-                  'open': tr('开放（无墙）', 'Ашық (қабырғасыз)'),
-                  'thickness': tr('调整墙厚', 'Қалыңдығын өзгерту'),
-                  'default': tr('恢复默认墙', 'Әдепкі қабырғаны қайтару')
-                }.entries)
-                  ListTile(
-                      title: Text(entry.value),
-                      onTap: () => Navigator.pop(context, entry.key))
+                Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                        '${tr('外墙', 'Сыртқы қабырға')} · ${dec(((wall.end.pos - wall.start.pos) / 1000).toStringAsFixed(2))} $unitM',
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700))),
+                heading(tr('在点的位置加', 'Осы жерге қосу')),
+                item('door', Icons.door_front_door_outlined, tr('门', 'Есік')),
+                item('window', Icons.window_outlined, tr('窗', 'Терезе')),
+                item('sliding', Icons.door_sliding_outlined,
+                    tr('推拉门', 'Сырғымалы есік')),
+                heading(tr('这段墙', 'Осы қабырға')),
+                item('thickness', Icons.straighten, tr('调整墙厚', 'Қалыңдығын өзгерту')),
+                item('open', Icons.crop_free, tr('去掉这段墙（开放）', 'Қабырғасыз (ашық)')),
+                item('default', Icons.restart_alt,
+                    tr('恢复默认墙', 'Әдепкі қабырғаны қайтару')),
               ])));
       if (choice == null) return;
       if (choice == 'move') {
@@ -1870,13 +1894,20 @@ class _HouseEditorState extends State<HouseEditor>
         return;
       }
       if (['door', 'window', 'sliding'].contains(choice)) {
+        final before = {for (final o in floor.openings) o.id};
         action('AddOpening', {
           'floorId': floor.id,
           'anchor': wall.ref.anchor,
           'kind': OpeningKind.values.firstWhere((k) => k.name == choice),
+          // Where the finger was, not 200 mm from a corner.
+          'centerAtTap': true,
           'tapT': ((wall.axis.dir == AxisDir.H ? x : y) - wall.start.pos)
               .clamp(0, wall.end.pos - wall.start.pos)
         });
+        // Select what was just added: its card offers change and delete.
+        final added =
+            floor.openings.where((o) => !before.contains(o.id)).firstOrNull;
+        if (added != null) selectOpening(added);
       } else {
         int? thickness;
         if (choice == 'thickness')
@@ -1964,7 +1995,7 @@ class _HouseEditorState extends State<HouseEditor>
         clearSelection();
         clearWallSelection();
         selectedOpeningId = opening.id;
-        panelCollapsed = false;
+        panelCollapsed = phoneTools;
       });
 
   Offset? drawingOrigin, drawingEnd;

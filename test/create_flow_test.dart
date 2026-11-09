@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:yusal/core/house_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/features/house_editor.dart';
@@ -49,9 +50,14 @@ void main() {
     final fields = t.widgetList<TextField>(find.byType(TextField)).toList();
     expect(fields[1].controller!.text, '10');
     expect(fields[2].controller!.text, '13');
+    // The roof is picked here too.
+    await t.ensureVisible(find.byKey(const ValueKey('new-roof-flat')));
+    await t.tap(find.byKey(const ValueKey('new-roof-flat')));
+    await t.pump();
     await t.tap(find.text('开始设计'));
     await t.pumpAndSettle();
     final doc = (await store.listProjects()).single.document;
     expect((doc.footprint.width, doc.footprint.depth), (10000, 13000));
+    expect(doc.roof.type, RoofType.flat);
   });
 }

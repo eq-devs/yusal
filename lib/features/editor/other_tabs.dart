@@ -176,7 +176,7 @@ extension _OtherTabs on _HouseEditorState {
               action('SetDefault', {'field': 'slabThickness', 'value': v});
           }),
         ]),
-        Wrap(spacing: 8, runSpacing: 8, children: [gableButton(), hipButton()]),
+        Wrap(spacing: 8, runSpacing: 8, children: [roofStyleButton()]),
       ];
     Future<void> gable(String field, String title, int value) async {
       final v = await askMm(title, value);
@@ -191,12 +191,6 @@ extension _OtherTabs on _HouseEditorState {
       });
     }
 
-    final flat = Btn(
-        label: tr('改为平屋顶', 'Тегіс ету'),
-        icon: Icons.crop_landscape,
-        onPressed: () => action('SetRoof', {
-              'roof': {'type': 'flat', 'parapetHeight': 1000}
-            }));
     if (roof.type == RoofType.hip)
       return [
         KvGrid([
@@ -210,7 +204,7 @@ extension _OtherTabs on _HouseEditorState {
               '${dec((math.min(history.present.footprint.width, history.present.footprint.depth) / 2 * math.tan(roof.pitchDeg! * math.pi / 180) / 1000).toStringAsFixed(2))} $unitM',
               tr('屋脊高出墙顶', 'Жота қабырғадан биік')),
         ]),
-        Wrap(spacing: 8, runSpacing: 8, children: [flat, gableButton()]),
+        Wrap(spacing: 8, runSpacing: 8, children: [roofStyleButton()]),
       ];
 
     return [
@@ -232,35 +226,14 @@ extension _OtherTabs on _HouseEditorState {
                   }
                 })),
       ]),
-      Wrap(spacing: 8, runSpacing: 8, children: [flat, hipButton()]),
+      Wrap(spacing: 8, runSpacing: 8, children: [roofStyleButton()]),
     ];
   }
 
-  Widget gableButton() => Btn(
-      label: tr('改为双坡屋顶', 'Қос беткейлі ету'),
+  Widget roofStyleButton() => Btn(
+      label: tr('换屋顶样式', 'Шатыр түрін ауыстыру'),
       icon: Icons.roofing,
-      onPressed: () => action('SetRoof', {
-            'roof': {
-              'type': 'gable',
-              'ridgeDir': history.present.footprint.width >=
-                      history.present.footprint.depth
-                  ? 'H'
-                  : 'V',
-              'pitchDeg': history.present.roof.pitchDeg ?? 30,
-              'overhang': history.present.roof.overhang ?? 500
-            }
-          }));
-
-  Widget hipButton() => Btn(
-      label: tr('改为四坡屋顶', 'Төрт беткейлі ету'),
-      icon: Icons.house_outlined,
-      onPressed: () => action('SetRoof', {
-            'roof': {
-              'type': 'hip',
-              'pitchDeg': history.present.roof.pitchDeg ?? 25,
-              'overhang': history.present.roof.overhang ?? 500
-            }
-          }));
+      onPressed: chooseRoof);
 
   Widget layerCard(
       {required String title,

@@ -218,6 +218,11 @@ extension _SceneTab on _HouseEditorState {
                 label: tr('剖切', 'Кесу'),
                 selected: s.cut,
                 onChanged: (v) => set(s.copyWith(cut: v))),
+            ActionChip(
+                key: const ValueKey('scene-roof-style'),
+                avatar: RoofIcon(roofStyle, size: 16),
+                label: Text(roofStyleName(roofStyle)),
+                onPressed: chooseRoof),
     ];
   }
 

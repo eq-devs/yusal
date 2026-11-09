@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -168,6 +169,28 @@ void main() {
     expect(api.requests.where((r) => r.url.path == '/auth/refresh'), hasLength(1));
   });
 
+  test('requests that hit an expired token together refresh it once',
+      () async {
+    await backend.signInWithProvider('google', 'id-token');
+    api.expireNextAccess = true;
+    final both = await Future.wait([backend.myPosts(), backend.myPosts()]);
+    expect(both.map((l) => l.single.id), ['p1', 'p1']);
+    expect(
+        api.requests.where((r) => r.url.path == '/auth/refresh'), hasLength(1));
+  });
+
+  test('a server that never answers fails the call as a network error',
+      () async {
+    final silent = HttpBackend('https://api.test',
+        client: MockClient((_) => Completer<http.Response>().future),
+        seed: false,
+        timeout: const Duration(milliseconds: 50));
+    await expectLater(
+        silent.feed(const FeedFilter()),
+        throwsA(isA<ApiFailure>()
+            .having((e) => e.code, 'code', ApiCodes.network)));
+  });
+
   test('a server that is down at startup does not sign the user out',
       () async {
     await backend.signInWithProvider('google', 'id-token');
@@ -182,6 +205,20 @@ void main() {
         client: MockClient(api.handle), seed: false);
     await later.restore();
     expect(later.currentAccount?.id, 'u1');
+  });
+
+  test('a session that could not restore comes back once the server does',
+      () async {
+    await backend.signInWithProvider('google', 'id-token');
+    api.refreshStatus = 502;
+    final offline = HttpBackend('https://api.test',
+        client: MockClient(api.handle), seed: false)
+      ..retryDelays = const [Duration(milliseconds: 20)];
+    await offline.restore();
+    expect(offline.currentAccount, isNull);
+    api.refreshStatus = null;
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    expect(offline.currentAccount?.id, 'u1');
   });
 
   test('a rejected refresh token signs the user out', () async {

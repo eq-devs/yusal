@@ -31,11 +31,29 @@ Future<List<List<int>>> pickPhotos(BuildContext context,
     return const [];
   }
   final out = <List<int>>[];
+  var skipped = 0;
   for (final f in files.take(max)) {
     try {
       final raw = await f.readAsBytes();
       out.add(await shrinkPhoto(raw));
-    } catch (_) {}
+    } catch (_) {
+      skipped++;
+    }
+  }
+  // Say what was left out instead of silently dropping photos.
+  final over = files.length > max ? files.length - max : 0;
+  if (context.mounted && (skipped > 0 || over > 0)) {
+    toast(
+        context,
+        [
+          if (skipped > 0)
+            tr3('$skipped 张照片无法读取或太大', '$skipped фото оқылмады не тым үлкен',
+                '$skipped фото не удалось прочитать или они слишком большие'),
+          if (over > 0)
+            tr3('这次只能再加 $max 张，$over 张没有加入',
+                'Тағы $max фото ғана қосуға болады, $over қосылмады',
+                'Можно добавить ещё $max фото, $over не добавлено'),
+        ].join(' · '));
   }
   return out;
 }

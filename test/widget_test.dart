@@ -100,6 +100,10 @@ void main() {
     await t.tap(find.text('我的').last);
     await t.pumpAndSettle();
     expect(find.text('设置'), findsOneWidget);
+    // Language is a row that opens a list of the three languages.
+    await t.ensureVisible(find.byKey(const Key('me-language')));
+    await t.tap(find.byKey(const Key('me-language')));
+    await t.pumpAndSettle();
     await t.tap(find.text('Русский'));
     await t.pumpAndSettle();
     expect(find.text('Настройки'), findsOneWidget);

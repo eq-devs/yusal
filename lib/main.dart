@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/settings.dart';
 import 'app/tokens.dart';
@@ -67,6 +68,16 @@ class _HouseAppState extends State<HouseApp> {
                 navigatorKey: appNavigator,
                 title: 'Yusal',
                 debugShowCheckedModeBanner: false,
+                // System texts (back, close, copy / paste, pickers) and
+                // what screen readers announce follow the app language.
+                locale: Locale(settings.lang.name),
+                supportedLocales: const [
+                  Locale('kk'),
+                  Locale('ru'),
+                  Locale('zh')
+                ],
+                localizationsDelegates:
+                    GlobalMaterialLocalizations.delegates,
                 theme: buildTheme(settings.theme == ThemeChoice.night
                     ? Tokens.night
                     : Tokens.light),

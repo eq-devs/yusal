@@ -56,6 +56,12 @@ Route<T> platformRoute<T>(WidgetBuilder builder) => MaterialPageRoute<T>(
 Future<T?> pushPage<T>(BuildContext context, WidgetBuilder builder) =>
     Navigator.of(context).push<T>(platformRoute(builder));
 
+/// Lets a pull-to-refresh reload a [Live] and wait until it has finished.
+class LiveRefresh {
+  Future<void> Function()? _run;
+  Future<void> call() => _run?.call() ?? Future<void>.value();
+}
+
 /// Loads data and reloads it whenever the backend reports a change.
 class Live<T> extends StatefulWidget {
   const Live(
@@ -66,7 +72,11 @@ class Live<T> extends StatefulWidget {
       this.reloadKey,
       this.refreshError,
       this.loading,
+      this.refresh,
       this.fadeIn = false});
+
+  /// Calling it reloads this list; the future completes with the load.
+  final LiveRefresh? refresh;
   final Future<T> Function(PlatformRepositories repos) load;
   final Widget Function(BuildContext context, T data) builder;
   final Widget Function(BuildContext context, Object error)? error;
@@ -93,6 +103,12 @@ class _LiveState<T> extends State<Live<T>> {
   String? _accountId;
 
   @override
+  void initState() {
+    super.initState();
+    widget.refresh?._run = _reload;
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final repos = context.repos;
@@ -111,6 +127,7 @@ class _LiveState<T> extends State<Live<T>> {
   @override
   void didUpdateWidget(covariant Live<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
+    widget.refresh?._run = _reload;
     if (widget.reloadKey == null || widget.reloadKey != oldWidget.reloadKey) {
       _reload();
     }
@@ -119,10 +136,12 @@ class _LiveState<T> extends State<Live<T>> {
   @override
   void dispose() {
     _repos?.changes.removeListener(_reload);
+    if (widget.refresh?._run == _reload) widget.refresh?._run = null;
     super.dispose();
   }
 
   Future<void> _reload() async {
+    if (!mounted) return;
     final accountId = _repos!.currentAccount?.id;
     if (accountId != _accountId) {
       _accountId = accountId;

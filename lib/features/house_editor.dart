@@ -155,16 +155,16 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   List<(String, String)> get editorTabs => [
-        ('plan', tr('2D 平面', '2D жоспар')),
-        ('ext', tr('3D 外观', '3D сыртқы көрініс')),
-        ('walk', tr('室内漫游', 'Ішкі серуен')),
-        ('site', tr('宅基地', 'Учаске')),
-        ('det', tr('构造细节', 'Құрылым бөлшектері')),
-        ('heat', tr('保温采暖', 'Жылу')),
-        ('qty', tr('门窗与工程量', 'Есік-терезе және көлем')),
-        ('cost', tr('预算', 'Смета')),
-        ('build', tr('施工进度', 'Құрылыс кестесі')),
-        ('iss', tr('问题清单', 'Мәселелер тізімі')),
+        ('plan', tr3('2D 平面', '2D жоспар', '2D-план')),
+        ('ext', tr3('3D 外观', '3D сыртқы көрініс', '3D-вид снаружи')),
+        ('walk', tr3('室内漫游', 'Ішкі серуен', 'Прогулка по дому')),
+        ('site', tr3('宅基地', 'Учаске', 'Участок')),
+        ('det', tr3('构造细节', 'Құрылым бөлшектері', 'Детали конструкции')),
+        ('heat', tr3('保温采暖', 'Жылу', 'Тепло')),
+        ('qty', tr3('门窗与工程量', 'Есік-терезе және көлем', 'Проёмы и объёмы работ')),
+        ('cost', tr3('预算', 'Смета', 'Смета')),
+        ('build', tr3('施工进度', 'Құрылыс кестесі', 'График строительства')),
+        ('iss', tr3('问题清单', 'Мәселелер тізімі', 'Список замечаний')),
       ];
 
   void showTab(String value) {
@@ -235,6 +235,7 @@ class _HouseEditorState extends State<HouseEditor>
     final m = RegExp(r'^([一二三四五六七八九十])楼( 副本)?$').firstMatch(name);
     if (m == null || !isKk) return name;
     final n = numerals.indexOf(m[1]!) + 1;
+    if (isRu) return '$n-й этаж${m[2] == null ? '' : ' (копия)'}';
     return '$n-қабат${m[2] == null ? '' : ' (көшірме)'}';
   }
 
@@ -305,7 +306,7 @@ class _HouseEditorState extends State<HouseEditor>
     openingDrop = null;
     derive();
     if (wall == null) {
-      placementHint = tr('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады');
+      placementHint = tr3('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады', 'Перетащите на стену — окно или дверь встанет на место');
       return;
     }
     final arguments = <String, dynamic>{
@@ -324,9 +325,9 @@ class _HouseEditorState extends State<HouseEditor>
       derived =
           deriveHouse(composeDocument(history.present.meta, result.newState));
       base = derived.floors[floorIndex].base;
-      placementHint = tr('已贴合墙面，松手放置', 'Қабырғаға орнықты, жіберіңіз');
+      placementHint = tr3('已贴合墙面，松手放置', 'Қабырғаға орнықты, жіберіңіз', 'Привязано к стене, отпустите');
     } else {
-      placementHint = result is Rejected ? result.message : tr('此处无法放置', 'Мұнда қоюға болмайды');
+      placementHint = result is Rejected ? result.message : tr3('此处无法放置', 'Мұнда қоюға болмайды', 'Здесь поставить нельзя');
     }
   }
 
@@ -349,12 +350,12 @@ class _HouseEditorState extends State<HouseEditor>
   String toolLabel(String label) {
     final text = toolText[label];
     if (text == null) return label;
-    return isKk ? text.$3 : text.$1;
+    return tr(text.$1, text.$3);
   }
 
   String toolTip(String label) {
     final text = toolText[label];
-    return text == null || !isKk ? label : text.$2;
+    return text == null ? label : tr(label, text.$2);
   }
 
   Widget basicTool(
@@ -436,27 +437,27 @@ class _HouseEditorState extends State<HouseEditor>
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text(tr('房屋长宽', 'Үйдің ені мен ұзындығы'),
+                              Text(tr3('房屋长宽', 'Үйдің ені мен ұзындығы', 'Ширина и длина дома'),
                                   style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w600)),
                               Padding(
                                   padding: EdgeInsets.symmetric(vertical: 12),
-                                  child: Text(tr('外形尺寸用于全部楼层。内部房间位置保持不变。', 'Сыртқы өлшем барлық қабатқа қолданылады. Ішкі бөлмелердің орны сақталады.'))),
+                                  child: Text(tr3('外形尺寸用于全部楼层。内部房间位置保持不变。', 'Сыртқы өлшем барлық қабатқа қолданылады. Ішкі бөлмелердің орны сақталады.', 'Наружный размер применяется ко всем этажам. Положение внутренних комнат сохраняется.'))),
                               TextField(
                                   controller: width,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
                                           decimal: true),
                                   decoration: InputDecoration(
-                                      labelText: tr('宽（米，左右方向）', 'Ені (м, солдан оңға)'))),
+                                      labelText: tr3('宽（米，左右方向）', 'Ені (м, солдан оңға)', 'Ширина (м, слева направо)'))),
                               TextField(
                                   controller: depth,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
                                           decimal: true),
                                   decoration: InputDecoration(
-                                      labelText: tr('长（米，上下方向）', 'Ұзындығы (м, төменнен жоғары)'))),
+                                      labelText: tr3('长（米，上下方向）', 'Ұзындығы (м, төменнен жоғары)', 'Длина (м, снизу вверх)'))),
                               if (error != null)
                                 Padding(
                                     padding: const EdgeInsets.only(top: 8),
@@ -478,7 +479,7 @@ class _HouseEditorState extends State<HouseEditor>
                                         d < 3 ||
                                         w > 100 ||
                                         d > 100) {
-                                      update(() => error = tr('长宽需在 3–100 米之间', 'Өлшем 3–100 м аралығында болуы керек'));
+                                      update(() => error = tr3('长宽需在 3–100 米之间', 'Өлшем 3–100 м аралығында болуы керек', 'Размер должен быть в пределах 3–100 м'));
                                       return;
                                     }
                                     final args = <String, dynamic>{
@@ -498,7 +499,7 @@ class _HouseEditorState extends State<HouseEditor>
                                     Navigator.pop(context);
                                     action('SetFootprintSize', args);
                                   },
-                                  child: Text(tr('应用尺寸', 'Өлшемді қолдану'))),
+                                  child: Text(tr3('应用尺寸', 'Өлшемді қолдану', 'Применить размер'))),
                               TextButton.icon(
                                   onPressed: () {
                                     Navigator.pop(context);
@@ -510,14 +511,14 @@ class _HouseEditorState extends State<HouseEditor>
                                     });
                                   },
                                   icon: const Icon(Icons.open_in_full),
-                                  label: Text(tr('拖动外边框调整', 'Сыртқы жиекті сүйреп өзгерту'))),
+                                  label: Text(tr3('拖动外边框调整', 'Сыртқы жиекті сүйреп өзгерту', 'Изменить, перетаскивая внешний контур'))),
                               TextButton.icon(
                                   onPressed: () {
                                     Navigator.pop(context);
                                     cutCornerDialog();
                                   },
                                   icon: const Icon(Icons.crop),
-                                  label: Text(tr('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)'))),
+                                  label: Text(tr3('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)', 'Вырезать угол (Г-образная форма)'))),
                               if (hasOutline)
                                 TextButton.icon(
                                     onPressed: () {
@@ -525,7 +526,7 @@ class _HouseEditorState extends State<HouseEditor>
                                       restoreOutlineAction();
                                     },
                                     icon: const Icon(Icons.crop_square),
-                                    label: Text(tr('恢复矩形外形', 'Тіктөртбұрышқа қайтару'))),
+                                    label: Text(tr3('恢复矩形外形', 'Тіктөртбұрышқа қайтару', 'Вернуть прямоугольник'))),
                             ]))))));
   }
 
@@ -539,7 +540,7 @@ class _HouseEditorState extends State<HouseEditor>
                 child: ListView(children: [
                   Padding(
                       padding: EdgeInsets.all(16),
-                      child: Text(tr('更多工具', 'Басқа құралдар'),
+                      child: Text(tr3('更多工具', 'Басқа құралдар', 'Другие инструменты'),
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w600))),
                   if (phoneTools)
@@ -556,13 +557,13 @@ class _HouseEditorState extends State<HouseEditor>
                                 child: w)
                         ])),
                   for (final entry in {
-                    'fit': tr('恢复画布视角', 'Көріністі қалпына келтіру'),
-                    'grid': tr('网格', 'Тор'),
-                    'opening': tr('门窗', 'Есік-терезе'),
-                    'stair': tr('楼梯', 'Баспалдақ'),
+                    'fit': tr3('恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид'),
+                    'grid': tr3('网格', 'Тор', 'Сетка'),
+                    'opening': tr3('门窗', 'Есік-терезе', 'Окна и двери'),
+                    'stair': tr3('楼梯', 'Баспалдақ', 'Лестница'),
                     for (final type in RoomType.values)
                       type.name: roomTypeName(type),
-                    'erase': tr('擦除', 'Өшіру')
+                    'erase': tr3('擦除', 'Өшіру', 'Стереть')
                   }.entries)
                     ListTile(
                         title: Text(entry.value),
@@ -589,15 +590,15 @@ class _HouseEditorState extends State<HouseEditor>
   OpeningKind? draggingNewOpening;
 
   String openingName(Opening o) => switch (o) {
-        DoorOpening() => tr('门', 'есік'),
-        WindowOpening() => tr('窗', 'терезе'),
-        SlidingOpening() => tr('推拉门', 'сырғымалы есік')
+        DoorOpening() => tr3('门', 'есік', 'дверь'),
+        WindowOpening() => tr3('窗', 'терезе', 'окно'),
+        SlidingOpening() => tr3('推拉门', 'сырғымалы есік', 'раздвижная дверь')
       };
 
   Map<OpeningKind, String> get openingNames => {
-        OpeningKind.door: tr('门', 'есік'),
-        OpeningKind.window: tr('窗', 'терезе'),
-        OpeningKind.sliding: tr('推拉门', 'сырғымалы есік')
+        OpeningKind.door: tr3('门', 'есік', 'дверь'),
+        OpeningKind.window: tr3('窗', 'терезе', 'окно'),
+        OpeningKind.sliding: tr3('推拉门', 'сырғымалы есік', 'раздвижная дверь')
       };
 
   /// The dragged door or window floats above the finger so the snapped
@@ -612,7 +613,7 @@ class _HouseEditorState extends State<HouseEditor>
       placingOpening = kind;
       browse = false;
       tool = 'placeOpening';
-      placementHint = tr('点一下墙面放置，也可以从工具栏直接拖入', 'Қабырғаны басып қойыңыз, не құралдар жолынан сүйреп әкеліңіз');
+      placementHint = tr3('点一下墙面放置，也可以从工具栏直接拖入', 'Қабырғаны басып қойыңыз, не құралдар жолынан сүйреп әкеліңіз', 'Нажмите на стену, чтобы поставить, или перетащите с панели инструментов');
     });
     return Draggable<OpeningKind>(
         data: kind,
@@ -741,7 +742,7 @@ class _HouseEditorState extends State<HouseEditor>
           .rooms
           .length;
       placementHint =
-          count > floor.rooms.length + 1 ? tr('分房后会得到 $count 个独立空间，松手完成', 'Бөлгенде $count бөлек кеңістік шығады, жіберіңіз') : null;
+          count > floor.rooms.length + 1 ? tr3('分房后会得到 $count 个独立空间，松手完成', 'Бөлгенде $count бөлек кеңістік шығады, жіберіңіз', 'Получится отдельных помещений: $count, отпустите') : null;
     } else {
       spatialDocument = null;
       spatialBase = null;
@@ -1103,13 +1104,13 @@ class _HouseEditorState extends State<HouseEditor>
           .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
       final wall = candidates.firstOrNull;
       if (wall == null) {
-        placementHint = tr('拖到另一面墙，门窗会自动贴合', 'Басқа қабырғаға апарыңыз, есік-терезе өзі орнығады');
+        placementHint = tr3('拖到另一面墙，门窗会自动贴合', 'Басқа қабырғаға апарыңыз, есік-терезе өзі орнығады', 'Перетащите на другую стену — окно или дверь встанет на место');
         return;
       }
       final along = wall.axis.dir == AxisDir.H ? x : y;
       final available = wall.end.pos - wall.start.pos - opening.opening.width;
       if (available < 0) {
-        placementHint = tr('这段墙放不下这个门窗', 'Бұл қабырғаға есік-терезе сыймайды');
+        placementHint = tr3('这段墙放不下这个门窗', 'Бұл қабырғаға есік-терезе сыймайды', 'Окно или дверь не помещается на этой стене');
         return;
       }
       dragKind = 'MoveOpening';
@@ -1211,7 +1212,7 @@ class _HouseEditorState extends State<HouseEditor>
       final cleanedName = history.present.meta.name
           .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '')
           .trim();
-      final filename = '${cleanedName.isEmpty ? tr('房屋设计', 'Үй жобасы') : cleanedName}.house';
+      final filename = '${cleanedName.isEmpty ? tr3('房屋设计', 'Үй жобасы', 'Проект дома') : cleanedName}.house';
       final file = XFile.fromData(utf8.encode(raw),
           mimeType: 'application/json', name: filename);
       if (kIsWeb) {
@@ -1225,7 +1226,7 @@ class _HouseEditorState extends State<HouseEditor>
                 : box.localToGlobal(Offset.zero) & box.size));
       }
     } catch (_) {
-      notify(tr('暂时无法导出这个设计', 'Жобаны қазір шығару мүмкін емес'));
+      notify(tr3('暂时无法导出这个设计', 'Жобаны қазір шығару мүмкін емес', 'Сейчас не удаётся экспортировать проект'));
     }
   }
 
@@ -1234,7 +1235,7 @@ class _HouseEditorState extends State<HouseEditor>
   Future<void> exportDrawings({bool png = false}) async {
     await save();
     if (!mounted) return;
-    final progress = ValueNotifier<String>(tr('正在准备图纸…', 'Сызбалар дайындалып жатыр…'));
+    final progress = ValueNotifier<String>(tr3('正在准备图纸…', 'Сызбалар дайындалып жатыр…', 'Подготовка чертежей…'));
     final today = DateTime.now();
     final input = DrawingInput(
         doc: history.present,
@@ -1266,14 +1267,14 @@ class _HouseEditorState extends State<HouseEditor>
           ? await buildPlanPng(input, floorIndex)
           : await buildDrawingPdf(input,
               onProgress: (done, total) => progress.value =
-                  tr('正在绘制第 $done / $total 张图纸…', '$done / $total сызба салынып жатыр…'));
+                  tr3('正在绘制第 $done / $total 张图纸…', '$done / $total сызба салынып жатыр…', 'Создаётся чертёж $done / $total…'));
       final cleaned = history.present.meta.name
           .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '')
           .trim();
-      final base = cleaned.isEmpty ? tr('房屋设计', 'Үй жобасы') : cleaned;
+      final base = cleaned.isEmpty ? tr3('房屋设计', 'Үй жобасы', 'Проект дома') : cleaned;
       final filename = png
           ? '$base ${displayFloorName(floor.name)}.png'
-          : '$base ${tr('图纸', 'сызбалар')}.pdf';
+          : '$base ${tr3('图纸', 'сызбалар', 'чертежи')}.pdf';
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
       final file = XFile.fromData(bytes,
           mimeType: png ? 'image/png' : 'application/pdf', name: filename);
@@ -1290,7 +1291,7 @@ class _HouseEditorState extends State<HouseEditor>
     } catch (_) {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).maybePop();
-        notify(tr('暂时无法生成图纸', 'Сызбаларды қазір жасау мүмкін емес'));
+        notify(tr3('暂时无法生成图纸', 'Сызбаларды қазір жасау мүмкін емес', 'Сейчас не удаётся создать чертежи'));
       }
     } finally {
       progress.dispose();
@@ -1306,8 +1307,8 @@ class _HouseEditorState extends State<HouseEditor>
     final added = floor.openings.where((o) => !ids.contains(o.id)).firstOrNull;
     if (added != null) selectOpening(added);
     notify(
-          tr('已放置${openingNames[arguments['kind']]} · 可以直接拖动它调整位置',
-              '${openingNames[arguments['kind']]} қойылды · оны сүйреп жылжытуға болады'),
+          tr3('已放置${openingNames[arguments['kind']]} · 可以直接拖动它调整位置',
+              '${openingNames[arguments['kind']]} қойылды · оны сүйреп жылжытуға болады', 'Добавлено: ${openingNames[arguments['kind']]} · можно перетащить, чтобы изменить положение'),
           undo: undo);
   }
 
@@ -1324,7 +1325,7 @@ class _HouseEditorState extends State<HouseEditor>
         persist: false,
         action: undo == null
             ? null
-            : SnackBarAction(label: tr('撤销', 'Болдырмау'), onPressed: undo)),
+            : SnackBarAction(label: tr3('撤销', 'Болдырмау', 'Отменить'), onPressed: undo)),
         snackBarAnimationStyle: Motion.toastStyle);
   }
 
@@ -1353,7 +1354,7 @@ class _HouseEditorState extends State<HouseEditor>
         browse = true;
       }
     });
-    notify(tr('已撤销上一步', 'Соңғы әрекет болдырылмады'));
+    notify(tr3('已撤销上一步', 'Соңғы әрекет болдырылмады', 'Последнее действие отменено'));
   }
 
   void redo() {
@@ -1368,7 +1369,7 @@ class _HouseEditorState extends State<HouseEditor>
         browse = true;
       }
     });
-    notify(tr('已重做', 'Қайталанды'));
+    notify(tr3('已重做', 'Қайталанды', 'Действие повторено'));
   }
 
   void action(String kind, Map<String, dynamic> args) {
@@ -1406,16 +1407,16 @@ class _HouseEditorState extends State<HouseEditor>
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text(tr('取消', 'Болдырмау'))),
+                      child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                   FilledButton(
                       onPressed: () => Navigator.pop(context, controller.text),
-                      child: Text(tr('确定', 'Жарайды')))
+                      child: Text(tr3('确定', 'Жарайды', 'ОК')))
                 ]));
   }
 
   Future<int?> length(String label, int value) async {
     final result =
-        await ask(tr('$label（米）', '$label (м)'), (value / 1000).toStringAsFixed(2),
+        await ask(tr3('$label（米）', '$label (м)', '$label (м)'), (value / 1000).toStringAsFixed(2),
         number: true);
     final parsed = double.tryParse(result ?? '');
     if (parsed == null || !parsed.isFinite) return null;
@@ -1428,11 +1429,11 @@ class _HouseEditorState extends State<HouseEditor>
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
               for (final entry in {
-                'AddFloor': tr('新增空层', 'Бос қабат қосу'),
-                'CopyFloor': tr('复制本层', 'Қабатты көшіру'),
-                'RenameFloor': tr('楼层名称', 'Қабат атауы'),
-                'SetFloorHeight': tr('层高', 'Қабат биіктігі'),
-                'DeleteFloor': tr('删除本层', 'Қабатты жою')
+                'AddFloor': tr3('新增空层', 'Бос қабат қосу', 'Добавить пустой этаж'),
+                'CopyFloor': tr3('复制本层', 'Қабатты көшіру', 'Копировать этаж'),
+                'RenameFloor': tr3('楼层名称', 'Қабат атауы', 'Название этажа'),
+                'SetFloorHeight': tr3('层高', 'Қабат биіктігі', 'Высота этажа'),
+                'DeleteFloor': tr3('删除本层', 'Қабатты жою', 'Удалить этаж')
               }.entries)
                 ListTile(
                     title: Text(entry.value),
@@ -1440,25 +1441,25 @@ class _HouseEditorState extends State<HouseEditor>
             ])));
     if (choice == null) return;
     if (choice == 'SetFloorHeight') {
-      final value = await length(tr('层高', 'Қабат биіктігі'), floor.height);
+      final value = await length(tr3('层高', 'Қабат биіктігі', 'Высота этажа'), floor.height);
       if (value != null) action(choice, {'floorId': floor.id, 'value': value});
     } else if (choice == 'RenameFloor') {
-      final value = await ask(tr('楼层名称', 'Қабат атауы'), floor.name);
+      final value = await ask(tr3('楼层名称', 'Қабат атауы', 'Название этажа'), floor.name);
       if (value != null) action(choice, {'floorId': floor.id, 'value': value});
     } else {
       if (choice == 'DeleteFloor') {
         final yes = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-                    title: Text(tr('删除本层及其全部内容？', 'Қабатты бүкіл ішімен жою керек пе?')),
-                    content: Text(tr('本层房间和门窗将删除。删除顶层时，下层通向本层的楼梯也会删除。', 'Қабаттағы бөлмелер мен есік-терезелер жойылады. Жоғарғы қабат жойылса, оған апаратын баспалдақ та жойылады.')),
+                    title: Text(tr3('删除本层及其全部内容？', 'Қабатты бүкіл ішімен жою керек пе?', 'Удалить этаж со всем содержимым?')),
+                    content: Text(tr3('本层房间和门窗将删除。删除顶层时，下层通向本层的楼梯也会删除。', 'Қабаттағы бөлмелер мен есік-терезелер жойылады. Жоғарғы қабат жойылса, оған апаратын баспалдақ та жойылады.', 'Комнаты, окна и двери этажа будут удалены. При удалении верхнего этажа лестница, ведущая на него, тоже удаляется.')),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: Text(tr('取消', 'Болдырмау'))),
+                          child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                       FilledButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: Text(tr('删除', 'Жою')))
+                          child: Text(tr3('删除', 'Жою', 'Удалить')))
                     ]));
         if (yes != true) return;
       }
@@ -1478,10 +1479,10 @@ class _HouseEditorState extends State<HouseEditor>
         derive();
       });
       notify(choice == 'DeleteFloor'
-          ? tr('已删除楼层，现在是「${displayFloorName(floor.name)}」',
-              'Қабат жойылды, қазір «${displayFloorName(floor.name)}»')
-          : tr('已新增「${displayFloorName(floor.name)}」，现在编辑这一层',
-              '«${displayFloorName(floor.name)}» қосылды, енді осы қабатты өзгертесіз'));
+          ? tr3('已删除楼层，现在是「${displayFloorName(floor.name)}」',
+              'Қабат жойылды, қазір «${displayFloorName(floor.name)}»', 'Этаж удалён, сейчас открыт «${displayFloorName(floor.name)}»')
+          : tr3('已新增「${displayFloorName(floor.name)}」，现在编辑这一层',
+              '«${displayFloorName(floor.name)}» қосылды, енді осы қабатты өзгертесіз', 'Добавлен «${displayFloorName(floor.name)}», теперь вы редактируете этот этаж'));
     }
   }
 
@@ -1491,16 +1492,16 @@ class _HouseEditorState extends State<HouseEditor>
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
               for (final e in {
-                'width': tr('房屋宽度', 'Үйдің ені'),
-                'depth': tr('房屋进深', 'Үйдің тереңдігі'),
-                'north': tr('正北方向', 'Солтүстік бағыты'),
-                'flat': tr('平屋顶', 'Тегіс шатыр'),
-                'gable': tr('双坡屋顶', 'Қос беткейлі шатыр'),
-                'hip': tr('四坡屋顶', 'Төрт беткейлі шатыр'),
-                'cut': tr('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)'),
-                if (hasOutline) 'restore': tr('恢复矩形外形', 'Тіктөртбұрышқа қайтару'),
-                'grid': tr('编辑网格', 'Торды өзгерту'),
-                'defaults': tr('默认尺寸', 'Әдепкі өлшемдер')
+                'width': tr3('房屋宽度', 'Үйдің ені', 'Ширина дома'),
+                'depth': tr3('房屋进深', 'Үйдің тереңдігі', 'Глубина дома'),
+                'north': tr3('正北方向', 'Солтүстік бағыты', 'Направление на север'),
+                'flat': tr3('平屋顶', 'Тегіс шатыр', 'Плоская крыша'),
+                'gable': tr3('双坡屋顶', 'Қос беткейлі шатыр', 'Двускатная крыша'),
+                'hip': tr3('四坡屋顶', 'Төрт беткейлі шатыр', 'Вальмовая крыша'),
+                'cut': tr3('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)', 'Вырезать угол (Г-образная форма)'),
+                if (hasOutline) 'restore': tr3('恢复矩形外形', 'Тіктөртбұрышқа қайтару', 'Вернуть прямоугольник'),
+                'grid': tr3('编辑网格', 'Торды өзгерту', 'Изменить сетку'),
+                'defaults': tr3('默认尺寸', 'Әдепкі өлшемдер', 'Размеры по умолчанию')
               }.entries)
                 ListTile(
                     title: Text(e.value),
@@ -1508,7 +1509,7 @@ class _HouseEditorState extends State<HouseEditor>
             ])));
     if (choice == 'width' || choice == 'depth') {
       final value = await length(
-          choice == 'width' ? tr('房屋宽度', 'Үйдің ені') : tr('房屋进深', 'Үйдің тереңдігі'),
+          choice == 'width' ? tr3('房屋宽度', 'Үйдің ені', 'Ширина дома') : tr3('房屋进深', 'Үйдің тереңдігі', 'Глубина дома'),
           choice == 'width'
               ? history.present.footprint.width
               : history.present.footprint.depth);
@@ -1516,7 +1517,7 @@ class _HouseEditorState extends State<HouseEditor>
     }
     if (choice == 'flat') {
       final height =
-          await length(tr('女儿墙高度', 'Парапет биіктігі'), history.present.roof.parapetHeight ?? 900);
+          await length(tr3('女儿墙高度', 'Парапет биіктігі', 'Высота парапета'), history.present.roof.parapetHeight ?? 900);
       if (height != null)
         action('SetRoof', {
           'roof': {'type': 'flat', 'parapetHeight': height}
@@ -1524,12 +1525,12 @@ class _HouseEditorState extends State<HouseEditor>
     }
     if (choice == 'hip') {
       final pitchText = await ask(
-          tr('屋顶坡度（5–60°）', 'Шатыр еңісі (5–60°)'), '${history.present.roof.pitchDeg ?? 25}',
+          tr3('屋顶坡度（5–60°）', 'Шатыр еңісі (5–60°)', 'Уклон крыши (5–60°)'), '${history.present.roof.pitchDeg ?? 25}',
           number: true);
       final pitch = int.tryParse(pitchText ?? '');
       if (pitch == null) return;
       final overhang =
-          await length(tr('屋檐伸出', 'Карниз шығыңқылығы'), history.present.roof.overhang ?? 500);
+          await length(tr3('屋檐伸出', 'Карниз шығыңқылығы', 'Карнизный свес'), history.present.roof.overhang ?? 500);
       if (overhang == null) return;
       action('SetRoof', {
         'roof': {'type': 'hip', 'pitchDeg': pitch, 'overhang': overhang}
@@ -1537,23 +1538,23 @@ class _HouseEditorState extends State<HouseEditor>
     }
     if (choice == 'gable') {
       final pitchText = await ask(
-          tr('屋顶坡度（5–60°）', 'Шатыр еңісі (5–60°)'), '${history.present.roof.pitchDeg ?? 30}',
+          tr3('屋顶坡度（5–60°）', 'Шатыр еңісі (5–60°)', 'Уклон крыши (5–60°)'), '${history.present.roof.pitchDeg ?? 30}',
           number: true);
       if (pitchText == null) return;
       final pitch = int.tryParse(pitchText);
       if (pitch == null) return;
       final overhang =
-          await length(tr('屋檐伸出', 'Карниз шығыңқылығы'), history.present.roof.overhang ?? 500);
+          await length(tr3('屋檐伸出', 'Карниз шығыңқылығы', 'Карнизный свес'), history.present.roof.overhang ?? 500);
       if (overhang == null) return;
       final direction = await showMotionSheet<String>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 ListTile(
-                    title: Text(tr('屋脊沿进深方向', 'Жота тереңдік бойымен')),
+                    title: Text(tr3('屋脊沿进深方向', 'Жота тереңдік бойымен', 'Конёк вдоль глубины')),
                     onTap: () => Navigator.pop(context, 'V')),
                 ListTile(
-                    title: Text(tr('屋脊沿宽度方向', 'Жота ені бойымен')),
+                    title: Text(tr3('屋脊沿宽度方向', 'Жота ені бойымен', 'Конёк вдоль ширины')),
                     onTap: () => Navigator.pop(context, 'H')),
               ])));
       if (direction != null)
@@ -1571,18 +1572,18 @@ class _HouseEditorState extends State<HouseEditor>
           jsonDecode(encodeHouse(history.present)) as Map<String, dynamic>;
       final defaults = raw['defaults'] as Map<String, dynamic>;
       final labels = {
-        'outerWallThickness': tr('外墙厚度', 'Сыртқы қабырға қалыңдығы'),
-        'innerWallThickness': tr('内墙厚度', 'Ішкі қабырға қалыңдығы'),
-        'slabThickness': tr('楼板厚度', 'Плита қалыңдығы'),
-        'stairRiserMax': tr('楼梯最大步高', 'Баспалдақтың ең үлкен биіктігі'),
-        'stairTread': tr('楼梯踏步进深', 'Баспалдақ табанының тереңдігі'),
-        'stairWidthMin': tr('楼梯最小宽度', 'Баспалдақтың ең аз ені'),
-        'floorHeight': tr('默认层高', 'Әдепкі қабат биіктігі'),
-        'doorWidth': tr('默认门宽', 'Әдепкі есік ені'),
-        'doorHeight': tr('默认门高', 'Әдепкі есік биіктігі'),
-        'windowWidth': tr('默认窗宽', 'Әдепкі терезе ені'),
-        'windowHeight': tr('默认窗高', 'Әдепкі терезе биіктігі'),
-        'windowSill': tr('默认窗台高度', 'Әдепкі терезе алды биіктігі')
+        'outerWallThickness': tr3('外墙厚度', 'Сыртқы қабырға қалыңдығы', 'Толщина наружной стены'),
+        'innerWallThickness': tr3('内墙厚度', 'Ішкі қабырға қалыңдығы', 'Толщина перегородки'),
+        'slabThickness': tr3('楼板厚度', 'Плита қалыңдығы', 'Толщина плиты'),
+        'stairRiserMax': tr3('楼梯最大步高', 'Баспалдақтың ең үлкен биіктігі', 'Максимальная высота ступени'),
+        'stairTread': tr3('楼梯踏步进深', 'Баспалдақ табанының тереңдігі', 'Глубина проступи лестницы'),
+        'stairWidthMin': tr3('楼梯最小宽度', 'Баспалдақтың ең аз ені', 'Минимальная ширина лестницы'),
+        'floorHeight': tr3('默认层高', 'Әдепкі қабат биіктігі', 'Высота этажа по умолчанию'),
+        'doorWidth': tr3('默认门宽', 'Әдепкі есік ені', 'Ширина двери по умолчанию'),
+        'doorHeight': tr3('默认门高', 'Әдепкі есік биіктігі', 'Высота двери по умолчанию'),
+        'windowWidth': tr3('默认窗宽', 'Әдепкі терезе ені', 'Ширина окна по умолчанию'),
+        'windowHeight': tr3('默认窗高', 'Әдепкі терезе биіктігі', 'Высота окна по умолчанию'),
+        'windowSill': tr3('默认窗台高度', 'Әдепкі терезе алды биіктігі', 'Высота подоконника по умолчанию')
       };
       final field = await showMotionSheet<String>(
           context: context,
@@ -1608,7 +1609,7 @@ class _HouseEditorState extends State<HouseEditor>
                   child: ListView(shrinkWrap: true, children: [
                 for (final angle in [0, 90, 180, 270])
                   ListTile(
-                      title: Text(tr('正北指向 $angle°', 'Солтүстік $angle° бағытта')),
+                      title: Text(tr3('正北指向 $angle°', 'Солтүстік $angle° бағытта', 'Направление на север: $angle°')),
                       onTap: () => Navigator.pop(context, angle))
               ])));
       if (value != null) action('SetNorthAngle', {'value': value});
@@ -1626,22 +1627,22 @@ class _HouseEditorState extends State<HouseEditor>
                 height: 360,
                 child: ListView(children: [
                   ListTile(
-                      title: Text(tr('新增竖向分隔线', 'Тік бөлу сызығын қосу')),
+                      title: Text(tr3('新增竖向分隔线', 'Тік бөлу сызығын қосу', 'Добавить вертикальную разделительную линию')),
                       onTap: () => Navigator.pop(context, AxisDir.V)),
                   ListTile(
-                      title: Text(tr('新增横向分隔线', 'Көлденең бөлу сызығын қосу')),
+                      title: Text(tr3('新增横向分隔线', 'Көлденең бөлу сызығын қосу', 'Добавить горизонтальную разделительную линию')),
                       onTap: () => Navigator.pop(context, AxisDir.H)),
                   for (final axis
                       in base.axes.all.where((a) => a.kind != 'boundary'))
                     ListTile(
                         title: Text(
-                            tr('${axis.dir == AxisDir.V ? '竖' : '横'}线 · ${(axis.pos / 1000).toStringAsFixed(2)} 米',
-                                '${axis.dir == AxisDir.V ? 'Тік' : 'Көлденең'} сызық · ${m2dp(axis.pos)} м')),
+                            tr3('${axis.dir == AxisDir.V ? '竖' : '横'}线 · ${(axis.pos / 1000).toStringAsFixed(2)} 米',
+                                '${axis.dir == AxisDir.V ? 'Тік' : 'Көлденең'} сызық · ${m2dp(axis.pos)} м', '${axis.dir == AxisDir.V ? 'Вертикальная' : 'Горизонтальная'} линия · ${m2dp(axis.pos)} м')),
                         onTap: () => Navigator.pop(context, axis))
                 ]))));
     if (selected is AxisDir) {
       final value = await length(
-          tr('新分隔线位置', 'Жаңа сызықтың орны'),
+          tr3('新分隔线位置', 'Жаңа сызықтың орны', 'Положение новой линии'),
           selected == AxisDir.V
               ? history.present.footprint.width ~/ 2
               : history.present.footprint.depth ~/ 2);
@@ -1651,10 +1652,10 @@ class _HouseEditorState extends State<HouseEditor>
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [
                   ListTile(
-                      title: Text(tr('所有楼层', 'Барлық қабат')),
+                      title: Text(tr3('所有楼层', 'Барлық қабат', 'Все этажи')),
                       onTap: () => Navigator.pop(context, 'global')),
                   ListTile(
-                      title: Text(tr('仅本层', 'Тек осы қабат')),
+                      title: Text(tr3('仅本层', 'Тек осы қабат', 'Только этот этаж')),
                       onTap: () => Navigator.pop(context, 'floor')),
                 ])));
         if (scope != null)
@@ -1671,19 +1672,19 @@ class _HouseEditorState extends State<HouseEditor>
         builder: (context) => SafeArea(
             child: ListView(shrinkWrap: true, children: [
           ListTile(
-              title: Text(tr('修改位置', 'Орнын өзгерту')),
+              title: Text(tr3('修改位置', 'Орнын өзгерту', 'Изменить положение')),
               onTap: () => Navigator.pop(context, 'move')),
           if (selected.kind == 'floor')
             ListTile(
-                title: Text(tr('同步到所有楼层', 'Барлық қабатқа тарату')),
+                title: Text(tr3('同步到所有楼层', 'Барлық қабатқа тарату', 'Применить ко всем этажам')),
                 onTap: () => Navigator.pop(context, 'promote')),
           ListTile(
-              title: Text(tr('删除分隔线', 'Сызықты жою')),
+              title: Text(tr3('删除分隔线', 'Сызықты жою', 'Удалить линию')),
               onTap: () => Navigator.pop(context, 'delete')),
         ])),
       );
       if (operation == 'move') {
-        final value = await length(tr('分隔线位置', 'Сызықтың орны'), selected.pos);
+        final value = await length(tr3('分隔线位置', 'Сызықтың орны', 'Положение линии'), selected.pos);
         if (value != null)
           action('MoveAxis', {'axisId': selected.id, 'pos': value});
       }
@@ -1696,17 +1697,17 @@ class _HouseEditorState extends State<HouseEditor>
           final resolution = await showDialog<String>(
               context: context,
               builder: (context) => AlertDialog(
-                    title: Text(tr('删除分隔线', 'Сызықты жою')),
+                    title: Text(tr3('删除分隔线', 'Сызықты жою', 'Удалить линию')),
                     content: Text(
-                        '${coreMessage(result.message ?? '')}\n${result.hasHosted ? tr('这条线上的门窗和墙设置将删除。\n', 'Осы сызықтағы есік-терезе мен қабырға баптаулары жойылады.\n') : ''}${result.hasStairs ? tr('受影响的楼梯将删除。\n', 'Әсер ететін баспалдақтар жойылады.\n') : ''}${tr('请选择合并后保留的房间。', 'Біріктірген соң қалатын бөлмені таңдаңыз.')}'),
+                        '${coreMessage(result.message ?? '')}\n${result.hasHosted ? tr3('这条线上的门窗和墙设置将删除。\n', 'Осы сызықтағы есік-терезе мен қабырға баптаулары жойылады.\n', 'Окна, двери и настройки стен на этой линии будут удалены.\n') : ''}${result.hasStairs ? tr3('受影响的楼梯将删除。\n', 'Әсер ететін баспалдақтар жойылады.\n', 'Затронутые лестницы будут удалены.\n') : ''}${tr3('请选择合并后保留的房间。', 'Біріктірген соң қалатын бөлмені таңдаңыз.', 'Выберите комнату, которая останется после объединения.')}'),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: Text(tr('取消', 'Болдырмау'))),
+                          child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                       for (final entry in {
-                        'mergeRooms': tr('合并房间', 'Бөлмелерді біріктіру'),
-                        'keepLowSide': tr('保留左 / 下侧', 'Сол / төменгі жағын қалдыру'),
-                        'keepHighSide': tr('保留右 / 上侧', 'Оң / жоғарғы жағын қалдыру')
+                        'mergeRooms': tr3('合并房间', 'Бөлмелерді біріктіру', 'Объединить комнаты'),
+                        'keepLowSide': tr3('保留左 / 下侧', 'Сол / төменгі жағын қалдыру', 'Оставить левую / нижнюю сторону'),
+                        'keepHighSide': tr3('保留右 / 上侧', 'Оң / жоғарғы жағын қалдыру', 'Оставить правую / верхнюю сторону')
                       }.entries)
                         TextButton(
                             onPressed: () => Navigator.pop(context, entry.key),
@@ -1727,7 +1728,7 @@ class _HouseEditorState extends State<HouseEditor>
                 withExtras(result.document!, history.present.extras))) changed();
           });
         } else {
-          notify(result.message ?? tr('无法删除分隔线', 'Сызықты жою мүмкін емес'));
+          notify(result.message ?? tr3('无法删除分隔线', 'Сызықты жою мүмкін емес', 'Линию нельзя удалить'));
         }
       }
     }
@@ -1861,19 +1862,19 @@ class _HouseEditorState extends State<HouseEditor>
                 Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
-                        '${tr('外墙', 'Сыртқы қабырға')} · ${dec(((wall.end.pos - wall.start.pos) / 1000).toStringAsFixed(2))} $unitM',
+                        '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} · ${dec(((wall.end.pos - wall.start.pos) / 1000).toStringAsFixed(2))} $unitM',
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w700))),
-                heading(tr('在点的位置加', 'Осы жерге қосу')),
-                item('door', Icons.door_front_door_outlined, tr('门', 'Есік')),
-                item('window', Icons.window_outlined, tr('窗', 'Терезе')),
+                heading(tr3('在点的位置加', 'Осы жерге қосу', 'Добавить здесь')),
+                item('door', Icons.door_front_door_outlined, tr3('门', 'Есік', 'Дверь')),
+                item('window', Icons.window_outlined, tr3('窗', 'Терезе', 'Окно')),
                 item('sliding', Icons.door_sliding_outlined,
-                    tr('推拉门', 'Сырғымалы есік')),
-                heading(tr('这段墙', 'Осы қабырға')),
-                item('thickness', Icons.straighten, tr('调整墙厚', 'Қалыңдығын өзгерту')),
-                item('open', Icons.crop_free, tr('去掉这段墙（开放）', 'Қабырғасыз (ашық)')),
+                    tr3('推拉门', 'Сырғымалы есік', 'Раздвижная дверь')),
+                heading(tr3('这段墙', 'Осы қабырға', 'Эта стена')),
+                item('thickness', Icons.straighten, tr3('调整墙厚', 'Қалыңдығын өзгерту', 'Изменить толщину')),
+                item('open', Icons.crop_free, tr3('去掉这段墙（开放）', 'Қабырғасыз (ашық)', 'Без стены (открыто)')),
                 item('default', Icons.restart_alt,
-                    tr('恢复默认墙', 'Әдепкі қабырғаны қайтару')),
+                    tr3('恢复默认墙', 'Әдепкі қабырғаны қайтару', 'Вернуть стену по умолчанию')),
               ])));
       if (choice == null) return;
       if (choice == 'move') {
@@ -1887,7 +1888,7 @@ class _HouseEditorState extends State<HouseEditor>
       }
       if (choice == 'position') {
         final value = await length(
-            wall.axis.dir == AxisDir.V ? tr('距左侧外墙', 'Сол жақ сыртқы қабырғадан') : tr('距下侧外墙', 'Төменгі сыртқы қабырғадан'), wall.axis.pos);
+            wall.axis.dir == AxisDir.V ? tr3('距左侧外墙', 'Сол жақ сыртқы қабырғадан', 'От левой наружной стены') : tr3('距下侧外墙', 'Төменгі сыртқы қабырғадан', 'От нижней наружной стены'), wall.axis.pos);
         if (value != null)
           action('MoveLocalWall',
               {'floorId': floor.id, 'anchor': wall.ref.anchor, 'pos': value});
@@ -1911,7 +1912,7 @@ class _HouseEditorState extends State<HouseEditor>
       } else {
         int? thickness;
         if (choice == 'thickness')
-          thickness = await length(tr('墙厚', 'Қабырға қалыңдығы'), wall.thickness.round());
+          thickness = await length(tr3('墙厚', 'Қабырға қалыңдығы', 'Толщина стены'), wall.thickness.round());
         if (choice != 'thickness' || thickness != null)
           action('SetWallOverride', {
             'floorId': floor.id,
@@ -1959,12 +1960,12 @@ class _HouseEditorState extends State<HouseEditor>
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 for (final e in {
-                  'straight': tr('直梯', 'Тік баспалдақ'),
-                  'L': tr('L 型楼梯', 'L тәрізді баспалдақ'),
-                  'U': tr('U 型楼梯', 'U тәрізді баспалдақ'),
-                  'turn': tr('切换转向', 'Бұрылысын ауыстыру'),
-                  'start': tr('切换起步边', 'Басталатын жағын ауыстыру'),
-                  'delete': tr('删除楼梯', 'Баспалдақты жою')
+                  'straight': tr3('直梯', 'Тік баспалдақ', 'Прямая лестница'),
+                  'L': tr3('L 型楼梯', 'L тәрізді баспалдақ', 'Г-образная лестница'),
+                  'U': tr3('U 型楼梯', 'U тәрізді баспалдақ', 'П-образная лестница'),
+                  'turn': tr3('切换转向', 'Бұрылысын ауыстыру', 'Сменить направление поворота'),
+                  'start': tr3('切换起步边', 'Басталатын жағын ауыстыру', 'Сменить сторону начала'),
+                  'delete': tr3('删除楼梯', 'Баспалдақты жою', 'Удалить лестницу')
                 }.entries)
                   ListTile(
                       title: Text(e.value),
@@ -2089,7 +2090,7 @@ class _HouseEditorState extends State<HouseEditor>
         tool = 'editWall';
         browse = false;
       }
-      placementHint = tr('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз');
+      placementHint = tr3('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз', 'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить');
     });
   }
 
@@ -2214,7 +2215,7 @@ class _HouseEditorState extends State<HouseEditor>
       }
     }
     schedulePreview(editCommand!, editArgs!,
-        ok: tr('松手完成，支持撤销', 'Жіберіңіз, болдырмауға болады'), failed: tr('无法移动这段墙', 'Бұл қабырғаны жылжыту мүмкін емес'));
+        ok: tr3('松手完成，支持撤销', 'Жіберіңіз, болдырмауға болады', 'Отпустите, действие можно отменить'), failed: tr3('无法移动这段墙', 'Бұл қабырғаны жылжыту мүмкін емес', 'Эту стену нельзя переместить'));
   }
 
   /// Full previews (validation plus the resulting rooms) can take tens of
@@ -2348,7 +2349,7 @@ class _HouseEditorState extends State<HouseEditor>
       if (history.present != before) refreshWallSelection(start, end);
     }
     if (error != null) notify(error);
-    placementHint = tr('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз');
+    placementHint = tr3('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз', 'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить');
     setState(() {});
   }
 
@@ -2367,7 +2368,7 @@ class _HouseEditorState extends State<HouseEditor>
   Future<void> preciseWallLength() async {
     if (editStart == null || editEnd == null) return;
     final start = editStart!, end = editEnd!;
-    final value = await length(tr('墙长', 'Қабырға ұзындығы'), (end - start).distance.round());
+    final value = await length(tr3('墙长', 'Қабырға ұзындығы', 'Длина стены'), (end - start).distance.round());
     if (value == null || !mounted) return;
     // Keep the end that is joined to another wall; move the free one.
     final keepEnd = selectedEndJoins(end) && !selectedEndJoins(start);
@@ -2379,15 +2380,15 @@ class _HouseEditorState extends State<HouseEditor>
     action('UpdateDrawnWall', wallEditArguments(from, to));
     if (history.present != before) {
       setState(() => refreshWallSelection(from, to));
-      notify(tr('墙长已改为 ${(value / 1000).toStringAsFixed(2)} 米',
-          'Қабырға ұзындығы ${m2dp(value)} м болды'));
+      notify(tr3('墙长已改为 ${(value / 1000).toStringAsFixed(2)} 米',
+          'Қабырға ұзындығы ${m2dp(value)} м болды', 'Длина стены теперь ${m2dp(value)} м'));
     }
   }
 
   Future<void> preciseWallPosition() async {
     if (editStart == null || editEnd == null) return;
     final vertical = editStart!.dx == editEnd!.dx;
-    final value = await length(vertical ? tr('墙到左侧外墙的距离', 'Сол сыртқы қабырғаға дейінгі қашықтық') : tr('墙到下侧外墙的距离', 'Төменгі сыртқы қабырғаға дейінгі қашықтық'),
+    final value = await length(vertical ? tr3('墙到左侧外墙的距离', 'Сол сыртқы қабырғаға дейінгі қашықтық', 'Расстояние до левой наружной стены') : tr3('墙到下侧外墙的距离', 'Төменгі сыртқы қабырғаға дейінгі қашықтық', 'Расстояние до нижней наружной стены'),
         (vertical ? editStart!.dx : editStart!.dy).round());
     if (value == null || !mounted) return;
     final start = vertical
@@ -2416,10 +2417,10 @@ class _HouseEditorState extends State<HouseEditor>
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [
                   ListTile(
-                      title: Text(tr('调整墙厚', 'Қалыңдығын өзгерту')),
+                      title: Text(tr3('调整墙厚', 'Қалыңдығын өзгерту', 'Изменить толщину')),
                       onTap: () => Navigator.pop(context, 'thickness')),
                   ListTile(
-                      title: Text(tr('恢复默认墙厚', 'Әдепкі қалыңдықты қайтару')),
+                      title: Text(tr3('恢复默认墙厚', 'Әдепкі қалыңдықты қайтару', 'Вернуть толщину по умолчанию')),
                       onTap: () => Navigator.pop(context, 'default'))
                 ])));
     if (choice == null) return;
@@ -2464,16 +2465,16 @@ class _HouseEditorState extends State<HouseEditor>
       final yes = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-                  title: Text(tr('删除墙及其门窗？', 'Қабырға мен ондағы есік-терезені жою керек пе?')),
-                  content: Text(tr('这段墙上的 $hosted 个门窗也会删除，可通过撤销恢复。',
-                      'Қабырғадағы $hosted есік-терезе де жойылады, болдырмау арқылы қайтаруға болады.')),
+                  title: Text(tr3('删除墙及其门窗？', 'Қабырға мен ондағы есік-терезені жою керек пе?', 'Удалить стену вместе с окнами и дверями?')),
+                  content: Text(tr3('这段墙上的 $hosted 个门窗也会删除，可通过撤销恢复。',
+                      'Қабырғадағы $hosted есік-терезе де жойылады, болдырмау арқылы қайтаруға болады.', 'Окна и двери на этой стене ($hosted шт.) тоже будут удалены, вернуть их можно отменой.')),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: Text(tr('取消', 'Болдырмау'))),
+                        child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                     FilledButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: Text(tr('删除', 'Жою')))
+                        child: Text(tr3('删除', 'Жою', 'Удалить')))
                   ]));
       if (yes != true) return;
     }
@@ -2493,8 +2494,8 @@ class _HouseEditorState extends State<HouseEditor>
       });
       notify(
           hosted > 0
-              ? tr('已删除墙体和 $hosted 个门窗', 'Қабырға мен $hosted есік-терезе жойылды')
-              : tr('已删除墙体', 'Қабырға жойылды'),
+              ? tr3('已删除墙体和 $hosted 个门窗', 'Қабырға мен $hosted есік-терезе жойылды', 'Стена удалена вместе с окнами и дверями ($hosted шт.)')
+              : tr3('已删除墙体', 'Қабырға жойылды', 'Стена удалена'),
           undo: undo);
     }
   }
@@ -2654,7 +2655,7 @@ class _HouseEditorState extends State<HouseEditor>
         clearWallSelection();
         startWallDrawing();
         drawingOrigin = point;
-        placementHint = tr('按住大 ＋ 拖出新墙', 'Үлкен ＋ белгісін ұстап, жаңа қабырға тартыңыз');
+        placementHint = tr3('按住大 ＋ 拖出新墙', 'Үлкен ＋ белгісін ұстап, жаңа қабырға тартыңыз', 'Удерживайте большой ＋ и протяните новую стену');
       });
       return;
     }
@@ -2837,7 +2838,7 @@ class _HouseEditorState extends State<HouseEditor>
       return;
     }
     schedulePreview('AddDrawnWall', drawingArguments,
-        ok: tr('松手建墙，末端可以继续拖', 'Жіберсеңіз қабырға салынады, ұшынан жалғастыруға болады'), failed: tr('此处无法建墙', 'Мұнда қабырға салу мүмкін емес'));
+        ok: tr3('松手建墙，末端可以继续拖', 'Жіберсеңіз қабырға салынады, ұшынан жалғастыруға болады', 'Отпустите, чтобы построить стену; от её конца можно продолжить'), failed: tr3('此处无法建墙', 'Мұнда қабырға салу мүмкін емес', 'Здесь нельзя построить стену'));
   }
 
   void finishWallStroke() {
@@ -2870,9 +2871,9 @@ class _HouseEditorState extends State<HouseEditor>
     }
     if (error != null) notify(error);
     placementHint = tapped
-        ? tr('按住大 ＋ 拖出新墙 · 也可点尺子输入长度', 'Үлкен ＋ белгісін ұстап тартыңыз · не сызғышты басып ұзындық енгізіңіз')
+        ? tr3('按住大 ＋ 拖出新墙 · 也可点尺子输入长度', 'Үлкен ＋ белгісін ұстап тартыңыз · не сызғышты басып ұзындық енгізіңіз', 'Удерживайте большой ＋ и тяните · или нажмите на линейку и введите длину')
         : !accepted && error == null
-            ? tr('墙至少 0.30 米，请拖远一些', 'Қабырға кемінде 0,30 м, әріректе жіберіңіз')
+            ? tr3('墙至少 0.30 米，请拖远一些', 'Қабырға кемінде 0,30 м, әріректе жіберіңіз', 'Стена не короче 0,30 м, протяните дальше')
             : null;
     setState(() {});
   }
@@ -2916,7 +2917,7 @@ class _HouseEditorState extends State<HouseEditor>
   String meters(num value) => m2dp(value);
 
   String get dragOntoWallHint =>
-      tr('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады');
+      tr3('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады', 'Перетащите на стену — окно или дверь встанет на место');
 
   bool get floorHasInnerWalls =>
       base.wallSegments.any((w) => w.axis.kind != 'boundary');
@@ -2937,9 +2938,9 @@ class _HouseEditorState extends State<HouseEditor>
       floor.openings.isEmpty;
 
   String? get coachText => showWallCoach
-      ? tr('按住橙色 ＋ 往里拖，松手就建好一面墙', 'Сары ＋ белгісін ішке қарай тартыңыз, жіберсеңіз қабырға салынады')
+      ? tr3('按住橙色 ＋ 往里拖，松手就建好一面墙', 'Сары ＋ белгісін ішке қарай тартыңыз, жіберсеңіз қабырға салынады', 'Удерживайте оранжевый ＋ и тяните внутрь: отпустите, и стена построена')
       : showStartCoach
-          ? tr('先点「墙体」，再按住 ＋ 往里拖', 'Алдымен «Қабырға» батырмасын, сосын ＋ белгісін ішке тартыңыз')
+          ? tr3('先点「墙体」，再按住 ＋ 往里拖', 'Алдымен «Қабырға» батырмасын, сосын ＋ белгісін ішке тартыңыз', 'Сначала нажмите «Стена», затем зажмите ＋ и тяните внутрь')
           : null;
 
   /// Dashed arrow from one outer plus into the house for the first wall.
@@ -2970,8 +2971,8 @@ class _HouseEditorState extends State<HouseEditor>
       return null;
     if (editCommand == 'MoveDrawnWall' ||
         (wallGrip == 'middle' && editStart != null)) {
-      return tr('移动 ${meters((editPreviewStart! - editStart!).distance)} 米',
-          'Жылжыту ${meters((editPreviewStart! - editStart!).distance)} м');
+      return tr3('移动 ${meters((editPreviewStart! - editStart!).distance)} 米',
+          'Жылжыту ${meters((editPreviewStart! - editStart!).distance)} м', 'Сдвиг на ${meters((editPreviewStart! - editStart!).distance)} м');
     }
     return '${meters((editPreviewEnd! - editPreviewStart!).distance)} $unitM';
   }
@@ -2988,18 +2989,18 @@ class _HouseEditorState extends State<HouseEditor>
         drawingEnd != null) {
       final length = (drawingEnd! - drawingOrigin!).distance;
       if (length < 300)
-        return (text: tr('继续拖动 · 墙至少 0.30 米', 'Тарта беріңіз · қабырға кемінде 0,30 м'), icon: Icons.straighten, color: info);
+        return (text: tr3('继续拖动 · 墙至少 0.30 米', 'Тарта беріңіз · қабырға кемінде 0,30 м', 'Тяните дальше · стена не короче 0,30 м'), icon: Icons.straighten, color: info);
       if (spatialError != null)
         return (text: spatialError!, icon: Icons.block, color: bad);
-      final direction = drawingEnd!.dy == drawingOrigin!.dy ? tr('横墙', 'Көлденең қабырға') : tr('竖墙', 'Тік қабырға');
+      final direction = drawingEnd!.dy == drawingOrigin!.dy ? tr3('横墙', 'Көлденең қабырға', 'Горизонтальная стена') : tr3('竖墙', 'Тік қабырға', 'Вертикальная стена');
       return drawConnected
           ? (
-              text: tr('$direction ${meters(length)} 米 · 已连到墙', '$direction ${meters(length)} м · қабырғаға жалғанды'),
+              text: tr3('$direction ${meters(length)} 米 · 已连到墙', '$direction ${meters(length)} м · қабырғаға жалғанды', '$direction ${meters(length)} м · соединена со стеной'),
               icon: Icons.link,
               color: good
             )
           : (
-              text: tr('$direction ${meters(length)} 米 · 末端没连墙', '$direction ${meters(length)} м · ұшы жалғанбаған'),
+              text: tr3('$direction ${meters(length)} 米 · 末端没连墙', '$direction ${meters(length)} м · ұшы жалғанбаған', '$direction ${meters(length)} м · конец не соединён'),
               icon: Icons.link_off,
               color: warn
             );
@@ -3010,13 +3011,13 @@ class _HouseEditorState extends State<HouseEditor>
       return dragValid && (width != null || depth != null)
           ? (
               text: width != null
-                  ? tr('房屋宽 ${meters(width)} 米 · 所有楼层一起改', 'Үй ені ${meters(width)} м · барлық қабат бірге өзгереді')
-                  : tr('房屋长 ${meters(depth!)} 米 · 所有楼层一起改', 'Үй ұзындығы ${meters(depth)} м · барлық қабат бірге өзгереді'),
+                  ? tr3('房屋宽 ${meters(width)} 米 · 所有楼层一起改', 'Үй ені ${meters(width)} м · барлық қабат бірге өзгереді', 'Ширина дома ${meters(width)} м · меняются все этажи')
+                  : tr3('房屋长 ${meters(depth!)} 米 · 所有楼层一起改', 'Үй ұзындығы ${meters(depth)} м · барлық қабат бірге өзгереді', 'Длина дома ${meters(depth)} м · меняются все этажи'),
               icon: Icons.open_in_full,
               color: good
             )
           : (
-              text: placementHint ?? tr('这个尺寸放不下已有的墙或房间', 'Бұл өлшемге бар қабырға не бөлме сыймайды'),
+              text: placementHint ?? tr3('这个尺寸放不下已有的墙或房间', 'Бұл өлшемге бар қабырға не бөлме сыймайды', 'В этот размер не помещаются существующие стены или комнаты'),
               icon: Icons.block,
               color: bad
             );
@@ -3025,12 +3026,12 @@ class _HouseEditorState extends State<HouseEditor>
       final name = openingName(draggingOpening!.opening);
       return dragValid
           ? (
-              text: tr('松手把$name放在这里', '$name осында қою үшін жіберіңіз'),
+              text: tr3('松手把$name放在这里', '$name осында қою үшін жіберіңіз', 'Отпустите, чтобы поставить здесь: $name'),
               icon: Icons.check_circle_outline,
               color: good
             )
           : (
-              text: placementHint ?? tr('这里放不下$name', '$name мұнда сыймайды'),
+              text: placementHint ?? tr3('这里放不下$name', '$name мұнда сыймайды', 'Здесь не помещается: $name'),
               icon: Icons.block,
               color: bad
             );
@@ -3038,13 +3039,13 @@ class _HouseEditorState extends State<HouseEditor>
     if (draggingNewOpening != null) {
       return openingDrop != null
           ? (
-              text: tr('已贴合墙面，松手放下${openingNames[draggingNewOpening]}',
-                  'Қабырғаға орнықты, ${openingNames[draggingNewOpening]} қою үшін жіберіңіз'),
+              text: tr3('已贴合墙面，松手放下${openingNames[draggingNewOpening]}',
+                  'Қабырғаға орнықты, ${openingNames[draggingNewOpening]} қою үшін жіберіңіз', 'Привязано к стене, отпустите, чтобы поставить: ${openingNames[draggingNewOpening]}'),
               icon: Icons.check_circle_outline,
               color: good
             )
           : (
-              text: placementHint ?? tr('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады'),
+              text: placementHint ?? tr3('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады', 'Перетащите на стену — окно или дверь встанет на место'),
               icon: Icons.touch_app_outlined,
               color: warn
             );
@@ -3054,7 +3055,7 @@ class _HouseEditorState extends State<HouseEditor>
         return (text: spatialError!, icon: Icons.block, color: bad);
       if (editCommand == 'MoveDrawnWall')
         return (
-          text: tr('${wallDraftLabel!} · 相连的墙会跟着伸缩', '${wallDraftLabel!} · жалғас қабырғалар бірге созылады'),
+          text: tr3('${wallDraftLabel!} · 相连的墙会跟着伸缩', '${wallDraftLabel!} · жалғас қабырғалар бірге созылады', '${wallDraftLabel!} · соединённые стены изменятся вместе'),
           icon: Icons.open_with,
           color: good
         );
@@ -3062,12 +3063,12 @@ class _HouseEditorState extends State<HouseEditor>
         return (text: wallDraftLabel!, icon: Icons.open_with, color: good);
       return drawConnected
           ? (
-              text: tr('墙长 ${wallDraftLabel!} · 已连到墙', 'Қабырға ${wallDraftLabel!} · қабырғаға жалғанды'),
+              text: tr3('墙长 ${wallDraftLabel!} · 已连到墙', 'Қабырға ${wallDraftLabel!} · қабырғаға жалғанды', 'Стена ${wallDraftLabel!} · соединена со стеной'),
               icon: Icons.link,
               color: good
             )
           : (
-              text: tr('墙长 ${wallDraftLabel!} · 这一端没连墙', 'Қабырға ${wallDraftLabel!} · бұл ұшы жалғанбаған'),
+              text: tr3('墙长 ${wallDraftLabel!} · 这一端没连墙', 'Қабырға ${wallDraftLabel!} · бұл ұшы жалғанбаған', 'Стена ${wallDraftLabel!} · этот конец не соединён'),
               icon: Icons.link_off,
               color: warn
             );
@@ -3207,44 +3208,44 @@ class _HouseEditorState extends State<HouseEditor>
               Row(children: [
                 Expanded(
                     child: Text(
-                        tr('${inner ? '内墙' : '外墙'} ${meters(length)} 米 · 厚 ${meters(wall.thickness)} 米',
-                            '${inner ? 'Ішкі' : 'Сыртқы'} қабырға ${meters(length)} м · қалыңдығы ${meters(wall.thickness)} м'),
+                        tr3('${inner ? '内墙' : '外墙'} ${meters(length)} 米 · 厚 ${meters(wall.thickness)} 米',
+                            '${inner ? 'Ішкі' : 'Сыртқы'} қабырға ${meters(length)} м · қалыңдығы ${meters(wall.thickness)} м', '${inner ? 'Перегородка' : 'Наружная стена'} ${meters(length)} м · толщина ${meters(wall.thickness)} м'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600))),
                 IconButton(
-                    tooltip: tr('关闭', 'Жабу'),
+                    tooltip: tr3('关闭', 'Жабу', 'Закрыть'),
                     visualDensity: VisualDensity.compact,
                     onPressed: () => setState(closeWallMenu),
                     icon: const Icon(Icons.close, size: 18))
               ]),
               Row(children: [
-                button('add', Icons.add_circle_outline, tr('接墙', 'Жалғау'),
-                    '从这里接墙'.trKey('Осы жерден жалғау'),
+                button('add', Icons.add_circle_outline, tr3('接墙', 'Жалғау', 'Пристроить'),
+                    '从这里接墙'.trKey('Осы жерден жалғау', 'Пристроить стену отсюда'),
                     enabled: !opening),
                 if (inner) ...[
-                  button('length', Icons.straighten, tr('长度', 'Ұзындық'),
-                      '调整长度'.trKey('Ұзындығын өзгерту')),
-                  button('move', Icons.open_with, tr('位置', 'Орны'),
-                      '移动墙体'.trKey('Қабырғаны жылжыту')),
-                  button('thickness', Icons.line_weight, tr('墙厚', 'Қалыңдық'),
-                      '修改墙厚'.trKey('Қалыңдығын өзгерту')),
-                  button('delete', Icons.delete_outline, tr('删除', 'Жою'),
-                      '删除墙体'.trKey('Қабырғаны жою'),
+                  button('length', Icons.straighten, tr3('长度', 'Ұзындық', 'Длина'),
+                      '调整长度'.trKey('Ұзындығын өзгерту', 'Изменить длину')),
+                  button('move', Icons.open_with, tr3('位置', 'Орны', 'Место'),
+                      '移动墙体'.trKey('Қабырғаны жылжыту', 'Переместить стену')),
+                  button('thickness', Icons.line_weight, tr3('墙厚', 'Қалыңдық', 'Толщина'),
+                      '修改墙厚'.trKey('Қалыңдығын өзгерту', 'Изменить толщину')),
+                  button('delete', Icons.delete_outline, tr3('删除', 'Жою', 'Удалить'),
+                      '删除墙体'.trKey('Қабырғаны жою', 'Удалить стену'),
                       danger: true),
                 ] else ...[
-                  button('footprint', Icons.aspect_ratio, tr('房屋尺寸', 'Үй өлшемі'),
-                      '调整房屋长宽'.trKey('Үй өлшемін өзгерту')),
-                  button('outerThickness', Icons.line_weight, tr('墙厚', 'Қалыңдық'),
-                      '外墙厚度'.trKey('Сыртқы қабырға қалыңдығы')),
+                  button('footprint', Icons.aspect_ratio, tr3('房屋尺寸', 'Үй өлшемі', 'Размеры дома'),
+                      '调整房屋长宽'.trKey('Үй өлшемін өзгерту', 'Изменить размеры дома')),
+                  button('outerThickness', Icons.line_weight, tr3('墙厚', 'Қалыңдық', 'Толщина'),
+                      '外墙厚度'.trKey('Сыртқы қабырға қалыңдығы', 'Толщина наружной стены')),
                 ]
               ]),
               if (opening)
                 Padding(
                     padding: EdgeInsets.only(bottom: 4),
                     child:
-                        Text(tr('这里有门窗，换个位置才能接墙', 'Мұнда есік-терезе бар, жалғау үшін басқа жерді таңдаңыз'), style: TextStyle(fontSize: 12))),
+                        Text(tr3('这里有门窗，换个位置才能接墙', 'Мұнда есік-терезе бар, жалғау үшін басқа жерді таңдаңыз', 'Здесь окно или дверь, выберите другое место для стены'), style: TextStyle(fontSize: 12))),
             ]))));
   }
 
@@ -3254,16 +3255,16 @@ class _HouseEditorState extends State<HouseEditor>
   String get interactionHint =>
       (placementHint == null ? null : coreMessage(placementHint!)) ??
       (tool == 'drawWall'
-          ? tr('按住 ＋ 拖出新墙 · 点墙修改 · 拖空白处移动画布', '＋ белгісін ұстап қабырға тартыңыз · қабырғаны басып өзгертіңіз · бос жерді сүйреп жылжытыңыз')
+          ? tr3('按住 ＋ 拖出新墙 · 点墙修改 · 拖空白处移动画布', '＋ белгісін ұстап қабырға тартыңыз · қабырғаны басып өзгертіңіз · бос жерді сүйреп жылжытыңыз', 'Зажмите ＋ и вытяните стену · нажмите на стену, чтобы изменить · тяните пустое место, чтобы сдвинуть чертёж')
           : tool == 'selectWall'
-              ? tr('点墙修改 · 拖 ＋ 接墙 · 拖空白处移动画布', 'Қабырғаны басып өзгертіңіз · ＋ белгісінен жалғаңыз · бос жерді сүйреп жылжытыңыз')
+              ? tr3('点墙修改 · 拖 ＋ 接墙 · 拖空白处移动画布', 'Қабырғаны басып өзгертіңіз · ＋ белгісінен жалғаңыз · бос жерді сүйреп жылжытыңыз', 'Нажмите на стену, чтобы изменить · тяните ＋, чтобы пристроить стену · тяните пустое место, чтобы сдвинуть чертёж')
               : tool == 'editWall'
-                  ? tr('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз')
+                  ? tr3('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз', 'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить')
                   : spatialTool
-                      ? (tool == 'split' ? tr('拉一条横线或竖线，松手分房', 'Көлденең не тік сызық тартып, жіберсеңіз бөлінеді') : tr('从一角拖到另一角，松手创建房间', 'Бір бұрыштан екіншісіне тартып жіберсеңіз, бөлме жасалады'))
+                      ? (tool == 'split' ? tr3('拉一条横线或竖线，松手分房', 'Көлденең не тік сызық тартып, жіберсеңіз бөлінеді', 'Проведите горизонтальную или вертикальную линию и отпустите — комната разделится') : tr3('从一角拖到另一角，松手创建房间', 'Бір бұрыштан екіншісіне тартып жіберсеңіз, бөлме жасалады', 'Протяните от одного угла к другому и отпустите — комната будет создана'))
                       : tool == 'resize'
-                          ? tr('拖右边或上边的圆形手柄改长宽 · 所有楼层一起改', 'Оң не жоғарғы дөңгелек тұтқаны сүйреп өлшемін өзгертіңіз · барлық қабат бірге өзгереді')
-                          : tr('拖动画布 · 点选对象调整 · 双指缩放', 'Сызбаны сүйреп жылжытыңыз · нысанды басып өзгертіңіз · екі саусақпен үлкейтіңіз'));
+                          ? tr3('拖右边或上边的圆形手柄改长宽 · 所有楼层一起改', 'Оң не жоғарғы дөңгелек тұтқаны сүйреп өлшемін өзгертіңіз · барлық қабат бірге өзгереді', 'Тяните круглую ручку справа или сверху, чтобы изменить размер · меняются все этажи')
+                          : tr3('拖动画布 · 点选对象调整 · 双指缩放', 'Сызбаны сүйреп жылжытыңыз · нысанды басып өзгертіңіз · екі саусақпен үлкейтіңіз', 'Тяните, чтобы сдвинуть чертёж · нажмите на объект, чтобы изменить · масштаб двумя пальцами'));
 
   MouseCursor canvasCursor = MouseCursor.defer;
 
@@ -3935,8 +3936,8 @@ class _HouseEditorState extends State<HouseEditor>
                                                   setState(() {});
                                                   notify(message == null ||
                                                           message == dragOntoWallHint
-                                                      ? tr('没有放上墙：请把${openingNames[details.data]}拖到墙上再松手',
-                                                          '${openingNames[details.data]} қабырғаға қойылмады: оны қабырғаға апарып жіберіңіз')
+                                                      ? tr3('没有放上墙：请把${openingNames[details.data]}拖到墙上再松手',
+                                                          '${openingNames[details.data]} қабырғаға қойылмады: оны қабырғаға апарып жіберіңіз', 'Не на стене: ${openingNames[details.data]}. Перетащите на стену и отпустите')
                                                       : message);
                                                 }
                                               },

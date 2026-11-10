@@ -90,16 +90,24 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
                                       HouseStage.building => 3,
                                       HouseStage.done => 2,
                                     }))),
-                        TabBar(controller: tabs, tabs: [
-                          Tab(text: tr3('找人', 'Іздеу', 'Поиск')),
-                          Tab(
-                              text:
-                                  '${tr3('报价', 'Ұсыныстар', 'Предложения')}${h.newQuotes > 0 ? ' · ${h.newQuotes}' : ''}'),
-                          Tab(
-                              text:
-                                  '${tr3('合作', 'Келісім', 'Соглашения')}${h.pendingConfirm(me) > 0 ? ' · ${h.pendingConfirm(me)}' : ''}'),
-                          Tab(text: tr3('施工', 'Құрылыс', 'Стройка')),
-                        ]),
+                        // Scrolls: four labels with counters do not fit
+                        // a phone in Russian or Kazakh.
+                        TabBar(
+                            controller: tabs,
+                            isScrollable: true,
+                            tabAlignment: TabAlignment.start,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: YSpace.sm),
+                            tabs: [
+                              Tab(text: tr3('找人', 'Іздеу', 'Поиск')),
+                              Tab(
+                                  text:
+                                      '${tr3('报价', 'Ұсыныстар', 'Предложения')}${h.newQuotes > 0 ? ' · ${h.newQuotes}' : ''}'),
+                              Tab(
+                                  text:
+                                      '${tr3('合作', 'Келісім', 'Соглашения')}${h.pendingConfirm(me) > 0 ? ' · ${h.pendingConfirm(me)}' : ''}'),
+                              Tab(text: tr3('施工', 'Құрылыс', 'Стройка')),
+                            ]),
                       ]))),
               body: MotionTabView(controller: tabs, children: [
                 _FindTab(house: h),
@@ -233,7 +241,7 @@ class HouseThumb extends StatelessWidget {
     final t = YTokens.of(context);
     final p = house.preview;
     return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(YRadius.control),
         child: SizedBox(
             width: size,
             height: size,

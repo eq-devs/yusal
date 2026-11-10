@@ -34,35 +34,35 @@ extension _OtherTabs on _HouseEditorState {
     final f = history.present.extras.foundation;
     final buried = f.height - f.plinth;
     return switch (key) {
-      'foundation' => tr(
+      'foundation' => tr3(
           '外墙和承重墙下按 ${f.width}×${f.height} 做条形基础；隔墙基础${f.partitions ? '已按 ${f.partitionWidth}×${f.partitionHeight} 计入' : '未计入，可在上面打开'}。高 ${f.height} mm、埋深 $buried mm 属于浅埋基础，只适合冻深较浅、土质为砂或砂砾的地区，而且必须做砂砾石垫层、外侧 XPS 和保温散水。黏土地基或冻深 1.5–2 m 的地区，要么把基础加深到冻深以下，要么请结构师按浅埋保温基础计算。动工前先挖一个 1.5 m 的探坑看土层和地下水。',
-          'Сыртқы және көтергіш қабырғалардың астында ${f.width}×${f.height} таспалы іргетас; қалқа іргетасы ${f.partitions ? '${f.partitionWidth}×${f.partitionHeight} етіп есептелді' : 'есепке кірмеген, жоғарыда қосуға болады'}. Биіктігі ${f.height} мм, тереңдігі $buried мм — таяз іргетас, тек қату таяз, құм не құм-қиыршық топырақты аймаққа жарайды; құм-қиыршық төсеме, сыртқы XPS пен жылы отмостка міндетті. Саз топырақта не қату 1,5–2 м жерде іргетасты қату тереңдігінен төмен түсіріңіз не конструктор есептесін. Бастамас бұрын 1,5 м шұңқыр қазып, топырақ пен жер асты суын қараңыз.'),
-      'wall' => tr(
+          'Сыртқы және көтергіш қабырғалардың астында ${f.width}×${f.height} таспалы іргетас; қалқа іргетасы ${f.partitions ? '${f.partitionWidth}×${f.partitionHeight} етіп есептелді' : 'есепке кірмеген, жоғарыда қосуға болады'}. Биіктігі ${f.height} мм, тереңдігі $buried мм — таяз іргетас, тек қату таяз, құм не құм-қиыршық топырақты аймаққа жарайды; құм-қиыршық төсеме, сыртқы XPS пен жылы отмостка міндетті. Саз топырақта не қату 1,5–2 м жерде іргетасты қату тереңдігінен төмен түсіріңіз не конструктор есептесін. Бастамас бұрын 1,5 м шұңқыр қазып, топырақ пен жер асты суын қараңыз.', 'Под наружными и несущими стенами — ленточный фундамент ${f.width}×${f.height}; фундамент под перегородки ${f.partitions ? '${f.partitionWidth}×${f.partitionHeight} учтён' : 'не учтён, его можно включить выше'}. Высота ${f.height} мм, глубина заложения $buried мм — это мелкозаглублённый фундамент, он подходит только для районов с небольшой глубиной промерзания и песчаным или песчано-гравийным грунтом; обязательны песчано-гравийная подушка, наружный XPS и утеплённая отмостка. На глинистом грунте или при промерзании 1,5–2 м заглубите фундамент ниже глубины промерзания либо закажите у конструктора расчёт мелкозаглублённого утеплённого фундамента. Перед началом работ выкопайте шурф глубиной 1,5 м и посмотрите грунт и грунтовые воды.'),
+      'wall' => tr3(
           '寒冷地区不建议纯砖墙不加保温，热工达不到。加气块加外保温是性价比高的做法，也可换成 380 砖 + 100 保温。',
-          'Суық климатта жылытқышсыз кірпіш қабырға жылу талабына жетпейді. Газоблок пен сыртқы жылытқыш — тиімді шешім. Баламасы: 380 мм кірпіш + 100 мм жылытқыш.'),
+          'Суық климатта жылытқышсыз кірпіш қабырға жылу талабына жетпейді. Газоблок пен сыртқы жылытқыш — тиімді шешім. Баламасы: 380 мм кірпіш + 100 мм жылытқыш.', 'В холодном климате кирпичная стена без утеплителя не отвечает теплотехническим требованиям. Газоблок с наружным утеплением — выгодное решение. Альтернатива: кирпич 380 мм + утеплитель 100 мм.'),
       'roof' => history.present.roof.type == RoofType.flat
-          ? tr(
+          ? tr3(
               '寒冷地区平屋顶要注意三点：排水口和落水管容易冻堵，建议加电伴热；积雪荷载按当地规范计算；女儿墙内侧防水上翻不少于 300 mm，并留一个检修上人孔。',
-              'Суық аймақта тегіс шатырдың үш маңызды жері бар: су қабылдағыш пен құбыр қатуы мүмкін — электр жылытқыш қойыңыз; қар жүктемесін жергілікті норма бойынша есептеңіз; парапет ішіне гидрооқшауды кемінде 300 мм көтеріп, шатырға шығатын люк қалдырыңыз.')
-          : tr(
+              'Суық аймақта тегіс шатырдың үш маңызды жері бар: су қабылдағыш пен құбыр қатуы мүмкін — электр жылытқыш қойыңыз; қар жүктемесін жергілікті норма бойынша есептеңіз; парапет ішіне гидрооқшауды кемінде 300 мм көтеріп, шатырға шығатын люк қалдырыңыз.', 'У плоской крыши в холодном климате три важных момента: водоприёмная воронка и водосточная труба могут замёрзнуть — установите электрообогрев; снеговую нагрузку рассчитывайте по местным нормам; гидроизоляцию заведите на внутреннюю сторону парапета не менее чем на 300 мм и оставьте люк для выхода на крышу.')
+          : tr3(
               '坡屋顶注意檐口保温连续、屋脊通风和雪挡。坡度越大积雪越少，但屋面面积和造价随之增加。四坡屋顶四面都有挑檐，墙面淋雨少，但斜脊和屋架更费工。',
-              'Еңісті шатырда карниз жылытқышы үзіліссіз, жотада желдету және қар ұстағыш болсын. Еңіс үлкен болса қар аз жиналады, бірақ шатыр ауданы мен құны артады. Төрт беткейлі шатырдың төрт жағында да карниз бар, қабырғаға жаңбыр аз тиеді, бірақ қырлары мен қаңқасы күрделірек.'),
-      'floor' => tr(
+              'Еңісті шатырда карниз жылытқышы үзіліссіз, жотада желдету және қар ұстағыш болсын. Еңіс үлкен болса қар аз жиналады, бірақ шатыр ауданы мен құны артады. Төрт беткейлі шатырдың төрт жағында да карниз бар, қабырғаға жаңбыр аз тиеді, бірақ қырлары мен қаңқасы күрделірек.', 'У скатной крыши утеплитель на карнизе должен быть непрерывным, конёк — вентилируемым, нужны снегозадержатели. Чем круче уклон, тем меньше скапливается снега, но площадь и стоимость крыши растут. У вальмовой крыши свесы со всех четырёх сторон, стены меньше мокнут под дождём, но рёбра и стропильная система сложнее.'),
+      'floor' => tr3(
           '如果考虑地暖，找平层里埋管，XPS 必须连续不断。卫生间和厨房在找平层上面再加一道防水，墙根上翻 200–300 mm。',
-          'Жылы еден жасасаңыз, құбыр тегістеу қабатына салынады, XPS үзіліссіз болуы керек. Жуыну бөлмесі мен ас үйде тағы бір гидрооқшау салып, қабырғаға 200–300 мм көтеріңіз.'),
-      'style' => tr(
+          'Жылы еден жасасаңыз, құбыр тегістеу қабатына салынады, XPS үзіліссіз болуы керек. Жуыну бөлмесі мен ас үйде тағы бір гидрооқшау салып, қабырғаға 200–300 мм көтеріңіз.', 'Если делаете тёплый пол, трубы укладываются в стяжку, а XPS должен быть непрерывным. В санузле и на кухне поверх стяжки уложите ещё один слой гидроизоляции и заведите его на стены на 200–300 мм.'),
+      'style' => tr3(
           '全家席地而坐吃饭、喝茶，所以地面温度最重要。客厅和卧室建议做地暖；挂毯挂在外墙或卧室墙上，同时起到保温和隔音作用，墙上提前预埋挂杆或木条。门厅设换鞋区，地毯就能保持干净。',
-          'Отбасы еденде отырып тамақ ішеді, сондықтан еденнің жылы болуы ең маңызды. Қонақ бөлме мен жатын бөлмелерге жылы еден жасаған дұрыс; тұскиіз жылу мен дыбыс оқшаулауға көмектеседі — қабырғаға ілгіш ағаш алдын ала бекітіңіз. Кіреберісте аяқ киім ауыстыратын орын болса, кілем таза тұрады.'),
-      'windows' => tr(
+          'Отбасы еденде отырып тамақ ішеді, сондықтан еденнің жылы болуы ең маңызды. Қонақ бөлме мен жатын бөлмелерге жылы еден жасаған дұрыс; тұскиіз жылу мен дыбыс оқшаулауға көмектеседі — қабырғаға ілгіш ағаш алдын ала бекітіңіз. Кіреберісте аяқ киім ауыстыратын орын болса, кілем таза тұрады.', 'Вся семья ест и пьёт чай, сидя на полу, поэтому важнее всего температура пола. В гостиной и спальнях лучше сделать тёплый пол; настенный ковёр (тускииз) на наружной стене или в спальне сохраняет тепло и глушит звук — заранее заложите в стену штангу или деревянную рейку для подвеса. Если в прихожей есть место для переобувания, ковры остаются чистыми.'),
+      'windows' => tr3(
           '建议 PVC 多腔型材配双中空 (三玻) 玻璃。窗装在保温层附近而不是墙的正中，用预压膨胀密封带封缝，可避免窗边结露发霉。北面大窗冬季失热最多。',
-          'Көпкамералы ПВХ профиль мен екі камералы (үш әйнекті) шыны пакет ұсынылады. Терезені қабырға ортасына емес, жылытқышқа жақын орнатып, саңылауын кеңейетін лентамен бітеңіз — конденсат пен көгеру болмайды. Солтүстіктегі үлкен терезе қыста ең көп жылу жоғалтады.'),
-      'doors' => tr(
+          'Көпкамералы ПВХ профиль мен екі камералы (үш әйнекті) шыны пакет ұсынылады. Терезені қабырға ортасына емес, жылытқышқа жақын орнатып, саңылауын кеңейетін лентамен бітеңіз — конденсат пен көгеру болмайды. Солтүстіктегі үлкен терезе қыста ең көп жылу жоғалтады.', 'Рекомендуются многокамерный ПВХ-профиль и двухкамерный стеклопакет (три стекла). Устанавливайте окно не посередине стены, а ближе к утеплителю, и заделывайте шов предварительно сжатой уплотнительной лентой (ПСУЛ) — не будет конденсата и плесени. Большое окно на северной стороне зимой теряет больше всего тепла.'),
+      'doors' => tr3(
           '入户门选带保温层和双道密封的钢门。卫生间门底留 20 mm 缝或装百叶，方便排气扇进风。锅炉房门的耐火等级和开启方向请按燃气验收要求确认。',
-          'Кіреберіске жылытқышы және екі қабат тығыздағышы бар болат есік таңдаңыз. Жуыну бөлмесі есігінің астынан 20 мм саңылау қалдырыңыз. Қазандық есігінің отқа төзімділігін газ қабылдау талабына сай нақтылаңыз.'),
-      'areas' => tr('实算按墙体内边净尺寸计算。图纸标注面积可在表中填写，差值大于 2 m² 标红。',
-          'Есеп қабырғаның ішкі таза өлшемі бойынша. Сызбадағы ауданды кестеге жазуға болады; айырмасы 2 м²-ден асса қызыл.'),
-      'qty' => tr('按模型尺寸自动计算，未计损耗、钢筋搭接以外的附加和抹灰。修改墙体、门窗或基础参数会同步更新。',
-          'Модель өлшемдері бойынша автоматты есептелген; шығын мен сылақ кірмейді. Қабырға, есік-терезе не іргетас өзгерсе, бірге жаңарады.'),
+          'Кіреберіске жылытқышы және екі қабат тығыздағышы бар болат есік таңдаңыз. Жуыну бөлмесі есігінің астынан 20 мм саңылау қалдырыңыз. Қазандық есігінің отқа төзімділігін газ қабылдау талабына сай нақтылаңыз.', 'Для входа выбирайте стальную дверь с утеплителем и двумя контурами уплотнения. Под дверью санузла оставьте зазор 20 мм или поставьте вентиляционную решётку — для притока воздуха к вытяжке. Огнестойкость и направление открывания двери котельной уточните по требованиям газовой приёмки.'),
+      'areas' => tr3('实算按墙体内边净尺寸计算。图纸标注面积可在表中填写，差值大于 2 m² 标红。',
+          'Есеп қабырғаның ішкі таза өлшемі бойынша. Сызбадағы ауданды кестеге жазуға болады; айырмасы 2 м²-ден асса қызыл.', 'Расчёт ведётся по внутренним чистым размерам стен. Площадь по чертежу можно вписать в таблицу; если разница больше 2 м², она выделяется красным.'),
+      'qty' => tr3('按模型尺寸自动计算，未计损耗、钢筋搭接以外的附加和抹灰。修改墙体、门窗或基础参数会同步更新。',
+          'Модель өлшемдері бойынша автоматты есептелген; шығын мен сылақ кірмейді. Қабырға, есік-терезе не іргетас өзгерсе, бірге жаңарады.', 'Рассчитано автоматически по размерам модели; отходы, штукатурка и прочие добавки (кроме нахлёста арматуры) не учтены. При изменении стен, окон и дверей или фундамента расчёт обновляется.'),
       _ => '',
     };
   }
@@ -73,7 +73,7 @@ extension _OtherTabs on _HouseEditorState {
     return InkWell(
         borderRadius: BorderRadius.circular(6),
         onTap: () async {
-          final value = await askText(tr('编辑说明', 'Жазбаны өзгерту'),
+          final value = await askText(tr3('编辑说明', 'Жазбаны өзгерту', 'Изменить примечание'),
               own ?? defaultNote(key),
               multiline: true);
           if (value == null) return;
@@ -101,27 +101,27 @@ extension _OtherTabs on _HouseEditorState {
       foundationCard(),
       grid2([
         layerCard(
-            title: tr('外墙', 'Сыртқы қабырға'),
+            title: tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены'),
             group: 'wall',
             layers: x.wallLayers,
             note: 'wall',
             horizontal: true),
         layerCard(
             title: switch (doc.roof.type) {
-              RoofType.flat => tr('平屋顶 · 坡度 2%', 'Тегіс шатыр · еңісі 2%'),
-              RoofType.gable => tr('双坡屋顶', 'Қос беткейлі шатыр'),
-              RoofType.hip => tr('四坡屋顶', 'Төрт беткейлі шатыр'),
+              RoofType.flat => tr3('平屋顶 · 坡度 2%', 'Тегіс шатыр · еңісі 2%', 'Плоская крыша · уклон 2%'),
+              RoofType.gable => tr3('双坡屋顶', 'Қос беткейлі шатыр', 'Двускатная крыша'),
+              RoofType.hip => tr3('四坡屋顶', 'Төрт беткейлі шатыр', 'Вальмовая крыша'),
             },
             group: 'roof',
             layers: x.roofLayers,
             note: 'roof',
             extra: roofFigures()),
         layerCard(
-            title: tr('地坪 (首层地面)', 'Еден (бірінші қабат)'),
+            title: tr3('地坪 (首层地面)', 'Еден (бірінші қабат)', 'Пол по грунту (первый этаж)'),
             group: 'floor',
             layers: x.floorLayers,
             note: 'floor'),
-        InfoCard(title: tr('室内风格 · 哈萨克乡村', 'Интерьер · қазақ ауылы стилі'), children: [
+        InfoCard(title: tr3('室内风格 · 哈萨克乡村', 'Интерьер · қазақ ауылы стилі', 'Интерьер · стиль казахского аула'), children: [
           KvGrid([
             for (final k in [
               FurnitureKind.rug,
@@ -134,7 +134,7 @@ extension _OtherTabs on _HouseEditorState {
           ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
             Btn(
-                label: tr('布置家具', 'Жиһаз қою'),
+                label: tr3('布置家具', 'Жиһаз қою', 'Расставить мебель'),
                 icon: Icons.chair_outlined,
                 onPressed: () {
                   showTab('plan');
@@ -147,8 +147,8 @@ extension _OtherTabs on _HouseEditorState {
         doorsCard(),
       ]),
       Text(
-          tr('构造做法是按寒冷气候给出的参考组合，用于和施工方、结构师沟通。最终厚度、配筋和冻深以当地规范和计算为准。',
-              'Құрылым шешімдері суық климатқа арналған ұсыныс, құрылысшы және конструктормен сөйлесуге арналған. Нақты қалыңдық, арматура және қату тереңдігі жергілікті нормалар мен есеп бойынша анықталады.'),
+          tr3('构造做法是按寒冷气候给出的参考组合，用于和施工方、结构师沟通。最终厚度、配筋和冻深以当地规范和计算为准。',
+              'Құрылым шешімдері суық климатқа арналған ұсыныс, құрылысшы және конструктормен сөйлесуге арналған. Нақты қалыңдық, арматура және қату тереңдігі жергілікті нормалар мен есеп бойынша анықталады.', 'Конструктивные решения — это рекомендации для холодного климата, предназначенные для обсуждения со строителями и конструктором. Окончательные толщины, армирование и глубина промерзания определяются по местным нормам и расчёту.'),
           style: TextStyle(fontSize: 12, color: t.muted)),
     ]);
   }
@@ -158,19 +158,19 @@ extension _OtherTabs on _HouseEditorState {
     if (roof.type == RoofType.flat)
       return [
         KvGrid([
-          Kv('${roof.parapetHeight}', tr('女儿墙高出墙顶 mm', 'Парапет биіктігі, мм'),
+          Kv('${roof.parapetHeight}', tr3('女儿墙高出墙顶 mm', 'Парапет биіктігі, мм', 'Высота парапета, мм'),
               onTap: () async {
-            final v = await askMm(tr('女儿墙高度', 'Парапет биіктігі'),
+            final v = await askMm(tr3('女儿墙高度', 'Парапет биіктігі', 'Высота парапета'),
                 roof.parapetHeight ?? 900);
             if (v != null)
               action('SetRoof', {
                 'roof': {'type': 'flat', 'parapetHeight': v}
               });
           }),
-          Kv('2%', tr('排水坡度', 'Су ағатын еңіс')),
+          Kv('2%', tr3('排水坡度', 'Су ағатын еңіс', 'Уклон для стока воды')),
           Kv('${history.present.defaults.slabThickness}',
-              tr('屋面板 mm', 'Жабын плитасы, мм'), onTap: () async {
-            final v = await askMm(tr('楼板厚度', 'Плита қалыңдығы'),
+              tr3('屋面板 mm', 'Жабын плитасы, мм', 'Плита покрытия, мм'), onTap: () async {
+            final v = await askMm(tr3('楼板厚度', 'Плита қалыңдығы', 'Толщина плиты'),
                 history.present.defaults.slabThickness);
             if (v != null)
               action('SetDefault', {'field': 'slabThickness', 'value': v});
@@ -194,29 +194,29 @@ extension _OtherTabs on _HouseEditorState {
     if (roof.type == RoofType.hip)
       return [
         KvGrid([
-          Kv('${roof.pitchDeg}°', tr('坡度', 'Еңісі'),
-              onTap: () => gable('pitch', tr('坡度 (度)', 'Еңісі (градус)'),
+          Kv('${roof.pitchDeg}°', tr3('坡度', 'Еңісі', 'Уклон'),
+              onTap: () => gable('pitch', tr3('坡度 (度)', 'Еңісі (градус)', 'Уклон (градусы)'),
                   roof.pitchDeg!)),
-          Kv('${roof.overhang}', tr('挑檐 mm', 'Карниз, мм'),
+          Kv('${roof.overhang}', tr3('挑檐 mm', 'Карниз, мм', 'Свес карниза, мм'),
               onTap: () =>
-                  gable('overhang', tr('挑檐', 'Карниз'), roof.overhang!)),
+                  gable('overhang', tr3('挑檐', 'Карниз', 'Свес карниза'), roof.overhang!)),
           Kv(
               '${dec((math.min(history.present.footprint.width, history.present.footprint.depth) / 2 * math.tan(roof.pitchDeg! * math.pi / 180) / 1000).toStringAsFixed(2))} $unitM',
-              tr('屋脊高出墙顶', 'Жота қабырғадан биік')),
+              tr3('屋脊高出墙顶', 'Жота қабырғадан биік', 'Высота конька над стеной')),
         ]),
         Wrap(spacing: 8, runSpacing: 8, children: [roofStyleButton()]),
       ];
 
     return [
       KvGrid([
-        Kv('${roof.pitchDeg}°', tr('坡度', 'Еңісі'),
-            onTap: () => gable('pitch', tr('坡度 (度)', 'Еңісі (градус)'),
+        Kv('${roof.pitchDeg}°', tr3('坡度', 'Еңісі', 'Уклон'),
+            onTap: () => gable('pitch', tr3('坡度 (度)', 'Еңісі (градус)', 'Уклон (градусы)'),
                 roof.pitchDeg!)),
-        Kv('${roof.overhang}', tr('挑檐 mm', 'Карниз, мм'),
+        Kv('${roof.overhang}', tr3('挑檐 mm', 'Карниз, мм', 'Свес карниза, мм'),
             onTap: () =>
-                gable('overhang', tr('挑檐', 'Карниз'), roof.overhang!)),
-        Kv(roof.ridgeDir == AxisDir.H ? tr('左右', 'көлденең') : tr('上下', 'тік'),
-            tr('屋脊方向', 'Жота бағыты'),
+                gable('overhang', tr3('挑檐', 'Карниз', 'Свес карниза'), roof.overhang!)),
+        Kv(roof.ridgeDir == AxisDir.H ? tr3('左右', 'көлденең', 'по горизонтали') : tr3('上下', 'тік', 'по вертикали'),
+            tr3('屋脊方向', 'Жота бағыты', 'Направление конька'),
             onTap: () => action('SetRoof', {
                   'roof': {
                     'type': 'gable',
@@ -231,7 +231,7 @@ extension _OtherTabs on _HouseEditorState {
   }
 
   Widget roofStyleButton() => Btn(
-      label: tr('换屋顶样式', 'Шатыр түрін ауыстыру'),
+      label: tr3('换屋顶样式', 'Шатыр түрін ауыстыру', 'Сменить тип крыши'),
       icon: Icons.roofing,
       onPressed: chooseRoof);
 
@@ -243,15 +243,15 @@ extension _OtherTabs on _HouseEditorState {
       bool horizontal = false,
       List<Widget> extra = const []}) {
     final t = Tokens.of(context);
-    final names = [for (final l in layers) isKk ? l.nameKk : l.name];
+    final names = [for (final l in layers) tr(l.name, l.nameKk)];
     final total = layers.fold(0, (s, l) => s + l.thickness);
     void save(List<Layer> next) =>
         action('SetLayers', {'group': group, 'layers': next});
     Future<void> editLayer(int i) async {
       final l = layers[i];
-      final name = await askText(tr('名称', 'Атауы'), names[i]);
+      final name = await askText(tr3('名称', 'Атауы', 'Наименование'), names[i]);
       if (name == null || !mounted) return;
-      final thickness = await askMm(tr('厚度', 'Қалыңдығы'), l.thickness);
+      final thickness = await askMm(tr3('厚度', 'Қалыңдығы', 'Толщина'), l.thickness);
       if (thickness == null || !mounted) return;
       final material = await showMotionSheet<LayerMaterial>(
           context: context,
@@ -276,7 +276,7 @@ extension _OtherTabs on _HouseEditorState {
     return InfoCard(
         title: '$title · $total $unitMm',
         trailing: IconButton(
-            tooltip: tr('恢复默认构造', 'Әдепкі құрылым'),
+            tooltip: tr3('恢复默认构造', 'Әдепкі құрылым', 'Вернуть конструкцию по умолчанию'),
             visualDensity: VisualDensity.compact,
             onPressed: () => save(switch (group) {
                   'wall' => defaultWallLayers,
@@ -289,7 +289,7 @@ extension _OtherTabs on _HouseEditorState {
           SectionView(
               painter: horizontal
                   ? WallSectionPainter(t, layers, names,
-                      outside: tr('室外', 'Сырты'), inside: tr('室内', 'Іші'))
+                      outside: tr3('室外', 'Сырты', 'Снаружи'), inside: tr3('室内', 'Іші', 'Внутри'))
                   : LayerStackPainter(t, layers, names,
                       scale: group == 'roof' ? 0.22 : 0.2)),
           const SizedBox(height: 6),
@@ -313,7 +313,7 @@ extension _OtherTabs on _HouseEditorState {
                       Text('${layers[i].thickness}',
                           style: mono(size: 13, color: t.muted)),
                       IconButton(
-                          tooltip: tr('上移', 'Жоғары'),
+                          tooltip: tr3('上移', 'Жоғары', 'Вверх'),
                           visualDensity: VisualDensity.compact,
                           onPressed: i == 0
                               ? null
@@ -324,7 +324,7 @@ extension _OtherTabs on _HouseEditorState {
                                 },
                           icon: const Icon(Icons.arrow_upward, size: 16)),
                       IconButton(
-                          tooltip: tr('删除这一层', 'Қабатты жою'),
+                          tooltip: tr3('删除这一层', 'Қабатты жою', 'Удалить слой'),
                           visualDensity: VisualDensity.compact,
                           onPressed: layers.length <= 1
                               ? null
@@ -336,11 +336,11 @@ extension _OtherTabs on _HouseEditorState {
               child: TextButton.icon(
                   onPressed: () => save([
                         ...layers,
-                        Layer(tr('新构造层', 'Жаңа қабат'), 'Жаңа қабат', 50,
+                        Layer(tr3('新构造层', 'Жаңа қабат', 'Новый слой'), 'Жаңа қабат', 50,
                             LayerMaterial.plaster)
                       ]),
                   icon: const Icon(Icons.add, size: 16),
-                  label: Text(tr('添加一层', 'Қабат қосу')))),
+                  label: Text(tr3('添加一层', 'Қабат қосу', 'Добавить слой')))),
           ...extra,
           editableNote(note),
         ]);
@@ -362,71 +362,71 @@ extension _OtherTabs on _HouseEditorState {
         TableCellData(text, numeric: true, onTap: () => edit(field, title));
     final params = <List<TableCellData>>[
       [
-        TableCellData(tr('类型', 'Түрі')),
-        TableCellData(tr('整体浇筑钢筋混凝土条形基础', 'Монолитті темірбетон таспалы іргетас'))
+        TableCellData(tr3('类型', 'Түрі', 'Тип')),
+        TableCellData(tr3('整体浇筑钢筋混凝土条形基础', 'Монолитті темірбетон таспалы іргетас', 'Монолитный железобетонный ленточный фундамент'))
       ],
       [
-        TableCellData(tr('宽 mm', 'Ені, мм')),
-        e('${f.width}', 'width', tr('基础宽度', 'Іргетас ені'))
+        TableCellData(tr3('宽 mm', 'Ені, мм', 'Ширина, мм')),
+        e('${f.width}', 'width', tr3('基础宽度', 'Іргетас ені', 'Ширина фундамента'))
       ],
       [
-        TableCellData(tr('高 mm', 'Биіктігі, мм')),
-        e('${f.height}', 'height', tr('基础高度', 'Іргетас биіктігі'))
+        TableCellData(tr3('高 mm', 'Биіктігі, мм', 'Высота, мм')),
+        e('${f.height}', 'height', tr3('基础高度', 'Іргетас биіктігі', 'Высота фундамента'))
       ],
       [
-        TableCellData(tr('露出地面 (勒脚) mm', 'Жер үстінде (цоколь), мм')),
-        e('${f.plinth}', 'plinth', tr('露出地面高度', 'Цоколь биіктігі'))
+        TableCellData(tr3('露出地面 (勒脚) mm', 'Жер үстінде (цоколь), мм', 'Над землёй (цоколь), мм')),
+        e('${f.plinth}', 'plinth', tr3('露出地面高度', 'Цоколь биіктігі', 'Высота цоколя'))
       ],
       [
-        TableCellData(tr('砂砾石垫层 mm', 'Құм-қиыршық төсеме, мм')),
-        e('${f.cushion}', 'cushion', tr('垫层厚度', 'Төсеме қалыңдығы'))
+        TableCellData(tr3('砂砾石垫层 mm', 'Құм-қиыршық төсеме, мм', 'Песчано-гравийная подушка, мм')),
+        e('${f.cushion}', 'cushion', tr3('垫层厚度', 'Төсеме қалыңдығы', 'Толщина подушки'))
       ],
       [
-        TableCellData(tr('垫层每侧加宽 mm', 'Төсеме кеңейтуі, мм')),
-        e('${f.cushionExtra}', 'cushionExtra', tr('垫层加宽', 'Кеңейту'))
+        TableCellData(tr3('垫层每侧加宽 mm', 'Төсеме кеңейтуі, мм', 'Уширение подушки с каждой стороны, мм')),
+        e('${f.cushionExtra}', 'cushionExtra', tr3('垫层加宽', 'Кеңейту', 'Уширение подушки'))
       ],
       [
-        TableCellData(tr('混凝土', 'Бетон')),
+        TableCellData(tr3('混凝土', 'Бетон', 'Бетон')),
         TableCellData(f.concrete, onTap: () async {
-          final v = await askText(tr('混凝土', 'Бетон'), f.concrete);
+          final v = await askText(tr3('混凝土', 'Бетон', 'Бетон'), f.concrete);
           if (v != null && v.trim().isNotEmpty)
             action('SetFoundation', {'concrete': v.trim()});
         })
       ],
       [
-        TableCellData(tr('上部纵筋 根', 'Үстіңгі арматура, дана')),
-        e('${f.topBars}', 'topBars', tr('上部纵筋根数', 'Үстіңгі арматура саны'))
+        TableCellData(tr3('上部纵筋 根', 'Үстіңгі арматура, дана', 'Верхняя арматура, шт.')),
+        e('${f.topBars}', 'topBars', tr3('上部纵筋根数', 'Үстіңгі арматура саны', 'Число верхних стержней'))
       ],
       [
-        TableCellData(tr('下部纵筋 根', 'Астыңғы арматура, дана')),
-        e('${f.bottomBars}', 'bottomBars', tr('下部纵筋根数', 'Астыңғы арматура саны'))
+        TableCellData(tr3('下部纵筋 根', 'Астыңғы арматура, дана', 'Нижняя арматура, шт.')),
+        e('${f.bottomBars}', 'bottomBars', tr3('下部纵筋根数', 'Астыңғы арматура саны', 'Число нижних стержней'))
       ],
       [
-        TableCellData(tr('纵筋直径 Ø', 'Арматура Ø')),
-        e('${f.barDia}', 'barDia', tr('纵筋直径', 'Арматура диаметрі'))
+        TableCellData(tr3('纵筋直径 Ø', 'Арматура Ø', 'Арматура Ø')),
+        e('${f.barDia}', 'barDia', tr3('纵筋直径', 'Арматура диаметрі', 'Диаметр арматуры'))
       ],
       [
-        TableCellData(tr('箍筋 Ø / 间距', 'Қамыт Ø / қадамы')),
+        TableCellData(tr3('箍筋 Ø / 间距', 'Қамыт Ø / қадамы', 'Хомуты Ø / шаг')),
         TableCellData('Ø${f.stirrupDia} @${f.stirrupStep}',
             numeric: true, onTap: () async {
-          await edit('stirrupDia', tr('箍筋直径', 'Қамыт диаметрі'));
-          if (mounted) await edit('stirrupStep', tr('箍筋间距', 'Қамыт қадамы'));
+          await edit('stirrupDia', tr3('箍筋直径', 'Қамыт диаметрі', 'Диаметр хомутов'));
+          if (mounted) await edit('stirrupStep', tr3('箍筋间距', 'Қамыт қадамы', 'Шаг хомутов'));
         })
       ],
       [
-        TableCellData(tr('保护层 mm', 'Қорғаныш қабаты, мм')),
-        e('${f.cover}', 'cover', tr('保护层', 'Қорғаныш қабаты'))
+        TableCellData(tr3('保护层 mm', 'Қорғаныш қабаты, мм', 'Защитный слой, мм')),
+        e('${f.cover}', 'cover', tr3('保护层', 'Қорғаныш қабаты', 'Защитный слой'))
       ],
       [
-        TableCellData(tr('承重墙判定 (墙厚 ≥) mm', 'Көтергіш қабырға (≥), мм')),
-        e('${f.bearingMin}', 'bearingMin', tr('承重墙最小厚度', 'Көтергіш қабырғаның ең аз қалыңдығы'))
+        TableCellData(tr3('承重墙判定 (墙厚 ≥) mm', 'Көтергіш қабырға (≥), мм', 'Несущая стена (толщина ≥), мм')),
+        e('${f.bearingMin}', 'bearingMin', tr3('承重墙最小厚度', 'Көтергіш қабырғаның ең аз қалыңдығы', 'Минимальная толщина несущей стены'))
       ],
       [
-        TableCellData(tr('隔墙基础', 'Қалқа іргетасы')),
+        TableCellData(tr3('隔墙基础', 'Қалқа іргетасы', 'Фундамент под перегородки')),
         TableCellData(
             f.partitions
                 ? '${f.partitionWidth} × ${f.partitionHeight} · ${f.partitionBars}Ø${f.partitionBarDia}'
-                : tr('不做 (点此开启)', 'Жоқ (қосу үшін басыңыз)'),
+                : tr3('不做 (点此开启)', 'Жоқ (қосу үшін басыңыз)', 'Нет (нажмите, чтобы включить)'),
             numeric: f.partitions,
             onTap: () => action('SetFoundation', {'partitions': !f.partitions}))
       ],
@@ -435,24 +435,24 @@ extension _OtherTabs on _HouseEditorState {
     final m = unitM, m2 = unitM2, m3 = unitM3;
     final qty = <List<TableCellData>>[
       [
-        TableCellData('${tr('主基础长度', 'Негізгі іргетас ұзындығы')} ${f.width}×${f.height}'),
+        TableCellData('${tr3('主基础长度', 'Негізгі іргетас ұзындығы', 'Длина основного фундамента')} ${f.width}×${f.height}'),
         TableCellData(n1(q.mainLength / 1000), numeric: true),
         TableCellData(m)
       ],
       if (q.partitionLength > 0)
         [
-          TableCellData('${tr('隔墙基础长度', 'Қалқа іргетасы ұзындығы')} ${f.partitionWidth}×${f.partitionHeight}'),
+          TableCellData('${tr3('隔墙基础长度', 'Қалқа іргетасы ұзындығы', 'Длина фундамента под перегородки')} ${f.partitionWidth}×${f.partitionHeight}'),
           TableCellData(n1(q.partitionLength / 1000), numeric: true),
           TableCellData(m)
         ],
       [
-        TableCellData(tr('混凝土', 'Бетон')),
+        TableCellData(tr3('混凝土', 'Бетон', 'Бетон')),
         TableCellData('${n1(q.concrete / 1e9)} (+3% ≈ ${n1(q.concrete * 1.03 / 1e9)})',
             numeric: true),
         TableCellData(m3)
       ],
       [
-        TableCellData('${tr('纵筋', 'Бойлық арматура')} Ø${f.barDia}'),
+        TableCellData('${tr3('纵筋', 'Бойлық арматура', 'Продольная арматура')} Ø${f.barDia}'),
         TableCellData(
             '${n0(q.mainBarLength / 1000)} $m ≈ ${n0(q.mainBarLength / 1000 * kg(f.barDia))} kg',
             numeric: true),
@@ -460,79 +460,79 @@ extension _OtherTabs on _HouseEditorState {
       ],
       if (q.partitionLength > 0)
         [
-          TableCellData('${tr('隔墙纵筋', 'Қалқа арматурасы')} Ø${f.partitionBarDia}'),
+          TableCellData('${tr3('隔墙纵筋', 'Қалқа арматурасы', 'Арматура под перегородки')} Ø${f.partitionBarDia}'),
           TableCellData(
               '${n0(q.partitionBarLength / 1000)} $m ≈ ${n0(q.partitionBarLength / 1000 * kg(f.partitionBarDia))} kg',
               numeric: true),
           const TableCellData('')
         ],
       [
-        TableCellData('${tr('箍筋', 'Қамыт')} Ø${f.stirrupDia}'),
+        TableCellData('${tr3('箍筋', 'Қамыт', 'Хомут')} Ø${f.stirrupDia}'),
         TableCellData(
-            '${q.stirrups} ${tr('个', 'дана')} · ${n0(q.stirrupLength / 1000)} $m ≈ ${n0(q.stirrupLength / 1000 * kg(f.stirrupDia))} kg',
+            '${q.stirrups} ${tr3('个', 'дана', 'шт.')} · ${n0(q.stirrupLength / 1000)} $m ≈ ${n0(q.stirrupLength / 1000 * kg(f.stirrupDia))} kg',
             numeric: true),
         const TableCellData('')
       ],
       [
-        TableCellData('${tr('挖土 (沟宽', 'Топырақ қазу (ор ені')} ${dec(((f.width + 600) / 1000).toStringAsFixed(2))})'),
+        TableCellData('${tr3('挖土 (沟宽', 'Топырақ қазу (ор ені', 'Выемка грунта (ширина траншеи')} ${dec(((f.width + 600) / 1000).toStringAsFixed(2))})'),
         TableCellData(n1(q.excavation / 1e9), numeric: true),
         TableCellData(m3)
       ],
       [
-        TableCellData(tr('砂砾石垫层', 'Құм-қиыршық төсеме')),
+        TableCellData(tr3('砂砾石垫层', 'Құм-қиыршық төсеме', 'Песчано-гравийная подушка')),
         TableCellData(n1(q.cushion / 1e9), numeric: true),
         TableCellData(m3)
       ],
       [
-        TableCellData(tr('模板 (两侧)', 'Қалып (екі жағы)')),
+        TableCellData(tr3('模板 (两侧)', 'Қалып (екі жағы)', 'Опалубка (с двух сторон)')),
         TableCellData(n1(q.formwork / 1e6), numeric: true),
         TableCellData(m2)
       ],
       [
-        TableCellData(tr('外侧 XPS 50', 'Сыртқы XPS 50')),
+        TableCellData(tr3('外侧 XPS 50', 'Сыртқы XPS 50', 'Наружный XPS 50')),
         TableCellData(n1(q.xps / 1e6), numeric: true),
         TableCellData(m2)
       ],
       [
-        TableCellData(tr('保温散水 (混凝土 + XPS)', 'Жылы отмостка (бетон + XPS)')),
+        TableCellData(tr3('保温散水 (混凝土 + XPS)', 'Жылы отмостка (бетон + XPS)', 'Утеплённая отмостка (бетон + XPS)')),
         TableCellData(n1(q.blinding / 1e6), numeric: true),
         TableCellData(m2)
       ],
       [
-        TableCellData(tr('水平防水 (2 层)', 'Көлденең гидрооқшау (2 қабат)')),
+        TableCellData(tr3('水平防水 (2 层)', 'Көлденең гидрооқшау (2 қабат)', 'Горизонтальная гидроизоляция (2 слоя)')),
         TableCellData(n1(q.waterproofing / 1e6), numeric: true),
         TableCellData(m2)
       ],
       [
-        TableCellData(tr('预留套管', 'Гильзалар')),
+        TableCellData(tr3('预留套管', 'Гильзалар', 'Гильзы')),
         TableCellData('${doc.extras.sleeves.length}', numeric: true),
-        TableCellData(tr('个', 'дана'))
+        TableCellData(tr3('个', 'дана', 'шт.'))
       ],
     ];
     final labels = {
-      'ground': tr('室外地面', 'жер беті'),
+      'ground': tr3('室外地面', 'жер беті', 'уровень земли'),
       'wall':
-          '${tr('外墙', 'Сыртқы қабырға')} ${doc.defaults.outerWallThickness}',
-      'damp': tr('水平防水：2 层卷材', 'Көлденең гидрооқшау: 2 қабат'),
-      'topBars': '${tr('上部纵筋', 'Үстіңгі арматура')} ${f.topBars}Ø${f.barDia}',
-      'floor': tr('地坪（见地坪构造）', 'Еден (еден құрылымын қараңыз)'),
-      'stirrups': '${tr('箍筋', 'Қамыт')} Ø${f.stirrupDia} @${f.stirrupStep}',
-      'concrete': '${tr('混凝土', 'Бетон')} ${f.concrete}',
+          '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} ${doc.defaults.outerWallThickness}',
+      'damp': tr3('水平防水：2 层卷材', 'Көлденең гидрооқшау: 2 қабат', 'Горизонтальная гидроизоляция: 2 слоя рулонного материала'),
+      'topBars': '${tr3('上部纵筋', 'Үстіңгі арматура', 'Верхняя арматура')} ${f.topBars}Ø${f.barDia}',
+      'floor': tr3('地坪（见地坪构造）', 'Еден (еден құрылымын қараңыз)', 'Пол (см. конструкцию пола)'),
+      'stirrups': '${tr3('箍筋', 'Қамыт', 'Хомут')} Ø${f.stirrupDia} @${f.stirrupStep}',
+      'concrete': '${tr3('混凝土', 'Бетон', 'Бетон')} ${f.concrete}',
       'bottomBars':
-          '${tr('下部纵筋', 'Астыңғы арматура')} ${f.bottomBars}Ø${f.barDia}',
-      'cover': '${tr('保护层', 'Қорғаныш қабаты')} ${f.cover} $unitMm',
-      'cushion': '${tr('砂砾石垫层', 'Құм-қиыршық')} ${f.cushion}',
-      'blind': tr('保温散水 1000 · 下铺 XPS 50', 'Жылы отмостка 1000 · астында XPS 50'),
-      'xps': tr('XPS 50 + 沥青防水', 'XPS 50 + битум'),
+          '${tr3('下部纵筋', 'Астыңғы арматура', 'Нижняя арматура')} ${f.bottomBars}Ø${f.barDia}',
+      'cover': '${tr3('保护层', 'Қорғаныш қабаты', 'Защитный слой')} ${f.cover} $unitMm',
+      'cushion': '${tr3('砂砾石垫层', 'Құм-қиыршық', 'Песчано-гравийная подушка')} ${f.cushion}',
+      'blind': tr3('保温散水 1000 · 下铺 XPS 50', 'Жылы отмостка 1000 · астында XPS 50', 'Утеплённая отмостка 1000 · снизу XPS 50'),
+      'xps': tr3('XPS 50 + 沥青防水', 'XPS 50 + битум', 'XPS 50 + битум'),
     };
     return InfoCard(
         title:
-            '${tr('条形基础', 'Таспалы іргетас')} · ${f.width} × ${f.height}',
-        subtitle: tr('参数可以直接点击修改；剖面、用量和平面图“地基”图层会一起更新。',
-            'Параметрлерді басып өзгертіңіз; қима, көлем және жоспардағы «Іргетас» қабаты бірге жаңарады.'),
+            '${tr3('条形基础', 'Таспалы іргетас', 'Ленточный фундамент')} · ${f.width} × ${f.height}',
+        subtitle: tr3('参数可以直接点击修改；剖面、用量和平面图“地基”图层会一起更新。',
+            'Параметрлерді басып өзгертіңіз; қима, көлем және жоспардағы «Іргетас» қабаты бірге жаңарады.', 'Нажмите на параметр, чтобы изменить его; разрез, расход материалов и слой «Фундамент» на плане обновятся вместе.'),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           IconButton(
-              tooltip: tr('在平面图中查看', 'Жоспардан көру'),
+              tooltip: tr3('在平面图中查看', 'Жоспардан көру', 'Открыть на плане'),
               visualDensity: VisualDensity.compact,
               onPressed: () => update(() {
                     showFoundation = true;
@@ -542,7 +542,7 @@ extension _OtherTabs on _HouseEditorState {
                   }),
               icon: const Icon(Icons.layers_outlined, size: 18)),
           IconButton(
-              tooltip: tr('恢复默认参数', 'Әдепкі параметрлер'),
+              tooltip: tr3('恢复默认参数', 'Әдепкі параметрлер', 'Вернуть параметры по умолчанию'),
               visualDensity: VisualDensity.compact,
               onPressed: () => action('SetFoundation', {'reset': true}),
               icon: const Icon(Icons.restart_alt, size: 18)),
@@ -555,19 +555,19 @@ extension _OtherTabs on _HouseEditorState {
           const SizedBox(height: 8),
           grid2([
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Text(tr('参数', 'Параметрлер'),
+              Text(tr3('参数', 'Параметрлер', 'Параметры'),
                   style: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w700)),
               PlainTable(rows: params),
             ]),
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Text(
-                  '${tr('材料用量', 'Материал көлемі')} · ${dec((doc.footprint.width / 1000).toString())}×${dec((doc.footprint.depth / 1000).toString())}',
+                  '${tr3('材料用量', 'Материал көлемі', 'Расход материалов')} · ${dec((doc.footprint.width / 1000).toString())}×${dec((doc.footprint.depth / 1000).toString())}',
                   style: const TextStyle(
                       fontSize: 14, fontWeight: FontWeight.w700)),
               PlainTable(rows: qty),
-              Note(tr('钢筋长度含约 8% 搭接和转角附加筋；未计混凝土垫块和绑扎丝。',
-                  'Арматура ұзындығына ~8% жалғау мен бұрыш қосымшасы кірді; тірек пен байлау сымы кірмейді.')),
+              Note(tr3('钢筋长度含约 8% 搭接和转角附加筋；未计混凝土垫块和绑扎丝。',
+                  'Арматура ұзындығына ~8% жалғау мен бұрыш қосымшасы кірді; тірек пен байлау сымы кірмейді.', 'В длину арматуры включено ~8% на нахлёст и угловые усиления; фиксаторы и вязальная проволока не учтены.')),
               const SizedBox(height: 6),
               sleevesEditor(),
             ]),
@@ -580,7 +580,7 @@ extension _OtherTabs on _HouseEditorState {
     final t = Tokens.of(context);
     final sleeves = history.present.extras.sleeves;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text(tr('预留套管', 'Гильзалар'),
+      Text(tr3('预留套管', 'Гильзалар', 'Гильзы'),
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
       for (final s in sleeves)
         Row(children: [
@@ -590,7 +590,7 @@ extension _OtherTabs on _HouseEditorState {
               child: Text('${sleeveName(s.kind)} Ø${s.diameter} · (${s.x}, ${s.y})',
                   style: mono(size: 12))),
           IconButton(
-              tooltip: tr('删除', 'Жою'),
+              tooltip: tr3('删除', 'Жою', 'Удалить'),
               visualDensity: VisualDensity.compact,
               onPressed: () => action('DeleteSleeve', {'sleeveId': s.id}),
               icon: const Icon(Icons.close, size: 16)),
@@ -632,24 +632,24 @@ extension _OtherTabs on _HouseEditorState {
           if (p.opening.kind != OpeningKind.door) p
     ];
     final d = history.present.defaults;
-    return InfoCard(title: tr('窗', 'Терезе'), children: [
+    return InfoCard(title: tr3('窗', 'Терезе', 'Окно'), children: [
       KvGrid([
-        Kv('${windows.length} ${tr('扇', 'дана')}',
-            tr('窗 / 推拉门', 'Терезе / сырғымалы есік')),
+        Kv('${windows.length} ${tr3('扇', 'дана', 'шт.')}',
+            tr3('窗 / 推拉门', 'Терезе / сырғымалы есік', 'Окно / раздвижная дверь')),
         Kv(
             '${dec((windows.fold(0.0, (s, p) => s + p.opening.width * p.opening.height) / 1e6).toStringAsFixed(2))} $unitM2',
-            tr('总窗面积', 'Жалпы терезе ауданы')),
-        Kv('${d.windowSill}', tr('常规窗台高 mm', 'Әдеттегі терезе алды, мм'),
+            tr3('总窗面积', 'Жалпы терезе ауданы', 'Общая площадь окон')),
+        Kv('${d.windowSill}', tr3('常规窗台高 mm', 'Әдеттегі терезе алды, мм', 'Обычная высота подоконника, мм'),
             onTap: () async {
-          final v = await askMm(tr('默认窗台高度', 'Әдепкі терезе алды'), d.windowSill);
+          final v = await askMm(tr3('默认窗台高度', 'Әдепкі терезе алды', 'Высота подоконника по умолчанию'), d.windowSill);
           if (v != null) action('SetDefault', {'field': 'windowSill', 'value': v});
         }),
-        Kv('${d.windowWidth} × ${d.windowHeight}', tr('新窗默认 mm', 'Жаңа терезе, мм'),
+        Kv('${d.windowWidth} × ${d.windowHeight}', tr3('新窗默认 mm', 'Жаңа терезе, мм', 'Новое окно, мм'),
             onTap: () async {
-          final w = await askMm(tr('默认窗宽', 'Әдепкі терезе ені'), d.windowWidth);
+          final w = await askMm(tr3('默认窗宽', 'Әдепкі терезе ені', 'Ширина окна по умолчанию'), d.windowWidth);
           if (w != null) action('SetDefault', {'field': 'windowWidth', 'value': w});
           if (!mounted) return;
-          final h = await askMm(tr('默认窗高', 'Әдепкі терезе биіктігі'), d.windowHeight);
+          final h = await askMm(tr3('默认窗高', 'Әдепкі терезе биіктігі', 'Высота окна по умолчанию'), d.windowHeight);
           if (h != null) action('SetDefault', {'field': 'windowHeight', 'value': h});
         }),
       ]),
@@ -664,24 +664,24 @@ extension _OtherTabs on _HouseEditorState {
         for (final p in g.openings)
           if (p.opening.id == history.present.mainEntranceOpeningId) p
     ].firstOrNull;
-    return InfoCard(title: tr('门', 'Есік'), children: [
+    return InfoCard(title: tr3('门', 'Есік', 'Дверь'), children: [
       KvGrid([
         Kv(
             entrance == null
                 ? '—'
                 : '${entrance.opening.width} × ${entrance.opening.height}',
-            tr('入户门', 'Кіреберіс есігі')),
-        Kv('${d.doorWidth} × ${d.doorHeight}', tr('室内门默认', 'Ішкі есік, әдепкі'),
+            tr3('入户门', 'Кіреберіс есігі', 'Входная дверь')),
+        Kv('${d.doorWidth} × ${d.doorHeight}', tr3('室内门默认', 'Ішкі есік, әдепкі', 'Межкомнатная дверь, по умолчанию'),
             onTap: () async {
-          final w = await askMm(tr('默认门宽', 'Әдепкі есік ені'), d.doorWidth);
+          final w = await askMm(tr3('默认门宽', 'Әдепкі есік ені', 'Ширина двери по умолчанию'), d.doorWidth);
           if (w != null) action('SetDefault', {'field': 'doorWidth', 'value': w});
           if (!mounted) return;
-          final h = await askMm(tr('默认门高', 'Әдепкі есік биіктігі'), d.doorHeight);
+          final h = await askMm(tr3('默认门高', 'Әдепкі есік биіктігі', 'Высота двери по умолчанию'), d.doorHeight);
           if (h != null) action('SetDefault', {'field': 'doorHeight', 'value': h});
         }),
         Kv(
             '${[for (final g in derived.floors) ...g.openings].where((p) => p.opening.kind == OpeningKind.door).length}',
-            tr('门 总数', 'Есік саны')),
+            tr3('门 总数', 'Есік саны', 'Количество дверей')),
       ]),
       editableNote('doors'),
     ]);
@@ -704,7 +704,7 @@ extension _OtherTabs on _HouseEditorState {
           TableCellData(code, bold: true),
           if (multi) TableCellData(displayFloorName(doc.floors[f].name), muted: true),
           TableCellData(openingLabel(p, f), onTap: () async {
-            final v = await askText(tr('名称 / 位置', 'Атауы / орны'),
+            final v = await askText(tr3('名称 / 位置', 'Атауы / орны', 'Название / расположение'),
                 doc.extras.openingLabels[o.id] ?? openingLabel(p, f));
             if (v != null)
               action('SetOpeningLabel', {
@@ -714,10 +714,10 @@ extension _OtherTabs on _HouseEditorState {
           }),
           TableCellData('${o.width} × ${o.height}', numeric: true,
               onTap: () async {
-            final w = await askMm(tr('宽度', 'Ені'), o.width);
+            final w = await askMm(tr3('宽度', 'Ені', 'Ширина'), o.width);
             if (w != null) action('ResizeOpening', {'openingId': o.id, 'width': w});
             if (!mounted) return;
-            final h = await askMm(tr('高度', 'Биіктігі'), o.height);
+            final h = await askMm(tr3('高度', 'Биіктігі', 'Высота'), o.height);
             if (h != null)
               action('ResizeOpening', {'openingId': o.id, 'height': h});
           }),
@@ -725,15 +725,15 @@ extension _OtherTabs on _HouseEditorState {
               onTap: o is DoorOpening
                   ? null
                   : () async {
-                      final v = await askMm(tr('窗台高度', 'Терезе алды'), o.sill);
+                      final v = await askMm(tr3('窗台高度', 'Терезе алды', 'Высота подоконника'), o.sill);
                       if (v != null)
                         action('ResizeOpening', {'openingId': o.id, 'sill': v});
                     }),
           TableCellData(
               switch (o) {
-                DoorOpening() => tr('平开门', 'Ашылмалы есік'),
-                SlidingOpening() => tr('推拉门', 'Сырғымалы есік'),
-                WindowOpening() => tr('窗', 'Терезе'),
+                DoorOpening() => tr3('平开门', 'Ашылмалы есік', 'Распашная дверь'),
+                SlidingOpening() => tr3('推拉门', 'Сырғымалы есік', 'Раздвижная дверь'),
+                WindowOpening() => tr3('窗', 'Терезе', 'Окно'),
               },
               color: p.status == 'ok' ? null : t.crit,
               onTap: () async {
@@ -744,10 +744,10 @@ extension _OtherTabs on _HouseEditorState {
                           for (final k in OpeningKind.values)
                             ListTile(
                                 title: Text(switch (k) {
-                                  OpeningKind.door => tr('平开门', 'Ашылмалы есік'),
+                                  OpeningKind.door => tr3('平开门', 'Ашылмалы есік', 'Распашная дверь'),
                                   OpeningKind.sliding =>
-                                    tr('推拉门', 'Сырғымалы есік'),
-                                  OpeningKind.window => tr('窗', 'Терезе'),
+                                    tr3('推拉门', 'Сырғымалы есік', 'Раздвижная дверь'),
+                                  OpeningKind.window => tr3('窗', 'Терезе', 'Окно'),
                                 }),
                                 selected: k == o.kind,
                                 onTap: () => Navigator.pop(context, k))
@@ -778,10 +778,10 @@ extension _OtherTabs on _HouseEditorState {
           TableCellData(l == null ? '—' : dec(l.toStringAsFixed(l % 1 == 0 ? 0 : 1)),
               numeric: true, onTap: () async {
             final text = await promptText(context,
-                title: tr('图纸标注面积', 'Сызбадағы аудан'),
+                title: tr3('图纸标注面积', 'Сызбадағы аудан', 'Площадь по чертежу'),
                 initial: l == null ? '' : '$l',
-                cancel: tr('取消', 'Болдырмау'),
-                ok: tr('确定', 'Жарайды'),
+                cancel: tr3('取消', 'Болдырмау', 'Отмена'),
+                ok: tr3('确定', 'Жарайды', 'ОК'),
                 number: true,
                 suffix: unitM2);
             if (text == null) return;
@@ -801,7 +801,7 @@ extension _OtherTabs on _HouseEditorState {
       }
     }
     areaRows.add([
-      TableCellData(tr('合计', 'Барлығы'), bold: true),
+      TableCellData(tr3('合计', 'Барлығы', 'Итого'), bold: true),
       if (multi) const TableCellData(''),
       TableCellData(dec(sumCalc.toStringAsFixed(1)), numeric: true, bold: true),
       TableCellData(sumLabel == 0 ? '—' : dec(sumLabel.toStringAsFixed(1)),
@@ -815,39 +815,39 @@ extension _OtherTabs on _HouseEditorState {
     ]);
     return page([
       compareCard(),
-      InfoCard(title: tr('门窗表', 'Есік-терезе кестесі'), children: [
+      InfoCard(title: tr3('门窗表', 'Есік-терезе кестесі', 'Ведомость окон и дверей'), children: [
         const SizedBox(height: 6),
         PlainTable(header: [
-          tr('编号', 'Код'),
-          if (multi) tr('楼层', 'Қабат'),
-          tr('位置', 'Орны'),
-          tr('宽 × 高 mm', 'Ені × биіктігі, мм'),
-          tr('窗台 mm', 'Терезе алды, мм'),
-          tr('类型', 'Түрі'),
+          tr3('编号', 'Код', 'Марка'),
+          if (multi) tr3('楼层', 'Қабат', 'Этаж'),
+          tr3('位置', 'Орны', 'Место'),
+          tr3('宽 × 高 mm', 'Ені × биіктігі, мм', 'Ширина × высота, мм'),
+          tr3('窗台 mm', 'Терезе алды, мм', 'Подоконник, мм'),
+          tr3('类型', 'Түрі', 'Тип'),
         ], rows: rows),
         if (rows.isEmpty)
           Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(tr('还没有门窗，到 2D 平面里拖入。', 'Есік-терезе әлі жоқ, 2D жоспарға сүйреп қосыңыз.'),
+              child: Text(tr3('还没有门窗，到 2D 平面里拖入。', 'Есік-терезе әлі жоқ, 2D жоспарға сүйреп қосыңыз.', 'Окон и дверей пока нет, перетащите их на 2D-план.'),
                   style: TextStyle(color: t.muted))),
       ]),
-      InfoCard(title: tr('房间面积对照', 'Бөлме аудандарын салыстыру'), children: [
+      InfoCard(title: tr3('房间面积对照', 'Бөлме аудандарын салыстыру', 'Сравнение площадей комнат'), children: [
         const SizedBox(height: 6),
         PlainTable(header: [
-          tr('房间', 'Бөлме'),
-          if (multi) tr('楼层', 'Қабат'),
-          tr('实算 m²', 'Есеп, м²'),
-          tr('图纸 m²', 'Сызба, м²'),
-          tr('差值', 'Айырма'),
+          tr3('房间', 'Бөлме', 'Комната'),
+          if (multi) tr3('楼层', 'Қабат', 'Этаж'),
+          tr3('实算 m²', 'Есеп, м²', 'Расчёт, м²'),
+          tr3('图纸 m²', 'Сызба, м²', 'Чертёж, м²'),
+          tr3('差值', 'Айырма', 'Разница'),
         ], rows: areaRows),
         editableNote('areas'),
       ]),
-      InfoCard(title: tr('主要工程量估算', 'Негізгі көлемдерді бағалау'), children: [
+      InfoCard(title: tr3('主要工程量估算', 'Негізгі көлемдерді бағалау', 'Оценка основных объёмов работ'), children: [
         const SizedBox(height: 6),
         PlainTable(header: [
-          tr('项目', 'Атауы'),
-          tr('算法', 'Есептеу'),
-          tr('数量', 'Мөлшері'),
+          tr3('项目', 'Атауы', 'Наименование'),
+          tr3('算法', 'Есептеу', 'Расчёт'),
+          tr3('数量', 'Мөлшері', 'Количество'),
           '',
         ], rows: quantityRows()),
         editableNote('qty'),
@@ -863,7 +863,7 @@ extension _OtherTabs on _HouseEditorState {
     final h = wt.height / 1000;
     String ds(num v) => dec(v.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), ''));
     final m = unitM, m2 = unitM2, m3 = unitM3;
-    final op = tr('洞口', 'ойықтар');
+    final op = tr3('洞口', 'ойықтар', 'проёмы');
     final f = doc.extras.foundation;
     final rebarT = (fd.mainBarLength / 1000 * barKgPerM(f.barDia) +
             fd.partitionBarLength / 1000 * barKgPerM(f.partitionBarDia) +
@@ -879,43 +879,43 @@ extension _OtherTabs on _HouseEditorState {
     final slab = doc.defaults.slabThickness / 1000;
     final roof = doc.roof;
     return [
-      row(tr('建筑面积', 'Құрылыс ауданы'), '${ds(w)} × ${ds(d)}', w * d, m2),
-      row(tr('首层室内地坪', 'Ішкі еден'), '${ds(w - 2 * t)} × ${ds(d - 2 * t)}',
+      row(tr3('建筑面积', 'Құрылыс ауданы', 'Общая площадь'), '${ds(w)} × ${ds(d)}', w * d, m2),
+      row(tr3('首层室内地坪', 'Ішкі еден', 'Пол первого этажа'), '${ds(w - 2 * t)} × ${ds(d - 2 * t)}',
           (w - 2 * t) * (d - 2 * t), m2),
-      row(tr('外墙外表面 (毛)', 'Сыртқы қабырға беті (жалпы)'),
+      row(tr3('外墙外表面 (毛)', 'Сыртқы қабырға беті (жалпы)', 'Наружная поверхность стен (брутто)'),
           '${ds(2 * (w + d))} × ${ds(h)}', wt.exteriorGross / 1e6, m2),
-      row(tr('外墙门窗洞口', 'Сыртқы қабырға ойықтары'), tr('合计', 'жиыны'),
+      row(tr3('外墙门窗洞口', 'Сыртқы қабырға ойықтары', 'Проёмы в наружных стенах'), tr3('合计', 'жиыны', 'итого'),
           wt.exteriorOpenings / 1e6, m2),
-      row(tr('外墙净面积 (保温/饰面)', 'Сыртқы қабырға таза ауданы'),
-          tr('毛 − 洞口', 'жалпы − ойықтар'),
+      row(tr3('外墙净面积 (保温/饰面)', 'Сыртқы қабырға таза ауданы', 'Чистая площадь наружных стен (утепление/отделка)'),
+          tr3('毛 − 洞口', 'жалпы − ойықтар', 'брутто − проёмы'),
           (wt.exteriorGross - wt.exteriorOpenings) / 1e6, m2),
-      row(tr('外墙砌体', 'Сыртқы қабырға қалауы'), '(L × H − $op) × t',
+      row(tr3('外墙砌体', 'Сыртқы қабырға қалауы', 'Кладка наружных стен'), '(L × H − $op) × t',
           wt.exteriorVolume / 1e9, m3),
-      row(tr('内承重墙砌体', 'Ішкі көтергіш қабырға'),
+      row(tr3('内承重墙砌体', 'Ішкі көтергіш қабырға', 'Внутренние несущие стены'),
           '${ds(wt.bearingLength / 1000)} $m × H − $op', wt.bearingVolume / 1e9, m3),
-      row(tr('隔墙砌体', 'Қалқа қабырға қалауы'),
+      row(tr3('隔墙砌体', 'Қалқа қабырға қалауы', 'Кладка перегородок'),
           '${ds(wt.partitionLength / 1000)} $m × H − $op',
           wt.partitionVolume / 1e9, m3),
-      row(tr('条形基础长度', 'Таспалы іргетас ұзындығы'),
-          f.partitions ? tr('含隔墙', 'қалқамен') : tr('外墙 + 承重墙', 'сыртқы + көтергіш'),
+      row(tr3('条形基础长度', 'Таспалы іргетас ұзындығы', 'Длина ленточного фундамента'),
+          f.partitions ? tr3('含隔墙', 'қалқамен', 'с перегородками') : tr3('外墙 + 承重墙', 'сыртқы + көтергіш', 'наружные + несущие'),
           (fd.mainLength + fd.partitionLength) / 1000, m),
-      row(tr('基础混凝土', 'Іргетас бетоны'), '${f.width} × ${f.height}',
+      row(tr3('基础混凝土', 'Іргетас бетоны', 'Бетон фундамента'), '${f.width} × ${f.height}',
           fd.concrete / 1e9, m3),
-      row(tr('基础钢筋', 'Іргетас арматурасы'), 'Ø${f.barDia} / Ø${f.stirrupDia}',
-          rebarT, tr('吨', 'т')),
-      row(tr('基础挖土', 'Іргетас үшін қазу'),
+      row(tr3('基础钢筋', 'Іргетас арматурасы', 'Арматура фундамента'), 'Ø${f.barDia} / Ø${f.stirrupDia}',
+          rebarT, tr3('吨', 'т', 'т')),
+      row(tr3('基础挖土', 'Іргетас үшін қазу', 'Выемка грунта под фундамент'),
           '${ds((f.width + 600) / 1000)} × ${ds((f.height - f.plinth + f.cushion) / 1000)}',
           fd.excavation / 1e9, m3),
       if (roof.type == RoofType.flat) ...[
-        row(tr('屋面板混凝土', 'Жабын плитасы бетоны'), '${ds(w)} × ${ds(d)} × ${ds(slab)}',
+        row(tr3('屋面板混凝土', 'Жабын плитасы бетоны', 'Бетон плиты покрытия'), '${ds(w)} × ${ds(d)} × ${ds(slab)}',
             w * d * slab, m3),
-        row(tr('屋面防水 / 保温', 'Шатыр гидро- / жылу оқшауы'),
+        row(tr3('屋面防水 / 保温', 'Шатыр гидро- / жылу оқшауы', 'Гидро- / теплоизоляция кровли'),
             '${ds(w - 2 * t)} × ${ds(d - 2 * t)}', (w - 2 * t) * (d - 2 * t), m2),
-        row(tr('女儿墙上翻防水', 'Парапетке көтерілетін гидрооқшау'),
+        row(tr3('女儿墙上翻防水', 'Парапетке көтерілетін гидрооқшау', 'Заведение гидроизоляции на парапет'),
             '${ds(2 * (w + d) - 4 * t)} × 0.3', (2 * (w + d) - 4 * t) * 0.3, m2),
       ] else
         row(
-            tr('坡屋面面积', 'Шатыр ауданы'),
+            tr3('坡屋面面积', 'Шатыр ауданы', 'Площадь кровли'),
             '(${ds(w)} + 2o)(${ds(d)} + 2o) / cos ${roof.pitchDeg}°',
             (w + 2 * roof.overhang! / 1000) *
                 (d + 2 * roof.overhang! / 1000) /
@@ -987,8 +987,8 @@ extension _OtherTabs on _HouseEditorState {
       for (final c in building)
         (
           level: Level.values[c.level.index],
-          title: tr(c.title.$1, c.title.$2),
-          text: tr(c.text.$1, c.text.$2),
+          title: tr3(c.title.$1, c.title.$2, c.title.$3),
+          text: tr3(c.text.$1, c.text.$2, c.text.$3),
           floorId: c.floorId,
           areas: c.areas,
           foundation: c.showFoundation,
@@ -1004,10 +1004,10 @@ extension _OtherTabs on _HouseEditorState {
         ? items
         : items.where((i) => i.level == issueFilter).toList();
     String levelName(Level l) => switch (l) {
-          Level.crit => tr('严重', 'Маңызды'),
-          Level.warn => tr('建议改', 'Өзгерткен жөн'),
-          Level.chk => tr('需确认', 'Тексеру керек'),
-          Level.ok => tr('做得好', 'Жақсы шешім'),
+          Level.crit => tr3('严重', 'Маңызды', 'Критично'),
+          Level.warn => tr3('建议改', 'Өзгерткен жөн', 'Стоит исправить'),
+          Level.chk => tr3('需确认', 'Тексеру керек', 'Нужно проверить'),
+          Level.ok => tr3('做得好', 'Жақсы шешім', 'Удачное решение'),
         };
     return page([
       Wrap(
@@ -1016,7 +1016,7 @@ extension _OtherTabs on _HouseEditorState {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             PillToggle(
-                label: '${tr('全部', 'Барлығы')} ${items.length}',
+                label: '${tr3('全部', 'Барлығы', 'Все')} ${items.length}',
                 checkbox: false,
                 selected: issueFilter == null,
                 onChanged: (_) => update(() => issueFilter = null)),
@@ -1028,14 +1028,14 @@ extension _OtherTabs on _HouseEditorState {
                   selected: issueFilter == l,
                   onChanged: (v) => update(() => issueFilter = v ? l : null)),
             Btn(
-                label: tr('添加问题', 'Мәселе қосу'),
+                label: tr3('添加问题', 'Мәселе қосу', 'Добавить замечание'),
                 icon: Icons.add,
                 primary: true,
                 onPressed: () => editIssue(null)),
           ]),
       if (shown.isEmpty)
         InfoCard(children: [
-          Text(tr('没有需要处理的提示', 'Өңдейтін ескерту жоқ'),
+          Text(tr3('没有需要处理的提示', 'Өңдейтін ескерту жоқ', 'Нет предупреждений, требующих действий'),
               style: TextStyle(color: t.muted))
         ]),
       for (final i in shown)
@@ -1057,7 +1057,7 @@ extension _OtherTabs on _HouseEditorState {
                       TagPill(levelName(i.level), levelColor(t, i.level)),
                       if (i.own != null) ...[
                         const SizedBox(width: 6),
-                        TagPill(tr('我的记录', 'Менің жазбам'), t.muted),
+                        TagPill(tr3('我的记录', 'Менің жазбам', 'Моя запись'), t.muted),
                       ],
                     ]),
                     const SizedBox(height: 4),
@@ -1074,8 +1074,8 @@ extension _OtherTabs on _HouseEditorState {
                       if (i.areas.isNotEmpty)
                         Btn(
                             label: i.site
-                                ? tr('在宅基地图中定位', 'Учаскеден көрсету')
-                                : tr('在平面图中定位', 'Жоспардан көрсету'),
+                                ? tr3('在宅基地图中定位', 'Учаскеден көрсету', 'Показать на участке')
+                                : tr3('在平面图中定位', 'Жоспардан көрсету', 'Показать на плане'),
                             icon: Icons.my_location,
                             onPressed: () => i.site
                                 ? update(() {
@@ -1089,11 +1089,11 @@ extension _OtherTabs on _HouseEditorState {
                                     foundation: i.foundation)),
                       if (i.own != null) ...[
                         Btn(
-                            label: tr('编辑', 'Өзгерту'),
+                            label: tr3('编辑', 'Өзгерту', 'Изменить'),
                             icon: Icons.edit_outlined,
                             onPressed: () => editIssue(i.own)),
                         Btn(
-                            label: tr('删除', 'Жою'),
+                            label: tr3('删除', 'Жою', 'Удалить'),
                             icon: Icons.delete_outline,
                             danger: true,
                             onPressed: () =>
@@ -1102,8 +1102,8 @@ extension _OtherTabs on _HouseEditorState {
                     ]),
                   ])),
             ]))),
-      Note(tr('这些阈值属于设计建议，不代表当地建筑法规或结构安全的合规结论。',
-          'Бұл шектер — жобалау ұсыныстары, жергілікті құрылыс нормасына не конструкция қауіпсіздігіне сәйкестік қорытындысы емес.')),
+      Note(tr3('这些阈值属于设计建议，不代表当地建筑法规或结构安全的合规结论。',
+          'Бұл шектер — жобалау ұсыныстары, жергілікті құрылыс нормасына не конструкция қауіпсіздігіне сәйкестік қорытындысы емес.', 'Эти пороги — проектные рекомендации, а не заключение о соответствии местным строительным нормам или требованиям безопасности конструкций.')),
     ]);
   }
 
@@ -1155,8 +1155,8 @@ extension _OtherTabs on _HouseEditorState {
         builder: (context) => StatefulBuilder(
             builder: (context, setDialog) => AlertDialog(
                     title: Text(issue == null
-                        ? tr('添加问题', 'Мәселе қосу')
-                        : tr('编辑问题', 'Мәселені өзгерту')),
+                        ? tr3('添加问题', 'Мәселе қосу', 'Добавить замечание')
+                        : tr3('编辑问题', 'Мәселені өзгерту', 'Изменить замечание')),
                     content: SizedBox(
                         width: 460,
                         child: SingleChildScrollView(
@@ -1168,10 +1168,10 @@ extension _OtherTabs on _HouseEditorState {
                                 for (final l in IssueLevel.values)
                                   ChoiceChip(
                                       label: Text(switch (l) {
-                                        IssueLevel.crit => tr('严重', 'Маңызды'),
-                                        IssueLevel.warn => tr('建议改', 'Өзгерткен жөн'),
-                                        IssueLevel.chk => tr('需确认', 'Тексеру керек'),
-                                        IssueLevel.ok => tr('做得好', 'Жақсы шешім'),
+                                        IssueLevel.crit => tr3('严重', 'Маңызды', 'Критично'),
+                                        IssueLevel.warn => tr3('建议改', 'Өзгерткен жөн', 'Стоит исправить'),
+                                        IssueLevel.chk => tr3('需确认', 'Тексеру керек', 'Нужно проверить'),
+                                        IssueLevel.ok => tr3('做得好', 'Жақсы шешім', 'Удачное решение'),
                                       }),
                                       selected: level == l,
                                       onSelected: (_) =>
@@ -1182,27 +1182,27 @@ extension _OtherTabs on _HouseEditorState {
                                   controller: title,
                                   autofocus: true,
                                   decoration: InputDecoration(
-                                      labelText: tr('标题', 'Тақырып'))),
+                                      labelText: tr3('标题', 'Тақырып', 'Заголовок'))),
                               const SizedBox(height: 10),
                               TextField(
                                   controller: text,
                                   minLines: 3,
                                   maxLines: 8,
                                   decoration: InputDecoration(
-                                      labelText: tr('说明', 'Түсіндірме'))),
+                                      labelText: tr3('说明', 'Түсіндірме', 'Описание'))),
                               const SizedBox(height: 10),
                               if (rooms.isNotEmpty)
                                 DropdownButtonFormField<String?>(
                                     initialValue: roomId,
                                     decoration: InputDecoration(
-                                        labelText: tr('在平面上标记的房间 (可选)',
-                                            'Жоспарда белгілейтін бөлме (міндетті емес)')),
+                                        labelText: tr3('在平面上标记的房间 (可选)',
+                                            'Жоспарда белгілейтін бөлме (міндетті емес)', 'Комната для отметки на плане (необязательно)')),
                                     items: [
                                       DropdownMenuItem(
                                           value: null,
                                           child: Text(issue?.areas.isNotEmpty ?? false
-                                              ? tr('保留原区域', 'Бұрынғы аймақ')
-                                              : tr('不标记', 'Белгілемеу'))),
+                                              ? tr3('保留原区域', 'Бұрынғы аймақ', 'Оставить прежнюю область')
+                                              : tr3('不标记', 'Белгілемеу', 'Не отмечать'))),
                                       for (final r in rooms)
                                         DropdownMenuItem(
                                             value: r.id,
@@ -1213,10 +1213,10 @@ extension _OtherTabs on _HouseEditorState {
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: Text(tr('取消', 'Болдырмау'))),
+                          child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                       FilledButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: Text(tr('保存', 'Сақтау'))),
+                          child: Text(tr3('保存', 'Сақтау', 'Сохранить'))),
                     ])));
     if (saved != true || !mounted) return;
     List<(int, int, int, int)>? areas;

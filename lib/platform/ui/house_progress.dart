@@ -50,7 +50,7 @@ class HouseProgress extends StatelessWidget {
                       color: i <= stage.index ? t.accent : t.line)),
             InkWell(
                 onTap: onTap == null ? null : () => onTap!(steps[i]),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(YRadius.row),
                 child: Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
@@ -66,7 +66,7 @@ class HouseProgress extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(houseStageName(steps[i]),
                           style: TextStyle(
-                              fontSize: 12,
+                              fontSize: YFont.caption,
                               fontWeight: i == stage.index
                                   ? FontWeight.w700
                                   : FontWeight.w500,

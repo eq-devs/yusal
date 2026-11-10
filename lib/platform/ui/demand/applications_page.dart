@@ -68,7 +68,7 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
                   children: [
                     Text(d.current.title,
                         style: const TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.w700)),
+                            fontSize: YFont.title, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
                     Text(
                         '${demandStatusName(d.status)} · ${tr3('第 ${d.current.no} 版', '${d.current.no}-нұсқа', 'версия ${d.current.no}')}',
@@ -215,10 +215,10 @@ class ApplicationCard extends StatelessWidget {
                     children: [
                   Text(name,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 15)),
+                          fontWeight: FontWeight.w700, fontSize: YFont.body)),
                   Text(
                       '${ago(v.createdAt, context.now)} · ${tr3('基于第 ${v.demandVersionNo} 版', '${v.demandVersionNo}-нұсқа', 'к версии ${v.demandVersionNo}')}${a.versions.length > 1 ? ' · ${tr3('已修改 ${a.versions.length - 1} 次', 'өзгертілді', 'изменено')}' : ''}',
-                      style: TextStyle(color: t.muted, fontSize: 12)),
+                      style: TextStyle(color: t.muted, fontSize: YFont.caption)),
                 ])),
             StatusPill(applicationStatusName(a.status),
                 color: a.status == ApplicationStatus.cooperating ? t.ok : null),
@@ -236,7 +236,7 @@ class ApplicationCard extends StatelessWidget {
       for (final l in lines)
         Padding(
             padding: const EdgeInsets.only(bottom: 3),
-            child: Text(l, style: const TextStyle(fontSize: 14))),
+            child: Text(l, style: const TextStyle(fontSize: YFont.label))),
       const SizedBox(height: 10),
       Wrap(spacing: 8, runSpacing: 8, children: [
         OutlinedButton.icon(

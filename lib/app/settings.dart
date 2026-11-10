@@ -1,9 +1,9 @@
 import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'messages_ru.dart';
 
-/// Chinese, Kazakh and Russian. The design tool is written in Chinese and
-/// Kazakh; in Russian it shows its Kazakh text until it is translated.
+/// Chinese, Kazakh and Russian, everywhere in the app.
 enum AppLang { zh, kk, ru }
 
 enum ThemeChoice { auto, day, night }
@@ -73,8 +73,14 @@ bool get isKk => AppSettings.instance.lang != AppLang.zh;
 
 bool get isRu => AppSettings.instance.lang == AppLang.ru;
 
-/// Every design-tool string is written as a Chinese / Kazakh pair.
-String tr(String zh, String kk) => isKk ? kk : zh;
+/// A Chinese / Kazakh pair from a table (names of furniture, stages,
+/// checklists). In Russian the Kazakh text is looked up in [ruText];
+/// strings written at a call use [tr3] instead.
+String tr(String zh, String kk) => switch (AppSettings.instance.lang) {
+      AppLang.zh => zh,
+      AppLang.kk => kk,
+      AppLang.ru => ruText(kk),
+    };
 
 /// Platform strings come in all three languages.
 String tr3(String zh, String kk, String ru) =>
@@ -90,8 +96,8 @@ String dec(String number) => isKk ? number.replaceAll('.', ',') : number;
 /// Metres from millimetres, two decimals: 3600 → "3.60".
 String m2dp(num mm) => dec((mm / 1000).toStringAsFixed(2));
 
-String get unitM => tr('米', 'м');
-String get unitM2 => tr('㎡', 'м²');
-String get unitM3 => tr('m³', 'м³');
-String get unitMm => tr('mm', 'мм');
-String get unitPcs => tr('个', 'дана');
+String get unitM => tr3('米', 'м', 'м');
+String get unitM2 => tr3('㎡', 'м²', 'м²');
+String get unitM3 => tr3('m³', 'м³', 'м³');
+String get unitMm => tr3('mm', 'мм', 'мм');
+String get unitPcs => tr3('个', 'дана', 'шт.');

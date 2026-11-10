@@ -284,7 +284,7 @@ class _CoopView extends StatelessWidget {
                   context, (_) => DemandDetailPage(demandId: c.demandId)),
               child: Text(title,
                   style: const TextStyle(
-                      fontSize: 24, fontWeight: FontWeight.w700))),
+                      fontSize: YFont.display, fontWeight: FontWeight.w700))),
           const SizedBox(height: 8),
           Row(children: [
             StatusPill(cooperationStatusName(c),
@@ -356,7 +356,7 @@ class _CoopView extends StatelessWidget {
               Text(
                   tr3('对方提交或评价期结束后，双方评价同时公开。', 'Екі жақ жазғанда ашылады.',
                       'Отзывы откроются, когда оба оставят их.'),
-                  style: TextStyle(color: t.muted, fontSize: 12)),
+                  style: TextStyle(color: t.muted, fontSize: YFont.caption)),
           ],
           if (c.agreements.length > 1) ...[
             SectionTitle(tr3('约定历史', 'Нұсқалар', 'История версий')),
@@ -379,7 +379,7 @@ class _CoopView extends StatelessWidget {
           Text(
               tr3('聊天内容不能代替确认操作；只有点击确认才算同意。', 'Чат растауды алмастырмайды.',
                   'Сообщения в чате не заменяют подтверждение.'),
-              style: TextStyle(color: t.muted, fontSize: 12)),
+              style: TextStyle(color: t.muted, fontSize: YFont.caption)),
         ]));
   }
 }
@@ -409,7 +409,7 @@ class _AgreementCard extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title,
               style:
-                  const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                  const TextStyle(fontSize: YFont.heading, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           InfoRow(tr3('范围', 'Көлемі', 'Объём') + mark(g.scope, previous?.scope),
               g.scope),
@@ -473,7 +473,7 @@ class _ReviewTile extends StatelessWidget {
           Wrap(spacing: 12, children: [
             for (final e in review.scores.entries)
               Text('${dimensionName(e.key)} ${e.value}/5',
-                  style: TextStyle(color: t.muted, fontSize: 13)),
+                  style: TextStyle(color: t.muted, fontSize: YFont.small)),
           ]),
           if (review.text.isNotEmpty) Text(review.text),
         ]));

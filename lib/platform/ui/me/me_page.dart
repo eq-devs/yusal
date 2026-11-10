@@ -4,6 +4,7 @@ import '../../domain/models.dart';
 import '../apply/apply_page.dart';
 import '../backup/backup_page.dart';
 import '../cards.dart';
+import '../components.dart';
 import '../demand/demand_detail_page.dart';
 import '../home/house_card.dart';
 import '../home/post_page.dart';
@@ -16,25 +17,28 @@ import '../widgets.dart';
 import 'admin_page.dart';
 import 'dev_tools_page.dart';
 
-/// Third tab: account, profiles, my sign-ups and quotes, favourites,
-/// backups, settings, privacy and developer tools.
+/// Fourth tab: who I am, what I published, my professional profile,
+/// settings and the account itself, each as its own group.
 class MePage extends StatelessWidget {
   const MePage({super.key});
+
+  static const _langs = [
+    (AppLang.kk, 'Қазақша'),
+    (AppLang.ru, 'Русский'),
+    (AppLang.zh, '中文'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final app = AppScope.watch(context);
     final t = YTokens.of(context);
+    final themes = [
+      (ThemeChoice.auto, tr3('跟随系统', 'Жүйе бойынша', 'Как в системе')),
+      (ThemeChoice.day, tr3('日间', 'Күндіз', 'Светлая')),
+      (ThemeChoice.night, tr3('夜间', 'Түн', 'Тёмная')),
+    ];
     return OnChange(builder: (context) {
       final account = context.repos.currentAccount;
-      Widget tile(IconData icon, String title, VoidCallback onTap,
-              {String? sub}) =>
-          ListTile(
-              leading: Icon(icon),
-              title: Text(title, style: const TextStyle(fontSize: 16)),
-              subtitle: sub == null ? null : Text(sub),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: onTap);
       return Scaffold(
           body: SafeArea(
               child: Center(
@@ -45,287 +49,330 @@ class MePage extends StatelessWidget {
                       // reloaded) the ones at the edge of its cache over and
                       // over while their height changed.
                       child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+                          padding: const EdgeInsets.fromLTRB(YSpace.gutter,
+                              YSpace.md, YSpace.gutter, YSpace.huge),
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                            Row(children: [
-                              Expanded(
-                                  child: Text(tr3('我的', 'Менің', 'Профиль'),
-                                      style: display(size: 28))),
-                            ]),
-                            const SizedBox(height: 16),
+                            Semantics(
+                                header: true,
+                                child: Text(tr3('我的', 'Менің', 'Профиль'),
+                                    style: display(size: 28))),
+                            const SizedBox(height: YSpace.lg),
                             if (account == null)
-                              YCard(
-                                  shadow: true,
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                            tr3(
-                                                '登录后可以发布、报名、报价和备份设计',
-                                                'Кіріп, жариялаңыз және сақтаңыз',
-                                                'Войдите, чтобы публиковать, откликаться и сохранять'),
-                                            style: const TextStyle(
-                                                fontSize: 17,
-                                                fontWeight: FontWeight.w700)),
-                                        const SizedBox(height: 14),
-                                        FilledButton(
-                                            onPressed: () =>
-                                                requireLogin(context),
-                                            child: Text(
-                                                tr3('登录或注册', 'Кіру', 'Войти'))),
-                                      ]))
+                              const _GuestCard()
                             else
-                              Row(children: [
-                                Avatar(account.displayName, size: 64),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                    child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                      Text(account.displayName,
-                                          style: const TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.w700)),
-                                      Text(
-                                          context.isDemo
-                                              ? '${maskPhone(account.phone)} · ${tr3('演示账号', 'Демо аккаунт', 'Демо-аккаунт')}'
-                                              : account.phone.isEmpty
-                                                  ? tr3('未填写手机号', 'Телефон көрсетілмеген', 'Телефон не указан')
-                                                  : maskPhone(account.phone),
-                                          style: TextStyle(color: t.muted)),
-                                    ])),
-                                IconButton(
-                                    tooltip: tr3(
-                                        '改称呼', 'Атын өзгерту', 'Изменить имя'),
-                                    icon: const Icon(Icons.edit_outlined),
-                                    onPressed: () async {
-                                      final name = await askText(
-                                          context, tr3('称呼', 'Аты', 'Имя'),
-                                          initial: account.displayName,
-                                          lines: 1);
-                                      if (name != null && context.mounted)
-                                        await attempt(
-                                            context,
-                                            () =>
-                                                context.repos.updateName(name));
-                                    }),
-                              ]),
+                              _AccountHeader(account: account),
                             if (account != null) ...[
                               SectionTitle(
-                                  tr3('我发布的房子', 'Үйлерім', 'Мои дома')),
-                              Live<List<HousePost>>(
-                                  load: (r) => r.myPosts(),
-                                  builder: (context, list) => list.isEmpty
-                                      ? Text(
-                                          tr3(
-                                              '还没有发布过设计。在“设计”里点分享图标即可发布到首页。',
-                                              'Әлі жарияланбаған.',
-                                              'Пока ничего не опубликовано.'),
-                                          style: TextStyle(color: t.muted))
-                                      : SizedBox(
-                                          height: 300,
-                                          child: ListView.separated(
-                                              scrollDirection: Axis.horizontal,
-                                              itemCount: list.length,
-                                              separatorBuilder: (_, __) =>
-                                                  const SizedBox(width: 12),
-                                              itemBuilder: (context, i) => SizedBox(
-                                                  width: 220,
-                                                  child: HouseCard(
-                                                      compact: true,
-                                                      post: list[i],
-                                                      onTap: () => pushPage<void>(context, (_) => PostPage(postId: list[i].id, preview: list[i]))))))),
-                              SectionTitle(tr3(
-                                  '入驻接活', 'Кәсіби профиль', 'Профиль мастера')),
-                              Text(
-                                  tr3(
-                                      '工人、包工头或工程师：建一张名片，房主就能找到你。',
-                                      'Жұмысшы, мердігер не инженер: профиль жасаңыз.',
-                                      'Рабочий, прораб или инженер: создайте профиль, и вас найдут.'),
-                                  style:
-                                      TextStyle(color: t.muted, fontSize: 13)),
-                              const SizedBox(height: 8),
-                              Live<List<ServiceProfile>>(
-                                  load: (r) => r.myProfiles(),
-                                  builder: (context, list) => Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                        for (final p in list)
-                                          Padding(
-                                              padding: const EdgeInsets.only(
-                                                  bottom: 10),
-                                              child: ProfileCard(
-                                                  profile: p,
-                                                  onTap: () => pushPage<void>(
-                                                      context,
-                                                      (_) => ProfilePage(
-                                                          profileId: p.id)))),
-                                        if (list.isEmpty)
-                                          Wrap(
-                                              spacing: 8,
-                                              runSpacing: 8,
-                                              children: [
-                                                for (final r in ProRole.values)
-                                                  OutlinedButton.icon(
-                                                      onPressed: () => pushPage<
-                                                              void>(
-                                                          context,
-                                                          (_) =>
-                                                              ProfileEditPage(
-                                                                  role: r)),
-                                                      icon: Icon(switch (r) {
-                                                        ProRole.worker => Icons
-                                                            .handyman_outlined,
-                                                        ProRole.contractor =>
-                                                          Icons.groups_outlined,
-                                                        ProRole.engineer => Icons
-                                                            .architecture_outlined,
-                                                      }),
-                                                      label:
-                                                          Text(proRoleName(r))),
-                                              ])
-                                        else
-                                          OutlinedButton.icon(
-                                              onPressed: () => pushPage<void>(
-                                                  context,
-                                                  (_) =>
-                                                      const ProfileEditPage()),
-                                              icon: const Icon(Icons.add),
-                                              label: Text(tr3(
-                                                  '再建一个名片',
-                                                  'Тағы профиль',
-                                                  'Ещё профиль'))),
-                                      ])),
-                              const SizedBox(height: 12),
-                              tile(
-                                  Icons.favorite_border,
-                                  tr3('收藏', 'Таңдаулы', 'Избранное'),
-                                  () => pushPage<void>(
-                                      context, (_) => const FavouritesPage())),
-                              tile(
-                                  Icons.cloud_outlined,
-                                  tr3(
-                                      '设计备份与恢复',
-                                      'Сақтық көшірме',
-                                      context.isDemo
-                                          ? 'Демо-копии'
-                                          : 'Резервные копии'),
-                                  () => pushPage<void>(
-                                      context, (_) => const BackupPage())),
-                              if (!context.isDemo)
-                                tile(
-                                    Icons.phone_outlined,
-                                    tr3('手机号', 'Телефон нөмірі',
-                                        'Номер телефона'),
-                                    () => editPhone(context),
-                                    sub: tr3(
-                                        '只在你在聊天里主动分享时对方才能看到',
-                                        'Чатта өзіңіз бөліскенде ғана көрінеді',
-                                        'Виден, только когда вы делитесь им в чате')),
-                              tile(
-                                  Icons.block,
-                                  tr3('隐私与拉黑', 'Құпиялық',
-                                      'Приватность и блокировки'),
-                                  () => pushPage<void>(
-                                      context, (_) => const PrivacyPage())),
-                              if (account.isAdmin)
-                                tile(
-                                    Icons.admin_panel_settings_outlined,
-                                    tr3('审核后台', 'Модерация', 'Модерация'),
-                                    () => pushPage<void>(
-                                        context, (_) => const AdminPage())),
+                                  tr3('我发布的房子', 'Жарияланған үйлерім',
+                                      'Мои публикации')),
+                              const _MyPosts(),
+                              const SizedBox(height: YSpace.xl),
+                              SettingsGroup(children: [
+                                SettingsRow(
+                                    icon: Icons.favorite_border,
+                                    title: tr3('收藏', 'Таңдаулы', 'Избранное'),
+                                    onTap: () => pushPage<void>(context,
+                                        (_) => const FavouritesPage())),
+                                SettingsRow(
+                                    icon: Icons.cloud_outlined,
+                                    title: tr3(
+                                        '设计备份与恢复',
+                                        'Сақтық көшірме',
+                                        context.isDemo
+                                            ? 'Демо-копии'
+                                            : 'Резервные копии'),
+                                    onTap: () => pushPage<void>(
+                                        context, (_) => const BackupPage())),
+                                if (!context.isDemo)
+                                  SettingsRow(
+                                      key: const Key('me-phone'),
+                                      icon: Icons.phone_outlined,
+                                      title: tr3('手机号', 'Телефон нөмірі',
+                                          'Номер телефона'),
+                                      subtitle: tr3(
+                                          '只在你在聊天里主动分享时对方才能看到',
+                                          'Чатта өзіңіз бөліскенде ғана көрінеді',
+                                          'Виден, только когда вы делитесь им в чате'),
+                                      onTap: () => editPhone(context)),
+                                SettingsRow(
+                                    icon: Icons.block,
+                                    title: tr3('隐私与拉黑', 'Құпиялық',
+                                        'Приватность и блокировки'),
+                                    onTap: () => pushPage<void>(
+                                        context, (_) => const PrivacyPage())),
+                                if (account.isAdmin)
+                                  SettingsRow(
+                                      icon:
+                                          Icons.admin_panel_settings_outlined,
+                                      title:
+                                          tr3('审核后台', 'Модерация', 'Модерация'),
+                                      onTap: () => pushPage<void>(context,
+                                          (_) => const AdminPage())),
+                              ]),
+                              const _ProProfiles(),
                             ],
-                            SectionTitle(tr3('设置', 'Баптаулар', 'Настройки')),
-                            Text(tr3('语言', 'Тіл', 'Язык'),
-                                style: TextStyle(color: t.muted)),
-                            const SizedBox(height: 8),
-                            Wrap(spacing: 8, children: [
-                              for (final (l, label) in const [
-                                (AppLang.kk, 'Қазақша'),
-                                (AppLang.ru, 'Русский'),
-                                (AppLang.zh, '中文'),
-                              ])
-                                FilterPill(
-                                    label: label,
-                                    selected: app.lang == l,
-                                    onTap: () => app.setLang(l)),
-                            ]),
-                            const SizedBox(height: 14),
-                            Text(tr3('外观', 'Көрініс', 'Тема'),
-                                style: TextStyle(color: t.muted)),
-                            const SizedBox(height: 8),
-                            Wrap(spacing: 8, children: [
-                              for (final (c, label) in [
-                                (ThemeChoice.auto, tr3('自动', 'Авто', 'Авто')),
-                                (
-                                  ThemeChoice.day,
-                                  tr3('日间', 'Күндіз', 'Светлая')
-                                ),
-                                (ThemeChoice.night, tr3('夜间', 'Түн', 'Тёмная')),
-                              ])
-                                FilterPill(
-                                    label: label,
-                                    selected: app.theme == c,
-                                    onTap: () => app.setTheme(c)),
-                            ]),
-                            const SizedBox(height: 18),
-                            if (context.mock != null)
-                              tile(
-                                  Icons.science_outlined,
-                                  tr3('开发者工具（模拟数据）', 'Әзірлеуші құралдары',
-                                      'Инструменты разработчика'),
-                                  () => pushPage<void>(
-                                      context, (_) => const DevToolsPage()),
-                                  sub: tr3(
-                                      '切换测试账号、快进时间、模拟断网',
-                                      'Сынақ аккаунты, уақыт',
-                                      'Тестовые аккаунты, время, сеть')),
-                            if (account != null) ...[
-                              const Divider(height: 32),
-                              TextButton(
-                                  onPressed: () => attempt(
-                                      context, () => context.repos.signOut()),
-                                  child: Text(tr3('退出登录', 'Шығу', 'Выйти'))),
-                              TextButton(
-                                  onPressed: () async {
-                                    if (await confirmDialog(
+                            SettingsGroup(
+                                title: tr3('设置', 'Баптаулар', 'Настройки'),
+                                children: [
+                                  SettingsRow(
+                                      key: const Key('me-language'),
+                                      icon: Icons.language,
+                                      title: tr3('语言', 'Тіл', 'Язык'),
+                                      value: _langs
+                                          .firstWhere((l) => l.$1 == app.lang)
+                                          .$2,
+                                      onTap: () async {
+                                        final v = await pickOne<AppLang>(
                                             context,
-                                            tr3('注销账号？', 'Аккаунтты жою?',
-                                                'Удалить аккаунт?'),
-                                            body: tr3(
-                                                '名片和招募中的需求会下架，云端设计备份会删除。已有合作记录保留，对方看到“已注销用户”。本机设计不受影响。',
-                                                'Профильдер мен тапсырыстар алынады. Жергілікті жобалар қалады.',
-                                                'Профили и заявки будут сняты, облачные копии удалены. Локальные проекты останутся.'),
-                                            ok: tr3('注销', 'Жою', 'Удалить')) &&
-                                        context.mounted)
-                                      await attempt(context,
-                                          () => context.repos.deleteAccount(),
-                                          success: tr3(
-                                              '账号已注销',
-                                              'Аккаунт жойылды',
-                                              'Аккаунт удалён'));
-                                  },
-                                  child: Text(
-                                      tr3('注销账号', 'Аккаунтты жою',
-                                          'Удалить аккаунт'),
-                                      style: TextStyle(color: t.crit))),
-                            ],
-                            const SizedBox(height: 12),
+                                            tr3('语言', 'Тіл', 'Язык'),
+                                            _langs,
+                                            selected: app.lang);
+                                        if (v != null) app.setLang(v);
+                                      }),
+                                  SettingsRow(
+                                      key: const Key('me-theme'),
+                                      icon: Icons.brightness_6_outlined,
+                                      title: tr3('外观', 'Көрініс', 'Тема'),
+                                      value: themes
+                                          .firstWhere(
+                                              (c) => c.$1 == app.theme)
+                                          .$2,
+                                      onTap: () async {
+                                        final v = await pickOne<ThemeChoice>(
+                                            context,
+                                            tr3('外观', 'Көрініс', 'Тема'),
+                                            themes,
+                                            selected: app.theme);
+                                        if (v != null) app.setTheme(v);
+                                      }),
+                                  if (context.mock != null)
+                                    SettingsRow(
+                                        icon: Icons.science_outlined,
+                                        title: tr3(
+                                            '开发者工具（模拟数据）',
+                                            'Әзірлеуші құралдары',
+                                            'Инструменты разработчика'),
+                                        subtitle: tr3(
+                                            '切换测试账号、快进时间、模拟断网',
+                                            'Сынақ аккаунты, уақыт',
+                                            'Тестовые аккаунты, время, сеть'),
+                                        onTap: () => pushPage<void>(context,
+                                            (_) => const DevToolsPage())),
+                                ]),
+                            if (account != null)
+                              SettingsGroup(
+                                  title: tr3('账号', 'Аккаунт', 'Аккаунт'),
+                                  children: [
+                                    SettingsRow(
+                                        key: const Key('me-sign-out'),
+                                        icon: Icons.logout,
+                                        title: tr3('退出登录', 'Шығу', 'Выйти'),
+                                        trailing: const SizedBox.shrink(),
+                                        onTap: () => attempt(context,
+                                            () => context.repos.signOut())),
+                                    SettingsRow(
+                                        key: const Key('me-delete-account'),
+                                        icon: Icons.delete_outline,
+                                        danger: true,
+                                        title: tr3('注销账号', 'Аккаунтты жою',
+                                            'Удалить аккаунт'),
+                                        onTap: () => _deleteAccount(context)),
+                                  ]),
+                            const SizedBox(height: YSpace.xl),
                             Text(
                                 tr3(
                                     'Yusal 不提供付款担保或资金托管，不承诺施工质量。',
                                     'Yusal төлем кепілдігін бермейді.',
                                     'Yusal не гарантирует оплату и качество работ.'),
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: t.faint, fontSize: 12)),
+                                style:
+                                    YText.caption.copyWith(color: t.muted)),
                           ]))))));
     });
+  }
+
+  static Future<void> _deleteAccount(BuildContext context) async {
+    if (await confirmDialog(
+            context, tr3('注销账号？', 'Аккаунтты жою?', 'Удалить аккаунт?'),
+            body: tr3(
+                '名片和招募中的需求会下架，云端设计备份会删除。已有合作记录保留，对方看到“已注销用户”。本机设计不受影响。',
+                'Профильдер мен тапсырыстар алынады. Жергілікті жобалар қалады.',
+                'Профили и заявки будут сняты, облачные копии удалены. Локальные проекты останутся.'),
+            ok: tr3('注销', 'Жою', 'Удалить'),
+            danger: true) &&
+        context.mounted)
+      await attempt(context, () => context.repos.deleteAccount(),
+          success: tr3('账号已注销', 'Аккаунт жойылды', 'Аккаунт удалён'));
+  }
+}
+
+/// Signed out: what an account is for, and the way in.
+class _GuestCard extends StatelessWidget {
+  const _GuestCard();
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    return YCard(
+        shadow: true,
+        padding: const EdgeInsets.all(YSpace.xl),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(
+              tr3('登录后可以发布、报名、报价和备份设计', 'Кіріп, жариялаңыз және сақтаңыз',
+                  'Войдите, чтобы публиковать, откликаться и сохранять'),
+              style: YText.heading),
+          const SizedBox(height: YSpace.xs),
+          Text(
+              tr3('浏览和画图不需要账号。', 'Қарау мен сызу үшін аккаунт қажет емес.',
+                  'Смотреть и чертить можно без аккаунта.'),
+              style: YText.label.copyWith(color: t.muted)),
+          const SizedBox(height: YSpace.lg),
+          FilledButton(
+              onPressed: () => requireLogin(context),
+              child: Text(tr3('登录或注册', 'Кіру', 'Войти'))),
+        ]));
+  }
+}
+
+class _AccountHeader extends StatelessWidget {
+  const _AccountHeader({required this.account});
+  final Account account;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    return Row(children: [
+      Avatar(account.displayName, size: 64),
+      const SizedBox(width: YSpace.lg),
+      Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(account.displayName,
+            maxLines: 1, overflow: TextOverflow.ellipsis, style: YText.title),
+        Text(
+            context.isDemo
+                ? '${maskPhone(account.phone)} · ${tr3('演示账号', 'Демо аккаунт', 'Демо-аккаунт')}'
+                : account.phone.isEmpty
+                    ? tr3('未填写手机号', 'Телефон көрсетілмеген',
+                        'Телефон не указан')
+                    : maskPhone(account.phone),
+            style: YText.label.copyWith(color: t.muted)),
+      ])),
+      IconButton(
+          tooltip: tr3('改称呼', 'Атын өзгерту', 'Изменить имя'),
+          icon: const Icon(Icons.edit_outlined),
+          onPressed: () async {
+            final name = await askText(context, tr3('称呼', 'Аты', 'Имя'),
+                initial: account.displayName, lines: 1);
+            if (name != null && context.mounted)
+              await attempt(context, () => context.repos.updateName(name));
+          }),
+    ]);
+  }
+}
+
+/// Houses I published, side by side; sized to the card so no gap is left
+/// under it.
+class _MyPosts extends StatelessWidget {
+  const _MyPosts();
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    return Live<List<HousePost>>(
+        load: (r) => r.myPosts(),
+        loading: const Skeleton(height: 150, radius: YRadius.card),
+        builder: (context, list) => list.isEmpty
+            ? Text(
+                tr3(
+                    '还没有发布过设计。在“我的房子”里打开设计的菜单，选“发布作品”。',
+                    'Әлі жарияланбаған. «Үйлерім» бөлімінде жоба мәзірінен «Жобаны жариялау» таңдаңыз.',
+                    'Пока ничего не опубликовано. В «Моих домах» откройте меню проекта и выберите «Опубликовать».'),
+                style: YText.label.copyWith(color: t.muted))
+            // A row that is as tall as its cards: a person has a handful
+            // of published houses, so nothing needs to be lazy, and no
+            // height has to be guessed for every language and text size.
+            : SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final (i, post) in list.indexed)
+                        Padding(
+                            padding: EdgeInsets.only(
+                                left: i == 0 ? 0 : YSpace.md),
+                            child: SizedBox(
+                                width: 220,
+                                child: HouseCard(
+                                    compact: true,
+                                    post: post,
+                                    onTap: () => pushPage<void>(
+                                        context,
+                                        (_) => PostPage(
+                                            postId: post.id,
+                                            preview: post))))),
+                    ])));
+  }
+}
+
+/// My professional profiles, or the three ways to make the first one.
+class _ProProfiles extends StatelessWidget {
+  const _ProProfiles();
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    return Live<List<ServiceProfile>>(
+        load: (r) => r.myProfiles(),
+        loading: const SizedBox.shrink(),
+        builder: (context, list) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (list.isNotEmpty) ...[
+                    SectionTitle(
+                        tr3('入驻接活', 'Кәсіби профиль', 'Профиль мастера')),
+                    for (final p in list)
+                      Padding(
+                          padding: const EdgeInsets.only(bottom: YSpace.md),
+                          child: ProfileCard(
+                              profile: p,
+                              onTap: () => pushPage<void>(context,
+                                  (_) => ProfilePage(profileId: p.id)))),
+                    Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton.icon(
+                            onPressed: () => pushPage<void>(
+                                context, (_) => const ProfileEditPage()),
+                            icon: const Icon(Icons.add, size: 20),
+                            label: Text(tr3(
+                                '再建一个名片', 'Тағы профиль', 'Ещё профиль')))),
+                  ] else ...[
+                    SettingsGroup(
+                        title: tr3('入驻接活', 'Кәсіби профиль', 'Профиль мастера'),
+                        children: [
+                          for (final r in ProRole.values)
+                            SettingsRow(
+                                key: Key('me-join-${r.name}'),
+                                icon: switch (r) {
+                                  ProRole.worker => Icons.handyman_outlined,
+                                  ProRole.contractor => Icons.groups_outlined,
+                                  ProRole.engineer =>
+                                    Icons.architecture_outlined,
+                                },
+                                title: proRoleName(r),
+                                onTap: () => pushPage<void>(context,
+                                    (_) => ProfileEditPage(role: r))),
+                        ]),
+                    Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                            YSpace.xs, YSpace.sm, YSpace.xs, 0),
+                        child: Text(
+                            tr3(
+                                '工人、包工头或工程师：建一张名片，房主就能找到你。',
+                                'Жұмысшы, мердігер не инженер: профиль жасаңыз.',
+                                'Рабочий, прораб или инженер: создайте профиль, и вас найдут.'),
+                            style: YText.caption.copyWith(color: t.muted))),
+                  ],
+                ]));
   }
 }
 
@@ -378,7 +425,7 @@ class MyApplicationsPage extends StatelessWidget {
                                             color: a.needsReconfirm
                                                 ? t.warn
                                                 : t.muted,
-                                            fontSize: 13)),
+                                            fontSize: YFont.small)),
                                   ])),
                               if (a.status ==
                                       ApplicationStatus.pendingConfirm ||

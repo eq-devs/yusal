@@ -5,6 +5,7 @@ import 'chat/inbox_page.dart';
 import 'explore/explore_page.dart';
 import 'me/me_page.dart';
 import 'projects/projects_page.dart';
+import 'components.dart';
 import 'theme.dart';
 import 'scope.dart';
 import '../../motion/motion.dart';
@@ -39,10 +40,37 @@ class _PlatformShellState extends State<PlatformShell> {
     super.dispose();
   }
 
+  /// Keeps the pages' state when the window crosses the wide breakpoint
+  /// and the navigation moves between the bottom bar and the side rail.
+  final _pagesKey = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     AppScope.watch(context);
     final drafting = Theme.of(context);
+    final destinations = [
+      (
+        const Icon(Icons.explore_outlined),
+        const Icon(Icons.explore),
+        tr3('发现', 'Шолу', 'Обзор')
+      ),
+      (
+        const Icon(Icons.home_work_outlined),
+        const Icon(Icons.home_work),
+        tr3('我的房子', 'Үйлерім', 'Мои дома')
+      ),
+      (
+        const InboxNavIcon(),
+        const InboxNavIcon(selected: true),
+        tr3('消息', 'Хабар', 'Чаты')
+      ),
+      (
+        const Icon(Icons.person_outline),
+        const Icon(Icons.person),
+        tr3('我的', 'Менің', 'Профиль')
+      ),
+    ];
+    void select(int i) => setState(() => tab = i);
     return PlatformReload(
         notifier: reload,
         child: ShellNav(
@@ -57,59 +85,80 @@ class _PlatformShellState extends State<PlatformShell> {
               WidgetsBinding.instance
                   .addPostFrameCallback((_) => newDesign.bump());
             },
-            child: PlatformTheme(
-                child: Builder(
-                    builder: (context) => Scaffold(
-                        body: Column(children: [
-                          if (context.isDemo)
-                            SafeArea(
-                                bottom: false,
-                                child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 4),
-                                    child: Text(
-                                        tr3(
-                                            '演示模式 · 平台数据重启后重置，本地设计保留',
-                                            'Демо · платформа деректері қайта іске қосқанда өшеді, жергілікті жобалар сақталады',
-                                            'Демо · данные платформы сбрасываются, локальные проекты сохраняются'),
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            color:
-                                                YTokens.of(context).muted)))),
-                          Expanded(
-                              child: MotionIndexedStack(index: tab, children: [
-                            ExplorePage(segment: segment),
-                            ProjectsPage(
-                                drafting: drafting,
-                                reload: reload,
-                                createRequest: newDesign),
-                            const InboxPage(),
-                            const MePage(),
-                          ])),
-                        ]),
-                        bottomNavigationBar: NavigationBar(
-                            selectedIndex: tab,
-                            onDestinationSelected: (i) =>
-                                setState(() => tab = i),
-                            destinations: [
-                              NavigationDestination(
-                                  icon: const Icon(Icons.explore_outlined),
-                                  selectedIcon: const Icon(Icons.explore),
-                                  label: tr3('发现', 'Шолу', 'Обзор')),
-                              NavigationDestination(
-                                  icon: const Icon(Icons.home_work_outlined),
-                                  selectedIcon: const Icon(Icons.home_work),
-                                  label: tr3('我的房子', 'Үйлерім', 'Мои дома')),
-                              NavigationDestination(
-                                  icon: const InboxNavIcon(),
-                                  selectedIcon:
-                                      const InboxNavIcon(selected: true),
-                                  label: tr3('消息', 'Хабар', 'Чаты')),
-                              NavigationDestination(
-                                  icon: const Icon(Icons.person_outline),
-                                  selectedIcon: const Icon(Icons.person),
-                                  label: tr3('我的', 'Менің', 'Профиль')),
-                            ]))))));
+            child: PlatformTheme(child: Builder(builder: (context) {
+              final t = YTokens.of(context);
+              // Phones get the bottom bar; tablets and desktop a side rail,
+              // so four icons are not spread across a wide window.
+              final wide = MediaQuery.sizeOf(context).width >= yWide;
+              Widget pages = MotionIndexedStack(
+                  key: _pagesKey,
+                  index: tab,
+                  children: [
+                    ExplorePage(segment: segment),
+                    ProjectsPage(
+                        drafting: drafting,
+                        reload: reload,
+                        createRequest: newDesign),
+                    const InboxPage(),
+                    const MePage(),
+                  ]);
+              // The notice already sits below the status bar; the pages
+              // must not leave room for it a second time.
+              if (context.isDemo)
+                pages = MediaQuery.removePadding(
+                    context: context, removeTop: true, child: pages);
+              return Scaffold(
+                  body: Column(children: [
+                    if (context.isDemo)
+                      ColoredBox(
+                          color: t.surface,
+                          child: const SafeArea(
+                              bottom: false, child: DemoNotice())),
+                    Expanded(
+                        child: wide
+                            ? Row(children: [
+                                SafeArea(
+                                    right: false,
+                                    child: NavigationRail(
+                                        key: const Key('shell-rail'),
+                                        selectedIndex: tab,
+                                        onDestinationSelected: select,
+                                        labelType:
+                                            NavigationRailLabelType.all,
+                                        groupAlignment: -0.9,
+                                        minWidth: 88,
+                                        destinations: [
+                                          for (final (icon, selected, label)
+                                              in destinations)
+                                            NavigationRailDestination(
+                                                icon: icon,
+                                                selectedIcon: selected,
+                                                label: Text(label)),
+                                        ])),
+                                VerticalDivider(width: 1, color: t.line),
+                                Expanded(child: pages),
+                              ])
+                            : pages),
+                  ]),
+                  bottomNavigationBar: wide
+                      ? null
+                      : DecoratedBox(
+                          decoration: BoxDecoration(
+                              border:
+                                  Border(top: BorderSide(color: t.line))),
+                          child: NavigationBar(
+                              key: const Key('shell-bar'),
+                              selectedIndex: tab,
+                              onDestinationSelected: select,
+                              destinations: [
+                                for (final (icon, selected, label)
+                                    in destinations)
+                                  NavigationDestination(
+                                      icon: icon,
+                                      selectedIcon: selected,
+                                      label: label),
+                              ])));
+            }))));
   }
 }
 

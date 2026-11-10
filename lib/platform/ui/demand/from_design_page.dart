@@ -90,7 +90,7 @@ class _FromDesignPageState extends State<FromDesignPage> {
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(widget.entry.document.meta.name,
               style:
-                  const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+                  const TextStyle(fontSize: YFont.display, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(
               tr3(
@@ -144,7 +144,9 @@ class _FromDesignPageState extends State<FromDesignPage> {
                       '${stageLabel(l.stage ?? '')} · ${qtySourceName(l.source)}'),
                   secondary: Text(
                       '${numText(l.quantity ?? 0)} ${unitLabel(l.unit)}',
-                      style: const TextStyle(fontWeight: FontWeight.w700))),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: YText.tabular))),
           const SizedBox(height: 12),
           Hint(tr3(
               '发布后附件固定为此刻的设计版本。设计检查结果不代表具备施工或审批资格。',

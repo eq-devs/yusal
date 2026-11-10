@@ -122,7 +122,7 @@ class BackupPage extends StatelessWidget {
                                   rows.any((r) =>
                                       r.cloud != null && r.entry != null)) ...[
                                 const SizedBox(height: 12),
-                                Text('Dev', style: TextStyle(color: t.faint)),
+                                Text('Dev', style: TextStyle(color: t.muted)),
                                 TextButton(
                                     onPressed: () {
                                       final row = rows.firstWhere((r) =>
@@ -269,7 +269,7 @@ class _BackupTile extends StatelessWidget {
             Expanded(
                 child: Text(name,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 15))),
+                        fontWeight: FontWeight.w700, fontSize: YFont.body))),
             StatusPill(label, color: color),
           ]),
           const SizedBox(height: 10),

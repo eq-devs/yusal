@@ -79,7 +79,7 @@ class ComparePage extends StatelessWidget {
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(demand.current.title,
               style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                  const TextStyle(fontSize: YFont.section, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(
               tr3(
@@ -106,7 +106,7 @@ class ComparePage extends StatelessWidget {
             Text(
                 tr3('每行最低价标绿；“未报”表示这位师傅没填这一项。', 'Ең төмені жасыл.',
                     'Минимум по строке выделен зелёным; «нет» — позиция не указана.'),
-                style: TextStyle(color: t.muted, fontSize: 13)),
+                style: TextStyle(color: t.muted, fontSize: YFont.small)),
             const SizedBox(height: 8),
             SingleChildScrollView(
                 key: const Key('line-compare'),
@@ -145,13 +145,13 @@ class ComparePage extends StatelessWidget {
                             padding: const EdgeInsets.all(10),
                             child: Text(label,
                                 style:
-                                    TextStyle(color: t.muted, fontSize: 13))),
+                                    TextStyle(color: t.muted, fontSize: YFont.small))),
                         for (final a in quotes)
                           Padding(
                               padding: const EdgeInsets.all(10),
                               child: Text(cell(a.current, a),
                                   style: const TextStyle(
-                                      fontSize: 13, height: 1.4))),
+                                      fontSize: YFont.small, height: 1.4))),
                       ]),
                   ])),
         ]));
@@ -183,8 +183,9 @@ class _LineTable extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         child: Text(text,
             style: TextStyle(
-                fontSize: 13,
+                fontSize: YFont.small,
                 color: color,
+                fontFeatures: YText.tabular,
                 fontWeight: bold ? FontWeight.w700 : FontWeight.w400)));
     return Table(
         defaultColumnWidth: const FixedColumnWidth(130),

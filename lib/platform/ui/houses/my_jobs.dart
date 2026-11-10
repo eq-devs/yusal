@@ -174,7 +174,7 @@ class _JobCard extends StatelessWidget {
                                   '需求已不可见', 'Қолжетімсіз', 'Заявка недоступна')
                               : title,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 15)),
+                              fontWeight: FontWeight.w700, fontSize: YFont.body)),
                       const SizedBox(height: 2),
                       Text(status, style: TextStyle(color: t.muted)),
                       if (c != null && c.status == CooperationStatus.confirmed)

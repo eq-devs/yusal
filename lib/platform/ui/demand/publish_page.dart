@@ -439,7 +439,7 @@ class _PublishPageState extends State<PublishPage> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(text,
               style:
-                  const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+                  const TextStyle(fontSize: YFont.display, fontWeight: FontWeight.w700)),
           if (sub != null) ...[
             const SizedBox(height: 6),
             Text(sub, style: TextStyle(color: t.muted, height: 1.4)),
@@ -474,7 +474,7 @@ class _PublishPageState extends State<PublishPage> {
                               children: [
                             Text(title,
                                 style: const TextStyle(
-                                    fontSize: 17, fontWeight: FontWeight.w700)),
+                                    fontSize: YFont.heading, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 4),
                             Text(body, style: TextStyle(color: t.muted)),
                           ])),
@@ -529,7 +529,7 @@ class _PublishPageState extends State<PublishPage> {
         padding: const EdgeInsets.only(bottom: 12),
         child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(YRadius.control),
             child: InputDecorator(
                 decoration: InputDecoration(
                     labelText: label,
@@ -713,9 +713,11 @@ class _PublishPageState extends State<PublishPage> {
               title: Text(q.name),
               subtitle: Text(qtySourceName(q.source)),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(q.quantity == null
-                    ? tr3('现场测量', 'Орында', 'Замер')
-                    : '${numText(q.quantity!)} ${unitLabel(q.unit)}'),
+                Text(
+                    q.quantity == null
+                        ? tr3('现场测量', 'Орында', 'Замер')
+                        : '${numText(q.quantity!)} ${unitLabel(q.unit)}',
+                    style: const TextStyle(fontFeatures: YText.tabular)),
                 IconButton(
                     tooltip: tr3('删除', 'Жою', 'Удалить'),
                     icon: const Icon(Icons.close, size: 18),

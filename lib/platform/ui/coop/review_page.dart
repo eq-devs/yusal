@@ -50,7 +50,7 @@ class _ReviewPageState extends State<ReviewPage> {
               tr3('评价 ${widget.otherName}', '${widget.otherName} туралы',
                   'Отзыв о ${widget.otherName}'),
               style:
-                  const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                  const TextStyle(fontSize: YFont.title, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           Text(
               tr3(

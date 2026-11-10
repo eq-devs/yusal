@@ -460,7 +460,7 @@ class FloorPlanPainter extends CustomPainter {
       final area = '${dec((room.clearArea / 1e6).toStringAsFixed(1))} $unitM2';
       final net = largest == null
           ? ''
-          : '${tr('净', 'таза')} ${m2dp(largest.right - largest.left)} × ${m2dp(largest.top - largest.bottom)} $unitM';
+          : '${tr3('净', 'таза', 'в свету')} ${m2dp(largest.right - largest.left)} × ${m2dp(largest.top - largest.bottom)} $unitM';
       // Long names shrink to one line before they would break mid-word.
       final room_ = math.max(px(24), available - px(8));
       final nameWidth = textWidth(name, px(14), FontWeight.w700);
@@ -487,11 +487,16 @@ class FloorPlanPainter extends CustomPainter {
       final anchor =
           labelSpot(room, largest, size, Size(boxWidth, lineGap * 2 * lines));
       var y = anchor.dy - lineGap * (lines - 1);
+      // One alphabetic word that still does not fit is cut with an ellipsis
+      // on one line ("Спаль…"); wrapping it would break it mid-word. Names
+      // of several words, and Chinese, may take two lines.
+      final oneWord =
+          !name.contains(' ') && !RegExp(r'[\u4e00-\u9fff]').hasMatch(name);
       label(canvas, name, Offset(anchor.dx, y),
           font: nameFont,
           weight: FontWeight.w700,
           maxWidth: room_,
-          maxLines: 2);
+          maxLines: oneWord ? 1 : 2);
       if (showArea) {
         y += lineGap * 2;
         label(canvas, area, Offset(anchor.dx, y),
@@ -628,7 +633,7 @@ class FloorPlanPainter extends CustomPainter {
           center.dy - vector.dy * px(7) - normal.dy * px(5))
       ..close();
     canvas.drawPath(arrow, Paint()..color = t.wall);
-    label(canvas, tr('北', 'С'), center + vector * px(20),
+    label(canvas, tr3('北', 'С', 'С'), center + vector * px(20),
         font: 11, weight: FontWeight.w700);
   }
 
@@ -738,7 +743,7 @@ class FloorPlanPainter extends CustomPainter {
             canvas,
             draftLabel ??
                 (draftIsLine
-                    ? tr('松手分房', 'Жіберсеңіз бөлінеді')
+                    ? tr3('松手分房', 'Жіберсеңіз бөлінеді', 'Отпустите, чтобы разделить')
                     : '${dec(((draft!.right - draft!.left) / 1000).toStringAsFixed(1))} × '
                         '${dec(((draft!.top - draft!.bottom) / 1000).toStringAsFixed(1))} $unitM'),
             Offset(rect.center.dx, rect.top - 18),

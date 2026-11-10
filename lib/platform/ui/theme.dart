@@ -89,12 +89,86 @@ class YTokens extends ThemeExtension<YTokens> {
   YTokens lerp(ThemeExtension<YTokens>? other, double t) =>
       other is YTokens && t >= 0.5 ? other : this;
 
+  /// The drafting sheet behind every plan drawing, light in both themes.
+  static const paper = Color(0xfff6f7f3);
+
+  /// Backing of a control that sits on a picture.
+  Color get onImage => card.withValues(alpha: 0.92);
+
   List<BoxShadow> get softShadow => [
         BoxShadow(color: shadow, blurRadius: 16, offset: const Offset(0, 6)),
       ];
 }
 
-const yRadius = 14.0;
+const yRadius = YRadius.card;
+
+/// Spacing on a 4 px grid. Pages use [gutter] at their sides.
+abstract final class YSpace {
+  static const xs = 4.0, sm = 8.0, md = 12.0, lg = 16.0, xl = 20.0;
+  static const xxl = 24.0, xxxl = 32.0, huge = 40.0;
+  static const gutter = xl;
+}
+
+/// Corner radii: dense rows and inputs, controls, cards, sheets, pills.
+abstract final class YRadius {
+  static const row = 8.0, control = 12.0, card = 14.0, sheet = 20.0;
+
+  /// A chat bubble.
+  static const bubble = 18.0;
+  static const pill = 999.0;
+}
+
+/// Smallest side of anything tappable.
+const yTouch = 44.0;
+
+/// Width from which the shell uses a side rail and pages may use columns.
+const yWide = 840.0;
+
+/// Type sizes. Pages name a step; they do not write a number.
+abstract final class YFont {
+  /// Bar labels under the tab icons.
+  static const tab = 11.0;
+  static const caption = 12.0, small = 13.0, label = 14.0;
+
+  /// Text on buttons.
+  static const button = 15.0;
+  static const body = 16.0, heading = 18.0, section = 20.0, title = 22.0;
+
+  /// Smallest size of the serif display face (page titles go up to 28).
+  static const display = 24.0;
+}
+
+/// The type scale. Sizes only come from here; colour comes from the theme
+/// unless a page asks for muted text.
+abstract final class YText {
+  static const title =
+      TextStyle(fontSize: YFont.title, fontWeight: FontWeight.w700, height: 1.2);
+  static const heading =
+      TextStyle(fontSize: YFont.heading, fontWeight: FontWeight.w700, height: 1.25);
+  static const body = TextStyle(fontSize: YFont.body, height: 1.45);
+  static const bodyStrong =
+      TextStyle(fontSize: YFont.body, fontWeight: FontWeight.w600, height: 1.3);
+  static const label = TextStyle(fontSize: YFont.label, height: 1.35);
+  static const labelStrong =
+      TextStyle(fontSize: YFont.label, fontWeight: FontWeight.w600, height: 1.3);
+  static const caption = TextStyle(fontSize: YFont.caption, height: 1.35);
+
+  /// Money, sizes and counts: digits of equal width, so columns line up.
+  static const tabular = [FontFeature.tabularFigures()];
+}
+
+/// Text and icon colour that stays readable on [fill], whatever the theme:
+/// the pills and badges are filled with ink or accent, which are dark by day
+/// and light at night.
+Color onFill(Color fill) {
+  const dark = Color(0xff1A120B);
+  // Whichever of the two contrasts more: a brightness threshold alone
+  // gives white on mid tones such as the night accent, at under 3 : 1.
+  final l = fill.computeLuminance();
+  final withWhite = 1.05 / (l + 0.05);
+  final withDark = (l + 0.05) / (dark.computeLuminance() + 0.05);
+  return withWhite >= withDark ? Colors.white : dark;
+}
 
 /// Big titles and house names: the serif display face, with the UI sans
 /// and system CJK fonts as fallback for Chinese.
@@ -154,7 +228,8 @@ ThemeData buildPlatformTheme(YTokens t) {
       extensions: [t, t.dark ? Tokens.night : Tokens.light],
       // iOS-style horizontal slide everywhere, with swipe-back.
       pageTransitionsTheme: motionPageTransitions);
-  final pill = RoundedRectangleBorder(borderRadius: BorderRadius.circular(10));
+  final pill = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(YRadius.control));
   return base.copyWith(
       textTheme: base.textTheme.apply(bodyColor: t.ink, displayColor: t.ink),
       appBarTheme: AppBarTheme(
@@ -168,7 +243,7 @@ ThemeData buildPlatformTheme(YTokens t) {
               fontFamily: fontBody,
               fontFamilyFallback: bodyFallback,
               color: t.ink,
-              fontSize: 18,
+              fontSize: YFont.heading,
               fontWeight: FontWeight.w700)),
       cardTheme: CardThemeData(
           color: t.card,
@@ -179,15 +254,36 @@ ThemeData buildPlatformTheme(YTokens t) {
               side: BorderSide(color: t.line))),
       dialogTheme: DialogThemeData(
           backgroundColor: t.bg,
+          // A dialog is a column of text, not a banner: without a cap a
+          // long sentence stretches it across a desktop window.
+          constraints: const BoxConstraints(minWidth: 280, maxWidth: 460),
           surfaceTintColor: Colors.transparent,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+          titleTextStyle: YText.heading.copyWith(
+              color: t.ink,
+              fontFamily: fontBody,
+              fontFamilyFallback: bodyFallback),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(YRadius.sheet))),
       bottomSheetTheme: BottomSheetThemeData(
           backgroundColor: t.bg,
           surfaceTintColor: Colors.transparent,
           showDragHandle: true,
+          dragHandleColor: t.faint,
           shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)))),
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(YRadius.sheet)))),
+      popupMenuTheme: PopupMenuThemeData(
+          color: t.card,
+          surfaceTintColor: Colors.transparent,
+          elevation: 6,
+          shadowColor: t.shadow,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(YRadius.control),
+              side: BorderSide(color: t.line))),
+      tooltipTheme: TooltipThemeData(
+          decoration: BoxDecoration(
+              color: t.ink, borderRadius: BorderRadius.circular(YRadius.row)),
+          textStyle: TextStyle(color: t.bg, fontSize: YFont.caption)),
       navigationBarTheme: NavigationBarThemeData(
           backgroundColor: t.bg,
           surfaceTintColor: Colors.transparent,
@@ -195,7 +291,7 @@ ThemeData buildPlatformTheme(YTokens t) {
           elevation: 0,
           height: 64,
           labelTextStyle: WidgetStateProperty.resolveWith((s) => TextStyle(
-              fontSize: 11,
+              fontSize: YFont.tab,
               fontWeight: s.contains(WidgetState.selected)
                   ? FontWeight.w700
                   : FontWeight.w500,
@@ -203,37 +299,138 @@ ThemeData buildPlatformTheme(YTokens t) {
           iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(
               size: 24,
               color: s.contains(WidgetState.selected) ? t.accent : t.muted))),
+      navigationRailTheme: NavigationRailThemeData(
+          backgroundColor: t.bg,
+          indicatorColor: t.accentSoft,
+          selectedIconTheme: IconThemeData(size: 24, color: t.accent),
+          unselectedIconTheme: IconThemeData(size: 24, color: t.muted),
+          selectedLabelTextStyle: TextStyle(
+              fontFamily: fontBody,
+              fontSize: YFont.caption,
+              fontWeight: FontWeight.w700,
+              color: t.accent),
+          unselectedLabelTextStyle: TextStyle(
+              fontFamily: fontBody,
+              fontSize: YFont.caption,
+              fontWeight: FontWeight.w500,
+              color: t.muted)),
       snackBarTheme: SnackBarThemeData(
           backgroundColor: t.ink,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(YRadius.control)),
           contentTextStyle: TextStyle(color: t.bg, fontFamily: fontBody),
-          actionTextColor: t.accent),
+          actionTextColor: t.dark ? YTokens.light.accent : YTokens.night.accent),
       filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
               backgroundColor: t.accent,
               foregroundColor: t.accentInk,
               disabledBackgroundColor: t.line,
+              disabledForegroundColor: t.muted,
               minimumSize: const Size(64, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               textStyle: const TextStyle(
                   fontFamily: fontBody,
-                  fontSize: 15,
+                  fontSize: YFont.button,
                   fontWeight: FontWeight.w700),
               shape: pill)),
-      outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(foregroundColor: t.ink, minimumSize: const Size(48, 44), side: BorderSide(color: t.ink), padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10), textStyle: const TextStyle(fontFamily: fontBody, fontSize: 14, fontWeight: FontWeight.w600), shape: pill)),
-      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: t.ink, textStyle: const TextStyle(fontFamily: fontBody, fontWeight: FontWeight.w600, decoration: TextDecoration.underline))),
-      inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: t.bg, contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14), labelStyle: TextStyle(color: t.muted), floatingLabelStyle: TextStyle(color: t.ink), border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: t.faint)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: t.faint)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: t.ink, width: 2))),
-      chipTheme: ChipThemeData(backgroundColor: t.bg, selectedColor: t.ink, checkmarkColor: t.bg, secondarySelectedColor: t.ink, side: BorderSide(color: t.line), shape: const StadiumBorder(), labelStyle: TextStyle(color: t.ink, fontSize: 13), secondaryLabelStyle: TextStyle(color: t.bg, fontSize: 13)),
-      switchTheme: SwitchThemeData(thumbColor: const WidgetStatePropertyAll(Colors.white), trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.ink : t.faint), trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent)),
-      checkboxTheme: CheckboxThemeData(fillColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.ink : Colors.transparent), checkColor: WidgetStatePropertyAll(t.bg)),
-      radioTheme: RadioThemeData(fillColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.ink : t.muted)),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+              foregroundColor: t.ink,
+              minimumSize: const Size(48, yTouch),
+              side: BorderSide(color: t.faint),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              textStyle: const TextStyle(
+                  fontFamily: fontBody,
+                  fontSize: YFont.label,
+                  fontWeight: FontWeight.w600),
+              shape: pill)),
+      // Plain buttons take the accent and no underline: on a phone an
+      // underline reads as a web link, not as something to press.
+      textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+              foregroundColor: t.accent,
+              minimumSize: const Size(yTouch, yTouch),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              textStyle: const TextStyle(
+                  fontFamily: fontBody,
+                  fontSize: YFont.label,
+                  fontWeight: FontWeight.w600),
+              shape: pill)),
+      iconButtonTheme: IconButtonThemeData(
+          style: IconButton.styleFrom(
+              foregroundColor: t.ink,
+              minimumSize: const Size(yTouch, yTouch))),
+      inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: t.card,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          labelStyle: TextStyle(color: t.muted),
+          hintStyle: TextStyle(color: t.muted),
+          helperStyle: TextStyle(color: t.muted),
+          floatingLabelStyle: TextStyle(color: t.ink),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(YRadius.control),
+              borderSide: BorderSide(color: t.faint)),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(YRadius.control),
+              borderSide: BorderSide(color: t.faint)),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(YRadius.control),
+              borderSide: BorderSide(color: t.accent, width: 2)),
+          errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(YRadius.control),
+              borderSide: BorderSide(color: t.crit)),
+          focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(YRadius.control),
+              borderSide: BorderSide(color: t.crit, width: 2))),
+      chipTheme: ChipThemeData(
+          backgroundColor: t.bg,
+          selectedColor: t.ink,
+          checkmarkColor: t.bg,
+          secondarySelectedColor: t.ink,
+          side: BorderSide(color: t.line),
+          shape: const StadiumBorder(),
+          labelStyle: TextStyle(color: t.ink, fontSize: YFont.small),
+          secondaryLabelStyle: TextStyle(color: t.bg, fontSize: YFont.small)),
+      switchTheme: SwitchThemeData(
+          thumbColor: WidgetStateProperty.resolveWith((s) =>
+              s.contains(WidgetState.selected) ? t.accentInk : t.card),
+          trackColor: WidgetStateProperty.resolveWith((s) =>
+              s.contains(WidgetState.selected) ? t.accent : t.faint),
+          trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent)),
+      checkboxTheme: CheckboxThemeData(
+          fillColor: WidgetStateProperty.resolveWith((s) =>
+              s.contains(WidgetState.selected) ? t.ink : Colors.transparent),
+          checkColor: WidgetStatePropertyAll(t.bg)),
+      radioTheme: RadioThemeData(
+          fillColor: WidgetStateProperty.resolveWith((s) =>
+              s.contains(WidgetState.selected) ? t.accent : t.muted)),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: t.accent),
       dividerTheme: DividerThemeData(color: t.line, space: 1, thickness: 1),
-      listTileTheme: ListTileThemeData(iconColor: t.ink, textColor: t.ink, contentPadding: EdgeInsets.zero),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(backgroundColor: t.accent, foregroundColor: t.accentInk, elevation: 3, extendedTextStyle: const TextStyle(fontFamily: fontBody, fontWeight: FontWeight.w700), shape: const StadiumBorder()),
-      tabBarTheme: TabBarThemeData(labelColor: t.ink, unselectedLabelColor: t.muted, indicatorColor: t.ink, dividerColor: t.line, labelStyle: const TextStyle(fontFamily: fontBody, fontWeight: FontWeight.w700, fontSize: 14), unselectedLabelStyle: const TextStyle(fontFamily: fontBody, fontWeight: FontWeight.w500, fontSize: 14)));
+      listTileTheme: ListTileThemeData(
+          iconColor: t.ink,
+          textColor: t.ink,
+          contentPadding: EdgeInsets.zero),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: t.accent,
+          foregroundColor: t.accentInk,
+          elevation: 3,
+          extendedTextStyle:
+              const TextStyle(fontFamily: fontBody, fontWeight: FontWeight.w700),
+          shape: const StadiumBorder()),
+      tabBarTheme: TabBarThemeData(
+          labelColor: t.ink,
+          unselectedLabelColor: t.muted,
+          indicatorColor: t.ink,
+          dividerColor: t.line,
+          labelStyle: const TextStyle(
+              fontFamily: fontBody, fontWeight: FontWeight.w700, fontSize: YFont.label),
+          unselectedLabelStyle: const TextStyle(
+              fontFamily: fontBody,
+              fontWeight: FontWeight.w500,
+              fontSize: YFont.label)));
 }
 
 /// Applies the platform theme below it, following the day / night choice.

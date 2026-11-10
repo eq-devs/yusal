@@ -108,7 +108,7 @@ class SectionTitle extends StatelessWidget {
         Expanded(
             child: Text(text,
                 style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.w700, height: 1.2))),
+                    fontSize: YFont.section, fontWeight: FontWeight.w700, height: 1.2))),
         if (trailing != null) trailing!,
       ]));
 }
@@ -126,55 +126,70 @@ class StatusPill extends StatelessWidget {
     return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-            color: filled ? c : c.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(999)),
+            color: filled ? c : c.withValues(alpha: t.dark ? 0.16 : 0.08),
+            borderRadius: BorderRadius.circular(YRadius.pill)),
         child: Text(text,
             style: TextStyle(
-                fontSize: 12,
+                fontSize: YFont.caption,
                 fontWeight: FontWeight.w600,
-                color: filled ? Colors.white : c)));
+                color: filled ? onFill(c) : c)));
   }
 }
 
-/// Pill-shaped filter toggle.
+/// Pill-shaped choice: a filter toggle, or with [menu] a pill that opens
+/// a list (sort, region). The pill is 36 px tall inside a 44 px target.
 class FilterPill extends StatelessWidget {
   const FilterPill(
       {super.key,
       required this.label,
       required this.selected,
       required this.onTap,
-      this.icon});
+      this.icon,
+      this.menu = false});
   final String label;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final IconData? icon;
+
+  /// Shows a chevron: tapping opens choices instead of toggling.
+  final bool menu;
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
+    final fg = selected ? t.bg : t.ink;
     return Semantics(
         button: true,
         selected: selected,
-        child: Material(
-            color: selected ? t.ink : t.bg,
-            shape: StadiumBorder(
-                side: BorderSide(color: selected ? t.ink : t.line)),
-            child: InkWell(
-                customBorder: const StadiumBorder(),
-                onTap: onTap,
-                child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      if (icon != null) ...[
-                        Icon(icon, size: 16, color: selected ? t.bg : t.ink),
-                        const SizedBox(width: 6),
-                      ],
-                      Text(label,
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: selected ? t.bg : t.ink)),
-                    ])))));
+        child: InkWell(
+            customBorder: const StadiumBorder(),
+            onTap: onTap,
+            child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: yTouch),
+                child: Center(
+                    widthFactor: 1,
+                    child: DecoratedBox(
+                        decoration: ShapeDecoration(
+                            color: selected ? t.ink : t.card,
+                            shape: StadiumBorder(
+                                side: BorderSide(
+                                    color: selected ? t.ink : t.line))),
+                        child: Padding(
+                            padding:
+                                EdgeInsets.fromLTRB(14, 8, menu ? 8 : 14, 8),
+                            child:
+                                Row(mainAxisSize: MainAxisSize.min, children: [
+                              if (icon != null) ...[
+                                Icon(icon, size: 16, color: fg),
+                                const SizedBox(width: 6),
+                              ],
+                              Text(label,
+                                  style: TextStyle(
+                                      fontSize: YFont.small,
+                                      fontWeight: FontWeight.w600,
+                                      color: fg)),
+                              if (menu)
+                                Icon(Icons.expand_more, size: 18, color: fg),
+                            ])))))));
   }
 }
 
@@ -227,11 +242,15 @@ class InfoRow extends StatelessWidget {
           SizedBox(
               width: 116,
               child:
-                  Text(label, style: TextStyle(color: t.muted, fontSize: 14))),
+                  Text(label, style: TextStyle(color: t.muted, fontSize: YFont.label))),
           Expanded(
+              // Values are often amounts, dates and sizes: equal-width
+              // digits keep a column of rows aligned.
               child: Text(value,
                   style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w500))),
+                      fontSize: YFont.label,
+                      fontWeight: FontWeight.w500,
+                      fontFeatures: YText.tabular))),
         ]));
   }
 }
@@ -258,7 +277,7 @@ class EmptyState extends StatelessWidget {
           Text(title,
               textAlign: TextAlign.center,
               style:
-                  const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                  const TextStyle(fontSize: YFont.heading, fontWeight: FontWeight.w700)),
           if (body != null) ...[
             const SizedBox(height: 6),
             Text(body!,
@@ -282,17 +301,14 @@ class Hint extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
             color: warn ? t.accentSoft : t.surface,
-            borderRadius: BorderRadius.circular(12)),
+            borderRadius: BorderRadius.circular(YRadius.control)),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Icon(icon ?? (warn ? Icons.error_outline : Icons.info_outline),
               size: 18, color: warn ? t.warn : t.muted),
           const SizedBox(width: 10),
           Expanded(
               child: Text(text,
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: warn ? t.warn : t.ink,
-                      height: 1.4))),
+                  style: TextStyle(fontSize: YFont.small, color: t.ink, height: 1.4))),
         ]));
   }
 }
@@ -374,7 +390,7 @@ Future<T?> pickOne<T>(
                       children: [
                         Text(title,
                             style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w700)),
+                                fontSize: YFont.heading, fontWeight: FontWeight.w700)),
                         const SizedBox(height: 8),
                         for (final (i, (value, label)) in options.indexed)
                           _staggered(
@@ -410,7 +426,7 @@ Future<List<T>?> pickMany<T>(BuildContext context, String title,
                           children: [
                             Text(title,
                                 style: const TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.w700)),
+                                    fontSize: YFont.heading, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 12),
                             Wrap(spacing: 8, runSpacing: 8, children: [
                               for (final (value, label) in options)
@@ -447,6 +463,11 @@ Future<bool> confirmDialog(BuildContext context, String title,
                     onPressed: () => Navigator.pop(context, false),
                     child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                 FilledButton(
+                    style: danger
+                        ? FilledButton.styleFrom(
+                            backgroundColor: YTokens.of(context).crit,
+                            foregroundColor: onFill(YTokens.of(context).crit))
+                        : null,
                     onPressed: () => Navigator.pop(context, true),
                     child: Text(ok ?? tr3('确定', 'Иә', 'Да'))),
               ])));
@@ -524,27 +545,45 @@ class Cover extends StatelessWidget {
     (Color(0xffEDE4EC), Color(0xffCDB9CF)),
     (Color(0xffE2E8EC), Color(0xffB7C7D3)),
   ];
+  static const _nightPairs = [
+    (Color(0xff3A2C20), Color(0xff2A2019)),
+    (Color(0xff2C3226), Color(0xff22271D)),
+    (Color(0xff3B2E22), Color(0xff2C2118)),
+    (Color(0xff332B33), Color(0xff272128)),
+    (Color(0xff283036), Color(0xff1F262B)),
+  ];
   @override
   Widget build(BuildContext context) {
-    final (a, b) = _pairs[seed.hashCode.abs() % _pairs.length];
+    final t = YTokens.of(context);
+    // A drawing is a sheet of paper: it keeps the light backing at night.
+    final pairs =
+        t.dark && image == null && child == null ? _nightPairs : _pairs;
+    final (a, b) = pairs[seed.hashCode.abs() % pairs.length];
     return ClipRRect(
         borderRadius: BorderRadius.circular(yRadius),
         child: Container(
             height: height,
-            decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    colors: [a, b],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight),
-                image: image == null
-                    ? null
-                    : DecorationImage(image: image!, fit: BoxFit.contain)),
+            // A drawing sits on its own sheet of paper; the tinted
+            // gradient is only the placeholder for a house without one.
+            decoration: image != null
+                ? BoxDecoration(
+                    color: YTokens.paper,
+                    image:
+                        DecorationImage(image: image!, fit: BoxFit.contain))
+                : BoxDecoration(
+                    gradient: LinearGradient(
+                        colors: [a, b],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight)),
             child: Stack(children: [
               if (image == null)
                 Center(
                     child: Icon(icon,
                         size: height * 0.32,
-                        color: Colors.black.withValues(alpha: 0.25))),
+                        color: (t.dark && child == null
+                                ? Colors.white
+                                : Colors.black)
+                            .withValues(alpha: 0.25))),
               if (child != null) Positioned.fill(child: child!),
             ])));
   }

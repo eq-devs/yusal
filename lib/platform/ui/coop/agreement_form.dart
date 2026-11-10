@@ -216,7 +216,7 @@ class _AgreementFormState extends State<AgreementForm> {
                       'Әдепкі 4 кезең. Растағанға дейін өзгертуге болады. Yusal төлем қабылдамайды.',
                       'По умолчанию 4 этапа, их можно изменить до подтверждения. Yusal не принимает платежи.'),
                   style: TextStyle(
-                      fontSize: 12, color: YTokens.of(context).muted))),
+                      fontSize: YFont.caption, color: YTokens.of(context).muted))),
           _field(materials,
               tr3('材料与工具责任', 'Материал мен құрал', 'Материалы и инструмент')),
           _field(

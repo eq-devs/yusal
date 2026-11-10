@@ -116,7 +116,7 @@ class SitePlanPainter extends CustomPainter {
     // Street along the bottom.
     final street = Rect.fromLTRB(plot.left - 30, plot.bottom + 4, plot.right + 30, plot.bottom + 22);
     canvas.drawRect(street, Paint()..color = Tokens.mix(t.line, 0.6, t.panel));
-    _text(canvas, tr('街道', 'Көше'), street.center, font: 10, color: t.muted);
+    _text(canvas, tr3('街道', 'Көше', 'Улица'), street.center, font: 10, color: t.muted);
 
     // Areas first, then buildings, so outbuildings sit on the yard.
     final items = [...site.items]..sort((a, b) =>
@@ -254,7 +254,7 @@ class SitePlanPainter extends CustomPainter {
         font: 12, weight: FontWeight.w700, maxWidth: math.max(30, hr.width - 6));
     _text(
         canvas,
-        '${_m(house.right - house.left)} × ${_m(house.top - house.bottom)} ${tr('米', 'м')}',
+        '${_m(house.right - house.left)} × ${_m(house.top - house.bottom)} ${tr3('米', 'м', 'м')}',
         hr.center + const Offset(0, 9),
         font: 10,
         color: t.muted,
@@ -271,10 +271,10 @@ class SitePlanPainter extends CustomPainter {
         _m(site.depth - house.top),
         vertical: true);
     // Plot size along the top and the left.
-    _text(canvas, '${_m(site.width.toDouble())} ${tr('米', 'м')}',
+    _text(canvas, '${_m(site.width.toDouble())} ${tr3('米', 'м', 'м')}',
         Offset(plot.center.dx, plot.top - 12),
         font: 11, color: t.dim, mono_: true);
-    _text(canvas, '${_m(site.depth.toDouble())} ${tr('米', 'м')}',
+    _text(canvas, '${_m(site.depth.toDouble())} ${tr3('米', 'м', 'м')}',
         Offset(plot.left - 14, plot.center.dy),
         font: 11, color: t.dim, mono_: true, angle: -math.pi / 2);
 
@@ -312,7 +312,7 @@ class SitePlanPainter extends CustomPainter {
       ..lineTo(c.dx - dir.dx * 10 - dir.dy * 6, c.dy - dir.dy * 10 + dir.dx * 6)
       ..close();
     canvas.drawPath(path, Paint()..color = t.ink);
-    _text(canvas, tr('北', 'С'), c + dir * 24, font: 11, weight: FontWeight.w700);
+    _text(canvas, tr3('北', 'С', 'С'), c + dir * 24, font: 11, weight: FontWeight.w700);
   }
 
   @override

@@ -9,6 +9,7 @@ import '../l10n.dart';
 import '../profile/profile_page.dart';
 import '../scope.dart';
 import '../theme.dart';
+import '../components.dart';
 import '../widgets.dart';
 
 /// First tab: "find work / find people" with search and filters.
@@ -35,6 +36,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
   String? trade, region;
   ProfileKind? kind;
   bool availableNow = false;
+  final _refresh = LiveRefresh();
 
   Future<void> publish() async {
     if (!await requireLogin(context) || !mounted) return;
@@ -56,6 +58,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     : demandTypeName(type!),
                 selected: type != null,
                 icon: Icons.tune,
+                menu: true,
                 onTap: () async {
                   final v = await pickOne<DemandType?>(
                       context,
@@ -75,6 +78,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   ? tr3('工种', 'Мамандық', 'Специальность')
                   : tradeName(trade!),
               selected: trade != null,
+              icon: Icons.handyman_outlined,
+              menu: true,
               onTap: () async {
                 final v = await pickOne<String?>(
                     context,
@@ -93,6 +98,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   : regionName(region!),
               selected: region != null,
               icon: Icons.place_outlined,
+              menu: true,
               onTap: () async {
                 final v = await pickOne<String?>(
                     context,
@@ -125,32 +131,14 @@ class _DiscoverPageState extends State<DiscoverPage> {
         ]));
     final search = Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-            decoration: BoxDecoration(
-                color: t.bg,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: t.line),
-                boxShadow: t.softShadow),
-            child: TextField(
-                controller: query,
-                onChanged: (_) => setState(() {}),
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                    filled: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    prefixIcon: const Icon(Icons.search),
-                    hintText: people
-                        ? tr3('搜索工人、施工队', 'Шебер не бригада іздеу',
-                            'Поиск мастеров и бригад')
-                        : tr3('搜索需求，如“砌墙”', 'Тапсырыс іздеу',
-                            'Поиск заявок, напр. «кладка»'),
-                    suffixIcon: query.text.isEmpty
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => setState(query.clear))))));
+        child: SearchField(
+            controller: query,
+            onChanged: (_) => setState(() {}),
+            hint: people
+                ? tr3('搜索工人、施工队', 'Шебер не бригада іздеу',
+                    'Поиск мастеров и бригад')
+                : tr3('搜索需求，如“砌墙”', 'Тапсырыс іздеу',
+                    'Поиск заявок, напр. «кладка»')));
     final toggle = Row(children: [
       for (final (isPeople, icon, label) in [
         (false, Icons.work_outline, tr3('找活', 'Жұмыс табу', 'Найти работу')),
@@ -172,13 +160,15 @@ class _DiscoverPageState extends State<DiscoverPage> {
                       Text(label,
                           style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              fontSize: 13,
+                              fontSize: YFont.small,
                               color: people == isPeople ? t.ink : t.muted)),
                     ])))),
     ]);
     final list = people
         ? Live<List<ServiceProfile>>(
             fadeIn: true,
+            refresh: _refresh,
+            loading: const SkeletonList(count: 4, avatar: true),
             load: (r) => r.searchProfiles(ProfileFilter(
                 kind: kind,
                 trade: trade,
@@ -203,6 +193,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   ]))
         : Live<(List<Demand>, Set<String>)>(
             fadeIn: true,
+            refresh: _refresh,
+            loading: const SkeletonList(count: 4),
             load: (r) async => (
                   await r.searchDemands(DemandFilter(
                       type: type,
@@ -256,7 +248,11 @@ class _DiscoverPageState extends State<DiscoverPage> {
             child: Center(
                 child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1180),
-                    child: CustomScrollView(slivers: [
+                    child: RefreshIndicator(
+                        onRefresh: _refresh.call,
+                        child: CustomScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            slivers: [
                       if (!widget.embedded)
                         SliverToBoxAdapter(
                             child: Padding(
@@ -284,6 +280,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
                       SliverPadding(
                           padding: const EdgeInsets.fromLTRB(20, 18, 20, 96),
                           sliver: SliverToBoxAdapter(child: list)),
-                    ])))));
+                    ]))))));
   }
 }

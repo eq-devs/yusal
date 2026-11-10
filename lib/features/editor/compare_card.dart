@@ -12,7 +12,7 @@ extension _CompareCard on _HouseEditorState {
           compareDoc = doc;
         });
     } catch (_) {
-      notify(tr('这个设计无法打开，请检查文件', 'Жобаны ашу мүмкін емес, файлды тексеріңіз'));
+      notify(tr3('这个设计无法打开，请检查文件', 'Жобаны ашу мүмкін емес, файлды тексеріңіз', 'Не удалось открыть проект, проверьте файл'));
     }
   }
 
@@ -27,8 +27,8 @@ extension _CompareCard on _HouseEditorState {
     }
     if (!mounted) return;
     if (others.isEmpty) {
-      notify(tr('还没有其他设计，可以先“复制为新方案”',
-          'Басқа жоба жоқ, алдымен «Жаңа нұсқа ретінде көшіру»'));
+      notify(tr3('还没有其他设计，可以先“复制为新方案”',
+          'Басқа жоба жоқ, алдымен «Жаңа нұсқа ретінде көшіру»', 'Других проектов пока нет, сначала выберите «Копировать как новый вариант»'));
       return;
     }
     final id = await showMotionSheet<String>(
@@ -55,7 +55,7 @@ extension _CompareCard on _HouseEditorState {
         .then((l) => l.map((p) => p.document.meta.name).toSet())
         .catchError((_) => <String>{});
     var n = 2;
-    String name() => '${meta.name} · ${tr('方案', 'нұсқа')} $n';
+    String name() => '${meta.name} · ${tr3('方案', 'нұсқа', 'вариант')} $n';
     while (existing.contains(name())) n++;
     final now = DateTime.now().toUtc().toIso8601String();
     final copy = composeDocument(
@@ -70,7 +70,7 @@ extension _CompareCard on _HouseEditorState {
               store: widget.store,
               compareWithId: widget.entry.id)));
     } catch (_) {
-      notify(tr('无法创建，请检查存储空间', 'Жасау мүмкін емес, жадты тексеріңіз'));
+      notify(tr3('无法创建，请检查存储空间', 'Жасау мүмкін емес, жадты тексеріңіз', 'Не удалось создать, проверьте свободное место'));
     }
   }
 
@@ -90,26 +90,26 @@ extension _CompareCard on _HouseEditorState {
     final other = compareDoc;
     final actions = Wrap(spacing: 8, runSpacing: 8, children: [
       Btn(
-          label: tr('复制为新方案', 'Жаңа нұсқа ретінде көшіру'),
+          label: tr3('复制为新方案', 'Жаңа нұсқа ретінде көшіру', 'Копировать как новый вариант'),
           icon: Icons.copy_all_outlined,
           onPressed: duplicateAsVariant),
       Btn(
           label: other == null
-              ? tr('选择要对比的设计', 'Салыстыратын жобаны таңдау')
-              : tr('换一个', 'Басқасын таңдау'),
+              ? tr3('选择要对比的设计', 'Салыстыратын жобаны таңдау', 'Выбрать проект для сравнения')
+              : tr3('换一个', 'Басқасын таңдау', 'Выбрать другой'),
           icon: Icons.compare_arrows,
           onPressed: chooseCompare),
       if (other != null)
         Btn(
-            label: tr('打开它', 'Соны ашу'),
+            label: tr3('打开它', 'Соны ашу', 'Открыть его'),
             icon: Icons.open_in_new,
             onPressed: openCompared),
     ]);
     if (other == null)
       return InfoCard(
-          title: tr('方案对比', 'Нұсқаларды салыстыру'),
-          subtitle: tr('把这个设计复制成新方案修改，再和原来的并排比较面宽、面积、跨度和房间。',
-              'Жобаны жаңа нұсқа етіп көшіріп өзгертіңіз, сосын ені, ауданы, аралықтары мен бөлмелерін қатар салыстырыңыз.'),
+          title: tr3('方案对比', 'Нұсқаларды салыстыру', 'Сравнение вариантов'),
+          subtitle: tr3('把这个设计复制成新方案修改，再和原来的并排比较面宽、面积、跨度和房间。',
+              'Жобаны жаңа нұсқа етіп көшіріп өзгертіңіз, сосын ені, ауданы, аралықтары мен бөлмелерін қатар салыстырыңыз.', 'Скопируйте проект как новый вариант и измените его, затем сравните рядом ширину, площадь, пролёты и комнаты.'),
           children: [const SizedBox(height: 10), actions]);
     final a = summarizeDesign(history.present, derived,
         nameOf: displayRoomName, floorName: (f) => displayFloorName(f.name));
@@ -127,17 +127,17 @@ extension _CompareCard on _HouseEditorState {
         TableCellData(v, numeric: numeric);
     final rows = <List<TableCellData>>[
       [
-        TableCellData(tr('入口一侧面宽', 'Кіреберіс жақтағы ені')),
+        TableCellData(tr3('入口一侧面宽', 'Кіреберіс жақтағы ені', 'Ширина со стороны входа')),
         cell('${m(a.frontWidth)} $unitM'),
         cell('${m(b.frontWidth)} $unitM'),
       ],
       [
-        TableCellData(tr('地块最小宽度（两侧各留 3 m）', 'Учаскенің ең аз ені (екі жақтан 3 м)')),
+        TableCellData(tr3('地块最小宽度（两侧各留 3 m）', 'Учаскенің ең аз ені (екі жақтан 3 м)', 'Минимальная ширина участка (по 3 м с каждой стороны)')),
         cell('${m(a.frontWidth + 6000)} $unitM'),
         cell('${m(b.frontWidth + 6000)} $unitM'),
       ],
       [
-        TableCellData(tr('建筑面积 / 外墙长度', 'Құрылыс ауданы / сыртқы қабырға')),
+        TableCellData(tr3('建筑面积 / 外墙长度', 'Құрылыс ауданы / сыртқы қабырға', 'Общая площадь / наружные стены')),
         cell('${m2(a.buildingArea)} / ${m(a.exteriorLength)} $unitM'),
         cell('${m2(b.buildingArea)} / ${m(b.exteriorLength)} $unitM'),
       ],
@@ -148,38 +148,38 @@ extension _CompareCard on _HouseEditorState {
           cell(b.roomAreas[r] == null ? '—' : m2(b.roomAreas[r]!)),
         ],
       [
-        TableCellData(tr('屋面板跨度', 'Жабын плитасының аралығы')),
+        TableCellData(tr3('屋面板跨度', 'Жабын плитасының аралығы', 'Пролёт плиты покрытия')),
         cell(spans(a.spans)),
         cell(spans(b.spans)),
       ],
       [
-        TableCellData(tr('卧室怎么进', 'Жатын бөлмеге кіру')),
+        TableCellData(tr3('卧室怎么进', 'Жатын бөлмеге кіру', 'Вход в спальни')),
         cell(
             a.bedroomsThroughLiving.isEmpty
-                ? tr('全部不穿过客厅', 'Қонақ бөлме арқылы емес')
-                : '${list(a.bedroomsThroughLiving)} ${tr('要穿过客厅', '— қонақ бөлме арқылы')}',
+                ? tr3('全部不穿过客厅', 'Қонақ бөлме арқылы емес', 'Не через гостиную')
+                : '${list(a.bedroomsThroughLiving)} ${tr3('要穿过客厅', '— қонақ бөлме арқылы', '— через гостиную')}',
             numeric: false),
         cell(
             b.bedroomsThroughLiving.isEmpty
-                ? tr('全部不穿过客厅', 'Қонақ бөлме арқылы емес')
-                : '${list(b.bedroomsThroughLiving)} ${tr('要穿过客厅', '— қонақ бөлме арқылы')}',
+                ? tr3('全部不穿过客厅', 'Қонақ бөлме арқылы емес', 'Не через гостиную')
+                : '${list(b.bedroomsThroughLiving)} ${tr3('要穿过客厅', '— қонақ бөлме арқылы', '— через гостиную')}',
             numeric: false),
       ],
       [
-        TableCellData(tr('朝后院 / 露台的房间', 'Аула / террасаға қарайтын бөлмелер')),
+        TableCellData(tr3('朝后院 / 露台的房间', 'Аула / террасаға қарайтын бөлмелер', 'Комнаты с окнами на задний двор / террасу')),
         cell(list(a.backRooms), numeric: false),
         cell(list(b.backRooms), numeric: false),
       ],
       [
-        TableCellData(tr('临街立面', 'Көше жақ қасбет')),
+        TableCellData(tr3('临街立面', 'Көше жақ қасбет', 'Уличный фасад')),
         cell(list(a.frontRooms), numeric: false),
         cell(list(b.frontRooms), numeric: false),
       ],
     ];
     return InfoCard(
-        title: tr('方案对比', 'Нұсқаларды салыстыру'),
-        subtitle: tr('左列是正在编辑的设计；改动会立刻反映在表里。',
-            'Сол бағанда — қазір өзгертіліп жатқан жоба; өзгерістер кестеде бірден көрінеді.'),
+        title: tr3('方案对比', 'Нұсқаларды салыстыру', 'Сравнение вариантов'),
+        subtitle: tr3('左列是正在编辑的设计；改动会立刻反映在表里。',
+            'Сол бағанда — қазір өзгертіліп жатқан жоба; өзгерістер кестеде бірден көрінеді.', 'В левом столбце — проект, который вы сейчас редактируете; изменения сразу отражаются в таблице.'),
         children: [
           const SizedBox(height: 8),
           PlainTable(
@@ -190,8 +190,8 @@ extension _CompareCard on _HouseEditorState {
               ],
               highlightColumn: 1,
               rows: rows),
-          Note(tr('造价主要取决于建筑面积和外墙长度。地块够宽、后院朝南时，让卧室和客厅朝后院；地块窄时选面宽小的方案。',
-              'Құны негізінен құрылыс ауданы мен сыртқы қабырға ұзындығына байланысты. Учаске кең әрі аула оңтүстікте болса, жатын бөлмелер мен қонақ бөлмені аулаға қаратыңыз; учаске тар болса, ені кішісін таңдаңыз.')),
+          Note(tr3('造价主要取决于建筑面积和外墙长度。地块够宽、后院朝南时，让卧室和客厅朝后院；地块窄时选面宽小的方案。',
+              'Құны негізінен құрылыс ауданы мен сыртқы қабырға ұзындығына байланысты. Учаске кең әрі аула оңтүстікте болса, жатын бөлмелер мен қонақ бөлмені аулаға қаратыңыз; учаске тар болса, ені кішісін таңдаңыз.', 'Стоимость в основном зависит от общей площади и длины наружных стен. Если участок широкий, а задний двор выходит на юг, сориентируйте спальни и гостиную на задний двор; если участок узкий, выберите вариант с меньшей шириной.')),
           const SizedBox(height: 10),
           actions,
         ]);

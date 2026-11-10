@@ -54,7 +54,7 @@ class _Queue extends StatelessWidget {
                             child: Text(d.current.title,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 16))),
+                                    fontSize: YFont.body))),
                         Text(d.current.description,
                             maxLines: 3, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 10),
@@ -99,14 +99,14 @@ class _Reports extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                           Text('${r.target.name} · ${r.targetId}',
-                              style: TextStyle(color: t.muted, fontSize: 12)),
+                              style: TextStyle(color: t.muted, fontSize: YFont.caption)),
                           Text(r.reason,
                               style:
                                   const TextStyle(fontWeight: FontWeight.w700)),
                           Text(
                               tr3('举报不等于事实成立，请核实后处理。', 'Тексеріп шешіңіз.',
                                   'Жалоба — не доказательство; проверьте.'),
-                              style: TextStyle(color: t.muted, fontSize: 12)),
+                              style: TextStyle(color: t.muted, fontSize: YFont.caption)),
                           const SizedBox(height: 8),
                           if (r.status == ReportStatus.open)
                             Wrap(spacing: 8, children: [

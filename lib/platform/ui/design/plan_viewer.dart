@@ -5,10 +5,12 @@ import '../../../core/document/house_document.dart';
 import '../../../core/geometry/derived_house.dart';
 import '../../../core/serialization/house_codec.dart';
 import '../../../render2d/floor_plan_painter.dart';
+import '../../../render2d/furniture_names.dart';
 import '../../../render3d/scene_view.dart';
 import '../../domain/models.dart';
 import '../../../app/settings.dart';
 import '../scope.dart';
+import '../theme.dart';
 import '../widgets.dart';
 
 HouseDocument? _document(DesignSnapshot? snapshot) {
@@ -48,7 +50,7 @@ class PlanCover extends StatelessWidget {
         final derived = deriveHouse(doc).floors.first;
         final rooms = doc.floors.first.rooms;
         return ColoredBox(
-            color: const Color(0xfff6f7f3),
+            color: YTokens.paper,
             child: CustomPaint(
                 painter: FloorPlanPainter(
                     derived.base,
@@ -184,7 +186,7 @@ class _PlanViewerState extends State<PlanViewer> {
         ],
         Expanded(
             child: threeD && doc != null
-                ? SceneView(doc: doc, derived: deriveHouse(doc), roomName: (r) => r.name,
+                ? SceneView(doc: doc, derived: deriveHouse(doc), roomName: shownRoomName,
                     settings: SceneSettings(roof: roof, furniture: false, site: false),
                     walk: false, viewToken: viewToken)
                 : ClipRect(
@@ -230,11 +232,14 @@ class _Sheet extends StatelessWidget {
     }
     final derived = deriveHouse(doc).floors[floor];
     return ColoredBox(
-        color: const Color(0xfff6f7f3),
+        color: YTokens.paper,
         child: CustomPaint(
           painter: FloorPlanPainter(
               derived.base,
-              {for (final room in doc.floors[floor].rooms) room.id: room.name},
+              {
+                for (final room in doc.floors[floor].rooms)
+                  room.id: shownRoomName(room)
+              },
               {
                 for (final room in doc.floors[floor].rooms)
                   room.id: roomColors[room.type]!

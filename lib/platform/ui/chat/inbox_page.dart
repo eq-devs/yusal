@@ -7,6 +7,7 @@ import '../home/post_page.dart';
 import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
+import '../components.dart';
 import '../widgets.dart';
 import 'chat_page.dart';
 import '../../../motion/motion.dart';
@@ -30,6 +31,7 @@ class InboxButton extends StatelessWidget {
             icon: Badge(
                 isLabelVisible: unread > 0,
                 backgroundColor: t.accent,
+                textColor: t.accentInk,
                 label: Text(unread > 99 ? '99+' : '$unread'),
                 child: const Icon(Icons.mail_outline))));
   }
@@ -53,44 +55,68 @@ class InboxNavIcon extends StatelessWidget {
                 builder: (context, unread) => Badge(
                     isLabelVisible: unread > 0,
                     backgroundColor: t.accent,
+                    textColor: t.accentInk,
                     label: Text(unread > 99 ? '99+' : '$unread'),
                     child: icon)));
   }
 }
 
-/// Message centre: conversations and system notices.
+/// Message centre: conversations and system notices. Signed out, it says
+/// what messages are for and offers to sign in.
 class InboxPage extends StatelessWidget {
   const InboxPage({super.key});
   @override
   Widget build(BuildContext context) {
     AppScope.watch(context);
-    return DefaultTabController(
-        length: 2,
-        child: Scaffold(
-            appBar: AppBar(
-                title: Text(tr3('消息', 'Хабарлар', 'Сообщения')),
-                actions: [
-                  TextButton(
-                      onPressed: () =>
-                          attempt(context, () => context.repos.markAllRead()),
-                      child:
-                          Text(tr3('全部已读', 'Барлығы оқылды', 'Прочитать всё'))),
-                ],
-                bottom: TabBar(tabs: [
-                  Tab(text: tr3('会话', 'Чаттар', 'Чаты')),
-                  Tab(text: tr3('通知', 'Хабарламалар', 'Уведомления')),
-                ])),
-            body: const MotionTabView(children: [_Conversations(), _Notices()])));
+    final title = Text(tr3('消息', 'Хабарлар', 'Сообщения'));
+    return OnChange(builder: (context) {
+      if (context.repos.currentAccount == null)
+        return Scaffold(
+            appBar: AppBar(title: title),
+            body: SignInPrompt(
+                icon: Icons.forum_outlined,
+                text: tr3('登录后查看消息', 'Хабарларды көру үшін кіріңіз',
+                    'Войдите, чтобы видеть сообщения'),
+                body: tr3(
+                    '和房主、师傅的聊天，以及报价、验收等通知都在这里。',
+                    'Үй иелері мен шеберлермен чаттар, ұсыныстар мен қабылдау туралы хабарламалар осында.',
+                    'Здесь чаты с владельцами и мастерами, уведомления о предложениях и приёмке.')));
+      return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+              appBar: AppBar(
+                  title: title,
+                  actions: [
+                    IconButton(
+                        tooltip: tr3('全部已读', 'Барлығы оқылды', 'Прочитать всё'),
+                        icon: const Icon(Icons.done_all),
+                        onPressed: () => attempt(
+                            context, () => context.repos.markAllRead())),
+                    const SizedBox(width: YSpace.xs),
+                  ],
+                  bottom: TabBar(tabs: [
+                    Tab(text: tr3('会话', 'Чаттар', 'Чаты')),
+                    Tab(text: tr3('通知', 'Хабарламалар', 'Уведомления')),
+                  ])),
+              body: const MotionTabView(
+                  children: [_Conversations(), _Notices()])));
+    });
   }
 }
 
 class _Conversations extends StatelessWidget {
   const _Conversations();
+  static final _refresh = LiveRefresh();
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     return Live<List<(Conversation, Account?)>>(
         fadeIn: true,
+        refresh: _refresh,
+        loading: const SkeletonList(
+            count: 4,
+            avatar: true,
+            padding: EdgeInsets.fromLTRB(20, 20, 20, 0)),
         load: (r) async {
           final me = r.currentAccount?.id ?? '';
           return [
@@ -104,7 +130,10 @@ class _Conversations extends StatelessWidget {
                 title: tr3('还没有会话', 'Чат жоқ', 'Нет чатов'),
                 body: tr3('在需求或名片页点击“联系”开始沟通。', 'Тапсырыс бетінен жазыңыз.',
                     'Напишите со страницы заявки или профиля.'))
-            : ListView.separated(
+            : RefreshIndicator(
+                onRefresh: _refresh.call,
+                child: ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 itemCount: list.length,
@@ -128,7 +157,7 @@ class _Conversations extends StatelessWidget {
                             if (last != null)
                               Text(ago(last.sentAt, context.now),
                                   style:
-                                      TextStyle(color: t.muted, fontSize: 12)),
+                                      TextStyle(color: t.muted, fontSize: YFont.caption)),
                             if (c.unread > 0)
                               Container(
                                   margin: const EdgeInsets.only(top: 4),
@@ -136,14 +165,16 @@ class _Conversations extends StatelessWidget {
                                       horizontal: 7, vertical: 2),
                                   decoration: BoxDecoration(
                                       color: t.accent,
-                                      borderRadius: BorderRadius.circular(99)),
+                                      borderRadius: BorderRadius.circular(YRadius.pill)),
                                   child: Text('${c.unread}',
-                                      style: const TextStyle(
-                                          color: Colors.white, fontSize: 11))),
+                                      style: TextStyle(
+                                          color: t.accentInk,
+                                          fontSize: YFont.caption,
+                                          fontWeight: FontWeight.w700))),
                           ]),
                       onTap: () => pushPage<void>(
                           context, (_) => ChatPage(conversationId: c.id)));
-                }));
+                })));
   }
 }
 
@@ -158,17 +189,24 @@ String messagePreview(ChatMessage m) => switch (m.kind) {
 
 class _Notices extends StatelessWidget {
   const _Notices();
+  static final _refresh = LiveRefresh();
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     return Live<List<AppNotification>>(
         fadeIn: true,
+        refresh: _refresh,
+        loading: const SkeletonList(
+            count: 4, padding: EdgeInsets.fromLTRB(20, 20, 20, 0)),
         load: (r) => r.notifications(),
         builder: (context, list) => list.isEmpty
             ? EmptyState(
                 icon: Icons.notifications_none,
                 title: tr3('暂无通知', 'Хабарлама жоқ', 'Нет уведомлений'))
-            : ListView.separated(
+            : RefreshIndicator(
+                onRefresh: _refresh.call,
+                child: ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 itemCount: list.length,
@@ -189,7 +227,7 @@ class _Notices extends StatelessWidget {
                         if (!context.mounted) return;
                         await openNotice(context, n);
                       });
-                }));
+                })));
   }
 }
 

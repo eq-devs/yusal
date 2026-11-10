@@ -118,6 +118,7 @@ The tool was written as Chinese / Kazakh pairs: 1,050 strings at their call (`tr
 | Screenshots in Chrome, `tool/ux/r1.mjs`, `r2.mjs` | 390 px day and night, 1280 px day; reviewed by eye; `docs/screenshots/ux-2026-11-09/after/` |
 | iOS simulator (iOS 26.4, "Yusal E2E") | `platform_smoke_test.dart` 1 of 1 and `app_test.dart` 5 of 5 pass on the ported code. Upstream's `app_test.dart` tapped tools that the phone toolbar keeps behind "more"; the test now opens "more" when needed. `screens_tour_test.dart` captures: `after/12-ios-simulator.png` |
 | Android emulator (`yusal_e2e_26`, Android 8.0, created for this) | `platform_smoke_test.dart` 1 of 1 and `app_test.dart` 5 of 5 pass on the ported code, including native file saves and WebP previews. The simulated keyboard did not reach the publish form's title field on this emulator, so the smoke test sets that draft through the field's controller. Tour captures: `after/13-android-emulator.png`. The existing `Pixel_2` emulator had 360 MB free and could not take the 105 MB debug build |
+| Real phone: Pixel 8 Pro, Android 16 | `platform_smoke_test.dart` 1 of 1 and `app_test.dart` 5 of 5 pass on hardware. The smoke test now looks for the card's button inside its own card, since a phone may hold other designs |
 
 Both device suites had gone stale before this round (they assumed the design list was the first screen, typed into "the first text field", did not wait for the native preview to be saved, and tapped tools the phone toolbar hides). They were brought up to date; no product fault was behind any of their failures.
 
@@ -135,11 +136,12 @@ Not run: the device tests against the real `yusal-api` (`backend_flow_test.dart`
 - 2026-11-09 — Round 2 (Me tab, Discover, shell, editor header, demo content, skeletons, refresh) implemented; reviewed at 390 px day and night and at 1280 px.
 - 2026-11-09 — Round 3: radii moved onto the scale, pull-to-refresh in Messages, single-word room labels no longer break mid-word in the plan viewer.
 - 2026-11-09 — Round 4: Russian for the whole design tool with a coverage test; type sizes and colours moved onto the system with a guard test; end-to-end flow checks; both device suites repaired and run on the iOS simulator.
+- 2026-11-10 — Both device suites run and pass on a real Pixel 8 Pro (Android 16).
 - 2026-11-10 — Round 5: the work ported onto current `origin/dev` in `../yusal-ux`; an independent review pass over the Russian (38 corrections applied); tabular figures in quantity rows, info values and the quote comparison; both device suites run on Android as well. Final check on the ported code: analyze 0 · 430 tests · web build · 11 of 11 browser flows · iOS 1 + 5 · Android 1 + 5.
 
 ## Known limits of the verification
 
-- **Simulators, not hardware.** iOS and Android were checked on a simulator and an emulator. Haptics, the real keyboard, the share sheet into WhatsApp or Telegram, and performance on a slow phone were not checked.
+- **Hardware: Android only.** Both device suites pass on a Pixel 8 Pro; iOS was checked on a simulator only. Haptics, the share sheet into WhatsApp or Telegram, and performance on a slow phone were not checked.
 - **Translations had two machine passes, no native speaker.** The Russian of the design tool (about 1,400 strings) was translated with a glossary and consistency checks and then reviewed independently (38 corrections); the Kazakh and Russian demo content had one pass. A Russian-speaking builder should still read the construction terms before release; `lib/app/messages_ru.dart` and the third argument of `tr3` are where to correct them.
 - **Text drawn on the plan and in the PDF** is translated but is not covered by the coverage test, which reads widgets, not canvases.
 - **The real backend** (`YUSAL_API`) was not exercised; everything ran on the in-memory demo backend.

@@ -5,6 +5,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/main.dart';
+import 'package:yusal/platform/ui/widgets.dart';
 import 'package:yusal/platform/data/mock/mock_backend.dart';
 import 'package:yusal/platform/ui/demand/from_design_page.dart';
 import 'package:yusal/platform/ui/home/publish_post_page.dart';
@@ -51,8 +52,15 @@ void main() {
           .first;
       final menu = find.descendant(of: row, matching: find.byTooltip('项目操作'));
       // Finding builders is on the card itself; publishing is in its menu.
-      await t.ensureVisible(find.text('找施工方'));
-      await t.tap(find.text('找施工方'));
+      // A phone may hold other designs, so look only inside this card.
+      final card = find
+          .ancestor(
+              of: find.text('Yusal smoke test'), matching: find.byType(YCard))
+          .first;
+      final builders =
+          find.descendant(of: card, matching: find.text('找施工方'));
+      await t.ensureVisible(builders);
+      await t.tap(builders);
       await t.pumpAndSettle();
       expect(find.byType(FromDesignPage), findsOneWidget);
       expect(find.byType(PublishPostPage), findsNothing);

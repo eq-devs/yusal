@@ -90,7 +90,7 @@ class _PlatformShellState extends State<PlatformShell> {
               // Phones get the bottom bar; tablets and desktop a side rail,
               // so four icons are not spread across a wide window.
               final wide = MediaQuery.sizeOf(context).width >= yWide;
-              Widget pages = MotionIndexedStack(
+              final pages = MotionIndexedStack(
                   key: _pagesKey,
                   index: tab,
                   children: [
@@ -102,11 +102,6 @@ class _PlatformShellState extends State<PlatformShell> {
                     const InboxPage(),
                     const MePage(),
                   ]);
-              // The notice already sits below the status bar; the pages
-              // must not leave room for it a second time.
-              if (context.isDemo)
-                pages = MediaQuery.removePadding(
-                    context: context, removeTop: true, child: pages);
               return Scaffold(
                   body: Column(children: [
                     if (context.isDemo)
@@ -115,8 +110,14 @@ class _PlatformShellState extends State<PlatformShell> {
                           child: const SafeArea(
                               bottom: false, child: DemoNotice())),
                     Expanded(
-                        child: wide
-                            ? Row(children: [
+                        // The demo notice already sits below the status
+                        // bar; neither the pages nor the side rail may
+                        // leave room for it a second time.
+                        child: MediaQuery.removePadding(
+                            context: context,
+                            removeTop: context.isDemo,
+                            child: wide
+                                ? Row(children: [
                                 SafeArea(
                                     right: false,
                                     child: NavigationRail(
@@ -138,7 +139,7 @@ class _PlatformShellState extends State<PlatformShell> {
                                 VerticalDivider(width: 1, color: t.line),
                                 Expanded(child: pages),
                               ])
-                            : pages),
+                                : pages)),
                   ]),
                   bottomNavigationBar: wide
                       ? null

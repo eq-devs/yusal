@@ -104,9 +104,16 @@ class InboxPage extends StatelessWidget {
   }
 }
 
-class _Conversations extends StatelessWidget {
+// Stateful so each copy of the page has its own pull-to-refresh: the
+// Messages tab and an inbox opened from the mail button live at once.
+class _Conversations extends StatefulWidget {
   const _Conversations();
-  static final _refresh = LiveRefresh();
+  @override
+  State<_Conversations> createState() => _ConversationsState();
+}
+
+class _ConversationsState extends State<_Conversations> {
+  final _refresh = LiveRefresh();
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
@@ -187,9 +194,16 @@ String messagePreview(ChatMessage m) => switch (m.kind) {
       MessageKind.system => m.text,
     };
 
-class _Notices extends StatelessWidget {
+// Stateful so each copy of the page has its own pull-to-refresh: the
+// Messages tab and an inbox opened from the mail button live at once.
+class _Notices extends StatefulWidget {
   const _Notices();
-  static final _refresh = LiveRefresh();
+  @override
+  State<_Notices> createState() => _NoticesState();
+}
+
+class _NoticesState extends State<_Notices> {
+  final _refresh = LiveRefresh();
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);

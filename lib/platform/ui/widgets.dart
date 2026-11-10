@@ -408,6 +408,22 @@ Future<T?> pickOne<T>(
                       ])))));
 }
 
+/// Bottom-sheet picker for a filter whose first row is "all" (no value).
+/// [pickOne] cannot tell "all" from closing the sheet, since both come
+/// back as null; here closing returns null and a choice returns a record,
+/// so a swipe-away leaves the filter as it was.
+Future<(T?,)?> pickFilter<T extends Object>(BuildContext context, String title,
+        String allLabel, List<(T, String)> options,
+        {T? selected}) =>
+    pickOne<(T?,)>(
+        context,
+        title,
+        [
+          ((null,), allLabel),
+          for (final (value, label) in options) ((value,), label),
+        ],
+        selected: (selected,));
+
 /// Bottom-sheet picker for several values.
 Future<List<T>?> pickMany<T>(BuildContext context, String title,
     List<(T, String)> options, List<T> selected) {

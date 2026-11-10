@@ -32,8 +32,6 @@ class HouseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     final p = post;
-    final image =
-        p.preview == null ? null : MemoryImage(Uint8List.fromList(p.preview!));
     return HeroTapArea(
         child: Pressable(
         child: InkWell(
@@ -45,14 +43,18 @@ class HouseCard extends StatelessWidget {
             HeroSource(
                 heroKey: houseHeroKey(p.id),
                 borderRadius: BorderRadius.circular(yRadius),
-                child: Cover(
-                    icon: Icons.home_outlined,
-                    seed: p.id,
-                    height: compact ? 150 : 230,
-                    image: image,
-                    child: image == null && p.snapshotId.isNotEmpty
-                        ? PlanCover(snapshotId: p.snapshotId, postId: p.id)
-                        : null)),
+                child: PostPicture(
+                    post: p,
+                    builder: (context, image, loading) => Cover(
+                        icon: Icons.home_outlined,
+                        seed: p.id,
+                        height: compact ? 150 : 230,
+                        image: image,
+                        child: image == null &&
+                                !loading &&
+                                p.snapshotId.isNotEmpty
+                            ? PlanCover(snapshotId: p.snapshotId, postId: p.id)
+                            : null))),
             if (onLike != null)
               Positioned(
                   top: 10,
@@ -195,6 +197,65 @@ class HouseCard extends StatelessWidget {
                     ])),
         ]))));
   }
+}
+
+/// A post's plan thumbnail: the one the post carries, or (for a post from
+/// a feed, which leaves pictures out) fetched when this is first built.
+/// [loading] is true only while that fetch runs.
+class PostPicture extends StatefulWidget {
+  const PostPicture({super.key, required this.post, required this.builder});
+  final HousePost post;
+  final Widget Function(BuildContext context, ImageProvider? image, bool loading)
+      builder;
+  @override
+  State<PostPicture> createState() => _PostPictureState();
+}
+
+class _PostPictureState extends State<PostPicture> {
+  ImageProvider? _image;
+  bool _loading = false;
+  String? _resolved;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _resolve();
+  }
+
+  @override
+  void didUpdateWidget(PostPicture old) {
+    super.didUpdateWidget(old);
+    if (old.post.id != widget.post.id ||
+        !identical(old.post.preview, widget.post.preview)) {
+      _resolved = null;
+      _resolve();
+    }
+  }
+
+  void _take(List<int>? bytes) {
+    _image = bytes == null ? null : MemoryImage(imageBytes(bytes));
+    _loading = false;
+  }
+
+  void _resolve() {
+    final id = widget.post.id;
+    if (_resolved == id) return;
+    _resolved = id;
+    final own = widget.post.preview;
+    final found = own ?? context.repos.postPreview(id);
+    if (found is! Future<List<int>?>) return _take(found);
+    _image = null;
+    _loading = true;
+    found.then((bytes) {
+      if (mounted && _resolved == id) setState(() => _take(bytes));
+    }, onError: (Object _) {
+      if (mounted && _resolved == id) setState(() => _take(null));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      widget.builder(context, _image, _loading);
 }
 
 /// Shared-element key of a house's cover, list card → house page.

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../core/document/house_document.dart';
 import '../../../core/geometry/derived_house.dart';
@@ -224,7 +223,7 @@ class _Sheet extends StatelessWidget {
         return Center(
             child:
                 Text(tr3('图纸暂不可用', 'Сызба қолжетімсіз', 'Чертежи недоступны')));
-      return Image.memory(Uint8List.fromList(bytes),
+      return Image.memory(imageBytes(bytes),
           fit: BoxFit.contain,
           errorBuilder: (_, error, stack) => Center(
               child: Text(tr3('预览图无法读取', 'Көріністі оқу мүмкін емес',

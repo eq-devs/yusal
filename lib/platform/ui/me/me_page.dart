@@ -491,8 +491,9 @@ class PrivacyPage extends StatelessWidget {
               'Телефон әдепкіде жасырын.', 'Номер скрыт по умолчанию.')),
           SectionTitle(tr3('已拉黑', 'Бұғатталғандар', 'Заблокированные')),
           Live<List<Account?>>(
-              load: (r) async =>
-                  [for (final id in await r.blocked()) await r.account(id)],
+              load: (r) async => Future.wait(
+                  [for (final id in await r.blocked()) r.account(id)]),
+              loading: const SkeletonList(count: 2, avatar: true),
               builder: (context, list) => Column(children: [
                     if (list.isEmpty)
                       Text(tr3('没有拉黑任何人', 'Ешкім жоқ', 'Никого нет')),

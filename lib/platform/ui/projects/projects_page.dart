@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../app/tokens.dart';
 import '../../../storage/project_store.dart';
@@ -354,7 +353,7 @@ class _PlanThumb extends StatelessWidget {
             border: Border.all(color: t.line)),
         child: preview == null
             ? Icon(Icons.other_houses_outlined, color: t.muted)
-            : Image.memory(Uint8List.fromList(preview!),
+            : Image.memory(imageBytes(preview!),
                 fit: BoxFit.contain, excludeFromSemantics: true));
   }
 }

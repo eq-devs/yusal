@@ -159,7 +159,7 @@ class _PublicPreview extends StatelessWidget {
             if (v.snapshot!.preview != null)
               ClipRRect(
                   borderRadius: BorderRadius.circular(YRadius.control),
-                  child: Image.memory(Uint8List.fromList(v.snapshot!.preview!),
+                  child: Image.memory(imageBytes(v.snapshot!.preview!),
                       height: 140, fit: BoxFit.contain)),
             if (v.snapshot!.lines.isNotEmpty) QtyTable(v.snapshot!.lines),
           ],

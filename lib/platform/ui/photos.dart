@@ -5,6 +5,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import '../../app/settings.dart';
 import 'scope.dart';
 import 'theme.dart';
+import 'widgets.dart';
 
 /// Most photos one site entry or inspection request can carry.
 const maxSitePhotos = 9;
@@ -100,10 +101,10 @@ class PhotoStrip extends StatelessWidget {
                   builder: (_) => Dialog(
                       insetPadding: const EdgeInsets.all(12),
                       child: InteractiveViewer(
-                          child: Image.memory(Uint8List.fromList(photos[i]))))),
+                          child: Image.memory(imageBytes(photos[i]))))),
               child: ClipRRect(
                   borderRadius: BorderRadius.circular(YRadius.row),
-                  child: Image.memory(Uint8List.fromList(photos[i]),
+                  child: Image.memory(imageBytes(photos[i]),
                       width: size,
                       height: size,
                       fit: BoxFit.cover,

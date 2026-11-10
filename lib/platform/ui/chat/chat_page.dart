@@ -5,6 +5,7 @@ import '../../domain/models.dart';
 import '../demand/demand_detail_page.dart';
 import '../l10n.dart';
 import '../scope.dart';
+import '../components.dart';
 import '../theme.dart';
 import '../widgets.dart';
 
@@ -135,8 +136,7 @@ class _ChatPageState extends State<ChatPage> {
     final t = YTokens.of(context);
     return Live<_ChatData>(
         load: load,
-        loading:
-            const Scaffold(body: Center(child: CircularProgressIndicator())),
+        loading: const SkeletonPage(avatar: true),
         error: (context, e) => PageScaffold(
             title: '',
             body: EmptyState(icon: Icons.error_outline, title: failureText(e))),

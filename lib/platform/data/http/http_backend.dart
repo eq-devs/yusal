@@ -40,6 +40,18 @@ class HttpBackend extends MockBackend {
 
   /// Posts' plan thumbnails, fetched once per post.
   final _previews = <String, List<int>?>{};
+  final _previewLoads = <String, Future<void>>{};
+
+  /// Public account views, kept for [_accountFresh] so the many rows that
+  /// name the same person (cards, comments, chats) ask the server once, not
+  /// once each and again after every change.
+  final _accountAt = <String, DateTime>{};
+  final _accountLoads = <String, Future<Account?>>{};
+  static const _accountFresh = Duration(minutes: 1);
+
+  /// "Liked" as the last [post] call reported it, for the [liked] call
+  /// that follows it on the house page.
+  final _likedSeen = <String, bool>{};
 
   // ───────────────────────────── transport ─────────────────────────────
 
@@ -137,6 +149,7 @@ class HttpBackend extends MockBackend {
     _access = null;
     _refresh = null;
     currentId = null;
+    _likedSeen.clear();
     await _save();
     notify();
   }
@@ -280,14 +293,29 @@ class HttpBackend extends MockBackend {
   @override
   Future<Account?> account(String id) async {
     if (accounts[id] case final a? when id == currentId) return a;
+    final at = _accountAt[id];
+    if (at != null && DateTime.now().difference(at) < _accountFresh) {
+      return accounts[id];
+    }
+    return _accountLoads[id] ??=
+        _loadAccount(id).whenComplete(() {
+      _accountLoads.remove(id);
+    });
+  }
+
+  Future<Account?> _loadAccount(String id) async {
     try {
       final a = _account(
           await _call('GET', '/client/accounts/$id') as Map<String, dynamic>);
       // Keep it for mock-served screens that look accounts up by id.
       accounts[id] = a;
+      _accountAt[id] = DateTime.now();
       return a;
     } on ApiFailure catch (e) {
-      if (e.code == ApiCodes.notFound) return accounts[id];
+      if (e.code == ApiCodes.notFound) {
+        _accountAt[id] = DateTime.now();
+        return accounts[id];
+      }
       rethrow;
     }
   }
@@ -439,17 +467,32 @@ class HttpBackend extends MockBackend {
         preview: _previews[id]);
   }
 
-  /// Maps posts and fills in their thumbnails (fetched once each).
-  Future<List<HousePost>> _posts(List raw) async {
+  /// Maps posts and fills in their thumbnails (fetched once each). With
+  /// [previews] off only thumbnails already here are filled in; the rest
+  /// come through [postPreview] as their cards scroll into view.
+  Future<List<HousePost>> _posts(List raw, {bool previews = true}) async {
     final list = [for (final j in raw) j as Map<String, dynamic>];
-    await Future.wait([
-      for (final j in list)
-        if (!_previews.containsKey(j['id'])) _loadPreview(j['id'] as String)
-    ]);
+    if (previews) {
+      await Future.wait([
+        for (final j in list)
+          if (!_previews.containsKey(j['id'])) _loadPreview(j['id'] as String)
+      ]);
+    }
     return [for (final j in list) _post(j)];
   }
 
-  Future<void> _loadPreview(String postId) async {
+  @override
+  FutureOr<List<int>?> postPreview(String postId) {
+    if (_previews.containsKey(postId)) return _previews[postId];
+    return _loadPreview(postId).then((_) => _previews[postId]);
+  }
+
+  Future<void> _loadPreview(String postId) => _previewLoads[postId] ??=
+      _fetchPreview(postId).whenComplete(() {
+        _previewLoads.remove(postId);
+      });
+
+  Future<void> _fetchPreview(String postId) async {
     try {
       final res = await _send('GET', '/client/posts/$postId/preview');
       _previews[postId] = res.statusCode == 200 ? res.bodyBytes : null;
@@ -468,13 +511,14 @@ class HttpBackend extends MockBackend {
       if (f.askingFeedback) 'asking_feedback': 'true',
       'page_size': '100',
     }) as Map<String, dynamic>;
-    return _posts(data['items'] as List);
+    return _posts(data['items'] as List, previews: false);
   }
 
   @override
   Future<HousePost?> post(String id) async {
     try {
       final j = await _call('GET', '/client/posts/$id') as Map<String, dynamic>;
+      if (currentId != null) _likedSeen[id] = j['liked'] == true;
       return (await _posts([j])).single;
     } on ApiFailure catch (e) {
       if (e.code == ApiCodes.notFound) return null;
@@ -545,6 +589,7 @@ class HttpBackend extends MockBackend {
   Future<bool> toggleLike(String postId) async {
     final data =
         await _call('POST', '/client/posts/$postId/like') as Map<String, dynamic>;
+    _likedSeen.remove(postId);
     notify();
     return data['liked'] as bool;
   }
@@ -552,6 +597,7 @@ class HttpBackend extends MockBackend {
   @override
   Future<bool> liked(String postId) async {
     if (currentId == null) return false;
+    if (_likedSeen.remove(postId) case final seen?) return seen;
     final j = await _call('GET', '/client/posts/$postId') as Map<String, dynamic>;
     return j['liked'] == true;
   }

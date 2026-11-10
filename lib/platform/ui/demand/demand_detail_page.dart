@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../app/settings.dart';
 import '../../domain/models.dart';
@@ -10,6 +9,7 @@ import '../coop/coop_page.dart';
 import '../l10n.dart';
 import '../design/plan_viewer.dart';
 import '../scope.dart';
+import '../components.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'applications_page.dart';
@@ -43,22 +43,26 @@ class DemandDetailPage extends StatelessWidget {
             return _DetailData(null, null, null, const [], const [], 0);
           final me = r.currentAccount?.id;
           final mine = me == d.ownerId;
+          final (owner, snapshot, applications, cooperations, received) = await (
+            r.account(d.ownerId),
+            d.current.snapshotId == null
+                ? Future<DesignSnapshot?>.value()
+                : r.snapshot(d.current.snapshotId!, demandId: d.id),
+            me == null || mine
+                ? Future.value(const <Application>[])
+                : r.myApplications().then(
+                    (all) => all.where((a) => a.demandId == d.id).toList()),
+            me == null
+                ? Future.value(const <Cooperation>[])
+                : r.cooperationsFor(d.id),
+            mine
+                ? r.applicationsFor(d.id).then((all) => all.length)
+                : Future.value(0)
+          ).wait;
           return _DetailData(
-              d,
-              await r.account(d.ownerId),
-              d.current.snapshotId == null
-                  ? null
-                  : await r.snapshot(d.current.snapshotId!, demandId: d.id),
-              me == null || mine
-                  ? const []
-                  : (await r.myApplications())
-                      .where((a) => a.demandId == d.id)
-                      .toList(),
-              me == null ? const [] : await r.cooperationsFor(d.id),
-              mine ? (await r.applicationsFor(d.id)).length : 0);
+              d, owner, snapshot, applications, cooperations, received);
         },
-        loading:
-            const Scaffold(body: Center(child: CircularProgressIndicator())),
+        loading: const SkeletonPage(),
         builder: (context, data) {
           final d = data.demand;
           if (d == null)
@@ -116,7 +120,7 @@ class _DemandDetail extends StatelessWidget {
             height: 190,
             image: data.snapshot?.preview == null
                 ? null
-                : MemoryImage(Uint8List.fromList(data.snapshot!.preview!)),
+                : MemoryImage(imageBytes(data.snapshot!.preview!)),
             child: data.snapshot?.preview == null
                 ? PlanCover(snapshotId: d.current.snapshotId!, demandId: d.id)
                 : null),

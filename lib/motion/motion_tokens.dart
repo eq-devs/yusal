@@ -30,6 +30,9 @@ abstract final class Motion {
   /// Color and small state changes.
   static const fast = Duration(milliseconds: 160);
 
+  /// Half a skeleton's breath: full to faint.
+  static const breath = Duration(milliseconds: 900);
+
   /// Skeleton → content.
   static const fadeIn = Duration(milliseconds: 200);
 

@@ -52,7 +52,7 @@ extension _SiteTab on _HouseEditorState {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(tr('添加到院子', 'Аулаға қосу'),
+                    Text(tr3('添加到院子', 'Аулаға қосу', 'Добавить во двор'),
                         style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 12),
@@ -100,23 +100,23 @@ extension _SiteTab on _HouseEditorState {
     if (saved == null)
       return page([
         InfoCard(
-            title: tr('宅基地与院子', 'Учаске және аула'),
-            subtitle: tr('画出宅基地、院墙和大门，摆放牲畜棚、澡堂、厕所、水井、菜园等，并检查常见的间距要求。',
-                'Учаскені, қоршау мен қақпаны сызып, мал қорасы, монша, дәретхана, құдық, бақша т.б. орналастырыңыз; әдеттегі арақашықтық талаптары тексеріледі.'),
+            title: tr3('宅基地与院子', 'Учаске және аула', 'Участок и двор'),
+            subtitle: tr3('画出宅基地、院墙和大门，摆放牲畜棚、澡堂、厕所、水井、菜园等，并检查常见的间距要求。',
+                'Учаскені, қоршау мен қақпаны сызып, мал қорасы, монша, дәретхана, құдық, бақша т.б. орналастырыңыз; әдеттегі арақашықтық талаптары тексеріледі.', 'Начертите участок, забор и ворота, разместите сарай для скота, баню, туалет, колодец, огород и т. д.; типовые требования к расстояниям проверяются автоматически.'),
             children: [
               const SizedBox(height: 12),
               Align(
                   alignment: Alignment.centerLeft,
                   child: Btn(
-                      label: tr('设置宅基地', 'Учаскені баптау'),
+                      label: tr3('设置宅基地', 'Учаскені баптау', 'Настроить участок'),
                       icon: Icons.fence_outlined,
                       primary: true,
                       onPressed: () async {
                         final d = defaultSitePlan(
                             doc.footprint.width, doc.footprint.depth);
-                        final w = await length(tr('宅基地宽 (临街)', 'Учаске ені (көше жақ)'), d.width);
+                        final w = await length(tr3('宅基地宽 (临街)', 'Учаске ені (көше жақ)', 'Ширина участка (вдоль улицы)'), d.width);
                         if (w == null || !mounted) return;
-                        final dd = await length(tr('宅基地进深', 'Учаске тереңдігі'), d.depth);
+                        final dd = await length(tr3('宅基地进深', 'Учаске тереңдігі', 'Глубина участка'), d.depth);
                         if (dd == null) return;
                         action('SetSite', {
                           'width': w,
@@ -205,42 +205,42 @@ extension _SiteTab on _HouseEditorState {
                           fontSize: 16, fontWeight: FontWeight.w700))),
             ]),
             trailing: IconButton(
-                tooltip: tr('关闭', 'Жабу'),
+                tooltip: tr3('关闭', 'Жабу', 'Закрыть'),
                 visualDensity: VisualDensity.compact,
                 onPressed: () => update(() => selectedSiteId = null),
                 icon: const Icon(Icons.close, size: 18)),
             children: [
               KvGrid([
-                Kv('${m2dp(i.width)} × ${m2dp(i.depth)}', tr('宽 × 深 (米)', 'Ені × тереңдігі (м)'),
+                Kv('${m2dp(i.width)} × ${m2dp(i.depth)}', tr3('宽 × 深 (米)', 'Ені × тереңдігі (м)', 'Ширина × глубина (м)'),
                     onTap: () async {
-                  final w = await length(tr('宽', 'Ені'), i.width);
+                  final w = await length(tr3('宽', 'Ені', 'Ширина'), i.width);
                   if (w == null || !mounted) return;
-                  final d = await length(tr('深', 'Тереңдігі'), i.depth);
+                  final d = await length(tr3('深', 'Тереңдігі', 'Глубина'), i.depth);
                   if (d == null) return;
                   action('UpdateSiteItem',
                       {'siteItemId': i.id, 'width': w, 'depth': d});
                 }),
-                Kv('${dec((i.width * i.depth / 1e6).toStringAsFixed(1))} $unitM2', tr('面积', 'Аудан')),
-                Kv('${m2dp(i.x)}, ${m2dp(i.y)}', tr('离左边界、离街道 (米)', 'Сол шекарадан, көшеден (м)'),
+                Kv('${dec((i.width * i.depth / 1e6).toStringAsFixed(1))} $unitM2', tr3('面积', 'Аудан', 'Площадь')),
+                Kv('${m2dp(i.x)}, ${m2dp(i.y)}', tr3('离左边界、离街道 (米)', 'Сол шекарадан, көшеден (м)', 'От левой границы, от улицы (м)'),
                     onTap: () async {
-                  final x = await length(tr('离左边界', 'Сол шекарадан'), i.x);
+                  final x = await length(tr3('离左边界', 'Сол шекарадан', 'От левой границы'), i.x);
                   if (x == null || !mounted) return;
-                  final y = await length(tr('离街道', 'Көшеден'), i.y);
+                  final y = await length(tr3('离街道', 'Көшеден', 'От улицы'), i.y);
                   if (y == null) return;
                   action('UpdateSiteItem', {'siteItemId': i.id, 'x': x, 'y': y});
                 }),
               ]),
               Wrap(spacing: 8, runSpacing: 8, children: [
                 Btn(
-                    label: tr('转 90°', '90° бұру'),
+                    label: tr3('转 90°', '90° бұру', 'Повернуть на 90°'),
                     icon: Icons.rotate_90_degrees_ccw,
                     onPressed: () =>
                         action('RotateSiteItem', {'siteItemId': i.id})),
                 Btn(
-                    label: tr('名称', 'Атауы'),
+                    label: tr3('名称', 'Атауы', 'Наименование'),
                     icon: Icons.edit_outlined,
                     onPressed: () async {
-                      final v = await askText(tr('名称', 'Атауы'), siteItemName(i));
+                      final v = await askText(tr3('名称', 'Атауы', 'Наименование'), siteItemName(i));
                       if (v != null)
                         action('UpdateSiteItem', {
                           'siteItemId': i.id,
@@ -248,7 +248,7 @@ extension _SiteTab on _HouseEditorState {
                         });
                     }),
                 Btn(
-                    label: tr('删除', 'Жою'),
+                    label: tr3('删除', 'Жою', 'Удалить'),
                     icon: Icons.delete_outline,
                     danger: true,
                     onPressed: () {
@@ -259,23 +259,23 @@ extension _SiteTab on _HouseEditorState {
             ]);
     final house = houseOnPlot(doc, saved);
     final plotCard = InfoCard(
-        title: tr('宅基地', 'Учаске'),
+        title: tr3('宅基地', 'Учаске', 'Участок'),
         trailing: IconButton(
-            tooltip: tr('删除宅基地', 'Учаскені жою'),
+            tooltip: tr3('删除宅基地', 'Учаскені жою', 'Удалить участок'),
             visualDensity: VisualDensity.compact,
             onPressed: () async {
               final ok = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
-                          content: Text(tr('删除宅基地和院子里的全部设施？可以撤销。',
-                              'Учаске мен ауладағы барлық нысанды жою керек пе? Болдырмауға болады.')),
+                          content: Text(tr3('删除宅基地和院子里的全部设施？可以撤销。',
+                              'Учаске мен ауладағы барлық нысанды жою керек пе? Болдырмауға болады.', 'Удалить участок и все объекты во дворе? Действие можно отменить.')),
                           actions: [
                             TextButton(
                                 onPressed: () => Navigator.pop(context, false),
-                                child: Text(tr('取消', 'Болдырмау'))),
+                                child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                             FilledButton(
                                 onPressed: () => Navigator.pop(context, true),
-                                child: Text(tr('删除', 'Жою'))),
+                                child: Text(tr3('删除', 'Жою', 'Удалить'))),
                           ]));
               if (ok == true) {
                 update(() => selectedSiteId = null);
@@ -285,47 +285,47 @@ extension _SiteTab on _HouseEditorState {
             icon: const Icon(Icons.delete_outline, size: 18)),
         children: [
           KvGrid([
-            Kv('${m2dp(saved.width)} × ${m2dp(saved.depth)}', tr('宽 × 进深 (米)', 'Ені × тереңдігі (м)'),
+            Kv('${m2dp(saved.width)} × ${m2dp(saved.depth)}', tr3('宽 × 进深 (米)', 'Ені × тереңдігі (м)', 'Ширина × глубина (м)'),
                 onTap: () async {
-              final w = await length(tr('宅基地宽 (临街)', 'Учаске ені (көше жақ)'), saved.width);
+              final w = await length(tr3('宅基地宽 (临街)', 'Учаске ені (көше жақ)', 'Ширина участка (вдоль улицы)'), saved.width);
               if (w == null || !mounted) return;
-              final d = await length(tr('宅基地进深', 'Учаске тереңдігі'), saved.depth);
+              final d = await length(tr3('宅基地进深', 'Учаске тереңдігі', 'Глубина участка'), saved.depth);
               if (d == null) return;
               action('SetSite', {'width': w, 'depth': d});
             }),
-            Kv('${dec((saved.width * saved.depth / 1e6).toStringAsFixed(0))} $unitM2 · ${dec((saved.width * saved.depth / 1e6 / 666.7).toStringAsFixed(2))} ${tr('亩', 'му')}',
-                tr('占地', 'Аудан')),
-            Kv('${m2dp(house.left)}, ${m2dp(house.bottom)}', tr('房子离左边界、离街道 (米)', 'Үй сол шекарадан, көшеден (м)'),
+            Kv('${dec((saved.width * saved.depth / 1e6).toStringAsFixed(0))} $unitM2 · ${dec((saved.width * saved.depth / 1e6 / 666.7).toStringAsFixed(2))} ${tr3('亩', 'му', 'му')}',
+                tr3('占地', 'Аудан', 'Площадь')),
+            Kv('${m2dp(house.left)}, ${m2dp(house.bottom)}', tr3('房子离左边界、离街道 (米)', 'Үй сол шекарадан, көшеден (м)', 'Дом: от левой границы, от улицы (м)'),
                 onTap: () async {
-              final x = await length(tr('房子离左边界', 'Үй сол шекарадан'), saved.houseX);
+              final x = await length(tr3('房子离左边界', 'Үй сол шекарадан', 'Дом от левой границы'), saved.houseX);
               if (x == null || !mounted) return;
-              final y = await length(tr('房子离街道', 'Үй көшеден'), saved.houseY);
+              final y = await length(tr3('房子离街道', 'Үй көшеден', 'Дом от улицы'), saved.houseY);
               if (y == null) return;
               action('SetSite', {'houseX': x, 'houseY': y});
             }),
             Kv(
                 '${dec((siteBuildings.fold(0.0, (s, k) => s + (siteAreas(saved)[k] ?? 0))).toStringAsFixed(1))} $unitM2',
-                tr('附属建筑面积', 'Қосалқы құрылыс ауданы')),
+                tr3('附属建筑面积', 'Қосалқы құрылыс ауданы', 'Площадь вспомогательных построек')),
           ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
             Btn(
-                label: tr('添加设施', 'Нысан қосу'),
+                label: tr3('添加设施', 'Нысан қосу', 'Добавить объект'),
                 icon: Icons.add,
                 primary: true,
                 onPressed: addSiteItem),
             PillToggle(
-                label: tr('院墙', 'Қоршау'),
+                label: tr3('院墙', 'Қоршау', 'Забор'),
                 selected: saved.fence,
                 onChanged: (v) => action('SetSite', {'fence': v})),
           ]),
         ]);
     final checkCard = InfoCard(
-        title: '${tr('院子检查', 'Аула тексеруі')} · ${checks.length}',
+        title: '${tr3('院子检查', 'Аула тексеруі', 'Проверка двора')} · ${checks.length}',
         children: [
           if (checks.isEmpty)
             Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(tr('没有发现问题', 'Мәселе табылмады'),
+                child: Text(tr3('没有发现问题', 'Мәселе табылмады', 'Проблем не найдено'),
                     style: TextStyle(color: t.muted))),
           for (final c in checks)
             InkWell(
@@ -351,24 +351,24 @@ extension _SiteTab on _HouseEditorState {
                               child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                Text(tr(c.title.$1, c.title.$2),
+                                Text(tr3(c.title.$1, c.title.$2, c.title.$3),
                                     style: const TextStyle(
                                         fontSize: 14, fontWeight: FontWeight.w600)),
-                                Text(tr(c.text.$1, c.text.$2),
+                                Text(tr3(c.text.$1, c.text.$2, c.text.$3),
                                     style: TextStyle(
                                         fontSize: 12, height: 1.45, color: t.muted)),
                               ])),
                         ]))),
-          Note(tr('间距是乡村宅基地的常见建议 (厕所离房子 12 m、澡堂 8 m、水井离厕所和化粪池 20 m 等)，不代表当地审批要求。',
-              'Арақашықтықтар — ауыл учаскесіне әдеттегі ұсыныс (дәретхана үйден 12 м, монша 8 м, құдық дәретхана мен септиктен 20 м т.б.), жергілікті рұқсат талабы емес.')),
+          Note(tr3('间距是乡村宅基地的常见建议 (厕所离房子 12 m、澡堂 8 m、水井离厕所和化粪池 20 m 等)，不代表当地审批要求。',
+              'Арақашықтықтар — ауыл учаскесіне әдеттегі ұсыныс (дәретхана үйден 12 м, монша 8 м, құдық дәретхана мен септиктен 20 м т.б.), жергілікті рұқсат талабы емес.', 'Расстояния — типовые рекомендации для сельского участка (туалет — 12 м от дома, баня — 8 м, колодец — 20 м от туалета и септика и т. д.), а не требования местных органов согласования.')),
         ]);
     final side = [
       if (selectedItem != null) itemCard(selectedItem),
       if (selectedSiteId == '@house')
         InfoCard(
             title: doc.meta.name,
-            subtitle: tr('拖动房子可在宅基地上移动，或点位置输入。',
-                'Үйді сүйреп жылжытыңыз немесе орнын басып енгізіңіз.'),
+            subtitle: tr3('拖动房子可在宅基地上移动，或点位置输入。',
+                'Үйді сүйреп жылжытыңыз немесе орнын басып енгізіңіз.', 'Перетащите дом, чтобы переместить его, или нажмите на положение и введите значения.'),
             children: const []),
       plotCard,
       checkCard,
@@ -376,7 +376,7 @@ extension _SiteTab on _HouseEditorState {
     if (!wide)
       return page([
         canvas,
-        Text(tr('点选房子或设施，拖动移动。', 'Үйді не нысанды таңдап, сүйреп жылжытыңыз.'),
+        Text(tr3('点选房子或设施，拖动移动。', 'Үйді не нысанды таңдап, сүйреп жылжытыңыз.', 'Выберите дом или объект и перетащите его.'),
             style: TextStyle(fontSize: 12, color: t.muted)),
         ...side
       ]);
@@ -385,7 +385,7 @@ extension _SiteTab on _HouseEditorState {
           child: ListView(padding: const EdgeInsets.all(12), children: [
         canvas,
         const SizedBox(height: 8),
-        Text(tr('点选房子或设施，拖动移动。', 'Үйді не нысанды таңдап, сүйреп жылжытыңыз.'),
+        Text(tr3('点选房子或设施，拖动移动。', 'Үйді не нысанды таңдап, сүйреп жылжытыңыз.', 'Выберите дом или объект и перетащите его.'),
             style: TextStyle(fontSize: 12, color: t.muted)),
       ])),
       SizedBox(

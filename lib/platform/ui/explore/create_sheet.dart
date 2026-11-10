@@ -133,22 +133,22 @@ class _OptionCard extends StatelessWidget {
           children: [
             Text(title,
                 style:
-                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                    const TextStyle(fontWeight: FontWeight.w700, fontSize: YFont.body)),
             if (recommended)
               Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                       color: t.accent,
-                      borderRadius: BorderRadius.circular(20)),
+                      borderRadius: BorderRadius.circular(YRadius.pill)),
                   child: Text(tr3('推荐', 'Ұсынамыз', 'Совет'),
                       style: TextStyle(
                           color: t.accentInk,
-                          fontSize: 11,
+                          fontSize: YFont.caption,
                           fontWeight: FontWeight.w700))),
           ]),
       const SizedBox(height: 2),
-      Text(body, style: TextStyle(color: t.muted, fontSize: 13)),
+      Text(body, style: TextStyle(color: t.muted, fontSize: YFont.small)),
     ]);
     final icon = Icon(this.icon, color: t.accent, size: 28);
     return Pressable(

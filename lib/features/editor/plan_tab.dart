@@ -51,17 +51,17 @@ extension _PlanTab on _HouseEditorState {
                         children: [
                       Row(children: [
                         IconButton(
-                            tooltip: '楼层操作'.trKey('Қабат әрекеттері'),
+                            tooltip: '楼层操作'.trKey('Қабат әрекеттері', 'Действия с этажом'),
                             visualDensity: VisualDensity.compact,
                             onPressed: floorOptions,
                             icon: const Icon(Icons.layers_outlined, size: 20)),
                         IconButton(
-                            tooltip: '房屋长宽'.trKey('Үйдің ені мен ұзындығы'),
+                            tooltip: '房屋长宽'.trKey('Үйдің ені мен ұзындығы', 'Ширина и длина дома'),
                             visualDensity: VisualDensity.compact,
                             onPressed: footprintOptions,
                             icon: const Icon(Icons.aspect_ratio, size: 20)),
                         IconButton(
-                            tooltip: '立即保存'.trKey('Қазір сақтау'),
+                            tooltip: '立即保存'.trKey('Қазір сақтау', 'Сохранить сейчас'),
                             visualDensity: VisualDensity.compact,
                             onPressed: save,
                             icon: const Icon(Icons.save_outlined, size: 20)),
@@ -194,9 +194,9 @@ extension _PlanTab on _HouseEditorState {
     }
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      button(Icons.add, tr('放大', 'Үлкейту'), () => zoom(1.3)),
-      button(Icons.remove, tr('缩小', 'Кішірейту'), () => zoom(1 / 1.3)),
-      button(Icons.fit_screen_outlined, tr('恢复画布视角', 'Көріністі қалпына келтіру'),
+      button(Icons.add, tr3('放大', 'Үлкейту', 'Увеличить'), () => zoom(1.3)),
+      button(Icons.remove, tr3('缩小', 'Кішірейту', 'Уменьшить'), () => zoom(1 / 1.3)),
+      button(Icons.fit_screen_outlined, tr3('恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид'),
           () => canvasTransform.value = Matrix4.identity()),
     ]);
   }
@@ -237,21 +237,21 @@ extension _PlanTab on _HouseEditorState {
                     borderRadius: BorderRadius.circular(8)),
                 child: Wrap(spacing: 12, runSpacing: 4, children: [
                   swatch(bar(t.wall, hatch: true),
-                      tr('承重墙 ≥$bearing', 'Көтергіш ≥$bearing')),
-                  swatch(bar(t.wall, h: 4), tr('隔墙', 'Қалқа қабырға')),
-                  swatch(bar(t.chk), tr('窗', 'Терезе')),
+                      tr3('承重墙 ≥$bearing', 'Көтергіш ≥$bearing', 'Несущая ≥$bearing')),
+                  swatch(bar(t.wall, h: 4), tr3('隔墙', 'Қалқа қабырға', 'Перегородка')),
+                  swatch(bar(t.chk), tr3('窗', 'Терезе', 'Окно')),
                   if (showFoundation) ...[
                     swatch(dashed(t.ok),
-                        '${tr('有基础', 'Іргетасы бар')} ${history.present.extras.foundation.width}×${history.present.extras.foundation.height}'),
+                        '${tr3('有基础', 'Іргетасы бар', 'Есть фундамент')} ${history.present.extras.foundation.width}×${history.present.extras.foundation.height}'),
                     swatch(
                         Container(
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
                                 color: t.chk, shape: BoxShape.circle)),
-                        tr('预留套管', 'Гильза')),
+                        tr3('预留套管', 'Гильза', 'Гильза')),
                     swatch(dashed(t.crit, fill: true),
-                        tr('缺基础', 'Іргетасы жоқ')),
+                        tr3('缺基础', 'Іргетасы жоқ', 'Нет фундамента')),
                   ],
                 ]))));
   }
@@ -291,7 +291,7 @@ extension _PlanTab on _HouseEditorState {
 
   List<(String, Widget)> keyedTools() {
     return [
-      ('browse', basicTool(Icons.pan_tool_outlined, tr('浏览', 'Шолу'), browse, () {
+      ('browse', basicTool(Icons.pan_tool_outlined, tr3('浏览', 'Шолу', 'Просмотр'), browse, () {
         tool = 'browse';
         browse = true;
       })),
@@ -300,8 +300,8 @@ extension _PlanTab on _HouseEditorState {
         ('freeWall', basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
           drawingOrigin = null;
           placingWallStart = true;
-          placementHint = tr('在空白处拖出独立墙，或点一下选起点',
-              'Бос жерден қабырға тартыңыз немесе бастауды басыңыз');
+          placementHint = tr3('在空白处拖出独立墙，或点一下选起点',
+              'Бос жерден қабырға тартыңыз немесе бастауды басыңыз', 'Протяните стену на свободном месте или нажмите, чтобы задать начало');
         })),
       ('split', basicTool(Icons.vertical_split_outlined, '拉线分房', tool == 'split', () {
         view3d = false;
@@ -340,15 +340,15 @@ extension _PlanTab on _HouseEditorState {
 
   List<Widget> layerChips() => [
         PillToggle(
-            label: tr('家具', 'Жиһаз'),
+            label: tr3('家具', 'Жиһаз', 'Мебель'),
             selected: showFurniture,
             onChanged: (v) => update(() => showFurniture = v)),
         PillToggle(
-            label: tr('尺寸', 'Өлшемдер'),
+            label: tr3('尺寸', 'Өлшемдер', 'Размеры'),
             selected: showDimensions,
             onChanged: (v) => update(() => showDimensions = v)),
         PillToggle(
-            label: tr('水电', 'Су-электр'),
+            label: tr3('水电', 'Су-электр', 'Электрика и вода'),
             selected: showUtilities,
             onChanged: (v) => update(() {
                   showUtilities = v;
@@ -362,7 +362,7 @@ extension _PlanTab on _HouseEditorState {
                   }
                 })),
         PillToggle(
-            label: tr('地基', 'Іргетас'),
+            label: tr3('地基', 'Іргетас', 'Фундамент'),
             selected: showFoundation,
             onChanged: (v) => update(() {
                   showFoundation = v;
@@ -372,7 +372,7 @@ extension _PlanTab on _HouseEditorState {
                   }
                 })),
         PillToggle(
-            label: tr('测距', 'Қашықтық өлшеу'),
+            label: tr3('测距', 'Қашықтық өлшеу', 'Измерить расстояние'),
             icon: Icons.straighten,
             checkbox: false,
             selected: tool == 'measure',
@@ -419,7 +419,7 @@ extension _PlanTab on _HouseEditorState {
             TextButton.icon(
                 onPressed: footprintOptions,
                 icon: const Icon(Icons.edit_outlined, size: 18),
-                label: Text(tr('输入长宽', 'Өлшем енгізу'))),
+                label: Text(tr3('输入长宽', 'Өлшем енгізу', 'Ввести размеры'))),
           if (tool == 'drawWall')
             IconButton(
                 tooltip: '输入墙长',
@@ -441,7 +441,7 @@ extension _PlanTab on _HouseEditorState {
                       placingUtility = null;
                       measurePoints = [];
                     }),
-                child: Text(tr('结束', 'Аяқтау'))),
+                child: Text(tr3('结束', 'Аяқтау', 'Завершить'))),
         ];
   }
 }

@@ -56,7 +56,7 @@ class DemandCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w700, height: 1.25))),
+                    fontSize: YFont.body, fontWeight: FontWeight.w700, height: 1.25))),
         if (demand.status != DemandStatus.open) ...[
           const SizedBox(width: 8),
           StatusPill(demandStatusName(demand.status),
@@ -69,11 +69,11 @@ class DemandCard extends StatelessWidget {
           '${regionName(v.region)}${v.locality.isEmpty ? '' : ' · ${v.locality}'}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: t.muted, fontSize: 14)),
+          style: TextStyle(color: t.muted, fontSize: YFont.label)),
       Text('${v.trades.map(tradeName).join('、')}$headcount',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: t.muted, fontSize: 14)),
+          style: TextStyle(color: t.muted, fontSize: YFont.label)),
       if ((v.contract?.quantities.length ?? 0) > 0)
         Padding(
             padding: const EdgeInsets.only(top: 4),
@@ -87,86 +87,91 @@ class DemandCard extends StatelessWidget {
       Text.rich(TextSpan(children: [
         TextSpan(
             text: budgetText(v.budget),
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+            style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: YFont.body,
+                fontFeatures: YText.tabular)),
         TextSpan(
             text: '  ·  $start',
-            style: TextStyle(color: t.muted, fontSize: 13)),
+            style: TextStyle(color: t.muted, fontSize: YFont.small)),
       ])),
     ]);
     if (compact) return YCard(onTap: onTap, child: info);
+    final heart = onFavourite == null
+        ? null
+        : IconButton(
+            tooltip: favourite == true
+                ? tr3('取消收藏', 'Таңдаулыдан алу', 'Убрать из избранного')
+                : tr3('收藏', 'Таңдаулы', 'В избранное'),
+            onPressed: () {
+              if (favourite != true) HapticFeedback.lightImpact();
+              onFavourite!();
+            },
+            icon: PopOnActive(
+                active: favourite == true,
+                child: Icon(
+                    favourite == true ? Icons.favorite : Icons.favorite_border,
+                    size: 22,
+                    color: favourite == true ? t.accent : t.muted)));
+    // The kind of demand leads the card; a drawing, when there is one, is
+    // the only picture. Without a drawing the card is its facts.
+    final kind = Row(children: [
+      Icon(demandIcon(demand), size: 18, color: t.accent),
+      const SizedBox(width: 6),
+      Expanded(
+          child: Text(demandTypeName(demand.type),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: YText.labelStrong.copyWith(color: t.accent))),
+      if (heart != null) heart,
+    ]);
     return Pressable(
-        child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(yRadius),
-        splashFactory: NoSplash.splashFactory,
-        child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Cover(
-                  icon: demandIcon(demand),
-                  seed: demand.id,
-                  // Without a drawing the cover is only decoration.
-                  height: v.snapshotId == null ? 96 : 150,
-                  child: Stack(children: [
-                    if (v.snapshotId != null)
-                      Positioned.fill(
-                          child: PlanCover(
-                              snapshotId: v.snapshotId!, demandId: demand.id)),
-                    Positioned(
-                        left: 12,
-                        top: 12,
-                        child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(999),
-                                boxShadow: t.softShadow),
-                            child: Text(demandTypeName(demand.type),
-                                style: const TextStyle(
-                                    color: Color(0xff222222),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700)))),
-                    if (v.snapshotId != null)
-                      Positioned(
-                          left: 12,
-                          bottom: 12,
-                          child: StatusPill(
-                              tr3('附设计工程量', 'Жоба көлемімен',
-                                  'С объёмами из проекта'),
-                              color: const Color(0xff222222),
-                              filled: true)),
-                    if (onFavourite != null)
-                      Positioned(
-                          right: 4,
-                          top: 4,
-                          child: IconButton(
-                              tooltip: tr3('收藏', 'Таңдаулы', 'В избранное'),
-                              onPressed: () {
-                                if (favourite != true) {
-                                  HapticFeedback.lightImpact();
-                                }
-                                onFavourite!();
-                              },
-                              icon: PopOnActive(
-                                  active: favourite == true,
-                                  child: Icon(
-                                      favourite == true
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color: favourite == true
-                                          ? t.accent
-                                          : Colors.white,
-                                      shadows: const [
-                                        Shadow(
-                                            blurRadius: 6,
-                                            color: Colors.black38)
-                                      ])))),
-                  ])),
-              const SizedBox(height: 10),
-              info,
-            ]))));
+        child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+                color: t.card,
+                borderRadius: BorderRadius.circular(YRadius.card),
+                border: Border.all(color: t.line)),
+            child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                    onTap: onTap,
+                    splashFactory: NoSplash.splashFactory,
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (v.snapshotId != null)
+                            SizedBox(
+                                height: 150,
+                                child: Stack(children: [
+                                  Positioned.fill(
+                                      child: PlanCover(
+                                          snapshotId: v.snapshotId!,
+                                          demandId: demand.id)),
+                                  Positioned(
+                                      left: YSpace.md,
+                                      bottom: YSpace.md,
+                                      child: StatusPill(
+                                          tr3('附设计工程量', 'Жоба көлемімен',
+                                              'С объёмами из проекта'),
+                                          color: YTokens.light.ink,
+                                          filled: true)),
+                                ])),
+                          Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                  YSpace.lg,
+                                  heart == null ? YSpace.md : YSpace.xs,
+                                  heart == null ? YSpace.lg : YSpace.xs,
+                                  0),
+                              child: kind),
+                          Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                  YSpace.lg,
+                                  heart == null ? YSpace.sm : 0,
+                                  YSpace.lg,
+                                  YSpace.lg),
+                              child: info),
+                        ])))));
   }
 }
 
@@ -196,7 +201,7 @@ class ProfileCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700))),
+                              fontSize: YFont.body, fontWeight: FontWeight.w700))),
                   StatusPill(profileKindName(p.kind)),
                 ]),
                 const SizedBox(height: 3),
@@ -207,7 +212,7 @@ class ProfileCard extends StatelessWidget {
                 Text(p.regions.map(regionName).join('、'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: t.muted, fontSize: 13)),
+                    style: TextStyle(color: t.muted, fontSize: YFont.small)),
                 const SizedBox(height: 6),
                 Row(children: [
                   Icon(Icons.circle,
@@ -216,13 +221,13 @@ class ProfileCard extends StatelessWidget {
                   Flexible(
                       child: Text(availabilityName(p),
                           style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w600))),
+                              fontSize: YFont.small, fontWeight: FontWeight.w600))),
                   if (stale) ...[
                     const SizedBox(width: 6),
                     Text(
                         tr3('· 较久未确认', '· ұзақ расталмаған',
                             '· давно не обновлял'),
-                        style: TextStyle(fontSize: 12, color: t.muted)),
+                        style: TextStyle(fontSize: YFont.caption, color: t.muted)),
                   ],
                 ]),
                 _TrackRecord(profile: p),
@@ -232,7 +237,7 @@ class ProfileCard extends StatelessWidget {
                       '${money(p.refPrices.first.amount, unit: p.refPrices.first.unit)} ${tr3('起', 'бастап', 'от')} · ${p.refPrices.first.scope}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13)),
+                      style: const TextStyle(fontSize: YFont.small)),
                 ],
               ])),
         ]));
@@ -279,7 +284,7 @@ class _TrackRecord extends StatelessWidget {
                   Text(
                       '${(scores.reduce((a, b) => a + b) / scores.length).toStringAsFixed(1)} (${scores.length})',
                       style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: YFont.small,
                           fontWeight: FontWeight.w700,
                           fontFeatures: [FontFeature.tabularFigures()])),
                   if (parts.isNotEmpty) const SizedBox(width: 8),
@@ -288,7 +293,7 @@ class _TrackRecord extends StatelessWidget {
                     child: Text(parts.join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 13, color: t.muted))),
+                        style: TextStyle(fontSize: YFont.small, color: t.muted))),
               ]));
         });
   }

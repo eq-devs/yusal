@@ -7,6 +7,7 @@ import '../discover/discover_page.dart';
 import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
+import '../components.dart';
 import '../widgets.dart';
 import 'house_card.dart';
 import 'post_page.dart';
@@ -32,6 +33,7 @@ class _HomePageState extends State<HomePage> {
   final search = TextEditingController();
   Timer? _searchTimer;
   int _retry = 0;
+  final _refresh = LiveRefresh();
 
   void searchChanged(String value) {
     _searchTimer?.cancel();
@@ -73,7 +75,11 @@ class _HomePageState extends State<HomePage> {
             child: Center(
                 child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1100),
-                    child: CustomScrollView(slivers: [
+                    child: RefreshIndicator(
+                        onRefresh: _refresh.call,
+                        child: CustomScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            slivers: [
                       SliverToBoxAdapter(
                           child: Padding(
                               padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
@@ -101,87 +107,54 @@ class _HomePageState extends State<HomePage> {
                                                 'Дома, которые спроектировали люди'),
                                         style: display(size: 24)),
                                     const SizedBox(height: 12),
-                                    // Search pill, Airbnb style.
-                                    Material(
-                                        color: t.card,
-                                        elevation: 0,
-                                        shape: StadiumBorder(
-                                            side: BorderSide(color: t.line)),
-                                        shadowColor: t.shadow,
-                                        child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 16),
-                                            child: Row(children: [
-                                              Icon(Icons.search, color: t.ink),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                  child: TextField(
-                                                      controller: search,
-                                                      onChanged: searchChanged,
-                                                      decoration: InputDecoration(
-                                                          border:
-                                                              InputBorder.none,
-                                                          enabledBorder:
-                                                              InputBorder.none,
-                                                          focusedBorder:
-                                                              InputBorder.none,
-                                                          filled: false,
-                                                          hintText: tr3(
-                                                              '搜索房子、地区',
-                                                              'Үй не аймақ іздеу',
-                                                              'Дом или район'),
-                                                          contentPadding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  vertical:
-                                                                      14)))),
-                                            ]))),
+                                    SearchField(
+                                        controller: search,
+                                        onChanged: searchChanged,
+                                        hint: tr3('搜索房子、地区',
+                                            'Үй не аймақ іздеу', 'Дом или район')),
                                     const SizedBox(height: 12),
                                     SingleChildScrollView(
                                         scrollDirection: Axis.horizontal,
                                         child: Row(children: [
                                           Padding(
-                                            padding:
-                                                const EdgeInsets.only(right: 8),
-                                            child: PopupMenuButton<FeedSort>(
-                                              tooltip: tr3('排序', 'Сұрыптау',
-                                                  'Сортировка'),
-                                              initialValue: filter.sort,
-                                              onSelected: (sort) => set(
-                                                  FeedFilter(
-                                                      region: filter.region,
-                                                      sort: sort,
-                                                      openForBuilders: filter
-                                                          .openForBuilders,
-                                                      askingFeedback: filter
-                                                          .askingFeedback)),
-                                              itemBuilder: (_) => [
-                                                for (final sort
-                                                    in FeedSort.values)
-                                                  CheckedPopupMenuItem(
-                                                      value: sort,
-                                                      checked:
-                                                          sort == filter.sort,
-                                                      child: Text(
-                                                          feedSortName(sort)))
-                                              ],
-                                              child: Padding(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 14),
-                                                  child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Text(feedSortName(
-                                                            filter.sort)),
-                                                        const Icon(
-                                                            Icons.expand_more,
-                                                            size: 18)
-                                                      ])),
-                                            ),
-                                          ),
+                                              padding: const EdgeInsets.only(
+                                                  right: 8),
+                                              child: FilterPill(
+                                                  key: const Key('feed-sort'),
+                                                  icon: Icons.swap_vert,
+                                                  label:
+                                                      feedSortName(filter.sort),
+                                                  selected: false,
+                                                  menu: true,
+                                                  onTap: () async {
+                                                    final sort =
+                                                        await pickOne<FeedSort>(
+                                                            context,
+                                                            tr3('排序', 'Сұрыптау',
+                                                                'Сортировка'),
+                                                            [
+                                                              for (final s
+                                                                  in FeedSort
+                                                                      .values)
+                                                                (
+                                                                  s,
+                                                                  feedSortName(
+                                                                      s)
+                                                                )
+                                                            ],
+                                                            selected:
+                                                                filter.sort);
+                                                    if (sort != null &&
+                                                        context.mounted)
+                                                      set(FeedFilter(
+                                                          region:
+                                                              filter.region,
+                                                          sort: sort,
+                                                          openForBuilders: filter
+                                                              .openForBuilders,
+                                                          askingFeedback: filter
+                                                              .askingFeedback));
+                                                  })),
                                           Padding(
                                               padding: const EdgeInsets.only(
                                                   right: 8),
@@ -221,6 +194,8 @@ class _HomePageState extends State<HomePage> {
                                                   ? tr3('地区', 'Аймақ', 'Район')
                                                   : regionName(filter.region!),
                                               selected: filter.region != null,
+                                              icon: Icons.place_outlined,
+                                              menu: true,
                                               onTap: () async {
                                                 final r = await pickOne<
                                                         String?>(
@@ -254,6 +229,7 @@ class _HomePageState extends State<HomePage> {
                                     ],
                                   ]))),
                       Live<(List<HousePost>, Set<String>)>(
+                          refresh: _refresh,
                           reloadKey: (
                             filter.region,
                             filter.sort,
@@ -281,9 +257,9 @@ class _HomePageState extends State<HomePage> {
                                 (await r.likedPosts()).toSet()
                               ),
                           loading: const SliverToBoxAdapter(
-                              child: Padding(
-                                  padding: EdgeInsets.all(40),
-                                  child: Center(child: CircularProgressIndicator()))),
+                              child: SkeletonList(
+                                  cover: 230,
+                                  padding: EdgeInsets.fromLTRB(20, 16, 20, 0))),
                           refreshError: (context, data, error, retry) => SliverMainAxisGroup(slivers: [
                                 SliverToBoxAdapter(
                                     child: Padding(
@@ -305,7 +281,7 @@ class _HomePageState extends State<HomePage> {
                                 feed(context, data),
                               ]),
                           builder: feed),
-                    ])))),
+                    ]))))),
         floatingActionButton: widget.embedded
             ? null
             : FloatingActionButton.extended(
@@ -379,7 +355,7 @@ class _ProBanner extends StatelessWidget {
                       tr3('找人／找活 · 查看专业人士与施工需求', 'Маман / жұмыс табу',
                           'Найти мастера или работу'),
                       style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14))),
+                          fontWeight: FontWeight.w600, fontSize: YFont.label))),
               Icon(Icons.chevron_right, color: t.muted),
             ])));
   }

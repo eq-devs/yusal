@@ -34,13 +34,12 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('我的房子').last);
     await t.pumpAndSettle();
-    await t.tap(find.byTooltip('项目操作'));
-    await t.pumpAndSettle();
+    // Finding builders is on the card itself, not behind the menu.
     await t.tap(find.text('找施工方'));
     await t.pumpAndSettle();
     expect(find.byType(FromDesignPage), findsOneWidget);
     expect(find.byType(PublishPostPage), findsNothing);
-    await t.pageBack();
+    await t.tap(find.byType(BackButton));
     await t.pumpAndSettle();
     await t.tap(find.byTooltip('项目操作'));
     await t.pumpAndSettle();

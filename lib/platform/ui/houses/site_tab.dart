@@ -42,7 +42,7 @@ class SiteTab extends StatelessWidget {
           for (final c in active) ...[
             Text(title(c.demandId),
                 style:
-                    const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    const TextStyle(fontWeight: FontWeight.w700, fontSize: YFont.body)),
             const SizedBox(height: 8),
             SiteSection(cooperation: c),
             const SizedBox(height: 28),
@@ -112,7 +112,7 @@ class SiteSection extends StatelessWidget {
                     'Yusal 目前只记录验收，不代收代付。',
                     'Yusal тек қабылдауды жазады, ақша ұстамайды.',
                     'Yusal только записывает приёмку и не принимает платежи.'),
-                style: TextStyle(color: t.faint, fontSize: 12))),
+                style: TextStyle(color: t.muted, fontSize: YFont.caption))),
       ],
       Row(children: [
         Expanded(
@@ -274,7 +274,7 @@ class _SiteEntrySheetState extends State<_SiteEntrySheet> {
                           tr3('$people 人', '$people адам', '$people чел.'),
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 16))),
+                              fontWeight: FontWeight.w700, fontSize: YFont.body))),
                   IconButton.outlined(
                       key: const Key('people-plus'),
                       onPressed: people! < 200
@@ -319,7 +319,7 @@ class _SiteEntrySheetState extends State<_SiteEntrySheet> {
                   child: Text(
                       tr3('照片只给合作双方看。', 'Фотоны тек екі жақ көреді.',
                           'Фото видят только стороны соглашения.'),
-                      style: TextStyle(color: t.faint, fontSize: 12))),
+                      style: TextStyle(color: t.muted, fontSize: YFont.caption))),
             ])));
   }
 }
@@ -376,11 +376,11 @@ class _MilestoneTile extends StatelessWidget {
               ]),
           const SizedBox(height: 2),
           Text(m.criteria.isEmpty ? milestoneCriteria(m.key) : m.criteria,
-              style: TextStyle(color: t.muted, fontSize: 13)),
+              style: TextStyle(color: t.muted, fontSize: YFont.small)),
           if (m.note.isNotEmpty)
             Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(m.note, style: const TextStyle(fontSize: 13))),
+                child: Text(m.note, style: const TextStyle(fontSize: YFont.small))),
           if (m.photos.isNotEmpty)
             Padding(
                 padding: const EdgeInsets.only(top: 6),
@@ -391,7 +391,7 @@ class _MilestoneTile extends StatelessWidget {
                 child: Text(
                     tr3('预计 ${fmtDay(m.due)}', 'Мерзімі ${fmtDay(m.due)}',
                         'Срок ${fmtDay(m.due)}'),
-                    style: TextStyle(color: t.muted, fontSize: 12))),
+                    style: TextStyle(color: t.muted, fontSize: YFont.caption))),
           if (onRequest != null || onAccept != null)
             Padding(
                 padding: const EdgeInsets.only(top: 8),

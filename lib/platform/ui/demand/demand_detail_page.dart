@@ -107,16 +107,19 @@ class _DemandDetail extends StatelessWidget {
 
     final body =
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Cover(
-          icon: demandIcon(d),
-          seed: d.id,
-          height: 190,
-          image: data.snapshot?.preview == null
-              ? null
-              : MemoryImage(Uint8List.fromList(data.snapshot!.preview!)),
-          child: data.snapshot?.preview == null && d.current.snapshotId != null
-              ? PlanCover(snapshotId: d.current.snapshotId!, demandId: d.id)
-              : null),
+      // A picture only when there is a real drawing; otherwise the facts
+      // start at the top of the page.
+      if (data.snapshot?.preview != null || d.current.snapshotId != null)
+        Cover(
+            icon: demandIcon(d),
+            seed: d.id,
+            height: 190,
+            image: data.snapshot?.preview == null
+                ? null
+                : MemoryImage(Uint8List.fromList(data.snapshot!.preview!)),
+            child: data.snapshot?.preview == null
+                ? PlanCover(snapshotId: d.current.snapshotId!, demandId: d.id)
+                : null),
       Live<HousePost?>(
           reloadKey: ('post-for', d.id),
           load: (r) => r.postForDemand(d.id),
@@ -128,7 +131,7 @@ class _DemandDetail extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: InkWell(
                       key: const Key('demand-house-link'),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(YRadius.row),
                       onTap: () => pushPage<void>(
                           context, (_) => PostPage(postId: post.id)),
                       child: Row(children: [
@@ -153,9 +156,9 @@ class _DemandDetail extends StatelessWidget {
           StatusPill(tr3('分包需求', 'Қосалқы мердігерлік', 'Субподряд')),
       ]),
       const SizedBox(height: 10),
-      Text(v.title,
-          style: const TextStyle(
-              fontSize: 26, fontWeight: FontWeight.w700, height: 1.2)),
+      Semantics(
+          header: true,
+          child: Text(v.title, style: display(size: 26, color: t.ink))),
       const SizedBox(height: 6),
       Text(
           '${regionName(v.region)}${v.locality.isEmpty ? '' : ' · ${v.locality}'} · ${tr3('第 ${v.no} 版', '${v.no}-нұсқа', 'версия ${v.no}')} · ${ago(v.createdAt, context.now)}',
@@ -181,7 +184,7 @@ class _DemandDetail extends StatelessWidget {
                   'Жариялаған: ${deletedName(data.owner)}',
                   'Автор: ${deletedName(data.owner)}'),
               style:
-                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                  const TextStyle(fontWeight: FontWeight.w700, fontSize: YFont.body)),
           Text(
               [
                 if (data.owner?.phoneVerified == true)
@@ -190,12 +193,12 @@ class _DemandDetail extends StatelessWidget {
                   tr3('施工方发布，非房屋所有人', 'Мердігер жариялаған',
                       'Размещено подрядчиком'),
               ].join(' · '),
-              style: TextStyle(color: t.muted, fontSize: 13)),
+              style: TextStyle(color: t.muted, fontSize: YFont.small)),
         ])),
       ]),
       const Divider(height: 36),
       if (v.description.isNotEmpty) ...[
-        Text(v.description, style: const TextStyle(fontSize: 15, height: 1.5)),
+        Text(v.description, style: const TextStyle(fontSize: YFont.body, height: 1.5)),
         const SizedBox(height: 12),
       ],
       InfoRow(tr3('工种', 'Мамандық', 'Специальность'),
@@ -232,7 +235,7 @@ class _DemandDetail extends StatelessWidget {
           'Платформа не требует залогов от рабочих. Гарантии оплаты нет — платите по соглашению.')),
       if (mine) ..._ownerPanel(context),
       if (!mine && data.coops.isNotEmpty) ...[
-        const SectionTitle('我的合作 · Cooperation'),
+        SectionTitle(tr3('我的合作', 'Менің келісімдерім', 'Моё сотрудничество')),
         for (final c in data.coops)
           ListTile(
               title: Text(cooperationStatusName(c)),
@@ -256,11 +259,16 @@ class _DemandDetail extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+              // Two lines, so "waiting for offers" is never cut beside
+              // the button.
               Text(budgetText(v.budget),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 16)),
+                      fontWeight: FontWeight.w700,
+                      fontSize: YFont.body,
+                      height: 1.2,
+                      fontFeatures: YText.tabular)),
               Text(
                   accepting
                       ? (d.expiresAt == null
@@ -271,7 +279,7 @@ class _DemandDetail extends StatelessWidget {
                               'до ${fmtDay(d.expiresAt)}'))
                       : tr3('暂不接收新申请', 'Жаңа өтінім қабылданбайды',
                           'Отклики не принимаются'),
-                  style: TextStyle(color: t.muted, fontSize: 12)),
+                  style: TextStyle(color: t.muted, fontSize: YFont.caption)),
             ])),
         IconButton(
             tooltip: tr3('联系发布者', 'Жариялаушыға жазу', 'Написать автору'),
@@ -393,7 +401,7 @@ class _DemandDetail extends StatelessWidget {
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(s.projectName,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: YFont.body)),
         const SizedBox(height: 4),
         Text(s.summary, style: TextStyle(color: t.muted)),
         const SizedBox(height: 4),
@@ -402,7 +410,7 @@ class _DemandDetail extends StatelessWidget {
                 '固定版本：提取于 ${fmtDay(s.extractedAt)}，设计后续修改不会改变此附件。',
                 'Бекітілген нұсқа: ${fmtDay(s.extractedAt)}. Кейінгі өзгерістер әсер етпейді.',
                 'Зафиксировано ${fmtDay(s.extractedAt)}; дальнейшие правки проекта не меняют вложение.'),
-            style: TextStyle(color: t.muted, fontSize: 12)),
+            style: TextStyle(color: t.muted, fontSize: YFont.caption)),
         if (s.stages.isNotEmpty) ...[
           const SizedBox(height: 8),
           Wrap(spacing: 6, runSpacing: 6, children: [
@@ -428,7 +436,7 @@ class _DemandDetail extends StatelessWidget {
                     if (vis.plan) tr3('平面图', 'жоспар', 'план'),
                     if (vis.render) tr3('效果图', 'көрініс', 'визуализация'),
                   ].join('、')}. ${tr3('完整 .house 文件不公开。', '.house файлы жарияланбайды.', 'Файл .house не публикуется.')}',
-                  style: TextStyle(color: t.muted, fontSize: 12))),
+                  style: TextStyle(color: t.muted, fontSize: YFont.caption))),
       ])),
     ];
   }
@@ -572,7 +580,7 @@ class QtyTable extends StatelessWidget {
     return Container(
         decoration: BoxDecoration(
             border: Border.all(color: t.line),
-            borderRadius: BorderRadius.circular(12)),
+            borderRadius: BorderRadius.circular(YRadius.control)),
         child: Column(children: [
           for (final (i, l) in lines.indexed)
             Container(
@@ -590,7 +598,7 @@ class QtyTable extends StatelessWidget {
                             style:
                                 const TextStyle(fontWeight: FontWeight.w600)),
                         Text(qtySourceName(l.source),
-                            style: TextStyle(color: t.muted, fontSize: 12)),
+                            style: TextStyle(color: t.muted, fontSize: YFont.caption)),
                       ])),
                   Text(
                       l.quantity == null

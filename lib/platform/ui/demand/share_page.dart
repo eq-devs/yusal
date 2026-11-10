@@ -78,7 +78,7 @@ class SharePage extends StatelessWidget {
                             '分享到 WhatsApp、Telegram 等应用时，对方未安装 Yusal 也能先在网页查看公开信息，登录后再报名或报价。',
                             'Yusal жоқ адам да ашық ақпаратты вебте көре алады.',
                             'Без приложения откроется веб-страница с публичными данными.'),
-                        style: TextStyle(color: t.muted, fontSize: 12)),
+                        style: TextStyle(color: t.muted, fontSize: YFont.caption)),
                     if (mine) ...[
                       const SizedBox(height: 8),
                       SwitchListTile(
@@ -134,14 +134,14 @@ class _PublicPreview extends StatelessWidget {
                 style: TextStyle(
                     color: t.accent,
                     fontWeight: FontWeight.w800,
-                    fontSize: 18)),
+                    fontSize: YFont.heading)),
             const Spacer(),
             StatusPill(demandTypeName(v.type), color: t.accent),
           ]),
           const SizedBox(height: 12),
           Text(v.title,
               style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                  const TextStyle(fontSize: YFont.section, fontWeight: FontWeight.w700)),
           Text('${regionName(v.region)} · ${v.locality}',
               style: TextStyle(color: t.muted)),
           const SizedBox(height: 8),
@@ -158,7 +158,7 @@ class _PublicPreview extends StatelessWidget {
             const SizedBox(height: 12),
             if (v.snapshot!.preview != null)
               ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(YRadius.control),
                   child: Image.memory(Uint8List.fromList(v.snapshot!.preview!),
                       height: 140, fit: BoxFit.contain)),
             if (v.snapshot!.lines.isNotEmpty) QtyTable(v.snapshot!.lines),
@@ -169,7 +169,7 @@ class _PublicPreview extends StatelessWidget {
                   '不显示：电话、具体地址、完整设计文件。登录 Yusal 后可报名或报价。',
                   'Телефон, мекенжай, жоба файлы көрсетілмейді.',
                   'Телефон, адрес и файл проекта скрыты. Войдите, чтобы откликнуться.'),
-              style: TextStyle(color: t.muted, fontSize: 12)),
+              style: TextStyle(color: t.muted, fontSize: YFont.caption)),
         ]));
   }
 }

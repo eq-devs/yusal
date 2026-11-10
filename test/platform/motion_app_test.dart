@@ -26,7 +26,8 @@ void main() {
             of: find.byType(HeroTarget), matching: find.byType(Hero)),
         findsOneWidget);
 
-    await t.pageBack();
+    // The back button is labelled in the app language, not "Back".
+    await t.tap(find.byTooltip('返回'));
     await t.pump();
     await t.pump(const Duration(milliseconds: 60));
     expect(t.takeException(), isNull);

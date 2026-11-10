@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../app/settings.dart';
+import '../core/commands/room_commands.dart';
 import '../core/document/house_document.dart';
 
 /// Chinese / Kazakh names of furniture kinds, sleeves and layer materials.
@@ -52,7 +53,7 @@ bool isFlatFurniture(FurnitureKind kind) =>
 /// Groups for the furniture palette.
 List<(String, List<FurnitureKind>)> furnitureGroups() => [
       (
-        tr('起居', 'Тұрғын'),
+        tr3('起居', 'Тұрғын', 'Гостиная'),
         [
           FurnitureKind.sofa,
           FurnitureKind.table,
@@ -63,7 +64,7 @@ List<(String, List<FurnitureKind>)> furnitureGroups() => [
         ]
       ),
       (
-        tr('哈萨克传统', 'Қазақы'),
+        tr3('哈萨克传统', 'Қазақы', 'Традиционные казахские'),
         [
           FurnitureKind.rug,
           FurnitureKind.alasha,
@@ -75,7 +76,7 @@ List<(String, List<FurnitureKind>)> furnitureGroups() => [
         ]
       ),
       (
-        tr('卧室', 'Жатын бөлме'),
+        tr3('卧室', 'Жатын бөлме', 'Спальня'),
         [
           FurnitureKind.bed,
           FurnitureKind.singleBed,
@@ -83,7 +84,7 @@ List<(String, List<FurnitureKind>)> furnitureGroups() => [
         ]
       ),
       (
-        tr('厨房', 'Ас үй'),
+        tr3('厨房', 'Ас үй', 'Кухня'),
         [
           FurnitureKind.counter,
           FurnitureKind.stove,
@@ -95,7 +96,7 @@ List<(String, List<FurnitureKind>)> furnitureGroups() => [
         ]
       ),
       (
-        tr('卫浴与设备', 'Жуыну, жабдық'),
+        tr3('卫浴与设备', 'Жуыну, жабдық', 'Санузел и оборудование'),
         [
           FurnitureKind.bathtub,
           FurnitureKind.shower,
@@ -106,7 +107,7 @@ List<(String, List<FurnitureKind>)> furnitureGroups() => [
         ]
       ),
       (
-        tr('门厅与室外', 'Кіреберіс, сыртқы'),
+        tr3('门厅与室外', 'Кіреберіс, сыртқы', 'Прихожая и улица'),
         [
           FurnitureKind.shoeCabinet,
           FurnitureKind.hooks,
@@ -154,30 +155,38 @@ IconData furnitureIcon(FurnitureKind kind) => switch (kind) {
     };
 
 String sleeveName(SleeveKind kind) => switch (kind) {
-      SleeveKind.sewer => tr('下水', 'Кәріз'),
-      SleeveKind.water => tr('给水', 'Су'),
-      SleeveKind.power => tr('电缆', 'Кабель'),
-      SleeveKind.gas => tr('燃气', 'Газ'),
+      SleeveKind.sewer => tr3('下水', 'Кәріз', 'Канализация'),
+      SleeveKind.water => tr3('给水', 'Су', 'Водоснабжение'),
+      SleeveKind.power => tr3('电缆', 'Кабель', 'Кабель'),
+      SleeveKind.gas => tr3('燃气', 'Газ', 'Газ'),
     };
 
 String materialName(LayerMaterial m) => switch (m) {
-      LayerMaterial.conc => tr('混凝土', 'Бетон'),
-      LayerMaterial.block => tr('砌块', 'Блок'),
-      LayerMaterial.ins => tr('保温', 'Жылытқыш'),
-      LayerMaterial.earth => tr('土', 'Топырақ'),
-      LayerMaterial.sand => tr('砂石', 'Құм-қиыршық'),
-      LayerMaterial.plaster => tr('抹灰', 'Сылақ'),
-      LayerMaterial.metal => tr('卷材', 'Мембрана'),
-      LayerMaterial.wood => tr('木/地板', 'Ағаш/еден'),
-      LayerMaterial.film => tr('薄膜', 'Пленка'),
-      LayerMaterial.gyp => tr('石膏板', 'Гипс'),
+      LayerMaterial.conc => tr3('混凝土', 'Бетон', 'Бетон'),
+      LayerMaterial.block => tr3('砌块', 'Блок', 'Блок'),
+      LayerMaterial.ins => tr3('保温', 'Жылытқыш', 'Утеплитель'),
+      LayerMaterial.earth => tr3('土', 'Топырақ', 'Грунт'),
+      LayerMaterial.sand => tr3('砂石', 'Құм-қиыршық', 'Песок и щебень'),
+      LayerMaterial.plaster => tr3('抹灰', 'Сылақ', 'Штукатурка'),
+      LayerMaterial.metal => tr3('卷材', 'Мембрана', 'Мембрана'),
+      LayerMaterial.wood => tr3('木/地板', 'Ағаш/еден', 'Дерево/пол'),
+      LayerMaterial.film => tr3('薄膜', 'Пленка', 'Плёнка'),
+      LayerMaterial.gyp => tr3('石膏板', 'Гипс', 'Гипсокартон'),
     };
 
 String roomTypeName(RoomType type) => switch (type) {
-      RoomType.living => tr('客厅', 'Қонақ бөлме'),
-      RoomType.bedroom => tr('卧室', 'Жатын бөлме'),
-      RoomType.kitchen => tr('厨房', 'Ас үй'),
-      RoomType.bathroom => tr('卫生间', 'Жуыну бөлмесі'),
-      RoomType.dining => tr('餐厅', 'Асхана'),
-      RoomType.custom => tr('房间', 'Бөлме'),
+      RoomType.living => tr3('客厅', 'Қонақ бөлме', 'Гостиная'),
+      RoomType.bedroom => tr3('卧室', 'Жатын бөлме', 'Спальня'),
+      RoomType.kitchen => tr3('厨房', 'Ас үй', 'Кухня'),
+      RoomType.bathroom => tr3('卫生间', 'Жуыну бөлмесі', 'Санузел'),
+      RoomType.dining => tr3('餐厅', 'Асхана', 'Столовая'),
+      RoomType.custom => tr3('房间', 'Бөлме', 'Комната'),
     };
+
+/// A room's name as shown: the name its owner gave it, or, for a name the
+/// tool gave automatically, the room type in the current language.
+String shownRoomName(Room r) {
+  for (final e in roomNames.entries)
+    if (r.name == e.value) return roomTypeName(e.key);
+  return r.name;
+}

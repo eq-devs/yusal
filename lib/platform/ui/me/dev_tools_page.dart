@@ -25,7 +25,7 @@ class DevToolsPage extends StatelessWidget {
                       Text(
                           '${fmtDay(mock.now)} ${fmtTime(mock.now)}  (+${mock.clock.offset.inDays} 天)',
                           style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600)),
+                              fontSize: YFont.body, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 8),
                       Wrap(spacing: 8, runSpacing: 8, children: [
                         for (final (d, label) in [

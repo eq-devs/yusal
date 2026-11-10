@@ -163,7 +163,7 @@ class _Segment extends StatelessWidget {
                   Text(label,
                       style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                          fontSize: YFont.small,
                           color: selected ? t.ink : t.muted)),
                 ]))));
   }

@@ -90,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
       Text(
           tr3('欢迎来到 Yusal', 'Yusal-ға қош келдіңіз',
               'Добро пожаловать в Yusal'),
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+          style: const TextStyle(fontSize: YFont.display, fontWeight: FontWeight.w700)),
       const SizedBox(height: 6),
       Text(
           tr3(
@@ -173,8 +173,7 @@ class _LoginPageState extends State<LoginPage> {
           Text(
               tr3('欢迎来到 Yusal', 'Yusal-ға қош келдіңіз',
                   'Добро пожаловать в Yusal'),
-              style:
-                  const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+              style: display(size: 26, color: t.ink)),
           const SizedBox(height: 6),
           Text(
               tr3(
@@ -220,26 +219,28 @@ class _LoginPageState extends State<LoginPage> {
                   '手机号默认不公开；手机号验证不等于实名认证。',
                   'Телефон әдепкіде жасырын; телефонды растау — жеке басты растау емес.',
                   'Номер скрыт по умолчанию; подтверждение телефона — не проверка личности.'),
-              style: TextStyle(color: t.muted, fontSize: 12)),
+              style: TextStyle(color: t.muted, fontSize: YFont.caption)),
           if (mock != null) ...[
-            const SectionTitle('测试账号 · Test', top: 28),
+            SectionTitle(
+                tr3('测试账号', 'Сынақ аккаунттары', 'Тестовые аккаунты'),
+                top: 28),
             for (final (id, label) in [
-              (SeedIds.owner, '业主 Айгерім'),
-              (SeedIds.mason, '瓦工 Болат'),
-              (SeedIds.team, '施工队 Нұрлан'),
-              (SeedIds.admin, '审核员 Admin'),
+              (SeedIds.owner, '${tr3('业主', 'Үй иесі', 'Владелец')} Айгерім'),
+              (SeedIds.mason, '${tr3('瓦工', 'Қалаушы', 'Каменщик')} Болат'),
+              (SeedIds.team, '${tr3('施工队', 'Бригада', 'Бригада')} Нұрлан'),
+              (SeedIds.admin, '${tr3('审核员', 'Модератор', 'Модератор')} Admin'),
             ])
               ListTile(
                   leading: Avatar(label.split(' ').last, size: 36),
                   title: Text(label),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: Icon(Icons.chevron_right, color: t.faint),
                   onTap: () {
                     HapticFeedback.selectionClick();
                     mock.signInAs(id);
                     Navigator.pop(context, true);
                   }),
             Text(fmtDay(context.now),
-                style: TextStyle(color: t.faint, fontSize: 11)),
+                style: TextStyle(color: t.muted, fontSize: YFont.caption)),
           ],
         ]));
   }

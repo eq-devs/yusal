@@ -108,7 +108,7 @@ class HouseCard extends StatelessWidget {
               Icon(Icons.star, size: 15, color: t.ink),
               const SizedBox(width: 3),
               Text(p.rating!.toStringAsFixed(1),
-                  style: TextStyle(fontSize: 14, color: t.ink)),
+                  style: TextStyle(fontSize: YFont.label, color: t.ink)),
             ],
           ]),
           if (p.rating == null)
@@ -119,15 +119,15 @@ class HouseCard extends StatelessWidget {
                     : p.openForBuilders
                         ? tr3('暂无评价', 'Пікір жоқ', 'Нет оценок')
                         : tr3('等你来点评', 'Пікір қалдырыңыз', 'Оставьте отзыв'),
-                style: TextStyle(fontSize: 12, color: t.muted)),
+                style: TextStyle(fontSize: YFont.caption, color: t.muted)),
           const SizedBox(height: 2),
-          Text(houseFacts(p), style: TextStyle(color: t.muted, fontSize: 14)),
+          Text(houseFacts(p), style: TextStyle(color: t.muted, fontSize: YFont.label)),
           if (p.estimatedCost != null)
             Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text.rich(
                     TextSpan(
-                        style: TextStyle(color: t.ink, fontSize: 14),
+                        style: TextStyle(color: t.ink, fontSize: YFont.label),
                         children: [
                           TextSpan(
                               text: '≈ ${money(p.estimatedCost)}',
@@ -159,17 +159,17 @@ class HouseCard extends StatelessWidget {
                               child: Text(
                                   a == null ? deletedName(null) : a.displayName,
                                   style:
-                                      TextStyle(color: t.muted, fontSize: 13))),
+                                      TextStyle(color: t.muted, fontSize: YFont.small))),
                           Icon(Icons.favorite, size: 14, color: t.faint),
                           const SizedBox(width: 3),
                           Text('${p.likeCount}',
-                              style: TextStyle(color: t.muted, fontSize: 13)),
+                              style: TextStyle(color: t.muted, fontSize: YFont.small)),
                           const SizedBox(width: 10),
                           Icon(Icons.chat_bubble_outline,
                               size: 14, color: t.faint),
                           const SizedBox(width: 3),
                           Text('${p.commentCount}',
-                              style: TextStyle(color: t.muted, fontSize: 13)),
+                              style: TextStyle(color: t.muted, fontSize: YFont.small)),
                         ]))),
           if (onReuse != null)
             Padding(
@@ -191,7 +191,7 @@ class HouseCard extends StatelessWidget {
                           label: Text(startFromThis())),
                       if (p.reuseCount > 0)
                         Text(reusedTimes(p.reuseCount),
-                            style: TextStyle(color: t.muted, fontSize: 13)),
+                            style: TextStyle(color: t.muted, fontSize: YFont.small)),
                     ])),
         ]))));
   }

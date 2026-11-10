@@ -30,6 +30,14 @@ Future<void> startApp(WidgetTester tester) async {
 }
 
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+  // On a phone the less common plan tools sit behind "更多工具".
+  final more = find.byTooltip('更多工具');
+  if (finder.evaluate().isEmpty && more.evaluate().isNotEmpty) {
+    await tester.ensureVisible(more);
+    await tester.pumpAndSettle();
+    await tester.tap(more);
+    await tester.pumpAndSettle();
+  }
   await tester.ensureVisible(finder);
   await tester.pumpAndSettle();
   await tester.tap(finder);
@@ -46,7 +54,7 @@ Future<void> waitForEditor(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-/// Open a design from 最近设计 on the 我的房子 tab. The list builds lazily,
+/// Open a design from 我的设计 on the 我的房子 tab. The list builds lazily,
 /// so scroll to it; the other tabs stay in the tree, so look only inside
 /// the houses page.
 Future<void> openDesign(WidgetTester tester, String name) async {
@@ -99,9 +107,9 @@ void main() {
           reason: 'Native WebP preview must be saved');
       expect(created.preview!.take(4), [82, 73, 70, 70]); // RIFF
     }
-    await tester.pageBack();
+    await tester.tap(find.byTooltip('返回'));
     await tester.pumpAndSettle();
-    expect(find.text('最近设计'), findsOneWidget);
+    expect(find.text('我的设计'), findsOneWidget);
     await openDesign(tester, '一层三间');
     await tester.pumpAndSettle();
     expect(find.byKey(tab3d), findsOneWidget);
@@ -169,7 +177,7 @@ void main() {
     await tapVisible(tester, find.byKey(tab3d));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    await tester.pageBack();
+    await tester.tap(find.byTooltip('返回'));
     await tester.pumpAndSettle();
     await openDesign(tester, '交互改造验收');
     await tester.pumpAndSettle();
@@ -276,7 +284,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byTooltip('适配画面'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    await tester.pageBack();
+    await tester.tap(find.byTooltip('返回'));
     await tester.pumpAndSettle();
     await openDesign(tester, '浮层绘墙验收');
     await tester.pumpAndSettle();
@@ -350,7 +358,7 @@ void main() {
         entry.document.floors.first.wallOverrides.whereType<SolidWall>().any(
             (w) => resolveAnchor(axes, w.anchor).chain!.nominalLength == 5000),
         true);
-    await tester.pageBack();
+    await tester.tap(find.byTooltip('返回'));
     await tester.pumpAndSettle();
     await openDesign(tester, '接点长按验收');
     await tester.pumpAndSettle();

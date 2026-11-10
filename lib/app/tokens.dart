@@ -187,6 +187,9 @@ ThemeData buildTheme(Tokens t) {
               side: BorderSide(color: t.line))),
       dialogTheme: DialogThemeData(
           backgroundColor: t.panel,
+          // A dialog is a column of text, not a banner: without a cap a
+          // long sentence stretches it across a desktop window.
+          constraints: const BoxConstraints(minWidth: 280, maxWidth: 460),
           surfaceTintColor: Colors.transparent,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),

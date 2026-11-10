@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/settings.dart';
 import '../../domain/models.dart';
 import '../cards.dart';
+import '../components.dart';
 import '../design/plan_viewer.dart';
 import '../chat/chat_page.dart';
 import '../demand/demand_detail_page.dart';
@@ -242,34 +243,36 @@ class PostPage extends StatelessWidget {
                     backgroundColor: t.bg,
                     // Opened from a shared link: no page to go back to, so
                     // offer the home feed instead.
-                    leading: fromLink
-                        ? IconButton(
-                            tooltip: tr3('首页', 'Басты бет', 'Главная'),
-                            icon: const Icon(Icons.home_outlined),
-                            onPressed: () => Navigator.of(context)
-                                .pushReplacement(platformRoute(
-                                    (_) => const PlatformShell())))
-                        : null,
+                    // Every control sits on a round backing: the cover is
+                    // a light drawing in both themes.
+                    leading: _PostLeading(fromLink: fromLink),
                     actions: [
-                      IconButton(
-                          tooltip: tr3('分享', 'Бөлісу', 'Поделиться'),
-                          icon: const Icon(Icons.ios_share),
+                      IconAction(
+                          label: tr3('分享', 'Бөлісу', 'Поделиться'),
+                          icon: const Icon(Icons.ios_share, size: 20),
                           onPressed: share),
-                      IconButton(
+                      IconAction(
+                          label: liked
+                              ? tr3('取消喜欢', 'Ұнатуды алу', 'Убрать лайк')
+                              : tr3('喜欢', 'Ұнайды', 'Нравится'),
+                          color: liked ? t.accent : null,
                           icon: PopOnActive(
                               active: liked,
                               child: Icon(
                                   liked
                                       ? Icons.favorite
                                       : Icons.favorite_border,
-                                  color: liked ? t.accent : null)),
+                                  size: 20)),
                           onPressed: () {
                             if (!liked) HapticFeedback.lightImpact();
                             attempt(
                                 context, () => context.repos.toggleLike(p.id));
                           }),
-                      IconButton(
-                          icon: const Icon(Icons.more_horiz), onPressed: more),
+                      IconAction(
+                          label: tr3('更多', 'Тағы', 'Ещё'),
+                          icon: const Icon(Icons.more_horiz, size: 20),
+                          onPressed: more),
+                      const SizedBox(width: YSpace.sm),
                     ],
                     flexibleSpace: FlexibleSpaceBar(
                         background: Padding(
@@ -290,7 +293,7 @@ class PostPage extends StatelessWidget {
                                       const SizedBox(height: 4),
                                       Text(regionName(p.region),
                                           style: TextStyle(
-                                              color: t.muted, fontSize: 15)),
+                                              color: t.muted, fontSize: YFont.body)),
                                       const SizedBox(height: 6),
                                       Row(children: [
                                         if (p.rating != null) ...[
@@ -395,7 +398,7 @@ class PostPage extends StatelessWidget {
                                                                   'Автор · ${fmtDay(p.createdAt)}'),
                                                           style: TextStyle(
                                                               color: t.muted,
-                                                              fontSize: 13)),
+                                                              fontSize: YFont.small)),
                                                     ])),
                                                 if (!mine)
                                                   OutlinedButton(
@@ -407,7 +410,7 @@ class PostPage extends StatelessWidget {
                                         const SizedBox(height: 18),
                                         Text(p.story,
                                             style: const TextStyle(
-                                                fontSize: 16, height: 1.5)),
+                                                fontSize: YFont.body, height: 1.5)),
                                       ],
                                       PlanAttachment(snapshot: snap),
                                       // Facts from the design.
@@ -652,7 +655,7 @@ class _BuildSection extends StatelessWidget {
               '金额来自双方确认的约定和节点验收记录，Yusal 不经手付款。',
               'Сомалар келісім мен қабылдау жазбаларынан.',
               'Суммы из соглашений и записей приёмки; Yusal не принимает платежи.'),
-          style: TextStyle(color: t.faint, fontSize: 12)),
+          style: TextStyle(color: t.muted, fontSize: YFont.caption)),
     ]);
   }
 }
@@ -670,16 +673,16 @@ class _FactSheet extends StatelessWidget {
         child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-                color: t.surface, borderRadius: BorderRadius.circular(12)),
+                color: t.surface, borderRadius: BorderRadius.circular(YRadius.control)),
             child: Column(children: [
               Icon(icon, color: t.accent),
               const SizedBox(height: 4),
               Text(value,
                   style: const TextStyle(
                       fontWeight: FontWeight.w800,
-                      fontSize: 16,
+                      fontSize: YFont.body,
                       fontFeatures: [FontFeature.tabularFigures()])),
-              Text(label, style: TextStyle(color: t.muted, fontSize: 12)),
+              Text(label, style: TextStyle(color: t.muted, fontSize: YFont.caption)),
             ])));
     final summary = snapshot?.summary ?? '';
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -698,7 +701,7 @@ class _FactSheet extends StatelessWidget {
             margin: const EdgeInsets.only(top: 8),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-                color: t.accentSoft, borderRadius: BorderRadius.circular(12)),
+                color: t.accentSoft, borderRadius: BorderRadius.circular(YRadius.control)),
             child: Row(children: [
               Icon(Icons.payments_outlined, color: t.accent),
               const SizedBox(width: 10),
@@ -708,14 +711,14 @@ class _FactSheet extends StatelessWidget {
               Text('≈ ${money(post.estimatedCost)}',
                   style: const TextStyle(
                       fontWeight: FontWeight.w800,
-                      fontSize: 16,
+                      fontSize: YFont.body,
                       fontFeatures: [FontFeature.tabularFigures()])),
             ])),
       if (summary.isNotEmpty)
         Padding(
             padding: const EdgeInsets.only(top: 8),
             child:
-                Text(summary, style: TextStyle(color: t.muted, fontSize: 13))),
+                Text(summary, style: TextStyle(color: t.muted, fontSize: YFont.small))),
     ]);
   }
 }
@@ -732,18 +735,39 @@ class _Quantities extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(children: [
                 Expanded(
-                    child: Text(l.name, style: const TextStyle(fontSize: 14))),
+                    child: Text(l.name, style: const TextStyle(fontSize: YFont.label))),
                 Text(
                     l.quantity == null
                         ? tr3('现场确认', 'Орнында', 'На месте')
                         : '${numText(l.quantity!)} ${unitLabel(l.unit)}',
                     style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 14)),
+                        fontWeight: FontWeight.w600,
+                        fontSize: YFont.label,
+                        fontFeatures: YText.tabular)),
               ])),
       ]);
 }
 
 /// Rate and say something. One rating per person; a new one replaces it.
+
+/// Back, or "home" when the page was opened from a shared link and has
+/// nothing to go back to.
+class _PostLeading extends StatelessWidget {
+  const _PostLeading({required this.fromLink});
+  final bool fromLink;
+  @override
+  Widget build(BuildContext context) => Center(
+      child: fromLink
+          ? IconAction(
+              label: tr3('首页', 'Басты бет', 'Главная'),
+              icon: const Icon(Icons.home_outlined, size: 20),
+              onPressed: () => Navigator.of(context).pushReplacement(
+                  platformRoute((_) => const PlatformShell())))
+          : IconAction(
+              label: MaterialLocalizations.of(context).backButtonTooltip,
+              icon: const Icon(Icons.arrow_back, size: 20),
+              onPressed: () => Navigator.maybePop(context)));
+}
 
 /// The house page's cover: where a tapped list card's picture lands.
 class _PostCover extends StatelessWidget {
@@ -780,6 +804,7 @@ class _PostSkeleton extends StatelessWidget {
           pinned: true,
           expandedHeight: 280,
           backgroundColor: t.bg,
+          leading: _PostLeading(fromLink: !Navigator.of(context).canPop()),
           flexibleSpace: FlexibleSpaceBar(
               background: _PostCover(post: post, image: image))),
       SliverToBoxAdapter(

@@ -15,7 +15,7 @@ extension _FurnitureTool on _HouseEditorState {
                 child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     children: [
-                      Text(tr('选择家具', 'Жиһаз таңдау'),
+                      Text(tr3('选择家具', 'Жиһаз таңдау', 'Выбрать мебель'),
                           style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w700)),
                       for (final (group, kinds) in furnitureGroups()) ...[
@@ -45,8 +45,8 @@ extension _FurnitureTool on _HouseEditorState {
       placingFurniture = kind;
       tool = 'placeFurniture';
       browse = false;
-      placementHint = tr('点平面放置「${furnitureName(kind)}」，可连续放置',
-          '«${furnitureName(kind)}» қою үшін жоспарды басыңыз, бірнеше рет қоюға болады');
+      placementHint = tr3('点平面放置「${furnitureName(kind)}」，可连续放置',
+          '«${furnitureName(kind)}» қою үшін жоспарды басыңыз, бірнеше рет қоюға болады', 'Нажмите на план, чтобы поставить «${furnitureName(kind)}»; можно ставить несколько раз подряд');
     });
   }
 
@@ -140,7 +140,7 @@ extension _FurnitureTool on _HouseEditorState {
       case 'move':
         furnitureDraft = f.copyWith(
             x: snap50(f.x + delta.dx), y: snap50(f.y + delta.dy));
-        placementHint = tr('松手放下', 'Жіберіп қойыңыз');
+        placementHint = tr3('松手放下', 'Жіберіп қойыңыз', 'Отпустите, чтобы поставить');
       case 'resize':
         final right = math.max(f.x + 100, snap50(p.dx)),
             bottom = math.min(f.top - 100, snap50(p.dy));
@@ -191,8 +191,8 @@ extension _FurnitureTool on _HouseEditorState {
       if (measurePoints.length >= 2) measurePoints = [];
       measurePoints = [...measurePoints, q];
       placementHint = measurePoints.length == 1
-          ? tr('再点第二个点', 'Екінші нүктені басыңыз')
-          : '${(measurePoints[1] - measurePoints[0]).distance.round()} $unitMm · ${tr('再点一次重新开始', 'Қайта бастау үшін тағы басыңыз')}';
+          ? tr3('再点第二个点', 'Екінші нүктені басыңыз', 'Укажите вторую точку')
+          : '${(measurePoints[1] - measurePoints[0]).distance.round()} $unitMm · ${tr3('再点一次重新开始', 'Қайта бастау үшін тағы басыңыз', 'Нажмите ещё раз, чтобы начать заново')}';
     });
   }
 

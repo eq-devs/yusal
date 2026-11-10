@@ -102,7 +102,7 @@ class PhotoStrip extends StatelessWidget {
                       child: InteractiveViewer(
                           child: Image.memory(Uint8List.fromList(photos[i]))))),
               child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(YRadius.row),
                   child: Image.memory(Uint8List.fromList(photos[i]),
                       width: size,
                       height: size,

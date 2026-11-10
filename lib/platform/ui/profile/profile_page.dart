@@ -68,12 +68,14 @@ class _ProfileView extends StatelessWidget {
     Widget fact(String value, String label) => Expanded(
             child: Column(children: [
           Text(value,
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+              style: const TextStyle(
+                  fontSize: YFont.section,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: YText.tabular)),
           const SizedBox(height: 2),
           Text(label,
               textAlign: TextAlign.center,
-              style: TextStyle(color: t.muted, fontSize: 12)),
+              style: TextStyle(color: t.muted, fontSize: YFont.caption)),
         ]));
 
     return PageScaffold(
@@ -135,7 +137,7 @@ class _ProfileView extends StatelessWidget {
                 Text(p.name,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                        fontSize: 24, fontWeight: FontWeight.w800)),
+                        fontSize: YFont.display, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
                 Text(
                     '${profileKindName(p.kind)} · ${p.trades.map(tradeName).join('、')}',
@@ -145,8 +147,8 @@ class _ProfileView extends StatelessWidget {
                 Row(children: [
                   fact(
                       '${s.confirmedCooperations}',
-                      tr3('双方确认合作', 'Расталған келісім',
-                          'Подтверждённых работ')),
+                      // Short words only: a cell is a third of a phone.
+                      tr3('双方确认合作', 'Расталған келісім', 'Работ на Yusal')),
                   fact('${s.reviewCount}', tr3('有效评价', 'Пікір', 'Отзывов')),
                   fact(p.experienceYears == null ? '—' : '${p.experienceYears}',
                       tr3('从业年数（自填）', 'Тәжірибе (өзі)', 'Лет опыта (со слов)')),
@@ -188,7 +190,7 @@ class _ProfileView extends StatelessWidget {
             Text(
                 tr3('按双方确认结束后公开的评价计算平均分。', 'Расталған пікірлердің орташасы.',
                     'Среднее по опубликованным отзывам.'),
-                style: TextStyle(color: t.muted, fontSize: 12)),
+                style: TextStyle(color: t.muted, fontSize: YFont.caption)),
           ],
           if (p.refPrices.isNotEmpty) ...[
             SectionTitle(tr3('参考价格', 'Бағдарлы баға', 'Ориентировочные цены')),
@@ -201,7 +203,7 @@ class _ProfileView extends StatelessWidget {
             Text(
                 tr3('最终以具体报价为准。', 'Нақты баға ұсыныста.',
                     'Окончательная цена — в предложении.'),
-                style: TextStyle(color: t.muted, fontSize: 12)),
+                style: TextStyle(color: t.muted, fontSize: YFont.caption)),
           ],
           if (p.works.isNotEmpty) ...[
             SectionTitle(tr3('作品', 'Жұмыстар', 'Работы')),
@@ -228,7 +230,7 @@ class _ProfileView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(fmtDay(r.createdAt),
-                            style: TextStyle(color: t.muted, fontSize: 12)),
+                            style: TextStyle(color: t.muted, fontSize: YFont.caption)),
                         if (r.text.isNotEmpty) Text(r.text),
                       ])),
           ],

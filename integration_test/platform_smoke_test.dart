@@ -50,28 +50,30 @@ void main() {
               of: find.text('Yusal smoke test'), matching: find.byType(Row))
           .first;
       final menu = find.descendant(of: row, matching: find.byTooltip('项目操作'));
-      await t.ensureVisible(menu);
-      await t.tap(menu);
-      await t.pumpAndSettle();
+      // Finding builders is on the card itself; publishing is in its menu.
+      await t.ensureVisible(find.text('找施工方'));
       await t.tap(find.text('找施工方'));
       await t.pumpAndSettle();
       expect(find.byType(FromDesignPage), findsOneWidget);
       expect(find.byType(PublishPostPage), findsNothing);
-      await t.pageBack();
+      await t.tap(find.byTooltip('返回'));
       await t.pumpAndSettle();
+      await t.ensureVisible(menu);
       await t.tap(menu);
       await t.pumpAndSettle();
       await t.tap(find.text('发布作品'));
       await t.pumpAndSettle();
-      await t.enterText(
-          find
-              .descendant(
-                  of: find.byType(PublishPostPage),
-                  matching: find.byType(TextField))
-              .first,
-          '保留的草稿');
+      // Set the draft through the field's controller: on the Android
+      // emulator the simulated keyboard did not reach this field, and the
+      // step under test is leaving with a draft, not typing.
+      final titleField = find
+          .descendant(
+              of: find.byType(PublishPostPage),
+              matching: find.byType(TextField))
+          .first;
+      t.widget<TextField>(titleField).controller!.text = '保留的草稿';
       await t.pumpAndSettle();
-      await t.pageBack();
+      await t.tap(find.byTooltip('返回'));
       await t.pumpAndSettle();
       await t.tap(find.text('继续编辑'));
       await t.pumpAndSettle();

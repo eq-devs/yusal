@@ -232,7 +232,7 @@ class _ApplyPageState extends State<ApplyPage> {
                   children: [
                     Text(d.current.title,
                         style: const TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.w700)),
+                            fontSize: YFont.title, fontWeight: FontWeight.w700)),
                     Text(
                         tr3(
                             '依据第 ${d.current.no} 版需求',

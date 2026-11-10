@@ -1,5 +1,35 @@
 part of '../house_editor.dart';
 
+/// What a page that draws its own list of designs needs from [HouseHome]:
+/// the designs and everything that can be done with them. [HouseHome]
+/// keeps the logic (storage, import, templates, export) in one place.
+abstract interface class DesignList {
+  /// False until the first read of the store has finished.
+  bool get loaded;
+  List<ProjectEntry> get projects;
+
+  /// Files that could not be read: id → reason.
+  Map<String, String> get corruptProjects;
+  String? get error;
+
+  /// Starts a design from its size (or, with [sketch], by drawing it).
+  Future<void> create({bool sketch = false});
+
+  /// Opens the "how to start" sheet, or starts from template [key].
+  Future<void> createFromTemplate([String? key]);
+  Future<void> import();
+  Future<void> open(ProjectEntry entry);
+
+  /// [anchor] is where the share sheet points on a tablet.
+  Future<void> export(ProjectEntry entry, BuildContext anchor);
+  Future<void> delete(ProjectEntry entry);
+  Future<void> deleteCorrupt(String id);
+
+  /// The example house's plan, for an empty state or a template row,
+  /// drawn with the palette found at [context].
+  Widget examplePreview(BuildContext context);
+}
+
 class HouseHome extends StatefulWidget {
   const HouseHome(
       {super.key,
@@ -8,8 +38,13 @@ class HouseHome extends StatefulWidget {
       this.onPublishPost,
       this.onBackup,
       this.reload,
-      this.createRequest});
+      this.createRequest,
+      this.builder});
   final ProjectStore? store;
+
+  /// Draws the list instead of the drafting-table page; the platform's
+  /// "My houses" tab uses it to show the designs in its own look.
+  final Widget Function(BuildContext context, DesignList list)? builder;
 
   /// Platform hooks: publish a demand from a design and back it up. The
   /// design tool works without them.
@@ -39,7 +74,15 @@ const _templateNames = {
 const _sizePresets = [(8, 10), (10, 12), (12, 10), (10, 13), (15, 10)];
 
 /// Room names of the village-house template in the current language.
-Map<String, String> kazakhTemplateNames() => isKk
+Map<String, String> kazakhTemplateNames() => isRu
+    ? const {
+        'b1': 'Спальня 1',
+        'b2': 'Спальня 2',
+        'cor': 'Коридор',
+        'ent': 'Прихожая',
+        'boil': 'Котельная',
+      }
+    : isKk
     ? const {
         'b1': 'Жатын бөлме 1',
         'b2': 'Жатын бөлме 2',
@@ -55,12 +98,18 @@ Map<String, String> kazakhTemplateNames() => isKk
         'boil': '锅炉房',
       };
 
-class _HouseHomeState extends State<HouseHome> {
+class _HouseHomeState extends State<HouseHome> implements DesignList {
   late final store =
       widget.store ?? ProjectStore(previewRenderer: renderProjectPreview);
   static const importChannel = MethodChannel('yusal/house_import');
+  @override
   List<ProjectEntry> projects = [];
+  @override
   String? error;
+  @override
+  bool loaded = false;
+  @override
+  Map<String, String> get corruptProjects => store.corruptProjects;
 
   /// The featured template, built once for its preview drawing.
   static HouseDocument? featured;
@@ -108,20 +157,20 @@ class _HouseHomeState extends State<HouseHome> {
     if (!mounted || payload is! Map) return;
     if (payload['bytes'] is! Uint8List) {
       message(payload['error'] == 'FILE_TOO_LARGE'
-          ? tr('文件超过 10 MiB，无法打开', 'Файл 10 MiB-тан үлкен, ашу мүмкін емес')
-          : tr('无法读取设计文件', 'Жоба файлын оқу мүмкін емес'));
+          ? tr3('文件超过 10 MiB，无法打开', 'Файл 10 MiB-тан үлкен, ашу мүмкін емес', 'Файл больше 10 МиБ, открыть нельзя')
+          : tr3('无法读取设计文件', 'Жоба файлын оқу мүмкін емес', 'Не удалось прочитать файл проекта'));
       return;
     }
     final loaded = loadHouse(payload['bytes'] as Uint8List);
     if (!loaded.isSuccess) {
-      message(tr('这个文件的内容有误，无法打开', 'Файлдың мазмұны қате, ашу мүмкін емес'));
+      message(tr3('这个文件的内容有误，无法打开', 'Файлдың мазмұны қате, ашу мүмкін емес', 'Файл повреждён, открыть нельзя'));
       return;
     }
     try {
       final id = await store.createProject(loaded.document!);
       if (mounted) await open(ProjectEntry(id, loaded.document!));
     } catch (_) {
-      message(tr('无法保存导入的设计', 'Импортталған жобаны сақтау мүмкін емес'));
+      message(tr3('无法保存导入的设计', 'Импортталған жобаны сақтау мүмкін емес', 'Не удалось сохранить импортированный проект'));
     }
   }
 
@@ -143,6 +192,7 @@ class _HouseHomeState extends State<HouseHome> {
       final list = await store.listProjects();
       if (mounted)
         setState(() {
+          loaded = true;
           projects = list;
           error = store.indexWarning == null
               ? null
@@ -153,8 +203,11 @@ class _HouseHomeState extends State<HouseHome> {
         });
     } catch (_) {
       if (mounted)
-        setState(() => error = tr('暂时无法读取设计，请稍后重试',
-            'Жобаларды оқу мүмкін болмады, кейін қайталаңыз'));
+        setState(() {
+          loaded = true;
+          error = tr3('暂时无法读取设计，请稍后重试',
+            'Жобаларды оқу мүмкін болмады, кейін қайталаңыз', 'Не удалось прочитать проекты, попробуйте позже');
+        });
     }
   }
 
@@ -164,6 +217,7 @@ class _HouseHomeState extends State<HouseHome> {
     if (mounted) create();
   }
 
+  @override
   Future<void> open(ProjectEntry entry) async {
     try {
       final document = await store.openProject(entry.id);
@@ -174,7 +228,7 @@ class _HouseHomeState extends State<HouseHome> {
       await refresh();
     } catch (_) {
       message(
-          tr('这个设计无法打开，请检查文件', 'Жобаны ашу мүмкін емес, файлды тексеріңіз'));
+          tr3('这个设计无法打开，请检查文件', 'Жобаны ашу мүмкін емес, файлды тексеріңіз', 'Не удалось открыть проект, проверьте файл'));
     }
   }
 
@@ -182,7 +236,7 @@ class _HouseHomeState extends State<HouseHome> {
     final now = DateTime.now().toUtc().toIso8601String();
     if (key == 'kz')
       return createKazakhTemplate(now, () => const Uuid().v4(),
-          name: tr('哈萨克乡村住宅', 'Қазақ ауыл үйі'), names: kazakhTemplateNames());
+          name: tr3('哈萨克乡村住宅', 'Қазақ ауыл үйі', 'Казахский сельский дом'), names: kazakhTemplateNames());
     return createTemplate(key, now, () => const Uuid().v4());
   }
 
@@ -217,6 +271,7 @@ class _HouseHomeState extends State<HouseHome> {
   /// How to start: from a size, by sketching the outline, or from a
   /// template shown as its plan (Planner 5D, Floorplanner and 酷家乐 all
   /// open with this choice instead of a blank sheet or a bare list).
+  @override
   Future<void> createFromTemplate([String? chosen]) async {
     final key = chosen ??
         await showMotionSheet<String>(
@@ -288,30 +343,30 @@ class _HouseHomeState extends State<HouseHome> {
                           shrinkWrap: true,
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                           children: [
-                            Text(tr('怎么开始？', 'Қалай бастаймыз?'),
+                            Text(tr3('怎么开始？', 'Қалай бастаймыз?', 'С чего начнём?'),
                                 style: const TextStyle(
                                     fontSize: 20, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 4),
                             Text(
-                                tr('都可以随时改：墙、房间、门窗都能拖动调整。',
-                                    'Кейін бәрін өзгертуге болады.'),
+                                tr3('都可以随时改：墙、房间、门窗都能拖动调整。',
+                                    'Кейін бәрін өзгертуге болады.', 'Потом всё можно изменить: стены, комнаты, окна и двери двигаются.'),
                                 style: TextStyle(color: t.muted)),
                             const SizedBox(height: 12),
                             way(
                                 'blank',
                                 Icons.crop_square,
-                                tr('按长宽新建', 'Өлшеммен бастау'),
-                                tr('输入面宽和进深，得到一个空房子',
-                                    'Ені мен ұзындығын енгізіңіз')),
+                                tr3('按长宽新建', 'Өлшеммен бастау', 'Начать с размеров'),
+                                tr3('输入面宽和进深，得到一个空房子',
+                                    'Ені мен ұзындығын енгізіңіз', 'Введите ширину и длину — получите пустой дом')),
                             const SizedBox(height: 8),
                             way(
                                 'sketch',
                                 Icons.gesture,
-                                tr('在画布上拖出外形', 'Пішінді сызып беру'),
-                                tr('用手指拉出房子的大小',
-                                    'Үйдің өлшемін саусақпен тартыңыз')),
+                                tr3('在画布上拖出外形', 'Пішінді сызып беру', 'Нарисовать контур'),
+                                tr3('用手指拉出房子的大小',
+                                    'Үйдің өлшемін саусақпен тартыңыз', 'Растяните размер дома пальцем')),
                             const SizedBox(height: 16),
-                            Text(tr('或者从模板改', 'Немесе үлгіден'),
+                            Text(tr3('或者从模板改', 'Немесе үлгіден', 'Или с шаблона'),
                                 style: const TextStyle(
                                     fontSize: 15, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 8),
@@ -335,12 +390,13 @@ class _HouseHomeState extends State<HouseHome> {
       final id = await store.createProject(doc);
       if (mounted) await open(ProjectEntry(id, doc));
     } catch (_) {
-      message(tr('无法创建，请检查存储空间', 'Жасау мүмкін емес, жадты тексеріңіз'));
+      message(tr3('无法创建，请检查存储空间', 'Жасау мүмкін емес, жадты тексеріңіз', 'Не удалось создать, проверьте свободное место'));
     }
   }
 
+  @override
   Future<void> create({bool sketch = false}) async {
-    final name = TextEditingController(text: tr('我的房屋', 'Менің үйім')),
+    final name = TextEditingController(text: tr3('我的房屋', 'Менің үйім', 'Мой дом')),
         width = TextEditingController(text: '12'),
         depth = TextEditingController(text: '10');
     const columns = 1, rows = 1;
@@ -368,7 +424,7 @@ class _HouseHomeState extends State<HouseHome> {
                           decoration: InputDecoration(
                               labelText: label, suffixText: unitM));
                   return AlertDialog(
-                      title: Text(tr('新建设计', 'Жаңа жоба')),
+                      title: Text(tr3('新建设计', 'Жаңа жоба', 'Новый проект')),
                       content: SingleChildScrollView(
                           child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -377,7 +433,7 @@ class _HouseHomeState extends State<HouseHome> {
                             TextField(
                                 controller: name,
                                 decoration: InputDecoration(
-                                    labelText: tr('设计名称', 'Жоба атауы'))),
+                                    labelText: tr3('设计名称', 'Жоба атауы', 'Название проекта'))),
                             const SizedBox(height: 12),
                             // Live outline: the numbers become a shape.
                             Center(
@@ -404,16 +460,16 @@ class _HouseHomeState extends State<HouseHome> {
                             Row(children: [
                               Expanded(
                                   child: size(width,
-                                      tr('面宽（左右）', 'Ені (солдан оңға)'))),
+                                      tr3('面宽（左右）', 'Ені (солдан оңға)', 'Ширина (слева направо)'))),
                               const SizedBox(width: 10),
                               Expanded(
                                   child: size(depth,
-                                      tr('进深（上下）', 'Ұзындығы (жоғары-төмен)'))),
+                                      tr3('进深（上下）', 'Ұзындығы (жоғары-төмен)', 'Длина (сверху вниз)'))),
                             ]),
                             const SizedBox(height: 12),
                             // The roof is chosen up front and can be
                             // changed any time later.
-                            Text(tr('屋顶', 'Шатыр'),
+                            Text(tr3('屋顶', 'Шатыр', 'Крыша'),
                                 style: TextStyle(
                                     fontSize: 12.5, color: t.muted)),
                             const SizedBox(height: 4),
@@ -439,8 +495,8 @@ class _HouseHomeState extends State<HouseHome> {
                             Padding(
                                 padding: const EdgeInsets.only(top: 10),
                                 child: Text(
-                                    tr('进去后，从墙上的 ＋ 拖出隔墙。',
-                                        'Ішке кірген соң қабырғадағы ＋ белгісінен ішкі қабырға тартыңыз.'),
+                                    tr3('进去后，从墙上的 ＋ 拖出隔墙。',
+                                        'Ішке кірген соң қабырғадағы ＋ белгісінен ішкі қабырға тартыңыз.', 'Внутри тяните перегородки от значка ＋ на стене.'),
                                     style: TextStyle(
                                         fontSize: 12.5, color: t.muted))),
                             if (validation != null)
@@ -456,10 +512,10 @@ class _HouseHomeState extends State<HouseHome> {
                               Navigator.pop(context);
                             },
                             icon: const Icon(Icons.gesture),
-                            label: Text(tr('在画布上拖出外形', 'Пішінді сызып беру'))),
+                            label: Text(tr3('在画布上拖出外形', 'Пішінді сызып беру', 'Нарисовать контур'))),
                         TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: Text(tr('取消', 'Болдырмау'))),
+                            child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                         FilledButton(
                             onPressed: () {
                               final w = parse(width), d = parse(depth);
@@ -471,9 +527,9 @@ class _HouseHomeState extends State<HouseHome> {
                                   d > 100 ||
                                   w * 1000 / columns < 300 ||
                                   d * 1000 / rows < 300) {
-                                setDialog(() => validation = tr(
+                                setDialog(() => validation = tr3(
                                     '宽和长都要在 3 到 100 米之间',
-                                    'Ені мен ұзындығы 3–100 м аралығында болуы керек'));
+                                    'Ені мен ұзындығы 3–100 м аралығында болуы керек', 'Ширина и длина должны быть от 3 до 100 м'));
                                 return;
                               }
                               Navigator.pop(
@@ -491,7 +547,7 @@ class _HouseHomeState extends State<HouseHome> {
                                       newId: () => const Uuid().v4()),
                                       roof));
                             },
-                            child: Text(tr('开始设计', 'Бастау')))
+                            child: Text(tr3('开始设计', 'Бастау', 'Начать')))
                       ]);
                 }));
     // The controllers stay alive until the dialog exit animation completes.
@@ -516,34 +572,35 @@ class _HouseHomeState extends State<HouseHome> {
       final id = await store.createProject(doc);
       if (mounted) await open(ProjectEntry(id, doc));
     } catch (_) {
-      message(tr('无法创建，请检查存储空间', 'Жасау мүмкін емес, жадты тексеріңіз'));
+      message(tr3('无法创建，请检查存储空间', 'Жасау мүмкін емес, жадты тексеріңіз', 'Не удалось создать, проверьте свободное место'));
     }
   }
 
+  @override
   Future<void> import() async {
     try {
       final file = await openFile(acceptedTypeGroups: [
         XTypeGroup(
-            label: tr('房屋设计', 'Үй жобасы'),
+            label: tr3('房屋设计', 'Үй жобасы', 'Проект дома'),
             extensions: const ['house'],
             uniformTypeIdentifiers: const ['public.data'])
       ]);
       if (file == null) return;
       if (await file.length() > maxHouseBytes) {
         message(
-            tr('文件超过 10 MiB，无法打开', 'Файл 10 MiB-тан үлкен, ашу мүмкін емес'));
+            tr3('文件超过 10 MiB，无法打开', 'Файл 10 MiB-тан үлкен, ашу мүмкін емес', 'Файл больше 10 МиБ, открыть нельзя'));
         return;
       }
       final loaded = await loadHouseStream(file.openRead(0, maxHouseBytes + 1),
           length: await file.length());
       if (!loaded.isSuccess) {
-        message(tr('这个文件的内容有误，无法打开', 'Файлдың мазмұны қате, ашу мүмкін емес'));
+        message(tr3('这个文件的内容有误，无法打开', 'Файлдың мазмұны қате, ашу мүмкін емес', 'Файл повреждён, открыть нельзя'));
         return;
       }
       final id = await store.createProject(loaded.document!);
       if (mounted) await open(ProjectEntry(id, loaded.document!));
     } catch (_) {
-      message(tr('无法导入设计', 'Жобаны импорттау мүмкін емес'));
+      message(tr3('无法导入设计', 'Жобаны импорттау мүмкін емес', 'Не удалось импортировать проект'));
     }
   }
 
@@ -554,16 +611,93 @@ class _HouseHomeState extends State<HouseHome> {
               AlertDialog(title: Text(title), content: Text(name), actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: Text(tr('取消', 'Болдырмау'))),
+                    child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                 FilledButton(
+                    style: FilledButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onError),
                     onPressed: () => Navigator.pop(context, true),
-                    child: Text(tr('删除', 'Жою')))
+                    child: Text(tr3('删除', 'Жою', 'Удалить')))
               ])) ==
       true;
 
   @override
+  Future<void> export(ProjectEntry entry, BuildContext anchor) async {
+    final doc = entry.document;
+    final text = encodeHouse(doc);
+    final name =
+        doc.meta.name.replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '').trim();
+    final filename = '${name.isEmpty ? 'house' : name}.house';
+    final file = XFile.fromData(Uint8List.fromList(utf8.encode(text)),
+        mimeType: 'application/json', name: filename);
+    try {
+      if (kIsWeb) {
+        await file.saveTo(filename);
+      } else {
+        final box = anchor.findRenderObject() as RenderBox?;
+        await SharePlus.instance.share(ShareParams(
+            files: [file],
+            sharePositionOrigin: box == null
+                ? null
+                : box.localToGlobal(Offset.zero) & box.size));
+      }
+    } catch (_) {
+      message(tr3('导出失败，请重试', 'Экспорт сәтсіз, қайталаңыз',
+          'Не удалось экспортировать. Повторите.'));
+    }
+  }
+
+  @override
+  Future<void> delete(ProjectEntry entry) async {
+    if (!await confirmDelete(
+        tr3('删除这个设计？', 'Бұл жобаны жою керек пе?', 'Удалить проект?'),
+        entry.document.meta.name)) return;
+    try {
+      await store.deleteProject(entry.id);
+      await refresh();
+    } catch (_) {
+      message(tr3('删除失败，请重试', 'Жою сәтсіз', 'Не удалось удалить'));
+    }
+  }
+
+  @override
+  Future<void> deleteCorrupt(String id) async {
+    if (!await confirmDelete(
+        tr3('删除无法打开的设计？', 'Ашылмайтын жобаны жою керек пе?',
+            'Удалить проект, который не открывается?'),
+        id)) return;
+    await store.deleteProject(id);
+    await refresh();
+  }
+
+  @override
+  Widget examplePreview(BuildContext context) {
+    final t = Tokens.of(context);
+    try {
+      featured ??= createKazakhTemplate(
+          '2026-01-01T00:00:00Z', () => 'featured${_featuredIds++}',
+          names: kazakhTemplateNames());
+      featuredDerived ??= deriveHouse(featured!);
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+    final doc = featured!, derived = featuredDerived!;
+    return CustomPaint(
+        painter: FloorPlanPainter(derived.floors.first.base,
+            {for (final r in doc.floors.first.rooms) r.id: ''}, const {},
+            openings: derived.floors.first.openings,
+            tokens: t,
+            furniture: doc.extras.furniture,
+            showDimensions: false,
+            showLabels: false,
+            viewportInsets: const EdgeInsets.all(8)));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final app = AppScope.watch(context);
+    if (widget.builder != null) return widget.builder!(context, this);
     final t = Tokens.of(context);
     final width = MediaQuery.sizeOf(context).width;
     // Inside the platform's "My houses" tab, language and theme live in
@@ -581,14 +715,14 @@ class _HouseHomeState extends State<HouseHome> {
               children: [
                 Text(
                     embedded
-                        ? tr('我的设计', 'Жобаларым')
-                        : tr('自建房设计工具', 'Үй жобалау құралы'),
+                        ? tr3('我的设计', 'Жобаларым', 'Мои проекты')
+                        : tr3('自建房设计工具', 'Үй жобалау құралы', 'Проектирование дома'),
                     style: const TextStyle(
                         fontSize: 22, fontWeight: FontWeight.w700)),
                 if (!embedded)
                   Text(
-                      tr('定长宽 · 拖出隔墙 · 放门窗 · 看 3D',
-                          'өлшем · қабырға · есік-терезе · 3D'),
+                      tr3('定长宽 · 拖出隔墙 · 放门窗 · 看 3D',
+                          'өлшем · қабырға · есік-терезе · 3D', 'размеры · стены · окна и двери · 3D'),
                       style: mono(size: 12, color: t.muted)),
               ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
@@ -606,30 +740,30 @@ class _HouseHomeState extends State<HouseHome> {
               Seg<ThemeChoice>(
                   value: app.theme,
                   items: [
-                    (ThemeChoice.auto, tr('◐ 自动', '◐ Авто')),
-                    (ThemeChoice.day, tr('☀ 日间', '☀ Күндіз')),
-                    (ThemeChoice.night, tr('☾ 夜间', '☾ Түн')),
+                    (ThemeChoice.auto, tr3('◐ 自动', '◐ Авто', '◐ Авто')),
+                    (ThemeChoice.day, tr3('☀ 日间', '☀ Күндіз', '☀ День')),
+                    (ThemeChoice.night, tr3('☾ 夜间', '☾ Түн', '☾ Ночь')),
                   ],
                   onChanged: app.setTheme),
             Btn(
-                label: tr('导入', 'Импорт'),
+                label: tr3('导入', 'Импорт', 'Импорт'),
                 icon: Icons.file_open_outlined,
-                tooltip: tr('导入 .house', '.house файлын ашу'),
+                tooltip: tr3('导入 .house', '.house файлын ашу', 'Открыть файл .house'),
                 onPressed: import),
           ]),
         ]);
     final hero = Sheet(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(tr('从长宽开始，设计你的家', 'Өлшемнен бастап, үйіңізді жобалаңыз'),
+          Text(tr3('从长宽开始，设计你的家', 'Өлшемнен бастап, үйіңізді жобалаңыз', 'Начните с размеров и спроектируйте свой дом'),
               style: TextStyle(
                   fontSize: width < 420 ? 22 : 28,
                   fontWeight: FontWeight.w700,
                   height: 1.25)),
           const SizedBox(height: 8),
           Text(
-              tr('定长宽 · 拖出隔墙 · 放门窗与家具 · 看 3D 与室内漫游 · 构造与工程量',
-                  'Өлшем · қабырға · есік-терезе мен жиһаз · 3D және ішкі серуен · құрылым мен көлем'),
+              tr3('定长宽 · 拖出隔墙 · 放门窗与家具 · 看 3D 与室内漫游 · 构造与工程量',
+                  'Өлшем · қабырға · есік-терезе мен жиһаз · 3D және ішкі серуен · құрылым мен көлем', 'Размеры · стены · окна, двери и мебель · 3D и прогулка внутри · конструкции и объёмы'),
               style: TextStyle(color: t.muted)),
           const SizedBox(height: 16),
           Wrap(spacing: 10, runSpacing: 10, children: [
@@ -638,13 +772,13 @@ class _HouseHomeState extends State<HouseHome> {
                 icon: const Icon(Icons.add),
                 label: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Text(tr('新建设计', 'Жаңа жоба')))),
+                    child: Text(tr3('新建设计', 'Жаңа жоба', 'Новый проект')))),
             OutlinedButton.icon(
                 onPressed: createFromTemplate,
                 icon: const Icon(Icons.auto_awesome_mosaic_outlined),
                 label: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Text(tr('也可以从示例开始', 'Үлгіден бастау')))),
+                    child: Text(tr3('也可以从示例开始', 'Үлгіден бастау', 'Начать с примера')))),
           ]),
         ]));
     return Scaffold(
@@ -666,7 +800,7 @@ class _HouseHomeState extends State<HouseHome> {
                             featuredCard(width),
                           ],
                           const SizedBox(height: 24),
-                          Text(tr('最近设计', 'Соңғы жобалар'),
+                          Text(tr3('最近设计', 'Соңғы жобалар', 'Недавние проекты'),
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 10),
@@ -677,8 +811,8 @@ class _HouseHomeState extends State<HouseHome> {
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 24),
                                 child: Text(
-                                    tr('还没有设计，创建你的第一栋房屋。',
-                                        'Әзірге жоба жоқ, алғашқы үйіңізді жасаңыз.'),
+                                    tr3('还没有设计，创建你的第一栋房屋。',
+                                        'Әзірге жоба жоқ, алғашқы үйіңізді жасаңыз.', 'Проектов пока нет. Создайте свой первый дом.'),
                                     style: TextStyle(color: t.muted))),
                           for (final entry in store.corruptProjects.entries)
                             Padding(
@@ -690,20 +824,11 @@ class _HouseHomeState extends State<HouseHome> {
                                         title: Text(entry.key),
                                         subtitle: Text(entry.value),
                                         trailing: IconButton(
-                                            tooltip: tr('删除损坏的设计',
-                                                'Бүлінген жобаны жою'),
+                                            tooltip: tr3('删除损坏的设计',
+                                                'Бүлінген жобаны жою', 'Удалить повреждённый проект'),
                                             icon: const Icon(
                                                 Icons.delete_outline),
-                                            onPressed: () async {
-                                              if (await confirmDelete(
-                                                  tr('删除无法打开的设计？',
-                                                      'Ашылмайтын жобаны жою керек пе?'),
-                                                  entry.key)) {
-                                                await store
-                                                    .deleteProject(entry.key);
-                                                await refresh();
-                                              }
-                                            })))),
+                                            onPressed: () => deleteCorrupt(entry.key))))),
                           LayoutBuilder(builder: (context, c) {
                             final columns =
                                 math.max(1, (c.maxWidth / 280).floor());
@@ -772,48 +897,9 @@ class _HouseHomeState extends State<HouseHome> {
                         case 'backup':
                           widget.onBackup?.call(entry);
                         case 'export':
-                          final text = encodeHouse(doc);
-                          final name = doc.meta.name
-                              .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '')
-                              .trim();
-                          final filename =
-                              '${name.isEmpty ? 'house' : name}.house';
-                          final file = XFile.fromData(
-                              Uint8List.fromList(utf8.encode(text)),
-                              mimeType: 'application/json',
-                              name: filename);
-                          try {
-                            if (kIsWeb) {
-                              await file.saveTo(filename);
-                            } else {
-                              final box =
-                                  context.findRenderObject() as RenderBox?;
-                              await SharePlus.instance.share(ShareParams(
-                                  files: [file],
-                                  sharePositionOrigin: box == null
-                                      ? null
-                                      : box.localToGlobal(Offset.zero) &
-                                          box.size));
-                            }
-                          } catch (_) {
-                            message(tr3(
-                                '导出失败，请重试',
-                                'Экспорт сәтсіз, қайталаңыз',
-                                'Не удалось экспортировать. Повторите.'));
-                          }
+                          await export(entry, context);
                         case 'delete':
-                          if (await confirmDelete(
-                              tr3('删除这个设计？', 'Бұл жобаны жою керек пе?',
-                                  'Удалить проект?'),
-                              doc.meta.name)) {
-                            try {
-                              await store.deleteProject(entry.id);
-                              await refresh();
-                            } catch (_) {
-                              message(tr3('删除失败，请重试', 'Жою сәтсіз',
-                                  'Не удалось удалить'));
-                            }
-                          }
+                          await delete(entry);
                       }
                     },
                     itemBuilder: (_) => [
@@ -879,21 +965,21 @@ class _HouseHomeState extends State<HouseHome> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          TagPill(tr('示例', 'Үлгі'), t.accent),
+          TagPill(tr3('示例', 'Үлгі', 'Пример'), t.accent),
           const SizedBox(height: 6),
-          Text(tr('哈萨克乡村住宅 10×13', 'Қазақ ауыл үйі 10×13'),
+          Text(tr3('哈萨克乡村住宅 10×13', 'Қазақ ауыл үйі 10×13', 'Казахский сельский дом 10×13'),
               style:
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(
-              tr('一层 · 外墙 400 mm · 平屋顶 · 8 个房间。已布置地毯、挂毯、矮圆桌、木箱和褥垫，带条形基础、预留套管和构造做法。打开后每一处都可以修改。',
-                  'Бір қабат · сыртқы қабырға 400 мм · тегіс шатыр · 8 бөлме. Кілем, тұскиіз, дөңгелек үстел, сандық пен көрпеше қойылған; таспалы іргетас, гильзалар мен құрылым шешімдері бар. Ашқан соң бәрін өзгертуге болады.'),
+              tr3('一层 · 外墙 400 mm · 平屋顶 · 8 个房间。已布置地毯、挂毯、矮圆桌、木箱和褥垫，带条形基础、预留套管和构造做法。打开后每一处都可以修改。',
+                  'Бір қабат · сыртқы қабырға 400 мм · тегіс шатыр · 8 бөлме. Кілем, тұскиіз, дөңгелек үстел, сандық пен көрпеше қойылған; таспалы іргетас, гильзалар мен құрылым шешімдері бар. Ашқан соң бәрін өзгертуге болады.', 'Один этаж · наружные стены 400 мм · плоская крыша · 8 комнат. Расставлены ковёр, тускииз, круглый стол, сундук и корпе; есть ленточный фундамент, гильзы и конструктивные решения. После открытия всё можно менять.'),
               style: TextStyle(color: t.muted, height: 1.5)),
           const SizedBox(height: 12),
           FilledButton.icon(
               onPressed: () => createFromTemplate('kz'),
               icon: const Icon(Icons.open_in_new, size: 18),
-              label: Text(tr('打开这个示例', 'Үлгіні ашу'))),
+              label: Text(tr3('打开这个示例', 'Үлгіні ашу', 'Открыть пример'))),
         ]);
     return Sheet(
         padding: const EdgeInsets.all(14),

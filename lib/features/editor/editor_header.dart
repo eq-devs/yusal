@@ -11,9 +11,9 @@ extension _EditorHeader on _HouseEditorState {
     String meters(int mm) => dec((mm / 1000).toStringAsFixed(
         mm % 1000 == 0 ? 0 : (mm % 100 == 0 ? 1 : 2)));
     final roof = switch (doc.roof.type) {
-      RoofType.flat => tr('平屋顶', 'тегіс шатыр'),
-      RoofType.gable => tr('双坡屋顶', 'қос беткейлі шатыр'),
-      RoofType.hip => tr('四坡屋顶', 'төрт беткейлі шатыр'),
+      RoofType.flat => tr3('平屋顶', 'тегіс шатыр', 'плоская крыша'),
+      RoofType.gable => tr3('双坡屋顶', 'қос беткейлі шатыр', 'двускатная крыша'),
+      RoofType.hip => tr3('四坡屋顶', 'төрт беткейлі шатыр', 'вальмовая крыша'),
     };
     final title = InkWell(
         borderRadius: BorderRadius.circular(6),
@@ -41,7 +41,7 @@ extension _EditorHeader on _HouseEditorState {
                             color: t.ink))),
               ]),
               Text(
-                  '$w × $d $unitMm · ${doc.floors.length} ${tr('层', 'қабат')} · ${tr('外墙', 'сыртқы қабырға')} ${doc.defaults.outerWallThickness} $unitMm · $roof',
+                  '$w × $d $unitMm · ${doc.floors.length} ${tr3('层', 'қабат', 'этаж')} · ${tr3('外墙', 'сыртқы қабырға', 'наружная стена')} ${doc.defaults.outerWallThickness} $unitMm · $roof',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: mono(size: 12, color: t.muted)),
@@ -58,39 +58,42 @@ extension _EditorHeader on _HouseEditorState {
     final theme = Seg<ThemeChoice>(
         value: app.theme,
         items: [
-          (ThemeChoice.auto, tr('◐ 自动', '◐ Авто')),
-          (ThemeChoice.day, tr('☀ 日间', '☀ Күндіз')),
-          (ThemeChoice.night, tr('☾ 夜间', '☾ Түн')),
+          (ThemeChoice.auto, tr3('◐ 自动', '◐ Авто', '◐ Авто')),
+          (ThemeChoice.day, tr3('☀ 日间', '☀ Күндіз', '☀ День')),
+          (ThemeChoice.night, tr3('☾ 夜间', '☾ Түн', '☾ Ночь')),
         ],
         onChanged: app.setTheme);
     final floors = Seg<int>(
-        label: tr('楼层', 'Қабат'),
+        label: tr3('楼层', 'Қабат', 'Этаж'),
         value: floorIndex,
         items: [
           for (var i = 0; i < doc.floors.length; i++) (i, displayFloorName(doc.floors[i].name))
         ],
         onChanged: selectFloor);
-    Widget icon(String zh, String kk, IconData data, VoidCallback? onTap,
+    Widget icon(String zh, String kk, String ru, IconData data,
+            VoidCallback? onTap,
             {double size = 20}) =>
         IconButton(
-            tooltip: zh.trKey(kk),
+            tooltip: zh.trKey(kk, ru),
             onPressed: onTap,
             visualDensity: wide ? null : VisualDensity.compact,
             icon: Icon(data, size: size));
-    final floorOps = icon('楼层操作', 'Қабат әрекеттері', Icons.layers_outlined,
+    final floorOps = icon('楼层操作', 'Қабат әрекеттері', 'Действия с этажом',
+        Icons.layers_outlined,
         floorOptions);
-    final sizeButton = icon('房屋长宽', 'Үйдің ені мен ұзындығы',
+    final sizeButton = icon('房屋长宽', 'Үйдің ені мен ұзындығы', 'Ширина и длина дома',
         Icons.aspect_ratio, footprintOptions);
     final history_ = Row(mainAxisSize: MainAxisSize.min, children: [
-      icon('撤销', 'Болдырмау', Icons.undo, history.canUndo ? undo : null,
+      icon('撤销', 'Болдырмау', 'Отменить', Icons.undo, history.canUndo ? undo : null,
           size: 21),
-      icon('重做', 'Қайталау', Icons.redo, history.canRedo ? redo : null,
+      icon('重做', 'Қайталау', 'Повторить', Icons.redo, history.canRedo ? redo : null,
           size: 21),
     ]);
     final saveButton =
-        icon('立即保存', 'Қазір сақтау', Icons.save_outlined, save);
+        icon('立即保存', 'Қазір сақтау', 'Сохранить сейчас',
+        Icons.save_outlined, save);
     final more = PopupMenuButton<String>(
-        tooltip: '更多操作'.trKey('Басқа әрекеттер'),
+        tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия'),
         onSelected: (value) {
           if (value == 'checks') showTab('iss');
           if (value == 'roof') chooseRoof();
@@ -110,26 +113,26 @@ extension _EditorHeader on _HouseEditorState {
         },
         itemBuilder: (context) => [
               PopupMenuItem(
-                  value: 'roof', child: Text(tr('屋顶样式', 'Шатыр түрі'))),
+                  value: 'roof', child: Text(tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши'))),
               PopupMenuItem(
-                  value: 'checks', child: Text(tr('设计检查', 'Жобаны тексеру'))),
+                  value: 'checks', child: Text(tr3('设计检查', 'Жобаны тексеру', 'Проверка проекта'))),
               PopupMenuItem(
                   value: 'variant',
-                  child: Text(tr('复制为新方案', 'Жаңа нұсқа ретінде көшіру'))),
+                  child: Text(tr3('复制为新方案', 'Жаңа нұсқа ретінде көшіру', 'Копировать как новый вариант'))),
               PopupMenuItem(
                   value: 'compare',
-                  child: Text(tr('方案对比', 'Нұсқаларды салыстыру'))),
+                  child: Text(tr3('方案对比', 'Нұсқаларды салыстыру', 'Сравнение вариантов'))),
               PopupMenuItem(
-                  value: 'settings', child: Text(tr('设置', 'Баптаулар'))),
+                  value: 'settings', child: Text(tr3('设置', 'Баптаулар', 'Настройки'))),
               PopupMenuItem(
                   value: 'pdf',
-                  child: Text(tr('导出图纸 PDF', 'Сызбаларды PDF ету'))),
+                  child: Text(tr3('导出图纸 PDF', 'Сызбаларды PDF ету', 'Экспорт чертежей в PDF'))),
               PopupMenuItem(
                   value: 'png',
-                  child: Text(tr('导出本层平面图 PNG', 'Қабат жоспарын PNG ету'))),
+                  child: Text(tr3('导出本层平面图 PNG', 'Қабат жоспарын PNG ету', 'Экспорт плана этажа в PNG'))),
               PopupMenuItem(
                   value: 'export',
-                  child: Text(tr('导出 .house', '.house файлын шығару'))),
+                  child: Text(tr3('导出 .house', '.house файлын шығару', 'Экспорт .house'))),
               // On phones language and theme live here, not in the header,
               // so the drawing gets the room.
               if (!wide) ...[
@@ -139,9 +142,9 @@ extension _EditorHeader on _HouseEditorState {
                 PopupMenuItem(
                     value: 'theme',
                     child: Text(switch (app.theme) {
-                      ThemeChoice.auto => tr('☀ 日间', '☀ Күндіз'),
-                      ThemeChoice.day => tr('☾ 夜间', '☾ Түн'),
-                      ThemeChoice.night => tr('◐ 自动', '◐ Авто'),
+                      ThemeChoice.auto => tr3('☀ 日间', '☀ Күндіз', '☀ День'),
+                      ThemeChoice.day => tr3('☾ 夜间', '☾ Түн', '☾ Ночь'),
+                      ThemeChoice.night => tr3('◐ 自动', '◐ Авто', '◐ Авто'),
                     })),
               ],
             ]);
@@ -209,17 +212,17 @@ extension _EditorHeader on _HouseEditorState {
               child: TabStrip(
                   tabs: editorTabs, current: tab, onSelect: showTab)),
           IconButton(
-              tooltip: '撤销'.trKey('Болдырмау'),
+              tooltip: '撤销'.trKey('Болдырмау', 'Отменить'),
               visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.undo, size: 20),
               onPressed: history.canUndo ? undo : null),
           IconButton(
-              tooltip: '重做'.trKey('Қайталау'),
+              tooltip: '重做'.trKey('Қайталау', 'Повторить'),
               visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.redo, size: 20),
               onPressed: history.canRedo ? redo : null),
           PopupMenuButton<String>(
-              tooltip: '更多操作'.trKey('Басқа әрекеттер'),
+              tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия'),
               onSelected: (value) {
                 if (value == 'checks') showTab('iss');
           if (value == 'roof') chooseRoof();
@@ -235,8 +238,8 @@ extension _EditorHeader on _HouseEditorState {
                 if (value == 'save') save();
                 if (value == 'size') footprintOptions();
                 if (value == 'floors') floorOptions();
-                if (value == 'lang')
-                  app.setLang(app.lang == AppLang.zh ? AppLang.kk : AppLang.zh);
+                // All three languages; the old toggle skipped Russian.
+                if (value == 'lang') chooseLanguage();
                 if (value == 'theme')
                   app.setTheme(ThemeChoice
                       .values[(app.theme.index + 1) % ThemeChoice.values.length]);
@@ -244,36 +247,36 @@ extension _EditorHeader on _HouseEditorState {
               itemBuilder: (context) => [
                     PopupMenuItem(
                         value: 'roof',
-                        child: Text(tr('屋顶样式', 'Шатыр түрі'))),
+                        child: Text(tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши'))),
                     PopupMenuItem(
                         value: 'checks',
-                        child: Text(tr('设计检查', 'Жобаны тексеру'))),
+                        child: Text(tr3('设计检查', 'Жобаны тексеру', 'Проверка проекта'))),
                     PopupMenuItem(
                         value: 'variant',
-                        child: Text(tr('复制为新方案', 'Жаңа нұсқа ретінде көшіру'))),
+                        child: Text(tr3('复制为新方案', 'Жаңа нұсқа ретінде көшіру', 'Копировать как новый вариант'))),
                     PopupMenuItem(
                         value: 'compare',
-                        child: Text(tr('方案对比', 'Нұсқаларды салыстыру'))),
+                        child: Text(tr3('方案对比', 'Нұсқаларды салыстыру', 'Сравнение вариантов'))),
                     PopupMenuItem(
-                        value: 'settings', child: Text(tr('设置', 'Баптаулар'))),
+                        value: 'settings', child: Text(tr3('设置', 'Баптаулар', 'Настройки'))),
                     PopupMenuItem(
                         value: 'pdf',
-                        child: Text(tr('导出图纸 PDF', 'Сызбаларды PDF ету'))),
+                        child: Text(tr3('导出图纸 PDF', 'Сызбаларды PDF ету', 'Экспорт чертежей в PDF'))),
                     PopupMenuItem(
                         value: 'png',
-                        child: Text(tr('导出本层平面图 PNG', 'Қабат жоспарын PNG ету'))),
+                        child: Text(tr3('导出本层平面图 PNG', 'Қабат жоспарын PNG ету', 'Экспорт плана этажа в PNG'))),
                     PopupMenuItem(
                         value: 'export',
-                        child: Text(tr('导出 .house', '.house файлын шығару'))),
+                        child: Text(tr3('导出 .house', '.house файлын шығару', 'Экспорт .house'))),
                     PopupMenuItem(
                         value: 'lang',
-                        child: Text(app.lang == AppLang.zh ? 'Қазақша' : '中文')),
+                        child: const Text('Тіл / Язык / 语言')),
                     PopupMenuItem(
                         value: 'theme',
                         child: Text(switch (app.theme) {
-                          ThemeChoice.auto => tr('☀ 日间', '☀ Күндіз'),
-                          ThemeChoice.day => tr('☾ 夜间', '☾ Түн'),
-                          ThemeChoice.night => tr('◐ 自动', '◐ Авто'),
+                          ThemeChoice.auto => tr3('☀ 日间', '☀ Күндіз', '☀ День'),
+                          ThemeChoice.day => tr3('☾ 夜间', '☾ Түн', '☾ Ночь'),
+                          ThemeChoice.night => tr3('◐ 自动', '◐ Авто', '◐ Авто'),
                         })),
                   ]),
         ]));
@@ -314,10 +317,10 @@ extension _EditorHeader on _HouseEditorState {
 
   Future<void> renameProject() async {
     final value = await promptText(context,
-        title: tr('设计名称', 'Жоба атауы'),
+        title: tr3('设计名称', 'Жоба атауы', 'Название проекта'),
         initial: history.present.meta.name,
-        cancel: tr('取消', 'Болдырмау'),
-        ok: tr('确定', 'Жарайды'));
+        cancel: tr3('取消', 'Болдырмау', 'Отмена'),
+        ok: tr3('确定', 'Жарайды', 'ОК'));
     if (value == null || value.trim().isEmpty || !mounted) return;
     final meta = history.present.meta;
     update(() {
@@ -337,5 +340,5 @@ extension _EditorHeader on _HouseEditorState {
 
 extension _KeyText on String {
   /// Chinese tooltip kept as the stable key; Kazakh shown when chosen.
-  String trKey(String kk) => isKk ? kk : this;
+  String trKey(String kk, [String? ru]) => tr3(this, kk, ru ?? kk);
 }

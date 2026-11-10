@@ -249,15 +249,15 @@ class _ChatPageState extends State<ChatPage> {
                                                 horizontal: 16, vertical: 10),
                                         border: OutlineInputBorder(
                                             borderRadius:
-                                                BorderRadius.circular(999)),
+                                                BorderRadius.circular(YRadius.pill)),
                                         enabledBorder: OutlineInputBorder(
                                             borderRadius:
-                                                BorderRadius.circular(999),
+                                                BorderRadius.circular(YRadius.pill),
                                             borderSide:
                                                 BorderSide(color: t.line)),
                                         focusedBorder: OutlineInputBorder(
                                             borderRadius:
-                                                BorderRadius.circular(999),
+                                                BorderRadius.circular(YRadius.pill),
                                             borderSide:
                                                 BorderSide(color: t.ink))))),
                             const SizedBox(width: 6),
@@ -266,8 +266,8 @@ class _ChatPageState extends State<ChatPage> {
                                 style: IconButton.styleFrom(
                                     backgroundColor: t.accent),
                                 onPressed: send,
-                                icon: const Icon(Icons.arrow_upward,
-                                    color: Colors.white)),
+                                icon: Icon(Icons.arrow_upward,
+                                    color: t.accentInk)),
                           ]))),
               ]));
         });
@@ -290,7 +290,7 @@ class _Bubble extends StatelessWidget {
       case MessageKind.text:
       case MessageKind.system:
         content = Text(m.text,
-            style: TextStyle(color: mine ? Colors.white : t.ink, height: 1.35));
+            style: TextStyle(color: mine ? t.bg : t.ink, height: 1.35));
       case MessageKind.image:
         content =
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -298,14 +298,14 @@ class _Bubble extends StatelessWidget {
               width: 180,
               height: 120,
               decoration: BoxDecoration(
-                  color: t.line, borderRadius: BorderRadius.circular(10)),
+                  color: t.line, borderRadius: BorderRadius.circular(YRadius.control)),
               child: Icon(Icons.image_outlined, size: 40, color: t.muted)),
           if (m.text.isNotEmpty)
             Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(m.text,
                     style: TextStyle(
-                        color: mine ? Colors.white : t.ink, fontSize: 12))),
+                        color: mine ? t.bg : t.ink, fontSize: YFont.caption))),
         ]);
       case MessageKind.demandCard:
       case MessageKind.quoteCard:
@@ -323,7 +323,7 @@ class _Bubble extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                     color: t.bg,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(YRadius.control),
                     border: Border.all(color: t.line)),
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,7 +334,7 @@ class _Bubble extends StatelessWidget {
                               : tr3('报价', 'Ұсыныс', 'Предложение'),
                           style: TextStyle(
                               color: t.accent,
-                              fontSize: 12,
+                              fontSize: YFont.caption,
                               fontWeight: FontWeight.w700)),
                       Text(
                           info.first.isEmpty
@@ -353,11 +353,11 @@ class _Bubble extends StatelessWidget {
                   : tr3('对方向你展示了电话', 'Телефонын көрсетті',
                       'Собеседник показал номер'),
               style: TextStyle(
-                  color: mine ? Colors.white70 : t.muted, fontSize: 12)),
+                  color: mine ? t.bg.withValues(alpha: 0.75) : t.muted, fontSize: YFont.caption)),
           SelectableText(m.text,
               style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: mine ? Colors.white : t.ink)),
+                  color: mine ? t.bg : t.ink)),
         ]);
     }
     final bubble = Container(
@@ -370,8 +370,8 @@ class _Bubble extends StatelessWidget {
         decoration: BoxDecoration(
             color: mine ? t.ink : t.surface,
             borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(18),
-                topRight: const Radius.circular(18),
+                topLeft: const Radius.circular(YRadius.bubble),
+                topRight: const Radius.circular(YRadius.bubble),
                 bottomLeft: Radius.circular(mine ? 18 : 4),
                 bottomRight: Radius.circular(mine ? 4 : 18))),
         child: content);
@@ -394,10 +394,10 @@ class _Bubble extends StatelessWidget {
                             Text(
                                 tr3('发送失败，点击重试', 'Жіберілмеді, қайталау',
                                     'Не отправлено, повторить'),
-                                style: TextStyle(color: t.crit, fontSize: 12)),
+                                style: TextStyle(color: t.crit, fontSize: YFont.caption)),
                           ]))
                       : Text(fmtTime(m.sentAt),
-                          style: TextStyle(color: t.faint, fontSize: 11))),
+                          style: TextStyle(color: t.muted, fontSize: YFont.caption))),
             ]));
   }
 }

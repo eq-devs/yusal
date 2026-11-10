@@ -32,7 +32,7 @@ class FeedbackAsk extends StatelessWidget {
             const SizedBox(height: 8),
             Wrap(spacing: 6, runSpacing: 6, children: [
               Text(tr3('最想听听：', 'Ең алдымен:', 'Важнее всего:'),
-                  style: TextStyle(color: t.muted, fontSize: 13)),
+                  style: TextStyle(color: t.muted, fontSize: YFont.small)),
               for (final f in post.focus)
                 StatusPill(feedbackTopicName(f), color: t.accent),
             ]),
@@ -89,7 +89,7 @@ class _CritiqueSectionState extends State<CritiqueSection> {
               ? Text(
                   tr3('$helpful 条作者觉得有用', '$helpful пайдалы',
                       'Полезных: $helpful'),
-                  style: TextStyle(color: t.muted, fontSize: 13))
+                  style: TextStyle(color: t.muted, fontSize: YFont.small))
               : null),
       if (!widget.mine) _CritiqueBox(post: widget.post),
       if (topics.length > 1 || (topics.isNotEmpty && topic != null))
@@ -214,7 +214,7 @@ class _CritiqueBoxState extends State<_CritiqueBox> {
           Text(
               tr3('说说哪方面？（可选）', 'Қай жағы туралы?',
                   'О чём отзыв? (необязательно)'),
-              style: TextStyle(color: t.muted, fontSize: 13)),
+              style: TextStyle(color: t.muted, fontSize: YFont.small)),
           const SizedBox(height: 6),
           Wrap(spacing: 6, runSpacing: 6, children: [
             for (final k in order)
@@ -232,15 +232,23 @@ class _CritiqueBoxState extends State<_CritiqueBox> {
           const SizedBox(height: 8),
           Row(children: [
             for (var i = 1; i <= 5; i++)
-              InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => setState(() => rating = rating == i ? null : i),
-                  child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(
-                          i <= (rating ?? 0) ? Icons.star : Icons.star_border,
-                          size: 24,
-                          color: t.accent))),
+              Semantics(
+                  button: true,
+                  selected: i <= (rating ?? 0),
+                  label: tr3('$i 星', '$i жұлдыз', 'Оценка $i из 5'),
+                  child: InkWell(
+                      borderRadius: BorderRadius.circular(YRadius.pill),
+                      onTap: () =>
+                          setState(() => rating = rating == i ? null : i),
+                      child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 10),
+                          child: Icon(
+                              i <= (rating ?? 0)
+                                  ? Icons.star
+                                  : Icons.star_border,
+                              size: 26,
+                              color: t.accent)))),
             const SizedBox(width: 6),
             Expanded(
                 child: Text(
@@ -256,27 +264,30 @@ class _CritiqueBoxState extends State<_CritiqueBox> {
                           ][rating!],
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: t.muted, fontSize: 13))),
+                    style: TextStyle(color: t.muted, fontSize: YFont.small))),
           ]),
-          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Expanded(
-                child: TextField(
-                    key: const Key('critique-text'),
-                    controller: text,
-                    minLines: 1,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                        hintText: topic == null
-                            ? tr3('说说布局、造价、施工上的看法…', 'Пікіріңіз…',
-                                'Что думаете о планировке, цене, стройке…')
-                            : tr3('关于${feedbackTopicName(topic!)}，你的建议是…',
-                                'Ұсынысыңыз…', 'Ваш совет…')))),
-            const SizedBox(width: 8),
-            FilledButton(
-                key: const Key('critique-send'),
-                onPressed: busy ? null : send,
-                child: Text(tr3('发布', 'Жіберу', 'Отправить'))),
-          ]),
+          const SizedBox(height: YSpace.xs),
+          // The field takes the full width; the button sits under it, so
+          // the hint and the text being written are never squeezed.
+          TextField(
+              key: const Key('critique-text'),
+              controller: text,
+              minLines: 2,
+              maxLines: 5,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                  hintText: topic == null
+                      ? tr3('说说布局、造价、施工上的看法…', 'Пікіріңіз…',
+                          'Что думаете о планировке, цене, стройке…')
+                      : tr3('关于${feedbackTopicName(topic!)}，你的建议是…',
+                          'Ұсынысыңыз…', 'Ваш совет…'))),
+          const SizedBox(height: YSpace.md),
+          Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                  key: const Key('critique-send'),
+                  onPressed: busy ? null : send,
+                  child: Text(tr3('发布', 'Жіберу', 'Отправить')))),
         ]));
   }
 }
@@ -346,7 +357,7 @@ class _CritiqueTile extends StatelessWidget {
                                       color: t.accent),
                                 Text(ago(c.createdAt, context.now),
                                     style: TextStyle(
-                                        color: t.faint, fontSize: 12)),
+                                        color: t.muted, fontSize: YFont.caption)),
                               ]),
                           if (c.helpful || c.topic != null)
                             Padding(

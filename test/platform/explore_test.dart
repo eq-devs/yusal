@@ -20,12 +20,16 @@ MockBackend backend() => MockBackend(
     autoReviewDelay: Duration.zero);
 
 Future<(MockBackend, ProjectStore)> launch(WidgetTester t,
-    {String? as, String route = '/'}) async {
+    {String? as,
+    String route = '/',
+    Size size = const Size(1200, 2400),
+    AppLang lang = AppLang.zh}) async {
   SharedPreferences.setMockInitialValues({});
   t.binding.platformDispatcher.defaultRouteNameTestValue = route;
   addTearDown(t.binding.platformDispatcher.clearDefaultRouteNameTestValue);
-  AppSettings.instance.lang = AppLang.zh;
-  t.view.physicalSize = const Size(1200, 2400);
+  AppSettings.instance.lang = lang;
+  addTearDown(() => AppSettings.instance.lang = AppLang.zh);
+  t.view.physicalSize = size;
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
   final repos = backend();
@@ -59,10 +63,33 @@ void main() {
     expect((await b.post('post_erlan'))!.reuseCount, 1);
   });
 
-  testWidgets('the bottom bar is Discover, My houses, Messages, Me', (t) async {
-    await launch(t);
+  testWidgets('a phone has the bottom bar: Discover, My houses, Messages, Me',
+      (t) async {
+    await launch(t, size: const Size(412, 915));
+    expect(find.byType(NavigationRail), findsNothing);
     for (final label in ['发现', '我的房子', '消息', '我的'])
       expect(find.widgetWithText(NavigationDestination, label), findsOneWidget);
+  });
+
+  testWidgets('a wide window has the same four places in a side rail',
+      (t) async {
+    await launch(t);
+    expect(find.byType(NavigationBar), findsNothing);
+    for (final label in ['发现', '我的房子', '消息', '我的'])
+      expect(
+          find.descendant(
+              of: find.byType(NavigationRail), matching: find.text(label)),
+          findsOneWidget);
+    // Switching places works from the rail, and keeps the page state when
+    // the window is narrowed to a phone.
+    await t.tap(find.descendant(
+        of: find.byType(NavigationRail), matching: find.text('我的')));
+    await t.pumpAndSettle();
+    t.view.physicalSize = const Size(412, 915);
+    await t.pumpAndSettle();
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(t.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+        3);
   });
 
   testWidgets('visitors open Discover on houses, pros open it on work',

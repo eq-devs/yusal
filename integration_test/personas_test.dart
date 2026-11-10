@@ -48,6 +48,11 @@ void main() {
     await chip('Test Owner');
     await shot(t, 't01-login-chips-owner');
     expect(await io(t, () => repos.myProfiles()), isEmpty);
+    final ownerId = repos.currentAccount!.id;
+
+    await chip('Test Owner 2');
+    expect(repos.currentAccount!.id, isNot(ownerId));
+    expect(await io(t, () => repos.myProfiles()), isEmpty);
 
     for (final pro in ['Test Worker', 'Test Contractor', 'Test Engineer']) {
       await chip(pro);

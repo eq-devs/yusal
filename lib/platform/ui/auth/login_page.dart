@@ -68,6 +68,7 @@ class _LoginPageState extends State<LoginPage> {
   /// sign-in (see yusal-api router.DevPersonas). Names must match there.
   static const testPersonas = [
     ('Test Owner', '房主', Icons.home_outlined),
+    ('Test Owner 2', '房主 2', Icons.cottage_outlined),
     ('Test Worker', '工人', Icons.construction_outlined),
     ('Test Contractor', '包工头 · 团队', Icons.groups_outlined),
     ('Test Engineer', '工程师', Icons.architecture_outlined),
@@ -226,8 +227,13 @@ class _LoginPageState extends State<LoginPage> {
                 top: 28),
             for (final (id, label) in [
               (SeedIds.owner, '${tr3('业主', 'Үй иесі', 'Владелец')} Айгерім'),
+              (SeedIds.owner2, '${tr3('业主', 'Үй иесі', 'Владелец')} Динара'),
               (SeedIds.mason, '${tr3('瓦工', 'Қалаушы', 'Каменщик')} Болат'),
+              (SeedIds.electrician,
+                  '${tr3('电工', 'Электрик', 'Электрик')} Ерлан'),
               (SeedIds.team, '${tr3('施工队', 'Бригада', 'Бригада')} Нұрлан'),
+              (SeedIds.roofTeam,
+                  '${tr3('屋面队', 'Шатыр бригадасы', 'Кровельщики')} Самат'),
               (SeedIds.admin, '${tr3('审核员', 'Модератор', 'Модератор')} Admin'),
             ])
               ListTile(

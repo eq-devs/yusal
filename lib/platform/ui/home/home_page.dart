@@ -197,24 +197,21 @@ class _HomePageState extends State<HomePage> {
                                               icon: Icons.place_outlined,
                                               menu: true,
                                               onTap: () async {
-                                                final r = await pickOne<
-                                                        String?>(
+                                                final r = await pickFilter<
+                                                        String>(
                                                     context,
                                                     tr3('地区', 'Аймақ', 'Район'),
+                                                    tr3('全部', 'Барлығы', 'Все'),
                                                     [
-                                                      (
-                                                        null,
-                                                        tr3('全部', 'Барлығы',
-                                                            'Все')
-                                                      ),
                                                       for (final c
                                                           in regionCodes)
                                                         (c, regionName(c)),
                                                     ],
                                                     selected: filter.region);
-                                                if (context.mounted)
+                                                if (r != null &&
+                                                    context.mounted)
                                                   set(FeedFilter(
-                                                      region: r,
+                                                      region: r.$1,
                                                       sort: filter.sort,
                                                       query: filter.query,
                                                       openForBuilders: filter

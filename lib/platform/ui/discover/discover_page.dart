@@ -60,16 +60,16 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 icon: Icons.tune,
                 menu: true,
                 onTap: () async {
-                  final v = await pickOne<DemandType?>(
+                  final v = await pickFilter<DemandType>(
                       context,
                       tr3('需求类型', 'Түрі', 'Тип'),
+                      tr3('全部', 'Барлығы', 'Все'),
                       [
-                        (null, tr3('全部', 'Барлығы', 'Все')),
                         for (final d in DemandType.values)
                           (d, demandTypeName(d)),
                       ],
                       selected: type);
-                  if (mounted) setState(() => type = v);
+                  if (v != null && mounted) setState(() => type = v.$1);
                 }),
             const SizedBox(width: 8),
           ],
@@ -81,15 +81,13 @@ class _DiscoverPageState extends State<DiscoverPage> {
               icon: Icons.handyman_outlined,
               menu: true,
               onTap: () async {
-                final v = await pickOne<String?>(
+                final v = await pickFilter<String>(
                     context,
                     tr3('工种', 'Мамандық', 'Специальность'),
-                    [
-                      (null, tr3('全部', 'Барлығы', 'Все')),
-                      for (final c in tradeCodes) (c, tradeName(c)),
-                    ],
+                    tr3('全部', 'Барлығы', 'Все'),
+                    [for (final c in tradeCodes) (c, tradeName(c))],
                     selected: trade);
-                if (mounted) setState(() => trade = v);
+                if (v != null && mounted) setState(() => trade = v.$1);
               }),
           const SizedBox(width: 8),
           FilterPill(
@@ -100,15 +98,13 @@ class _DiscoverPageState extends State<DiscoverPage> {
               icon: Icons.place_outlined,
               menu: true,
               onTap: () async {
-                final v = await pickOne<String?>(
+                final v = await pickFilter<String>(
                     context,
                     tr3('地区', 'Аймақ', 'Район'),
-                    [
-                      (null, tr3('全部', 'Барлығы', 'Все')),
-                      for (final c in regionCodes) (c, regionName(c)),
-                    ],
+                    tr3('全部', 'Барлығы', 'Все'),
+                    [for (final c in regionCodes) (c, regionName(c))],
                     selected: region);
-                if (mounted) setState(() => region = v);
+                if (v != null && mounted) setState(() => region = v.$1);
               }),
           if (people) ...[
             const SizedBox(width: 8),

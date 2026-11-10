@@ -59,10 +59,12 @@ class _LoginPageState extends State<LoginPage> {
     if (account != null && mounted) Navigator.pop(context, true);
   }
 
-  /// Development sign-in by name. Shown only in builds made with
-  /// `--dart-define=YUSAL_DEV_LOGIN=true`; the backend must run with
-  /// DEV_LOGIN=true. For local runs and simulators, never for release.
-  static const _devLogin = bool.fromEnvironment('YUSAL_DEV_LOGIN');
+  /// Development sign-in by name and the one-tap test accounts. On by
+  /// default while the app is in development; build with
+  /// `--dart-define=YUSAL_DEV_LOGIN=false` to hide them. The backend must run
+  /// with DEV_LOGIN=true.
+  static const _devLogin =
+      bool.fromEnvironment('YUSAL_DEV_LOGIN', defaultValue: true);
 
   /// One-tap test accounts; the backend sets each up with its role on first
   /// sign-in (see yusal-api router.DevPersonas). Names must match there.

@@ -236,6 +236,139 @@ class _PressableState extends State<Pressable> {
               Transform.scale(scale: scale, child: child)));
 }
 
+/// The app's press feedback in place of Material's ripple: the whole
+/// control takes one even tint, nothing spreads out from the finger. The
+/// tint comes up in [Motion.press], holds while the finger rests, and
+/// fades in [Motion.fast] once it lifts. A quick tap still reaches the
+/// full tint before fading, so it never reads as missed; a press that
+/// turns into a scroll just fades from wherever it got to.
+///
+/// Set once as `ThemeData.splashFactory` (with a transparent
+/// `highlightColor`, so the tint is not drawn twice); every [InkWell],
+/// list tile and button then uses it. Cards keep [Pressable]'s scale and
+/// no tint.
+class PressTint extends InteractiveInkFeature {
+  PressTint({
+    required MaterialInkController controller,
+    required super.referenceBox,
+    required super.color,
+    required TextDirection textDirection,
+    bool containedInkWell = true,
+    RectCallback? rectCallback,
+    BorderRadius? borderRadius,
+    super.customBorder,
+    double? radius,
+    super.onRemoved,
+  })  : _textDirection = textDirection,
+        _contained = containedInkWell,
+        _rect = rectCallback,
+        _borderRadius = borderRadius ?? BorderRadius.zero,
+        _radius = radius ?? Material.defaultSplashRadius,
+        super(controller: controller) {
+    _t = AnimationController(
+        vsync: controller.vsync,
+        duration: Motion.press,
+        reverseDuration: Motion.fast)
+      ..addListener(controller.markNeedsPaint)
+      ..addStatusListener(_onStatus)
+      ..forward();
+    controller.addInkFeature(this);
+  }
+
+  static const InteractiveInkFeatureFactory splashFactory = _PressTintFactory();
+
+  final TextDirection _textDirection;
+  final bool _contained;
+  final RectCallback? _rect;
+  final BorderRadius _borderRadius;
+  final double _radius;
+  late final AnimationController _t;
+  bool _released = false;
+
+  void _onStatus(AnimationStatus s) {
+    if (s == AnimationStatus.completed && _released) _t.reverse();
+    if (s == AnimationStatus.dismissed && _released) dispose();
+  }
+
+  /// The finger lifted on the control: finish coming up, then fade.
+  @override
+  void confirm() {
+    if (_released) return;
+    _released = true;
+    if (_t.isCompleted) _t.reverse();
+  }
+
+  /// The press became a scroll or left the control: fade from here.
+  @override
+  void cancel() {
+    if (_released) return;
+    _released = true;
+    _t.reverse();
+  }
+
+  @override
+  void dispose() {
+    _t.dispose();
+    super.dispose();
+  }
+
+  @override
+  void paintFeature(Canvas canvas, Matrix4 transform) {
+    final v = Curves.easeOut.transform(_t.value);
+    if (v == 0) return;
+    final paint = Paint()..color = color.withValues(alpha: color.a * v);
+    canvas.save();
+    canvas.transform(transform.storage);
+    if (_contained) {
+      final rect = _rect?.call() ?? Offset.zero & referenceBox.size;
+      final border = customBorder;
+      if (border != null) {
+        canvas.drawPath(
+            border.getOuterPath(rect, textDirection: _textDirection), paint);
+      } else if (_borderRadius != BorderRadius.zero) {
+        canvas.drawRRect(_borderRadius.toRRect(rect), paint);
+      } else {
+        canvas.drawRect(rect, paint);
+      }
+    } else {
+      // An unbounded response (a bare icon): a still disc behind it,
+      // centred on the control, not on the finger.
+      canvas.drawCircle(referenceBox.size.center(Offset.zero), _radius, paint);
+    }
+    canvas.restore();
+  }
+}
+
+class _PressTintFactory extends InteractiveInkFeatureFactory {
+  const _PressTintFactory();
+
+  @override
+  InteractiveInkFeature create({
+    required MaterialInkController controller,
+    required RenderBox referenceBox,
+    required Offset position,
+    required Color color,
+    required TextDirection textDirection,
+    bool containedInkWell = false,
+    RectCallback? rectCallback,
+    BorderRadius? borderRadius,
+    ShapeBorder? customBorder,
+    double? radius,
+    VoidCallback? onRemoved,
+  }) =>
+      PressTint(
+          controller: controller,
+          referenceBox: referenceBox,
+          color: color,
+          textDirection: textDirection,
+          containedInkWell: containedInkWell,
+          rectCallback: rectCallback,
+          borderRadius: borderRadius,
+          customBorder: customBorder,
+          radius: radius,
+          onRemoved: onRemoved);
+}
+
 /// The app's one bounce: when [active] turns true (saved), the child hops
 /// 1 → [Motion.popScale] → 1 once. Un-saving stays still. The caller adds
 /// `HapticFeedback.lightImpact()`.
@@ -440,10 +573,16 @@ class HeroTarget extends StatefulWidget {
       {super.key,
       required this.heroKey,
       required this.child,
-      this.borderRadius = BorderRadius.zero});
+      this.borderRadius = BorderRadius.zero,
+      this.cropInFlight = true});
   final String heroKey;
   final BorderRadius borderRadius;
   final Widget child;
+
+  /// True (photos): the flight shows this page's picture at its own size,
+  /// cropped like `BoxFit.cover`. False (a drawing contained on its sheet):
+  /// the picture is laid out at each frame's size, so it morphs exactly.
+  final bool cropInFlight;
   @override
   State<HeroTarget> createState() => _HeroTargetState();
 }
@@ -463,7 +602,10 @@ class _HeroTargetState extends State<HeroTarget> {
 
   @override
   Widget build(BuildContext context) {
-    final frame = _HeroFrame(radius: widget.borderRadius, child: widget.child);
+    final frame = _HeroFrame(
+        radius: widget.borderRadius,
+        crop: widget.cropInFlight,
+        child: widget.child);
     final tag = _tag;
     return tag == null
         ? frame
@@ -472,8 +614,10 @@ class _HeroTargetState extends State<HeroTarget> {
 }
 
 class _HeroFrame extends StatelessWidget {
-  const _HeroFrame({required this.radius, required this.child});
+  const _HeroFrame(
+      {required this.radius, required this.child, this.crop = true});
   final BorderRadius radius;
+  final bool crop;
   final Widget child;
   @override
   Widget build(BuildContext context) => radius == BorderRadius.zero
@@ -482,7 +626,8 @@ class _HeroFrame extends StatelessWidget {
 }
 
 /// Flies the detail page's picture, cropped like `BoxFit.cover`, so a 7:5
-/// list cover and a wide detail photo morph without stretching.
+/// list cover and a wide detail photo morph without stretching; or, for a
+/// target that asks not to be cropped, laid out at the flight's size.
 Widget _shuttle(
     BuildContext flightContext,
     Animation<double> animation,
@@ -495,7 +640,7 @@ Widget _shuttle(
   final (src, dst) = push ? (from, to) : (to, from);
   final box = (push ? toContext : fromContext).findRenderObject();
   final size = box is RenderBox && box.hasSize ? box.size : null;
-  final picture = size == null
+  final picture = size == null || !dst.crop
       ? dst.child
       : FittedBox(
           fit: BoxFit.cover,

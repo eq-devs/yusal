@@ -140,6 +140,113 @@ void main() {
     await tester.pump(const Duration(seconds: 4));
   });
 
+  testWidgets('a cover moved by a GlobalKey mid-flight keeps the flight',
+      (tester) async {
+    // The house page swaps its skeleton for the loaded page while the
+    // card's picture is still flying; the cover moves under a GlobalKey.
+    final loaded = ValueNotifier(false);
+    final cover = GlobalKey();
+    Widget target() => HeroTarget(
+        key: cover,
+        heroKey: 'house:2',
+        cropInFlight: false,
+        child: Container(
+            height: 300, color: Colors.blue, child: const Text('detail')));
+    Widget page(BuildContext _) => ValueListenableBuilder<bool>(
+        valueListenable: loaded,
+        builder: (_, done, __) => done
+            ? Scaffold(body: Column(children: [target(), const Text('facts')]))
+            : Scaffold(
+                body: Padding(padding: EdgeInsets.zero, child: target())));
+    await tester.pumpWidget(MaterialApp(
+        home: Builder(
+            builder: (context) => Scaffold(
+                body: GestureDetector(
+                    onTap: () => Navigator.of(context)
+                        .push(MaterialPageRoute<void>(builder: page)),
+                    child: HeroSource(
+                        heroKey: 'house:2',
+                        child: Container(
+                            height: 120,
+                            color: Colors.blue,
+                            child: const Text('card'))))))));
+    await tester.tap(find.text('card'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    loaded.value = true;
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+    // Still one picture: the flying one. A rebuilt target would show its
+    // own copy at the landing spot while the flight fades out.
+    expect(find.text('detail'), findsOneWidget);
+    // Not cropped: laid out at the flight's size.
+    expect(
+        find.ancestor(
+            of: find.text('detail'), matching: find.byType(FittedBox)),
+        findsNothing);
+    await tester.pumpAndSettle();
+    expect(find.text('facts'), findsOneWidget);
+    expect(find.text('detail'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(seconds: 4));
+  });
+
+  testWidgets('PressTint: a quick tap shows one even tint, then clears',
+      (tester) async {
+    var taps = 0;
+    await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(
+            splashFactory: PressTint.splashFactory,
+            highlightColor: Colors.transparent),
+        home: Scaffold(
+            body: Center(
+                child: InkWell(
+                    onTap: () => taps++,
+                    borderRadius: BorderRadius.circular(12),
+                    child: const SizedBox(
+                        width: 120, height: 48, child: Text('press')))))));
+    final ink = Material.of(tester.element(find.text('press')));
+    List<InkFeature> features() =>
+        (ink as dynamic).debugInkFeatures as List<InkFeature>? ?? const [];
+
+    await tester.tap(find.text('press'));
+    await tester.pump();
+    expect(taps, 1);
+    expect(features().whereType<PressTint>(), hasLength(1));
+    expect(features().whereType<InkSplash>(), isEmpty);
+    expect(features().whereType<InkRipple>(), isEmpty);
+    expect(features().whereType<InkSparkle>(), isEmpty);
+    // Released at once, it still comes all the way up before fading.
+    await tester.pump(Motion.press ~/ 2);
+    expect(features().whereType<PressTint>(), hasLength(1));
+    await tester.pumpAndSettle();
+    expect(features().whereType<PressTint>(), isEmpty);
+  });
+
+  testWidgets('PressTint holds while pressed and fades when it scrolls away',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(splashFactory: PressTint.splashFactory),
+        home: Scaffold(
+            body: ListView(children: [
+          for (var i = 0; i < 30; i++)
+            ListTile(title: Text('row $i'), onTap: () {}),
+        ]))));
+    final ink = Material.of(tester.element(find.text('row 1')));
+    List<InkFeature> features() =>
+        (ink as dynamic).debugInkFeatures as List<InkFeature>? ?? const [];
+    final g = await tester.startGesture(tester.getCenter(find.text('row 1')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(features().whereType<PressTint>(), hasLength(1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(features().whereType<PressTint>(), hasLength(1));
+    await g.moveBy(const Offset(0, -80));
+    await tester.pump();
+    await g.up();
+    await tester.pumpAndSettle();
+    expect(features().whereType<PressTint>(), isEmpty);
+  });
+
   testWidgets('HeroTarget without a touched source has no Hero',
       (tester) async {
     await tester.pumpWidget(

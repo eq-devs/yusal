@@ -68,15 +68,65 @@ class HttpBackend extends MockBackend {
     return _decode(res);
   }
 
+  /// GETs in flight by URL and token, so screens that ask for the same
+  /// thing at once (a badge and a list, two pages in the stack) share one
+  /// request instead of each sending its own.
+  final _inflight = <String, Future<http.Response>>{};
+
+  /// Waits before each retry of a read that lost its connection.
+  static const _retryBackoff = [
+    Duration(milliseconds: 300),
+    Duration(milliseconds: 1200),
+  ];
+
   Future<http.Response> _send(String method, String path,
-      {Object? body, Map<String, String>? query, bool auth = true}) async {
+      {Object? body, Map<String, String>? query, bool auth = true}) {
     final uri = Uri.parse('$baseUrl$path').replace(
         queryParameters: query == null || query.isEmpty ? null : query);
+    final token = auth ? _access : null;
+    if (method != 'GET') return _sendOnce(method, uri, token, body, timeout);
+    final key = '$uri|$token';
+    return _inflight[key] ??=
+        _sendRead(uri, token).whenComplete(() {
+      _inflight.remove(key);
+    });
+  }
+
+  /// A read, tried again when the connection drops (a pooled socket the
+  /// network or the phone closed while idle, a server restarting behind the
+  /// proxy) so a blip never reaches the screen as "connection lost". Reads
+  /// are safe to repeat; writes are sent once.
+  Future<http.Response> _sendRead(Uri uri, String? token) async {
+    for (var attempt = 0;; attempt++) {
+      final last = attempt >= _retryBackoff.length;
+      try {
+        final res = await _sendOnce('GET', uri, token, null,
+            last || timeout < _readTimeout ? timeout : _readTimeout);
+        if (!last && _retryable(res.statusCode)) {
+          await Future<void>.delayed(_retryBackoff[attempt]);
+          continue;
+        }
+        return res;
+      } on ApiFailure {
+        if (last) rethrow;
+        await Future<void>.delayed(_retryBackoff[attempt]);
+      }
+    }
+  }
+
+  /// One read attempt may take this long before it is tried again; a
+  /// healthy server answers in well under a second.
+  static const _readTimeout = Duration(seconds: 12);
+
+  /// A proxy in front of a restarting server answers these.
+  static bool _retryable(int status) =>
+      status == 502 || status == 503 || status == 504;
+
+  Future<http.Response> _sendOnce(String method, Uri uri, String? token,
+      Object? body, Duration limit) async {
     final req = http.Request(method, uri);
     req.headers['Accept'] = 'application/json';
-    if (auth && _access != null) {
-      req.headers['Authorization'] = 'Bearer $_access';
-    }
+    if (token != null) req.headers['Authorization'] = 'Bearer $token';
     if (body != null) {
       req.headers['Content-Type'] = 'application/json';
       req.body = jsonEncode(body);
@@ -85,7 +135,7 @@ class HttpBackend extends MockBackend {
       return await _http
           .send(req)
           .then(http.Response.fromStream)
-          .timeout(timeout);
+          .timeout(limit);
     } catch (e) {
       throw ApiFailure(ApiCodes.network, '$e');
     }

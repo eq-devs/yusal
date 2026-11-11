@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show Listenable;
 import '../domain/models.dart';
 
@@ -266,6 +268,11 @@ abstract interface class PostRepository {
   /// Toggles the like; returns the new state.
   Future<bool> toggleLike(String postId);
   Future<bool> liked(String postId);
+
+  /// The plan thumbnail of a post whose list left [HousePost.preview] out
+  /// (feeds do, so cards can show before their pictures arrive). The bytes
+  /// themselves, not a future, when they are already at hand.
+  FutureOr<List<int>?> postPreview(String postId);
   Future<List<String>> likedPosts();
 
   Future<List<PostComment>> comments(String postId);

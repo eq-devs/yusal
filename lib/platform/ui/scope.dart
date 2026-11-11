@@ -6,6 +6,7 @@ import '../data/mock/mock_backend.dart';
 import '../data/repositories.dart';
 import 'l10n.dart';
 import 'auth/login_page.dart';
+import 'components.dart';
 import 'theme.dart';
 import 'widgets.dart';
 import '../../motion/motion.dart';
@@ -181,10 +182,7 @@ class _LiveState<T> extends State<Live<T>> {
   Widget _build(BuildContext context) {
     if (!_loaded)
       return widget.loading ??
-          const Center(
-              child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator()));
+          const SkeletonList(padding: EdgeInsets.all(YSpace.xl));
     if (_error != null) {
       if (_data != null && widget.refreshError != null) {
         return widget.refreshError!(context, _data as T, _error!, _reload);

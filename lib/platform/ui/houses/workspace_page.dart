@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../app/settings.dart';
 import '../../domain/models.dart';
@@ -10,6 +9,7 @@ import '../demand/publish_page.dart';
 import '../home/post_page.dart';
 import '../house_progress.dart';
 import '../l10n.dart';
+import '../components.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -51,6 +51,7 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
           for (final h in all) if (h.key == widget.houseKey) return h;
           return null;
         },
+        loading: const SkeletonPage(),
         builder: (context, h) {
           if (h == null)
             return PageScaffold(
@@ -253,6 +254,6 @@ class HouseThumb extends StatelessWidget {
                             ? Icons.home_outlined
                             : Icons.construction,
                         color: t.muted))
-                : Image.memory(Uint8List.fromList(p), fit: BoxFit.cover)));
+                : Image.memory(imageBytes(p), fit: BoxFit.cover)));
   }
 }

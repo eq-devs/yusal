@@ -1794,6 +1794,9 @@ class MockBackend implements PlatformRepositories {
       });
 
   @override
+  FutureOr<List<int>?> postPreview(String postId) => posts[postId]?.preview;
+
+  @override
   Future<HousePost?> post(String id) => _read(() {
         final p = posts[id];
         return p == null || !_postVisible(p) ? null : p;

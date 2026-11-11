@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../app/settings.dart';
+import '../../motion/motion.dart';
 import 'scope.dart';
 import 'theme.dart';
 
@@ -152,19 +153,79 @@ class SettingsRow extends StatelessWidget {
   }
 }
 
-/// A grey block standing in for content that is loading.
-class Skeleton extends StatelessWidget {
+/// A grey block standing in for content that is loading. It breathes
+/// slowly so a waiting page reads as working, not frozen; with reduce
+/// motion on it stays still.
+class Skeleton extends StatefulWidget {
   const Skeleton(
       {super.key, this.width, this.height = 14, this.radius = YRadius.row});
   final double? width;
   final double height, radius;
   @override
-  Widget build(BuildContext context) => Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-          color: YTokens.of(context).surface,
-          borderRadius: BorderRadius.circular(radius)));
+  State<Skeleton> createState() => _SkeletonState();
+}
+
+class _SkeletonState extends State<Skeleton>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _breath;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (Motion.reduced(context)) {
+      _breath?.dispose();
+      _breath = null;
+    } else {
+      _breath ??= AnimationController(vsync: this, duration: Motion.breath)
+        ..repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _breath?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final block = Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+            color: YTokens.of(context).surface,
+            borderRadius: BorderRadius.circular(widget.radius)));
+    final breath = _breath;
+    if (breath == null) return block;
+    return FadeTransition(
+        opacity: Tween<double>(begin: 1, end: 0.45)
+            .animate(CurvedAnimation(parent: breath, curve: Curves.easeInOut)),
+        child: block);
+  }
+}
+
+/// One loading row: an optional avatar and two lines of text.
+class SkeletonRow extends StatelessWidget {
+  const SkeletonRow({super.key, this.avatar = false, this.avatarSize = 48});
+  final bool avatar;
+  final double avatarSize;
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        if (avatar) ...[
+          Skeleton(
+              width: avatarSize, height: avatarSize, radius: avatarSize / 2),
+          const SizedBox(width: YSpace.md),
+        ],
+        const Expanded(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+              FractionallySizedBox(
+                  widthFactor: 0.7, child: Skeleton(height: 16)),
+              SizedBox(height: YSpace.sm),
+              FractionallySizedBox(widthFactor: 0.45, child: Skeleton()),
+            ])),
+      ]);
 }
 
 /// The outline of a list while it loads: [count] rows shaped like the
@@ -202,27 +263,53 @@ class SkeletonList extends StatelessWidget {
                                   radius: YRadius.card),
                               const SizedBox(height: YSpace.md),
                             ],
-                            Row(children: [
-                              if (avatar) ...[
-                                const Skeleton(
-                                    width: 48, height: 48, radius: 24),
-                                const SizedBox(width: YSpace.md),
-                              ],
-                              const Expanded(
-                                  child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                    FractionallySizedBox(
-                                        widthFactor: 0.7,
-                                        child: Skeleton(height: 16)),
-                                    SizedBox(height: YSpace.sm),
-                                    FractionallySizedBox(
-                                        widthFactor: 0.45, child: Skeleton()),
-                                  ])),
-                            ]),
+                            SkeletonRow(avatar: avatar),
                           ])),
               ]))));
+}
+
+/// A whole page while it loads: the app bar with its back button, then the
+/// outline of a detail page, so a pushed route is never a blank screen
+/// with a spinner. [cover] is the height of a picture on top; 0 for none.
+class SkeletonPage extends StatelessWidget {
+  const SkeletonPage({super.key, this.cover = 0, this.avatar = false});
+  final double cover;
+  final bool avatar;
+  @override
+  Widget build(BuildContext context) => Scaffold(
+      appBar: AppBar(),
+      body: SafeArea(
+          top: false,
+          child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: SingleChildScrollView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(
+                          YSpace.xl, YSpace.sm, YSpace.xl, YSpace.xxxl),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (cover > 0) ...[
+                              Skeleton(
+                                  height: cover,
+                                  width: double.infinity,
+                                  radius: YRadius.card),
+                              const SizedBox(height: YSpace.xl),
+                            ],
+                            const FractionallySizedBox(
+                                widthFactor: 0.6,
+                                child: Skeleton(height: 24)),
+                            const SizedBox(height: YSpace.md),
+                            const FractionallySizedBox(
+                                widthFactor: 0.85, child: Skeleton()),
+                            const SizedBox(height: YSpace.sm),
+                            const FractionallySizedBox(
+                                widthFactor: 0.4, child: Skeleton()),
+                            const SizedBox(height: YSpace.xxxl),
+                            SkeletonList(count: 4, avatar: avatar),
+                          ]))))));
 }
 
 /// Round icon button on a solid backing, for controls that sit on a

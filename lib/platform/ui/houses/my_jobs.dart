@@ -4,6 +4,7 @@ import '../../domain/models.dart';
 import '../coop/coop_page.dart';
 import '../demand/demand_detail_page.dart';
 import '../l10n.dart';
+import '../components.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -207,6 +208,7 @@ class SitePage extends StatelessWidget {
   Widget build(BuildContext context) => Live<Cooperation?>(
       reloadKey: cooperationId,
       load: (r) => r.cooperation(cooperationId),
+      loading: const SkeletonPage(),
       builder: (context, c) => PageScaffold(
           title: tr3('施工', 'Құрылыс', 'Стройка'),
           body: c == null

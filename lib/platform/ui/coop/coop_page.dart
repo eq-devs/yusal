@@ -6,6 +6,7 @@ import '../chat/chat_page.dart';
 import '../demand/demand_detail_page.dart';
 import '../l10n.dart';
 import '../scope.dart';
+import '../components.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import '../houses/site_tab.dart';
@@ -37,16 +38,16 @@ class CooperationPage extends StatelessWidget {
           final c = await r.cooperation(cooperationId);
           if (c == null)
             return _CoopData(null, null, null, null, null, const []);
-          return _CoopData(
-              c,
-              await r.demand(c.demandId),
-              await r.account(c.ownerId),
-              await r.account(c.providerId),
-              await r.profile(c.profileId),
-              await r.reviewsFor(c.id));
+          final (demand, owner, provider, profile, reviews) = await (
+            r.demand(c.demandId),
+            r.account(c.ownerId),
+            r.account(c.providerId),
+            r.profile(c.profileId),
+            r.reviewsFor(c.id)
+          ).wait;
+          return _CoopData(c, demand, owner, provider, profile, reviews);
         },
-        loading:
-            const Scaffold(body: Center(child: CircularProgressIndicator())),
+        loading: const SkeletonPage(avatar: true),
         builder: (context, data) => data.coop == null
             ? PageScaffold(
                 title: '',

@@ -122,6 +122,8 @@ class FakeApi {
         return ok({...user, ...body});
       case ('GET', '/client/posts'):
         return ok({'items': [postJson], 'total': 1, 'page': 1, 'page_size': 100});
+      case ('GET', '/client/accounts/u9'):
+        return ok({...user, 'id': 'u9', 'display_name': '邻居'});
       case ('GET', '/client/posts/p1/preview'):
         return http.Response.bytes([1, 2, 3], 200);
       case ('GET', '/client/me/posts'):
@@ -241,11 +243,27 @@ void main() {
     expect(p.title, '两层砖房');
     expect(p.area, 120.5);
     expect(p.rating, 4);
-    expect(p.preview, [1, 2, 3]);
+    // A feed comes without pictures; each card asks for its own, once.
+    expect(p.preview, isNull);
+    expect(await backend.postPreview(p.id), [1, 2, 3]);
+    expect(backend.postPreview(p.id), [1, 2, 3]);
+    expect(api.requests.where((r) => r.url.path.endsWith('/preview')).length,
+        1);
     final q = api.requests.first.url.queryParameters;
     expect(q['region'], 'almaty');
     expect(q['sort'], 'topRated');
     expect(q['asking_feedback'], 'true');
+  });
+
+  test('rows naming the same person ask for the account once', () async {
+    await backend.signInWithProvider('google', 'id-token');
+    final names = await Future.wait(
+        [for (var i = 0; i < 5; i++) backend.account('u9')]);
+    expect(names.map((a) => a!.displayName).toSet(), {'邻居'});
+    expect((await backend.account('u9'))!.displayName, '邻居');
+    expect(
+        api.requests.where((r) => r.url.path == '/client/accounts/u9').length,
+        1);
   });
 
   test('server error codes become ApiFailure codes', () async {

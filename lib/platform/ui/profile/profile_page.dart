@@ -4,6 +4,7 @@ import '../../domain/models.dart';
 import '../chat/chat_page.dart';
 import '../l10n.dart';
 import '../scope.dart';
+import '../components.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'profile_edit_page.dart';
@@ -29,11 +30,14 @@ class ProfilePage extends StatelessWidget {
         load: (r) async {
           final p = await r.profile(profileId);
           if (p == null) return _ProfileData(null, null, null, const []);
-          return _ProfileData(p, await r.stats(p.id),
-              await r.account(p.ownerId), await r.reviewsAbout(p.ownerId));
+          final (stats, owner, reviews) = await (
+            r.stats(p.id),
+            r.account(p.ownerId),
+            r.reviewsAbout(p.ownerId)
+          ).wait;
+          return _ProfileData(p, stats, owner, reviews);
         },
-        loading:
-            const Scaffold(body: Center(child: CircularProgressIndicator())),
+        loading: const SkeletonPage(avatar: true),
         builder: (context, data) => data.profile == null
             ? PageScaffold(
                 title: '',

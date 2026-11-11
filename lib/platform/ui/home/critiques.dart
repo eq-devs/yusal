@@ -4,6 +4,7 @@ import '../../data/repositories.dart';
 import '../../domain/models.dart';
 import '../l10n.dart';
 import '../profile/profile_page.dart';
+import '../components.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -319,8 +320,8 @@ class _CritiqueTile extends StatelessWidget {
     return Padding(
         padding: EdgeInsets.only(top: reply ? 10 : 16),
         child: Live<(Account?, List<ServiceProfile>)>(
-            load: (r) async =>
-                (await r.account(c.authorId), await r.profilesOf(c.authorId)),
+            load: (r) => (r.account(c.authorId), r.profilesOf(c.authorId)).wait,
+            loading: SkeletonRow(avatar: true, avatarSize: reply ? 28 : 36),
             builder: (context, data) {
               final (a, profiles) = data;
               final pro = profiles.firstOrNull;

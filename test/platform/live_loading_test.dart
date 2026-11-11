@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/platform/data/mock/mock_backend.dart';
 import 'package:yusal/platform/data/mock/mock_seed.dart';
+import 'package:yusal/platform/ui/components.dart';
 import 'package:yusal/platform/ui/scope.dart';
 import 'package:yusal/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
@@ -32,6 +33,35 @@ void main() {
     await t.pumpAndSettle();
     expect(calls, 2);
     expect(find.text('second'), findsOneWidget);
+  });
+
+  testWidgets('a loading list shows a skeleton, never a spinner', (t) async {
+    final backend = MockBackend(latency: Duration.zero);
+    final store = ProjectStore(fileSystem: MemoryFiles());
+    final answer = Completer<String>();
+    Widget page({bool reduceMotion = false}) => MaterialApp(
+        home: MediaQuery(
+            data: MediaQueryData(disableAnimations: reduceMotion),
+            child: PlatformScope(
+                repos: backend,
+                store: store,
+                child: Scaffold(
+                    body: Live<String>(
+                        reloadKey: 'q',
+                        load: (_) => answer.future,
+                        builder: (_, data) => Text(data))))));
+    await t.pumpWidget(page());
+    expect(find.byType(SkeletonList), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    // It breathes while waiting, and holds still under reduce motion.
+    expect(t.hasRunningAnimations, isTrue);
+    await t.pumpWidget(page(reduceMotion: true));
+    await t.pump();
+    expect(t.hasRunningAnimations, isFalse);
+    answer.complete('done');
+    await t.pumpAndSettle();
+    expect(find.text('done'), findsOneWidget);
+    expect(find.byType(Skeleton), findsNothing);
   });
 
   testWidgets('old request cannot overwrite new query', (t) async {

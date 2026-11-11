@@ -48,7 +48,9 @@ class PostPage extends StatelessWidget {
               PostBuild?
             )>(
         reloadKey: postId,
-        loading: preview == null ? null : _PostSkeleton(post: preview!),
+        loading: preview == null
+            ? const SkeletonPage(cover: 230)
+            : _PostSkeleton(post: preview!),
         load: (r) async {
           final p = await r.post(postId);
           if (p == null)
@@ -61,15 +63,18 @@ class PostPage extends StatelessWidget {
               false,
               null
             );
-          return (
-            p,
-            await r.liked(postId),
-            await r.demandsForPost(postId),
-            await r.comments(postId),
-            await r.snapshot(p.snapshotId, postId: p.id),
-            r.currentAccount != null && (await r.myProfiles()).isNotEmpty,
-            await r.postBuild(postId)
-          );
+          // Independent of each other: asked together, not one by one.
+          final (liked, demands, comments, snap, isPro, build) = await (
+            r.liked(postId),
+            r.demandsForPost(postId),
+            r.comments(postId),
+            r.snapshot(p.snapshotId, postId: p.id),
+            r.currentAccount == null
+                ? Future.value(false)
+                : r.myProfiles().then((list) => list.isNotEmpty),
+            r.postBuild(postId)
+          ).wait;
+          return (p, liked, demands, comments, snap, isPro, build);
         },
         builder: (context, data) {
           final (p, liked, demands, comments, snap, isPro, build) = data;
@@ -88,7 +93,7 @@ class PostPage extends StatelessWidget {
           final mine = me?.id == p.ownerId;
           final image = p.preview == null
               ? null
-              : MemoryImage(Uint8List.fromList(p.preview!));
+              : MemoryImage(imageBytes(p.preview!));
           final open =
               demands.where((d) => d.status == DemandStatus.open).toList();
           // Floor count is already on the fact sheet.
@@ -367,6 +372,8 @@ class PostPage extends StatelessWidget {
                                       // Owner.
                                       Live<Account?>(
                                           load: (r) => r.account(p.ownerId),
+                                          loading: const SkeletonRow(
+                                              avatar: true, avatarSize: 44),
                                           builder: (context, a) =>
                                               Row(children: [
                                                 Avatar(a?.displayName ?? '',
@@ -771,9 +778,10 @@ class _PostLeading extends StatelessWidget {
 
 /// The house page's cover: where a tapped list card's picture lands.
 class _PostCover extends StatelessWidget {
-  const _PostCover({required this.post, this.image});
+  const _PostCover({required this.post, this.image, this.loading = false});
   final HousePost post;
   final ImageProvider? image;
+  final bool loading;
   @override
   Widget build(BuildContext context) => HeroTarget(
       heroKey: houseHeroKey(post.id),
@@ -782,7 +790,7 @@ class _PostCover extends StatelessWidget {
           seed: post.id,
           height: 300,
           image: image,
-          child: image == null && post.snapshotId.isNotEmpty
+          child: image == null && !loading && post.snapshotId.isNotEmpty
               ? PlanCover(snapshotId: post.snapshotId, postId: post.id)
               : null));
 }
@@ -795,9 +803,6 @@ class _PostSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
-    final image = post.preview == null
-        ? null
-        : MemoryImage(Uint8List.fromList(post.preview!));
     return Scaffold(
         body: CustomScrollView(slivers: [
       SliverAppBar(
@@ -806,17 +811,23 @@ class _PostSkeleton extends StatelessWidget {
           backgroundColor: t.bg,
           leading: _PostLeading(fromLink: !Navigator.of(context).canPop()),
           flexibleSpace: FlexibleSpaceBar(
-              background: _PostCover(post: post, image: image))),
+              background: PostPicture(
+                  post: post,
+                  builder: (context, image, loading) => _PostCover(
+                      post: post, image: image, loading: loading)))),
       SliverToBoxAdapter(
           child: Center(
               child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 760),
                   child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 18, 20, 120),
-                      child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(post.title,
-                              style: display(size: 26))))))),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(post.title, style: display(size: 26)),
+                            const SizedBox(height: YSpace.xl),
+                            const SkeletonList(count: 4),
+                          ]))))),
     ]));
   }
 }

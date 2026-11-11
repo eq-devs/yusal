@@ -7,6 +7,7 @@ import '../coop/agreement_form.dart';
 import '../l10n.dart';
 import '../profile/profile_page.dart';
 import '../scope.dart';
+import '../components.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'compare_page.dart';
@@ -38,15 +39,17 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
     return Live<_AppsData>(
         load: (r) async {
           final d = (await r.demand(widget.demandId))!;
-          final apps = await r.applicationsFor(d.id);
+          final (apps, coops) =
+              await (r.applicationsFor(d.id), r.cooperationsFor(d.id)).wait;
+          final profiles =
+              await Future.wait([for (final a in apps) r.profile(a.profileId)]);
           return _AppsData(
               d,
               apps,
-              {for (final a in apps) a.profileId: await r.profile(a.profileId)},
-              await r.cooperationsFor(d.id));
+              {for (final (i, a) in apps.indexed) a.profileId: profiles[i]},
+              coops);
         },
-        loading:
-            const Scaffold(body: Center(child: CircularProgressIndicator())),
+        loading: const SkeletonPage(avatar: true),
         builder: (context, data) {
           final d = data.demand;
           final hire = d.type == DemandType.hire;

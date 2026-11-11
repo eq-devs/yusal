@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../app/settings.dart';
 import '../../../storage/project_store.dart';
@@ -155,7 +154,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
                       height: 200,
                       image: preview == null
                           ? null
-                          : MemoryImage(Uint8List.fromList(preview))),
+                          : MemoryImage(imageBytes(preview))),
                   if (e != null)
                     Padding(
                         padding: const EdgeInsets.only(top: 10),

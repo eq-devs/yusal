@@ -21,6 +21,7 @@ import 'house_card.dart';
 import 'reuse.dart';
 import '../house_progress.dart';
 import '../../../motion/motion.dart';
+import '../me/trust_pages.dart';
 
 /// One house: the plan, the facts, the story, the people recruiting for
 /// it, and what others think. The owner recruits from here; a
@@ -228,14 +229,7 @@ class PostPage extends StatelessWidget {
                   if (context.mounted) Navigator.of(context).pop();
                 }
               case 'report':
-                final reason =
-                    await askText(context, tr3('举报原因', 'Себебі', 'Причина'));
-                if (reason != null && context.mounted)
-                  await attempt(
-                      context,
-                      () => context.repos.report(ReportTarget.account,
-                          p.ownerId, '[post ${p.id}] $reason'),
-                      success: tr3('已收到举报', 'Қабылданды', 'Жалоба отправлена'));
+                await reportContent(context, ReportTarget.post, p.id);
             }
           }
 
@@ -256,23 +250,23 @@ class PostPage extends StatelessWidget {
                           label: tr3('分享', 'Бөлісу', 'Поделиться'),
                           icon: const Icon(Icons.ios_share, size: 20),
                           onPressed: share),
-                      IconAction(
-                          label: liked
-                              ? tr3('取消喜欢', 'Ұнатуды алу', 'Убрать лайк')
-                              : tr3('喜欢', 'Ұнайды', 'Нравится'),
-                          color: liked ? t.accent : null,
-                          icon: PopOnActive(
-                              active: liked,
-                              child: Icon(
-                                  liked
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  size: 20)),
-                          onPressed: () {
-                            if (!liked) HapticFeedback.lightImpact();
-                            attempt(
-                                context, () => context.repos.toggleLike(p.id));
-                          }),
+                      OptimisticLike(
+                          liked: liked,
+                          toggle: () => attempt(
+                              context, () => context.repos.toggleLike(p.id)),
+                          builder: (context, liked, toggle) => IconAction(
+                              label: liked
+                                  ? tr3('取消喜欢', 'Ұнатуды алу', 'Убрать лайк')
+                                  : tr3('喜欢', 'Ұнайды', 'Нравится'),
+                              color: liked ? t.accent : null,
+                              icon: PopOnActive(
+                                  active: liked,
+                                  child: Icon(
+                                      liked
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      size: 20)),
+                              onPressed: toggle)),
                       IconAction(
                           label: tr3('更多', 'Тағы', 'Ещё'),
                           icon: const Icon(Icons.more_horiz, size: 20),
@@ -584,16 +578,16 @@ class PostPage extends StatelessWidget {
       if (!canReuse) return null;
       return ActionBar(
           child: Row(children: [
-        IconButton.outlined(
-            tooltip: tr3('收藏', 'Сақтау', 'Сохранить'),
-            onPressed: () {
-              if (!liked) HapticFeedback.lightImpact();
-              attempt(context, () => context.repos.toggleLike(post.id));
-            },
-            icon: PopOnActive(
-                active: liked,
-                child: Icon(liked ? Icons.favorite : Icons.favorite_border,
-                    color: liked ? t.accent : null))),
+        OptimisticLike(
+            liked: liked,
+            toggle: () => attempt(context, () => context.repos.toggleLike(post.id)),
+            builder: (context, liked, toggle) => IconButton.outlined(
+                tooltip: tr3('收藏', 'Сақтау', 'Сохранить'),
+                onPressed: toggle,
+                icon: PopOnActive(
+                    active: liked,
+                    child: Icon(liked ? Icons.favorite : Icons.favorite_border,
+                        color: liked ? t.accent : null)))),
         const SizedBox(width: 12),
         Expanded(
             child: FilledButton.icon(

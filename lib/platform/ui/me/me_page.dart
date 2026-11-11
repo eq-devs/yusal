@@ -16,6 +16,7 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'admin_page.dart';
 import 'dev_tools_page.dart';
+import 'trust_pages.dart';
 
 /// Fourth tab: who I am, what I published, my professional profile,
 /// settings and the account itself, each as its own group.
@@ -102,12 +103,13 @@ class MePage extends StatelessWidget {
                                         'Приватность и блокировки'),
                                     onTap: () => pushPage<void>(
                                         context, (_) => const PrivacyPage())),
-                                if (account.isAdmin)
+                                ...trustRows(context, account),
+                                if (account.can(AdminPerms.read))
                                   SettingsRow(
+                                      key: const Key('me-admin'),
                                       icon:
                                           Icons.admin_panel_settings_outlined,
-                                      title:
-                                          tr3('审核后台', 'Модерация', 'Модерация'),
+                                      title: tr3('管理后台', 'Әкімшілік', 'Админка'),
                                       onTap: () => pushPage<void>(context,
                                           (_) => const AdminPage())),
                               ]),
@@ -337,6 +339,28 @@ class _ProProfiles extends StatelessWidget {
                               profile: p,
                               onTap: () => pushPage<void>(context,
                                   (_) => ProfilePage(profileId: p.id)))),
+                    SettingsGroup(children: [
+                      SettingsRow(
+                          key: const Key('me-demand-alert'),
+                          icon: Icons.notifications_active_outlined,
+                          title: tr3('新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки'),
+                          subtitle: tr3('按地区、工种订阅，有新需求时提醒你',
+                              'Аймақ пен мамандық бойынша', 'По региону и специальности'),
+                          onTap: () => pushPage<void>(
+                              context, (_) => const DemandAlertPage())),
+                      for (final p in list)
+                        if (!p.verified)
+                          SettingsRow(
+                              key: Key('me-verify-${p.id}'),
+                              icon: Icons.verified_outlined,
+                              title: tr3('实名核验：${p.name}', 'Тексеру: ${p.name}',
+                                  'Проверка: ${p.name}'),
+                              subtitle: tr3('核验手机号和施工现场，名片显示“已核验”',
+                                  'Профильде «тексерілген» белгісі', 'Значок «проверен» в профиле'),
+                              onTap: () => pushPage<void>(
+                                  context, (_) => VerificationPage(profile: p))),
+                    ]),
+                    const SizedBox(height: YSpace.sm),
                     Align(
                         alignment: AlignmentDirectional.centerStart,
                         child: TextButton.icon(

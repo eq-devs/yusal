@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../app/settings.dart';
 import '../../storage/project_store.dart';
@@ -103,46 +105,115 @@ class _LiveState<T> extends State<Live<T>> {
   int _generation = 0;
   String? _accountId;
 
+  /// A load is running; a change seen meanwhile sets [_again] so one more
+  /// load follows it, instead of a second one racing it.
+  Future<void>? _running;
+  bool _again = false;
+
+  /// A coalesced reload is waiting for the burst of changes to settle.
+  Timer? _queued;
+
+  /// A change came while this page was covered by another route; it
+  /// reloads once it is on top again instead of while hidden.
+  bool _stale = false;
+  bool _visible = true;
+
+  /// One write can notify several times and several writes often come
+  /// together; screens reload once after they settle.
+  static const _settle = Duration(milliseconds: 60);
+
   @override
   void initState() {
     super.initState();
-    widget.refresh?._run = _reload;
+    widget.refresh?._run = _userReload;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Depending on the route makes this run again when it is covered or
+    // uncovered, so a page under a chat does not refetch on every message.
+    final visible = (ModalRoute.of(context)?.isCurrent ?? true) &&
+        TickerMode.valuesOf(context).enabled;
+    final shown = visible && !_visible;
+    _visible = visible;
     final repos = context.repos;
     if (!identical(repos, _repos)) {
-      _repos?.changes.removeListener(_reload);
+      _repos?.changes.removeListener(_changed);
       _repos = repos;
       _data = null;
       _loaded = false;
       _error = null;
       _accountId = repos.currentAccount?.id;
-      repos.changes.addListener(_reload);
+      repos.changes.addListener(_changed);
       _reload();
+    } else if (shown && _stale) {
+      _changed();
     }
   }
 
   @override
   void didUpdateWidget(covariant Live<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    widget.refresh?._run = _reload;
-    if (widget.reloadKey == null || widget.reloadKey != oldWidget.reloadKey) {
+    widget.refresh?._run = _userReload;
+    if (widget.reloadKey != null && widget.reloadKey != oldWidget.reloadKey) {
+      // A different query: load it now and drop the old one's answer.
       _reload();
+    } else if (widget.reloadKey == null) {
+      // Legacy callers rebuild with fresh closures; pick them up, but share
+      // the load with any change that caused the rebuild.
+      _changed();
     }
   }
 
   @override
   void dispose() {
-    _repos?.changes.removeListener(_reload);
-    if (widget.refresh?._run == _reload) widget.refresh?._run = null;
+    _queued?.cancel();
+    _repos?.changes.removeListener(_changed);
+    if (widget.refresh?._run == _userReload) widget.refresh?._run = null;
     super.dispose();
   }
 
-  Future<void> _reload() async {
+  /// The backend changed: reload soon, once, and only if anyone sees it.
+  void _changed() {
     if (!mounted) return;
+    final accountId = _repos!.currentAccount?.id;
+    if (accountId != _accountId) {
+      // Signed in as someone else: never show the last person's data.
+      _reload();
+      return;
+    }
+    if (!_visible) {
+      _stale = true;
+      return;
+    }
+    _stale = false;
+    if (_running != null) {
+      _again = true;
+      return;
+    }
+    _queued ??= Timer(_settle, () {
+      _queued = null;
+      if (mounted) _reload();
+    });
+  }
+
+  /// Pull-to-refresh: a failure is said out loud, since the user asked.
+  Future<void> _userReload() async {
+    final error = await _reload();
+    if (error != null && _data != null && mounted) {
+      toast(context, failureText(error));
+    }
+  }
+
+  /// Loads now, superseding any load in flight. Completes with the error,
+  /// if the load failed.
+  Future<Object?> _reload() async {
+    if (!mounted) return null;
+    _queued?.cancel();
+    _queued = null;
+    _stale = false;
+    _again = false;
     final accountId = _repos!.currentAccount?.id;
     if (accountId != _accountId) {
       _accountId = accountId;
@@ -153,21 +224,38 @@ class _LiveState<T> extends State<Live<T>> {
       });
     }
     final generation = ++_generation;
+    final done = Completer<void>();
+    _running = done.future;
+    Object? failure;
     try {
       final data = await widget.load(_repos!);
-      if (!mounted || generation != _generation) return;
+      if (!mounted || generation != _generation) return null;
       setState(() {
         _data = data;
         _error = null;
         _loaded = true;
       });
     } catch (e) {
-      if (!mounted || generation != _generation) return;
+      if (!mounted || generation != _generation) return null;
+      failure = e;
       setState(() {
-        _error = e;
+        // A failed refresh keeps what is on screen: a dropped connection
+        // must not wipe a page the user is reading. Only a first load, or a
+        // caller that draws its own banner, shows the error.
+        if (_data == null || widget.refreshError != null) _error = e;
         _loaded = true;
       });
+    } finally {
+      if (generation == _generation) {
+        _running = null;
+        done.complete();
+        if (_again && mounted) {
+          _again = false;
+          _changed();
+        }
+      }
     }
+    return failure;
   }
 
   @override

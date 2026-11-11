@@ -3,6 +3,7 @@ import '../../../app/settings.dart';
 import '../../data/repositories.dart';
 import '../../domain/models.dart';
 import '../l10n.dart';
+import '../me/trust_pages.dart';
 import '../profile/profile_page.dart';
 import '../components.dart';
 import '../scope.dart';
@@ -422,7 +423,15 @@ class _CritiqueTile extends StatelessWidget {
                           tooltip: tr3('删除', 'Жою', 'Удалить'),
                           icon: Icon(Icons.close, size: 16, color: t.faint),
                           onPressed: () => attempt(context,
-                              () => context.repos.deleteComment(c.id))),
+                              () => context.repos.deleteComment(c.id)))
+                    else
+                      IconButton(
+                          key: Key('critique-report-${c.id}'),
+                          visualDensity: VisualDensity.compact,
+                          tooltip: tr3('举报', 'Шағым', 'Пожаловаться'),
+                          icon: Icon(Icons.flag_outlined, size: 16, color: t.faint),
+                          onPressed: () =>
+                              reportContent(context, ReportTarget.comment, c.id)),
                   ]);
             }));
   }

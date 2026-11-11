@@ -17,6 +17,7 @@ import 'package:yusal/platform/data/repositories.dart';
 import 'package:yusal/platform/domain/models.dart';
 import 'package:yusal/platform/ui/chat/chat_page.dart';
 import 'package:yusal/platform/ui/me/admin_page.dart';
+import 'package:yusal/platform/ui/widgets.dart';
 import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 
@@ -45,8 +46,10 @@ Future<void> openAdmin(WidgetTester t, HttpBackend repos) async {
       reason: 'make "$adminName" an admin with go run ./cmd/setadmin <id>');
   await home(t);
   await tab(t, '我的');
-  await scrollTap(t, find.text('审核后台'));
+  await scrollTap(t, find.text('管理后台'));
   await waitFor(t, find.byType(AdminPage));
+  await tapIt(t, find.descendant(
+      of: find.byType(NavigationBar), matching: find.text('审核')));
 }
 
 /// The admin card whose texts include [text].
@@ -94,16 +97,18 @@ void main() {
       await openAdmin(t, repos);
       await waitFor(t, find.text(good));
       await shot(t, 'a02-review-queue');
-      await tapIt(
-          t, find.descendant(of: card(good), matching: find.text('通过')));
+      // Swipe right approves, swipe left asks for a reason and rejects.
+      await t.drag(find.text(good), const Offset(600, 0));
       await idle(t, 1000);
       await waitFor(t, find.text(bad));
-      await tapIt(t, find.descendant(of: card(bad), matching: find.text('拒绝')));
+      await t.drag(find.text(bad), const Offset(-600, 0));
+      await idle(t, 500);
+      await tapIt(t, find.text('自己填写…'));
       await answerDialog(t, '不要收押金 $run');
       await idle(t, 1000);
       expect(find.text(good), findsNothing);
       expect(find.text(bad), findsNothing);
-      final audit = await io(t, () => repos.audit());
+      final audit = (await io(t, () => repos.audit())).items;
       expect(audit.where((a) => a.targetId == goodId || a.targetId == badId),
           hasLength(2));
 
@@ -139,23 +144,25 @@ void main() {
       await waitFor(t, find.text('加我微信，先交押金 $run'));
       await tapIt(t, find.byType(PopupMenuButton<String>));
       await tapIt(t, find.text('举报'));
+      await tapIt(t, find.text('其他，自己填写'));
       await answerDialog(t, '要求先交押金 $run');
       await shot(t, 'a04-report-from-chat');
 
       // ── Admin upholds the report: the account is restricted ──
       await openAdmin(t, repos);
-      await tapIt(t, find.text('举报').last);
+      await tapIt(t, find.widgetWithText(FilterPill, '举报'));
       await waitFor(t, find.text('要求先交押金 $run'));
       await shot(t, 'a05-report-queue');
       await tapIt(
           t,
           find.descendant(
-              of: card('要求先交押金 $run'), matching: find.text('核实违规并处理')));
+              of: card('要求先交押金 $run'), matching: find.text('成立并限制')));
+      await tapIt(t, find.text('自己填写…'));
       await answerDialog(t, '收押金，限制账号 $run');
       await idle(t, 1000);
-      final reports = await io(t, () => repos.reports());
-      final report = reports.singleWhere((r) => r.targetId == workerId);
-      expect(report.status, isNot(ReportStatus.open));
+      final reports = (await io(t, () => repos.reports())).items;
+      final report = reports.singleWhere((r) => r.report.targetId == workerId);
+      expect(report.report.status, ReportStatus.upheld);
 
       // ── Restricted: cannot publish, apply or message ──
       await signIn(t, repos, worker);

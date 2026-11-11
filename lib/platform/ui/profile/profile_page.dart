@@ -8,6 +8,7 @@ import '../components.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'profile_edit_page.dart';
+import '../me/trust_pages.dart';
 
 class _ProfileData {
   _ProfileData(this.profile, this.stats, this.owner, this.reviews);
@@ -94,16 +95,8 @@ class _ProfileView extends StatelessWidget {
           else
             PopupMenuButton<String>(
                 onSelected: (v) async {
-                  if (v == 'report') {
-                    final reason = await askText(
-                        context, tr3('举报名片', 'Шағым', 'Пожаловаться'));
-                    if (reason != null && context.mounted)
-                      await attempt(
-                          context,
-                          () => context.repos
-                              .report(ReportTarget.profile, p.id, reason),
-                          success: tr3('已提交', 'Жіберілді', 'Отправлено'));
-                  }
+                  if (v == 'report')
+                    await reportContent(context, ReportTarget.profile, p.id);
                   if (v == 'block' &&
                       context.mounted &&
                       await requireLogin(context) &&
@@ -138,7 +131,15 @@ class _ProfileView extends StatelessWidget {
               child: Column(children: [
                 Avatar(p.name, size: 84, team: p.kind == ProfileKind.team),
                 const SizedBox(height: 12),
-                Text(p.name,
+                Text.rich(
+                    TextSpan(text: p.name, children: [
+                      if (p.verified)
+                        const WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Padding(
+                                padding: EdgeInsets.only(left: 6),
+                                child: VerifiedBadge(size: 22))),
+                    ]),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                         fontSize: YFont.display, fontWeight: FontWeight.w800)),

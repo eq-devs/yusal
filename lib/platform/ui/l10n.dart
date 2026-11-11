@@ -275,8 +275,50 @@ String noticeText(AppNotification n) {
         '$t 需求已修改，请重新确认你的报名／报价', '$t тапсырыс өзгерді', '$t заявка изменилась'),
     NoticeKind.applicationNotSelected =>
       tr3('$t 发布者暂未选用你的报名', '$t сіз таңдалмадыңыз', '$t ваш отклик не выбран'),
+    NoticeKind.contentRemoved => tr3('$t 因违反社区规范被处理，可申诉',
+        '$t ереже бұзғаны үшін алынды, шағым беруге болады',
+        '$t снято за нарушение правил, можно обжаловать'),
+    NoticeKind.reportResolved => tr3('你对 $t 的举报已处理，谢谢', '$t шағымыңыз қаралды, рақмет',
+        'Ваша жалоба на $t рассмотрена, спасибо'),
+    NoticeKind.accountRestricted => tr3('你的账号已被限制发布与联系，可申诉',
+        'Аккаунтыңыз шектелді, шағым беруге болады',
+        'Ваш аккаунт ограничен, можно обжаловать'),
+    NoticeKind.accountRestored => tr3(
+        '你的账号已恢复正常', 'Аккаунтыңыз қалпына келді', 'Ограничения с аккаунта сняты'),
+    NoticeKind.appealAnswered => tr3('你对 $t 的申诉有了结果', '$t шағымыңызға жауап келді',
+        'Есть ответ на ваше обжалование $t'),
+    NoticeKind.verificationApproved => tr3('$t 已通过实名核验', '$t тексеруден өтті',
+        '$t прошёл проверку'),
+    NoticeKind.verificationRejected => tr3('$t 核验未通过，请查看原因',
+        '$t тексеруден өтпеді, себебін қараңыз', '$t не прошёл проверку, см. причину'),
+    NoticeKind.newDemandMatch => tr3('有符合你订阅条件的新需求 $t',
+        'Сізге сай жаңа тапсырыс: $t', 'Новая заявка по вашей подписке: $t'),
   };
 }
+
+/// Preset reasons a moderator picks; stored as `code:<name>` and shown in
+/// the reader's language. Anything else is the moderator's own words.
+const reasonCodes = [
+  'contact', 'fake', 'illegal', 'incomplete', 'duplicate', 'abuse', 'spam', 'ok'
+];
+
+String reasonCodeText(String code) => switch (code) {
+      'contact' => tr3('正文包含联系方式，请通过平台沟通', 'Мәтінде байланыс деректері бар',
+          'В тексте есть контакты, общайтесь через приложение'),
+      'fake' => tr3('信息不真实或无法核实', 'Ақпарат шынайы емес', 'Недостоверная информация'),
+      'illegal' => tr3('包含违规内容', 'Ережеге қайшы мазмұн', 'Запрещённое содержание'),
+      'incomplete' => tr3('信息不完整，请补充地点、范围和预算', 'Ақпарат толық емес',
+          'Не хватает данных: место, объём, бюджет'),
+      'duplicate' => tr3('重复发布', 'Қайталанған жарияланым', 'Повторная публикация'),
+      'abuse' => tr3('辱骂、骚扰或歧视', 'Балағат не қудалау', 'Оскорбления или преследование'),
+      'spam' => tr3('广告或引流', 'Жарнама не спам', 'Реклама или спам'),
+      'ok' => tr3('经核查未发现问题', 'Тексеруде бұзушылық табылмады', 'Нарушений не найдено'),
+      _ => code,
+    };
+
+/// A reason as the reader should see it: preset codes are translated.
+String reasonText(String reason) =>
+    reason.startsWith('code:') ? reasonCodeText(reason.substring(5)) : reason;
 
 String failureText(Object e) {
   if (e is! ApiFailure)

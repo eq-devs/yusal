@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../../app/settings.dart';
 import '../../data/repositories.dart';
@@ -30,44 +32,137 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final input = TextEditingController();
-  int seen = -1;
+  final _refresh = LiveRefresh();
+
+  /// Card titles already looked up; a message's card never changes, so a
+  /// reload after each new message does not ask for them again.
+  final _cards = <String, String>{};
+
+  /// Texts on their way to the server, drawn as faded bubbles until the
+  /// reload that follows the send shows them for real.
+  final _pending = <String>[];
+
+  /// What the last load showed, to tell whether a poll found anything new.
+  String _shown = '';
+  Timer? _poll;
+  bool _polling = false;
+  bool _readSent = false;
+
+  /// While the chat is open and on top, new messages from the other side
+  /// show up without leaving and coming back.
+  static const _pollEvery = Duration(seconds: 4);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _poll = Timer.periodic(_pollEvery, (_) => _check());
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    input.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back from the background: catch up at once instead of on the next tick.
+    if (state == AppLifecycleState.resumed) _check();
+  }
+
+  static String _signature(List<ChatMessage> msgs) => msgs.isEmpty
+      ? '0'
+      : '${msgs.length}|${msgs.last.id}|${msgs.last.state.name}';
+
+  Future<void> _check() async {
+    if (!mounted || _polling || _shown.isEmpty) return;
+    if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      return;
+    }
+    final repos = context.repos;
+    if (repos.currentAccount == null) return;
+    _polling = true;
+    try {
+      final msgs = await repos.messages(widget.conversationId);
+      if (mounted && _signature(msgs) != _shown) {
+        _readSent = false;
+        await _refresh();
+      }
+    } on ApiFailure {
+      // A missed poll is caught by the next one.
+    } finally {
+      _polling = false;
+    }
+  }
+
+  Future<String> _card(PlatformRepositories r, ChatMessage m) async {
+    if (m.kind == MessageKind.demandCard) {
+      return (await r.demand(m.refId!))?.current.title ?? '';
+    }
+    final a = await r.application(m.refId!);
+    if (a == null) return '';
+    final d = await r.demand(a.demandId);
+    return '${d?.current.title ?? ''}|${a.demandId}|${a.current.total == null ? pricingName(a.current.pricing) : money(a.current.total)}';
+  }
 
   Future<_ChatData> load(PlatformRepositories r) async {
-    final convs = await r.conversations();
+    final me = r.currentAccount?.id;
+    if (me == null) throw const ApiFailure(ApiCodes.notSignedIn);
+    // The conversation, its messages and the block list do not depend on
+    // each other: ask for them together.
+    final convsF = r.conversations();
+    final msgsF = r.messages(widget.conversationId);
+    final blockedF = r.blocked();
+    final convs = await convsF;
     final c = convs.firstWhere((c) => c.id == widget.conversationId,
         orElse: () => throw const ApiFailure(ApiCodes.notFound));
-    final me = r.currentAccount!.id;
-    final msgs = await r.messages(c.id);
-    final cards = <String, String>{};
-    for (final m in msgs) {
-      if (m.refId == null) continue;
-      if (m.kind == MessageKind.demandCard) {
-        cards[m.refId!] = (await r.demand(m.refId!))?.current.title ?? '';
-      } else if (m.kind == MessageKind.quoteCard) {
-        final a = await r.application(m.refId!);
-        if (a != null) {
-          final d = await r.demand(a.demandId);
-          cards[m.refId!] =
-              '${d?.current.title ?? ''}|${a.demandId}|${a.current.total == null ? pricingName(a.current.pricing) : money(a.current.total)}';
-        }
-      }
+    final otherF = r.account(c.otherSide(me));
+    final msgs = await msgsF;
+    final missing = [
+      for (final m in msgs)
+        if (m.refId != null &&
+            (m.kind == MessageKind.demandCard ||
+                m.kind == MessageKind.quoteCard) &&
+            !_cards.containsKey(m.refId))
+          m
+    ];
+    await Future.wait([
+      for (final m in missing)
+        _card(r, m).then((v) => _cards[m.refId!] = v,
+            onError: (Object _) {/* drawn as unavailable; retried later */})
+    ]);
+    final blocked = (await blockedF).contains(c.otherSide(me));
+    final other = await otherF;
+    _shown = _signature(msgs);
+    if (c.unread > 0 && !_readSent) {
+      // Once per batch of unread: the reload this causes sees it read.
+      _readSent = true;
+      unawaited(r.markConversationRead(c.id).catchError((Object _) {
+        _readSent = false;
+      }));
     }
-    if (c.unread > 0) await r.markConversationRead(c.id);
-    return _ChatData(c, await r.account(c.otherSide(me)), msgs, cards,
-        (await r.blocked()).contains(c.otherSide(me)));
+    return _ChatData(c, other, msgs, Map.of(_cards), blocked);
   }
 
   Future<void> send() async {
     final text = input.text.trim();
     if (text.isEmpty) return;
     input.clear();
+    setState(() => _pending.add(text));
     final m = await attempt(
         context,
         () => context.repos
             .send(widget.conversationId, MessageKind.text, text: text));
-    if (m == null) input.text = text;
+    if (m != null && mounted) await _refresh();
+    if (!mounted) return;
+    setState(() => _pending.remove(text));
+    if (m == null && input.text.isEmpty) input.text = text;
   }
 
   Future<void> more(_ChatData data) async {
@@ -136,10 +231,19 @@ class _ChatPageState extends State<ChatPage> {
     final t = YTokens.of(context);
     return Live<_ChatData>(
         load: load,
+        reloadKey: widget.conversationId,
+        refresh: _refresh,
         loading: const SkeletonPage(avatar: true),
         error: (context, e) => PageScaffold(
             title: '',
-            body: EmptyState(icon: Icons.error_outline, title: failureText(e))),
+            body: Center(
+                child: EmptyState(
+                    icon: Icons.error_outline,
+                    title: failureText(e),
+                    action: OutlinedButton(
+                        onPressed: _refresh,
+                        child:
+                            Text(tr3('重试', 'Қайталау', 'Повторить')))))),
         builder: (context, data) {
           final me = context.repos.currentAccount?.id;
           final name = deletedName(data.other);
@@ -209,8 +313,13 @@ class _ChatPageState extends State<ChatPage> {
                     child: ListView.builder(
                         reverse: true,
                         padding: const EdgeInsets.all(16),
-                        itemCount: data.messages.length,
+                        itemCount: data.messages.length + _pending.length,
                         itemBuilder: (context, i) {
+                          if (i < _pending.length) {
+                            return _PendingBubble(
+                                text: _pending[_pending.length - 1 - i]);
+                          }
+                          i -= _pending.length;
                           final m = data.messages[data.messages.length - 1 - i];
                           return _Bubble(
                               message: m,
@@ -369,11 +478,7 @@ class _Bubble extends StatelessWidget {
                 : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
             color: mine ? t.ink : t.surface,
-            borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(YRadius.bubble),
-                topRight: const Radius.circular(YRadius.bubble),
-                bottomLeft: Radius.circular(mine ? 18 : 4),
-                bottomRight: Radius.circular(mine ? 4 : 18))),
+            borderRadius: _bubbleRadius(mine)),
         child: content);
     return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -401,3 +506,39 @@ class _Bubble extends StatelessWidget {
             ]));
   }
 }
+
+/// A text still on its way: faded, with a clock instead of the time.
+class _PendingBubble extends StatelessWidget {
+  const _PendingBubble({required this.text});
+  final String text;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Opacity(
+              opacity: 0.6,
+              child: Container(
+                  constraints: BoxConstraints(
+                      maxWidth: MediaQuery.sizeOf(context).width * 0.72),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                      color: t.ink,
+                      borderRadius: _bubbleRadius(true)),
+                  child: Text(text,
+                      style: TextStyle(color: t.bg, height: 1.35)))),
+          Padding(
+              padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
+              child: Icon(Icons.schedule, size: 12, color: t.muted)),
+        ]));
+  }
+}
+
+/// Bubbles point their tail at the sender's side.
+BorderRadius _bubbleRadius(bool mine) => BorderRadius.only(
+    topLeft: const Radius.circular(YRadius.bubble),
+    topRight: const Radius.circular(YRadius.bubble),
+    bottomLeft: Radius.circular(mine ? 18 : 4),
+    bottomRight: Radius.circular(mine ? 4 : 18));

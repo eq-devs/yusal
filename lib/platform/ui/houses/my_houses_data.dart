@@ -125,22 +125,32 @@ class MyHouse {
 Future<List<MyHouse>> loadMyHouses(
     PlatformRepositories r, ProjectStore store) async {
   if (r.currentAccount == null) return const [];
-  final designs = {for (final e in await store.listProjects()) e.id: e};
-  final demands = (await r.myDemands())
+  // Independent reads go out together instead of one after another.
+  final postsF = _quiet(r.myPosts);
+  final projectsF = store.listProjects();
+  final demandsF = r.myDemands();
+  final countsF = r.myQuoteCounts();
+  // Waits for all three, so a failure of one leaves none unhandled, and
+  // rethrows the first failure as it is.
+  await Future.wait<Object?>([projectsF, demandsF, countsF]);
+  final designs = {for (final e in await projectsF) e.id: e};
+  final counts = await countsF;
+  final demands = (await demandsF)
       .where((d) =>
           d.status != DemandStatus.draft && d.status != DemandStatus.rejected)
       .toList();
-  final counts = await r.myQuoteCounts();
   final byKey = <String, MyHouse>{};
-  final snaps = <String, DesignSnapshot?>{};
+  final snaps = <String, Future<DesignSnapshot?>>{};
   for (final d in demands) {
     final sid = d.current.snapshotId;
-    DesignSnapshot? snap;
     if (sid != null) {
-      snap = snaps.containsKey(sid)
-          ? snaps[sid]
-          : snaps[sid] = await _quiet(() => r.snapshot(sid, demandId: d.id));
+      snaps[sid] ??= _quiet(() => r.snapshot(sid, demandId: d.id));
     }
+  }
+  final coopsF = Future.wait([for (final d in demands) r.cooperationsFor(d.id)]);
+  for (final d in demands) {
+    final sid = d.current.snapshotId;
+    final snap = sid == null ? null : await snaps[sid];
     // One house per design: the linked project, else the design the
     // published extract came from, else the demand on its own.
     final pid = d.designProjectId ?? snap?.projectId;
@@ -168,7 +178,7 @@ Future<List<MyHouse>> loadMyHouses(
   }
   // Houses I shared: attach critiques to the house they belong to, or
   // list a shared-only design as its own house.
-  for (final p in await _quiet(r.myPosts) ?? const <HousePost>[]) {
+  for (final p in await postsF ?? const <HousePost>[]) {
     if (p.status != PostStatus.published) continue;
     final existing = byKey[p.projectId] ??
         byKey.values.where((h) => h.postId == p.id).firstOrNull;
@@ -182,9 +192,12 @@ Future<List<MyHouse>> loadMyHouses(
     h.comments = p.commentCount;
     h.sharedAt = p.updatedAt;
   }
+  final coopLists = await coopsF;
+  final coops = {
+    for (var i = 0; i < demands.length; i++) demands[i].id: coopLists[i]
+  };
   for (final h in byKey.values)
-    for (final d in h.demands)
-      h.cooperations.addAll(await r.cooperationsFor(d.id));
+    for (final d in h.demands) h.cooperations.addAll(coops[d.id]!);
   final list = byKey.values.toList()
     ..sort((a, b) => _latest(b).compareTo(_latest(a)));
   return list;

@@ -578,36 +578,34 @@ class Cover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
-    // A drawing is a sheet of paper: it keeps the light backing at night.
-    final pairs =
-        t.dark && image == null && child == null ? _nightPairs : _pairs;
+    final pairs = t.dark ? _nightPairs : _pairs;
     final (a, b) = pairs[seed.hashCode.abs() % pairs.length];
+    // A drawing (a picture, or a plan drawn in [child]) sits on its own
+    // sheet of paper, light at night too. The tinted gradient and icon are
+    // only for a house with nothing to draw: a plan that is still loading
+    // shows bare paper, so the icon never flashes before it.
+    final sheet = image != null || child != null;
     return ClipRRect(
         borderRadius: BorderRadius.circular(yRadius),
         child: Container(
             height: height,
-            // A drawing sits on its own sheet of paper; the tinted
-            // gradient is only the placeholder for a house without one.
-            decoration: image != null
+            decoration: sheet
                 ? BoxDecoration(
                     color: YTokens.paper,
-                    image:
-                        DecorationImage(image: image!, fit: BoxFit.contain))
+                    image: image == null
+                        ? null
+                        : DecorationImage(image: image!, fit: BoxFit.contain))
                 : BoxDecoration(
                     gradient: LinearGradient(
                         colors: [a, b],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight)),
-            child: Stack(children: [
-              if (image == null)
-                Center(
+            child: sheet
+                ? (image == null ? child : null)
+                : Center(
                     child: Icon(icon,
                         size: height * 0.32,
-                        color: (t.dark && child == null
-                                ? Colors.white
-                                : Colors.black)
-                            .withValues(alpha: 0.25))),
-              if (child != null) Positioned.fill(child: child!),
-            ])));
+                        color: (t.dark ? Colors.white : Colors.black)
+                            .withValues(alpha: 0.25)))));
   }
 }

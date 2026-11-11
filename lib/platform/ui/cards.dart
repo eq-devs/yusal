@@ -8,6 +8,7 @@ import 'l10n.dart';
 import 'scope.dart';
 import 'theme.dart';
 import 'widgets.dart';
+import 'me/trust_pages.dart';
 
 IconData demandIcon(Demand d) => d.type == DemandType.hire
     ? Icons.engineering_outlined
@@ -202,6 +203,10 @@ class ProfileCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               fontSize: YFont.body, fontWeight: FontWeight.w700))),
+                  if (p.verified) ...[
+                    const VerifiedBadge(),
+                    const SizedBox(width: 6),
+                  ],
                   StatusPill(profileKindName(p.kind)),
                 ]),
                 const SizedBox(height: 3),

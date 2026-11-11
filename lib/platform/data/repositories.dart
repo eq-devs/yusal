@@ -1,7 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show Listenable;
+import 'dart:typed_data';
+
+import '../domain/admin_models.dart';
 import '../domain/models.dart';
+
+export '../domain/admin_models.dart';
 
 /// Repository interfaces of the platform. The interface only talks to these;
 /// today they are served by `MockBackend`, later by a real backend. Every
@@ -298,12 +303,62 @@ abstract interface class PostRepository {
 
 abstract interface class ModerationRepository {
   Future<void> report(ReportTarget target, String targetId, String reason);
-  Future<List<Demand>> reviewQueue();
+
+  /// Asks a moderator to look again at a decision about the caller's own
+  /// demand, profile, house (post) or account.
+  Future<Appeal> fileAppeal(String target, String targetId, String text);
+  Future<List<Appeal>> myAppeals();
+}
+
+/// Trust and reach for workers, and the user's push preferences.
+abstract interface class TrustRepository {
+  /// Sends a profile for verification: a phone and photos of past sites.
+  Future<Verification> requestVerification(
+      String profileId, String phone, List<Uint8List> photos,
+      {String note = ''});
+  Future<Verification?> myVerification(String profileId);
+  Future<DemandAlert> demandAlert();
+  Future<DemandAlert> saveDemandAlert(DemandAlert alert);
+  Future<NotificationSettings> notificationSettings();
+  Future<NotificationSettings> saveNotificationSettings(NotificationSettings s);
+}
+
+/// The back office. Every call checks the caller's role.
+abstract interface class AdminRepository {
+  Future<AdminTodo> todo();
+  Future<AdminDashboard> dashboard();
+  Future<Paged<Demand>> reviewQueue({int page = 1, int pageSize = 20});
+  Future<Paged<Demand>> adminDemands(
+      {DemandStatus? status, String query = '', int page = 1, int pageSize = 20});
   Future<void> approve(String demandId);
+
+  /// [reason] is free text or a preset code (`code:<name>`).
   Future<void> reject(String demandId, String reason);
-  Future<List<Report>> reports();
+  Future<BatchResult> decideMany(List<String> ids, bool approve, {String reason = ''});
+  Future<Paged<ReportView>> reports(
+      {ReportStatus? status, int page = 1, int pageSize = 20});
   Future<void> resolveReport(String reportId, bool upheld, String note);
-  Future<List<AuditEntry>> audit();
+  Future<Paged<Appeal>> appeals(
+      {AppealStatus? status, int page = 1, int pageSize = 20});
+  Future<void> resolveAppeal(String id, bool accept, String note);
+  Future<Paged<Verification>> verifications(
+      {VerificationStatus? status, int page = 1, int pageSize = 20});
+  Future<void> resolveVerification(String id, bool approve, String note);
+  Future<void> setRestriction(String accountId, bool restricted, String note);
+  Future<void> setPostHidden(String postId, bool hidden, String note);
+  Future<Paged<AuditEntry>> audit(
+      {String? by, String? targetId, int page = 1, int pageSize = 20});
+  Future<Paged<AdminUserRow>> users(
+      {String query = '',
+      bool restricted = false,
+      bool admins = false,
+      int page = 1,
+      int pageSize = 20});
+  Future<List<AdminUserRow>> team();
+  Future<void> setRole(String accountId, String? role);
+  Future<AccountDetail> accountDetail(String accountId);
+  Future<PushPolicy> pushPolicy();
+  Future<PushPolicy> savePushPolicy(PushPolicy policy);
 }
 
 /// Everything the platform interface needs, in one bundle.
@@ -321,4 +376,6 @@ abstract interface class PlatformRepositories
         SnapshotRepository,
         BackupRepository,
         PostRepository,
-        ModerationRepository {}
+        ModerationRepository,
+        TrustRepository,
+        AdminRepository {}

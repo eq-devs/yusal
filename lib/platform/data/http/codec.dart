@@ -52,7 +52,12 @@ Account accountFrom(Map<String, dynamic> u) => Account(
     deleted: u['deleted'] == true || u['status'] == 'deleted',
     restricted: u['restricted'] == true || u['status'] == 'blocked',
     isAdmin: u['is_admin'] == true,
+    adminRole: (u['admin_role'] as String?)?.nullIfEmpty,
     createdAt: _tt(u['created_at']));
+
+extension on String {
+  String? get nullIfEmpty => isEmpty ? null : this;
+}
 
 // ── profiles ──
 
@@ -86,7 +91,8 @@ ServiceProfile profileFrom(Map<String, dynamic> j) => ServiceProfile(
     bio: j['bio'] as String? ?? '',
     works: [for (final w in _maps(j['works'])) _work(w)],
     status: _enum(ProfileStatus.values, j['status'], ProfileStatus.active),
-    showPhone: j['show_phone'] == true);
+    showPhone: j['show_phone'] == true,
+    verified: j['verified'] == true);
 
 Map<String, dynamic> profileJson(ServiceProfile p) => _drop({
       'id': p.id,
@@ -533,7 +539,164 @@ AuditEntry auditFrom(Map<String, dynamic> j) => AuditEntry(
     at: _tt(j['at']),
     action: j['action'] as String? ?? '',
     targetId: j['target_id'] as String? ?? '',
-    reason: j['reason'] as String? ?? '');
+    reason: j['reason'] as String? ?? '',
+    target: j['target'] as String? ?? '',
+    title: j['title'] as String? ?? '',
+    byName: j['by_name'] as String? ?? '');
+
+// ── back office ──
+
+Paged<T> pagedFrom<T>(Object? v, T Function(Map<String, dynamic>) item) {
+  final j = v as Map<String, dynamic>;
+  return Paged([for (final m in _maps(j['items'])) item(m)],
+      total: _i(j['total']) ?? 0,
+      page: _i(j['page']) ?? 1,
+      pageSize: _i(j['page_size']) ?? 20);
+}
+
+ReportView reportViewFrom(Map<String, dynamic> j) => ReportView(
+    report: reportFrom(j),
+    reporterName: j['reporter_name'] as String? ?? '',
+    targetTitle: j['target_title'] as String? ?? '',
+    targetOwnerId: j['target_owner_id'] as String? ?? '',
+    targetOwnerName: j['target_owner_name'] as String? ?? '',
+    postId: j['post_id'] as String?);
+
+Appeal appealFrom(Map<String, dynamic> j) => Appeal(
+    id: j['id'] as String,
+    accountId: j['account_id'] as String? ?? '',
+    accountName: j['account_name'] as String? ?? '',
+    target: j['target'] as String? ?? '',
+    targetId: j['target_id'] as String? ?? '',
+    targetTitle: j['target_title'] as String? ?? '',
+    text: j['text'] as String? ?? '',
+    status: _enum(AppealStatus.values, j['status'], AppealStatus.open),
+    createdAt: _tt(j['created_at']),
+    handledAt: _t(j['handled_at']),
+    resolution: j['resolution'] as String? ?? '');
+
+Verification verificationFrom(Map<String, dynamic> j) => Verification(
+    id: j['id'] as String,
+    profileId: j['profile_id'] as String? ?? '',
+    ownerId: j['owner_id'] as String? ?? '',
+    ownerName: j['owner_name'] as String? ?? '',
+    name: j['name'] as String? ?? '',
+    phone: j['phone'] as String? ?? '',
+    photos: _strs(j['photos']),
+    note: j['note'] as String? ?? '',
+    status: _enum(VerificationStatus.values, j['status'], VerificationStatus.pending),
+    createdAt: _tt(j['created_at']),
+    resolution: j['resolution'] as String? ?? '');
+
+DemandAlert alertFrom(Map<String, dynamic> j) => DemandAlert(
+    on: j['on'] == true,
+    regions: _strs(j['regions']),
+    trades: _strs(j['trades']),
+    types: [
+      for (final t in _strs(j['types']))
+        for (final e in DemandType.values)
+          if (e.name == t) e
+    ]);
+
+Map<String, dynamic> alertJson(DemandAlert a) => {
+      'on': a.on,
+      'regions': a.regions,
+      'trades': a.trades,
+      'types': [for (final t in a.types) t.name],
+    };
+
+NotificationSettings settingsFrom(Map<String, dynamic> j) => NotificationSettings(
+    muted: _strs(j['muted']),
+    quietStart: j['quiet_start'] as String? ?? '',
+    quietEnd: j['quiet_end'] as String? ?? '');
+
+PushPolicy policyFrom(Map<String, dynamic> j) => PushPolicy(
+    quietStart: j['quiet_start'] as String? ?? '',
+    quietEnd: j['quiet_end'] as String? ?? '',
+    dailyCap: _i(j['daily_cap']) ?? 0);
+
+TodoList<T> _todo<T>(Object? v, T Function(Map<String, dynamic>) item) {
+  final j = v as Map<String, dynamic>? ?? const {};
+  return TodoList(_i(j['count']) ?? 0, [for (final m in _maps(j['items'])) item(m)]);
+}
+
+AdminTodo todoFrom(Map<String, dynamic> j,
+        Cooperation Function(Map<String, dynamic>) coop) =>
+    AdminTodo(
+        review: _todo(j['review'], demandFrom),
+        reports: _todo(j['reports'], reportFrom),
+        appeals: _todo(j['appeals'], appealFrom),
+        verifications: _todo(j['verifications'], verificationFrom),
+        disputes: _todo(j['disputes'], coop),
+        health: _strs(j['health']));
+
+Map<String, int> _ints(Object? v) => {
+      for (final e in (v as Map<String, dynamic>? ?? const {}).entries)
+        e.key: (e.value as num?)?.toInt() ?? 0
+    };
+
+AdminDashboard dashboardFrom(Map<String, dynamic> j) => AdminDashboard(
+    today: _ints(j['today']),
+    daily: [
+      for (final d in _maps(j['daily']))
+        DashboardDay(d['day'] as String? ?? '',
+            active: _i(d['active']) ?? 0,
+            demands: _i(d['demands']) ?? 0,
+            quotes: _i(d['quotes']) ?? 0)
+    ],
+    funnel: [
+      for (final f in _maps(j['funnel']))
+        (f['key'] as String? ?? '', _i(f['count']) ?? 0)
+    ],
+    regions: [
+      for (final r in _maps(j['regions']))
+        RegionSupply(r['region'] as String? ?? '',
+            demands: _i(r['demands']) ?? 0, workers: _i(r['workers']) ?? 0)
+    ],
+    firstQuoteHours: (j['first_quote_hours'] as num?)?.toDouble(),
+    totals: _ints(j['totals']));
+
+AdminUserRow userRowFrom(Map<String, dynamic> j) => AdminUserRow(
+    id: j['id'] as String,
+    name: j['name'] as String? ?? '',
+    email: j['email'] as String? ?? '',
+    restricted: j['restricted'] == true || j['status'] == 'blocked',
+    deleted: j['status'] == 'deleted',
+    role: (j['admin_role'] as String?)?.nullIfEmpty,
+    createdAt: _t(j['created_at']) ?? DateTime.fromMillisecondsSinceEpoch(0));
+
+AccountDetail accountDetailFrom(Map<String, dynamic> j,
+    Cooperation Function(Map<String, dynamic>) coop) {
+  final a = j['account'] as Map<String, dynamic>;
+  return AccountDetail(
+      account: Account(
+          id: a['id'] as String,
+          phone: a['phone'] as String? ?? '',
+          displayName: a['name'] as String? ?? '',
+          createdAt: _tt(a['created_at']),
+          phoneVerified: false,
+          deleted: a['status'] == 'deleted',
+          restricted: a['restricted'] == true,
+          adminRole: (a['admin_role'] as String?)?.nullIfEmpty),
+      email: a['email'] as String? ?? '',
+      lastLogin: _t(a['last_login_at']),
+      profiles: [for (final p in _maps(j['profiles'])) profileFrom(p)],
+      demands: [for (final d in _maps(j['demands'])) demandFrom(d)],
+      applications: _i(j['applications']) ?? 0,
+      cooperations: [for (final c in _maps(j['cooperations'])) coop(c)],
+      posts: [
+        for (final p in _maps(j['posts']))
+          (
+            id: p['id'] as String,
+            title: p['title'] as String? ?? '',
+            hidden: p['status'] == 'hidden'
+          )
+      ],
+      reportsAbout: [for (final r in _maps(j['reports_about'])) reportFrom(r)],
+      reportsFiled: _i(j['reports_filed']) ?? 0,
+      appeals: [for (final x in _maps(j['appeals'])) appealFrom(x)],
+      audit: [for (final e in _maps(j['audit'])) auditFrom(e)]);
+}
 
 PostBuild postBuildFrom(Map<String, dynamic> j) => PostBuild(
     builders: [

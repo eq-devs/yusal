@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/core/commands/house_templates.dart';
 import 'package:yusal/platform/data/mock/mock_backend.dart';
@@ -430,12 +431,163 @@ void main() {
       expect(d.status, DemandStatus.pendingReview);
       await expectLater(b.approve(d.id), throwsA(isA<ApiFailure>()));
       b.signInAs(SeedIds.admin);
-      expect(await b.reviewQueue(), hasLength(1));
+      expect((await b.reviewQueue()).items, hasLength(1));
       await b.approve(d.id);
       expect(b.demands[d.id]!.status, DemandStatus.open);
       await b.resolveReport('rep_seed', true, '工资信息虚假');
       expect(b.demands['dem_rebar']!.status, DemandStatus.rejected);
-      expect((await b.audit()).first.by, SeedIds.admin);
+      final last = (await b.audit()).items.first;
+      expect(last.by, SeedIds.admin);
+      expect(last.target, 'demand');
+      expect(last.title, isNotEmpty);
+    });
+
+    test('roles: viewers read, only superadmins grant, nobody changes their own',
+        () async {
+      final b = backend();
+      b.signInAs(SeedIds.admin);
+      expect(b.currentAccount!.role, AdminRoles.superadmin);
+      await b.setRole(SeedIds.owner2, AdminRoles.viewer);
+      await expectLater(b.setRole(SeedIds.admin, null), throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.owner2);
+      expect((await b.todo()).total, greaterThanOrEqualTo(0));
+      await expectLater(b.approve('dem_rebar'), throwsA(isA<ApiFailure>()));
+      await expectLater(
+          b.setRole(SeedIds.owner, AdminRoles.viewer), throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.admin);
+      await b.setRole(SeedIds.owner2, null);
+      expect(b.accounts[SeedIds.owner2]!.role, isNull);
+    });
+
+    test('a reported house is hidden, the owner appeals and it comes back',
+        () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner2);
+      await b.report(ReportTarget.post, 'post_aigerim', 'code:fake');
+      b.signInAs(SeedIds.admin);
+      final open = await b.reports(status: ReportStatus.open);
+      final v = open.items.singleWhere((r) => r.report.targetId == 'post_aigerim');
+      expect(v.targetOwnerId, SeedIds.owner);
+      expect(v.targetTitle, isNotEmpty);
+      await b.resolveReport(v.report.id, true, 'code:fake');
+      expect(b.posts['post_aigerim']!.status, PostStatus.hidden);
+      expect(
+          b.notices.values.where((n) =>
+              n.accountId == SeedIds.owner && n.kind == NoticeKind.contentRemoved),
+          isNotEmpty);
+      expect(
+          b.notices.values.where((n) =>
+              n.accountId == SeedIds.owner2 && n.kind == NoticeKind.reportResolved),
+          isNotEmpty);
+
+      b.signInAs(SeedIds.owner);
+      final appeal = await b.fileAppeal('post', 'post_aigerim', '是我自己的房子');
+      b.signInAs(SeedIds.owner2);
+      await expectLater(
+          b.fileAppeal('post', 'post_aigerim', 'x'), throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.admin);
+      expect((await b.todo()).appeals.count, 1);
+      await b.resolveAppeal(appeal.id, true, '误判');
+      expect(b.posts['post_aigerim']!.status, PostStatus.published);
+      b.signInAs(SeedIds.owner);
+      expect((await b.myAppeals()).single.status, AppealStatus.accepted);
+    });
+
+    test('a reported comment is removed and the house recounts', () async {
+      final b = backend();
+      final c = b.commentsById.values.firstWhere((c) => c.parentId == null);
+      final before = b.posts[c.postId]!.commentCount;
+      b.signInAs(c.authorId == SeedIds.owner2 ? SeedIds.mason : SeedIds.owner2);
+      await b.report(ReportTarget.comment, c.id, 'code:abuse');
+      b.signInAs(SeedIds.admin);
+      final v = (await b.reports()).items.singleWhere((r) => r.report.targetId == c.id);
+      expect(v.postId, c.postId);
+      await b.resolveReport(v.report.id, true, 'code:abuse');
+      expect(b.commentsById.containsKey(c.id), isFalse);
+      expect(b.posts[c.postId]!.commentCount, lessThan(before));
+    });
+
+    test('an upheld profile report keeps it hidden from its owner', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      await b.report(ReportTarget.profile, 'prof_mason', 'code:fake');
+      b.signInAs(SeedIds.admin);
+      final v = (await b.reports()).items.singleWhere((r) => r.report.targetId == 'prof_mason');
+      await b.resolveReport(v.report.id, true, 'code:fake');
+      b.signInAs(SeedIds.mason);
+      final p = b.profiles['prof_mason']!;
+      final saved = await b.saveProfile(p.copyWith(status: ProfileStatus.active));
+      expect(saved.status, ProfileStatus.hidden);
+    });
+
+    test('restriction can be lifted; admins cannot be restricted', () async {
+      final b = backend();
+      b.signInAs(SeedIds.admin);
+      await b.setRestriction(SeedIds.mason, true, 'code:spam');
+      expect(b.accounts[SeedIds.mason]!.restricted, isTrue);
+      expect((await b.users(restricted: true)).items.map((u) => u.id), [SeedIds.mason]);
+      await b.setRestriction(SeedIds.mason, false, '已核实');
+      expect(b.accounts[SeedIds.mason]!.restricted, isFalse);
+      await b.setRole(SeedIds.owner2, AdminRoles.moderator);
+      await expectLater(
+          b.setRestriction(SeedIds.owner2, true, 'x'), throwsA(isA<ApiFailure>()));
+      final detail = await b.accountDetail(SeedIds.mason);
+      expect(detail.audit.map((e) => e.action), containsAll(['restrict', 'unrestrict']));
+    });
+
+    test('batch decisions report what changed meanwhile', () async {
+      final b = backend();
+      b.autoReviewDelay = null;
+      final a = await publishAsOwner(b);
+      final c = await publishAsOwner(b, text: '第二个');
+      b.signInAs(SeedIds.admin);
+      await b.approve(a.id);
+      final r = await b.decideMany([a.id, c.id], true);
+      expect(r.done, 1);
+      expect(r.failed, [a.id]);
+    });
+  });
+
+  group('trust', () {
+    test('verification by a moderator marks the profile verified', () async {
+      final b = backend();
+      b.signInAs(SeedIds.mason);
+      final v = await b.requestVerification(
+          'prof_mason', '+77010000000', [Uint8List.fromList([1, 2, 3])]);
+      expect((await b.myVerification('prof_mason'))!.id, v.id);
+      b.signInAs(SeedIds.admin);
+      final pending = await b.verifications(status: VerificationStatus.pending);
+      expect(pending.items.single.photos.single, startsWith('data:'));
+      await b.resolveVerification(v.id, true, '');
+      expect(b.profiles['prof_mason']!.verified, isTrue);
+      b.signInAs(SeedIds.mason);
+      final p = b.profiles['prof_mason']!;
+      expect((await b.saveProfile(p.copyWith(bio: '改了简介'))).verified, isTrue);
+    });
+
+    test('alerts notify matching workers when a demand opens', () async {
+      final b = backend();
+      b.signInAs(SeedIds.mason);
+      await b.saveDemandAlert(const DemandAlert(on: true, types: [DemandType.contract]));
+      b.signInAs(SeedIds.electrician);
+      await b.saveDemandAlert(const DemandAlert(on: true, types: [DemandType.hire]));
+      final d = await publishAsOwner(b);
+      expect(b.demands[d.id]!.status, DemandStatus.open);
+      bool told(String who) => b.notices.values.any((n) =>
+          n.accountId == who && n.kind == NoticeKind.newDemandMatch && n.refId == d.id);
+      expect(told(SeedIds.mason), isTrue);
+      expect(told(SeedIds.electrician), isFalse);
+    });
+
+    test('only community and alert pushes can be muted', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      await b.saveNotificationSettings(
+          const NotificationSettings(muted: [PushCategory.community]));
+      expect((await b.notificationSettings()).muted, [PushCategory.community]);
+      await expectLater(
+          b.saveNotificationSettings(const NotificationSettings(muted: ['deals'])),
+          throwsA(isA<ApiFailure>()));
     });
   });
 

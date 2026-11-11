@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../domain/models.dart';
 import '../mock/mock_backend.dart';
@@ -127,6 +130,7 @@ class HttpBackend extends MockBackend {
     final req = http.Request(method, uri);
     req.headers['Accept'] = 'application/json';
     if (token != null) req.headers['Authorization'] = 'Bearer $token';
+    if (_deviceId != null) req.headers['X-Device-Id'] = _deviceId!;
     if (body != null) {
       req.headers['Content-Type'] = 'application/json';
       req.body = jsonEncode(body);
@@ -186,12 +190,55 @@ class HttpBackend extends MockBackend {
     _refresh = data['refresh_token'] as String?;
   }
 
+  /// The refresh token lives in the platform keystore (Keychain, Android
+  /// Keystore, encrypted on the web). Where that is missing (tests, an old
+  /// desktop) it falls back to plain preferences; a token found there from
+  /// an older build moves to the keystore on the next save.
+  static const _vault = FlutterSecureStorage();
+
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
+    try {
+      if (_refresh == null) {
+        await _vault.delete(key: _refreshKey);
+      } else {
+        await _vault.write(key: _refreshKey, value: _refresh!);
+      }
+      await prefs.remove(_refreshKey);
+      return;
+    } catch (_) {
+      // No keystore here: keep it in preferences.
+    }
     if (_refresh == null) {
       await prefs.remove(_refreshKey);
     } else {
       await prefs.setString(_refreshKey, _refresh!);
+    }
+  }
+
+  Future<String?> _savedRefresh() async {
+    String? token;
+    try {
+      token = await _vault.read(key: _refreshKey);
+    } catch (_) {
+      // No keystore: preferences only.
+    }
+    final prefs = await SharedPreferences.getInstance();
+    return token ?? prefs.getString(_refreshKey);
+  }
+
+  /// A random id for this install, sent as `X-Device-Id` so the dashboard
+  /// counts active devices, guests included. Not tied to the account.
+  String? _deviceId;
+  static const _deviceKey = 'yusal_api.device_id';
+
+  Future<void> _loadDeviceId() async {
+    if (_deviceId != null) return;
+    final prefs = await SharedPreferences.getInstance();
+    _deviceId = prefs.getString(_deviceKey);
+    if (_deviceId == null) {
+      _deviceId = const Uuid().v4();
+      await prefs.setString(_deviceKey, _deviceId!);
     }
   }
 
@@ -224,8 +271,8 @@ class HttpBackend extends MockBackend {
 
   Future<void> _restore(int attempt) async {
     if (currentId != null) return;
-    final prefs = await SharedPreferences.getInstance();
-    _refresh = prefs.getString(_refreshKey);
+    await _loadDeviceId();
+    _refresh = await _savedRefresh();
     if (_refresh == null) return;
     try {
       if (!await _refreshTokens()) return;
@@ -1263,31 +1310,195 @@ class HttpBackend extends MockBackend {
   }
 
   @override
-  Future<List<Demand>> reviewQueue() async =>
-      [for (final j in await _list('/client/admin/review-queue')) demandFrom(j)];
+  Future<Appeal> fileAppeal(String target, String targetId, String text) async =>
+      appealFrom(await _write('POST', '/client/appeals',
+              body: {'target': target, 'target_id': targetId, 'text': text})
+          as Map<String, dynamic>);
+
+  @override
+  Future<List<Appeal>> myAppeals() async =>
+      [for (final j in await _list('/client/appeals')) appealFrom(j)];
+
+  // ───────────────────────────── trust ─────────────────────────────
+
+  @override
+  Future<Verification> requestVerification(
+          String profileId, String phone, List<Uint8List> photos,
+          {String note = ''}) async =>
+      verificationFrom(await _write('POST', '/client/profiles/$profileId/verification',
+          body: {'phone': phone, 'note': note, 'photos': photosJson(photos)}) as Map<String, dynamic>);
+
+  @override
+  Future<Verification?> myVerification(String profileId) async {
+    final j = await _call('GET', '/client/profiles/$profileId/verification');
+    return j == null ? null : verificationFrom(j as Map<String, dynamic>);
+  }
+
+  @override
+  Future<DemandAlert> demandAlert() async =>
+      alertFrom(await _call('GET', '/client/demand-alert') as Map<String, dynamic>);
+
+  @override
+  Future<DemandAlert> saveDemandAlert(DemandAlert alert) async => alertFrom(
+      await _write('PUT', '/client/demand-alert', body: alertJson(alert))
+          as Map<String, dynamic>);
+
+  @override
+  Future<NotificationSettings> notificationSettings() async => settingsFrom(
+      await _call('GET', '/client/notification-settings') as Map<String, dynamic>);
+
+  @override
+  Future<NotificationSettings> saveNotificationSettings(NotificationSettings s) async =>
+      settingsFrom(await _write('PUT', '/client/notification-settings', body: {
+        'muted': s.muted,
+        'quiet_start': s.quietStart,
+        'quiet_end': s.quietEnd,
+      }) as Map<String, dynamic>);
+
+  // ───────────────────────────── back office ─────────────────────────────
+
+  Cooperation _coopPlain(Map<String, dynamic> j) => cooperationFrom(j, media: _media);
+
+  Future<Paged<T>> _paged<T>(String path, T Function(Map<String, dynamic>) item,
+          {int page = 1, int pageSize = 20, Map<String, String> query = const {}}) async =>
+      pagedFrom(
+          await _call('GET', path, query: {
+            ...query,
+            'page': '$page',
+            'page_size': '$pageSize',
+          }),
+          item);
+
+  @override
+  Future<AdminTodo> todo() async =>
+      todoFrom(await _call('GET', '/admin/todo') as Map<String, dynamic>, _coopPlain);
+
+  @override
+  Future<AdminDashboard> dashboard() async =>
+      dashboardFrom(await _call('GET', '/admin/dashboard') as Map<String, dynamic>);
+
+  @override
+  Future<Paged<Demand>> reviewQueue({int page = 1, int pageSize = 20}) =>
+      _paged('/admin/review-queue', demandFrom, page: page, pageSize: pageSize);
+
+  @override
+  Future<Paged<Demand>> adminDemands(
+          {DemandStatus? status, String query = '', int page = 1, int pageSize = 20}) =>
+      _paged('/admin/demands', demandFrom, page: page, pageSize: pageSize, query: {
+        if (status != null) 'status': status.name,
+        if (query.trim().isNotEmpty) 'q': query.trim(),
+      });
 
   @override
   Future<void> approve(String demandId) async {
-    await _write('POST', '/client/admin/demands/$demandId/approve');
+    await _write('POST', '/admin/demands/$demandId/approve');
   }
 
   @override
   Future<void> reject(String demandId, String reason) async {
-    await _write('POST', '/client/admin/demands/$demandId/reject',
-        body: {'reason': reason});
+    await _write('POST', '/admin/demands/$demandId/reject', body: {'reason': reason});
   }
 
   @override
-  Future<List<Report>> reports() async =>
-      [for (final j in await _list('/client/admin/reports')) reportFrom(j)];
+  Future<BatchResult> decideMany(List<String> ids, bool approve,
+      {String reason = ''}) async {
+    final j = await _write('POST', '/admin/demands/batch',
+        body: {'ids': ids, 'approve': approve, 'reason': reason}) as Map<String, dynamic>;
+    return BatchResult(_int(j['done']), [for (final f in j['failed'] as List? ?? const []) f as String]);
+  }
+
+  static int _int(Object? v) => (v as num?)?.toInt() ?? 0;
+
+  @override
+  Future<Paged<ReportView>> reports(
+          {ReportStatus? status, int page = 1, int pageSize = 20}) =>
+      _paged('/admin/reports', reportViewFrom,
+          page: page, pageSize: pageSize, query: {if (status != null) 'status': status.name});
 
   @override
   Future<void> resolveReport(String reportId, bool upheld, String note) async {
-    await _write('POST', '/client/admin/reports/$reportId/resolve',
+    await _write('POST', '/admin/reports/$reportId/resolve',
         body: {'upheld': upheld, 'note': note});
   }
 
   @override
-  Future<List<AuditEntry>> audit() async =>
-      [for (final j in await _list('/client/admin/audit')) auditFrom(j)];
+  Future<Paged<Appeal>> appeals(
+          {AppealStatus? status, int page = 1, int pageSize = 20}) =>
+      _paged('/admin/appeals', appealFrom,
+          page: page, pageSize: pageSize, query: {if (status != null) 'status': status.name});
+
+  @override
+  Future<void> resolveAppeal(String id, bool accept, String note) async {
+    await _write('POST', '/admin/appeals/$id/resolve', body: {'accept': accept, 'note': note});
+  }
+
+  @override
+  Future<Paged<Verification>> verifications(
+          {VerificationStatus? status, int page = 1, int pageSize = 20}) =>
+      _paged('/admin/verifications', verificationFrom,
+          page: page, pageSize: pageSize, query: {if (status != null) 'status': status.name});
+
+  @override
+  Future<void> resolveVerification(String id, bool approve, String note) async {
+    await _write('POST', '/admin/verifications/$id/resolve',
+        body: {'accept': approve, 'note': note});
+  }
+
+  @override
+  Future<void> setRestriction(String accountId, bool restricted, String note) async {
+    await _write('POST', '/admin/accounts/$accountId/restriction',
+        body: {'restricted': restricted, 'note': note});
+  }
+
+  @override
+  Future<void> setPostHidden(String postId, bool hidden, String note) async {
+    await _write('POST', '/admin/posts/$postId/visibility',
+        body: {'hidden': hidden, 'note': note});
+  }
+
+  @override
+  Future<Paged<AuditEntry>> audit(
+          {String? by, String? targetId, int page = 1, int pageSize = 20}) =>
+      _paged('/admin/audit', auditFrom, page: page, pageSize: pageSize, query: {
+        if (by != null) 'by': by,
+        if (targetId != null) 'target_id': targetId,
+      });
+
+  @override
+  Future<Paged<AdminUserRow>> users(
+          {String query = '',
+          bool restricted = false,
+          bool admins = false,
+          int page = 1,
+          int pageSize = 20}) =>
+      _paged('/admin/users', userRowFrom, page: page, pageSize: pageSize, query: {
+        if (query.trim().isNotEmpty) 'q': query.trim(),
+        if (restricted) 'restricted': 'true',
+        if (admins) 'admins': 'true',
+      });
+
+  @override
+  Future<List<AdminUserRow>> team() async =>
+      [for (final j in await _list('/admin/team')) userRowFrom(j)];
+
+  @override
+  Future<void> setRole(String accountId, String? role) async {
+    await _write('PUT', '/admin/users/$accountId/role', body: {'role': role ?? ''});
+  }
+
+  @override
+  Future<AccountDetail> accountDetail(String accountId) async {
+    final j = await _call('GET', '/admin/accounts/$accountId') as Map<String, dynamic>;
+    return accountDetailFrom(j, _coopPlain);
+  }
+
+  @override
+  Future<PushPolicy> pushPolicy() async =>
+      policyFrom(await _call('GET', '/admin/push-policy') as Map<String, dynamic>);
+
+  @override
+  Future<PushPolicy> savePushPolicy(PushPolicy p) async => policyFrom(await _write(
+      'PUT', '/admin/push-policy',
+      body: {'quiet_start': p.quietStart, 'quiet_end': p.quietEnd, 'daily_cap': p.dailyCap})
+      as Map<String, dynamic>);
 }

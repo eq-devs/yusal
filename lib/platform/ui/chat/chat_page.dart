@@ -10,6 +10,7 @@ import '../scope.dart';
 import '../components.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../me/trust_pages.dart';
 
 class _ChatData {
   _ChatData(
@@ -267,17 +268,9 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                           if (v == 'unblock')
                             await attempt(
                                 context, () => context.repos.unblock(other));
-                          if (v == 'report' && context.mounted) {
-                            final reason = await askText(
-                                context, tr3('举报', 'Шағым', 'Жалоба'));
-                            if (reason != null && context.mounted)
-                              await attempt(
-                                  context,
-                                  () => context.repos.report(
-                                      ReportTarget.account, other, reason),
-                                  success:
-                                      tr3('已提交', 'Жіберілді', 'Отправлено'));
-                          }
+                          if (v == 'report' && context.mounted)
+                            await reportContent(
+                                context, ReportTarget.account, other);
                         },
                         itemBuilder: (context) => [
                               PopupMenuItem(

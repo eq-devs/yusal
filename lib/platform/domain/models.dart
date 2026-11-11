@@ -15,10 +15,21 @@ class Account {
       this.phoneVerified = true,
       this.deleted = false,
       this.restricted = false,
-      this.isAdmin = false});
+      this.isAdmin = false,
+      this.adminRole});
   final String id, phone, displayName;
   final DateTime createdAt;
   final bool phoneVerified, deleted, restricted, isAdmin;
+
+  /// Back-office role (superadmin, moderator, operator, viewer), or null.
+  final String? adminRole;
+
+  /// The role, with the pre-roles admin flag read as superadmin.
+  String? get role => adminRole ?? (isAdmin ? AdminRoles.superadmin : null);
+
+  /// Whether the role grants [perm] (see [AdminPerms]).
+  bool can(String perm) =>
+      !deleted && (AdminRoles.perms[role] ?? const []).contains(perm);
 
   /// What others see once the account is deleted.
   String get publicName => deleted ? '—' : displayName;
@@ -33,7 +44,46 @@ class Account {
           phoneVerified: phoneVerified,
           deleted: deleted ?? this.deleted,
           restricted: restricted ?? this.restricted,
-          isAdmin: isAdmin);
+          isAdmin: isAdmin,
+          adminRole: adminRole);
+
+  Account withRole(String? role) => Account(
+      id: id,
+      phone: phone,
+      displayName: displayName,
+      createdAt: createdAt,
+      phoneVerified: phoneVerified,
+      deleted: deleted,
+      restricted: restricted,
+      isAdmin: role != null,
+      adminRole: role);
+}
+
+/// Back-office roles, held on the account like the backend.
+abstract final class AdminRoles {
+  static const superadmin = 'superadmin',
+      moderator = 'moderator',
+      operator = 'operator',
+      viewer = 'viewer';
+  static const all = [superadmin, moderator, operator, viewer];
+  static const perms = <String?, List<String>>{
+    superadmin: [
+      AdminPerms.read,
+      AdminPerms.moderate,
+      AdminPerms.operate,
+      AdminPerms.team
+    ],
+    moderator: [AdminPerms.read, AdminPerms.moderate],
+    operator: [AdminPerms.read, AdminPerms.operate],
+    viewer: [AdminPerms.read],
+  };
+}
+
+abstract final class AdminPerms {
+  static const read = 'read',
+      moderate = 'moderate',
+      operate = 'operate',
+      team = 'team';
 }
 
 enum ProfileKind { individual, team }
@@ -94,8 +144,12 @@ class ServiceProfile {
       this.works = const [],
       this.status = ProfileStatus.active,
       this.showPhone = false,
-      this.role = ProRole.worker});
+      this.role = ProRole.worker,
+      this.verified = false});
   final String id, ownerId, name, bio;
+
+  /// A moderator checked the phone and site photos (identity, not quality).
+  final bool verified;
   final ProfileKind kind;
   final ProRole role;
   final List<String> trades, regions;
@@ -132,7 +186,8 @@ class ServiceProfile {
           String? bio,
           List<Work>? works,
           ProfileStatus? status,
-          bool? showPhone}) =>
+          bool? showPhone,
+          bool? verified}) =>
       ServiceProfile(
           id: id,
           ownerId: ownerId,
@@ -151,7 +206,9 @@ class ServiceProfile {
           bio: bio ?? this.bio,
           works: works ?? this.works,
           status: status ?? this.status,
-          showPhone: showPhone ?? this.showPhone);
+          showPhone: showPhone ?? this.showPhone,
+          role: role,
+          verified: verified ?? this.verified);
 }
 
 /// Facts the platform can prove about a profile; nothing invented.
@@ -911,9 +968,27 @@ enum NoticeKind {
   milestoneRequested,
   milestoneAnswered,
   workLogged,
+  contentRemoved,
+  reportResolved,
+  accountRestricted,
+  accountRestored,
+  appealAnswered,
+  verificationApproved,
+  verificationRejected,
+  newDemandMatch,
 }
 
-enum RefType { demand, application, cooperation, conversation, profile, post }
+enum RefType {
+  demand,
+  application,
+  cooperation,
+  conversation,
+  profile,
+  post,
+  report,
+  appeal,
+  account
+}
 
 class AppNotification {
   const AppNotification(
@@ -994,7 +1069,7 @@ class BackupRecord {
 
 // ───────────────────────────── moderation ─────────────────────────────
 
-enum ReportTarget { demand, profile, account, message }
+enum ReportTarget { demand, profile, account, message, post, comment }
 
 enum ReportStatus { open, upheld, dismissed }
 
@@ -1039,9 +1114,18 @@ class AuditEntry {
       required this.at,
       required this.action,
       required this.targetId,
-      required this.reason});
+      required this.reason,
+      this.target = '',
+      this.title = '',
+      this.byName = ''});
   final String by, action, targetId, reason;
   final DateTime at;
+
+  /// What kind of record (demand, post, account…) and its title then.
+  final String target, title;
+
+  /// The decider's name ('' for the automatic check).
+  final String byName;
 }
 
 // ─────────────────────────── house posts ───────────────────────────

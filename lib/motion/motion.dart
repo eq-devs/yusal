@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/gestures.dart' show kTouchSlop;
+import 'package:flutter/cupertino.dart' show CupertinoPageTransition, CupertinoRouteTransitionMixin;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -730,8 +731,19 @@ Widget _shuttle(
 /// its swipe back (Android's default zoom read as a different app). Each
 /// page gets its own [StaggerScope], so its first rows rise in. Under
 /// reduce motion the slide becomes a plain fade.
-class MotionPageTransitionsBuilder extends CupertinoPageTransitionsBuilder {
+// Built on CupertinoRouteTransitionMixin rather than
+// CupertinoPageTransitionsBuilder, which moved from material to cupertino
+// between Flutter releases; the mixin's transition is the same one.
+class MotionPageTransitionsBuilder extends PageTransitionsBuilder {
   const MotionPageTransitionsBuilder();
+
+  @override
+  Duration get transitionDuration =>
+      CupertinoRouteTransitionMixin.kTransitionDuration;
+
+  @override
+  DelegatedTransitionBuilder? get delegatedTransition =>
+      CupertinoPageTransition.delegatedTransition;
 
   @override
   Widget buildTransitions<T>(
@@ -746,8 +758,8 @@ class MotionPageTransitionsBuilder extends CupertinoPageTransitionsBuilder {
           opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
           child: page);
     }
-    return super
-        .buildTransitions(route, context, animation, secondaryAnimation, page);
+    return CupertinoRouteTransitionMixin.buildPageTransitions<T>(
+        route, context, animation, secondaryAnimation, page);
   }
 }
 

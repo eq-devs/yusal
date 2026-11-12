@@ -82,10 +82,13 @@ class FrostedAppBar extends StatelessWidget implements PreferredSizeWidget {
         actions: [...actions, const SizedBox(width: YSpace.xs)],
         bottom: bottom,
         backgroundColor: Colors.transparent,
-        flexibleSpace: ClipRect(
-            child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                child: ColoredBox(color: t.bg.withValues(alpha: 0.88)))));
+        // The app bar gives flexibleSpace loose constraints: without the
+        // expand the frost lays out at height 0 and the bar is see-through.
+        flexibleSpace: SizedBox.expand(
+            child: ClipRect(
+                child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                    child: ColoredBox(color: t.bg.withValues(alpha: 0.88))))));
   }
 }
 

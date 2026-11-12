@@ -32,8 +32,32 @@ class _PlatformShellState extends State<PlatformShell> {
   final segment = ValueNotifier<int?>(null);
   final newDesign = ReloadNotifier();
 
+  // Local designs belong to an account: another account signing in on
+  // this device lists its own.
+  Listenable? _changes;
+  String? _account;
+  void _onAccount() {
+    final id = context.repos.currentAccount?.id;
+    if (id != _account) {
+      _account = id;
+      reload.bump();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final changes = context.repos.changes;
+    if (!identical(changes, _changes)) {
+      _changes?.removeListener(_onAccount);
+      _changes = changes..addListener(_onAccount);
+      _account = context.repos.currentAccount?.id;
+    }
+  }
+
   @override
   void dispose() {
+    _changes?.removeListener(_onAccount);
     reload.dispose();
     segment.dispose();
     newDesign.dispose();

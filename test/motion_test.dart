@@ -16,34 +16,79 @@ double _scaleOf(WidgetTester tester, Finder f) {
 }
 
 void main() {
-  testWidgets('Stagger leaves no Opacity once it finishes', (tester) async {
+  // A row at rest: fully opaque and in place.
+  double opacityOf(WidgetTester tester, String text) => tester
+      .widgetList<Opacity>(
+          find.ancestor(of: find.text(text), matching: find.byType(Opacity)))
+      .fold(1.0, (o, w) => o * w.opacity);
+  double liftOf(WidgetTester tester, String text) =>
+      tester.getTopLeft(find.text(text)).dy;
+
+  testWidgets('Stagger rises rows in one after another and rests at 1',
+      (tester) async {
     await tester.pumpWidget(_app(Column(children: [
       for (var i = 0; i < 3; i++) Stagger(index: i + 1, child: Text('row $i')),
     ])));
-    expect(
-        find.ancestor(of: find.text('row 2'), matching: find.byType(Opacity)),
-        findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(opacityOf(tester, 'row 0'), greaterThan(opacityOf(tester, 'row 2')));
+    expect(opacityOf(tester, 'row 2'), lessThan(1));
+    final rest = <double>[];
     await tester.pumpAndSettle();
-    expect(
-        find.ancestor(of: find.text('row 2'), matching: find.byType(Opacity)),
-        findsNothing);
+    for (var i = 0; i < 3; i++) {
+      expect(opacityOf(tester, 'row $i'), 1);
+      rest.add(liftOf(tester, 'row $i'));
+    }
+    // Rebuilding a rested row keeps it still: the entrance plays once.
+    await tester.pumpWidget(_app(Column(children: [
+      for (var i = 0; i < 3; i++) Stagger(index: i + 1, child: Text('row $i')),
+    ])));
+    expect(opacityOf(tester, 'row 2'), 1);
+    expect(liftOf(tester, 'row 2'), rest[2]);
+  });
+
+  testWidgets('Stagger keeps its child\'s state through the entrance',
+      (tester) async {
+    final key = GlobalKey<State<StatefulWidget>>();
+    await tester.pumpWidget(_app(Stagger(
+        index: 1,
+        child: StatefulBuilder(key: key, builder: (_, __) => const Text('row')))));
+    final before = key.currentState;
+    await tester.pumpAndSettle();
+    expect(key.currentState, same(before));
   });
 
   testWidgets('Stagger shows rows at once under reduce motion', (tester) async {
     await tester.pumpWidget(
         _app(const Stagger(index: 2, child: Text('row')), reduced: true));
-    expect(find.ancestor(of: find.text('row'), matching: find.byType(Opacity)),
-        findsNothing);
-    expect(
-        find.ancestor(of: find.text('row'), matching: find.byType(Transform)),
-        findsNothing);
+    expect(opacityOf(tester, 'row'), 1);
   });
 
   testWidgets('Stagger skips rows past the cap', (tester) async {
     await tester.pumpWidget(
         _app(const Stagger(index: Motion.staggerCap + 1, child: Text('late'))));
-    expect(find.ancestor(of: find.text('late'), matching: find.byType(Opacity)),
-        findsNothing);
+    expect(opacityOf(tester, 'late'), 1);
+  });
+
+  testWidgets('a scope rises its first burst in and lets later rows appear',
+      (tester) async {
+    final more = ValueNotifier(false);
+    await tester.pumpWidget(_app(StaggerScope(
+        child: ValueListenableBuilder<bool>(
+            valueListenable: more,
+            builder: (_, show, __) => Column(children: [
+                  const Stagger(child: Text('first')),
+                  const Stagger(child: Text('second')),
+                  if (show) const Stagger(child: Text('late')),
+                ])))));
+    await tester.pump(const Duration(milliseconds: 40));
+    expect(opacityOf(tester, 'second'), lessThan(1));
+    await tester.pumpAndSettle();
+    // The burst is measured on the wall clock.
+    await tester.runAsync(() => Future<void>.delayed(Motion.burst));
+    more.value = true;
+    await tester.pump();
+    expect(opacityOf(tester, 'late'), 1);
   });
 
   testWidgets('Pressable shrinks while held and returns to 1 on release',
@@ -77,14 +122,22 @@ void main() {
     await g.up();
   });
 
-  testWidgets('PopOnActive hops above 1 mid-way and lands on 1',
+  testWidgets('PopOnActive dips, bounces past 1 and lands on 1',
       (tester) async {
     Widget build(bool on) => _app(Center(
         child: PopOnActive(active: on, child: const Icon(Icons.favorite))));
     await tester.pumpWidget(build(false));
     await tester.pumpWidget(build(true));
-    await tester.pump(Motion.pop * 0.35);
-    expect(_scaleOf(tester, find.byIcon(Icons.favorite)), greaterThan(1));
+    // Dips first, then the bouncy spring carries it past 1.
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(_scaleOf(tester, find.byIcon(Icons.favorite)), lessThan(1));
+    var peak = 0.0;
+    for (var i = 0; i < 40; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      final s = _scaleOf(tester, find.byIcon(Icons.favorite));
+      if (s > peak) peak = s;
+    }
+    expect(peak, greaterThan(1));
     await tester.pumpAndSettle();
     expect(_scaleOf(tester, find.byIcon(Icons.favorite)), closeTo(1, 1e-3));
   });
@@ -292,7 +345,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('sheet'), findsOneWidget);
     expect(scoped, isTrue);
-    expect(StaggerScope.of(ctx), isFalse);
   });
 
   testWidgets('MotionIndexedStack builds pages lazily and keeps them',

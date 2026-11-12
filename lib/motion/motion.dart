@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/gestures.dart' show kTouchSlop;
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -13,88 +12,161 @@ import 'motion_tokens.dart';
 export 'motion_stack.dart';
 export 'motion_tokens.dart';
 
-/// Fades a row in and lifts it [Motion.rise] px, [Motion.staggerStep] after
-/// the row before it. Plays once, on first build. Rows past
-/// [Motion.staggerCap] and anything under reduce motion appear at once.
+/// Fades a row in and lifts it [Motion.rise] px into place, one step after
+/// the row above: ANT's entrance, used by cards, list rows and sheets.
+///
+/// With [index] null the row takes its step from the nearest
+/// [StaggerScope]: rows that arrive together (a page's first rows, a list
+/// that just loaded, a sheet opening) rise in one after another; rows built
+/// after the scope's first [Motion.burst] (scrolled into view, a kept tab
+/// coming back) just appear. Without a scope a null-index row does not
+/// move. A row inside another staggered row does not move either, so a
+/// card's own rows do not rise twice. Rows past [Motion.staggerCap] and
+/// anything under reduce motion appear at once.
 class Stagger extends StatefulWidget {
-  const Stagger({super.key, required this.index, required this.child});
+  const Stagger({super.key, this.index, required this.child, this.rise = true});
 
-  /// Position in the reveal; 0 starts right away.
-  final int index;
+  /// Position in the reveal; 0 starts right away. Null: from the scope.
+  final int? index;
   final Widget child;
+
+  /// False: fade only, for a block that already slides in with its sheet.
+  final bool rise;
 
   @override
   State<Stagger> createState() => _StaggerState();
 }
 
 class _StaggerState extends State<Stagger> with SingleTickerProviderStateMixin {
-  AnimationController? _controller;
-  late Animation<double> _t;
-  bool _decided = false, _done = false;
+  // A motor spring per row, so a row caught mid-entrance just retargets.
+  late final motor.SingleMotionController _c;
+  Timer? _delay;
+  bool _decided = false, _nested = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = motor.SingleMotionController(
+        motion: Motion.rowSpring, vsync: this, initialValue: 1);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_decided) return;
     _decided = true;
-    final i = widget.index;
-    if (i < 0 || i > Motion.staggerCap || Motion.reduced(context)) {
-      _done = true;
-      return;
+    _nested = context.getInheritedWidgetOfExactType<_InStagger>() != null;
+    if (_nested || Motion.reduced(context)) return;
+    final explicit = widget.index;
+    final scope = context
+        .getInheritedWidgetOfExactType<_StaggerScopeMarker>()
+        ?.state;
+    final int? step;
+    if (scope == null || !scope.widget.enabled) {
+      step = explicit;
+    } else {
+      final joined = scope._join();
+      step = joined == null ? null : (explicit ?? joined);
     }
-    final delay = Motion.staggerStep * i;
-    final total = delay + Motion.enter;
-    final c = _controller = AnimationController(vsync: this, duration: total);
-    _t = CurvedAnimation(
-        parent: c,
-        curve: Interval(delay.inMicroseconds / total.inMicroseconds, 1,
-            curve: Motion.settle));
-    c.addStatusListener((s) {
-      if (s == AnimationStatus.completed && mounted) {
-        setState(() => _done = true);
-      }
-    });
-    c.forward();
+    if (step == null || step < 0 || step > Motion.staggerCap) return;
+    _c.value = 0;
+    final delay = Motion.staggerStep * step;
+    if (delay == Duration.zero) {
+      _c.animateTo(1);
+    } else {
+      _delay = Timer(delay, () {
+        if (mounted) _c.animateTo(1);
+      });
+    }
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _delay?.cancel();
+    _c.dispose();
     super.dispose();
   }
 
+  // Always the same wrappers, so the row's own subtree (and its state) is
+  // never rebuilt when the entrance starts or ends. At rest they are a
+  // full opacity and a zero offset, which paint as nothing.
   @override
   Widget build(BuildContext context) {
-    if (_done) return widget.child;
-    return AnimatedBuilder(
-        animation: _t,
-        child: widget.child,
-        builder: (context, child) => Opacity(
-            opacity: _t.value,
-            child: Transform.translate(
-                offset: Offset(0, Motion.rise * (1 - _t.value)),
-                child: child)));
+    if (_nested) return widget.child;
+    return _InStagger(
+        child: AnimatedBuilder(
+            animation: _c,
+            child: widget.child,
+            builder: (context, child) {
+              final v = _c.value.clamp(0.0, 1.0);
+              final rest = v >= 0.999;
+              return Opacity(
+                  alwaysIncludeSemantics: true,
+                  opacity: rest ? 1 : v,
+                  child: Transform.translate(
+                      offset: Offset(0,
+                          widget.rise && !rest ? Motion.rise * (1 - v) : 0),
+                      child: child));
+            }));
   }
 }
 
-/// Marks a subtree (a sheet) whose list groups should reveal their rows
-/// with [Stagger]. List groups ask [StaggerScope.of].
-class StaggerScope extends InheritedWidget {
-  const StaggerScope({super.key, this.enabled = true, required super.child});
-  final bool enabled;
+class _InStagger extends InheritedWidget {
+  const _InStagger({required super.child});
+  @override
+  bool updateShouldNotify(_InStagger oldWidget) => false;
+}
 
+/// Groups the rows of one page, tab or sheet for [Stagger]. Like
+/// flutter_animate, an entrance plays once per mount: the scope's first
+/// burst of rows rises in, and every row built after that just appears.
+/// Every pushed page and every shell tab has one.
+class StaggerScope extends StatefulWidget {
+  const StaggerScope({super.key, this.enabled = true, required this.child});
+  final bool enabled;
+  final Widget child;
+
+  /// True under an enabled scope (sheets, pages, tabs).
   static bool of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<StaggerScope>()?.enabled ??
+      context
+          .getInheritedWidgetOfExactType<_StaggerScopeMarker>()
+          ?.state
+          .widget
+          .enabled ??
       false;
 
   @override
-  bool updateShouldNotify(StaggerScope oldWidget) =>
-      enabled != oldWidget.enabled;
+  State<StaggerScope> createState() => _StaggerScopeState();
 }
 
-/// [showModalBottomSheet] with the settle curve, a content fade, rows that
-/// may stagger in. Opening a sheet is not a confirmation, so there is no
-/// haptic unless a caller asks with `haptic: true`.
+class _StaggerScopeState extends State<StaggerScope> {
+  DateTime? _burstStart;
+  int _burstCount = 0;
+
+  /// The step a newly built row plays at, or null to just appear.
+  int? _join() {
+    final now = DateTime.now();
+    final start = _burstStart ??= now;
+    if (now.difference(start) > Motion.burst) return null;
+    return _burstCount++;
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      _StaggerScopeMarker(state: this, child: widget.child);
+}
+
+class _StaggerScopeMarker extends InheritedWidget {
+  const _StaggerScopeMarker({required this.state, required super.child});
+  final _StaggerScopeState state;
+  @override
+  bool updateShouldNotify(_StaggerScopeMarker oldWidget) => false;
+}
+
+/// The app's bottom sheet, with ANT's account-switcher feel: it settles up
+/// on [Motion.settle], its content fades in behind it, list rows inside
+/// rise in one by one, and opening it gives a light tap (pass
+/// `haptic: false` for a sheet that opens on its own).
 Future<T?> showMotionSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -117,15 +189,16 @@ Future<T?> showMotionSheet<T>({
   Offset? anchorPoint,
   AnimationStyle? sheetAnimationStyle,
   bool? requestFocus,
-  bool haptic = false,
+  bool haptic = true,
 }) {
   final reduced = Motion.reduced(context);
-  if (haptic) HapticFeedback.selectionClick();
+  if (haptic) HapticFeedback.lightImpact();
   return showModalBottomSheet<T>(
       context: context,
       builder: (context) => StaggerScope(
           enabled: !reduced,
-          child: _FadeInOnce(child: Builder(builder: builder))),
+          child: Stagger(
+              index: 0, rise: false, child: Builder(builder: builder))),
       backgroundColor: backgroundColor,
       barrierLabel: barrierLabel,
       elevation: elevation,
@@ -149,40 +222,18 @@ Future<T?> showMotionSheet<T>({
       requestFocus: requestFocus);
 }
 
-/// Fades its child in once over [Motion.fadeIn].
-class _FadeInOnce extends StatefulWidget {
-  const _FadeInOnce({required this.child});
-  final Widget child;
-  @override
-  State<_FadeInOnce> createState() => _FadeInOnceState();
-}
-
-class _FadeInOnceState extends State<_FadeInOnce>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: Motion.fadeIn)..forward();
-  late final Animation<double> _t =
-      CurvedAnimation(parent: _c, curve: Curves.easeOut);
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-      animation: _c,
-      child: widget.child,
-      builder: (context, child) =>
-          _c.isCompleted ? child! : Opacity(opacity: _t.value, child: child));
-}
-
-/// Shrinks a card to [Motion.pressScale] while a finger rests on it, and
-/// springs it back on release. Not for full-width list rows.
+/// Cards shrink a touch under the finger ([Motion.pressScale]) and settle
+/// back on release with a hint of spring, instead of a ripple. A quick tap
+/// still shows the press briefly, so it never reads as missed; a touch
+/// that turns into a scroll lets go at once. Not for full-width list rows.
 class Pressable extends StatefulWidget {
-  const Pressable({super.key, this.enabled = true, required this.child});
+  const Pressable(
+      {super.key,
+      this.enabled = true,
+      this.scale = Motion.pressScale,
+      required this.child});
   final bool enabled;
+  final double scale;
   final Widget child;
   @override
   State<Pressable> createState() => _PressableState();
@@ -190,47 +241,65 @@ class Pressable extends StatefulWidget {
 
 class _PressableState extends State<Pressable> {
   bool _pressed = false;
-  Timer? _wait;
+  Timer? _wait, _release;
   Offset? _origin;
+
+  void _set(bool down) {
+    if (mounted && down != _pressed) setState(() => _pressed = down);
+  }
 
   void _down(PointerDownEvent e) {
     if (!widget.enabled || Motion.reduced(context)) return;
+    _release?.cancel();
     _origin = e.position;
     _wait?.cancel();
-    _wait = Timer(Motion.pressDelay, () {
-      if (mounted) setState(() => _pressed = true);
-    });
+    // A short wait, so a finger that starts a scroll does not squeeze every
+    // card it lands on.
+    _wait = Timer(Motion.pressDelay, () => _set(true));
   }
 
   void _move(PointerMoveEvent e) {
     final o = _origin;
-    if (o != null && (e.position - o).distance > kTouchSlop) _up();
+    if (o != null && (e.position - o).distance > kTouchSlop) _cancel();
   }
 
-  void _up([PointerEvent? _]) {
+  void _up(PointerUpEvent e) {
+    if (_origin == null) return;
+    _origin = null;
+    if (_wait?.isActive ?? false) {
+      // A quick tap: still show the press, briefly.
+      _wait!.cancel();
+      _set(true);
+      _release = Timer(Motion.press, () => _set(false));
+    } else {
+      _set(false);
+    }
+  }
+
+  void _cancel([PointerEvent? _]) {
     _origin = null;
     _wait?.cancel();
-    _wait = null;
-    if (_pressed) setState(() => _pressed = false);
+    _set(false);
   }
 
   @override
   void dispose() {
     _wait?.cancel();
+    _release?.cancel();
     super.dispose();
   }
 
-  // A spring, not a timed tween: a quick press-release-press picks up
-  // from wherever the card is, with its velocity.
+  // A spring, not a timed tween: quick down, a snappy settle back, and a
+  // press-release-press picks up from wherever the card is.
   @override
   Widget build(BuildContext context) => Listener(
       onPointerDown: _down,
       onPointerMove: _move,
       onPointerUp: _up,
-      onPointerCancel: _up,
+      onPointerCancel: _cancel,
       child: motor.SingleMotionBuilder(
-          motion: Motion.quickSpring,
-          value: _pressed ? Motion.pressScale : 1.0,
+          motion: _pressed ? Motion.quickSpring : Motion.releaseSpring,
+          value: _pressed ? widget.scale : 1.0,
           child: widget.child,
           builder: (context, scale, child) =>
               Transform.scale(scale: scale, child: child)));
@@ -369,9 +438,9 @@ class _PressTintFactory extends InteractiveInkFeatureFactory {
           onRemoved: onRemoved);
 }
 
-/// The app's one bounce: when [active] turns true (saved), the child hops
-/// 1 → [Motion.popScale] → 1 once. Un-saving stays still. The caller adds
-/// `HapticFeedback.lightImpact()`.
+/// The app's one bounce: when [active] turns true (saved), the child dips
+/// to [Motion.popFrom] and a bouncy spring carries it past 1 and home.
+/// Un-saving stays still. The caller adds `HapticFeedback.lightImpact()`.
 class PopOnActive extends StatefulWidget {
   const PopOnActive({super.key, required this.active, required this.child});
   final bool active;
@@ -380,54 +449,56 @@ class PopOnActive extends StatefulWidget {
   State<PopOnActive> createState() => _PopOnActiveState();
 }
 
-class _PopOnActiveState extends State<PopOnActive> {
-  int _hops = 0;
+class _PopOnActiveState extends State<PopOnActive>
+    with SingleTickerProviderStateMixin {
+  late final motor.SingleMotionController _c = motor.SingleMotionController(
+      motion: Motion.popSpring, vsync: this, initialValue: 1);
 
   @override
   void didUpdateWidget(PopOnActive old) {
     super.didUpdateWidget(old);
-    if (widget.active && !old.active && !Motion.reduced(context)) _hops++;
+    if (widget.active && !old.active && !Motion.reduced(context)) {
+      _c.value = Motion.popFrom;
+      _c.animateTo(1);
+    }
   }
 
-  // Cue's keyframes: up quickly, then a smooth spring back to rest.
   @override
-  Widget build(BuildContext context) => cue.Cue.onChange(
-      value: _hops,
-      skipFirstAnimation: true,
-      acts: [
-        cue.ScaleAct.keyframed(
-            frames: cue.Keyframes<double>.fractional(const [
-          cue.FKeyframe(1.0, at: 0),
-          cue.FKeyframe(Motion.popScale, at: 0.35, curve: Curves.easeOut),
-          cue.FKeyframe(1.0, at: 1, curve: Curves.easeOutCubic),
-        ], duration: Motion.pop)),
-      ],
-      child: widget.child);
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+      animation: _c,
+      child: widget.child,
+      builder: (context, child) =>
+          Transform.scale(scale: _c.value, child: child));
 }
 
-/// One control changing state (apply → applied): cross-fade with a
-/// [Motion.switchScale] → 1 settle. Key the child by its state:
+/// One control changing state (apply → applied): the new state fades in
+/// from [Motion.switchScale] on cue's smooth spring, so it reads as an
+/// answer. Key the child by its state:
 /// `StateSwitcher(child: KeyedSubtree(key: ValueKey(state), child: ...))`.
 class StateSwitcher extends StatelessWidget {
-  const StateSwitcher({super.key, required this.child});
+  const StateSwitcher({super.key, required this.child, this.alignment});
   final Widget child;
+  final AlignmentGeometry? alignment;
 
   @override
   Widget build(BuildContext context) {
-    final reduced = Motion.reduced(context);
-    return AnimatedSwitcher(
-        duration: reduced ? Motion.fast : Motion.base,
-        reverseDuration: Motion.fast,
-        switchInCurve: Motion.settle,
-        switchOutCurve: Curves.easeOut,
-        transitionBuilder: (child, a) => FadeTransition(
-            opacity: a,
-            child: reduced
-                ? child
-                : ScaleTransition(
-                    scale: Tween<double>(begin: Motion.switchScale, end: 1)
-                        .animate(a),
-                    child: child)),
+    if (Motion.reduced(context)) return child;
+    return cue.Cue.onChange(
+        value: child.key,
+        skipFirstAnimation: true,
+        motion: const cue.CueMotion.smooth(),
+        acts: [
+          const cue.OpacityAct.fadeIn(),
+          cue.ScaleAct(
+              from: Motion.switchScale,
+              alignment: alignment ?? AlignmentDirectional.center),
+        ],
         child: child);
   }
 }
@@ -655,8 +726,10 @@ Widget _shuttle(
           child: child));
 }
 
-/// iOS and macOS: the native horizontal slide with swipe-back. Under
-/// reduce motion it becomes a plain fade.
+/// One way into a page on every platform, as in ANT: the iOS slide with
+/// its swipe back (Android's default zoom read as a different app). Each
+/// page gets its own [StaggerScope], so its first rows rise in. Under
+/// reduce motion the slide becomes a plain fade.
 class MotionPageTransitionsBuilder extends CupertinoPageTransitionsBuilder {
   const MotionPageTransitionsBuilder();
 
@@ -667,51 +740,23 @@ class MotionPageTransitionsBuilder extends CupertinoPageTransitionsBuilder {
       Animation<double> animation,
       Animation<double> secondaryAnimation,
       Widget child) {
+    final page = StaggerScope(child: child);
     if (Motion.reduced(context)) {
       return FadeTransition(
           opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-          child: child);
+          child: page);
     }
     return super
-        .buildTransitions(route, context, animation, secondaryAnimation, child);
-  }
-}
-
-/// Android and the rest: the new page fades in while drifting 12px from
-/// the right on the spring curve; the page underneath stays still. The
-/// full-width iOS slide with parallax felt too strong on Android, whose
-/// system back gesture owns the screen edge anyway.
-class SoftPageTransitionsBuilder extends PageTransitionsBuilder {
-  const SoftPageTransitionsBuilder();
-
-  static const double _shift = 12;
-
-  @override
-  Widget buildTransitions<T>(
-      PageRoute<T> route,
-      BuildContext context,
-      Animation<double> animation,
-      Animation<double> secondaryAnimation,
-      Widget child) {
-    final reduced = Motion.reduced(context);
-    final t = CurvedAnimation(
-        parent: animation, curve: Motion.settle, reverseCurve: Curves.easeIn);
-    final faded = FadeTransition(opacity: t, child: child);
-    if (reduced) return faded;
-    return AnimatedBuilder(
-        animation: t,
-        child: faded,
-        builder: (context, child) => t.value >= 1
-            ? child!
-            : Transform.translate(
-                offset: Offset(_shift * (1 - t.value), 0), child: child));
+        .buildTransitions(route, context, animation, secondaryAnimation, page);
   }
 }
 
 /// The page transitions to put in `ThemeData.pageTransitionsTheme`.
-final motionPageTransitions = PageTransitionsTheme(builders: {
-  for (final p in TargetPlatform.values)
-    p: p == TargetPlatform.iOS || p == TargetPlatform.macOS
-        ? const MotionPageTransitionsBuilder()
-        : const SoftPageTransitionsBuilder(),
+const motionPageTransitions = PageTransitionsTheme(builders: {
+  TargetPlatform.android: MotionPageTransitionsBuilder(),
+  TargetPlatform.iOS: MotionPageTransitionsBuilder(),
+  TargetPlatform.macOS: MotionPageTransitionsBuilder(),
+  TargetPlatform.linux: MotionPageTransitionsBuilder(),
+  TargetPlatform.windows: MotionPageTransitionsBuilder(),
+  TargetPlatform.fuchsia: MotionPageTransitionsBuilder(),
 });

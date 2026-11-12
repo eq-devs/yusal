@@ -6,6 +6,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yusal/platform/ui/widgets.dart';
+import 'package:yusal/platform/ui/shell.dart';
 import 'package:yusal/platform/data/http/http_backend.dart';
 import 'package:yusal/platform/ui/demand/demand_detail_page.dart';
 import 'package:yusal/platform/ui/demand/publish_page.dart';
@@ -95,7 +97,7 @@ Future<void> scrollTo(WidgetTester t, Finder f, {double delta = 300}) async {
 
 Future<void> tab(WidgetTester t, String label) async {
   await t.tap(find.descendant(
-      of: find.byType(NavigationBar), matching: find.text(label)));
+      of: find.byType(ShellBar), matching: find.text(label)));
   await idle(t);
 }
 
@@ -136,7 +138,7 @@ Future<void> signOut(WidgetTester t, HttpBackend repos) async {
 Future<void> answerDialog(WidgetTester t, String text) async {
   await t.enterText(
       find.descendant(
-          of: find.byType(AlertDialog), matching: find.byType(TextField)),
+          of: find.byType(SheetBody), matching: find.byType(TextField)),
       text);
   await tapIt(t, find.widgetWithText(FilledButton, '确定'));
 }

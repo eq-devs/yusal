@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app/settings.dart';
@@ -13,7 +15,9 @@ Uint8List imageBytes(List<int> bytes) =>
 
 /// Shared building blocks of the platform pages.
 
-/// Width-limited page with an app bar and an optional sticky action bar.
+/// Width-limited page with ANT's frosted header and an optional sticky
+/// action bar. The content scrolls under both: the header blurs it, the
+/// action bar fades it out, so neither reads as a hard-edged slab.
 class PageScaffold extends StatelessWidget {
   const PageScaffold(
       {super.key,
@@ -30,22 +34,63 @@ class PageScaffold extends StatelessWidget {
   final bool scroll;
   final EdgeInsets padding;
   @override
+  Widget build(BuildContext context) => Scaffold(
+      extendBodyBehindAppBar: true,
+      extendBody: bottom != null,
+      appBar: FrostedAppBar(title: Text(title), actions: actions),
+      // The scaffold now reports the bars as padding; the content clears
+      // them and still scrolls underneath.
+      body: Builder(builder: (context) {
+        final bars = MediaQuery.paddingOf(context);
+        final inset = padding.copyWith(
+            top: padding.top + bars.top, bottom: padding.bottom + bars.bottom);
+        return MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            removeBottom: true,
+            child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: scroll
+                        ? SingleChildScrollView(padding: inset, child: body)
+                        : Padding(padding: inset, child: body))));
+      }),
+      bottomNavigationBar: bottom == null ? null : ActionBar(child: bottom!));
+}
+
+/// An app bar whose page scrolls under it: the page colour at 88 % over a
+/// blur, as in ANT. Put the page in a Scaffold with
+/// `extendBodyBehindAppBar: true` and pad the content by
+/// `MediaQuery.paddingOf(context).top`.
+class FrostedAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const FrostedAppBar(
+      {super.key, this.title, this.actions = const [], this.bottom});
+  final Widget? title;
+  final List<Widget> actions;
+  final PreferredSizeWidget? bottom;
+
+  @override
+  Size get preferredSize =>
+      Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0));
+
+  @override
   Widget build(BuildContext context) {
-    final content = Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: scroll
-                ? SingleChildScrollView(padding: padding, child: body)
-                : Padding(padding: padding, child: body)));
-    return Scaffold(
-        appBar: AppBar(title: Text(title), actions: actions),
-        body: SafeArea(top: false, child: content),
-        bottomNavigationBar: bottom == null ? null : ActionBar(child: bottom!));
+    final t = YTokens.of(context);
+    return AppBar(
+        title: title,
+        actions: [...actions, const SizedBox(width: YSpace.xs)],
+        bottom: bottom,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: ClipRect(
+            child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                child: ColoredBox(color: t.bg.withValues(alpha: 0.88)))));
   }
 }
 
-/// Sticky bottom bar with a hairline on top, like a booking bar.
+/// Sticky bottom bar for a page's main action. The page fades out under it
+/// instead of meeting a hairline, as ANT's action strip does.
 class ActionBar extends StatelessWidget {
   const ActionBar({super.key, required this.child});
   final Widget child;
@@ -54,11 +99,15 @@ class ActionBar extends StatelessWidget {
     final t = YTokens.of(context);
     return DecoratedBox(
         decoration: BoxDecoration(
-            color: t.bg, border: Border(top: BorderSide(color: t.line))),
+            gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [t.bg.withValues(alpha: 0), t.bg, t.bg],
+                stops: const [0, 0.4, 1])),
         child: SafeArea(
             top: false,
             child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
                 // heightFactor keeps the bar as tall as its content; a plain
                 // Center would take the whole screen as a bottom bar.
                 child: Center(
@@ -85,21 +134,24 @@ class YCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
-    return Pressable(
-        enabled: onTap != null,
-        child: Container(
-            decoration: BoxDecoration(
-                color: color ?? t.card,
-                borderRadius: BorderRadius.circular(yRadius),
-                border: Border.all(color: t.line),
-                boxShadow: shadow ? t.softShadow : null),
-            child: Material(
-                type: MaterialType.transparency,
-                child: InkWell(
+    // A card rises in with its page's first rows (ANT's entrance), and
+    // shrinks a touch under the finger when it opens something.
+    return Stagger(
+        child: Pressable(
+            enabled: onTap != null,
+            child: Container(
+                decoration: BoxDecoration(
+                    color: color ?? t.card,
                     borderRadius: BorderRadius.circular(yRadius),
-                    splashFactory: NoSplash.splashFactory,
-                    onTap: onTap,
-                    child: Padding(padding: padding, child: child)))));
+                    border: Border.all(color: t.line),
+                    boxShadow: shadow ? t.softShadow : null),
+                child: Material(
+                    type: MaterialType.transparency,
+                    child: InkWell(
+                        borderRadius: BorderRadius.circular(yRadius),
+                        splashFactory: NoSplash.splashFactory,
+                        onTap: onTap,
+                        child: Padding(padding: padding, child: child))))));
   }
 }
 
@@ -115,7 +167,10 @@ class SectionTitle extends StatelessWidget {
         Expanded(
             child: Text(text,
                 style: const TextStyle(
-                    fontSize: YFont.section, fontWeight: FontWeight.w700, height: 1.2))),
+                    fontSize: YFont.section,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                    height: 1.25))),
         if (trailing != null) trailing!,
       ]));
 }
@@ -169,7 +224,13 @@ class FilterPill extends StatelessWidget {
         selected: selected,
         child: InkWell(
             customBorder: const StadiumBorder(),
-            onTap: onTap,
+            onTap: onTap == null
+                ? null
+                : () {
+                    // A choice: confirmed with a tick, as in ANT.
+                    if (!menu) HapticFeedback.selectionClick();
+                    onTap!();
+                  },
             child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: yTouch),
                 child: Center(
@@ -248,8 +309,8 @@ class InfoRow extends StatelessWidget {
           ],
           SizedBox(
               width: 116,
-              child:
-                  Text(label, style: TextStyle(color: t.muted, fontSize: YFont.label))),
+              child: Text(label,
+                  style: TextStyle(color: t.muted, fontSize: YFont.label))),
           Expanded(
               // Values are often amounts, dates and sizes: equal-width
               // digits keep a column of rows aligned.
@@ -283,8 +344,8 @@ class EmptyState extends StatelessWidget {
           const SizedBox(height: 14),
           Text(title,
               textAlign: TextAlign.center,
-              style:
-                  const TextStyle(fontSize: YFont.heading, fontWeight: FontWeight.w700)),
+              style: const TextStyle(
+                  fontSize: YFont.heading, fontWeight: FontWeight.w700)),
           if (body != null) ...[
             const SizedBox(height: 6),
             Text(body!,
@@ -315,7 +376,8 @@ class Hint extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
               child: Text(text,
-                  style: TextStyle(fontSize: YFont.small, color: t.ink, height: 1.4))),
+                  style: TextStyle(
+                      fontSize: YFont.small, color: t.ink, height: 1.4))),
         ]));
   }
 }
@@ -342,6 +404,8 @@ class _BusyButtonState extends State<BusyButton> {
   bool busy = false;
   Future<void> run() async {
     if (busy) return;
+    // The main action of a screen: a light tap confirms the press.
+    HapticFeedback.lightImpact();
     setState(() => busy = true);
     try {
       await widget.onPressed!();
@@ -352,27 +416,52 @@ class _BusyButtonState extends State<BusyButton> {
 
   @override
   Widget build(BuildContext context) {
-    final onPressed = widget.onPressed == null || busy ? null : run;
-    final child = busy
-        ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2.4))
-        : Row(mainAxisSize: MainAxisSize.min, children: [
-            if (widget.icon != null) ...[
-              Icon(widget.icon, size: 18),
-              const SizedBox(width: 8)
-            ],
-            Flexible(
-                child: Text(widget.label, overflow: TextOverflow.ellipsis)),
-          ]);
+    final enabled = widget.onPressed != null;
+    // While busy the label keeps its width so the button does not jump,
+    // and the button keeps its colours (a disabled fill would wash the
+    // spinner out); taps are swallowed instead.
+    final label = Row(mainAxisSize: MainAxisSize.min, children: [
+      if (widget.icon != null) ...[
+        Icon(widget.icon, size: 18),
+        const SizedBox(width: 8)
+      ],
+      Flexible(child: Text(widget.label, overflow: TextOverflow.ellipsis)),
+    ]);
+    final child = Stack(alignment: Alignment.center, children: [
+      Visibility(
+          visible: !busy,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: label),
+      if (busy) const ButtonSpinner(),
+    ]);
+    final onPressed = enabled ? run : null;
     final button = widget.outlined
         ? OutlinedButton(onPressed: onPressed, child: child)
         : FilledButton(onPressed: onPressed, child: child);
-    return widget.expand
-        ? SizedBox(width: double.infinity, child: button)
-        : button;
+    return Semantics(
+        enabled: enabled && !busy,
+        child: IgnorePointer(
+            ignoring: busy,
+            child: widget.expand
+                ? SizedBox(width: double.infinity, child: button)
+                : button));
   }
+}
+
+/// A small spinner in the enclosing button's text colour, so it reads on
+/// every fill and in both themes.
+class ButtonSpinner extends StatelessWidget {
+  const ButtonSpinner({super.key});
+  @override
+  Widget build(BuildContext context) => SizedBox(
+      width: 20,
+      height: 20,
+      child: CircularProgressIndicator(
+          strokeWidth: 2.2,
+          color: IconTheme.of(context).color ??
+              DefaultTextStyle.of(context).style.color));
 }
 
 /// A sheet row that staggers in when its sheet first opens.
@@ -397,7 +486,8 @@ Future<T?> pickOne<T>(
                       children: [
                         Text(title,
                             style: const TextStyle(
-                                fontSize: YFont.heading, fontWeight: FontWeight.w700)),
+                                fontSize: YFont.heading,
+                                fontWeight: FontWeight.w700)),
                         const SizedBox(height: 8),
                         for (final (i, (value, label)) in options.indexed)
                           _staggered(
@@ -422,14 +512,12 @@ Future<T?> pickOne<T>(
 Future<(T?,)?> pickFilter<T extends Object>(BuildContext context, String title,
         String allLabel, List<(T, String)> options,
         {T? selected}) =>
-    pickOne<(T?,)>(
-        context,
-        title,
-        [
-          ((null,), allLabel),
-          for (final (value, label) in options) ((value,), label),
-        ],
-        selected: (selected,));
+    pickOne<(T?,)>(context, title, [
+      ((null,), allLabel),
+      for (final (value, label) in options) ((value,), label),
+    ], selected: (
+      selected,
+    ));
 
 /// Bottom-sheet picker for several values.
 Future<List<T>?> pickMany<T>(BuildContext context, String title,
@@ -449,7 +537,8 @@ Future<List<T>?> pickMany<T>(BuildContext context, String title,
                           children: [
                             Text(title,
                                 style: const TextStyle(
-                                    fontSize: YFont.heading, fontWeight: FontWeight.w700)),
+                                    fontSize: YFont.heading,
+                                    fontWeight: FontWeight.w700)),
                             const SizedBox(height: 12),
                             Wrap(spacing: 8, runSpacing: 8, children: [
                               for (final (value, label) in options)
@@ -473,55 +562,132 @@ Future<List<T>?> pickMany<T>(BuildContext context, String title,
                           ]))))));
 }
 
+/// A sheet's body as ANT lays it out: a heading, an optional line, then
+/// the content, above the keyboard and the home indicator.
+class SheetBody extends StatelessWidget {
+  const SheetBody(
+      {super.key, required this.title, this.body, required this.children});
+  final String title;
+  final String? body;
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    return Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: SafeArea(
+            top: false,
+            child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(title,
+                          style: const TextStyle(
+                              fontSize: YFont.section,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                              height: 1.25)),
+                      if (body != null) ...[
+                        const SizedBox(height: 6),
+                        Text(body!,
+                            style: TextStyle(
+                                fontSize: YFont.label,
+                                height: 1.45,
+                                color: t.muted)),
+                      ],
+                      const SizedBox(height: 18),
+                      ...children,
+                    ]))));
+  }
+}
+
+/// A sheet's two answers side by side: the quiet one, then the main one in
+/// ink (or in the alarm colour when it destroys something).
+class SheetAnswers extends StatelessWidget {
+  const SheetAnswers(
+      {super.key,
+      required this.cancel,
+      required this.ok,
+      required this.onOk,
+      this.danger = false});
+  final String cancel, ok;
+  final VoidCallback? onOk;
+  final bool danger;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    final fill = danger ? t.crit : t.ink;
+    return Row(children: [
+      Expanded(
+          child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, yButton),
+                  backgroundColor: t.surface,
+                  side: BorderSide.none),
+              onPressed: () => Navigator.pop(context),
+              child: Text(cancel))),
+      const SizedBox(width: 10),
+      Expanded(
+          child: FilledButton(
+              style: FilledButton.styleFrom(
+                  backgroundColor: fill, foregroundColor: onFill(fill)),
+              onPressed: onOk == null
+                  ? null
+                  : () {
+                      HapticFeedback.lightImpact();
+                      onOk!();
+                    },
+              child: Text(ok))),
+    ]);
+  }
+}
+
+/// Asks yes or no in a bottom sheet (ANT asks in sheets, not dialogs: the
+/// answer sits under the thumb). Swiping it away is a no.
 Future<bool> confirmDialog(BuildContext context, String title,
     {String? body, String? ok, bool danger = false}) async {
-  final result = await showDialog<bool>(
+  final result = await showMotionSheet<bool>(
       context: context,
+      isScrollControlled: true,
       builder: (context) => PlatformTheme(
-              child: AlertDialog(
-                  title: Text(title),
-                  content: body == null ? null : Text(body),
-                  actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
-                FilledButton(
-                    style: danger
-                        ? FilledButton.styleFrom(
-                            backgroundColor: YTokens.of(context).crit,
-                            foregroundColor: onFill(YTokens.of(context).crit))
-                        : null,
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text(ok ?? tr3('确定', 'Иә', 'Да'))),
-              ])));
+              child: SheetBody(title: title, body: body, children: [
+            SheetAnswers(
+                cancel: tr3('取消', 'Болдырмау', 'Отмена'),
+                ok: ok ?? tr3('确定', 'Иә', 'Да'),
+                danger: danger,
+                onOk: () => Navigator.pop(context, true)),
+          ])));
   return result == true;
 }
 
+/// Asks for a line of text in a bottom sheet, above the keyboard. Null when
+/// dismissed.
 Future<String?> askText(BuildContext context, String title,
     {String? hint, String initial = '', bool required = true, int lines = 3}) {
   final controller = TextEditingController(text: initial);
-  return showDialog<String>(
+  return showMotionSheet<String>(
       context: context,
+      isScrollControlled: true,
       builder: (context) => PlatformTheme(
-              child: AlertDialog(
-                  title: Text(title),
-                  content: TextField(
-                      controller: controller,
-                      autofocus: true,
-                      minLines: 1,
-                      maxLines: lines,
-                      decoration: InputDecoration(hintText: hint)),
-                  actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
-                FilledButton(
-                    onPressed: () {
-                      if (required && controller.text.trim().isEmpty) return;
-                      Navigator.pop(context, controller.text.trim());
-                    },
-                    child: Text(tr3('确定', 'Иә', 'Да'))),
-              ])));
+              child: SheetBody(title: title, children: [
+            TextField(
+                controller: controller,
+                autofocus: true,
+                minLines: 1,
+                maxLines: lines,
+                decoration: InputDecoration(hintText: hint)),
+            const SizedBox(height: 14),
+            SheetAnswers(
+                cancel: tr3('取消', 'Болдырмау', 'Отмена'),
+                ok: tr3('确定', 'Иә', 'Да'),
+                onOk: () {
+                  if (required && controller.text.trim().isEmpty) return;
+                  Navigator.pop(context, controller.text.trim());
+                }),
+          ])));
 }
 
 /// Number field helper: parses "1 200,5" style input.
@@ -591,8 +757,7 @@ class Cover extends StatelessWidget {
             decoration: image != null
                 ? BoxDecoration(
                     color: YTokens.paper,
-                    image:
-                        DecorationImage(image: image!, fit: BoxFit.contain))
+                    image: DecorationImage(image: image!, fit: BoxFit.contain))
                 : BoxDecoration(
                     gradient: LinearGradient(
                         colors: [a, b],

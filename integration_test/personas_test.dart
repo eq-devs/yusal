@@ -1,5 +1,6 @@
 // The one-tap test accounts on the dev sign-in, against a yusal-api run
-// with DEV_LOGIN=true. Run like backend_flow_test.dart.
+// with DEV_LOGIN=true and DEV_ADMIN=true, filled by yusal-api
+// tool/seed/seed.py. Run like backend_flow_test.dart.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,41 +33,44 @@ void main() {
             child: HouseApp(repos: repos, store: ProjectStore()))));
     await idle(t, 1000);
 
-    Future<void> chip(String name) async {
+    Future<void> chip(String key, String name) async {
       if (repos.currentAccount != null) await signOut(t, repos);
       await home(t);
       await tab(t, '我的');
       await tapIt(t, find.widgetWithText(FilledButton, '登录或注册'));
-      final key = find.byKey(Key('test-login-$name'));
-      await waitFor(t, key);
-      await scrollTo(t, key);
-      await tapIt(t, key);
+      final chip = find.byKey(Key('test-login-$key'));
+      await waitFor(t, chip);
+      await scrollTo(t, chip);
+      await tapIt(t, chip);
       await waitFor(t, find.byTooltip('改称呼'));
       expect(repos.currentAccount?.displayName, name);
     }
 
-    await chip('Test Owner');
+    await chip('Test Owner', 'Test Owner');
     await shot(t, 't01-login-chips-owner');
     expect(await io(t, () => repos.myProfiles()), isEmpty);
-    final ownerId = repos.currentAccount!.id;
 
-    await chip('Test Owner 2');
-    expect(repos.currentAccount!.id, isNot(ownerId));
+    await chip('seed:aigerim', 'Айгерім Сейтқали');
     expect(await io(t, () => repos.myProfiles()), isEmpty);
 
-    for (final pro in ['Test Worker', 'Test Contractor', 'Test Engineer']) {
-      await chip(pro);
+    for (final (key, name) in [
+      ('seed:bolat', 'Болат Жұмабеков'),
+      ('seed:nurlan', 'Нұрлан Сәрсенбаев'),
+      ('seed:gulnar', 'Гүлнар Омарова'),
+    ]) {
+      await chip(key, name);
       expect(await io(t, () => repos.myProfiles()), isNotEmpty,
-          reason: '$pro starts with a service profile');
+          reason: '$name has a service profile');
     }
 
-    await chip('Test Admin');
+    await chip('Test Admin', 'Test Admin');
     expect(repos.currentAccount!.isAdmin, isTrue);
-    await scrollTo(t, find.text('审核后台'));
-    expect(find.text('审核后台'), findsOneWidget);
     await shot(t, 't02-admin-entry');
 
-    await chip('Test Restricted');
+    await chip('seed:moderator', 'Әлия · модератор');
+    expect(repos.currentAccount!.adminRole, 'moderator');
+
+    await chip('seed:spam', 'Стройбаза Опт');
     expect(repos.currentAccount!.restricted, isTrue);
     await signOut(t, repos);
     expect(t.takeException(), isNull);

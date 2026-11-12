@@ -168,6 +168,7 @@ class Skeleton extends StatefulWidget {
 class _SkeletonState extends State<Skeleton>
     with SingleTickerProviderStateMixin {
   AnimationController? _breath;
+  Animation<double>? _opacity;
 
   @override
   void didChangeDependencies() {
@@ -175,9 +176,13 @@ class _SkeletonState extends State<Skeleton>
     if (Motion.reduced(context)) {
       _breath?.dispose();
       _breath = null;
-    } else {
-      _breath ??= AnimationController(vsync: this, duration: Motion.breath)
-        ..repeat(reverse: true);
+      _opacity = null;
+    } else if (_breath == null) {
+      final breath = _breath =
+          AnimationController(vsync: this, duration: Motion.breath)
+            ..repeat(reverse: true);
+      _opacity = Tween<double>(begin: 1, end: 0.45)
+          .animate(CurvedAnimation(parent: breath, curve: Curves.easeInOut));
     }
   }
 
@@ -195,12 +200,9 @@ class _SkeletonState extends State<Skeleton>
         decoration: BoxDecoration(
             color: YTokens.of(context).surface,
             borderRadius: BorderRadius.circular(widget.radius)));
-    final breath = _breath;
-    if (breath == null) return block;
-    return FadeTransition(
-        opacity: Tween<double>(begin: 1, end: 0.45)
-            .animate(CurvedAnimation(parent: breath, curve: Curves.easeInOut)),
-        child: block);
+    final opacity = _opacity;
+    if (opacity == null) return block;
+    return FadeTransition(opacity: opacity, child: block);
   }
 }
 

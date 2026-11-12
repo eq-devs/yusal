@@ -450,6 +450,8 @@ class MyApplicationsPage extends StatelessWidget {
   }
 }
 
+/// What I saved: the houses I hearted on the home feed or a house page,
+/// and the demands I starred on Discover, one section each.
 class FavouritesPage extends StatelessWidget {
   const FavouritesPage({super.key});
   @override
@@ -457,25 +459,57 @@ class FavouritesPage extends StatelessWidget {
     AppScope.watch(context);
     return PageScaffold(
         title: tr3('收藏', 'Таңдаулы', 'Избранное'),
-        body: Live<List<Demand>>(
-            load: (r) async => [
-                  for (final id in await r.favourites())
-                    if (await r.demand(id) case final d?) d
-                ],
-            builder: (context, list) => Column(children: [
-                  if (list.isEmpty)
-                    EmptyState(
-                        icon: Icons.favorite_border,
-                        title: tr3('还没有收藏', 'Бос', 'Пусто')),
-                  for (final d in list)
-                    Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: DemandCard(
-                            compact: true,
-                            demand: d,
-                            onTap: () => pushPage<void>(context,
-                                (_) => DemandDetailPage(demandId: d.id)))),
-                ])));
+        body: Live<(List<HousePost>, List<Demand>)>(
+            load: (r) async => (
+                  [
+                    for (final id in await r.likedPosts())
+                      if (await r.post(id) case final p?) p
+                  ],
+                  [
+                    for (final id in await r.favourites())
+                      if (await r.demand(id) case final d?) d
+                  ]
+                ),
+            builder: (context, data) {
+              final (houses, demands) = data;
+              if (houses.isEmpty && demands.isEmpty) {
+                return EmptyState(
+                    icon: Icons.favorite_border,
+                    title: tr3('还没有收藏', 'Бос', 'Пусто'),
+                    body: tr3(
+                        '在首页的房子上点 ♡，或在发现里收藏需求，就会出现在这里',
+                        'Үйдегі ♡ белгісін басыңыз, ол осында шығады',
+                        'Нажмите ♡ на доме или заявке, и она появится здесь'));
+              }
+              return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (houses.isNotEmpty) ...[
+                      SectionTitle(tr3('房子', 'Үйлер', 'Дома')),
+                      for (final p in houses)
+                        Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: HouseCard(
+                                key: Key('fav-house-${p.id}'),
+                                compact: true,
+                                post: p,
+                                liked: true,
+                                onTap: () => pushPage<void>(context,
+                                    (_) => PostPage(postId: p.id, preview: p)))),
+                    ],
+                    if (demands.isNotEmpty) ...[
+                      SectionTitle(tr3('需求', 'Тапсырыстар', 'Заявки')),
+                      for (final d in demands)
+                        Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: DemandCard(
+                                compact: true,
+                                demand: d,
+                                onTap: () => pushPage<void>(context,
+                                    (_) => DemandDetailPage(demandId: d.id)))),
+                    ],
+                  ]);
+            }));
   }
 }
 

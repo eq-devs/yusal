@@ -66,23 +66,54 @@ class _LoginPageState extends State<LoginPage> {
   static const _devLogin =
       bool.fromEnvironment('YUSAL_DEV_LOGIN', defaultValue: true);
 
-  /// One-tap test accounts; the backend sets each up with its role on first
-  /// sign-in (see yusal-api router.DevPersonas). Names must match there.
-  static const testPersonas = [
-    ('Test Owner', '房主', Icons.home_outlined),
-    ('Test Owner 2', '房主 2', Icons.cottage_outlined),
-    ('Test Worker', '工人', Icons.construction_outlined),
-    ('Test Contractor', '包工头 · 团队', Icons.groups_outlined),
-    ('Test Engineer', '工程师', Icons.architecture_outlined),
-    ('Test Admin', '管理员', Icons.admin_panel_settings_outlined),
-    ('Test Restricted', '受限账号', Icons.block_outlined),
+  /// One-tap test accounts, by role. Each is a real account on the backend
+  /// with real history, filled by yusal-api `tool/seed/seed.py` (the keys
+  /// must match its PEOPLE). "Test Admin" is the superadmin the backend makes
+  /// with DEV_ADMIN=true; "Test Owner" stays an empty new account.
+  static const testPersonaGroups = [
+    (
+      '业主',
+      [
+        ('seed:aigerim', 'Айгерім · 施工中', Icons.home_outlined),
+        ('seed:dinara', 'Динара · 已完工', Icons.cottage_outlined),
+        ('seed:asel', 'Асель · 比价中', Icons.request_quote_outlined),
+        ('seed:zhanar', 'Жанар · 求点评', Icons.forum_outlined),
+        ('Test Owner', '新用户 · 空账号', Icons.person_add_alt),
+      ]
+    ),
+    (
+      '师傅与团队',
+      [
+        ('seed:bolat', 'Болат · 瓦工 · 已认证', Icons.construction_outlined),
+        ('seed:erlan', 'Ерлан · 电工', Icons.electrical_services_outlined),
+        ('seed:ruslan', 'Руслан · 认证审核中', Icons.plumbing_outlined),
+        ('seed:gulnar', 'Гүлнар · 工程师', Icons.architecture_outlined),
+        ('seed:nurlan', 'Нұрлан · 施工队', Icons.groups_outlined),
+        ('seed:samat', 'Самат · 屋面队', Icons.roofing_outlined),
+      ]
+    ),
+    (
+      '后台',
+      [
+        ('Test Admin', '超级管理员', Icons.admin_panel_settings_outlined),
+        ('seed:moderator', '审核员', Icons.gavel_outlined),
+        ('seed:operator', '运营', Icons.campaign_outlined),
+        ('seed:viewer', '只读', Icons.visibility_outlined),
+      ]
+    ),
+    (
+      '受限',
+      [
+        ('seed:spam', 'Стройбаза · 受限 · 申诉中', Icons.block_outlined),
+      ]
+    ),
   ];
 
   Future<void> devSignIn(HttpBackend api, [String? persona]) async {
     final n = (persona ?? name.text).trim();
     if (n.isEmpty) return;
-    final account = await attempt(
-        context, () => api.signInWithProvider('dev', n, name: n));
+    final account =
+        await attempt(context, () => api.signInWithProvider('dev', n, name: n));
     if (account != null && mounted) Navigator.pop(context, true);
   }
 
@@ -93,7 +124,8 @@ class _LoginPageState extends State<LoginPage> {
       Text(
           tr3('欢迎来到 Yusal', 'Yusal-ға қош келдіңіз',
               'Добро пожаловать в Yusal'),
-          style: const TextStyle(fontSize: YFont.display, fontWeight: FontWeight.w700)),
+          style: const TextStyle(
+              fontSize: YFont.display, fontWeight: FontWeight.w700)),
       const SizedBox(height: 6),
       Text(
           tr3(
@@ -133,15 +165,20 @@ class _LoginPageState extends State<LoginPage> {
             onPressed: () => devSignIn(api)),
         const SizedBox(height: 16),
         Text('测试账号 · Test accounts', style: TextStyle(color: t.muted)),
-        const SizedBox(height: 8),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final (id, label, icon) in testPersonas)
-            ActionChip(
-                key: Key('test-login-$id'),
-                avatar: Icon(icon, size: 18),
-                label: Text(label),
-                onPressed: () => devSignIn(api, id)),
-        ]),
+        for (final (group, personas) in testPersonaGroups) ...[
+          const SizedBox(height: 12),
+          Text(group,
+              style: TextStyle(color: t.muted, fontSize: YFont.caption)),
+          const SizedBox(height: 6),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final (id, label, icon) in personas)
+              ActionChip(
+                  key: Key('test-login-$id'),
+                  avatar: Icon(icon, size: 18),
+                  label: Text(label),
+                  onPressed: () => devSignIn(api, id)),
+          ]),
+        ],
       ],
     ]);
   }
@@ -224,18 +261,21 @@ class _LoginPageState extends State<LoginPage> {
                   'Номер скрыт по умолчанию; подтверждение телефона — не проверка личности.'),
               style: TextStyle(color: t.muted, fontSize: YFont.caption)),
           if (mock != null) ...[
-            SectionTitle(
-                tr3('测试账号', 'Сынақ аккаунттары', 'Тестовые аккаунты'),
+            SectionTitle(tr3('测试账号', 'Сынақ аккаунттары', 'Тестовые аккаунты'),
                 top: 28),
             for (final (id, label) in [
               (SeedIds.owner, '${tr3('业主', 'Үй иесі', 'Владелец')} Айгерім'),
               (SeedIds.owner2, '${tr3('业主', 'Үй иесі', 'Владелец')} Динара'),
               (SeedIds.mason, '${tr3('瓦工', 'Қалаушы', 'Каменщик')} Болат'),
-              (SeedIds.electrician,
-                  '${tr3('电工', 'Электрик', 'Электрик')} Ерлан'),
+              (
+                SeedIds.electrician,
+                '${tr3('电工', 'Электрик', 'Электрик')} Ерлан'
+              ),
               (SeedIds.team, '${tr3('施工队', 'Бригада', 'Бригада')} Нұрлан'),
-              (SeedIds.roofTeam,
-                  '${tr3('屋面队', 'Шатыр бригадасы', 'Кровельщики')} Самат'),
+              (
+                SeedIds.roofTeam,
+                '${tr3('屋面队', 'Шатыр бригадасы', 'Кровельщики')} Самат'
+              ),
               (SeedIds.admin, '${tr3('审核员', 'Модератор', 'Модератор')} Admin'),
             ])
               ListTile(

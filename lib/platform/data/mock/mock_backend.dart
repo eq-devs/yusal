@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:math' show max;
 import 'package:flutter/foundation.dart' show ChangeNotifier, Listenable;
 import '../../domain/models.dart';
 import '../../domain/rules.dart';
@@ -58,6 +61,14 @@ class MockBackend implements PlatformRepositories {
   final likes = <String, Set<String>>{}; // postId -> account ids
   final _commentTimes = <String, List<DateTime>>{};
   final auditLog = <AuditEntry>[];
+  final appealsById = <String, Appeal>{};
+  final verificationsById = <String, Verification>{};
+  final alerts = <String, DemandAlert>{};
+  final settings = <String, NotificationSettings>{};
+  PushPolicy policy = const PushPolicy();
+
+  /// Profiles a moderator hid; the owner cannot show them again.
+  final modHidden = <String>{};
   final _favourites = <String, Set<String>>{};
   final _blocks = <String, Set<String>>{};
   final _lastRead = <String, DateTime>{};
@@ -113,8 +124,8 @@ class MockBackend implements PlatformRepositories {
     if (_meAccount.restricted) throw const ApiFailure(ApiCodes.restricted);
   }
 
-  void _requireAdmin() {
-    if (!_meAccount.isAdmin) throw const ApiFailure(ApiCodes.forbidden);
+  void _requireAdmin([String perm = AdminPerms.moderate]) {
+    if (!_meAccount.can(perm)) throw const ApiFailure(ApiCodes.forbidden);
   }
 
   bool _isBlocked(String a, String b) =>
@@ -338,7 +349,8 @@ class MockBackend implements PlatformRepositories {
               refPrices: p.refPrices,
               bio: p.bio,
               works: p.works,
-              showPhone: p.showPhone);
+              showPhone: p.showPhone,
+              role: p.role);
           profiles[id] = created;
           return created;
         }
@@ -373,8 +385,10 @@ class MockBackend implements PlatformRepositories {
             refPrices: saved.refPrices,
             bio: saved.bio,
             works: saved.works,
-            status: saved.status,
-            showPhone: saved.showPhone);
+            status: modHidden.contains(p.id) ? ProfileStatus.hidden : saved.status,
+            showPhone: saved.showPhone,
+            role: p.role,
+            verified: old.verified);
         return profiles[p.id]!;
       });
 
@@ -428,7 +442,7 @@ class MockBackend implements PlatformRepositories {
 
   bool _demandVisible(Demand d) {
     if (d.ownerId == currentId) return true;
-    if (currentId != null && accounts[currentId]!.isAdmin) return true;
+    if (currentId != null && accounts[currentId]!.can(AdminPerms.read)) return true;
     if (currentId != null &&
         applications.values
             .any((a) => a.demandId == d.id && a.applicantId == currentId))
@@ -620,8 +634,10 @@ class MockBackend implements PlatformRepositories {
     final d = demands[id];
     if (d == null || d.status != DemandStatus.pendingReview) return;
     final v = d.current;
-    final word = bannedWordIn('${v.title} ${v.description} ${v.siteNotes}');
+    final text = '${v.title}\n${v.description}\n${v.siteNotes}';
+    final word = bannedWordIn(text);
     if (word != null) {
+      if (onlyNegatedBanned(text)) return; // left for a moderator
       _decide(d, false, 'system', 'banned:$word');
     } else {
       _decide(d, true, 'system', 'auto');
@@ -631,6 +647,7 @@ class MockBackend implements PlatformRepositories {
   void _decide(Demand d, bool approve, String by, String reason) {
     if (approve) {
       final first = d.publishedAt == null;
+      if (first) _alertMatches(d);
       demands[d.id] = d.copyWith(
           status: DemandStatus.open,
           publishedAt: first ? now : d.publishedAt,
@@ -645,12 +662,8 @@ class MockBackend implements PlatformRepositories {
       notice(d.ownerId, NoticeKind.reviewRejected, RefType.demand, d.id,
           title: d.current.title);
     }
-    auditLog.add(AuditEntry(
-        by: by,
-        at: now,
-        action: approve ? 'approve' : 'reject',
-        targetId: d.id,
-        reason: reason));
+    _record(by, approve ? 'approve' : 'reject', 'demand', d.id, d.current.title,
+        reason);
   }
 
   void _queueReview(String id) {
@@ -831,7 +844,7 @@ class MockBackend implements PlatformRepositories {
               a.status == ApplicationStatus.notSelected) continue;
           final c = out[d.id] ?? (total: 0, unread: 0);
           out[d.id] =
-              (total: c.total + 1, unread: c.unread + (a.readByOwner ? 0 : 1));
+              (total: c.total + 1, unread: c.unread + (a.readByOwner || a.status != ApplicationStatus.submitted ? 0 : 1));
         }
         return out;
       });
@@ -1068,8 +1081,9 @@ class MockBackend implements PlatformRepositories {
               _agreementFrom(
                   terms, 1, me, d.current.no, AgreementStatus.proposed)
             ],
-            milestones:
-                d.type == DemandType.contract ? defaultMilestones : const [],
+            milestones: d.type == DemandType.contract
+                ? milestonesForStages(d.current.contract)
+                : const [],
             createdAt: now);
         applications[a.id] =
             a.copyWith(status: ApplicationStatus.pendingConfirm);
@@ -1105,9 +1119,39 @@ class MockBackend implements PlatformRepositories {
           notice(c.otherSide(me), NoticeKind.cooperationConfirmed,
               RefType.cooperation, c.id,
               title: _title(c));
+          _settle(c.demandId);
         }
         return cooperations[c.id]!;
       });
+
+  /// A filled demand (a contract has its builder; a hire has its headcount)
+  /// is found, and the other applicants are told they were not selected.
+  /// Pending invitations are left alone.
+  void _settle(String demandId) {
+    final d = demands[demandId]!;
+    if (d.status != DemandStatus.open && d.status != DemandStatus.paused) {
+      return;
+    }
+    final apps = applications.values.where((a) => a.demandId == d.id).toList();
+    if (d.type == DemandType.hire) {
+      final need = d.current.hire?.headcount ?? 1;
+      final got = apps
+          .where((a) => a.status == ApplicationStatus.cooperating)
+          .fold<int>(0, (n, a) => n + max(a.current.headcountOffered, 1));
+      if (got < need) return;
+    }
+    demands[d.id] = d.copyWith(
+        status: DemandStatus.found,
+        outcome: OutcomeKind.platformConfirmed,
+        outcomeAt: now);
+    for (final a
+        in apps.where((a) => a.status == ApplicationStatus.submitted)) {
+      applications[a.id] = a.copyWith(status: ApplicationStatus.notSelected);
+      notice(a.applicantId, NoticeKind.applicationNotSelected, RefType.demand,
+          d.id,
+          title: d.current.title);
+    }
+  }
 
   Cooperation _notFormed(Cooperation c, NoticeKind kind, String to) {
     cooperations[c.id] = c
@@ -1354,7 +1398,11 @@ class MockBackend implements PlatformRepositories {
           throw const ApiFailure(ApiCodes.invalidState);
         if (headcount < 1 || headcount > 200)
           throw const ApiFailure(ApiCodes.invalidInput, 'headcount');
-        final day = DateTime.utc(now.year, now.month, now.day);
+        // The Kazakhstan calendar day (UTC+5); a confirmed day stays as is.
+        final kz = now.toUtc().add(const Duration(hours: 5));
+        final day = DateTime.utc(kz.year, kz.month, kz.day);
+        if (c.workLogs.any((w) => w.day == day && w.confirmed))
+          throw const ApiFailure(ApiCodes.invalidState, 'workLogConfirmed');
         final rest = c.workLogs.where((w) => w.day != day);
         final log = WorkLog(
             id: newId('wl'),
@@ -1881,7 +1929,7 @@ class MockBackend implements PlatformRepositories {
   Future<void> hidePost(String id) => _io(() {
         final p = posts[id];
         if (p == null) throw const ApiFailure(ApiCodes.notFound);
-        if (p.ownerId != _me && !_meAccount.isAdmin)
+        if (p.ownerId != _me && !_meAccount.can(AdminPerms.moderate))
           throw const ApiFailure(ApiCodes.forbidden);
         posts[id] = p.copyWith(status: PostStatus.hidden, updatedAt: now);
       });
@@ -2038,16 +2086,20 @@ class MockBackend implements PlatformRepositories {
         final c = commentsById[id];
         if (c == null) throw const ApiFailure(ApiCodes.notFound);
         final p = posts[c.postId]!;
-        if (c.authorId != _me && p.ownerId != _me && !_meAccount.isAdmin)
+        if (c.authorId != _me && p.ownerId != _me && !_meAccount.can(AdminPerms.moderate))
           throw const ApiFailure(ApiCodes.forbidden);
-        commentsById.remove(id);
-        commentsById.removeWhere((_, r) => r.parentId == id);
-        posts[p.id] = p.copyWith(
-            commentCount:
-                commentsById.values.where((x) => x.postId == p.id).length,
-            ratingSum: c.rating == null ? null : p.ratingSum - c.rating!,
-            ratingCount: c.rating == null ? null : p.ratingCount - 1);
+        _removeComment(c);
       });
+
+  void _removeComment(PostComment c) {
+    final p = posts[c.postId]!;
+    commentsById.remove(c.id);
+    commentsById.removeWhere((_, r) => r.parentId == c.id);
+    posts[p.id] = p.copyWith(
+        commentCount: commentsById.values.where((x) => x.postId == p.id).length,
+        ratingSum: c.rating == null ? null : p.ratingSum - c.rating!,
+        ratingCount: c.rating == null ? null : p.ratingCount - 1);
+  }
 
   /// Demands belonging to a post's house, any status.
   Iterable<Demand> _postDemands(HousePost p) => demands.values.where((d) =>
@@ -2134,7 +2186,59 @@ class MockBackend implements PlatformRepositories {
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       });
 
+
   // ─────────────────────────── moderation ───────────────────────────
+
+  void _record(String by, String action, String target, String targetId,
+      String title, String reason) {
+    auditLog.add(AuditEntry(
+        by: by,
+        at: now,
+        action: action,
+        target: target,
+        targetId: targetId,
+        title: title,
+        reason: reason,
+        byName: accounts[by]?.displayName ?? ''));
+  }
+
+  void _alertMatches(Demand d) {
+    for (final e in alerts.entries) {
+      if (e.key == d.ownerId || !e.value.matches(d) || _isBlocked(e.key, d.ownerId))
+        continue;
+      notice(e.key, NoticeKind.newDemandMatch, RefType.demand, d.id,
+          title: d.current.title);
+    }
+  }
+
+  /// Owner, title and (for comments) house of a reported record.
+  ({String owner, String title, String? postId}) _target(
+      ReportTarget kind, String id) {
+    switch (kind) {
+      case ReportTarget.demand:
+        final d = demands[id];
+        if (d != null) return (owner: d.ownerId, title: d.current.title, postId: null);
+      case ReportTarget.profile:
+        final p = profiles[id];
+        if (p != null) return (owner: p.ownerId, title: p.name, postId: null);
+      case ReportTarget.account:
+        final a = accounts[id];
+        if (a != null) return (owner: id, title: a.displayName, postId: null);
+      case ReportTarget.post:
+        final p = posts[id];
+        if (p != null) return (owner: p.ownerId, title: p.title, postId: id);
+      case ReportTarget.comment:
+        final c = commentsById[id];
+        if (c != null) {
+          final t = c.text.length > 60 ? '${c.text.substring(0, 60)}…' : c.text;
+          return (owner: c.authorId, title: t, postId: c.postId);
+        }
+      case ReportTarget.message:
+        final m = messagesById[id];
+        if (m != null) return (owner: m.senderId, title: m.text, postId: null);
+    }
+    return (owner: '', title: '', postId: null);
+  }
 
   @override
   Future<void> report(ReportTarget target, String targetId, String reason) =>
@@ -2158,41 +2262,329 @@ class MockBackend implements PlatformRepositories {
       });
 
   @override
-  Future<List<Demand>> reviewQueue() => _read(() {
-        _requireAdmin();
-        return demands.values
-            .where((d) => d.status == DemandStatus.pendingReview)
-            .toList();
-      });
-
-  @override
-  Future<void> approve(String demandId) => _io(() {
-        _requireAdmin();
-        final d = demands[demandId];
-        if (d == null || d.status != DemandStatus.pendingReview)
-          throw const ApiFailure(ApiCodes.invalidState);
-        _decide(d, true, _me, 'manual');
-      });
-
-  @override
-  Future<void> reject(String demandId, String reason) => _io(() {
-        _requireAdmin();
-        final d = demands[demandId];
-        if (d == null ||
-            (d.status != DemandStatus.pendingReview &&
-                d.status != DemandStatus.open &&
-                d.status != DemandStatus.paused))
-          throw const ApiFailure(ApiCodes.invalidState);
-        if (reason.trim().isEmpty)
+  Future<Appeal> fileAppeal(String target, String targetId, String text) =>
+      _io(() {
+        final me = _me;
+        if (text.trim().isEmpty || text.length > 1000)
           throw const ApiFailure(ApiCodes.invalidInput);
-        _decide(d, false, _me, reason.trim());
+        final kind = switch (target) {
+          'demand' => ReportTarget.demand,
+          'profile' => ReportTarget.profile,
+          'post' => ReportTarget.post,
+          'account' => ReportTarget.account,
+          _ => throw const ApiFailure(ApiCodes.invalidInput, 'target'),
+        };
+        final t = _target(kind, targetId);
+        if (t.owner != me) throw const ApiFailure(ApiCodes.forbidden);
+        for (final a in appealsById.values) {
+          if (a.accountId == me && a.targetId == targetId && a.status == AppealStatus.open)
+            return a;
+        }
+        final id = newId('appeal');
+        return appealsById[id] = Appeal(
+            id: id,
+            accountId: me,
+            target: target,
+            targetId: targetId,
+            targetTitle: t.title,
+            text: text.trim(),
+            createdAt: now);
       });
 
   @override
-  Future<List<Report>> reports() => _read(() {
-        _requireAdmin();
-        return reportsById.values.toList()
+  Future<List<Appeal>> myAppeals() => _read(() {
+        final me = _me;
+        return appealsById.values.where((a) => a.accountId == me).toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      });
+
+  // ─────────────────────────── trust ───────────────────────────
+
+  @override
+  Future<Verification> requestVerification(
+          String profileId, String phone, List<Uint8List> photos,
+          {String note = ''}) =>
+      _io(() {
+        final me = _me;
+        _requireActive();
+        final p = profiles[profileId];
+        if (p == null || p.ownerId != me) throw const ApiFailure(ApiCodes.notFound);
+        if (phone.trim().length < 6 || photos.isEmpty || photos.length > 6)
+          throw const ApiFailure(ApiCodes.invalidInput);
+        if (p.verified) throw const ApiFailure(ApiCodes.invalidState);
+        for (final v in verificationsById.values) {
+          if (v.profileId == profileId && v.status == VerificationStatus.pending)
+            return v;
+        }
+        final id = newId('verif');
+        return verificationsById[id] = Verification(
+            id: id,
+            profileId: profileId,
+            ownerId: me,
+            name: p.name,
+            phone: phone.trim(),
+            note: note.trim(),
+            photos: [
+              for (final b in photos) 'data:image/jpeg;base64,${base64Encode(b)}'
+            ],
+            createdAt: now);
+      });
+
+  @override
+  Future<Verification?> myVerification(String profileId) => _read(() {
+        final me = _me;
+        final mine = verificationsById.values
+            .where((v) => v.profileId == profileId && v.ownerId == me)
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return mine.isEmpty ? null : mine.first;
+      });
+
+  @override
+  Future<DemandAlert> demandAlert() =>
+      _read(() => alerts[_me] ?? const DemandAlert());
+
+  @override
+  Future<DemandAlert> saveDemandAlert(DemandAlert alert) =>
+      _io(() => alerts[_me] = alert);
+
+  @override
+  Future<NotificationSettings> notificationSettings() =>
+      _read(() => settings[_me] ?? const NotificationSettings());
+
+  @override
+  Future<NotificationSettings> saveNotificationSettings(
+          NotificationSettings s) =>
+      _io(() {
+        final me = _me;
+        if (s.muted.any((m) => m != PushCategory.community && m != PushCategory.alerts))
+          throw const ApiFailure(ApiCodes.invalidInput);
+        return settings[me] = s;
+      });
+
+  // ─────────────────────────── back office ───────────────────────────
+
+  List<T> _sorted<T>(Iterable<T> items, DateTime Function(T) at,
+          {bool oldest = false}) =>
+      items.toList()
+        ..sort((a, b) => oldest ? at(a).compareTo(at(b)) : at(b).compareTo(at(a)));
+
+  @override
+  Future<AdminTodo> todo() => _read(() {
+        _requireAdmin(AdminPerms.read);
+        TodoList<T> list<T>(List<T> all) => TodoList(all.length, all.take(5).toList());
+        final cutoff = now.subtract(const Duration(days: 3));
+        return AdminTodo(
+            review: list(_sorted(
+                demands.values.where((d) => d.status == DemandStatus.pendingReview),
+                (d) => d.createdAt,
+                oldest: true)),
+            reports: list(_sorted(
+                reportsById.values.where((r) => r.status == ReportStatus.open),
+                (r) => r.createdAt,
+                oldest: true)),
+            appeals: list(_sorted(
+                appealsById.values.where((a) => a.status == AppealStatus.open),
+                (a) => a.createdAt,
+                oldest: true)),
+            verifications: list(_sorted(
+                verificationsById.values
+                    .where((v) => v.status == VerificationStatus.pending),
+                (v) => v.createdAt,
+                oldest: true)),
+            disputes: list(_sorted(
+                cooperations.values.where((c) =>
+                    c.status == CooperationStatus.confirmed &&
+                    (c.milestones.any((m) =>
+                            m.status == MilestoneStatus.disputed &&
+                            (m.answeredAt?.isBefore(cutoff) ?? false)) ||
+                        (c.endRequest?.dispute != null &&
+                            c.endRequest!.at.isBefore(cutoff)))),
+                (c) => c.createdAt,
+                oldest: true)),
+            health: [if (autoReviewDelay == null) 'manual_review_on']);
+      });
+
+  @override
+  Future<AdminDashboard> dashboard() => _read(() {
+        _requireAdmin(AdminPerms.read);
+        final today = DateTime(now.year, now.month, now.day);
+        bool on(DateTime? t, DateTime day) =>
+            t != null && !t.isBefore(day) && t.isBefore(day.add(const Duration(days: 1)));
+        final published = posts.values.where((p) => p.status == PostStatus.published);
+        final regions = <String, (int, int)>{};
+        for (final d in demands.values.where((d) => d.status == DemandStatus.open)) {
+          final r = regions[d.current.region] ?? (0, 0);
+          regions[d.current.region] = (r.$1 + 1, r.$2);
+        }
+        for (final p in profiles.values.where((p) =>
+            p.status == ProfileStatus.active && p.availability != Availability.notTaking)) {
+          for (final reg in p.regions) {
+            final r = regions[reg] ?? (0, 0);
+            regions[reg] = (r.$1, r.$2 + 1);
+          }
+        }
+        final hours = <double>[];
+        for (final d in demands.values.where((d) => d.publishedAt != null)) {
+          final apps = applications.values.where((a) => a.demandId == d.id).toList()
+            ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          if (apps.isNotEmpty)
+            hours.add(apps.first.createdAt.difference(d.publishedAt!).inMinutes / 60);
+        }
+        hours.sort();
+        final quoted = applications.values.map((a) => a.demandId).toSet();
+        final coops = cooperations.values
+            .where((c) => c.status == CooperationStatus.confirmed || c.status == CooperationStatus.ended)
+            .map((c) => c.demandId)
+            .toSet();
+        return AdminDashboard(
+            today: {
+              'active': 1,
+              'new_users': accounts.values.where((a) => on(a.createdAt, today)).length,
+              'new_posts': published.where((p) => on(p.createdAt, today)).length,
+              'new_demands': demands.values.where((d) => on(d.publishedAt, today)).length,
+              'new_quotes': applications.values.where((a) => on(a.createdAt, today)).length,
+              'new_cooperations': cooperations.values.where((c) => on(c.createdAt, today)).length,
+              'inspections': cooperations.values
+                  .where((c) => c.milestones.any((m) =>
+                      m.status == MilestoneStatus.accepted && on(m.answeredAt, today)))
+                  .length,
+            },
+            daily: [
+              for (var i = 6; i >= 0; i--)
+                () {
+                  final day = today.subtract(Duration(days: i));
+                  return DashboardDay(
+                      '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}',
+                      active: i == 0 ? 1 : 0,
+                      demands: demands.values.where((d) => on(d.publishedAt, day)).length,
+                      quotes: applications.values.where((a) => on(a.createdAt, day)).length);
+                }()
+            ],
+            funnel: [
+              ('posts', published.length),
+              ('reuses', published.fold(0, (n, p) => n + p.reuseCount)),
+              ('demands', demands.values.where((d) => d.publishedAt != null).length),
+              ('quoted', quoted.length),
+              ('cooperations', coops.length),
+              ('inspected', cooperations.values
+                  .where((c) => c.milestones.any((m) => m.status == MilestoneStatus.accepted))
+                  .length),
+              ('reviews', reviews.length),
+            ],
+            regions: [
+              for (final e in regions.entries)
+                if (e.key.isNotEmpty) RegionSupply(e.key, demands: e.value.$1, workers: e.value.$2)
+            ]..sort((a, b) => b.demands.compareTo(a.demands)),
+            firstQuoteHours: hours.isEmpty ? null : hours[hours.length ~/ 2],
+            totals: {
+              'users': accounts.values.where((a) => !a.deleted).length,
+              'posts': published.length,
+              'profiles': profiles.values.where((p) => p.status == ProfileStatus.active).length,
+              'demands': demands.values.where((d) => d.publishedAt != null).length,
+            });
+      });
+
+  @override
+  Future<Paged<Demand>> reviewQueue({int page = 1, int pageSize = 20}) =>
+      _read(() {
+        _requireAdmin(AdminPerms.read);
+        return Paged.of(
+            _sorted(demands.values.where((d) => d.status == DemandStatus.pendingReview),
+                (d) => d.createdAt,
+                oldest: true),
+            page,
+            pageSize);
+      });
+
+  @override
+  Future<Paged<Demand>> adminDemands(
+          {DemandStatus? status, String query = '', int page = 1, int pageSize = 20}) =>
+      _read(() {
+        _requireAdmin(AdminPerms.read);
+        final q = query.trim().toLowerCase();
+        return Paged.of(
+            _sorted(
+                demands.values.where((d) =>
+                    (status == null || d.status == status) &&
+                    (q.isEmpty || d.current.title.toLowerCase().contains(q))),
+                (d) => d.createdAt),
+            page,
+            pageSize);
+      });
+
+  @override
+  Future<void> approve(String demandId) => _io(() => _approve(demandId));
+
+  void _approve(String demandId) {
+    _requireAdmin();
+    final d = demands[demandId];
+    if (d == null || d.status != DemandStatus.pendingReview)
+      throw const ApiFailure(ApiCodes.invalidState);
+    _decide(d, true, _me, 'manual');
+  }
+
+  @override
+  Future<void> reject(String demandId, String reason) =>
+      _io(() => _reject(demandId, reason));
+
+  void _reject(String demandId, String reason) {
+    _requireAdmin();
+    final d = demands[demandId];
+    if (d == null ||
+        (d.status != DemandStatus.pendingReview &&
+            d.status != DemandStatus.open &&
+            d.status != DemandStatus.paused))
+      throw const ApiFailure(ApiCodes.invalidState);
+    if (reason.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
+    _decide(d, false, _me, reason.trim());
+  }
+
+  @override
+  Future<BatchResult> decideMany(List<String> ids, bool approve,
+          {String reason = ''}) =>
+      _io(() {
+        _requireAdmin();
+        var done = 0;
+        final failed = <String>[];
+        for (final id in ids) {
+          try {
+            approve ? _approve(id) : _reject(id, reason);
+            done++;
+          } on ApiFailure {
+            failed.add(id);
+          }
+        }
+        return BatchResult(done, failed);
+      });
+
+  @override
+  Future<Paged<ReportView>> reports(
+          {ReportStatus? status, int page = 1, int pageSize = 20}) =>
+      _read(() {
+        _requireAdmin(AdminPerms.read);
+        final list = reportsById.values
+            .where((r) => status == null || r.status == status)
+            .toList()
+          ..sort((a, b) {
+            final open = (b.status == ReportStatus.open ? 1 : 0)
+                .compareTo(a.status == ReportStatus.open ? 1 : 0);
+            return open != 0 ? open : b.createdAt.compareTo(a.createdAt);
+          });
+        final pg = Paged.of(list, page, pageSize);
+        return Paged([
+          for (final r in pg.items)
+            () {
+              final t = _target(r.target, r.targetId);
+              return ReportView(
+                  report: r,
+                  reporterName: accounts[r.reporterId]?.displayName ?? '',
+                  targetTitle: t.title,
+                  targetOwnerId: t.owner,
+                  targetOwnerName: accounts[t.owner]?.displayName ?? '',
+                  postId: t.postId);
+            }()
+        ], total: pg.total, page: pg.page, pageSize: pg.pageSize);
       });
 
   @override
@@ -2204,6 +2596,7 @@ class MockBackend implements PlatformRepositories {
         if (r == null || r.status != ReportStatus.open)
           throw const ApiFailure(ApiCodes.invalidState);
         if (note.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
+        final t = _target(r.target, r.targetId);
         reportsById[r.id] = r.handle(
             upheld ? ReportStatus.upheld : ReportStatus.dismissed,
             me,
@@ -2217,26 +2610,338 @@ class MockBackend implements PlatformRepositories {
                 _decide(d, false, me, note.trim());
             case ReportTarget.profile:
               final p = profiles[r.targetId];
-              if (p != null)
+              if (p != null) {
                 profiles[p.id] = p.copyWith(status: ProfileStatus.hidden);
+                modHidden.add(p.id);
+              }
             case ReportTarget.account:
-              final a = accounts[r.targetId];
-              if (a != null) accounts[a.id] = a.copyWith(restricted: true);
+              _restrict(me, r.targetId, true, note.trim());
+            case ReportTarget.post:
+              final p = posts[r.targetId];
+              if (p != null) posts[p.id] = p.copyWith(status: PostStatus.hidden);
+            case ReportTarget.comment:
+              final c = commentsById[r.targetId];
+              if (c != null) _removeComment(c);
             case ReportTarget.message:
               break;
           }
+          if (t.owner.isNotEmpty && r.target != ReportTarget.account) {
+            final comment = r.target == ReportTarget.comment;
+            notice(
+                t.owner,
+                NoticeKind.contentRemoved,
+                comment
+                    ? RefType.post
+                    : switch (r.target) {
+                        ReportTarget.demand => RefType.demand,
+                        ReportTarget.profile => RefType.profile,
+                        ReportTarget.post => RefType.post,
+                        _ => RefType.account,
+                      },
+                comment ? (t.postId ?? '') : r.targetId,
+                title: t.title);
+          }
         }
-        auditLog.add(AuditEntry(
-            by: me,
-            at: now,
-            action: upheld ? 'uphold' : 'dismiss',
-            targetId: r.targetId,
-            reason: note.trim()));
+        notice(r.reporterId, NoticeKind.reportResolved, RefType.report, r.id,
+            title: t.title);
+        _record(me, upheld ? 'uphold' : 'dismiss', r.target.name, r.targetId,
+            t.title, note.trim());
+      });
+
+  void _restrict(String by, String accountId, bool restricted, String note) {
+    final a = accounts[accountId];
+    if (a == null) throw const ApiFailure(ApiCodes.notFound);
+    accounts[a.id] = a.copyWith(restricted: restricted);
+    notice(
+        accountId,
+        restricted ? NoticeKind.accountRestricted : NoticeKind.accountRestored,
+        RefType.account,
+        accountId,
+        title: note);
+    _record(by, restricted ? 'restrict' : 'unrestrict', 'account', accountId,
+        a.displayName, note);
+  }
+
+  @override
+  Future<void> setRestriction(String accountId, bool restricted, String note) =>
+      _io(() {
+        _requireAdmin();
+        if (note.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
+        final a = accounts[accountId];
+        if (a == null) throw const ApiFailure(ApiCodes.notFound);
+        if (restricted && a.role != null)
+          throw const ApiFailure(ApiCodes.invalidState);
+        if (a.restricted == restricted) return;
+        _restrict(_me, accountId, restricted, note.trim());
       });
 
   @override
-  Future<List<AuditEntry>> audit() => _read(() {
+  Future<void> setPostHidden(String postId, bool hidden, String note) =>
+      _io(() {
         _requireAdmin();
-        return auditLog.reversed.toList();
+        if (note.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
+        final p = posts[postId];
+        if (p == null) throw const ApiFailure(ApiCodes.notFound);
+        posts[p.id] =
+            p.copyWith(status: hidden ? PostStatus.hidden : PostStatus.published);
+        if (hidden)
+          notice(p.ownerId, NoticeKind.contentRemoved, RefType.post, p.id,
+              title: p.title);
+        _record(_me, hidden ? 'post_hide' : 'post_show', 'post', p.id, p.title,
+            note.trim());
+      });
+
+  @override
+  Future<Paged<Appeal>> appeals(
+          {AppealStatus? status, int page = 1, int pageSize = 20}) =>
+      _read(() {
+        _requireAdmin(AdminPerms.read);
+        final list = _sorted(
+            appealsById.values.where((a) => status == null || a.status == status),
+            (a) => a.createdAt);
+        final pg = Paged.of(list, page, pageSize);
+        return Paged([
+          for (final a in pg.items)
+            Appeal(
+                id: a.id,
+                accountId: a.accountId,
+                target: a.target,
+                targetId: a.targetId,
+                text: a.text,
+                createdAt: a.createdAt,
+                targetTitle: a.targetTitle,
+                accountName: accounts[a.accountId]?.displayName ?? '',
+                status: a.status,
+                resolution: a.resolution,
+                handledAt: a.handledAt)
+        ], total: pg.total, page: pg.page, pageSize: pg.pageSize);
+      });
+
+  @override
+  Future<void> resolveAppeal(String id, bool accept, String note) => _io(() {
+        _requireAdmin();
+        final me = _me;
+        final a = appealsById[id];
+        if (a == null || a.status != AppealStatus.open)
+          throw const ApiFailure(ApiCodes.invalidState);
+        if (note.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
+        if (accept) {
+          switch (a.target) {
+            case 'account':
+              _restrict(me, a.accountId, false, note.trim());
+            case 'profile':
+              final p = profiles[a.targetId];
+              modHidden.remove(a.targetId);
+              if (p != null) profiles[p.id] = p.copyWith(status: ProfileStatus.active);
+            case 'post':
+              final p = posts[a.targetId];
+              if (p != null) posts[p.id] = p.copyWith(status: PostStatus.published);
+            case 'demand':
+              final d = demands[a.targetId];
+              if (d != null && d.status == DemandStatus.rejected)
+                _decide(d.copyWith(status: DemandStatus.pendingReview), true, me,
+                    note.trim());
+          }
+        }
+        appealsById[id] = Appeal(
+            id: a.id,
+            accountId: a.accountId,
+            target: a.target,
+            targetId: a.targetId,
+            text: a.text,
+            createdAt: a.createdAt,
+            targetTitle: a.targetTitle,
+            status: accept ? AppealStatus.accepted : AppealStatus.rejected,
+            resolution: note.trim(),
+            handledAt: now);
+        notice(a.accountId, NoticeKind.appealAnswered, RefType.appeal, a.id,
+            title: a.targetTitle);
+        _record(me, accept ? 'appeal_accept' : 'appeal_reject', a.target,
+            a.targetId, a.targetTitle, note.trim());
+      });
+
+  @override
+  Future<Paged<Verification>> verifications(
+          {VerificationStatus? status, int page = 1, int pageSize = 20}) =>
+      _read(() {
+        _requireAdmin(AdminPerms.read);
+        final list = _sorted(
+            verificationsById.values.where((v) => status == null || v.status == status),
+            (v) => v.createdAt,
+            oldest: true);
+        final pg = Paged.of(list, page, pageSize);
+        return Paged([
+          for (final v in pg.items)
+            Verification(
+                id: v.id,
+                profileId: v.profileId,
+                ownerId: v.ownerId,
+                name: v.name,
+                phone: v.phone,
+                createdAt: v.createdAt,
+                photos: v.photos,
+                note: v.note,
+                ownerName: accounts[v.ownerId]?.displayName ?? '',
+                status: v.status,
+                resolution: v.resolution)
+        ], total: pg.total, page: pg.page, pageSize: pg.pageSize);
+      });
+
+  @override
+  Future<void> resolveVerification(String id, bool approve, String note) =>
+      _io(() {
+        _requireAdmin();
+        final v = verificationsById[id];
+        if (v == null || v.status != VerificationStatus.pending)
+          throw const ApiFailure(ApiCodes.invalidState);
+        if (!approve && note.trim().isEmpty)
+          throw const ApiFailure(ApiCodes.invalidInput);
+        verificationsById[id] = Verification(
+            id: v.id,
+            profileId: v.profileId,
+            ownerId: v.ownerId,
+            name: v.name,
+            phone: v.phone,
+            createdAt: v.createdAt,
+            photos: v.photos,
+            note: v.note,
+            status: approve ? VerificationStatus.approved : VerificationStatus.rejected,
+            resolution: note.trim());
+        final p = profiles[v.profileId];
+        if (approve && p != null) profiles[p.id] = p.copyWith(verified: true);
+        notice(
+            v.ownerId,
+            approve ? NoticeKind.verificationApproved : NoticeKind.verificationRejected,
+            RefType.profile,
+            v.profileId,
+            title: v.name);
+        _record(_me, approve ? 'verify_approve' : 'verify_reject', 'profile',
+            v.profileId, v.name, note.trim());
+      });
+
+  @override
+  Future<Paged<AuditEntry>> audit(
+          {String? by, String? targetId, int page = 1, int pageSize = 20}) =>
+      _read(() {
+        _requireAdmin(AdminPerms.read);
+        return Paged.of(
+            auditLog.reversed
+                .where((a) =>
+                    (by == null || a.by == by) &&
+                    (targetId == null || a.targetId == targetId))
+                .toList(),
+            page,
+            pageSize);
+      });
+
+  AdminUserRow _row(Account a) => AdminUserRow(
+      id: a.id,
+      name: a.displayName,
+      createdAt: a.createdAt,
+      restricted: a.restricted,
+      deleted: a.deleted,
+      role: a.role);
+
+  @override
+  Future<Paged<AdminUserRow>> users(
+          {String query = '',
+          bool restricted = false,
+          bool admins = false,
+          int page = 1,
+          int pageSize = 20}) =>
+      _read(() {
+        _requireAdmin(AdminPerms.read);
+        final q = query.trim().toLowerCase();
+        return Paged.of(
+            _sorted(
+                    accounts.values.where((a) =>
+                        !a.deleted &&
+                        (q.isEmpty ||
+                            a.displayName.toLowerCase().contains(q) ||
+                            a.id == query.trim()) &&
+                        (!restricted || a.restricted) &&
+                        (!admins || a.role != null)),
+                    (a) => a.createdAt)
+                .map(_row)
+                .toList(),
+            page,
+            pageSize);
+      });
+
+  @override
+  Future<List<AdminUserRow>> team() => _read(() {
+        _requireAdmin(AdminPerms.read);
+        return accounts.values.where((a) => a.role != null && !a.deleted).map(_row).toList();
+      });
+
+  @override
+  Future<void> setRole(String accountId, String? role) => _io(() {
+        _requireAdmin(AdminPerms.team);
+        final me = _me;
+        if (accountId == me) throw const ApiFailure(ApiCodes.invalidState);
+        if (role != null && !AdminRoles.all.contains(role))
+          throw const ApiFailure(ApiCodes.invalidInput, 'role');
+        final a = accounts[accountId];
+        if (a == null || a.deleted) throw const ApiFailure(ApiCodes.notFound);
+        if (role != null && a.restricted) throw const ApiFailure(ApiCodes.invalidState);
+        accounts[a.id] = a.withRole(role);
+        _record(me, role == null ? 'role_revoke' : 'role_grant:$role', 'account', a.id,
+            a.displayName, '');
+      });
+
+  @override
+  Future<AccountDetail> accountDetail(String accountId) => _read(() {
+        _requireAdmin(AdminPerms.read);
+        final a = accounts[accountId];
+        if (a == null) throw const ApiFailure(ApiCodes.notFound);
+        final mine = [
+          ...profiles.values.where((p) => p.ownerId == accountId).map((p) => p.id),
+          ...demands.values.where((d) => d.ownerId == accountId).map((d) => d.id),
+          ...posts.values.where((p) => p.ownerId == accountId).map((p) => p.id),
+          accountId,
+        ].toSet();
+        return AccountDetail(
+            account: a,
+            profiles: profiles.values.where((p) => p.ownerId == accountId).toList(),
+            demands: _sorted(demands.values.where((d) => d.ownerId == accountId),
+                    (d) => d.createdAt)
+                .take(20)
+                .toList(),
+            applications:
+                applications.values.where((x) => x.applicantId == accountId).length,
+            cooperations: _sorted(
+                    cooperations.values.where(
+                        (c) => c.ownerId == accountId || c.providerId == accountId),
+                    (c) => c.createdAt)
+                .take(20)
+                .toList(),
+            posts: [
+              for (final p in posts.values.where((p) => p.ownerId == accountId))
+                (id: p.id, title: p.title, hidden: p.status == PostStatus.hidden)
+            ],
+            reportsAbout: _sorted(
+                reportsById.values.where((r) => mine.contains(r.targetId)),
+                (r) => r.createdAt),
+            reportsFiled:
+                reportsById.values.where((r) => r.reporterId == accountId).length,
+            appeals: _sorted(appealsById.values.where((x) => x.accountId == accountId),
+                (x) => x.createdAt),
+            audit: auditLog.reversed.where((e) => mine.contains(e.targetId)).take(50).toList());
+      });
+
+  @override
+  Future<PushPolicy> pushPolicy() => _read(() {
+        _requireAdmin(AdminPerms.read);
+        return policy;
+      });
+
+  @override
+  Future<PushPolicy> savePushPolicy(PushPolicy p) => _io(() {
+        _requireAdmin(AdminPerms.operate);
+        if (p.dailyCap < 0 || p.dailyCap > 100)
+          throw const ApiFailure(ApiCodes.invalidInput);
+        _record(_me, 'push_policy', 'platform', 'push-policy', '',
+            '${p.quietStart}–${p.quietEnd} · ${p.dailyCap}');
+        return policy = p;
       });
 }

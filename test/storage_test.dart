@@ -44,6 +44,14 @@ class MemoryFiles implements ProjectFileSystem {
   }
 }
 
+class MemoryOwners implements ProjectOwners {
+  Map<String, String> map = {};
+  @override
+  Future<Map<String, String>> load() async => {...map};
+  @override
+  Future<void> save(Map<String, String> owners) async => map = {...owners};
+}
+
 void main() {
   var sequence = 0;
   final doc = createHouse(
@@ -54,6 +62,25 @@ void main() {
       rows: 2,
       timestamp: '2026-09-30T00:00:00Z',
       newId: () => 'id${sequence++}');
+  test('each account lists only its own designs', () async {
+    String? me;
+    final store = ProjectStore(fileSystem: MemoryFiles(), owners: MemoryOwners())
+      ..currentOwner = () => me;
+    final guest = await store.createProject(doc);
+    me = 'aigerim';
+    final mine = await store.createProject(doc);
+    // The design made signed out joins the first account that signs in.
+    expect({for (final e in await store.listProjects()) e.id}, {guest, mine});
+    me = 'bolat';
+    expect(await store.listProjects(), isEmpty);
+    final his = await store.createProject(doc);
+    expect([for (final e in await store.listProjects()) e.id], [his]);
+    me = null;
+    expect(await store.listProjects(), isEmpty);
+    me = 'aigerim';
+    expect((await store.listProjects()).length, 2);
+  });
+
   test('project round trip, index and deletion', () async {
     final files = MemoryFiles(),
         store = ProjectStore(fileSystem: MemoryFiles());

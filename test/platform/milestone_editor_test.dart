@@ -30,17 +30,18 @@ void main() {
                         child: const Text('open')))))));
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
+    // The wall contract starts with its own point only: walls, 100%.
     expect(find.text('合计 100%'), findsOneWidget);
     await t.tap(find.byKey(const Key('ms-add')));
     await t.pumpAndSettle();
-    await t.enterText(find.byKey(const Key('ms-name-4')), '门窗');
-    await t.enterText(find.byKey(const Key('ms-percent-4')), '10');
+    await t.enterText(find.byKey(const Key('ms-name-1')), '门窗');
+    await t.enterText(find.byKey(const Key('ms-percent-1')), '10');
     await t.pumpAndSettle();
     expect(find.text('合计 110%'), findsOneWidget);
     await t.tap(find.byKey(const Key('milestones-save')));
     await t.pumpAndSettle();
-    expect(b.cooperations[coop.id]!.milestones, hasLength(4));
-    await t.enterText(find.byKey(const Key('ms-percent-3')), '5');
+    expect(b.cooperations[coop.id]!.milestones, hasLength(1));
+    await t.enterText(find.byKey(const Key('ms-percent-0')), '90');
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('milestones-save')));
     await t.pumpAndSettle();

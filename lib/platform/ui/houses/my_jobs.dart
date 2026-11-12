@@ -183,12 +183,11 @@ class _JobCard extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 10),
                             child: Wrap(spacing: 8, runSpacing: 8, children: [
                               FilledButton.tonalIcon(
-                                  onPressed: () => logToday(context, c),
+                                  onPressed: onLogToday(context, c),
                                   icon: const Icon(
                                       Icons.event_available_outlined,
                                       size: 18),
-                                  label: Text(tr3('今天记工', 'Бүгінді жазу',
-                                      'Отметить день'))),
+                                  label: Text(logTodayLabel(c))),
                               if (c.milestones.isNotEmpty)
                                 OutlinedButton(
                                     onPressed: () => pushPage<void>(context,

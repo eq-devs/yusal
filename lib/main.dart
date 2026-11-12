@@ -53,7 +53,11 @@ class HouseApp extends StatefulWidget {
 class _HouseAppState extends State<HouseApp> {
   late final PlatformRepositories repos = widget.repos ?? MockBackend();
   late final ProjectStore store =
-      widget.store ?? ProjectStore(previewRenderer: renderProjectPreview);
+      (widget.store ??
+          ProjectStore(
+              previewRenderer: renderProjectPreview,
+              owners: PrefsProjectOwners()))
+        ..currentOwner ??= () => repos.currentAccount?.id;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(

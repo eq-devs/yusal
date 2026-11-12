@@ -17,6 +17,7 @@ import 'publish_page.dart';
 import 'share_page.dart';
 import '../home/post_page.dart';
 import '../../../motion/motion.dart';
+import '../me/trust_pages.dart';
 
 class _DetailData {
   _DetailData(this.demand, this.owner, this.snapshot, this.myApps, this.coops,
@@ -172,8 +173,14 @@ class _DemandDetail extends StatelessWidget {
           d.rejectReason != null) ...[
         const SizedBox(height: 14),
         Hint(
-            '${tr3('未通过原因', 'Себебі', 'Причина')}: ${d.rejectReason!.startsWith('banned:') ? tr3('包含不允许的内容（如收取押金）', 'Рұқсат етілмеген мазмұн (мысалы кепілақы)', 'Недопустимое содержание (например, залог)') : d.rejectReason}. ${tr3('修改后可重新提交审核。', 'Түзетіп, қайта жіберіңіз.', 'Исправьте и отправьте снова.')}',
+            '${tr3('未通过原因', 'Себебі', 'Причина')}: ${d.rejectReason!.startsWith('banned:') ? tr3('包含不允许的内容（如收取押金）', 'Рұқсат етілмеген мазмұн (мысалы кепілақы)', 'Недопустимое содержание (например, залог)') : reasonText(d.rejectReason!)}. ${tr3('修改后可重新提交审核。', 'Түзетіп, қайта жіберіңіз.', 'Исправьте и отправьте снова.')}',
             warn: true),
+        Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton(
+                onPressed: () => appealDecision(context, 'demand', d.id),
+                child: Text(tr3('认为处理有误？申诉', 'Шешім қате ме? Шағымдану',
+                    'Не согласны? Обжаловать')))),
       ],
       const Divider(height: 36),
       Row(children: [
@@ -309,19 +316,8 @@ class _DemandDetail extends StatelessWidget {
           if (!mine)
             PopupMenuButton<String>(
                 onSelected: (value) async {
-                  if (value == 'report') {
-                    final reason = await askText(
-                        context, tr3('举报这个需求', 'Шағымдану', 'Пожаловаться'),
-                        hint: tr3('说明原因，例如收押金、虚假信息', 'Себебін жазыңыз',
-                            'Причина, например залог или ложные данные'));
-                    if (reason != null && context.mounted)
-                      await attempt(
-                          context,
-                          () => context.repos
-                              .report(ReportTarget.demand, d.id, reason),
-                          success: tr3(
-                              '已提交，审核人员会处理', 'Жіберілді', 'Жалоба отправлена'));
-                  }
+                  if (value == 'report')
+                    await reportContent(context, ReportTarget.demand, d.id);
                   if (value == 'block' && context.mounted) {
                     if (await requireLogin(context) && context.mounted)
                       await attempt(

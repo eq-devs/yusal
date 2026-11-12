@@ -18,12 +18,17 @@ import 'mock_backend_test.dart' show backend, terms;
 Future<Cooperation> liveContract(MockBackend b) async {
   b.signInAs(SeedIds.owner);
   final coop = await b.invite('app_team_wall', terms());
+  // The demand is for walls only; plan the four whole-house points.
+  await b.setMilestones(coop.id, defaultMilestones);
   b.signInAs(SeedIds.team);
   return b.confirm(coop.id);
 }
 
 void main() {
-  test('a contract starts with four inspection points', () async {
+  test('a contract starts with the points of its stages', () async {
+    final b = backend()..signInAs(SeedIds.owner);
+    final pending = await b.invite('app_team_wall', terms());
+    expect(pending.milestones.map((m) => (m.key, m.percent)), [('walls', 100)]);
     final c = await liveContract(backend());
     expect(c.milestones.map((m) => m.key),
         ['foundation', 'walls', 'roof', 'finish']);

@@ -62,6 +62,57 @@ Future<Demand> publishAsOwner(MockBackend b, {String text = ''}) async {
 }
 
 void main() {
+  test('confirming a builder fills the demand and tells the others',
+      () async {
+    final b = backend();
+    final d = await publishAsOwner(b);
+    b.signInAs(SeedIds.mason);
+    final won = await b.submit(
+        demandId: d.id,
+        profileId: 'prof_mason',
+        version: lumpQuote(800000),
+        requestId: 'r1');
+    b.signInAs(SeedIds.team);
+    final lost = await b.submit(
+        demandId: d.id,
+        profileId: 'prof_team',
+        version: lumpQuote(700000),
+        requestId: 'r2');
+    b.signInAs(SeedIds.owner);
+    final coop = await b.invite(won.id, terms());
+    b.signInAs(SeedIds.mason);
+    await b.confirm(coop.id);
+    expect(b.demands[d.id]!.status, DemandStatus.found);
+    expect(b.demands[d.id]!.outcome, OutcomeKind.platformConfirmed);
+    expect(b.applications[lost.id]!.status, ApplicationStatus.notSelected);
+    expect(
+        b.notices.values.where((n) =>
+            n.kind == NoticeKind.applicationNotSelected && n.refId == d.id),
+        hasLength(1));
+  });
+
+  test('milestones follow the contracted stages', () {
+    List<(String, int)> plan(ContractTerms? c) =>
+        [for (final m in milestonesForStages(c)) (m.key, m.percent)];
+    expect(plan(null), hasLength(4));
+    expect(
+        plan(const ContractTerms(
+            scopeKind: ScopeKind.stages, stages: ['found', 'walls'])),
+        [('foundation', 33), ('walls', 67)]);
+    expect(
+        plan(const ContractTerms(scopeKind: ScopeKind.stages, stages: ['roof'])),
+        [('roof', 100)]);
+  });
+
+  test('banned words in a negated clause are not rejected outright', () {
+    expect(onlyNegatedBanned('Залог за инструмент не даём'), isTrue);
+    expect(onlyNegatedBanned('我们不收押金，按节点付款'), isTrue);
+    expect(onlyNegatedBanned('Кепіл ақы жоқ'), isTrue);
+    expect(onlyNegatedBanned('Нужен залог 20000'), isFalse);
+    expect(onlyNegatedBanned('Без опыта не берём, залог 20000'), isFalse);
+    expect(onlyNegatedBanned('清水房 两层'), isFalse);
+  });
+
   group('accounts', () {
     test('signs in with the mock code and refuses a wrong one', () async {
       final b = backend();
@@ -165,6 +216,10 @@ void main() {
       final coop = await b.invite(app.id, terms());
       b.signInAs(SeedIds.mason);
       await b.confirm(coop.id);
+      // A confirmed builder fills a contract demand; the owner reopens it.
+      expect(b.demands[d.id]!.status, DemandStatus.found);
+      b.signInAs(SeedIds.owner);
+      await b.resume(d.id);
       b.advanceTime(const Duration(days: 31));
       expect(b.demands[d.id]!.status, DemandStatus.expired);
       expect(b.cooperations[coop.id]!.status, CooperationStatus.confirmed);

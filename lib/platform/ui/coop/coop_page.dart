@@ -198,9 +198,9 @@ class _CoopView extends StatelessWidget {
           if (me == c.providerId)
             FilledButton.icon(
                 key: const Key('coop-log-today'),
-                onPressed: () => logToday(context, c),
+                onPressed: onLogToday(context, c),
                 icon: const Icon(Icons.event_available_outlined, size: 18),
-                label: Text(tr3('今天记工', 'Бүгінді жазу', 'Отметить день'))),
+                label: Text(logTodayLabel(c))),
           if (change == null && data.demand != null)
             OutlinedButton(
                 onPressed: () async {

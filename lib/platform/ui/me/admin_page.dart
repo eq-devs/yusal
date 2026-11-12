@@ -116,6 +116,7 @@ String _targetName(String t) => switch (t) {
       'message' => '消息',
       'post' => '房子',
       'comment' => '评论',
+      'platform' => '全平台',
       _ => t,
     };
 
@@ -147,6 +148,7 @@ String _actionName(String a) => switch (a) {
       'verify_approve' => '认证通过',
       'verify_reject' => '认证驳回',
       'role_revoke' => '撤销角色',
+      'push_policy' => '修改推送节制',
       _ when a.startsWith('role_grant:') => '授予${roleName(a.substring(11))}',
       _ => a,
     };

@@ -81,6 +81,61 @@ String? bannedWordIn(String text) {
   return null;
 }
 
+const _negationWords = {'не', 'без', 'нет', 'ни', 'жоқ', 'емес'};
+const _negationChars = ['不', '无', '免', '没'];
+
+/// Whether every clause holding a banned word also holds a negation
+/// ("залог не берём", "不收押金"). Such text goes to a moderator instead of
+/// being rejected, because "залог не возвращается" negates too.
+bool onlyNegatedBanned(String text) {
+  var found = false;
+  for (final clause in text.toLowerCase().split(RegExp(r'[.!?;,\n。！？；，、]'))) {
+    if (bannedWordIn(clause) == null) continue;
+    found = true;
+    final negated = _negationChars.any(clause.contains) ||
+        clause
+            .split(RegExp(r'[^\p{L}]+', unicode: true))
+            .any(_negationWords.contains);
+    if (!negated) return false;
+  }
+  return found;
+}
+
+/// Inspection point closing each demand stage.
+const _stageMilestone = {
+  'found': 'foundation',
+  'walls': 'walls',
+  'roof': 'roof',
+  'openings': 'finish',
+  'mep': 'finish',
+  'finish': 'finish',
+  'site': 'finish',
+};
+
+/// The four default points, or for a contract over some stages only the
+/// points of those stages, their shares rescaled to 100. Either side can
+/// replan before confirming.
+List<Milestone> milestonesForStages(ContractTerms? c) {
+  var plan = defaultMilestones;
+  if (c != null && c.scopeKind == ScopeKind.stages) {
+    final keep = {for (final s in c.stages) _stageMilestone[s]};
+    final some = [
+      for (final m in defaultMilestones)
+        if (keep.contains(m.key)) m
+    ];
+    if (some.isNotEmpty) plan = some;
+  }
+  final total = plan.fold<int>(0, (n, m) => n + m.percent);
+  final out = <Milestone>[];
+  var left = 100;
+  for (final m in plan) {
+    final p = m == plan.last ? left : m.percent * 100 ~/ total;
+    left -= p;
+    out.add(Milestone(key: m.key, percent: p));
+  }
+  return out;
+}
+
 /// Why two or more quotes cannot be compared directly.
 enum CompareIssue {
   /// Based on different demand versions.

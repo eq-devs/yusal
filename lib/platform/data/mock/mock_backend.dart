@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:math' show max;
 import 'package:flutter/foundation.dart' show ChangeNotifier, Listenable;
 import '../../domain/models.dart';
 import '../../domain/rules.dart';
@@ -633,8 +634,10 @@ class MockBackend implements PlatformRepositories {
     final d = demands[id];
     if (d == null || d.status != DemandStatus.pendingReview) return;
     final v = d.current;
-    final word = bannedWordIn('${v.title} ${v.description} ${v.siteNotes}');
+    final text = '${v.title}\n${v.description}\n${v.siteNotes}';
+    final word = bannedWordIn(text);
     if (word != null) {
+      if (onlyNegatedBanned(text)) return; // left for a moderator
       _decide(d, false, 'system', 'banned:$word');
     } else {
       _decide(d, true, 'system', 'auto');
@@ -841,7 +844,7 @@ class MockBackend implements PlatformRepositories {
               a.status == ApplicationStatus.notSelected) continue;
           final c = out[d.id] ?? (total: 0, unread: 0);
           out[d.id] =
-              (total: c.total + 1, unread: c.unread + (a.readByOwner ? 0 : 1));
+              (total: c.total + 1, unread: c.unread + (a.readByOwner || a.status != ApplicationStatus.submitted ? 0 : 1));
         }
         return out;
       });
@@ -1078,8 +1081,9 @@ class MockBackend implements PlatformRepositories {
               _agreementFrom(
                   terms, 1, me, d.current.no, AgreementStatus.proposed)
             ],
-            milestones:
-                d.type == DemandType.contract ? defaultMilestones : const [],
+            milestones: d.type == DemandType.contract
+                ? milestonesForStages(d.current.contract)
+                : const [],
             createdAt: now);
         applications[a.id] =
             a.copyWith(status: ApplicationStatus.pendingConfirm);
@@ -1115,9 +1119,39 @@ class MockBackend implements PlatformRepositories {
           notice(c.otherSide(me), NoticeKind.cooperationConfirmed,
               RefType.cooperation, c.id,
               title: _title(c));
+          _settle(c.demandId);
         }
         return cooperations[c.id]!;
       });
+
+  /// A filled demand (a contract has its builder; a hire has its headcount)
+  /// is found, and the other applicants are told they were not selected.
+  /// Pending invitations are left alone.
+  void _settle(String demandId) {
+    final d = demands[demandId]!;
+    if (d.status != DemandStatus.open && d.status != DemandStatus.paused) {
+      return;
+    }
+    final apps = applications.values.where((a) => a.demandId == d.id).toList();
+    if (d.type == DemandType.hire) {
+      final need = d.current.hire?.headcount ?? 1;
+      final got = apps
+          .where((a) => a.status == ApplicationStatus.cooperating)
+          .fold<int>(0, (n, a) => n + max(a.current.headcountOffered, 1));
+      if (got < need) return;
+    }
+    demands[d.id] = d.copyWith(
+        status: DemandStatus.found,
+        outcome: OutcomeKind.platformConfirmed,
+        outcomeAt: now);
+    for (final a
+        in apps.where((a) => a.status == ApplicationStatus.submitted)) {
+      applications[a.id] = a.copyWith(status: ApplicationStatus.notSelected);
+      notice(a.applicantId, NoticeKind.applicationNotSelected, RefType.demand,
+          d.id,
+          title: d.current.title);
+    }
+  }
 
   Cooperation _notFormed(Cooperation c, NoticeKind kind, String to) {
     cooperations[c.id] = c
@@ -1364,7 +1398,11 @@ class MockBackend implements PlatformRepositories {
           throw const ApiFailure(ApiCodes.invalidState);
         if (headcount < 1 || headcount > 200)
           throw const ApiFailure(ApiCodes.invalidInput, 'headcount');
-        final day = DateTime.utc(now.year, now.month, now.day);
+        // The Kazakhstan calendar day (UTC+5); a confirmed day stays as is.
+        final kz = now.toUtc().add(const Duration(hours: 5));
+        final day = DateTime.utc(kz.year, kz.month, kz.day);
+        if (c.workLogs.any((w) => w.day == day && w.confirmed))
+          throw const ApiFailure(ApiCodes.invalidState, 'workLogConfirmed');
         final rest = c.workLogs.where((w) => w.day != day);
         final log = WorkLog(
             id: newId('wl'),
@@ -2902,6 +2940,8 @@ class MockBackend implements PlatformRepositories {
         _requireAdmin(AdminPerms.operate);
         if (p.dailyCap < 0 || p.dailyCap > 100)
           throw const ApiFailure(ApiCodes.invalidInput);
+        _record(_me, 'push_policy', 'platform', 'push-policy', '',
+            '${p.quietStart}–${p.quietEnd} · ${p.dailyCap}');
         return policy = p;
       });
 }

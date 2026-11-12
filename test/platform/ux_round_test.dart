@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yusal/platform/ui/shell.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/features/house_editor.dart';
@@ -98,7 +99,7 @@ void main() {
   testWidgets('a guest on Messages is offered to sign in, not to retry',
       (t) async {
     await launch(t, size: phone);
-    await t.tap(find.byType(NavigationDestination).at(2));
+    await t.tap(find.byType(ShellBarTab).at(2));
     await t.pumpAndSettle();
     expect(
         find.descendant(
@@ -113,7 +114,7 @@ void main() {
   testWidgets('signed in, Messages has its tabs and "mark all read"',
       (t) async {
     await launch(t, as: SeedIds.owner, size: phone);
-    await t.tap(find.byType(NavigationDestination).at(2));
+    await t.tap(find.byType(ShellBarTab).at(2));
     await t.pumpAndSettle();
     expect(find.byType(SignInPrompt), findsNothing);
     expect(find.byTooltip('全部已读'), findsOneWidget);
@@ -158,7 +159,7 @@ void main() {
         (t) async {
       final (_, store) = await launch(t, size: phone);
       await addDesign(t, store);
-      await t.tap(find.byType(NavigationDestination).at(1));
+      await t.tap(find.byType(ShellBarTab).at(1));
       await t.pumpAndSettle();
       expect(find.text('我的测试设计'), findsOneWidget);
       expect(find.text('继续设计'), findsOneWidget);
@@ -185,7 +186,7 @@ void main() {
 
     testWidgets('with no designs the example is offered', (t) async {
       await launch(t, size: phone);
-      await t.tap(find.byType(NavigationDestination).at(1));
+      await t.tap(find.byType(ShellBarTab).at(1));
       await t.pumpAndSettle();
       expect(find.byKey(const Key('designs-empty')), findsOneWidget);
       expect(find.byKey(const Key('designs-new')), findsOneWidget);
@@ -197,7 +198,7 @@ void main() {
       AppSettings.instance.lang = AppLang.ru;
       final (_, store) = await launch(t, size: phone, lang: AppLang.ru);
       await addDesign(t, store);
-      await t.tap(find.byType(NavigationDestination).at(1));
+      await t.tap(find.byType(ShellBarTab).at(1));
       await t.pumpAndSettle();
       expect(find.text('Мои проекты'), findsOneWidget);
       expect(find.text('Продолжить'), findsOneWidget);
@@ -223,7 +224,7 @@ void main() {
     testWidgets('deleting a design asks first and removes it', (t) async {
       final (_, store) = await launch(t, size: phone);
       await addDesign(t, store);
-      await t.tap(find.byType(NavigationDestination).at(1));
+      await t.tap(find.byType(ShellBarTab).at(1));
       await t.pumpAndSettle();
       await t.tap(find.byTooltip('项目操作'));
       await t.pumpAndSettle();
@@ -241,7 +242,7 @@ void main() {
   testWidgets('workspace tabs scroll on a phone in Russian instead of cutting',
       (t) async {
     await launch(t, as: SeedIds.owner, size: phone, lang: AppLang.ru);
-    await t.tap(find.byType(NavigationDestination).at(1));
+    await t.tap(find.byType(ShellBarTab).at(1));
     await t.pumpAndSettle();
     final card = find.byWidgetPredicate(
         (w) => w.key?.toString().contains('house-card-') ?? false);

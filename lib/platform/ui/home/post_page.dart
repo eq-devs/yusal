@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -25,7 +27,7 @@ import '../../../motion/motion.dart';
 /// One house: the plan, the facts, the story, the people recruiting for
 /// it, and what others think. The owner recruits from here; a
 /// professional applies or writes from here.
-class PostPage extends StatelessWidget {
+class PostPage extends StatefulWidget {
   const PostPage({super.key, required this.postId, this.preview});
   final String postId;
 
@@ -34,9 +36,22 @@ class PostPage extends StatelessWidget {
   final HousePost? preview;
 
   @override
+  State<PostPage> createState() => _PostPageState();
+}
+
+class _PostPageState extends State<PostPage> {
+  /// The cover, shared by the skeleton and the loaded page. When the house
+  /// arrives the cover moves into the new page instead of being built
+  /// again: a rebuilt cover would end the list card's flight half-way, the
+  /// picture flashing at its landing spot while the flying copy fades.
+  final _cover = GlobalKey();
+
+  @override
   Widget build(BuildContext context) {
     AppScope.watch(context);
     final t = YTokens.of(context);
+    final postId = widget.postId, preview = widget.preview;
+    final route = ModalRoute.of(context);
     return Live<
             (
               HousePost?,
@@ -50,8 +65,12 @@ class PostPage extends StatelessWidget {
         reloadKey: postId,
         loading: preview == null
             ? const SkeletonPage(cover: 230)
-            : _PostSkeleton(post: preview!),
+            : _PostSkeleton(post: preview, coverKey: _cover),
         load: (r) async {
+          // One thing moves at a time: the page swaps the skeleton for the
+          // house only once it has slid in, so the big build does not land
+          // in the middle of the slide and the cover's flight.
+          final settled = _settled(route);
           final p = await r.post(postId);
           if (p == null)
             return (
@@ -74,6 +93,7 @@ class PostPage extends StatelessWidget {
                 : r.myProfiles().then((list) => list.isNotEmpty),
             r.postBuild(postId)
           ).wait;
+          await settled;
           return (p, liked, demands, comments, snap, isPro, build);
         },
         builder: (context, data) {
@@ -91,9 +111,8 @@ class PostPage extends StatelessWidget {
                         child: Text(tr3('首页', 'Басты', 'Главная')))));
           final me = context.repos.currentAccount;
           final mine = me?.id == p.ownerId;
-          final image = p.preview == null
-              ? null
-              : MemoryImage(imageBytes(p.preview!));
+          final image =
+              p.preview == null ? null : MemoryImage(imageBytes(p.preview!));
           final open =
               demands.where((d) => d.status == DemandStatus.open).toList();
           // Floor count is already on the fact sheet.
@@ -282,7 +301,8 @@ class PostPage extends StatelessWidget {
                     flexibleSpace: FlexibleSpaceBar(
                         background: Padding(
                             padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                            child: _PostCover(post: p, image: image)))),
+                            child: _PostCover(
+                                key: _cover, post: p, image: image)))),
                 SliverToBoxAdapter(
                     child: Center(
                         child: ConstrainedBox(
@@ -298,7 +318,8 @@ class PostPage extends StatelessWidget {
                                       const SizedBox(height: 4),
                                       Text(regionName(p.region),
                                           style: TextStyle(
-                                              color: t.muted, fontSize: YFont.body)),
+                                              color: t.muted,
+                                              fontSize: YFont.body)),
                                       const SizedBox(height: 6),
                                       Row(children: [
                                         if (p.rating != null) ...[
@@ -405,7 +426,8 @@ class PostPage extends StatelessWidget {
                                                                   'Автор · ${fmtDay(p.createdAt)}'),
                                                           style: TextStyle(
                                                               color: t.muted,
-                                                              fontSize: YFont.small)),
+                                                              fontSize:
+                                                                  YFont.small)),
                                                     ])),
                                                 if (!mine)
                                                   OutlinedButton(
@@ -417,7 +439,8 @@ class PostPage extends StatelessWidget {
                                         const SizedBox(height: 18),
                                         Text(p.story,
                                             style: const TextStyle(
-                                                fontSize: YFont.body, height: 1.5)),
+                                                fontSize: YFont.body,
+                                                height: 1.5)),
                                       ],
                                       PlanAttachment(snapshot: snap),
                                       // Facts from the design.
@@ -537,7 +560,8 @@ class PostPage extends StatelessWidget {
       summary = post.commentCount == 0
           ? tr3('等大家点评', 'Пікір күтілуде', 'Ждём отзывов')
           // commentCount includes replies, unlike the critiques header.
-          : tr3('${post.commentCount} 条点评和回复',
+          : tr3(
+              '${post.commentCount} 条点评和回复',
               '${post.commentCount} пікір мен жауап',
               'Отзывов и ответов: ${post.commentCount}');
       main = FilledButton(
@@ -680,7 +704,8 @@ class _FactSheet extends StatelessWidget {
         child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-                color: t.surface, borderRadius: BorderRadius.circular(YRadius.control)),
+                color: t.surface,
+                borderRadius: BorderRadius.circular(YRadius.control)),
             child: Column(children: [
               Icon(icon, color: t.accent),
               const SizedBox(height: 4),
@@ -689,7 +714,8 @@ class _FactSheet extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                       fontSize: YFont.body,
                       fontFeatures: [FontFeature.tabularFigures()])),
-              Text(label, style: TextStyle(color: t.muted, fontSize: YFont.caption)),
+              Text(label,
+                  style: TextStyle(color: t.muted, fontSize: YFont.caption)),
             ])));
     final summary = snapshot?.summary ?? '';
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -708,7 +734,8 @@ class _FactSheet extends StatelessWidget {
             margin: const EdgeInsets.only(top: 8),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-                color: t.accentSoft, borderRadius: BorderRadius.circular(YRadius.control)),
+                color: t.accentSoft,
+                borderRadius: BorderRadius.circular(YRadius.control)),
             child: Row(children: [
               Icon(Icons.payments_outlined, color: t.accent),
               const SizedBox(width: 10),
@@ -724,8 +751,8 @@ class _FactSheet extends StatelessWidget {
       if (summary.isNotEmpty)
         Padding(
             padding: const EdgeInsets.only(top: 8),
-            child:
-                Text(summary, style: TextStyle(color: t.muted, fontSize: YFont.small))),
+            child: Text(summary,
+                style: TextStyle(color: t.muted, fontSize: YFont.small))),
     ]);
   }
 }
@@ -742,7 +769,8 @@ class _Quantities extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(children: [
                 Expanded(
-                    child: Text(l.name, style: const TextStyle(fontSize: YFont.label))),
+                    child: Text(l.name,
+                        style: const TextStyle(fontSize: YFont.label))),
                 Text(
                     l.quantity == null
                         ? tr3('现场确认', 'Орнында', 'На месте')
@@ -768,8 +796,8 @@ class _PostLeading extends StatelessWidget {
           ? IconAction(
               label: tr3('首页', 'Басты бет', 'Главная'),
               icon: const Icon(Icons.home_outlined, size: 20),
-              onPressed: () => Navigator.of(context).pushReplacement(
-                  platformRoute((_) => const PlatformShell())))
+              onPressed: () => Navigator.of(context)
+                  .pushReplacement(platformRoute((_) => const PlatformShell())))
           : IconAction(
               label: MaterialLocalizations.of(context).backButtonTooltip,
               icon: const Icon(Icons.arrow_back, size: 20),
@@ -777,14 +805,34 @@ class _PostLeading extends StatelessWidget {
 }
 
 /// The house page's cover: where a tapped list card's picture lands.
+/// Completes once [route] has finished coming in (at once if it has).
+Future<void> _settled(ModalRoute<Object?>? route) {
+  final a = route?.animation;
+  if (a == null || a.status != AnimationStatus.forward) return Future.value();
+  final done = Completer<void>();
+  void listen(AnimationStatus s) {
+    if (s == AnimationStatus.forward) return;
+    a.removeStatusListener(listen);
+    done.complete();
+  }
+
+  a.addStatusListener(listen);
+  return done.future;
+}
+
 class _PostCover extends StatelessWidget {
-  const _PostCover({required this.post, this.image, this.loading = false});
+  const _PostCover(
+      {super.key, required this.post, this.image, this.loading = false});
   final HousePost post;
   final ImageProvider? image;
   final bool loading;
   @override
   Widget build(BuildContext context) => HeroTarget(
       heroKey: houseHeroKey(post.id),
+      // The plan sits contained on its sheet in both places: laid out at
+      // each frame's size it morphs exactly, where cropping would make it
+      // jump as the flight starts.
+      cropInFlight: false,
       child: Cover(
           icon: Icons.home_outlined,
           seed: post.id,
@@ -798,8 +846,9 @@ class _PostCover extends StatelessWidget {
 /// While the house loads: the same app bar and cover, so the page does
 /// not jump when the rest arrives.
 class _PostSkeleton extends StatelessWidget {
-  const _PostSkeleton({required this.post});
+  const _PostSkeleton({required this.post, required this.coverKey});
   final HousePost post;
+  final GlobalKey coverKey;
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
@@ -814,7 +863,10 @@ class _PostSkeleton extends StatelessWidget {
               background: PostPicture(
                   post: post,
                   builder: (context, image, loading) => _PostCover(
-                      post: post, image: image, loading: loading)))),
+                      key: coverKey,
+                      post: post,
+                      image: image,
+                      loading: loading)))),
       SliverToBoxAdapter(
           child: Center(
               child: ConstrainedBox(

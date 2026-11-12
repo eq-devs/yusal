@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yusal/platform/ui/widgets.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/main.dart';
@@ -161,7 +162,7 @@ void main() {
       await tapIt(t, find.byKey(Key('critique-reply-${critique.id}')));
       await t.enterText(
         find.descendant(
-          of: find.byType(AlertDialog),
+          of: find.byType(SheetBody),
           matching: find.byType(TextField),
         ),
         '好的，我改一下 $run',
@@ -233,7 +234,7 @@ void main() {
           scrollable: find.byType(Scrollable).hitTestable().first);
       await tapIt(t, find.byTooltip('改称呼'));
       final field = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(SheetBody),
         matching: find.byType(TextField),
       );
       await t.enterText(field, 'Ana 改名 $run');

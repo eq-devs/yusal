@@ -450,6 +450,9 @@ class MyApplicationsPage extends StatelessWidget {
   }
 }
 
+/// Everything I saved, one section per kind: houses I hearted (home feed
+/// or a house page), workers and teams, and demands. Favourites hold
+/// profile and demand ids together, so each id is looked up as either.
 class FavouritesPage extends StatelessWidget {
   const FavouritesPage({super.key});
   @override
@@ -457,25 +460,76 @@ class FavouritesPage extends StatelessWidget {
     AppScope.watch(context);
     return PageScaffold(
         title: tr3('收藏', 'Таңдаулы', 'Избранное'),
-        body: Live<List<Demand>>(
-            load: (r) async => [
-                  for (final id in await r.favourites())
-                    if (await r.demand(id) case final d?) d
-                ],
-            builder: (context, list) => Column(children: [
-                  if (list.isEmpty)
-                    EmptyState(
-                        icon: Icons.favorite_border,
-                        title: tr3('还没有收藏', 'Бос', 'Пусто')),
-                  for (final d in list)
-                    Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: DemandCard(
-                            compact: true,
-                            demand: d,
-                            onTap: () => pushPage<void>(context,
-                                (_) => DemandDetailPage(demandId: d.id)))),
-                ])));
+        body: Live<(List<HousePost>, List<ServiceProfile>, List<Demand>)>(
+            load: (r) async {
+              final houses = [
+                for (final id in await r.likedPosts())
+                  if (await r.post(id) case final p?) p
+              ];
+              final profiles = <ServiceProfile>[];
+              final demands = <Demand>[];
+              for (final id in await r.favourites()) {
+                if (await r.demand(id) case final d?) {
+                  demands.add(d);
+                } else if (await r.profile(id) case final p?) {
+                  profiles.add(p);
+                }
+              }
+              return (houses, profiles, demands);
+            },
+            builder: (context, data) {
+              final (houses, profiles, demands) = data;
+              if (houses.isEmpty && profiles.isEmpty && demands.isEmpty) {
+                return EmptyState(
+                    icon: Icons.favorite_border,
+                    title: tr3('还没有收藏', 'Бос', 'Пусто'),
+                    body: tr3(
+                        '在房子、师傅名片或需求上点 ♡，就会出现在这里',
+                        'Үйдегі, шебердегі не тапсырыстағы ♡ белгісін басыңыз',
+                        'Нажмите ♡ на доме, мастере или заявке, и они появятся здесь'));
+              }
+              return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (houses.isNotEmpty) ...[
+                      SectionTitle(tr3('房子', 'Үйлер', 'Дома')),
+                      for (final p in houses)
+                        Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: HouseCard(
+                                key: Key('fav-house-${p.id}'),
+                                compact: true,
+                                post: p,
+                                liked: true,
+                                onTap: () => pushPage<void>(context,
+                                    (_) => PostPage(postId: p.id, preview: p)))),
+                    ],
+                    if (profiles.isNotEmpty) ...[
+                      SectionTitle(
+                          tr3('师傅和施工队', 'Шеберлер', 'Мастера и бригады')),
+                      for (final p in profiles)
+                        Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: ProfileCard(
+                                key: Key('fav-profile-${p.id}'),
+                                profile: p,
+                                onTap: () => pushPage<void>(context,
+                                    (_) => ProfilePage(profileId: p.id)))),
+                    ],
+                    if (demands.isNotEmpty) ...[
+                      SectionTitle(tr3('需求', 'Тапсырыстар', 'Заявки')),
+                      for (final d in demands)
+                        Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: DemandCard(
+                                key: Key('fav-demand-${d.id}'),
+                                compact: true,
+                                demand: d,
+                                onTap: () => pushPage<void>(context,
+                                    (_) => DemandDetailPage(demandId: d.id)))),
+                    ],
+                  ]);
+            }));
   }
 }
 

@@ -24,6 +24,7 @@ dependencies:
   pdf: ^3.12.0
   share_plus: ^13.3.0
   shared_preferences: ^2.5.5
+  shorebird_code_push: ^2.0.5
   sign_in_with_apple: ^7.0.1
   uuid: ^4.6.0
 dev_dependencies:
@@ -35,6 +36,9 @@ dev_dependencies:
   file_selector_platform_interface: ^2.7.0
 flutter:
   uses-material-design: true
+  # Shorebird reads its app_id from here at runtime.
+  assets:
+    - shorebird.yaml
   fonts:
     - family: Onest
       fonts:

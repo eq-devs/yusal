@@ -50,3 +50,6 @@ firebase-debug.log
 
 # Screenshots from integration_test/backend_flow_test.dart
 /test-screens/
+
+# Shorebird
+.shorebird/

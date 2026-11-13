@@ -12,6 +12,7 @@ import 'platform/ui/home/post_page.dart';
 import 'platform/ui/links.dart';
 import 'platform/ui/scope.dart';
 import 'platform/ui/shell.dart';
+import 'platform/update/code_push.dart';
 import 'render2d/project_preview.dart';
 import 'storage/project_store.dart';
 
@@ -36,6 +37,8 @@ Future<void> main() async {
     unawaited(PushSetup(api, appNavigator).start());
   }
   runApp(ProviderScope(child: HouseApp(repos: repos)));
+  // Over-the-air patches (Shorebird); a no-op outside `shorebird release`.
+  CodePush().start();
 }
 
 class HouseApp extends StatefulWidget {

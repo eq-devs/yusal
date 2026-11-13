@@ -24,5 +24,33 @@
       }
     ],
     "site": "yusal-web"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "yusal-web",
+          "appId": "1:814743623983:android:b4a92a238d1f4a6f12a9da",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "yusal-web",
+          "appId": "1:814743623983:ios:2d9310918cca26a912a9da",
+          "uploadDebugSymbols": true,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "yusal-web",
+          "configurations": {
+            "android": "1:814743623983:android:b4a92a238d1f4a6f12a9da",
+            "ios": "1:814743623983:ios:2d9310918cca26a912a9da"
+          }
+        }
+      }
+    }
   }
 }

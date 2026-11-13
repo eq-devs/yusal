@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -8,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import '../../app/settings.dart';
 import '../data/http/http_backend.dart';
 import '../domain/models.dart';
+import '../firebase_setup.dart';
 import '../ui/chat/inbox_page.dart';
 
 /// What the app needs from a push service; Firebase in the app, a fake in
@@ -29,15 +29,9 @@ abstract class PushMessaging {
 class FirebasePushMessaging implements PushMessaging {
   @override
   Future<bool> init() async {
-    try {
-      // Reads GoogleService-Info.plist / google-services.json; until those
-      // are added (flutterfire configure) this fails and push stays off.
-      await Firebase.initializeApp();
-      return true;
-    } catch (e) {
-      debugPrint('push: Firebase not configured, push is off ($e)');
-      return false;
-    }
+    final ok = await FirebaseSetup.init();
+    if (!ok) debugPrint('push: Firebase not available, push is off');
+    return ok;
   }
 
   @override

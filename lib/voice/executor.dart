@@ -80,6 +80,9 @@ class ActionExecutor {
         ParamType.flag => raw is bool ? raw : null,
         ParamType.choice =>
           raw is String && param.values.contains(raw) ? raw : null,
+        ParamType.fields => raw is Map && raw.keys.every((k) => k is String)
+            ? raw.cast<String, Object?>()
+            : null,
         ParamType.entity => null,
       };
 }

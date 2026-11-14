@@ -9,6 +9,9 @@ import '../profile/profile_edit_page.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../../../voice/action.dart';
+import '../../../voice/form.dart';
+import '../../../voice/screen.dart';
 
 /// Sign-up (hire) or quote (contract) editor. Sending again creates a new
 /// version of the same application; history is kept.
@@ -26,7 +29,35 @@ class _QuoteRow {
   String unit;
 }
 
-class _ApplyPageState extends State<ApplyPage> {
+class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
+  @override
+  String get screenId => 'apply';
+
+  @override
+  List<VoiceField> get fields => [
+        if (hire) ...[
+          VoiceField.number('wage',
+              const L3('期望工资', 'Күтетін жалақы', 'Ожидаемая ставка'), wage),
+          VoiceField.number('headcount',
+              const L3('可提供人数', 'Адам саны', 'Сколько человек'), headcount),
+        ] else ...[
+          VoiceField.text('scope',
+              const L3('承接范围', 'Қандай жұмыс', 'Что вы выполняете'), scope),
+          VoiceField.number(
+              'lump_sum', const L3('总价', 'Жалпы баға', 'Сумма'), lump),
+          VoiceField.number(
+              'days', const L3('预计工期（天）', 'Мерзім (күн)', 'Срок (дней)'), days),
+          VoiceField.text(
+              'includes', const L3('包含', 'Кіреді', 'Входит'), includes),
+          VoiceField.text(
+              'excludes', const L3('不包含', 'Кірмейді', 'Не входит'), excludes),
+        ],
+        VoiceField.text(
+            'note', const L3('补充说明', 'Қосымша', 'Комментарий'), note),
+      ];
+
+  @override
+  Future<void> Function()? get voiceSubmit => submit;
   final requestId = const Uuid().v4();
   String? profileId;
   DateTime? availableFrom;

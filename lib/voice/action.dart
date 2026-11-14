@@ -37,7 +37,7 @@ enum Risk {
 /// Where a call came from.
 enum Source { touch, voice }
 
-enum ParamType { text, number, integer, flag, choice, entity }
+enum ParamType { text, number, integer, flag, choice, entity, fields }
 
 /// One named argument of an action.
 class Param {
@@ -67,6 +67,14 @@ class Param {
   const Param.entity(String this.kind, {this.optional = false})
       : type = ParamType.entity,
         values = const [];
+
+  /// Values for a page's inputs, by field name. The form action checks
+  /// each against the page's fields.
+  const Param.fields()
+      : type = ParamType.fields,
+        optional = false,
+        values = const [],
+        kind = null;
 
   final ParamType type;
   final bool optional;
@@ -116,6 +124,8 @@ class Args {
   bool flag(String name) => _values[name]! as bool;
   String choice(String name) => _values[name]! as String;
   Entity entity(String name) => _values[name]! as Entity;
+  Map<String, Object?> fields(String name) =>
+      _values[name]! as Map<String, Object?>;
   String id(String name) => entity(name).id;
 }
 

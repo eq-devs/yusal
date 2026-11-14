@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../platform/data/repositories.dart';
 import 'action.dart';
+import 'form.dart';
 
 /// A page's contract with the voice layer: what it is, what it shows and
 /// what can be done on it. Pages keep their state privately, so each one
@@ -26,6 +27,13 @@ mixin VoiceScreen<T extends StatefulWidget> on State<T> {
 
   /// One line for the language model about what the page shows.
   String get summary => '';
+
+  /// The inputs showing that voice can fill.
+  List<VoiceField> get fields => const [];
+
+  /// Sends what the page has filled in, as its main button does. Null
+  /// when the page has nothing to send.
+  Future<void> Function()? get voiceSubmit => null;
 
   @override
   void initState() {

@@ -23,6 +23,10 @@ abstract interface class DesignHost {
 
   /// False when there is nothing to undo.
   bool undoDesign();
+
+  /// Between these, every change undoes as one step.
+  void beginUndoGroup();
+  void endUndoGroup();
 }
 
 /// Failure code of a command that needs the user to choose how to go on.

@@ -126,6 +126,12 @@ class _HouseEditorState extends State<HouseEditor>
       action(kind, args, quiet: true);
 
   @override
+  void beginUndoGroup() => history.beginGroup();
+
+  @override
+  void endUndoGroup() => history.endGroup();
+
+  @override
   bool undoDesign() {
     final can = history.canUndo;
     undo();

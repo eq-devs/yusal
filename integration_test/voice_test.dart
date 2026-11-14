@@ -7,8 +7,9 @@
 //   flutter test integration_test/voice_test.dart -d <simulator-id> \
 //       --dart-define=YUSAL_VOICE=true
 //
-// The grant must come after the app is installed (run once, grant, run again)
-// or iOS shows its permission prompt and the spoken test waits on it.
+// The grant must come after the app is installed, and a reinstall drops it:
+// run once, grant, run again. Without it the two tests that record fail
+// with "the microphone must be allowed".
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -223,8 +224,14 @@ void main() {
       await audio.stopPlaying();
       // Twice in a row: the second recording must not reuse the first file.
       for (var i = 0; i < 2; i++) {
-        expect(await audio.startRecording(), isTrue,
-            reason: 'the microphone must be allowed');
+        // Without the permission iOS shows its prompt and this never returns.
+        expect(
+            await audio
+                .startRecording()
+                .timeout(const Duration(seconds: 10), onTimeout: () => false),
+            isTrue,
+            reason:
+                'the microphone must be allowed (see the top of this file)');
         await Future<void>.delayed(const Duration(milliseconds: 700));
         final wav = await audio.stopRecording();
         expect(wav, isNotNull);

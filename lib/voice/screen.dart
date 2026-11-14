@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import '../platform/data/repositories.dart';
 import 'action.dart';
 
 /// A page's contract with the voice layer: what it is, what it shows and
@@ -53,5 +54,17 @@ abstract final class VoiceScreens {
       if (ModalRoute.of(s.context)?.isCurrent ?? true) return s;
     }
     return null;
+  }
+
+  /// What an action may read right now: the current page and what it
+  /// shows.
+  static ActionContext context(PlatformRepositories repos,
+      {required bool loggedIn}) {
+    final screen = current;
+    return ActionContext(
+        repos: repos,
+        loggedIn: loggedIn,
+        entities: screen?.entities ?? const [],
+        page: screen?.context);
   }
 }

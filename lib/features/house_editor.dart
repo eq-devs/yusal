@@ -1372,7 +1372,11 @@ class _HouseEditorState extends State<HouseEditor>
     notify(tr3('已重做', 'Қайталанды', 'Действие повторено'));
   }
 
-  void action(String kind, Map<String, dynamic> args) {
+  /// Runs a design command and returns what came of it. A failure is
+  /// shown to the user unless [quiet], for callers that report it
+  /// themselves.
+  CommandResult action(String kind, Map<String, dynamic> args,
+      {bool quiet = false}) {
     final result = executeCommand(
         presentState,
         DesignCommand(kind, args),
@@ -1384,12 +1388,13 @@ class _HouseEditorState extends State<HouseEditor>
         if (history.commit(
             composeDocument(history.present.meta, result.newState))) changed();
       });
-    } else {
+    } else if (!quiet) {
       final message = result is Rejected
           ? result.message
           : (result as NeedsResolution).conflict.message;
       notify(message);
     }
+    return result;
   }
 
   Future<String?> ask(String label, String value, {bool number = false}) async {

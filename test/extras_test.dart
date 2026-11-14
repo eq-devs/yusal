@@ -95,6 +95,41 @@ void main() {
     expect(validateHouse(d), isEmpty);
   });
 
+  test('commits inside a group undo and redo as one step', () {
+    final start = initial();
+    final history = DesignHistory(start);
+    var s = extractDesignState(start);
+    final floor = s.floors.first.id;
+    Map<String, dynamic> wardrobe(int x) =>
+        {'floorId': floor, 'kind': FurnitureKind.wardrobe, 'x': x, 'y': 0};
+    s = run(s, 'AddFurniture', wardrobe(0));
+    history.commit(doc(s));
+
+    history.beginGroup();
+    s = run(s, 'AddFurniture', wardrobe(2000));
+    history.commit(doc(s));
+    s = run(s, 'AddFurniture', wardrobe(4000));
+    history.commit(doc(s));
+    history.endGroup();
+    expect(history.present.extras.furniture, hasLength(3));
+
+    history.undo();
+    expect(history.present.extras.furniture, hasLength(1));
+    history.redo();
+    expect(history.present.extras.furniture, hasLength(3));
+    history.undo();
+    history.undo();
+    expect(history.present.extras.isEmpty, true);
+    expect(history.canUndo, false);
+
+    // A group in which nothing changed leaves the history alone.
+    history.redo();
+    history.beginGroup();
+    history.endGroup();
+    history.undo();
+    expect(history.present.extras.isEmpty, true);
+  });
+
   test('furniture edits are undoable and invalid sizes are rejected', () {
     final start = initial();
     final history = DesignHistory(start);

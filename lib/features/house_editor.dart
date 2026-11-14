@@ -91,15 +91,29 @@ class _HouseEditorState extends State<HouseEditor>
   @override
   String get screenId => 'editor.$tab';
 
-  /// Floors as f1, f2…, and the rooms of the floor being edited as r1,
-  /// r2…, in document order.
+  /// Floors as f1, f2…, and on the floor being edited rooms as r1…,
+  /// openings as o1… and furniture as u1…, in document order.
   @override
   List<Entity> get entities => [
         for (final (i, f) in history.present.floors.indexed)
           Entity('floor', f.id, alias: 'f${i + 1}', title: f.name),
         for (final (i, r) in floor.rooms.indexed)
           Entity('room', r.id, alias: 'r${i + 1}', title: r.name),
+        for (final (i, o) in floor.openings.indexed)
+          Entity('opening', o.id,
+              alias: 'o${i + 1}', title: openingKindName(o)),
+        for (final (i, f) in history.present.extras.furniture
+            .where((f) => f.floorId == floor.id)
+            .indexed)
+          Entity('furniture', f.id,
+              alias: 'u${i + 1}', title: furnitureName(f.kind)),
       ];
+
+  @override
+  HouseDocument get document => history.present;
+
+  @override
+  FloorBase get floorBase => base;
 
   @override
   List<String> get actions => [for (final a in designActions) a.id];

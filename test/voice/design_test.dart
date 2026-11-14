@@ -6,7 +6,10 @@ import 'package:yusal/platform/data/mock/mock_backend.dart';
 import 'package:yusal/platform/data/mock/mock_clock.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'package:yusal/voice/action.dart';
+import 'package:yusal/core/analysis/house_analysis.dart';
+import 'package:yusal/core/house_core.dart';
 import 'package:yusal/voice/actions.dart';
+import 'package:yusal/voice/actions_design.dart';
 import 'package:yusal/voice/executor.dart';
 import 'package:yusal/voice/screen.dart';
 
@@ -94,6 +97,78 @@ void main() {
     await t.pump();
     expect(shown('floor').keys, ['f1']);
     expect((await say('editor.undo')).code, ActionCodes.notAvailable);
+
+    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpAndSettle();
+  });
+
+  testWidgets('openings go on the wall a room has on the side asked for',
+      (t) async {
+    t.view.physicalSize = const Size(844, 390);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    var sequence = 0;
+    final doc = createHouse(
+        name: '门窗',
+        width: 10000,
+        depth: 8000,
+        columns: 1,
+        rows: 1,
+        initialRoom: true,
+        timestamp: '2026-11-14T00:00:00Z',
+        newId: () => 'id${sequence++}');
+    await t.pumpWidget(MaterialApp(
+        home: HouseEditor(
+            entry: ProjectEntry('project', doc),
+            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpAndSettle();
+    final host = VoiceScreens.current! as DesignHost;
+    expect(shown('opening'), isEmpty);
+
+    // North is up on the plan until the user turns it: the four outer
+    // walls are the room's four sides.
+    for (final (side, axis) in [
+      ('north', '@top'),
+      ('east', '@right'),
+      ('south', '@bottom'),
+      ('west', '@left')
+    ]) {
+      final added = await say(
+          'design.add_opening', {'room': 'r1', 'side': side, 'kind': 'window'});
+      expect(added.changed, hasLength(1), reason: side);
+      await t.pump();
+      final window = host.document.floors.single.openings.last;
+      expect(window, isA<WindowOpening>());
+      expect(window.anchor.axisId, axis, reason: side);
+    }
+    expect(shown('opening').keys, ['o1', 'o2', 'o3', 'o4']);
+
+    // With north turned a quarter to point right, east is the bottom wall,
+    // as in the opening cards' facingOf.
+    final east = roomWall(host.floorBase,
+        host.document.floors.single.rooms.single.id, Facing.east, 90);
+    expect(east!.wall.ref.anchor.axisId, '@bottom');
+
+    expect((await say('design.delete_opening', {'opening': 'o1'})).ok, isTrue);
+    await t.pump();
+    expect(host.document.floors.single.openings, hasLength(3));
+
+    // Furniture lands inside the room it was asked for.
+    final bed =
+        await say('design.add_furniture', {'room': 'r1', 'kind': 'bed'});
+    expect(bed.changed, hasLength(1));
+    await t.pump();
+    final item = host.document.extras.furniture.single;
+    final room = host.floorBase.roomGeometry.single;
+    expect(
+        room.clearRects.any((r) =>
+            r.contains(item.x + item.width / 2, item.y + item.depth / 2)),
+        isTrue);
+    expect(shown('furniture').keys, ['u1']);
+    expect(
+        (await say('design.delete_furniture', {'furniture': 'u1'})).ok, isTrue);
+    await t.pump();
+    expect(host.document.extras.furniture, isEmpty);
 
     await t.pumpWidget(const SizedBox.shrink());
     await t.pumpAndSettle();

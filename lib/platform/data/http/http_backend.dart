@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../voice/session.dart';
 import '../../domain/models.dart';
 import '../mock/mock_backend.dart';
 import '../repositories.dart';
@@ -14,7 +15,7 @@ import 'codec.dart';
 /// cooperations, reviews, chat, notifications and moderation. It extends
 /// [MockBackend] only for the shared plumbing (the change notifier and the
 /// account cache screens read synchronously); no data is served from it.
-class HttpBackend extends MockBackend {
+class HttpBackend extends MockBackend implements VoiceBackend {
   HttpBackend(this.baseUrl,
       {http.Client? client,
       bool seed = false,
@@ -244,6 +245,32 @@ class HttpBackend extends MockBackend {
 
   /// The device's FCM token, from the push setup; registered now if signed
   /// in, else at the next sign-in. [language] is zh / kk / ru.
+  // Voice: yusal-api forwards both to the AI gateway.
+
+  @override
+  Future<VoiceTurn> say(
+          {required String sessionId,
+          required String text,
+          required bool spoken,
+          required Map<String, Object?> context}) async =>
+      VoiceTurn.fromJson(await _call('POST', '/voice', body: {
+        'session_id': sessionId,
+        'text': text,
+        'input': spoken ? 'voice' : 'text',
+        'context': context,
+      }) as Map<String, dynamic>);
+
+  @override
+  Future<VoiceTurn> results(
+          {required String turnId,
+          required List<Map<String, Object?>> results,
+          required Map<String, Object?> context}) async =>
+      VoiceTurn.fromJson(await _call('POST', '/voice/results', body: {
+        'turn_id': turnId,
+        'results': results,
+        'context': context,
+      }) as Map<String, dynamic>);
+
   Future<void> setPushToken(String token,
       {required String platform, required String language}) async {
     _pushToken = token;

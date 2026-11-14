@@ -14,6 +14,7 @@ import 'platform/ui/scope.dart';
 import 'platform/ui/shell.dart';
 import 'render2d/project_preview.dart';
 import 'storage/project_store.dart';
+import 'voice/voice_overlay.dart';
 
 /// Real backend address, e.g. `--dart-define=YUSAL_API=https://api.example.com`.
 /// Empty: the in-memory demo backend.
@@ -89,7 +90,11 @@ class _HouseAppState extends State<HouseApp> {
                   ThemeChoice.day => ThemeMode.light,
                   ThemeChoice.night => ThemeMode.dark
                 },
-                builder: (context, child) => AppScope(child: child!),
+                builder: (context, child) => AppScope(
+                    child: VoiceHost(
+                        navigator: appNavigator,
+                        repos: repos,
+                        child: child!)),
                 // `/h/<id>` is a shared house: open it directly, signed in
                 // or not. Everything else is the app shell.
                 onGenerateRoute: _route,

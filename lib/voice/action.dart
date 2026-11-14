@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart' show BuildContext;
+
 import '../app/settings.dart';
 import '../platform/data/repositories.dart';
 
@@ -82,10 +84,16 @@ class Entity {
 /// What an action may read: the backend and what is on screen.
 class ActionContext {
   const ActionContext(
-      {required this.repos, required this.loggedIn, this.entities = const []});
+      {required this.repos,
+      required this.loggedIn,
+      this.entities = const [],
+      this.page});
   final PlatformRepositories repos;
   final bool loggedIn;
   final List<Entity> entities;
+
+  /// The page the user is on, for actions that navigate from it.
+  final BuildContext? page;
 
   bool has(String kind) => entities.any((e) => e.kind == kind);
 

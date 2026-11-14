@@ -9,6 +9,8 @@ import 'components.dart';
 import 'theme.dart';
 import 'scope.dart';
 import '../../motion/motion.dart';
+import '../../voice/actions_nav.dart';
+import '../../voice/screen.dart';
 
 /// Tabs of the app shell, in order.
 abstract final class ShellTab {
@@ -26,8 +28,18 @@ class PlatformShell extends StatefulWidget {
   State<PlatformShell> createState() => _PlatformShellState();
 }
 
-class _PlatformShellState extends State<PlatformShell> {
+class _PlatformShellState extends State<PlatformShell>
+    with VoiceScreen
+    implements ShellTabs {
   late int tab = widget.initialTab;
+
+  @override
+  String get screenId =>
+      'shell.${const ['explore', 'houses', 'messages', 'me'][tab]}';
+
+  @override
+  void goTab(int i) => setState(() => tab = i);
+
   final reload = ReloadNotifier();
   final segment = ValueNotifier<int?>(null);
   final newDesign = ReloadNotifier();

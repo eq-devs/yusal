@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -8,6 +10,7 @@ import 'action.dart';
 import 'actions.dart';
 import 'executor.dart';
 import 'session.dart';
+import 'speech.dart';
 
 /// Voice control is built in only with `--dart-define=YUSAL_VOICE=true`,
 /// until yusal-api and the AI gateway serve it.
@@ -49,10 +52,12 @@ String _failure(String? code) => switch (code) {
           '现在连不上服务器，请再试一次',
           'Серверге қосылу мүмкін болмады, қайталап көріңіз',
           'Нет связи с сервером, попробуйте ещё раз'),
-      'RATE_LIMITED' => tr3(
-          '今天的次数用完了，明天再试',
-          'Бүгінгі лимит таусылды, ертең көріңіз',
-          'Лимит на сегодня исчерпан, попробуйте завтра'),
+      'RATE_LIMITED' => tr3('用得太频繁了，请稍后再试', 'Тым жиі, сәл кейінірек көріңіз',
+          'Слишком часто, попробуйте чуть позже'),
+      'VOICE_BUSY' => tr3(
+          '语音服务正忙，请稍后再试',
+          'Дауыс қызметі бос емес, сәл кейінірек көріңіз',
+          'Голосовой сервис занят, попробуйте чуть позже'),
       VoiceCodes.tooManySteps => tr3(
           '这句话要做的步骤太多，请分开说',
           'Қадам тым көп, бөліп айтыңыз',
@@ -64,8 +69,11 @@ String _failure(String? code) => switch (code) {
 /// The button that opens voice control and the bar above it that shows
 /// what was heard, what is being done and what came of it.
 class VoiceBar extends StatefulWidget {
-  const VoiceBar({super.key, required this.session});
+  const VoiceBar({super.key, required this.session, this.speech});
   final VoiceSession session;
+
+  /// Null leaves the bar typed-only.
+  final Speech? speech;
 
   @override
   State<VoiceBar> createState() => _VoiceBarState();
@@ -74,13 +82,67 @@ class VoiceBar extends StatefulWidget {
 class _VoiceBarState extends State<VoiceBar> {
   final input = TextEditingController();
   bool open = false;
+  bool listening = false, transcribing = false;
+  String? speechNote;
+  Timer? limit;
 
   VoiceSession get s => widget.session;
 
   @override
   void dispose() {
+    limit?.cancel();
     input.dispose();
     super.dispose();
+  }
+
+  /// First tap starts recording, the second sends what was said. A reply
+  /// to a spoken request is also read aloud.
+  Future<void> mic() async {
+    final speech = widget.speech!;
+    if (transcribing || s.busy) return;
+    if (!listening) {
+      await speech.audio.stopPlaying();
+      final ok = await speech.audio.startRecording();
+      if (!mounted) return;
+      setState(() {
+        listening = ok;
+        speechNote = ok
+            ? null
+            : tr3('请在系统设置里允许使用麦克风', 'Баптаулардан микрофонға рұқсат беріңіз',
+                'Разрешите доступ к микрофону в настройках');
+      });
+      if (ok) limit = Timer(Speech.maxSentence, mic);
+      return;
+    }
+    limit?.cancel();
+    setState(() {
+      listening = false;
+      transcribing = true;
+    });
+    var text = '';
+    String? note;
+    try {
+      text = (await speech.heard()).trim();
+      if (text.isEmpty) {
+        note = tr3('没听清，请再说一次', 'Естілмеді, қайталап айтыңыз',
+            'Не расслышал, повторите');
+      }
+    } catch (e) {
+      note = _failure(e is ApiFailure ? e.code : VoiceCodes.network);
+    }
+    if (!mounted) return;
+    setState(() {
+      transcribing = false;
+      speechNote = note;
+    });
+    if (text.isEmpty) return;
+    await s.say(text, spoken: true);
+    if (s.phase != VoicePhase.done || s.reply.isEmpty) return;
+    try {
+      await speech.speak(s.reply);
+    } catch (_) {
+      // The reply is on screen either way.
+    }
   }
 
   void send([String? text]) {
@@ -131,7 +193,11 @@ class _VoiceBarState extends State<VoiceBar> {
                                       child: Text(
                                           step.action?.title.of(lang) ?? '?')),
                                 ]),
-                              if (s.busy)
+                              if (speechNote != null)
+                                Text(speechNote!,
+                                    style: TextStyle(
+                                        color: theme.colorScheme.error)),
+                              if (s.busy || transcribing)
                                 const Padding(
                                     padding: EdgeInsets.symmetric(vertical: 8),
                                     child: LinearProgressIndicator()),
@@ -163,6 +229,21 @@ class _VoiceBarState extends State<VoiceBar> {
                                                 '想做什么？',
                                                 'Не істейміз?',
                                                 'Что сделать?')))),
+                                if (widget.speech != null)
+                                  IconButton(
+                                      key: const Key('voice-mic'),
+                                      tooltip: listening
+                                          ? tr3('说完了', 'Айтып болдым', 'Готово')
+                                          : tr3('说话（哈萨克语）', 'Сөйлеу',
+                                              'Говорить (по-казахски)'),
+                                      color: listening
+                                          ? theme.colorScheme.error
+                                          : null,
+                                      icon: Icon(listening
+                                          ? Icons.stop_circle_outlined
+                                          : Icons.mic),
+                                      onPressed:
+                                          s.busy || transcribing ? null : mic),
                                 s.phase == VoicePhase.acting
                                     ? IconButton(
                                         tooltip: tr3('停止', 'Тоқтату', 'Стоп'),
@@ -196,10 +277,15 @@ class VoiceHost extends StatefulWidget {
       required this.navigator,
       required this.repos,
       required this.child,
+      this.audio,
       this.enabled = voiceBuiltIn});
   final GlobalKey<NavigatorState> navigator;
   final PlatformRepositories repos;
   final Widget child;
+
+  /// The microphone and speaker; without it, or with a backend that does
+  /// no speech, the bar is typed-only. Disposed with this widget.
+  final AudioDevice? audio;
   final bool enabled;
 
   @override
@@ -215,6 +301,8 @@ class _VoiceHostState extends State<VoiceHost> {
     super.initState();
     final repos = widget.repos;
     final Object backend = repos;
+    final Object speaker = repos;
+    final audio = widget.audio;
     if (!widget.enabled || !voicePlatform || backend is! VoiceBackend) return;
     final s = session = VoiceSession(
         backend: backend,
@@ -238,7 +326,11 @@ class _VoiceHostState extends State<VoiceHost> {
                   alignment: Alignment.bottomRight,
                   child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 420),
-                      child: VoiceBar(session: s)))));
+                      child: VoiceBar(
+                          session: s,
+                          speech: audio != null && speaker is SpeechBackend
+                              ? Speech(speaker, audio)
+                              : null)))));
       overlay.insert(entry!);
     });
   }
@@ -247,6 +339,7 @@ class _VoiceHostState extends State<VoiceHost> {
   void dispose() {
     entry?.remove();
     session?.dispose();
+    widget.audio?.dispose();
     super.dispose();
   }
 

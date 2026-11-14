@@ -6,6 +6,7 @@ import 'package:yusal/voice/action.dart';
 import 'package:yusal/voice/executor.dart';
 import 'package:yusal/voice/registry.dart';
 import 'package:yusal/voice/session.dart';
+import 'package:yusal/voice/speech.dart';
 import 'package:yusal/voice/voice_overlay.dart';
 
 import 'session_test.dart' show ScriptedBackend, act;
@@ -32,16 +33,58 @@ class VoiceMock extends MockBackend implements VoiceBackend {
       inner.results(turnId: turnId, results: results, context: context);
 }
 
+/// A backend that also does speech: every recording says [text].
+class SpeakingMock extends VoiceMock implements SpeechBackend {
+  SpeakingMock(super.inner, this.text);
+  final String text;
+  final spoken = <String>[];
+
+  @override
+  Future<String> transcribe(Uint8List wav) async => text;
+
+  @override
+  Future<Uint8List> synthesize(String text) async {
+    spoken.add(text);
+    return Uint8List(2);
+  }
+}
+
+class FakeAudio implements AudioDevice {
+  FakeAudio({this.allowed = true});
+  final bool allowed;
+  final log = <String>[];
+
+  @override
+  Future<bool> startRecording() async {
+    log.add('record');
+    return allowed;
+  }
+
+  @override
+  Future<Uint8List?> stopRecording() async => Uint8List(4);
+
+  @override
+  Future<void> play(Uint8List wav) async => log.add('play');
+
+  @override
+  Future<void> stopPlaying() async {}
+
+  @override
+  Future<void> dispose() async => log.add('dispose');
+}
+
 void main() {
   final navigator = GlobalKey<NavigatorState>();
 
-  Future<void> pump(WidgetTester t, VoiceMock repos, {bool enabled = true}) =>
+  Future<void> pump(WidgetTester t, VoiceMock repos,
+          {bool enabled = true, AudioDevice? audio}) =>
       t.pumpWidget(MaterialApp(
           navigatorKey: navigator,
           builder: (context, child) => VoiceHost(
               navigator: navigator,
               repos: repos,
               enabled: enabled,
+              audio: audio,
               child: child!),
           home: const Scaffold(body: Text('page'))));
 
@@ -74,6 +117,66 @@ void main() {
     await t.pumpAndSettle();
     expect(backend.said.map((s) => s.text), ['打开我的', '算了']);
     expect(find.text('好的。'), findsOneWidget);
+  });
+
+  testWidgets('a spoken request is sent as heard and its reply read aloud',
+      (t) async {
+    final backend = ScriptedBackend([const VoiceTurn(reply: 'Жарайды.')]);
+    final repos = SpeakingMock(backend, ' бір қабат қос ');
+    final audio = FakeAudio();
+    await pump(t, repos, audio: audio);
+    await t.pump();
+    await t.tap(find.byKey(const Key('voice-button')));
+    await t.pump();
+
+    await t.tap(find.byKey(const Key('voice-mic')));
+    await t.pump();
+    expect(find.byIcon(Icons.stop_circle_outlined), findsOneWidget);
+    expect(backend.said, isEmpty);
+    await t.tap(find.byKey(const Key('voice-mic')));
+    await t.pumpAndSettle();
+
+    expect(
+        backend.said.map((s) => (s.text, s.spoken)), [('бір қабат қос', true)]);
+    expect(find.text('Жарайды.'), findsOneWidget);
+    expect(repos.spoken, ['Жарайды.']);
+    expect(audio.log, ['record', 'play']);
+
+    await t.pumpWidget(const SizedBox());
+    expect(audio.log.last, 'dispose');
+  });
+
+  testWidgets('speech says why it cannot go on, and typing has no mic',
+      (t) async {
+    final backend = ScriptedBackend([]);
+    await pump(t, SpeakingMock(backend, ''), audio: FakeAudio());
+    await t.pump();
+    await t.tap(find.byKey(const Key('voice-button')));
+    await t.pump();
+    await t.tap(find.byKey(const Key('voice-mic')));
+    await t.pump();
+    await t.tap(find.byKey(const Key('voice-mic')));
+    await t.pumpAndSettle();
+    expect(find.text('没听清，请再说一次'), findsOneWidget);
+    expect(backend.said, isEmpty);
+
+    await t.pumpWidget(const SizedBox());
+    await pump(t, SpeakingMock(backend, 'x'), audio: FakeAudio(allowed: false));
+    await t.pump();
+    await t.tap(find.byKey(const Key('voice-button')));
+    await t.pump();
+    await t.tap(find.byKey(const Key('voice-mic')));
+    await t.pump();
+    expect(find.text('请在系统设置里允许使用麦克风'), findsOneWidget);
+    expect(find.byIcon(Icons.stop_circle_outlined), findsNothing);
+
+    // No audio device, or a backend without speech: typed only.
+    await t.pumpWidget(const SizedBox());
+    await pump(t, SpeakingMock(backend, 'x'));
+    await t.pump();
+    await t.tap(find.byKey(const Key('voice-button')));
+    await t.pump();
+    expect(find.byKey(const Key('voice-mic')), findsNothing);
   });
 
   testWidgets('a failure says what to do', (t) async {

@@ -105,6 +105,8 @@
 			</dict>
 		</dict>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Yusal records your voice when you tap the microphone, to carry out a spoken request.</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 </dict>

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -14,13 +15,14 @@ void main() {
       http.Response.bytes(utf8.encode(jsonEncode(body)), status,
           headers: {'content-type': 'application/json'});
 
-  test('a sentence and its results go to /voice and /voice/results', () async {
+  test('a sentence and its results go to /client/voice and its /results',
+      () async {
     final seen = <(String, Map<String, dynamic>)>[];
     final api = HttpBackend('https://api.test', client: MockClient((r) async {
       seen.add((r.url.path, jsonDecode(r.body) as Map<String, dynamic>));
       return json({
         'success': true,
-        'data': r.url.path == '/voice'
+        'data': r.url.path == '/client/voice'
             ? {
                 'reply': '',
                 'events': [
@@ -51,7 +53,7 @@ void main() {
     });
     expect((last.turnId, last.reply), (null, 'Қабат қосылды.'));
 
-    expect(seen.map((s) => s.$1), ['/voice', '/voice/results']);
+    expect(seen.map((s) => s.$1), ['/client/voice', '/client/voice/results']);
     expect(seen.first.$2, {
       'session_id': 's1',
       'text': 'бір қабат қос',
@@ -73,5 +75,36 @@ void main() {
         api.say(sessionId: 's', text: 'x', spoken: false, context: {}),
         throwsA(
             isA<ApiFailure>().having((e) => e.code, 'code', 'RATE_LIMITED')));
+  });
+
+  test('a recording goes up as raw bytes and speech comes back as bytes',
+      () async {
+    final api = HttpBackend('https://api.test', client: MockClient((r) async {
+      if (r.url.path == '/client/voice/transcribe') {
+        expect(r.headers['Content-Type'], 'application/octet-stream');
+        expect(r.bodyBytes, [82, 73, 70, 70]);
+        return json({
+          'success': true,
+          'data': {'text': 'бір қабат қос'}
+        });
+      }
+      expect(r.url.path, '/client/voice/tts');
+      expect(jsonDecode(r.body), {'text': 'Қабат қосылды.'});
+      return http.Response.bytes([1, 2, 3], 200,
+          headers: {'content-type': 'audio/wav'});
+    }));
+    expect(await api.transcribe(Uint8List.fromList([82, 73, 70, 70])),
+        'бір қабат қос');
+    expect(await api.synthesize('Қабат қосылды.'), [1, 2, 3]);
+  });
+
+  test('a busy speech service is a failure with its code', () async {
+    final api = HttpBackend('https://api.test',
+        client: MockClient((_) async => json(
+            {'success': false, 'code': 'VOICE_BUSY', 'msg': 'busy'}, 503)));
+    final busy =
+        throwsA(isA<ApiFailure>().having((e) => e.code, 'code', 'VOICE_BUSY'));
+    await expectLater(api.transcribe(Uint8List(4)), busy);
+    await expectLater(api.synthesize('x'), busy);
   });
 }

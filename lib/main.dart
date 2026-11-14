@@ -14,6 +14,8 @@ import 'platform/ui/scope.dart';
 import 'platform/ui/shell.dart';
 import 'render2d/project_preview.dart';
 import 'storage/project_store.dart';
+import 'voice/audio_device.dart';
+import 'voice/speech.dart';
 import 'voice/voice_overlay.dart';
 
 /// Real backend address, e.g. `--dart-define=YUSAL_API=https://api.example.com`.
@@ -22,6 +24,10 @@ const apiBaseUrl = String.fromEnvironment('YUSAL_API');
 
 /// The app's navigator, for opening what a tapped push points to.
 final appNavigator = GlobalKey<NavigatorState>();
+
+/// The microphone and speaker for voice control, on phones and tablets.
+final AudioDevice? voiceAudio =
+    voiceBuiltIn && voicePlatform ? PluginAudio() : null;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,6 +100,7 @@ class _HouseAppState extends State<HouseApp> {
                     child: VoiceHost(
                         navigator: appNavigator,
                         repos: repos,
+                        audio: voiceAudio,
                         child: child!)),
                 // `/h/<id>` is a shared house: open it directly, signed in
                 // or not. Everything else is the app shell.

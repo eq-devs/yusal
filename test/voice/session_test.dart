@@ -171,6 +171,9 @@ void main() {
     final sent = backend.said.single;
     expect((sent.text, sent.spoken), ('加一层楼，把这间叫书房，再在北墙加窗', true));
     expect(sent.context['screen'], 'editor.plan');
+    // Only what can run on this screen is offered to the model.
+    expect(sent.context['actions'], contains('design.add_floor'));
+    expect(sent.context['actions'], isNot(contains('form.submit')));
     expect(sent.context['entities'], contains(containsPair('id', 'r1')));
     expect('${sent.context}', isNot(contains('id0')));
     expect(backend.reported.map((r) => r.turnId), ['t1', 't2']);

@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/platform/data/mock/mock_backend.dart';
 import 'package:yusal/platform/data/mock/mock_clock.dart';
 import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/actions.dart';
 import 'package:yusal/voice/registry.dart';
 
 const _name = L3('动作', 'Әрекет', 'Действие');
@@ -77,5 +81,42 @@ void main() {
             loggedIn: true,
             entities: const [Entity('room', 'id', alias: 'r1')])),
         ['a.always', 'a.logged_in', 'a.room']);
+  });
+
+  test('tool definitions carry the argument schema and skip touch-only', () {
+    final tools = ActionRegistry([
+      action('a.b', risk: Risk.outbound, params: const {
+        'room': Param.entity('room'),
+        'side': Param.choice(['north', 'south'], optional: true),
+        'width': Param.number(optional: true),
+      }),
+      action('a.manual', risk: Risk.manual),
+    ]).tools();
+    expect(tools.map((t) => t['name']), ['a.b']);
+    expect(tools.single['risk'], 'outbound');
+    expect(tools.single['parameters'], {
+      'type': 'object',
+      'properties': {
+        'room': {'type': 'string', 'entity': 'room'},
+        'side': {
+          'type': 'string',
+          'enum': ['north', 'south']
+        },
+        'width': {'type': 'number'},
+      },
+      'required': ['room'],
+    });
+  });
+
+  // The AI gateway loads docs/voice_tools.json. After changing an action,
+  // rewrite it with: UPDATE_VOICE_TOOLS=1 flutter test test/voice/registry_test.dart
+  test('docs/voice_tools.json matches the app\'s actions', () {
+    final file = File('docs/voice_tools.json');
+    final now =
+        '${const JsonEncoder.withIndent('  ').convert(appActions.tools())}\n';
+    if (Platform.environment['UPDATE_VOICE_TOOLS'] == '1') {
+      file.writeAsStringSync(now);
+    }
+    expect(file.readAsStringSync(), now);
   });
 }

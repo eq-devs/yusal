@@ -98,12 +98,14 @@ abstract final class VoiceCodes {
 }
 
 /// What the language model is told about the screen: the page, what it
-/// shows under short aliases, and its inputs. Ids stay in the app.
-Map<String, Object?> voiceContext() {
+/// shows under short aliases, its inputs, and the [actions] that can run
+/// here right now. Ids stay in the app.
+Map<String, Object?> voiceContext({List<String> actions = const []}) {
   final screen = VoiceScreens.current;
   return {
     'screen': screen?.screenId,
     'lang': AppSettings.instance.lang.name,
+    'actions': actions,
     if (screen != null && screen.summary.isNotEmpty) 'summary': screen.summary,
     'entities': [
       for (final e in screen?.entities ?? const <Entity>[])
@@ -175,7 +177,7 @@ class VoiceSession extends ChangeNotifier {
           sessionId: sessionId,
           text: text,
           spoken: spoken,
-          context: voiceContext());
+          context: _context());
       for (var step = 0; turn.turnId != null; step++) {
         if (step == maxSteps) {
           error = VoiceCodes.tooManySteps;
@@ -185,7 +187,7 @@ class VoiceSession extends ChangeNotifier {
         final results = await _run(turn.calls);
         _set(VoicePhase.thinking);
         turn = await backend.results(
-            turnId: turn.turnId!, results: results, context: voiceContext());
+            turnId: turn.turnId!, results: results, context: _context());
       }
       reply = turn.reply;
       options = turn.options;
@@ -197,6 +199,12 @@ class VoiceSession extends ChangeNotifier {
       design?.endUndoGroup();
     }
   }
+
+  Map<String, Object?> _context() => voiceContext(actions: [
+        for (final a in executor.registry
+            .offered(VoiceScreens.context(repos, loggedIn: loggedIn())))
+          a.id
+      ]);
 
   /// Runs a batch in order. After a failure, or once the user stops it,
   /// the rest are reported as skipped.

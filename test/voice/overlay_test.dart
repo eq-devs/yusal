@@ -100,7 +100,7 @@ void main() {
 
     // The outcome is a bubble; tapping it shows the steps that ran.
     expect(find.text('这里没有主页面。'), findsOneWidget);
-    await t.tap(find.byKey(const Key('voice-bar')));
+    await t.tap(find.text('这里没有主页面。'));
     await t.pumpAndSettle();
     // The step ran and failed (no shell here): it is listed with its name.
     expect(find.text('切换主页面'), findsOneWidget);
@@ -121,6 +121,8 @@ void main() {
     final bubble = t.getRect(find.byKey(const Key('voice-bar')));
     expect(bubble.right, lessThan(orb.left));
     expect(bubble.bottom, greaterThan(orb.top));
+    // A short answer is a small bubble, not a bar across the screen.
+    expect(bubble.width, lessThan(200));
     await t.tap(find.byKey(const Key('voice-close')));
     await t.pumpAndSettle();
     expect(find.byKey(const Key('voice-bar')), findsNothing);

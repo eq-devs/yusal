@@ -339,8 +339,10 @@ class _VoiceBarState extends State<VoiceBar>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(children: [
-                        Expanded(
+                      // Only as wide as its text: a short answer is a
+                      // small bubble.
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        Flexible(
                             child: Text(
                                 s.busy
                                     ? (s.heard.isEmpty

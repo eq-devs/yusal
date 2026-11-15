@@ -33,7 +33,7 @@ Shorebird 让我们在**不重新提交商店审核**的情况下，把 Dart 代
    ```
 2. 登录：`shorebird login`（浏览器授权）。
 3. 生成 app_id：在仓库根目录运行 `shorebird init`，它会改写 `shorebird.yaml`，提交这个文件。
-4. Android 签名：`android/key.properties` 指向 `~/Desktop/eq/yusal-signing/upload-keystore.jks`（不入库）。
+4. Android 签名：`android/key.properties` 指向 `~/Desktop/eq/yusal/signing/upload-keystore.jks`（不入库）。
 5. iOS：沿用现在的自动签名（Bundle ID `com.yusal.client`）。
 
 ## 4. 发布新版本（会上架商店）
@@ -44,7 +44,7 @@ Shorebird 让我们在**不重新提交商店审核**的情况下，把 Dart 代
 scripts/shorebird/release.sh all        # 或 android / ios
 ```
 
-产物会复制到 `~/Desktop/eq/yusal-release/yusal-<版本>.aab|.ipa`，然后按原流程上传到 Play Console / TestFlight。
+产物会复制到 `~/Desktop/eq/yusal/release/yusal-<版本>.aab|.ipa`，然后按原流程上传到 Play Console / TestFlight。
 
 **重要**：只有用 `shorebird release` 构建并上架的包才能接收补丁。之前用 `flutter build` 打的 `0.4.0+4` 不能热更新，下一次上架务必改用这个脚本。
 

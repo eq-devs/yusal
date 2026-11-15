@@ -8,7 +8,7 @@ cd "$ROOT"
 # patch whose --dart-define values differ from its release.
 DEFINES="${DEFINES:-$ROOT/config/dart_defines.release.json}"
 # Where finished .aab / .ipa files are copied.
-OUT_DIR="${OUT_DIR:-$HOME/Desktop/eq/yusal-release}"
+OUT_DIR="${OUT_DIR:-$HOME/Desktop/eq/yusal/release}"
 
 die() { echo "错误: $*" >&2; exit 1; }
 info() { echo "==> $*"; }
@@ -29,5 +29,5 @@ check_platform() {
 }
 
 check_android_signing() {
-  [ -f android/key.properties ] || die "缺少 android/key.properties（上传密钥在 ~/Desktop/eq/yusal-signing/），否则会用 debug 签名，商店不收"
+  [ -f android/key.properties ] || die "缺少 android/key.properties（上传密钥在 ~/Desktop/eq/yusal/signing/），否则会用 debug 签名，商店不收"
 }

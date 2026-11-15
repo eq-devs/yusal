@@ -337,4 +337,49 @@ void main() {
     }
     expect(api.requests.length, before);
   });
+
+  test('a read that loses its connection is tried again', () async {
+    var drops = 2;
+    final flaky = HttpBackend('https://api.test',
+        client: MockClient((r) async {
+          if (r.url.path == '/client/posts' && drops-- > 0) {
+            throw http.ClientException(
+                'Connection closed before full header was received');
+          }
+          return api.handle(r);
+        }),
+        seed: false);
+    final feed = await flaky.feed(const FeedFilter());
+    expect(feed.single.id, 'p1');
+  });
+
+  test('a write that loses its connection is not sent twice', () async {
+    var sent = 0;
+    final flaky = HttpBackend('https://api.test',
+        client: MockClient((r) async {
+          if (r.method == 'POST' && r.url.path.endsWith('/messages')) {
+            sent++;
+            throw http.ClientException('Connection reset by peer');
+          }
+          return api.handle(r);
+        }),
+        seed: false);
+    await flaky.signInWithProvider('google', 'id-token');
+    await expectLater(
+        flaky.send('c1', MessageKind.text, text: 'hi'),
+        throwsA(isA<ApiFailure>()
+            .having((e) => e.code, 'code', ApiCodes.network)));
+    expect(sent, 1);
+  });
+
+  test('the same read asked for at once goes out once', () async {
+    await backend.signInWithProvider('google', 'id-token');
+    final before = api.requests.length;
+    await Future.wait([backend.myPosts(), backend.myPosts(), backend.myPosts()]);
+    expect(
+        api.requests
+            .skip(before)
+            .where((r) => r.url.path == '/client/me/posts'),
+        hasLength(1));
+  });
 }

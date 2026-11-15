@@ -1,0 +1,6 @@
+# Shorebird (code push) config. app_id comes from `shorebird init`;
+# it is not a secret.
+app_id: PENDING-run-shorebird-init
+# lib/platform/update/code_push.dart checks for patches itself (launch and
+# resume), so the engine's own launch-time check stays off.
+auto_update: false

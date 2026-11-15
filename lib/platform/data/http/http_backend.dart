@@ -358,6 +358,15 @@ class HttpBackend extends MockBackend
           as Map<String, dynamic>)['text'] as String? ??
       '';
 
+  /// [text] read aloud by the speech service, as WAV. The app shows
+  /// replies as text; the live tests use this to make Kazakh recordings.
+  Future<Uint8List> synthesize(String text) async {
+    final res =
+        await _send('POST', '/client/voice/tts', body: {'text': text});
+    if (res.statusCode != 200) _decode(res);
+    return res.bodyBytes;
+  }
+
   Future<void> setPushToken(String token,
       {required String platform, required String language}) async {
     _pushToken = token;

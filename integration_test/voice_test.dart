@@ -1,5 +1,5 @@
 // Voice control on a real phone or simulator: the bar over the real app, a
-// spoken request through the device's microphone and speaker, and a design
+// spoken request through the device's microphone, and a design
 // edited and undone by one sentence. The language model and the speech
 // service are scripted here, so no server is needed.
 //
@@ -30,32 +30,6 @@ import 'package:yusal/voice/session.dart';
 import 'package:yusal/voice/speech.dart';
 import 'package:yusal/voice/voice_overlay.dart';
 
-/// One second of 16 kHz mono silence as WAV.
-Uint8List silence() {
-  const samples = 16000;
-  final b = ByteData(44 + samples * 2);
-  void tag(int at, String s) {
-    for (var i = 0; i < 4; i++) {
-      b.setUint8(at + i, s.codeUnitAt(i));
-    }
-  }
-
-  tag(0, 'RIFF');
-  b.setUint32(4, 36 + samples * 2, Endian.little);
-  tag(8, 'WAVE');
-  tag(12, 'fmt ');
-  b.setUint32(16, 16, Endian.little);
-  b.setUint16(20, 1, Endian.little); // PCM
-  b.setUint16(22, 1, Endian.little); // mono
-  b.setUint32(24, 16000, Endian.little);
-  b.setUint32(28, 32000, Endian.little);
-  b.setUint16(32, 2, Endian.little);
-  b.setUint16(34, 16, Endian.little);
-  tag(36, 'data');
-  b.setUint32(40, samples * 2, Endian.little);
-  return b.buffer.asUint8List();
-}
-
 VoiceTurn act(String turnId, List<(String, Map<String, Object?>)> calls) =>
     VoiceTurn(turnId: turnId, calls: [
       for (final (i, c) in calls.indexed) ActionCall('c$i', c.$1, c.$2)
@@ -69,7 +43,6 @@ class VoiceMock extends MockBackend implements VoiceBackend, SpeechBackend {
   final String hears;
   final said = <({String text, bool spoken, Map<String, Object?> context})>[];
   final recordings = <Uint8List>[];
-  final spoken = <String>[];
 
   @override
   Future<VoiceTurn> say(
@@ -92,12 +65,6 @@ class VoiceMock extends MockBackend implements VoiceBackend, SpeechBackend {
   Future<String> transcribe(Uint8List wav) async {
     recordings.add(wav);
     return hears;
-  }
-
-  @override
-  Future<Uint8List> synthesize(String text) async {
-    spoken.add(text);
-    return silence();
   }
 }
 
@@ -147,7 +114,8 @@ void main() {
       expect(start, startsWith('shell.'));
       expect(start, isNot('shell.me'));
 
-      await t.tap(find.byKey(const Key('voice-button')));
+      // A long press opens typing; a tap would start listening.
+      await t.longPress(find.byKey(const Key('voice-button')));
       await t.pumpAndSettle();
       await type(t, '打开我的');
       await waitFor(t, () => find.text('已打开“我的”。').evaluate().isNotEmpty);
@@ -168,7 +136,7 @@ void main() {
     }
   });
 
-  testWidgets('a spoken request is recorded, sent as heard and answered aloud',
+  testWidgets('a spoken request is recorded, sent as heard and answered in text',
       (t) async {
     expect(voiceBuiltIn, isTrue,
         reason: 'run with --dart-define=YUSAL_VOICE=true');
@@ -180,17 +148,15 @@ void main() {
     try {
       await t.pumpWidget(ProviderScope(child: HouseApp(repos: repos)));
       await t.pumpAndSettle();
+      // Tap the orb to listen, tap it again when done.
       await t.tap(find.byKey(const Key('voice-button')));
-      await t.pumpAndSettle();
-
-      await t.tap(find.byKey(const Key('voice-mic')));
-      await waitFor(t,
-          () => find.byIcon(Icons.stop_circle_outlined).evaluate().isNotEmpty);
-      expect(find.byIcon(Icons.stop_circle_outlined), findsOneWidget,
+      await waitFor(
+          t, () => find.byIcon(Icons.stop_rounded).evaluate().isNotEmpty);
+      expect(find.byIcon(Icons.stop_rounded), findsOneWidget,
           reason: 'the microphone must be allowed (see the top of this file)');
       await real(t, 1500);
-      await t.tap(find.byKey(const Key('voice-mic')));
-      await waitFor(t, () => repos.spoken.isNotEmpty);
+      await t.tap(find.byKey(const Key('voice-button')));
+      await waitFor(t, () => find.text('Жарайды.').evaluate().isNotEmpty);
 
       // What the speech service got: a 16 kHz mono 16-bit WAV of about the
       // time spoken.
@@ -204,7 +170,6 @@ void main() {
       expect(repos.said.map((s) => (s.text, s.spoken)),
           [('менің бетімді аш', true)]);
       expect(find.text('Жарайды.'), findsOneWidget);
-      expect(repos.spoken, ['Жарайды.']);
       await real(t, 1200);
       expect(t.takeException(), isNull);
     } finally {
@@ -215,13 +180,9 @@ void main() {
     }
   }, skip: !onPhone);
 
-  testWidgets('the speaker plays a reply and the microphone records again',
-      (t) async {
+  testWidgets('the microphone records twice in a row', (t) async {
     final audio = PluginAudio();
     await t.runAsync(() async {
-      await audio.play(silence());
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      await audio.stopPlaying();
       // Twice in a row: the second recording must not reuse the first file.
       for (var i = 0; i < 2; i++) {
         // Without the permission iOS shows its prompt and this never returns.
@@ -291,7 +252,8 @@ void main() {
       final before = '${shown('floor')} ${shown('room')} ${shown('opening')}';
       expect(shown('floor').keys, ['f1']);
 
-      await t.tap(find.byKey(const Key('voice-button')));
+      // A long press opens typing; a tap would start listening.
+      await t.longPress(find.byKey(const Key('voice-button')));
       await t.pumpAndSettle();
       await type(t, '加一层楼，把这间叫书房，再在北墙加窗');
       await waitFor(t, () => find.text('加好了。').evaluate().isNotEmpty);

@@ -86,24 +86,35 @@ void main() {
     await pump(t, VoiceMock(backend));
     await t.pump();
     expect(find.byKey(const Key('voice-bar')), findsNothing);
+    expect(find.byKey(const Key('voice-input')), findsNothing);
 
+    // Without speech the orb opens a text field.
     await t.tap(find.byKey(const Key('voice-button')));
     await t.pump();
     await t.enterText(find.byKey(const Key('voice-input')), '打开我的');
     await t.testTextInput.receiveAction(TextInputAction.send);
     await t.pumpAndSettle();
 
-    expect(find.text('打开我的'), findsOneWidget);
+    // The outcome is a banner; tapping it shows the steps that ran.
+    expect(find.text('这里没有主页面。'), findsOneWidget);
+    await t.tap(find.byKey(const Key('voice-bar')));
+    await t.pumpAndSettle();
     // The step ran and failed (no shell here): it is listed with its name.
     expect(find.text('切换主页面'), findsOneWidget);
     expect(find.byIcon(Icons.error_outline), findsOneWidget);
-    expect(find.text('这里没有主页面。'), findsOneWidget);
+    // Nothing changed a design, so there is nothing to undo.
+    expect(find.byKey(const Key('voice-undo')), findsNothing);
 
     // An offered answer is sent as the next sentence.
     await t.tap(find.text('算了'));
     await t.pumpAndSettle();
     expect(backend.said.map((s) => s.text), ['打开我的', '算了']);
     expect(find.text('好的。'), findsOneWidget);
+
+    // A finished reply gets out of the way.
+    await t.pump(VoiceBar.showFor);
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('voice-bar')), findsNothing);
   });
 
   testWidgets('a spoken request is sent as heard and its reply shown as text',
@@ -113,21 +124,30 @@ void main() {
     final audio = FakeAudio();
     await pump(t, repos, audio: audio);
     await t.pump();
+
+    // One tap listens: the edges glow and the pill says so.
     await t.tap(find.byKey(const Key('voice-button')));
     await t.pump();
-
-    await t.tap(find.byKey(const Key('voice-mic')));
-    await t.pump();
-    expect(find.byIcon(Icons.stop_circle_outlined), findsOneWidget);
+    expect(find.byKey(const Key('voice-glow')), findsOneWidget);
+    expect(find.byKey(const Key('voice-pill')), findsOneWidget);
+    expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
     expect(backend.said, isEmpty);
-    await t.tap(find.byKey(const Key('voice-mic')));
+    // The next sends what was said.
+    await t.tap(find.byKey(const Key('voice-button')));
     await t.pumpAndSettle();
 
     expect(
         backend.said.map((s) => (s.text, s.spoken)), [('бір қабат қос', true)]);
     expect(find.text('Жарайды.'), findsOneWidget);
+    expect(find.byKey(const Key('voice-glow')), findsNothing);
     // Nothing is read aloud.
     expect(audio.log, ['record']);
+
+    // A long press types instead, with the microphone a tap away.
+    await t.longPress(find.byKey(const Key('voice-button')));
+    await t.pump();
+    expect(find.byKey(const Key('voice-input')), findsOneWidget);
+    expect(find.byKey(const Key('voice-mic')), findsOneWidget);
 
     await t.pumpWidget(const SizedBox());
     expect(audio.log.last, 'dispose');
@@ -140,9 +160,7 @@ void main() {
     await t.pump();
     await t.tap(find.byKey(const Key('voice-button')));
     await t.pump();
-    await t.tap(find.byKey(const Key('voice-mic')));
-    await t.pump();
-    await t.tap(find.byKey(const Key('voice-mic')));
+    await t.tap(find.byKey(const Key('voice-button')));
     await t.pumpAndSettle();
     expect(find.text('没听清，请再说一次'), findsOneWidget);
     expect(backend.said, isEmpty);
@@ -152,10 +170,8 @@ void main() {
     await t.pump();
     await t.tap(find.byKey(const Key('voice-button')));
     await t.pump();
-    await t.tap(find.byKey(const Key('voice-mic')));
-    await t.pump();
     expect(find.text('请在系统设置里允许使用麦克风'), findsOneWidget);
-    expect(find.byIcon(Icons.stop_circle_outlined), findsNothing);
+    expect(find.byIcon(Icons.stop_rounded), findsNothing);
 
     // No audio device, or a backend without speech: typed only.
     await t.pumpWidget(const SizedBox());
@@ -163,6 +179,7 @@ void main() {
     await t.pump();
     await t.tap(find.byKey(const Key('voice-button')));
     await t.pump();
+    expect(find.byKey(const Key('voice-input')), findsOneWidget);
     expect(find.byKey(const Key('voice-mic')), findsNothing);
   });
 

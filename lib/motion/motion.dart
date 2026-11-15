@@ -29,8 +29,8 @@ class Stagger extends StatefulWidget {
 
 class _StaggerState extends State<Stagger> with SingleTickerProviderStateMixin {
   AnimationController? _controller;
-  late Animation<double> _t;
-  bool _decided = false, _done = false;
+  Animation<double>? _t;
+  bool _decided = false;
 
   @override
   void didChangeDependencies() {
@@ -38,10 +38,7 @@ class _StaggerState extends State<Stagger> with SingleTickerProviderStateMixin {
     if (_decided) return;
     _decided = true;
     final i = widget.index;
-    if (i < 0 || i > Motion.staggerCap || Motion.reduced(context)) {
-      _done = true;
-      return;
-    }
+    if (i < 0 || i > Motion.staggerCap || Motion.reduced(context)) return;
     final delay = Motion.staggerStep * i;
     final total = delay + Motion.enter;
     final c = _controller = AnimationController(vsync: this, duration: total);
@@ -49,11 +46,6 @@ class _StaggerState extends State<Stagger> with SingleTickerProviderStateMixin {
         parent: c,
         curve: Interval(delay.inMicroseconds / total.inMicroseconds, 1,
             curve: Motion.settle));
-    c.addStatusListener((s) {
-      if (s == AnimationStatus.completed && mounted) {
-        setState(() => _done = true);
-      }
-    });
     c.forward();
   }
 
@@ -65,14 +57,19 @@ class _StaggerState extends State<Stagger> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    if (_done) return widget.child;
-    return AnimatedBuilder(
-        animation: _t,
-        child: widget.child,
-        builder: (context, child) => Opacity(
-            opacity: _t.value,
-            child: Transform.translate(
-                offset: Offset(0, Motion.rise * (1 - _t.value)),
+    final t = _t;
+    if (t == null) return widget.child;
+    // The same widgets before, during and after the reveal: swapping the
+    // wrapper out once it ends would throw the row away and build it again
+    // from scratch, a visible hitch right as the motion settles. At rest
+    // the fade is fully opaque and costs no layer.
+    return FadeTransition(
+        opacity: t,
+        child: AnimatedBuilder(
+            animation: t,
+            child: widget.child,
+            builder: (context, child) => Transform.translate(
+                offset: Offset(0, Motion.rise * (1 - t.value)),
                 child: child)));
   }
 }
@@ -171,11 +168,10 @@ class _FadeInOnceState extends State<_FadeInOnce>
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-      animation: _c,
-      child: widget.child,
-      builder: (context, child) =>
-          _c.isCompleted ? child! : Opacity(opacity: _t.value, child: child));
+  // One stable FadeTransition: dropping it when the fade ends would rebuild
+  // the whole sheet from scratch on that frame.
+  Widget build(BuildContext context) =>
+      FadeTransition(opacity: _t, child: widget.child);
 }
 
 /// Shrinks a card to [Motion.pressScale] while a finger rests on it, and
@@ -553,13 +549,15 @@ class SoftPageTransitionsBuilder extends PageTransitionsBuilder {
         parent: animation, curve: Motion.settle, reverseCurve: Curves.easeIn);
     final faded = FadeTransition(opacity: t, child: child);
     if (reduced) return faded;
+    // Always the same Transform, also at rest: returning the bare child
+    // once the push settles (and the Transform again when a pop starts)
+    // would throw the whole page away and build it anew, which redoes its
+    // loads and drops a frame at both ends of every navigation.
     return AnimatedBuilder(
         animation: t,
         child: faded,
-        builder: (context, child) => t.value >= 1
-            ? child!
-            : Transform.translate(
-                offset: Offset(_shift * (1 - t.value), 0), child: child));
+        builder: (context, child) => Transform.translate(
+            offset: Offset(_shift * (1 - t.value), 0), child: child));
   }
 }
 

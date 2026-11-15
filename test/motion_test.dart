@@ -16,17 +16,19 @@ double _scaleOf(WidgetTester tester, Finder f) {
 }
 
 void main() {
-  testWidgets('Stagger leaves no Opacity once it finishes', (tester) async {
+  testWidgets('Stagger keeps its row alive and ends fully opaque',
+      (tester) async {
     await tester.pumpWidget(_app(Column(children: [
       for (var i = 0; i < 3; i++) Stagger(index: i + 1, child: Text('row $i')),
     ])));
-    expect(
-        find.ancestor(of: find.text('row 2'), matching: find.byType(Opacity)),
-        findsOneWidget);
+    final fade = find.ancestor(
+        of: find.text('row 2'), matching: find.byType(FadeTransition));
+    expect(tester.widget<FadeTransition>(fade.first).opacity.value, lessThan(1));
+    final before = tester.element(find.text('row 2'));
     await tester.pumpAndSettle();
-    expect(
-        find.ancestor(of: find.text('row 2'), matching: find.byType(Opacity)),
-        findsNothing);
+    // The same element: the reveal ending must not rebuild the row anew.
+    expect(tester.element(find.text('row 2')), same(before));
+    expect(tester.widget<FadeTransition>(fade.first).opacity.value, 1);
   });
 
   testWidgets('Stagger shows rows at once under reduce motion', (tester) async {

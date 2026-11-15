@@ -53,7 +53,8 @@ class SceneSettings {
 
 class Camera {
   Camera(this.eye, this.forward, this.fov) {
-    final up0 = forward.y.abs() > 0.999 ? const Vec3(0, 0, -1) : const Vec3(0, 1, 0);
+    final up0 =
+        forward.y.abs() > 0.999 ? const Vec3(0, 0, -1) : const Vec3(0, 1, 0);
     right = forward.cross(up0).unit;
     up = right.cross(forward).unit;
   }
@@ -101,8 +102,8 @@ class Camera {
         final along = d.dot(cam.forward);
         distance = math.max(
             distance,
-            math.max(d.dot(cam.right).abs() / tanH,
-                    d.dot(cam.up).abs() / tanV) -
+            math.max(
+                    d.dot(cam.right).abs() / tanH, d.dot(cam.up).abs() / tanV) -
                 along);
       }
   return (target: target, distance: distance, yaw: yaw, pitch: pitch);
@@ -170,6 +171,10 @@ class ScenePainter extends CustomPainter {
   final bool fast;
   List<_Item> items = [];
 
+  /// Faces left out of the last frame as off screen or hidden inside the
+  /// closed shell; for tests and diagnostics.
+  int culled = 0;
+
   /// Layer and source of each drawn item, for tests.
   List<(int, SourceRef?)> get debugItems =>
       [for (final i in items) (i.layer, i.source)];
@@ -177,6 +182,8 @@ class ScenePainter extends CustomPainter {
   Paint? groundPaint;
 
   static const skyDay = Color(0xffDCE5E8), skyNight = Color(0xff0C1420);
+  static const sectionFill = Color(0xff4E4A45),
+      sectionSelected = Color(0xffB8742A);
   static const near = 0.05;
 
   Vec3 get sun {
@@ -271,7 +278,9 @@ class ScenePainter extends CustomPainter {
       settings.roof && settings.maxFloor >= model.elevations.length - 1;
 
   bool visible(Face3 f) {
+    if (f.capOnly && (walk || settings.maxFloor != f.floorIndex)) return false;
     if (f.roof && (!roofOn || settings.cut) && !walk) return false;
+    if (f.roof && walk && walkerInside) return false;
     if (f.furniture && !settings.furniture && !walk) return false;
     if (f.floorIndex > settings.maxFloor) return false;
     return true;
@@ -280,27 +289,96 @@ class ScenePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final night = settings.night;
-    canvas.drawRect(Offset.zero & size, Paint()..color = night ? skyNight : skyDay);
+    canvas.drawRect(
+        Offset.zero & size, Paint()..color = night ? skyNight : skyDay);
     final focal = size.height / 2 / math.tan(camera.fov / 2);
     final light = sun;
     final cutY = settings.cut && !walk ? settings.cutHeight : double.infinity;
     final foundation = settings.foundation && !walk;
     items = [];
     groundPath = null;
+    culled = 0;
+    // The view frustum, a few pixels wider for the seam hairlines.
+    final tanH = (size.width / 2 + 3) / focal,
+        tanV = (size.height / 2 + 3) / focal;
+    bool inView(Vec3 lo, Vec3 hi) {
+      var behind = true, left = true, right = true, below = true, above = true;
+      for (var i = 0; i < 8; i++) {
+        final c = camera.toCamera(Vec3(i & 1 == 0 ? lo.x : hi.x,
+            i & 2 == 0 ? lo.y : hi.y, i & 4 == 0 ? lo.z : hi.z));
+        if (c.z >= near) behind = false;
+        if (c.x <= c.z * tanH) right = false;
+        if (c.x >= -c.z * tanH) left = false;
+        if (c.y <= c.z * tanV) above = false;
+        if (c.y >= -c.z * tanV) below = false;
+      }
+      return !(behind || left || right || below || above);
+    }
+
+    final screen = (Offset.zero & size).inflate(3);
+    final shell = !walk && roofOn && !cutY.isFinite;
+    // With the shell closed, enclosed faces can only be seen through the
+    // window and door holes: their screen boxes are all that need drawing
+    // inside it (portal culling, as in game engines' indoor scenes).
+    List<Rect>? portals;
+    final e = camera.eye;
+    if (shell &&
+        !(e.x > -0.5 &&
+            e.x < model.width + 0.5 &&
+            e.z > -0.5 &&
+            e.z < model.depth + 0.5 &&
+            e.y < model.height + 8)) {
+      portals = [];
+      for (final p in model.portals) {
+        var lo = const Offset(double.infinity, double.infinity),
+            hi = const Offset(-double.infinity, -double.infinity);
+        for (var i = 0; i < 8 && portals != null; i++) {
+          final c = camera.toCamera(Vec3(i & 1 == 0 ? p.lo.x : p.hi.x,
+              i & 2 == 0 ? p.lo.y : p.hi.y, i & 4 == 0 ? p.lo.z : p.hi.z));
+          final s = c.z < near ? null : project(c, size, focal);
+          if (s == null) {
+            portals = null;
+            break;
+          }
+          lo = Offset(math.min(lo.dx, s.dx), math.min(lo.dy, s.dy));
+          hi = Offset(math.max(hi.dx, s.dx), math.max(hi.dy, s.dy));
+        }
+        if (portals == null) break;
+        final r = Rect.fromPoints(lo, hi).inflate(3);
+        if (r.overlaps(screen)) portals.add(r);
+      }
+    }
+
+    /// Whether a face drawn over [pts] (screen) would show at all.
+    bool shows(List<Offset> pts, bool enclosed) {
+      var l = double.infinity, t = double.infinity;
+      var r = -double.infinity, b = -double.infinity;
+      for (final p in pts) {
+        if (p.dx < l) l = p.dx;
+        if (p.dx > r) r = p.dx;
+        if (p.dy < t) t = p.dy;
+        if (p.dy > b) b = p.dy;
+      }
+      final box = Rect.fromLTRB(l, t, r, b);
+      if (!box.overlaps(screen) ||
+          (enclosed && portals != null && !portals.any(box.overlaps))) {
+        culled++;
+        return false;
+      }
+      return true;
+    }
+
     void addPoly(List<Vec3> world, Color color, double alpha, int layer,
-        SourceRef? source) {
+        SourceRef? source,
+        {bool enclosed = false}) {
       final cam = clipNear([for (final p in world) camera.toCamera(p)]);
       if (cam.length < 3) return;
-      final path = Path();
+      final pts = [for (final c in cam) project(c, size, focal)!];
+      if (!shows(pts, enclosed)) return;
       var depth = 0.0;
-      for (var i = 0; i < cam.length; i++) {
-        final s = project(cam[i], size, focal)!;
-        i == 0 ? path.moveTo(s.dx, s.dy) : path.lineTo(s.dx, s.dy);
-        depth += cam[i].z;
-      }
-      path.close();
-      items.add(_Item(path, color.withValues(alpha: alpha), depth / cam.length,
-          layer, source));
+      for (final c in cam) depth += c.z;
+      items.add(_Item(Path()..addPolygon(pts, true),
+          color.withValues(alpha: alpha), depth / cam.length, layer, source));
     }
 
     // Ground: one large square, fading into the sky toward the horizon
@@ -337,8 +415,10 @@ class ScenePainter extends CustomPainter {
       final nearY = screenY(40), farY = screenY(110);
       final paint = Paint();
       if (!walk && (nearY - farY).abs() > 1) {
-        paint.shader = ui.Gradient.linear(Offset(0, farY), Offset(0, nearY),
-            [sky.withValues(alpha: foundation ? 0.28 : 1), ground.withValues(alpha: foundation ? 0.28 : 1)]);
+        paint.shader = ui.Gradient.linear(Offset(0, farY), Offset(0, nearY), [
+          sky.withValues(alpha: foundation ? 0.28 : 1),
+          ground.withValues(alpha: foundation ? 0.28 : 1)
+        ]);
       } else {
         paint.color = ground.withValues(alpha: foundation ? 0.28 : 1);
       }
@@ -360,7 +440,8 @@ class ScenePainter extends CustomPainter {
             break;
           }
           final t = (p.y - g) / light.y;
-          final q = camera.toCamera(Vec3(p.x - light.x * t, g + 0.001, p.z - light.z * t));
+          final q = camera
+              .toCamera(Vec3(p.x - light.x * t, g + 0.001, p.z - light.z * t));
           final s = project(q, size, focal);
           if (s == null) {
             ok = false;
@@ -370,13 +451,14 @@ class ScenePainter extends CustomPainter {
         }
         if (ok && pts.length >= 3) shadow.addPolygon(pts, true);
       }
-      items.add(_Item(shadow, Colors.black.withValues(alpha: 0.22), 0, 2, null));
+      items
+          .add(_Item(shadow, Colors.black.withValues(alpha: 0.22), 0, 2, null));
     }
 
     // Faces come out of the BSP tree farthest first, so overlapping faces
     // keep their true order from every angle (no flicker while orbiting).
     var order = 0;
-    model.bsp.backToFront(camera.eye, (frag) {
+    model.bsp.backToFront(inView: inView, camera.eye, (frag) {
       final f = frag.face;
       if (!visible(f)) return;
       if (f.layer == Layer3.buried && !foundation) return;
@@ -410,7 +492,6 @@ class ScenePainter extends CustomPainter {
       centre = centre * (1 / f.points.length);
       // With the roof on, the inside is only seen through glass: draw it
       // before the shell so walls and roof always cover it.
-      final shell = !walk && roofOn && !cutY.isFinite;
       final layer = switch (f.layer) {
         Layer3.buried => 0,
         Layer3.ground => 1,
@@ -427,15 +508,47 @@ class ScenePainter extends CustomPainter {
       };
       final alpha = f.glow && night ? 0.62 : f.alpha;
       final before = items.length;
+      final enclosed = f.enclosed && shell;
       if (f.textile != null && frag.uv != null && !clipped && !fast) {
-        addTextured(f, pts, frag.uv!, n, (centre - camera.eye).length, light,
-            layer, size, focal);
+        final outline = [
+          for (final p in clipNear([for (final p in pts) camera.toCamera(p)]))
+            project(p, size, focal)!
+        ];
+        if (outline.length >= 3 && shows(outline, enclosed))
+          addTextured(f, pts, frag.uv!, n, (centre - camera.eye).length, light,
+              layer, size, focal);
       } else {
         addPoly(pts, shade(f, n, (centre - camera.eye).length, light), alpha,
-            layer, f.source);
+            layer, f.source,
+            enclosed: enclosed);
       }
       for (var i = before; i < items.length; i++) items[i].order = order++;
     });
+    // Section fill: where the cut plane passes through a wall, its cut face
+    // is filled solid (the poché of a CAD section) instead of leaving the
+    // wall open as a hollow box. Seen from above the cut nothing else can
+    // be in front of it, so it is drawn last.
+    if (cutY.isFinite && camera.eye.y > cutY + 0.01)
+      for (final b in model.sections) {
+        if (b.floor > settings.maxFloor ||
+            b.lo.y >= cutY - 1e-3 ||
+            b.hi.y <= cutY + 1e-3) continue;
+        final before = items.length;
+        addPoly(
+            [
+              Vec3(b.lo.x, cutY, b.lo.z),
+              Vec3(b.lo.x, cutY, b.hi.z),
+              Vec3(b.hi.x, cutY, b.hi.z),
+              Vec3(b.hi.x, cutY, b.lo.z),
+            ],
+            b.source != null && b.source == selected
+                ? sectionSelected
+                : sectionFill,
+            1,
+            9,
+            b.source);
+        for (var i = before; i < items.length; i++) items[i].order = order++;
+      }
     if (foundation)
       for (final l in model.lines) {
         var a = camera.toCamera(l.a), b = camera.toCamera(l.b);
@@ -506,9 +619,15 @@ class ScenePainter extends CustomPainter {
       // Nearest rooms first; a tag that would cover one already placed
       // tries just above or below, and is left out if neither is free
       // (map labels thin out the same way).
+      var tagFloor = math.min(settings.maxFloor, model.elevations.length - 1);
+      while (tagFloor > 0 && model.elevations[tagFloor] >= cutY - 0.05)
+        tagFloor--;
       final tags = <(Offset, double, Label3)>[];
       for (final l in model.labels) {
-        if (l.floorIndex > settings.maxFloor) continue;
+        // Only the rooms of the highest floor shown are open to view: the
+        // floors under it (or a floor wholly above the cut) are covered,
+        // and their tags would float on the walls above them.
+        if (l.floorIndex != tagFloor) continue;
         final at = Vec3(l.at.x, math.min(l.at.y, cutY - 0.2), l.at.z);
         final c = camera.toCamera(at);
         final s = project(c, size, focal);
@@ -521,8 +640,8 @@ class ScenePainter extends CustomPainter {
         final t = tagPainter(l.title, l.subtitle);
         final w = t.width + 16, h = t.height + 8;
         for (final dy in [0.0, -h * 0.6, h * 0.6]) {
-          final box = Rect.fromCenter(
-              center: s.translate(0, dy), width: w, height: h);
+          final box =
+              Rect.fromCenter(center: s.translate(0, dy), width: w, height: h);
           if (placed.any((p) => p.inflate(2).overlaps(box))) continue;
           if (!(Offset.zero & size).inflate(-2).contains(box.center)) break;
           placed.add(box);
@@ -556,7 +675,8 @@ class ScenePainter extends CustomPainter {
     (Vec3, Offset) at(double s, double t) {
       // Bilinear over the quad: s along p0→p3, t along p0→p1.
       final a = Vec3.lerp(pts[0], pts[3], s), b = Vec3.lerp(pts[1], pts[2], s);
-      final ua = Offset.lerp(uv[0], uv[3], s)!, ub = Offset.lerp(uv[1], uv[2], s)!;
+      final ua = Offset.lerp(uv[0], uv[3], s)!,
+          ub = Offset.lerp(uv[1], uv[2], s)!;
       return (camera.toCamera(Vec3.lerp(a, b, t)), Offset.lerp(ua, ub, t)!);
     }
 
@@ -576,7 +696,8 @@ class ScenePainter extends CustomPainter {
       for (var i = 1; i < out.length - 1; i++)
         for (final k in [0, i, i + 1]) {
           positions.add(screen[k]);
-          coords.add(Offset(out[k].$2.dx * image.width, out[k].$2.dy * image.height));
+          coords.add(
+              Offset(out[k].$2.dx * image.width, out[k].$2.dy * image.height));
         }
       for (final p in out) depth += p.$1.z;
       count += out.length;
@@ -585,11 +706,16 @@ class ScenePainter extends CustomPainter {
     if (quad) {
       for (var i = 0; i < cells; i++)
         for (var j = 0; j < cells; j++) {
-          final s0 = i / cells, s1 = (i + 1) / cells, t0 = j / cells, t1 = (j + 1) / cells;
+          final s0 = i / cells,
+              s1 = (i + 1) / cells,
+              t0 = j / cells,
+              t1 = (j + 1) / cells;
           cell([at(s0, t0), at(s0, t1), at(s1, t1), at(s1, t0)]);
         }
     } else {
-      cell([for (var i = 0; i < pts.length; i++) (camera.toCamera(pts[i]), uv[i])]);
+      cell([
+        for (var i = 0; i < pts.length; i++) (camera.toCamera(pts[i]), uv[i])
+      ]);
     }
     if (positions.isEmpty) return;
     // Outline for picking: the clipped face as a whole.
@@ -606,30 +732,40 @@ class ScenePainter extends CustomPainter {
   }
 
   static Color _lit(Color c, bool night) => night
-      ? Color.from(alpha: 1, red: c.r * 0.22, green: c.g * 0.25, blue: c.b * 0.32)
-      : Color.from(alpha: 1, red: c.r * 0.95, green: c.g * 0.95, blue: c.b * 0.92);
+      ? Color.from(
+          alpha: 1, red: c.r * 0.22, green: c.g * 0.25, blue: c.b * 0.32)
+      : Color.from(
+          alpha: 1, red: c.r * 0.95, green: c.g * 0.95, blue: c.b * 0.92);
 
-  TextPainter tagPainter(String title, String sub) =>
-      TextPainter(
-        text: TextSpan(children: [
-          TextSpan(
-              text: title,
-              style: const TextStyle(
-                  fontFamily: 'Onest',
-                  fontFamilyFallback: ['PingFang SC', 'Noto Sans SC'],
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700)),
-          TextSpan(
-              text: '\n$sub',
-              style: const TextStyle(
-                  fontFamily: 'PlexMono',
-                  color: Color(0xffF2B867),
-                  fontSize: 11)),
-        ]),
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr)
-        ..layout();
+  /// Laid-out room tags, kept between frames: laying out text for every
+  /// room on every frame of an orbit cost more than drawing the house.
+  static final _tags = <(String, String), TextPainter>{};
+
+  TextPainter tagPainter(String title, String sub) {
+    if (_tags.length > 300) _tags.clear();
+    return _tags[(title, sub)] ??= _layoutTag(title, sub);
+  }
+
+  static TextPainter _layoutTag(String title, String sub) => TextPainter(
+      text: TextSpan(children: [
+        TextSpan(
+            text: title,
+            style: const TextStyle(
+                fontFamily: 'Onest',
+                fontFamilyFallback: ['PingFang SC', 'Noto Sans SC'],
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700)),
+        TextSpan(
+            text: '\n$sub',
+            style: const TextStyle(
+                fontFamily: 'PlexMono',
+                color: Color(0xffF2B867),
+                fontSize: 11)),
+      ]),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr)
+    ..layout();
 
   void drawTag(Canvas canvas, Rect box, TextPainter t) {
     canvas.drawRRect(RRect.fromRectAndRadius(box, const Radius.circular(8)),
@@ -670,7 +806,13 @@ class SceneView extends StatefulWidget {
   final int viewToken;
 
   /// Plan point (mm) and floor to stand at; a new token moves there.
-  final ({int floorIndex, double x, double y, double yaw, int token})? walkStart;
+  final ({
+    int floorIndex,
+    double x,
+    double y,
+    double yaw,
+    int token
+  })? walkStart;
   final int walkFloor;
   final ValueChanged<SourceRef?>? onPick;
   final SourceRef? selected;
@@ -836,8 +978,10 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
     last = now;
     var forward = -joy.dy, strafe = joy.dx;
     bool k(LogicalKeyboardKey key) => keys.contains(key);
-    if (k(LogicalKeyboardKey.keyW) || k(LogicalKeyboardKey.arrowUp)) forward += 1;
-    if (k(LogicalKeyboardKey.keyS) || k(LogicalKeyboardKey.arrowDown)) forward -= 1;
+    if (k(LogicalKeyboardKey.keyW) || k(LogicalKeyboardKey.arrowUp))
+      forward += 1;
+    if (k(LogicalKeyboardKey.keyS) || k(LogicalKeyboardKey.arrowDown))
+      forward -= 1;
     if (k(LogicalKeyboardKey.keyA)) strafe -= 1;
     if (k(LogicalKeyboardKey.keyD)) strafe += 1;
     var turn = 0.0;
@@ -922,13 +1066,17 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
 
   Camera get camera {
     if (widget.walk) {
-      final eyeY = (floor < model.elevations.length ? model.elevations[floor] : 0) + 1.6;
+      final eyeY =
+          (floor < model.elevations.length ? model.elevations[floor] : 0) + 1.6;
       final f = Vec3(-math.sin(wYaw) * math.cos(wPitch), math.sin(wPitch),
           -math.cos(wYaw) * math.cos(wPitch));
       return Camera(Vec3(wx, eyeY, wz), f, 72 * math.pi / 180);
     }
     return orbitCamera(target, yaw, pitch, distance);
   }
+
+  bool get walkerOutside =>
+      wx <= 0 || wx >= model.width || wz <= 0 || wz >= model.depth;
 
   /// Room name (or outside / in a wall) under the walker.
   String get whereAmI {
@@ -939,7 +1087,8 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
     final i = g.axes.v.indexWhere((a) => a.pos > px) - 1,
         j = g.axes.h.indexWhere((a) => a.pos > py) - 1;
     final id = g.owners[Cell(i, j)];
-    final room = widget.doc.floors[floor].rooms.where((r) => r.id == id).firstOrNull;
+    final room =
+        widget.doc.floors[floor].rooms.where((r) => r.id == id).firstOrNull;
     return room == null ? widget.inWallLabel : widget.roomName(room);
   }
 
@@ -949,7 +1098,11 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
         model: model,
         camera: camera,
         settings: widget.settings.copyWith(
-            maxFloor: widget.walk ? floor : widget.settings.maxFloor),
+            // Inside, the floors above are hidden (the ceiling closes
+            // the view); from outside the whole house shows.
+            maxFloor: widget.walk
+                ? (walkerOutside ? 999 : floor)
+                : widget.settings.maxFloor),
         northAngleDeg: widget.doc.footprint.northAngleDeg,
         walk: widget.walk,
         labels: true,
@@ -1095,6 +1248,7 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
                         height: 40,
                         decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xffC2771A).withValues(alpha: 0.9)))))));
+                            color: const Color(0xffC2771A)
+                                .withValues(alpha: 0.9)))))));
   }
 }

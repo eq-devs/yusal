@@ -84,7 +84,7 @@ const _suggestionOrder = [
 ];
 
 /// Voice control in the manner of a phone assistant: a small orb in the
-/// corner, the screen's edges glowing while it listens and works, what was
+/// corner that turns and breathes while it listens and works, what was
 /// heard in a pill at the bottom and the outcome in a banner at the top
 /// that gets out of the way. The page underneath stays visible.
 ///
@@ -113,7 +113,7 @@ class _VoiceBarState extends State<VoiceBar>
   String? speechNote;
   Timer? limit, hide;
   late final glow = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1600));
+      vsync: this, duration: const Duration(milliseconds: 2400));
 
   VoiceSession get s => widget.session;
   bool get active => listening || transcribing || s.busy;
@@ -155,7 +155,7 @@ class _VoiceBarState extends State<VoiceBar>
   void _animate() {
     final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     if (active && !still) {
-      if (!glow.isAnimating) glow.repeat(reverse: true);
+      if (!glow.isAnimating) glow.repeat();
     } else {
       glow.stop();
     }
@@ -430,19 +430,6 @@ class _VoiceBarState extends State<VoiceBar>
     return Material(
         type: MaterialType.transparency,
         child: Stack(children: [
-          // The screen's edges glow while voice listens or works.
-          if (active)
-            Positioned.fill(
-                child: IgnorePointer(
-                    child: AnimatedBuilder(
-                        animation: glow,
-                        builder: (context, _) => CustomPaint(
-                            key: const Key('voice-glow'),
-                            painter: _EdgeGlow(
-                                listening
-                                    ? 0.55 + 0.45 * glow.value
-                                    : 0.35 + 0.25 * glow.value,
-                                colors))))),
           if (banner != null)
             Positioned(
                 top: insets.top + 8,
@@ -509,7 +496,10 @@ class _VoiceBarState extends State<VoiceBar>
   }
 }
 
-/// The assistant's orb: a turning colour wheel, brighter while busy.
+/// The assistant's orb: a colour wheel that turns and breathes while
+/// busy. The wheel is painted once and only moved by the compositor
+/// (rotation and scale), so the motion costs no repaint and nothing else
+/// on the page is redrawn.
 class _Orb extends StatelessWidget {
   const _Orb(
       {required this.size, required this.glow, required this.busy, this.icon});
@@ -518,66 +508,42 @@ class _Orb extends StatelessWidget {
   final bool busy;
   final IconData? icon;
 
+  static final _breath = TweenSequence<double>([
+    TweenSequenceItem(tween: Tween(begin: 1, end: 1.08), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: 1.08, end: 1), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: 1, end: 1.08), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: 1.08, end: 1), weight: 1),
+  ]);
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return AnimatedBuilder(
-        animation: glow,
-        builder: (context, _) => Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: SweepGradient(
-                    transform: GradientRotation(glow.value * 3.1416),
-                    colors: [
-                      colors.primary,
-                      colors.tertiary,
-                      colors.secondary,
-                      colors.primary
-                    ]),
-                boxShadow: [
-                  BoxShadow(
-                      color:
-                          colors.primary.withValues(alpha: busy ? 0.5 : 0.25),
-                      blurRadius: busy ? 18 : 8)
-                ]),
-            child: icon == null
-                ? null
-                : Icon(icon, color: colors.onPrimary, size: size * 0.5)));
+    return Stack(alignment: Alignment.center, children: [
+      ScaleTransition(
+          scale: glow.drive(_breath),
+          child: RotationTransition(
+              turns: glow,
+              child: RepaintBoundary(
+                  child: Container(
+                      width: size,
+                      height: size,
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: SweepGradient(colors: [
+                            colors.primary,
+                            colors.tertiary,
+                            colors.secondary,
+                            colors.primary
+                          ]),
+                          boxShadow: [
+                            BoxShadow(
+                                color: colors.primary
+                                    .withValues(alpha: busy ? 0.45 : 0.25),
+                                blurRadius: 8)
+                          ]))))),
+      if (icon != null) Icon(icon, color: colors.onPrimary, size: size * 0.5),
+    ]);
   }
-}
-
-/// A soft coloured glow along the screen's edges.
-class _EdgeGlow extends CustomPainter {
-  _EdgeGlow(this.strength, this.colors);
-  final double strength;
-  final ColorScheme colors;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final shader = SweepGradient(colors: [
-      colors.primary,
-      colors.tertiary,
-      colors.secondary,
-      colors.primary
-    ]).createShader(rect);
-    for (final (width, blur, alpha) in [(18.0, 18.0, 0.55), (5.0, 3.0, 0.9)]) {
-      canvas.drawRRect(
-          RRect.fromRectAndRadius(
-              rect.deflate(width / 2), const Radius.circular(28)),
-          Paint()
-            ..shader = shader
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = width
-            ..color = Colors.white.withValues(alpha: alpha * strength)
-            ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur));
-    }
-  }
-
-  @override
-  bool shouldRepaint(_EdgeGlow old) => old.strength != strength;
 }
 
 /// Puts the voice bar over every page. Wraps the app's content in

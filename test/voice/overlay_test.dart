@@ -125,10 +125,9 @@ void main() {
     await pump(t, repos, audio: audio);
     await t.pump();
 
-    // One tap listens: the edges glow and the pill says so.
+    // One tap listens: the pill says so and the orb shows stop.
     await t.tap(find.byKey(const Key('voice-button')));
     await t.pump();
-    expect(find.byKey(const Key('voice-glow')), findsOneWidget);
     expect(find.byKey(const Key('voice-pill')), findsOneWidget);
     expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
     expect(backend.said, isEmpty);
@@ -139,7 +138,7 @@ void main() {
     expect(
         backend.said.map((s) => (s.text, s.spoken)), [('бір қабат қос', true)]);
     expect(find.text('Жарайды.'), findsOneWidget);
-    expect(find.byKey(const Key('voice-glow')), findsNothing);
+    expect(find.byIcon(Icons.stop_rounded), findsNothing);
     // Nothing is read aloud.
     expect(audio.log, ['record']);
 

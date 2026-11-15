@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../../app/settings.dart';
+import '../../data/repositories.dart';
 import '../../domain/models.dart';
 import '../coop/coop_page.dart';
 import '../demand/demand_detail_page.dart';
@@ -12,6 +15,13 @@ import '../widgets.dart';
 import 'chat_page.dart';
 import '../../../motion/motion.dart';
 
+/// Unread chats and notices together, asked for at the same time.
+Future<int> _unread(PlatformRepositories r) async {
+  final counts =
+      await Future.wait([r.unreadMessages(), r.unreadNotifications()]);
+  return counts[0] + counts[1];
+}
+
 /// Envelope button with the unread count of chats and notices together.
 class InboxButton extends StatelessWidget {
   const InboxButton({super.key});
@@ -19,8 +29,7 @@ class InboxButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     return Live<int>(
-        load: (r) async =>
-            await r.unreadMessages() + await r.unreadNotifications(),
+        load: _unread,
         loading: const SizedBox(width: 48),
         builder: (context, unread) => IconButton(
             tooltip: tr3('消息', 'Хабарлар', 'Сообщения'),
@@ -49,8 +58,7 @@ class InboxNavIcon extends StatelessWidget {
         builder: (context) => context.repos.currentAccount == null
             ? icon
             : Live<int>(
-                load: (r) async =>
-                    await r.unreadMessages() + await r.unreadNotifications(),
+                load: _unread,
                 loading: icon,
                 builder: (context, unread) => Badge(
                     isLabelVisible: unread > 0,
@@ -126,10 +134,10 @@ class _ConversationsState extends State<_Conversations> {
             padding: EdgeInsets.fromLTRB(20, 20, 20, 0)),
         load: (r) async {
           final me = r.currentAccount?.id ?? '';
-          return [
-            for (final c in await r.conversations())
-              (c, await r.account(c.otherSide(me)))
-          ];
+          final list = await r.conversations();
+          final others = await Future.wait(
+              [for (final c in list) r.account(c.otherSide(me))]);
+          return [for (var i = 0; i < list.length; i++) (list[i], others[i])];
         },
         builder: (context, list) => list.isEmpty
             ? EmptyState(
@@ -235,11 +243,15 @@ class _NoticesState extends State<_Notices> {
                               fontWeight:
                                   n.read ? FontWeight.w400 : FontWeight.w700)),
                       subtitle: Text(ago(n.createdAt, context.now)),
-                      onTap: () async {
-                        await attempt(
-                            context, () => context.repos.markRead(n.id));
-                        if (!context.mounted) return;
-                        await openNotice(context, n);
+                      onTap: () {
+                        // Open at once; the read mark follows in the
+                        // background instead of holding the tap.
+                        if (!n.read) {
+                          unawaited(context.repos
+                              .markRead(n.id)
+                              .catchError((Object _) {}));
+                        }
+                        openNotice(context, n);
                       });
                 })));
   }

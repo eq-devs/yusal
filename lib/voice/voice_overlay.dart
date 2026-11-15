@@ -511,10 +511,15 @@ class _VoiceBarState extends State<VoiceBar>
                                             style: theme.textTheme.bodyMedium),
                                         onPressed: () => send(tip)),
                                 ])),
+                      // As tall as the orb, so the two share a centre line.
                       if (pill != null)
-                        ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 420),
-                            child: pill),
+                        Container(
+                            constraints: const BoxConstraints(minHeight: 52),
+                            alignment: Alignment.centerRight,
+                            child: ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 420),
+                                child: pill)),
                     ])),
                 const SizedBox(width: 10),
                 Semantics(

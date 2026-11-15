@@ -16,6 +16,7 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'admin_page.dart';
 import 'dev_tools_page.dart';
+import 'feedback_page.dart';
 
 /// Fourth tab: who I am, what I published, my professional profile,
 /// settings and the account itself, each as its own group.
@@ -147,6 +148,13 @@ class MePage extends StatelessWidget {
                                             selected: app.theme);
                                         if (v != null) app.setTheme(v);
                                       }),
+                                  SettingsRow(
+                                      key: const Key('me-feedback'),
+                                      icon: Icons.chat_bubble_outline,
+                                      title: tr3('意见反馈', 'Пікір қалдыру',
+                                          'Обратная связь'),
+                                      onTap: () => pushPage<void>(context,
+                                          (_) => const FeedbackPage())),
                                   if (context.mock != null)
                                     SettingsRow(
                                         icon: Icons.science_outlined,

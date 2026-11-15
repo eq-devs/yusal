@@ -1327,6 +1327,20 @@ class HttpBackend extends MockBackend
     return (await _posts([j])).single;
   }
 
+  // ───────────────────────────── feedback ─────────────────────────────
+
+  @override
+  Future<void> sendFeedback(
+      {required String requestId,
+      required String text,
+      Map<String, String>? context}) async {
+    await _call('POST', '/client/feedback', body: {
+      'request_id': requestId,
+      'text': text,
+      if (context != null) 'context': context,
+    });
+  }
+
   // ───────────────────────────── moderation ─────────────────────────────
 
   @override

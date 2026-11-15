@@ -306,6 +306,16 @@ abstract interface class ModerationRepository {
   Future<List<AuditEntry>> audit();
 }
 
+abstract interface class FeedbackRepository {
+  /// Sends a short message to the team, signed in or not. [context] is what
+  /// the app attached about itself (version, device, OS); null when the user
+  /// switched it off. A retry with the same [requestId] is stored once.
+  Future<void> sendFeedback(
+      {required String requestId,
+      required String text,
+      Map<String, String>? context});
+}
+
 /// Everything the platform interface needs, in one bundle.
 abstract interface class PlatformRepositories
     implements
@@ -321,4 +331,5 @@ abstract interface class PlatformRepositories
         SnapshotRepository,
         BackupRepository,
         PostRepository,
-        ModerationRepository {}
+        ModerationRepository,
+        FeedbackRepository {}

@@ -19,6 +19,9 @@ class _Node {
   final double offset;
   final on = <Fragment>[];
   _Node? front, back;
+
+  /// Box around every fragment in this subtree.
+  Vec3 lo = const Vec3(0, 0, 0), hi = const Vec3(0, 0, 0);
 }
 
 /// Binary space partitioning tree of the scene faces.
@@ -58,6 +61,19 @@ class BspTree {
       count += node.on.length;
       node.front = build(front);
       node.back = build(back);
+      var lo = const Vec3(double.infinity, double.infinity, double.infinity);
+      var hi = const Vec3(-double.infinity, -double.infinity, -double.infinity);
+      void grow(Vec3 a, Vec3 b) {
+        lo = Vec3(a.x < lo.x ? a.x : lo.x, a.y < lo.y ? a.y : lo.y,
+            a.z < lo.z ? a.z : lo.z);
+        hi = Vec3(b.x > hi.x ? b.x : hi.x, b.y > hi.y ? b.y : hi.y,
+            b.z > hi.z ? b.z : hi.z);
+      }
+
+      for (final f in node.on) for (final p in f.points) grow(p, p);
+      for (final c in [node.front, node.back]) if (c != null) grow(c.lo, c.hi);
+      node.lo = lo;
+      node.hi = hi;
       return node;
     }
 
@@ -155,9 +171,14 @@ class BspTree {
   }
 
   /// Visit every fragment from farthest to nearest as seen from [eye].
-  void backToFront(Vec3 eye, void Function(Fragment) visit) {
+  ///
+  /// [inView] gets the box around a whole subtree; when it says the box is
+  /// out of sight (outside the view frustum) none of it is visited.
+  void backToFront(Vec3 eye, void Function(Fragment) visit,
+      {bool Function(Vec3 lo, Vec3 hi)? inView}) {
     void walk(_Node? node) {
       if (node == null) return;
+      if (inView != null && !inView(node.lo, node.hi)) return;
       final side = node.normal.dot(eye) - node.offset;
       if (side >= 0) {
         walk(node.back);

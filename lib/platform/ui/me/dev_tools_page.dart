@@ -44,7 +44,7 @@ class DevToolsPage extends StatelessWidget {
                       const SectionTitle('网络与审核'),
                       SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('模拟断网（聊天发送和备份会失败）'),
+                          title: const Text('模拟断网（聊天发送、备份和反馈会失败）'),
                           value: mock.simulateOffline,
                           onChanged: (v) {
                             mock.simulateOffline = v;

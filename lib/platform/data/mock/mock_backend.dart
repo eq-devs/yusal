@@ -58,6 +58,9 @@ class MockBackend implements PlatformRepositories {
   final likes = <String, Set<String>>{}; // postId -> account ids
   final _commentTimes = <String, List<DateTime>>{};
   final auditLog = <AuditEntry>[];
+
+  /// Sent feedback by request id: text and attached context.
+  final feedback = <String, ({String text, Map<String, String>? context})>{};
   final _favourites = <String, Set<String>>{};
   final _blocks = <String, Set<String>>{};
   final _lastRead = <String, DateTime>{};
@@ -2132,6 +2135,20 @@ class MockBackend implements PlatformRepositories {
                 !_taken(d))
             .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      });
+
+  // ─────────────────────────── feedback ───────────────────────────
+
+  @override
+  Future<void> sendFeedback(
+          {required String requestId,
+          required String text,
+          Map<String, String>? context}) =>
+      _io(() {
+        if (simulateOffline) throw const ApiFailure(ApiCodes.network);
+        if (text.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
+        feedback.putIfAbsent(
+            requestId, () => (text: text.trim(), context: context));
       });
 
   // ─────────────────────────── moderation ───────────────────────────

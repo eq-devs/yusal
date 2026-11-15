@@ -383,6 +383,92 @@ final designActions = [
         _design('DeleteOpening', {'openingId': args.id('opening')}),
   ),
   AppAction(
+    id: 'design.resize_opening',
+    title: const L3('改门窗宽度', 'Есік-терезе енін өзгерту', 'Изменить ширину двери или окна'),
+    examples: const L3('这扇窗改成一米五宽', 'Осы терезенің енін бір жарым метр қыл',
+        'Сделай это окно шириной полтора метра'),
+    params: const {
+      'opening': Param.entity('opening'),
+      'width_mm': Param.integer(),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) => _design('ResizeOpening',
+        {'openingId': args.id('opening'), 'width': args.integer('width_mm')},
+        changed: [args.id('opening')]),
+  ),
+  AppAction(
+    id: 'design.flip_door',
+    title: const L3('门换个方向开', 'Есіктің ашылу жағын өзгерту', 'Открывать дверь в другую сторону'),
+    examples: const L3('这扇门朝另一边开', 'Осы есік екінші жаққа ашылсын',
+        'Пусть эта дверь открывается в другую сторону'),
+    params: const {'opening': Param.entity('opening')},
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) async {
+      final door = _host!.document.floors
+          .expand((f) => f.openings)
+          .whereType<DoorOpening>()
+          .where((o) => o.id == args.id('opening'))
+          .firstOrNull;
+      return _design('FlipDoor', {
+        'openingId': args.id('opening'),
+        if (door != null)
+          'opensTo': (door.opensTo == OpeningSide.positiveSide
+                  ? OpeningSide.negativeSide
+                  : OpeningSide.positiveSide)
+              .name,
+      }, changed: [
+        args.id('opening')
+      ]);
+    },
+  ),
+  AppAction(
+    id: 'design.set_main_entrance',
+    title: const L3('设为主入口', 'Басты кіреберіс ету', 'Сделать главным входом'),
+    examples: const L3('这扇门是大门', 'Осы есік басты кіреберіс болсын',
+        'Эта дверь — главный вход'),
+    params: const {'opening': Param.entity('opening')},
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) => _design(
+        'SetMainEntrance', {'openingId': args.id('opening')},
+        changed: [args.id('opening')]),
+  ),
+  AppAction(
+    id: 'design.set_roof',
+    title: const L3('换屋顶样式', 'Шатыр түрін өзгерту', 'Изменить тип крыши'),
+    examples: const L3('屋顶改成四坡的', 'Шатырды төрт еңісті қыл',
+        'Сделай крышу четырёхскатной'),
+    params: {
+      // flat, gable (two slopes) or hip (four slopes).
+      'type': Param.choice([for (final t in RoofType.values) t.name]),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) {
+      final roof = _host!.document.roof;
+      final sloped = {
+        'pitchDeg': roof.pitchDeg ?? 30,
+        'overhang': roof.overhang ?? 500
+      };
+      return _design('SetRoof', {
+        'roof': switch (RoofType.values.byName(args.choice('type'))) {
+          RoofType.flat => {
+              'type': 'flat',
+              'parapetHeight': roof.parapetHeight ?? 900
+            },
+          RoofType.hip => {'type': 'hip', ...sloped},
+          RoofType.gable => {
+              'type': 'gable',
+              'ridgeDir': roof.ridgeDir?.name ?? 'H',
+              ...sloped
+            },
+        }
+      });
+    },
+  ),
+  AppAction(
     id: 'design.add_furniture',
     title: const L3('放家具', 'Жиһаз қою', 'Поставить мебель'),
     examples: const L3('卧室放一张双人床', 'Жатын бөлмеге екі кісілік төсек қой',

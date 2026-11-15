@@ -138,8 +138,10 @@ extension _FurnitureTool on _HouseEditorState {
     final delta = p - furnitureDown!;
     switch (furnitureGrip) {
       case 'move':
-        furnitureDraft = f.copyWith(
-            x: snap50(f.x + delta.dx), y: snap50(f.y + delta.dy));
+        // Close to a wall it goes flush against it.
+        furnitureDraft = snapToWalls(
+            f.copyWith(x: snap50(f.x + delta.dx), y: snap50(f.y + delta.dy)),
+            [for (final r in base.roomGeometry) r.clearRects]);
         placementHint = tr3('松手放下', 'Жіберіп қойыңыз', 'Отпустите, чтобы поставить');
       case 'resize':
         final right = math.max(f.x + 100, snap50(p.dx)),

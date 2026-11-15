@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import '../core/house_core.dart';
 import '../core/commands/room_commands.dart';
 import '../core/geometry/floor_base.dart';
+import '../core/geometry/furniture_snap.dart';
 import '../core/history/design_history.dart';
 import '../core/commands/delete_axis.dart';
 import '../core/commands/house_templates.dart';
@@ -160,6 +161,9 @@ class _HouseEditorState extends State<HouseEditor>
   late final DesignHistory history;
   late FloorBase base;
   late DerivedHouse derived;
+  // The estimate shown beside the plan, worked out once per change.
+  HouseDocument? costChipFor;
+  String costChip = '';
   /// Current page: plan, ext (3D), walk, site, det, heat, qty, cost, build
   /// or iss.
   String tab = 'plan';
@@ -650,6 +654,7 @@ class _HouseEditorState extends State<HouseEditor>
                         ])),
                   for (final entry in {
                     'fit': tr3('恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид'),
+                    'addRoom': tr3('按尺寸加房间', 'Өлшеммен бөлме қосу', 'Добавить комнату по размерам'),
                     'grid': tr3('网格', 'Тор', 'Сетка'),
                     'opening': tr3('门窗', 'Есік-терезе', 'Окна и двери'),
                     'stair': tr3('楼梯', 'Баспалдақ', 'Лестница'),
@@ -666,6 +671,7 @@ class _HouseEditorState extends State<HouseEditor>
       canvasTransform.value = Matrix4.identity();
       return;
     }
+    if (choice == 'addRoom') return addRoomBySize();
     setState(() {
       browse = false;
       erase = choice == 'erase';
@@ -677,6 +683,133 @@ class _HouseEditorState extends State<HouseEditor>
         if (!erase) brush = RoomType.values.firstWhere((t) => t.name == choice);
       }
     });
+  }
+
+  /// Usual sizes to start from, metres (width, depth).
+  static const roomSizes = {
+    RoomType.living: (4.5, 5.0),
+    RoomType.bedroom: (3.6, 4.0),
+    RoomType.kitchen: (3.0, 3.6),
+    RoomType.bathroom: (1.8, 2.4),
+    RoomType.dining: (3.0, 3.6),
+    RoomType.custom: (3.0, 3.0),
+  };
+
+  /// A room from its use, its size and the corner of the house it goes
+  /// in, for those who would rather type than draw.
+  Future<void> addRoomBySize() async {
+    var type = RoomType.bedroom, corner = 'bl';
+    final width = TextEditingController(), depth = TextEditingController();
+    void fill() {
+      width.text = dec('${roomSizes[type]!.$1}');
+      depth.text = dec('${roomSizes[type]!.$2}');
+    }
+
+    fill();
+    String? error;
+    final args = await showMotionSheet<Map<String, dynamic>>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => StatefulBuilder(
+            builder: (context, update) => SafeArea(
+                child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(20, 20, 20,
+                        MediaQuery.viewInsetsOf(context).bottom + 20),
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(tr3('按尺寸加房间', 'Өлшеммен бөлме қосу', 'Добавить комнату по размерам'),
+                              style: const TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 12),
+                          Wrap(spacing: 8, runSpacing: 4, children: [
+                            for (final t in RoomType.values)
+                              ChoiceChip(
+                                  key: Key('add-room-${t.name}'),
+                                  label: Text(roomTypeName(t)),
+                                  selected: type == t,
+                                  onSelected: (_) => update(() {
+                                        type = t;
+                                        fill();
+                                      }))
+                          ]),
+                          Row(children: [
+                            Expanded(
+                                child: TextField(
+                                    controller: width,
+                                    keyboardType: const TextInputType
+                                        .numberWithOptions(decimal: true),
+                                    decoration: InputDecoration(
+                                        labelText: tr3('宽（米）', 'Ені (м)', 'Ширина (м)')))),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: TextField(
+                                    controller: depth,
+                                    keyboardType: const TextInputType
+                                        .numberWithOptions(decimal: true),
+                                    decoration: InputDecoration(
+                                        labelText: tr3('长（米）', 'Ұзындығы (м)', 'Длина (м)')))),
+                          ]),
+                          const SizedBox(height: 12),
+                          Text(tr3('放在房子的哪个角', 'Үйдің қай бұрышына', 'В какой угол дома')),
+                          const SizedBox(height: 6),
+                          Wrap(spacing: 8, runSpacing: 4, children: [
+                            for (final c in {
+                              'tl': tr3('左上', 'Сол жақ жоғары', 'Слева вверху'),
+                              'tr': tr3('右上', 'Оң жақ жоғары', 'Справа вверху'),
+                              'bl': tr3('左下', 'Сол жақ төмен', 'Слева внизу'),
+                              'br': tr3('右下', 'Оң жақ төмен', 'Справа внизу'),
+                            }.entries)
+                              ChoiceChip(
+                                  key: Key('add-room-${c.key}'),
+                                  label: Text(c.value),
+                                  selected: corner == c.key,
+                                  onSelected: (_) =>
+                                      update(() => corner = c.key))
+                          ]),
+                          if (error != null)
+                            Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(error!,
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .error))),
+                          const SizedBox(height: 16),
+                          FilledButton(
+                              key: const Key('add-room-go'),
+                              onPressed: () {
+                                final fp = history.present.footprint;
+                                final w =
+                                        ((parseNumber(width.text) ?? 0) * 1000)
+                                            .round(),
+                                    d = ((parseNumber(depth.text) ?? 0) * 1000)
+                                        .round();
+                                if (w < 300 ||
+                                    d < 300 ||
+                                    w > fp.width ||
+                                    d > fp.depth) {
+                                  update(() => error = tr3('房间要在 0.3 米到房屋长宽之间', 'Бөлме 0,3 м мен үй өлшемі аралығында болуы керек', 'Комната должна быть от 0,3 м до размеров дома'));
+                                  return;
+                                }
+                                final left =
+                                        corner.endsWith('l') ? 0 : fp.width - w,
+                                    bottom = corner.startsWith('b')
+                                        ? 0
+                                        : fp.depth - d;
+                                Navigator.pop(context, <String, dynamic>{
+                                  'floorId': floor.id,
+                                  'left': left,
+                                  'bottom': bottom,
+                                  'right': left + w,
+                                  'top': bottom + d,
+                                  'roomType': type
+                                });
+                              },
+                              child: Text(tr3('加上', 'Қосу', 'Добавить'))),
+                        ])))));
+    if (args != null && mounted) action('CarveRoom', args);
   }
 
   OpeningKind? draggingNewOpening;

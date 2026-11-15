@@ -401,6 +401,19 @@ extension _PlanTab on _HouseEditorState {
         padding: const EdgeInsets.only(top: 6), child: Row(children: children));
   }
 
+  /// The whole budget in a few characters, e.g. "≈ ₸ 18,4 млн".
+  String get costChipText {
+    if (!identical(costChipFor, history.present)) {
+      final e = estimate;
+      final v = e.total;
+      costChipFor = history.present;
+      costChip = v <= 0
+          ? ''
+          : '≈ ${currencySymbol(e.currency)} ${v < 1e6 ? money(v) : isKk ? '${dec((v / 1e6).toStringAsFixed(1))} млн' : '${(v / 1e4).round()} 万'}';
+    }
+    return costChip;
+  }
+
   List<Widget> hintChildren(Tokens t, bool coach) {
     return [
           if (coach) ...[
@@ -442,6 +455,17 @@ extension _PlanTab on _HouseEditorState {
                       measurePoints = [];
                     }),
                 child: Text(tr3('结束', 'Аяқтау', 'Завершить'))),
+          // While just looking at the plan: what it would cost to build.
+          if (!coach && browse && costChipText.isNotEmpty)
+            TextButton(
+                key: const Key('plan-cost'),
+                style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8)),
+                onPressed: () => showTab('cost'),
+                child: Text(costChipText,
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600))),
         ];
   }
 }

@@ -153,6 +153,43 @@ void main() {
     await t.pump();
     expect(host.document.floors.single.openings, hasLength(3));
 
+    // A door is resized, turned to open the other way and made the way in.
+    final door = await say(
+        'design.add_opening', {'room': 'r1', 'side': 'north', 'kind': 'door'});
+    expect(door.ok, isTrue);
+    await t.pump();
+    DoorOpening theDoor() => host.document.floors.single.openings
+        .whereType<DoorOpening>()
+        .single;
+    final alias = VoiceScreens.current!.entities
+        .firstWhere((e) => e.id == theDoor().id)
+        .alias;
+    final swing = theDoor().opensTo;
+    expect(
+        (await say('design.resize_opening',
+                {'opening': alias, 'width_mm': 1000}))
+            .ok,
+        isTrue);
+    expect((await say('design.flip_door', {'opening': alias})).ok, isTrue);
+    expect(
+        (await say('design.set_main_entrance', {'opening': alias})).ok, isTrue);
+    await t.pump();
+    expect(theDoor().width, 1000);
+    expect(theDoor().opensTo, isNot(swing));
+    expect(host.document.mainEntranceOpeningId, theDoor().id);
+    // A window cannot be the way in: the reason comes back.
+    expect((await say('design.set_main_entrance', {'opening': 'o2'})).ok,
+        isFalse);
+    expect((await say('design.delete_opening', {'opening': alias})).ok, isTrue);
+    await t.pump();
+
+    for (final type in ['hip', 'flat', 'gable']) {
+      expect((await say('design.set_roof', {'type': type})).ok, isTrue);
+      await t.pump();
+      expect(host.document.roof.type.name, type);
+    }
+
+
     // Furniture lands inside the room it was asked for.
     final bed =
         await say('design.add_furniture', {'room': 'r1', 'kind': 'bed'});

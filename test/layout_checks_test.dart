@@ -3,6 +3,7 @@ import 'package:yusal/core/checks/check_engine.dart';
 import 'package:yusal/core/commands/house_spec.dart';
 import 'package:yusal/core/commands/house_templates.dart';
 import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/house_core.dart';
 
 Map<String, dynamic> spec(
         {required String bathDoorTo, bool kitchenWindow = true}) =>
@@ -83,6 +84,24 @@ void main() {
     expect(rules(spec(bathDoorTo: 'cor')), isNot(contains('R12')));
   });
 
+  test('a narrow door is pointed out', () {
+    var n = 0;
+    final doc = buildHouseFromSpec(spec(bathDoorTo: 'cor'),
+            '2026-11-15T00:00:00Z', () => 'id${n++}')
+        .document!;
+    expect(runChecks(doc, deriveHouse(doc)).map((c) => c.ruleId),
+        isNot(contains('R13')));
+    final door = doc.floors.single.openings
+        .firstWhere((o) => o.id != doc.mainEntranceOpeningId);
+    final result = executeCommand(
+        extractDesignState(doc),
+        DesignCommand('ResizeOpening', {'openingId': door.id, 'width': 600}),
+        CommandContext(newId: () => 'id${n++}', now: () => 'unused'));
+    final narrow = composeDocument(doc.meta, (result as Applied).newState);
+    expect(runChecks(narrow, deriveHouse(narrow)).map((c) => c.ruleId),
+        contains('R13'));
+  });
+
   test('the built-in templates pass both', () {
     for (final kind in houseTemplates.keys) {
       var n = 0;
@@ -91,6 +110,7 @@ void main() {
       final found = runChecks(doc, deriveHouse(doc)).map((c) => c.ruleId);
       expect(found, isNot(contains('R11')), reason: kind);
       expect(found, isNot(contains('R12')), reason: kind);
+      expect(found, isNot(contains('R13')), reason: kind);
     }
   });
 }

@@ -223,7 +223,11 @@ ThemeData buildPlatformTheme(YTokens t) {
       scaffoldBackgroundColor: t.bg,
       canvasColor: t.bg,
       dividerColor: t.line,
-      splashFactory: InkSparkle.splashFactory,
+      // No ripple: a press is one even tint over the whole control (see
+      // PressTint). The highlight stays clear so it is not drawn twice.
+      splashFactory: PressTint.splashFactory,
+      splashColor: t.ink.withValues(alpha: t.dark ? 0.10 : 0.06),
+      highlightColor: Colors.transparent,
       // The design tool's palette stays available to shared widgets.
       extensions: [t, t.dark ? Tokens.night : Tokens.light],
       // iOS-style horizontal slide everywhere, with swipe-back.

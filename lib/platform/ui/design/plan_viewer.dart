@@ -19,49 +19,78 @@ HouseDocument? _document(DesignSnapshot? snapshot) {
 }
 
 /// The ground-floor plan as a cover, for houses published without a
-/// picture. Loads the snapshot once and keeps the parsed plan; shows
-/// nothing (the cover's placeholder) while loading or if unavailable.
+/// picture. Loads the snapshot once and keeps the parsed, derived plan;
+/// shows nothing (the cover's paper) while loading or if unavailable.
+///
+/// Once loaded it draws in the very first frame: a house page, or the
+/// card's picture flying into it, builds a new cover, and waiting a frame
+/// for the cache would flash the empty placeholder.
 class PlanCover extends StatelessWidget {
   const PlanCover(
       {super.key, required this.snapshotId, this.postId, this.demandId});
   final String snapshotId;
   final String? postId, demandId;
 
-  static final _cache = <String, HouseDocument?>{};
+  static final _cache = <String, _CoverPlan?>{};
 
   @override
-  Widget build(BuildContext context) => Live<HouseDocument?>(
-      reloadKey: 'plan-cover:$snapshotId',
-      load: (r) async {
-        if (_cache.containsKey(snapshotId)) return _cache[snapshotId];
-        try {
-          final snap =
-              await r.snapshot(snapshotId, postId: postId, demandId: demandId);
-          return _cache[snapshotId] = _document(snap);
-        } catch (_) {
-          return null;
-        }
-      },
-      loading: const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      builder: (context, doc) {
-        if (doc == null || doc.floors.isEmpty) return const SizedBox.shrink();
-        final derived = deriveHouse(doc).floors.first;
-        final rooms = doc.floors.first.rooms;
-        return ColoredBox(
+  Widget build(BuildContext context) {
+    if (_cache.containsKey(snapshotId)) {
+      return _CoverSheet(plan: _cache[snapshotId]);
+    }
+    return Live<_CoverPlan?>(
+        reloadKey: 'plan-cover:$snapshotId',
+        load: (r) async {
+          if (_cache.containsKey(snapshotId)) return _cache[snapshotId];
+          try {
+            final snap = await r.snapshot(snapshotId,
+                postId: postId, demandId: demandId);
+            return _cache[snapshotId] = _CoverPlan.of(_document(snap));
+          } catch (_) {
+            return null;
+          }
+        },
+        loading: const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
+        builder: (context, plan) => _CoverSheet(plan: plan));
+  }
+}
+
+/// A plan ready to paint: derived once, not on every frame of a flight.
+class _CoverPlan {
+  _CoverPlan(this.doc, this.floor);
+  final HouseDocument doc;
+  final DerivedFloor floor;
+
+  static _CoverPlan? of(HouseDocument? doc) => doc == null || doc.floors.isEmpty
+      ? null
+      : _CoverPlan(doc, deriveHouse(doc).floors.first);
+}
+
+class _CoverSheet extends StatelessWidget {
+  const _CoverSheet({required this.plan});
+  final _CoverPlan? plan;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = plan;
+    if (p == null) return const SizedBox.shrink();
+    final rooms = p.doc.floors.first.rooms;
+    return RepaintBoundary(
+        child: ColoredBox(
             color: YTokens.paper,
             child: CustomPaint(
                 painter: FloorPlanPainter(
-                    derived.base,
+                    p.floor.base,
                     {for (final r in rooms) r.id: ''},
                     {for (final r in rooms) r.id: roomColors[r.type]!},
-                    openings: derived.openings,
-                    stairs: derived.stairs,
-                    furniture: doc.extras.furniture,
+                    openings: p.floor.openings,
+                    stairs: p.floor.stairs,
+                    furniture: p.doc.extras.furniture,
                     showDimensions: false,
                     showLabels: false,
-                    viewportInsets: const EdgeInsets.all(18))));
-      });
+                    viewportInsets: const EdgeInsets.all(18)))));
+  }
 }
 
 /// Shared public entry point. Never opens the editor or writes local projects.

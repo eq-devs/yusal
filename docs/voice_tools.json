@@ -1,0 +1,474 @@
+[
+  {
+    "name": "nav.tab",
+    "title": {
+      "zh": "切换主页面",
+      "kk": "Негізгі бетке өту",
+      "ru": "Перейти на вкладку"
+    },
+    "examples": {
+      "zh": "打开消息",
+      "kk": "Хабарларды аш",
+      "ru": "Открой чаты"
+    },
+    "risk": "read",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "tab": {
+          "type": "string",
+          "enum": [
+            "explore",
+            "houses",
+            "messages",
+            "me"
+          ]
+        }
+      },
+      "required": [
+        "tab"
+      ]
+    }
+  },
+  {
+    "name": "nav.open",
+    "title": {
+      "zh": "打开一项内容",
+      "kk": "Нысанды ашу",
+      "ru": "Открыть объект"
+    },
+    "examples": {
+      "zh": "打开这个需求",
+      "kk": "Осы сұранысты аш",
+      "ru": "Открой эту заявку"
+    },
+    "risk": "read",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "demand",
+            "application",
+            "cooperation",
+            "conversation",
+            "profile",
+            "post"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "ref"
+      ]
+    }
+  },
+  {
+    "name": "design.add_floor",
+    "title": {
+      "zh": "加一层楼",
+      "kk": "Қабат қосу",
+      "ru": "Добавить этаж"
+    },
+    "examples": {
+      "zh": "加一层楼",
+      "kk": "Бір қабат қос",
+      "ru": "Добавь этаж"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floor": {
+          "type": "string",
+          "entity": "floor"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "design.set_floor_height",
+    "title": {
+      "zh": "改层高",
+      "kk": "Қабат биіктігін өзгерту",
+      "ru": "Изменить высоту этажа"
+    },
+    "examples": {
+      "zh": "层高改成三米",
+      "kk": "Қабат биіктігін үш метр қыл",
+      "ru": "Сделай высоту этажа три метра"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floor": {
+          "type": "string",
+          "entity": "floor"
+        },
+        "height_mm": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "height_mm"
+      ]
+    }
+  },
+  {
+    "name": "design.set_size",
+    "title": {
+      "zh": "改房屋尺寸",
+      "kk": "Үй өлшемін өзгерту",
+      "ru": "Изменить размер дома"
+    },
+    "examples": {
+      "zh": "房子改成十米乘十二米",
+      "kk": "Үйді он да он екі метр қыл",
+      "ru": "Сделай дом десять на двенадцать метров"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "width_mm": {
+          "type": "integer"
+        },
+        "depth_mm": {
+          "type": "integer"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "design.rename_room",
+    "title": {
+      "zh": "给房间改名",
+      "kk": "Бөлме атауын өзгерту",
+      "ru": "Переименовать комнату"
+    },
+    "examples": {
+      "zh": "这间叫书房",
+      "kk": "Бұл бөлмені кабинет деп ата",
+      "ru": "Назови эту комнату кабинетом"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "room": {
+          "type": "string",
+          "entity": "room"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "room",
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "design.set_room_type",
+    "title": {
+      "zh": "改房间用途",
+      "kk": "Бөлме түрін өзгерту",
+      "ru": "Изменить тип комнаты"
+    },
+    "examples": {
+      "zh": "这间改成卧室",
+      "kk": "Бұл бөлмені жатын бөлме қыл",
+      "ru": "Сделай эту комнату спальней"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "room": {
+          "type": "string",
+          "entity": "room"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "living",
+            "bedroom",
+            "kitchen",
+            "bathroom",
+            "dining",
+            "custom"
+          ]
+        }
+      },
+      "required": [
+        "room",
+        "type"
+      ]
+    }
+  },
+  {
+    "name": "design.merge_rooms",
+    "title": {
+      "zh": "合并两个房间",
+      "kk": "Екі бөлмені біріктіру",
+      "ru": "Объединить две комнаты"
+    },
+    "examples": {
+      "zh": "把客厅和餐厅合并",
+      "kk": "Қонақ бөлме мен асхананы біріктір",
+      "ru": "Объедини гостиную и столовую"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string",
+          "entity": "room"
+        },
+        "b": {
+          "type": "string",
+          "entity": "room"
+        }
+      },
+      "required": [
+        "a",
+        "b"
+      ]
+    }
+  },
+  {
+    "name": "design.add_opening",
+    "title": {
+      "zh": "加门或窗",
+      "kk": "Есік не терезе қосу",
+      "ru": "Добавить дверь или окно"
+    },
+    "examples": {
+      "zh": "客厅北墙加一扇窗",
+      "kk": "Қонақ бөлменің солтүстік қабырғасына терезе қой",
+      "ru": "Добавь окно на северную стену гостиной"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "room": {
+          "type": "string",
+          "entity": "room"
+        },
+        "side": {
+          "type": "string",
+          "enum": [
+            "north",
+            "east",
+            "south",
+            "west"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "door",
+            "window",
+            "sliding"
+          ]
+        }
+      },
+      "required": [
+        "room",
+        "side",
+        "kind"
+      ]
+    }
+  },
+  {
+    "name": "design.delete_opening",
+    "title": {
+      "zh": "删除门窗",
+      "kk": "Есік-терезені жою",
+      "ru": "Удалить дверь или окно"
+    },
+    "examples": {
+      "zh": "删掉这扇窗",
+      "kk": "Осы терезені алып таста",
+      "ru": "Удали это окно"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "opening": {
+          "type": "string",
+          "entity": "opening"
+        }
+      },
+      "required": [
+        "opening"
+      ]
+    }
+  },
+  {
+    "name": "design.add_furniture",
+    "title": {
+      "zh": "放家具",
+      "kk": "Жиһаз қою",
+      "ru": "Поставить мебель"
+    },
+    "examples": {
+      "zh": "卧室放一张双人床",
+      "kk": "Жатын бөлмеге екі кісілік төсек қой",
+      "ru": "Поставь в спальню двуспальную кровать"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "room": {
+          "type": "string",
+          "entity": "room"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "bed",
+            "singleBed",
+            "wardrobe",
+            "table",
+            "diningTable",
+            "chair",
+            "sofa",
+            "desk",
+            "tvStand",
+            "shelf",
+            "rug",
+            "alasha",
+            "wallRug",
+            "korpe",
+            "cushion",
+            "dastarkhan",
+            "sandyq",
+            "bench",
+            "hooks",
+            "counter",
+            "stove",
+            "sink",
+            "fridge",
+            "pantry",
+            "bathtub",
+            "shower",
+            "toilet",
+            "basin",
+            "washer",
+            "boiler",
+            "shoeCabinet",
+            "terrace",
+            "porch",
+            "custom"
+          ]
+        }
+      },
+      "required": [
+        "room",
+        "kind"
+      ]
+    }
+  },
+  {
+    "name": "design.delete_furniture",
+    "title": {
+      "zh": "删除家具",
+      "kk": "Жиһазды жою",
+      "ru": "Удалить мебель"
+    },
+    "examples": {
+      "zh": "删掉这个柜子",
+      "kk": "Осы шкафты алып таста",
+      "ru": "Убери этот шкаф"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "furniture": {
+          "type": "string",
+          "entity": "furniture"
+        }
+      },
+      "required": [
+        "furniture"
+      ]
+    }
+  },
+  {
+    "name": "editor.undo",
+    "title": {
+      "zh": "撤销",
+      "kk": "Болдырмау",
+      "ru": "Отменить"
+    },
+    "examples": {
+      "zh": "撤销",
+      "kk": "Соңғы әрекетті болдырма",
+      "ru": "Отмени"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "form.fill",
+    "title": {
+      "zh": "填写表单",
+      "kk": "Пішінді толтыру",
+      "ru": "Заполнить форму"
+    },
+    "examples": {
+      "zh": "找两个瓦工，日薪一万五",
+      "kk": "Екі қалаушы керек, күніне он бес мың",
+      "ru": "Нужны два каменщика, пятнадцать тысяч в день"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "values"
+      ]
+    }
+  },
+  {
+    "name": "form.submit",
+    "title": {
+      "zh": "提交或发送",
+      "kk": "Жіберу",
+      "ru": "Отправить"
+    },
+    "examples": {
+      "zh": "发送",
+      "kk": "Жібер",
+      "ru": "Отправь"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]

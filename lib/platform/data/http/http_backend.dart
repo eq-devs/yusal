@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../voice/session.dart';
+import '../../../voice/speech.dart';
 import '../../domain/models.dart';
 import '../mock/mock_backend.dart';
 import '../repositories.dart';
@@ -14,7 +17,8 @@ import 'codec.dart';
 /// cooperations, reviews, chat, notifications and moderation. It extends
 /// [MockBackend] only for the shared plumbing (the change notifier and the
 /// account cache screens read synchronously); no data is served from it.
-class HttpBackend extends MockBackend {
+class HttpBackend extends MockBackend
+    implements VoiceBackend, SpeechBackend {
   HttpBackend(this.baseUrl,
       {http.Client? client,
       bool seed = false,
@@ -56,20 +60,28 @@ class HttpBackend extends MockBackend {
   // ───────────────────────────── transport ─────────────────────────────
 
   Future<dynamic> _call(String method, String path,
-      {Object? body, Map<String, String>? query, bool auth = true}) async {
-    final res = await _send(method, path, body: body, query: query, auth: auth);
+      {Object? body,
+      List<int>? bytes,
+      Map<String, String>? query,
+      bool auth = true}) async {
+    final res = await _send(method, path,
+        body: body, bytes: bytes, query: query, auth: auth);
     if (res.statusCode == 401 && auth && _refresh != null) {
       if (await (_refreshing ??=
           _refreshTokens().whenComplete(() => _refreshing = null))) {
-        return _decode(
-            await _send(method, path, body: body, query: query, auth: auth));
+        return _decode(await _send(method, path,
+            body: body, bytes: bytes, query: query, auth: auth));
       }
     }
     return _decode(res);
   }
 
+  /// [bytes] is a raw body (a recording), sent instead of a JSON [body].
   Future<http.Response> _send(String method, String path,
-      {Object? body, Map<String, String>? query, bool auth = true}) async {
+      {Object? body,
+      List<int>? bytes,
+      Map<String, String>? query,
+      bool auth = true}) async {
     final uri = Uri.parse('$baseUrl$path').replace(
         queryParameters: query == null || query.isEmpty ? null : query);
     final req = http.Request(method, uri);
@@ -80,6 +92,10 @@ class HttpBackend extends MockBackend {
     if (body != null) {
       req.headers['Content-Type'] = 'application/json';
       req.body = jsonEncode(body);
+    }
+    if (bytes != null) {
+      req.headers['Content-Type'] = 'application/octet-stream';
+      req.bodyBytes = bytes;
     }
     try {
       return await _http
@@ -244,6 +260,48 @@ class HttpBackend extends MockBackend {
 
   /// The device's FCM token, from the push setup; registered now if signed
   /// in, else at the next sign-in. [language] is zh / kk / ru.
+  // Voice: yusal-api forwards both to the AI gateway.
+
+  @override
+  Future<VoiceTurn> say(
+          {required String sessionId,
+          required String text,
+          required bool spoken,
+          required Map<String, Object?> context}) async =>
+      VoiceTurn.fromJson(await _call('POST', '/client/voice', body: {
+        'session_id': sessionId,
+        'text': text,
+        'input': spoken ? 'voice' : 'text',
+        'context': context,
+      }) as Map<String, dynamic>);
+
+  @override
+  Future<VoiceTurn> results(
+          {required String turnId,
+          required List<Map<String, Object?>> results,
+          required Map<String, Object?> context}) async =>
+      VoiceTurn.fromJson(await _call('POST', '/client/voice/results', body: {
+        'turn_id': turnId,
+        'results': results,
+        'context': context,
+      }) as Map<String, dynamic>);
+
+  // Speech: yusal-api proxies QazSTT, which holds the key.
+
+  @override
+  Future<String> transcribe(Uint8List wav) async =>
+      (await _call('POST', '/client/voice/transcribe', bytes: wav)
+          as Map<String, dynamic>)['text'] as String? ??
+      '';
+
+  @override
+  Future<Uint8List> synthesize(String text) async {
+    final res =
+        await _send('POST', '/client/voice/tts', body: {'text': text});
+    if (res.statusCode != 200) _decode(res);
+    return res.bodyBytes;
+  }
+
   Future<void> setPushToken(String token,
       {required String platform, required String language}) async {
     _pushToken = token;

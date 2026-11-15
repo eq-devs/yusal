@@ -46,6 +46,9 @@ import '../core/analysis/utility_plan.dart';
 import '../render2d/planning_names.dart';
 import '../render2d/site_plan_painter.dart';
 import '../motion/motion.dart';
+import '../voice/action.dart';
+import '../voice/actions_design.dart';
+import '../voice/screen.dart';
 
 part 'editor/roof_picker.dart';
 part 'editor/editor_header.dart';
@@ -83,7 +86,58 @@ class HouseEditor extends StatefulWidget {
 }
 
 class _HouseEditorState extends State<HouseEditor>
-    with WidgetsBindingObserver, TickerProviderStateMixin {
+    with WidgetsBindingObserver, TickerProviderStateMixin, VoiceScreen
+    implements DesignHost {
+  @override
+  String get screenId => 'editor.$tab';
+
+  /// Floors as f1, f2…, and on the floor being edited rooms as r1…,
+  /// openings as o1… and furniture as u1…, in document order.
+  @override
+  List<Entity> get entities => [
+        for (final (i, f) in history.present.floors.indexed)
+          Entity('floor', f.id, alias: 'f${i + 1}', title: f.name),
+        for (final (i, r) in floor.rooms.indexed)
+          Entity('room', r.id, alias: 'r${i + 1}', title: r.name),
+        for (final (i, o) in floor.openings.indexed)
+          Entity('opening', o.id,
+              alias: 'o${i + 1}', title: openingKindName(o)),
+        for (final (i, f) in history.present.extras.furniture
+            .where((f) => f.floorId == floor.id)
+            .indexed)
+          Entity('furniture', f.id,
+              alias: 'u${i + 1}', title: furnitureName(f.kind)),
+      ];
+
+  @override
+  HouseDocument get document => history.present;
+
+  @override
+  FloorBase get floorBase => base;
+
+  @override
+  List<String> get actions => [for (final a in designActions) a.id];
+
+  @override
+  String get currentFloorId => floor.id;
+
+  @override
+  CommandResult runDesign(String kind, Map<String, dynamic> args) =>
+      action(kind, args, quiet: true);
+
+  @override
+  void beginUndoGroup() => history.beginGroup();
+
+  @override
+  void endUndoGroup() => history.endGroup();
+
+  @override
+  bool undoDesign() {
+    final can = history.canUndo;
+    undo();
+    return can;
+  }
+
   late final DesignHistory history;
   late FloorBase base;
   late DerivedHouse derived;
@@ -1372,7 +1426,11 @@ class _HouseEditorState extends State<HouseEditor>
     notify(tr3('已重做', 'Қайталанды', 'Действие повторено'));
   }
 
-  void action(String kind, Map<String, dynamic> args) {
+  /// Runs a design command and returns what came of it. A failure is
+  /// shown to the user unless [quiet], for callers that report it
+  /// themselves.
+  CommandResult action(String kind, Map<String, dynamic> args,
+      {bool quiet = false}) {
     final result = executeCommand(
         presentState,
         DesignCommand(kind, args),
@@ -1384,12 +1442,13 @@ class _HouseEditorState extends State<HouseEditor>
         if (history.commit(
             composeDocument(history.present.meta, result.newState))) changed();
       });
-    } else {
+    } else if (!quiet) {
       final message = result is Rejected
           ? result.message
           : (result as NeedsResolution).conflict.message;
       notify(message);
     }
+    return result;
   }
 
   Future<String?> ask(String label, String value, {bool number = false}) async {

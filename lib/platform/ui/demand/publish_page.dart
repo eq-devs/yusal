@@ -9,6 +9,9 @@ import '../theme.dart';
 import '../widgets.dart';
 import '../unsaved_changes_guard.dart';
 import 'demand_detail_page.dart';
+import '../../../voice/action.dart';
+import '../../../voice/form.dart';
+import '../../../voice/screen.dart';
 
 /// Publish wizard for both demand types: type → work → time and budget →
 /// attachments and privacy → preview. Also edits a published demand, which
@@ -26,7 +29,43 @@ class PublishPage extends StatefulWidget {
   State<PublishPage> createState() => _PublishPageState();
 }
 
-class _PublishPageState extends State<PublishPage> {
+class _PublishPageState extends State<PublishPage> with VoiceScreen {
+  @override
+  String get screenId => 'demand.publish';
+
+  /// The inputs of every step and of both types, so one sentence can set
+  /// the type together with its fields. The controllers keep what is
+  /// filled while the user moves between steps and reviews it.
+  @override
+  List<VoiceField> get fields => [
+        VoiceField.choice(
+            'type',
+            const L3('类型', 'Түрі', 'Тип'),
+            [for (final t in DemandType.values) t.name],
+            (v) => setState(() => type = DemandType.values.byName(v))),
+        VoiceField('title', const L3('标题', 'Тақырып', 'Заголовок'),
+            FieldType.text, (v) {
+          titleTouched = true;
+          title.text = v as String;
+        }),
+        VoiceField.text('locality',
+            const L3('村镇／街区', 'Ауыл / аудан', 'Посёлок / микрорайон'), locality),
+        VoiceField.text('address',
+            const L3('具体地址', 'Нақты мекенжай', 'Точный адрес'), address),
+        VoiceField.text(
+            'description', const L3('说明', 'Сипаттама', 'Описание'), description),
+        VoiceField.number('headcount',
+            const L3('需要人数', 'Адам саны', 'Сколько человек'), headcount),
+        VoiceField.number('wage', const L3('工资', 'Жалақы', 'Ставка'), wage),
+        VoiceField.number(
+            'days', const L3('预计工作天数', 'Күн саны', 'Дней'), days),
+        VoiceField.number('target_days',
+            const L3('目标工期（天）', 'Мерзім (күн)', 'Срок (дней)'), targetDays),
+      ];
+
+  @override
+  Future<void> Function()? get voiceSubmit => submit;
+
   int step = 0;
   DemandType type = DemandType.contract;
   PublisherRole role = PublisherRole.owner;

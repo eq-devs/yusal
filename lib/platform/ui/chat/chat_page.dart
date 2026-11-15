@@ -8,6 +8,9 @@ import '../scope.dart';
 import '../components.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../../../voice/action.dart';
+import '../../../voice/form.dart';
+import '../../../voice/screen.dart';
 
 class _ChatData {
   _ChatData(
@@ -30,8 +33,20 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _ChatPageState extends State<ChatPage> with VoiceScreen {
   final input = TextEditingController();
+
+  @override
+  String get screenId => 'chat';
+
+  @override
+  List<VoiceField> get fields => [
+        VoiceField.text('message',
+            const L3('消息', 'Хабар', 'Сообщение'), input),
+      ];
+
+  @override
+  Future<void> Function()? get voiceSubmit => send;
   int seen = -1;
 
   Future<_ChatData> load(PlatformRepositories r) async {

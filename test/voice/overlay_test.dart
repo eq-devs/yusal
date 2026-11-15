@@ -98,7 +98,7 @@ void main() {
     await t.testTextInput.receiveAction(TextInputAction.send);
     await t.pumpAndSettle();
 
-    // The outcome is a banner; tapping it shows the steps that ran.
+    // The outcome is a bubble; tapping it shows the steps that ran.
     expect(find.text('这里没有主页面。'), findsOneWidget);
     await t.tap(find.byKey(const Key('voice-bar')));
     await t.pumpAndSettle();
@@ -114,8 +114,14 @@ void main() {
     expect(backend.said.map((s) => s.text), ['打开我的', '算了']);
     expect(find.text('好的。'), findsOneWidget);
 
-    // A finished reply gets out of the way.
-    await t.pump(VoiceBar.showFor);
+    // A finished reply stays beside the orb until it is closed.
+    await t.pump(const Duration(seconds: 30));
+    expect(find.text('好的。'), findsOneWidget);
+    final orb = t.getRect(find.byKey(const Key('voice-button')));
+    final bubble = t.getRect(find.byKey(const Key('voice-bar')));
+    expect(bubble.right, lessThan(orb.left));
+    expect(bubble.bottom, greaterThan(orb.top));
+    await t.tap(find.byKey(const Key('voice-close')));
     await t.pumpAndSettle();
     expect(find.byKey(const Key('voice-bar')), findsNothing);
   });

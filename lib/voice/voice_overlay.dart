@@ -85,8 +85,9 @@ const _suggestionOrder = [
 
 /// Voice control in the manner of a phone assistant: a small orb in the
 /// corner that turns and breathes while it listens and works, what was
-/// heard in a pill at the bottom and the outcome in a banner at the top
-/// that gets out of the way. The page underneath stays visible.
+/// heard and the outcome in a bubble beside it. The answer stays until it
+/// is closed or the next sentence starts. The page underneath stays
+/// visible.
 ///
 /// Tapping the orb starts listening and tapping it again sends; without
 /// speech, or on a long press, it opens a text field instead.
@@ -96,9 +97,6 @@ class VoiceBar extends StatefulWidget {
 
   /// Null leaves the bar typed-only.
   final Speech? speech;
-
-  /// How long a finished reply stays before the banner hides.
-  static const showFor = Duration(seconds: 5);
 
   /// How many open pages want the orb out of the way (the sign-in page:
   /// its buttons reach the corner where the orb sits).
@@ -115,7 +113,7 @@ class _VoiceBarState extends State<VoiceBar>
   bool typing = false, listening = false, transcribing = false;
   bool bannerShown = false, expanded = false;
   String? speechNote;
-  Timer? limit, hide;
+  Timer? limit;
   // One turn of the orb, and how loud the voice is (0 to 1).
   late final glow = AnimationController(vsync: this, duration: _calm);
   late final level = AnimationController(vsync: this);
@@ -152,7 +150,6 @@ class _VoiceBarState extends State<VoiceBar>
     s.removeListener(_changed);
     VoiceBar.hidden.removeListener(_hiddenChanged);
     limit?.cancel();
-    hide?.cancel();
     levels?.cancel();
     glow.dispose();
     level.dispose();
@@ -169,13 +166,6 @@ class _VoiceBarState extends State<VoiceBar>
     if (!mounted) return;
     final finished = s.phase == VoicePhase.done || s.phase == VoicePhase.failed;
     if (s.busy || finished) bannerShown = true;
-    hide?.cancel();
-    // A question with answers to pick, or an open banner, stays.
-    if (finished && s.options.isEmpty && !expanded) {
-      hide = Timer(VoiceBar.showFor, () {
-        if (mounted) setState(() => bannerShown = false);
-      });
-    }
     _animate();
     setState(() {});
   }
@@ -281,6 +271,8 @@ class _VoiceBarState extends State<VoiceBar>
     if (t.isEmpty || s.busy) return;
     input.clear();
     expanded = false;
+    // The answer takes the field's place beside the orb.
+    typing = false;
     s.say(t, spoken: false);
   }
 
@@ -316,7 +308,6 @@ class _VoiceBarState extends State<VoiceBar>
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final lang = AppSettings.instance.lang;
-    final insets = MediaQuery.paddingOf(context);
     final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final quiet =
         theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant);
@@ -335,23 +326,20 @@ class _VoiceBarState extends State<VoiceBar>
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 child: child));
 
-    // Top: what came of the sentence.
+    // What came of the sentence, beside the orb. It stays until closed
+    // or the next sentence starts.
     final banner = bannerShown &&
             (s.busy || s.phase == VoicePhase.done || failed)
         ? card(
             key: const Key('voice-bar'),
             child: InkWell(
-                onTap: () => setState(() {
-                      expanded = !expanded;
-                      if (expanded) hide?.cancel();
-                    }),
-                child: Column(
+                onTap: () => setState(() => expanded = !expanded),
+                // A long answer scrolls inside its bubble.
+                child: SingleChildScrollView(child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(children: [
-                        _Orb(size: 26, glow: glow, mood: mood),
-                        const SizedBox(width: 10),
                         Expanded(
                             child: Text(
                                 s.busy
@@ -364,7 +352,7 @@ class _VoiceBarState extends State<VoiceBar>
                                         : s.reply.isNotEmpty
                                             ? s.reply
                                             : tr3('完成了', 'Дайын', 'Готово'),
-                                maxLines: expanded ? null : 2,
+                                maxLines: expanded ? null : 4,
                                 overflow:
                                     expanded ? null : TextOverflow.ellipsis,
                                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -379,10 +367,18 @@ class _VoiceBarState extends State<VoiceBar>
                               tooltip: tr3('停止', 'Тоқтату', 'Стоп'),
                               icon: const Icon(Icons.stop_circle),
                               onPressed: s.stop),
+                        if (!s.busy)
+                          IconButton(
+                              key: const Key('voice-close'),
+                              visualDensity: VisualDensity.compact,
+                              tooltip: tr3('关闭', 'Жабу', 'Закрыть'),
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () =>
+                                  setState(() => bannerShown = false)),
                       ]),
                       if (s.steps.isNotEmpty && (expanded || s.busy))
                         Padding(
-                            padding: const EdgeInsets.only(top: 6, left: 36),
+                            padding: const EdgeInsets.only(top: 6),
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -408,13 +404,15 @@ class _VoiceBarState extends State<VoiceBar>
                                 ])),
                       if (s.options.isNotEmpty)
                         Padding(
-                            padding: const EdgeInsets.only(top: 6, left: 36),
+                            padding: const EdgeInsets.only(top: 6),
                             child: Wrap(spacing: 8, children: [
                               for (final o in s.options)
                                 ActionChip(
-                                    label: Text(o), onPressed: () => send(o)),
+                                    label: Text(o,
+                                        style: theme.textTheme.bodyMedium),
+                                    onPressed: () => send(o)),
                             ])),
-                    ])))
+                    ]))))
         : null;
 
     // Bottom: what is being heard, or the text field.
@@ -486,15 +484,6 @@ class _VoiceBarState extends State<VoiceBar>
     return Material(
         type: MaterialType.transparency,
         child: Stack(children: [
-          if (banner != null)
-            Positioned(
-                top: insets.top + 8,
-                left: 12,
-                right: 12,
-                child: Center(
-                    child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 480),
-                        child: banner))),
           Positioned(
               left: 16,
               right: 16,
@@ -522,6 +511,18 @@ class _VoiceBarState extends State<VoiceBar>
                                             style: theme.textTheme.bodyMedium),
                                         onPressed: () => send(tip)),
                                 ])),
+                      if (banner != null)
+                        Container(
+                            constraints: BoxConstraints(
+                                minHeight: 52,
+                                maxWidth: 420,
+                                maxHeight:
+                                    MediaQuery.sizeOf(context).height * 0.45),
+                            margin: EdgeInsets.only(bottom: pill == null ? 0 : 8),
+                            child: Align(
+                                alignment: Alignment.centerRight,
+                                heightFactor: 1,
+                                child: banner)),
                       // As tall as the orb, so the two share a centre line.
                       if (pill != null)
                         Container(

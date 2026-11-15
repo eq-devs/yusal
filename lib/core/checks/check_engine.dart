@@ -107,7 +107,25 @@ List<CheckResult> runChecks(HouseDocument doc, DerivedHouse derived) {
               touches(p, room.id)))
         add('R05', 'suggestion', floor.id, [room.id],
             '${room.name}没有窗，采光和通风会很差。可以在外墙上加一扇窗。');
+      if ((room.type == RoomType.kitchen || room.type == RoomType.living) &&
+          !g.openings.any((p) =>
+              p.status == 'ok' &&
+              p.host?.kind == 'exterior' &&
+              p.opening.kind != OpeningKind.door &&
+              touches(p, room.id)))
+        add('R12', 'suggestion', floor.id, [room.id],
+            '${room.name}没有窗，白天也要开灯，做饭的油烟也散不出去。可以在外墙上加一扇窗。');
     }
+    // A bathroom door should open to a hall, not to where food is.
+    for (final p in g.openings)
+      if (p.status == 'ok' && p.opening.kind != OpeningKind.window)
+        for (final bath
+            in floor.rooms.where((r) => r.type == RoomType.bathroom))
+          for (final other in floor.rooms.where((r) =>
+              r.type == RoomType.kitchen || r.type == RoomType.dining))
+            if (touches(p, bath.id) && touches(p, other.id))
+              add('R11', 'suggestion', floor.id, [p.opening.id],
+                  '${bath.name}的门直接开向${other.name}，气味和卫生都不好。可以把门改到走廊或门厅一侧。');
     for (final stair in g.stairs) {
       final geometry =
           g.base.stairGeometryBase.firstWhere((s) => s.id == stair.stairId);

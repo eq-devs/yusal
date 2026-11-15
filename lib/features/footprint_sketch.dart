@@ -1,3 +1,4 @@
+import '../core/number_input.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../app/settings.dart';
@@ -40,7 +41,7 @@ class _FootprintSketchState extends State<FootprintSketch> {
 
   void editDimensions() {
     numericPreview = true;
-    final w = double.tryParse(width.text), d = double.tryParse(depth.text);
+    final w = parseNumber(width.text), d = parseNumber(depth.text);
     setState(() => dimensions = w != null &&
             d != null &&
             w.isFinite &&

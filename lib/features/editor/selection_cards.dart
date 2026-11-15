@@ -144,7 +144,7 @@ extension _SelectionCards on _HouseEditorState {
         ok: tr3('确定', 'Жарайды', 'ОК'),
         number: true,
         suffix: unitMm);
-    final parsed = double.tryParse((text ?? '').replaceAll(',', '.'));
+    final parsed = parseNumber((text ?? ''));
     if (parsed == null || !parsed.isFinite) return null;
     return parsed.round();
   }
@@ -200,7 +200,7 @@ extension _SelectionCards on _HouseEditorState {
                   number: true,
                   suffix: unitM2);
               if (text == null) return;
-              final v = double.tryParse(text.replaceAll(',', '.'));
+              final v = parseNumber(text);
               action('SetRoomInfo', {
                 'roomId': room.id,
                 'labelArea':

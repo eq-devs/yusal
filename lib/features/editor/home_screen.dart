@@ -424,6 +424,16 @@ class _HouseHomeState extends State<HouseHome>
                                 tr3('在画布上拖出外形', 'Пішінді сызып беру', 'Нарисовать контур'),
                                 tr3('用手指拉出房子的大小',
                                     'Үйдің өлшемін саусақпен тартыңыз', 'Растяните размер дома пальцем')),
+                            // Only where the assistant is there to draw it.
+                            if (VoiceSession.current != null) ...[
+                              const SizedBox(height: 8),
+                              way(
+                                  'wizard',
+                                  Icons.auto_awesome,
+                                  tr3('回答几个问题，帮我出一套', 'Сұрақтарға жауап беріп, жоба алу', 'Ответить на вопросы и получить проект'),
+                                  tr3('选好大小、层数和房间，助手画出第一版',
+                                      'Өлшемін, қабатын, бөлмелерін таңдаңыз — көмекші сызады', 'Выберите размер, этажи и комнаты — помощник начертит')),
+                            ],
                             const SizedBox(height: 16),
                             Text(tr3('或者从模板改', 'Немесе үлгіден', 'Или с шаблона'),
                                 style: const TextStyle(
@@ -444,6 +454,12 @@ class _HouseHomeState extends State<HouseHome>
     if (key == null) return;
     if (key == 'blank') return create();
     if (key == 'sketch') return create(sketch: true);
+    if (key == 'wizard') {
+      final wish = await showHouseWizard(context);
+      if (wish != null)
+        VoiceSession.current?.say(wish.sentence(), spoken: false);
+      return;
+    }
     try {
       final doc = buildTemplate(key);
       final id = await store.createProject(doc);
@@ -463,7 +479,7 @@ class _HouseHomeState extends State<HouseHome>
     var sketchRequested = sketch;
     var roof = 'gable';
     double? parse(TextEditingController c) {
-      final v = double.tryParse(c.text.replaceAll(',', '.'));
+      final v = parseNumber(c.text);
       return v == null || !v.isFinite ? null : v;
     }
 

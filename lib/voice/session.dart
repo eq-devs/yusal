@@ -143,6 +143,10 @@ class VoiceSession extends ChangeNotifier {
   final bool Function() loggedIn;
   final String sessionId;
 
+  /// The app's one session while its bar is up, for pages that hand it
+  /// a sentence themselves.
+  static VoiceSession? current;
+
   /// Batches of actions one sentence may run.
   static const maxSteps = 6;
 

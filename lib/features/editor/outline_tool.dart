@@ -78,8 +78,8 @@ extension _OutlineTool on _HouseEditorState {
                         child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                     FilledButton(
                         onPressed: () {
-                          final w = double.tryParse(width.text.replaceAll(',', '.')),
-                              d = double.tryParse(depth.text.replaceAll(',', '.'));
+                          final w = parseNumber(width.text),
+                              d = parseNumber(depth.text);
                           if (w == null || d == null || !w.isFinite || !d.isFinite) {
                             setDialog(() => error = tr3('请输入数字', 'Сан енгізіңіз', 'Введите число'));
                             return;

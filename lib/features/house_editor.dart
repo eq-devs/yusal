@@ -1,3 +1,4 @@
+import '../core/number_input.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -50,6 +51,8 @@ import '../voice/action.dart';
 import '../voice/actions_design.dart';
 import '../voice/actions_houses.dart';
 import '../voice/screen.dart';
+import '../voice/session.dart';
+import 'house_wizard.dart';
 
 part 'editor/roof_picker.dart';
 part 'editor/editor_header.dart';
@@ -539,8 +542,8 @@ class _HouseEditorState extends State<HouseEditor>
                               const SizedBox(height: 16),
                               FilledButton(
                                   onPressed: () {
-                                    final w = double.tryParse(width.text),
-                                        d = double.tryParse(depth.text);
+                                    final w = parseNumber(width.text),
+                                        d = parseNumber(depth.text);
                                     if (w == null ||
                                         d == null ||
                                         !w.isFinite ||
@@ -589,6 +592,25 @@ class _HouseEditorState extends State<HouseEditor>
                                   },
                                   icon: const Icon(Icons.crop),
                                   label: Text(tr3('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)', 'Вырезать угол (Г-образная форма)'))),
+                              // The same plan for a plot whose road or sun
+                              // is on the other side.
+                              TextButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    action('MirrorPlan',
+                                        {'direction': 'horizontal'});
+                                  },
+                                  icon: const Icon(Icons.flip),
+                                  label: Text(tr3('整个房子左右翻转', 'Бүкіл үйді оңнан солға аудару', 'Отразить весь дом слева направо'))),
+                              TextButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    action('MirrorPlan',
+                                        {'direction': 'vertical'});
+                                  },
+                                  icon: const RotatedBox(
+                                      quarterTurns: 1, child: Icon(Icons.flip)),
+                                  label: Text(tr3('整个房子上下翻转', 'Бүкіл үйді жоғарыдан төменге аудару', 'Отразить весь дом сверху вниз'))),
                               if (hasOutline)
                                 TextButton.icon(
                                     onPressed: () {
@@ -1493,8 +1515,8 @@ class _HouseEditorState extends State<HouseEditor>
     final result =
         await ask(tr3('$label（米）', '$label (м)', '$label (м)'), (value / 1000).toStringAsFixed(2),
         number: true);
-    final parsed = double.tryParse(result ?? '');
-    if (parsed == null || !parsed.isFinite) return null;
+    final parsed = parseNumber(result ?? '');
+    if (parsed == null) return null;
     return (parsed * 1000).round();
   }
 
@@ -2442,12 +2464,21 @@ class _HouseEditorState extends State<HouseEditor>
 
   Future<void> preciseWallLength() async {
     if (editStart == null || editEnd == null) return;
-    final start = editStart!, end = editEnd!;
-    final value = await length(tr3('墙长', 'Қабырға ұзындығы', 'Длина стены'), (end - start).distance.round());
-    if (value == null || !mounted) return;
-    // Keep the end that is joined to another wall; move the free one.
-    final keepEnd = selectedEndJoins(end) && !selectedEndJoins(start);
+    // Start at the left or bottom end, as the dialog names them.
+    final ordered = editStart!.dx + editStart!.dy <= editEnd!.dx + editEnd!.dy;
+    final start = ordered ? editStart! : editEnd!,
+        end = ordered ? editEnd! : editStart!;
     final vertical = start.dx == end.dx;
+    // Offer to keep the end that is joined to another wall and move the
+    // free one; the user can pick the other end.
+    final choice = await showDialog<WallResizeChoice>(
+        context: context,
+        builder: (_) => WallResizeDialog(
+            initial: (end - start).distance.round(),
+            vertical: vertical,
+            keepEnd: selectedEndJoins(end) && !selectedEndJoins(start)));
+    if (choice == null || !mounted) return;
+    final value = choice.length, keepEnd = choice.keepEnd;
     final direction = vertical ? const Offset(0, 1) : const Offset(1, 0);
     final from = keepEnd ? end - direction * value.toDouble() : start,
         to = keepEnd ? end : start + direction * value.toDouble();

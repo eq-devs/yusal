@@ -274,6 +274,23 @@ final designActions = [
     }),
   ),
   AppAction(
+    id: 'design.mirror',
+    title: const L3('把房子翻过来', 'Үйді айнадай аудару', 'Отразить дом зеркально'),
+    examples: const L3('把整个房子左右翻过来', 'Бүкіл үйді оңнан солға аудар',
+        'Отрази весь дом слева направо'),
+    params: const {
+      // left_right swaps west and east on the plan; top_bottom swaps
+      // the front and the back.
+      'direction': Param.choice(['left_right', 'top_bottom']),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) => _design('MirrorPlan', {
+      'direction':
+          args.choice('direction') == 'top_bottom' ? 'vertical' : 'horizontal'
+    }),
+  ),
+  AppAction(
     id: 'design.rename_room',
     title: const L3('给房间改名', 'Бөлме атауын өзгерту', 'Переименовать комнату'),
     examples: const L3(

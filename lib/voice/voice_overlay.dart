@@ -733,6 +733,7 @@ class _VoiceHostState extends State<VoiceHost> {
         repos: repos,
         loggedIn: () => repos.currentAccount != null,
         sessionId: const Uuid().v4());
+    VoiceSession.current = s;
     // In the navigator's overlay, not a route: pages stay "current" for
     // voice while the bar is open, and its text field has an overlay.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -752,6 +753,7 @@ class _VoiceHostState extends State<VoiceHost> {
   @override
   void dispose() {
     entry?.remove();
+    if (VoiceSession.current == session) VoiceSession.current = null;
     session?.dispose();
     widget.audio?.dispose();
     super.dispose();

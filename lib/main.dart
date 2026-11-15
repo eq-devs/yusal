@@ -27,7 +27,7 @@ const apiBaseUrl = String.fromEnvironment('YUSAL_API');
 /// The app's navigator, for opening what a tapped push points to.
 final appNavigator = GlobalKey<NavigatorState>();
 
-/// The microphone and speaker for voice control, on phones and tablets.
+/// The microphone for voice control, on phones and tablets.
 final AudioDevice? voiceAudio =
     voiceBuiltIn && voicePlatform ? PluginAudio() : null;
 

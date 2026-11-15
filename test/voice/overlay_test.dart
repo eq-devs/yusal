@@ -37,16 +37,9 @@ class VoiceMock extends MockBackend implements VoiceBackend {
 class SpeakingMock extends VoiceMock implements SpeechBackend {
   SpeakingMock(super.inner, this.text);
   final String text;
-  final spoken = <String>[];
 
   @override
   Future<String> transcribe(Uint8List wav) async => text;
-
-  @override
-  Future<Uint8List> synthesize(String text) async {
-    spoken.add(text);
-    return Uint8List(2);
-  }
 }
 
 class FakeAudio implements AudioDevice {
@@ -62,12 +55,6 @@ class FakeAudio implements AudioDevice {
 
   @override
   Future<Uint8List?> stopRecording() async => Uint8List(4);
-
-  @override
-  Future<void> play(Uint8List wav) async => log.add('play');
-
-  @override
-  Future<void> stopPlaying() async {}
 
   @override
   Future<void> dispose() async => log.add('dispose');
@@ -119,7 +106,7 @@ void main() {
     expect(find.text('好的。'), findsOneWidget);
   });
 
-  testWidgets('a spoken request is sent as heard and its reply read aloud',
+  testWidgets('a spoken request is sent as heard and its reply shown as text',
       (t) async {
     final backend = ScriptedBackend([const VoiceTurn(reply: 'Жарайды.')]);
     final repos = SpeakingMock(backend, ' бір қабат қос ');
@@ -139,8 +126,8 @@ void main() {
     expect(
         backend.said.map((s) => (s.text, s.spoken)), [('бір қабат қос', true)]);
     expect(find.text('Жарайды.'), findsOneWidget);
-    expect(repos.spoken, ['Жарайды.']);
-    expect(audio.log, ['record', 'play']);
+    // Nothing is read aloud.
+    expect(audio.log, ['record']);
 
     await t.pumpWidget(const SizedBox());
     expect(audio.log.last, 'dispose');

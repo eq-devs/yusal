@@ -63,14 +63,15 @@ class HttpBackend extends MockBackend
       {Object? body,
       List<int>? bytes,
       Map<String, String>? query,
-      bool auth = true}) async {
+      bool auth = true,
+      Duration? limit}) async {
     final res = await _send(method, path,
-        body: body, bytes: bytes, query: query, auth: auth);
+        body: body, bytes: bytes, query: query, auth: auth, limit: limit);
     if (res.statusCode == 401 && auth && _refresh != null) {
       if (await (_refreshing ??=
           _refreshTokens().whenComplete(() => _refreshing = null))) {
         return _decode(await _send(method, path,
-            body: body, bytes: bytes, query: query, auth: auth));
+            body: body, bytes: bytes, query: query, auth: auth, limit: limit));
       }
     }
     return _decode(res);
@@ -88,16 +89,19 @@ class HttpBackend extends MockBackend
   ];
 
   /// [bytes] is a raw body (a recording), sent instead of a JSON [body].
+  /// [limit] replaces [timeout] for a write that is known to be slow.
   Future<http.Response> _send(String method, String path,
       {Object? body,
       List<int>? bytes,
       Map<String, String>? query,
-      bool auth = true}) {
+      bool auth = true,
+      Duration? limit}) {
     final uri = Uri.parse('$baseUrl$path').replace(
         queryParameters: query == null || query.isEmpty ? null : query);
     final token = auth ? _access : null;
     if (method != 'GET') {
-      return _sendOnce(method, uri, token, body, timeout, bytes: bytes);
+      return _sendOnce(method, uri, token, body, limit ?? timeout,
+          bytes: bytes);
     }
     final key = '$uri|$token';
     return _inflight[key] ??=
@@ -321,23 +325,30 @@ class HttpBackend extends MockBackend
           required String text,
           required bool spoken,
           required Map<String, Object?> context}) async =>
-      VoiceTurn.fromJson(await _call('POST', '/client/voice', body: {
-        'session_id': sessionId,
-        'text': text,
-        'input': spoken ? 'voice' : 'text',
-        'context': context,
-      }) as Map<String, dynamic>);
+      VoiceTurn.fromJson(await _call('POST', '/client/voice',
+          body: {
+            'session_id': sessionId,
+            'text': text,
+            'input': spoken ? 'voice' : 'text',
+            'context': context,
+          },
+          limit: _voiceTimeout) as Map<String, dynamic>);
+
+  /// Designing a whole house takes the AI a minute or two.
+  static const _voiceTimeout = Duration(seconds: 150);
 
   @override
   Future<VoiceTurn> results(
           {required String turnId,
           required List<Map<String, Object?>> results,
           required Map<String, Object?> context}) async =>
-      VoiceTurn.fromJson(await _call('POST', '/client/voice/results', body: {
-        'turn_id': turnId,
-        'results': results,
-        'context': context,
-      }) as Map<String, dynamic>);
+      VoiceTurn.fromJson(await _call('POST', '/client/voice/results',
+          body: {
+            'turn_id': turnId,
+            'results': results,
+            'context': context,
+          },
+          limit: _voiceTimeout) as Map<String, dynamic>);
 
   // Speech: yusal-api proxies QazSTT, which holds the key.
 
@@ -346,14 +357,6 @@ class HttpBackend extends MockBackend
       (await _call('POST', '/client/voice/transcribe', bytes: wav)
           as Map<String, dynamic>)['text'] as String? ??
       '';
-
-  @override
-  Future<Uint8List> synthesize(String text) async {
-    final res =
-        await _send('POST', '/client/voice/tts', body: {'text': text});
-    if (res.statusCode != 200) _decode(res);
-    return res.bodyBytes;
-  }
 
   Future<void> setPushToken(String token,
       {required String platform, required String language}) async {

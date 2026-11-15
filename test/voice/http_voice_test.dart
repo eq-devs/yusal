@@ -77,7 +77,7 @@ void main() {
             isA<ApiFailure>().having((e) => e.code, 'code', 'RATE_LIMITED')));
   });
 
-  test('a recording goes up as raw bytes and speech comes back as bytes',
+  test('a recording goes up as raw bytes and its text comes back',
       () async {
     final api = HttpBackend('https://api.test', client: MockClient((r) async {
       if (r.url.path == '/client/voice/transcribe') {
@@ -88,14 +88,10 @@ void main() {
           'data': {'text': 'бір қабат қос'}
         });
       }
-      expect(r.url.path, '/client/voice/tts');
-      expect(jsonDecode(r.body), {'text': 'Қабат қосылды.'});
-      return http.Response.bytes([1, 2, 3], 200,
-          headers: {'content-type': 'audio/wav'});
+      fail('unexpected ${r.url.path}');
     }));
     expect(await api.transcribe(Uint8List.fromList([82, 73, 70, 70])),
         'бір қабат қос');
-    expect(await api.synthesize('Қабат қосылды.'), [1, 2, 3]);
   });
 
   test('a busy speech service is a failure with its code', () async {
@@ -105,6 +101,5 @@ void main() {
     final busy =
         throwsA(isA<ApiFailure>().having((e) => e.code, 'code', 'VOICE_BUSY'));
     await expectLater(api.transcribe(Uint8List(4)), busy);
-    await expectLater(api.synthesize('x'), busy);
   });
 }

@@ -52,8 +52,8 @@ String _failure(String? code) => switch (code) {
           '现在连不上服务器，请再试一次',
           'Серверге қосылу мүмкін болмады, қайталап көріңіз',
           'Нет связи с сервером, попробуйте ещё раз'),
-      ApiCodes.notSignedIn => tr3('请先登录，再用语音', 'Алдымен жүйеге кіріңіз',
-          'Сначала войдите в аккаунт'),
+      ApiCodes.notSignedIn =>
+        tr3('请先登录，再用语音', 'Алдымен жүйеге кіріңіз', 'Сначала войдите в аккаунт'),
       'RATE_LIMITED' => tr3('用得太频繁了，请稍后再试', 'Тым жиі, сәл кейінірек көріңіз',
           'Слишком часто, попробуйте чуть позже'),
       'VOICE_BUSY' => tr3(
@@ -97,13 +97,12 @@ class _VoiceBarState extends State<VoiceBar> {
     super.dispose();
   }
 
-  /// First tap starts recording, the second sends what was said. A reply
-  /// to a spoken request is also read aloud.
+  /// First tap starts recording, the second sends what was said. The
+  /// reply is shown as text.
   Future<void> mic() async {
     final speech = widget.speech!;
     if (transcribing || s.busy) return;
     if (!listening) {
-      await speech.audio.stopPlaying();
       final ok = await speech.audio.startRecording();
       if (!mounted) return;
       setState(() {
@@ -139,12 +138,6 @@ class _VoiceBarState extends State<VoiceBar> {
     });
     if (text.isEmpty) return;
     await s.say(text, spoken: true);
-    if (s.phase != VoicePhase.done || s.reply.isEmpty) return;
-    try {
-      await speech.speak(s.reply);
-    } catch (_) {
-      // The reply is on screen either way.
-    }
   }
 
   void send([String? text]) {
@@ -285,7 +278,7 @@ class VoiceHost extends StatefulWidget {
   final PlatformRepositories repos;
   final Widget child;
 
-  /// The microphone and speaker; without it, or with a backend that does
+  /// The microphone; without it, or with a backend that does
   /// no speech, the bar is typed-only. Disposed with this widget.
   final AudioDevice? audio;
   final bool enabled;

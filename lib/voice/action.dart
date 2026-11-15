@@ -37,35 +37,41 @@ enum Risk {
 /// Where a call came from.
 enum Source { touch, voice }
 
-enum ParamType { text, number, integer, flag, choice, entity, fields }
+enum ParamType { text, number, integer, flag, choice, entity, fields, object }
 
 /// One named argument of an action.
 class Param {
   const Param.text({this.optional = false})
       : type = ParamType.text,
+        schema = null,
         values = const [],
         kind = null;
   const Param.number({this.optional = false})
       : type = ParamType.number,
+        schema = null,
         values = const [],
         kind = null;
   const Param.integer({this.optional = false})
       : type = ParamType.integer,
+        schema = null,
         values = const [],
         kind = null;
   const Param.flag({this.optional = false})
       : type = ParamType.flag,
+        schema = null,
         values = const [],
         kind = null;
 
   /// One of [values].
   const Param.choice(this.values, {this.optional = false})
       : type = ParamType.choice,
+        schema = null,
         kind = null;
 
   /// Something on screen of this [kind], named by its alias or id.
   const Param.entity(String this.kind, {this.optional = false})
       : type = ParamType.entity,
+        schema = null,
         values = const [];
 
   /// Values for a page's inputs, by field name. The form action checks
@@ -73,11 +79,20 @@ class Param {
   const Param.fields()
       : type = ParamType.fields,
         optional = false,
+        schema = null,
+        values = const [],
+        kind = null;
+
+  /// A JSON object shaped by [schema], handed to the action as a map.
+  const Param.object(Map<String, Object?> this.schema)
+      : type = ParamType.object,
+        optional = false,
         values = const [],
         kind = null;
 
   final ParamType type;
   final bool optional;
+  final Map<String, Object?>? schema;
   final List<String> values;
   final String? kind;
 }
@@ -125,6 +140,8 @@ class Args {
   String choice(String name) => _values[name]! as String;
   Entity entity(String name) => _values[name]! as Entity;
   Map<String, Object?> fields(String name) =>
+      _values[name]! as Map<String, Object?>;
+  Map<String, Object?> object(String name) =>
       _values[name]! as Map<String, Object?>;
   String id(String name) => entity(name).id;
 }

@@ -1,11 +1,17 @@
-import 'dart:math' as math;
+import 'package:uuid/uuid.dart';
 
 import '../core/analysis/house_analysis.dart';
+import '../core/checks/check_engine.dart';
 import '../core/commands/extras_commands.dart';
+import '../core/commands/house_spec.dart';
+import '../core/geometry/derived_house.dart';
 import '../core/geometry/floor_base.dart';
 import '../core/house_core.dart';
 import 'action.dart';
+import 'actions_houses.dart';
 import 'screen.dart';
+
+export '../core/commands/house_spec.dart' show roomWall;
 
 /// Implemented by the design editor so design actions can reach it.
 abstract interface class DesignHost {
@@ -27,6 +33,13 @@ abstract interface class DesignHost {
   /// Between these, every change undoes as one step.
   void beginUndoGroup();
   void endUndoGroup();
+
+  /// Puts [doc]'s design in place of the current one, as one undoable
+  /// change. The design keeps its name and file.
+  void replaceDesign(HouseDocument doc);
+
+  /// Writes unsaved changes now, before the editor is closed.
+  Future<void> saveNow();
 }
 
 /// Failure code of a command that needs the user to choose how to go on.
@@ -55,50 +68,168 @@ Future<ActionResult> _design(String kind, Map<String, dynamic> args,
 String _floor(Args args) =>
     args.has('floor') ? args.id('floor') : _host!.currentFloorId;
 
-/// Where a new opening goes: the wall of [roomId] that faces [side], and
-/// the middle of the room's stretch of it. Null when the room has no wall
-/// on that side.
-({WallSegment wall, double tapT})? roomWall(
-    FloorBase base, String roomId, Facing side, int northAngleDeg) {
-  final a = northAngleDeg * math.pi / 180;
-  ({WallSegment wall, double from, double to})? best;
-  for (final wall in base.wallSegments) {
-    double? from, to;
-    for (final e in wall.edges) {
-      final inNegative =
-              e.negative != null && base.owners[e.negative] == roomId,
-          inPositive = e.positive != null && base.owners[e.positive] == roomId;
-      if (inNegative == inPositive) continue;
-      // Out of the room, in plan coordinates; north is (sin a, cos a).
-      final sign = inNegative ? 1.0 : -1.0;
-      final (dx, dy) = e.axis.dir == AxisDir.V ? (sign, 0.0) : (0.0, sign);
-      final dn = dx * math.sin(a) + dy * math.cos(a),
-          de = dx * math.cos(a) - dy * math.sin(a);
-      final facing = dn.abs() >= de.abs()
-          ? (dn >= 0 ? Facing.north : Facing.south)
-          : (de >= 0 ? Facing.east : Facing.west);
-      if (facing != side) continue;
-      from = math.min(from ?? e.start.pos.toDouble(), e.start.pos.toDouble());
-      to = math.max(to ?? e.end.pos.toDouble(), e.end.pos.toDouble());
-    }
-    if (from == null || to == null) continue;
-    if (best == null || to - from > best.to - best.from) {
-      best = (wall: wall, from: from, to: to);
-    }
-  }
-  if (best == null) return null;
-  return (
-    wall: best.wall,
-    tapT: (best.from + best.to) / 2 - best.wall.start.pos
-  );
-}
-
 /// Failure code when a room has no wall on the side asked for.
 const noWallThere = 'no_wall_on_that_side';
+
+/// Failure code of a house spec that cannot be built; `say.errors` lists
+/// what to fix.
+const badSpec = 'bad_spec';
+
+/// Builds a whole house from the language model's spec, checks it with
+/// the design rules and puts it in the editor, or in a new design when no
+/// editor is open. The rule findings go back so the model can correct
+/// the spec and call again.
+Future<ActionResult> designWholeHouse(Map<String, Object?> spec) async {
+  final built = buildHouseFromSpec(
+      spec, DateTime.now().toUtc().toIso8601String(), () => const Uuid().v4());
+  final doc = built.document;
+  if (doc == null) {
+    return ActionResult.fail(badSpec, say: {'errors': built.errors});
+  }
+  final issues = [
+    for (final c in runChecks(doc, deriveHouse(doc)))
+      if (c.level != 'info') '${c.ruleId} ${c.level}: ${c.message}'
+  ];
+  final host = _host, library = HouseLibrary.instance;
+  if (host != null) {
+    host.replaceDesign(doc);
+  } else if (library != null) {
+    await library.addDesign(doc);
+  } else {
+    return const ActionResult.fail(ActionCodes.notAvailable);
+  }
+  return ActionResult.ok(say: {
+    'floors': doc.floors.length,
+    'rooms': doc.floors.fold<int>(0, (n, f) => n + f.rooms.length),
+    if (built.notes.isNotEmpty) 'not_built': built.notes,
+    if (issues.isNotEmpty) 'issues': issues,
+  });
+}
+
+/// The plan rectangle a room's cells cover.
+PlanRect _bounds(FloorBase base, String roomId) {
+  final cells =
+      base.owners.entries.where((e) => e.value == roomId).map((e) => e.key);
+  final v = base.axes.v, h = base.axes.h;
+  return PlanRect(
+      cells.map((c) => v[c.i].pos).reduce((a, b) => a < b ? a : b).toDouble(),
+      cells.map((c) => h[c.j].pos).reduce((a, b) => a < b ? a : b).toDouble(),
+      cells
+          .map((c) => v[c.i + 1].pos)
+          .reduce((a, b) => a > b ? a : b)
+          .toDouble(),
+      cells
+          .map((c) => h[c.j + 1].pos)
+          .reduce((a, b) => a > b ? a : b)
+          .toDouble());
+}
+
+Set<String> _rooms() => {
+      for (final f in _host!.document.floors)
+        for (final r in f.rooms) r.id
+    };
 
 /// Design commands that map one to one onto a spoken request. Lengths
 /// are millimetres, as in the document.
 final designActions = [
+  AppAction(
+    id: 'design.create_house',
+    title: const L3('设计整栋房子', 'Бүкіл үйді жобалау', 'Спроектировать весь дом'),
+    examples: const L3(
+        '设计一个三室一厅、十二乘十米的平房',
+        'Үш жатын бөлмелі, он екіге он метр бір қабатты үй жобала',
+        'Спроектируй одноэтажный дом двенадцать на десять с тремя спальнями'),
+    params: {'spec': Param.object(houseSpecSchema())},
+    when: (ctx) => _host != null || HouseLibrary.instance != null,
+    risk: Risk.undoable,
+    run: (ctx, args) => designWholeHouse(args.object('spec')),
+  ),
+  AppAction(
+    id: 'design.add_room',
+    title: const L3('画一个房间', 'Бөлме қосу', 'Добавить комнату'),
+    examples: const L3(
+        '在西南角画一个三乘四米的卧室',
+        'Оңтүстік-батыс бұрышқа үшке төрт метр жатын бөлме қос',
+        'Добавь спальню три на четыре метра в юго-западном углу'),
+    params: {
+      'type': Param.choice([for (final t in RoomType.values) t.name]),
+      'name': const Param.text(optional: true),
+      'x_mm': const Param.integer(),
+      'y_mm': const Param.integer(),
+      'w_mm': const Param.integer(),
+      'd_mm': const Param.integer(),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) async {
+      final host = _host!;
+      final before = _rooms();
+      final x = args.integer('x_mm'), y = args.integer('y_mm');
+      final result = await _design('CarveRoom', {
+        'floorId': host.currentFloorId,
+        'left': x,
+        'bottom': y,
+        'right': x + args.integer('w_mm'),
+        'top': y + args.integer('d_mm'),
+        'roomType': RoomType.values.byName(args.choice('type')),
+      });
+      if (!result.ok) return result;
+      final added = _rooms().difference(before);
+      if (args.has('name') && added.length == 1) {
+        host.runDesign(
+            'RenameRoom', {'roomId': added.single, 'value': args.text('name')});
+      }
+      return ActionResult.ok(changed: [...added]);
+    },
+  ),
+  AppAction(
+    id: 'design.split_room',
+    title:
+        const L3('把房间分成两间', 'Бөлмені екіге бөлу', 'Разделить комнату на две'),
+    examples: const L3(
+        '把这间从中间隔开', 'Бұл бөлмені ортасынан бөл', 'Раздели эту комнату пополам'),
+    params: {
+      'room': const Param.entity('room'),
+      // Which way the new wall runs.
+      'wall': const Param.choice(['north_south', 'east_west']),
+      // From the room's west edge (north_south) or south edge (east_west);
+      // the middle when left out.
+      'at_mm': const Param.integer(optional: true),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) async {
+      final host = _host!;
+      final base = host.floorBase;
+      final id = args.id('room');
+      final room = base.roomGeometry.where((g) => g.id == id).firstOrNull;
+      if (room == null) {
+        return const ActionResult.fail(ActionCodes.unknownEntity,
+            say: {'param': 'room'});
+      }
+      final r = _bounds(base, id);
+      final across = args.choice('wall') == 'north_south';
+      final (low, high) = across ? (r.left, r.right) : (r.bottom, r.top);
+      final pos =
+          (args.has('at_mm') ? low + args.integer('at_mm') : (low + high) / 2)
+              .round();
+      if (pos <= low || pos >= high) {
+        return const ActionResult.fail(ActionCodes.badArgs,
+            say: {'param': 'at_mm'});
+      }
+      final before = _rooms();
+      final result = await _design('SplitSpace', {
+        'floorId': host.currentFloorId,
+        'dir': across ? AxisDir.V : AxisDir.H,
+        'pos': pos,
+        'x': room.labelAnchor.x.round(),
+        'y': room.labelAnchor.y.round(),
+      });
+      return result.ok
+          ? ActionResult.ok(changed: [id, ..._rooms().difference(before)])
+          : result;
+    },
+  ),
   AppAction(
     id: 'design.add_floor',
     title: const L3('加一层楼', 'Қабат қосу', 'Добавить этаж'),

@@ -53,6 +53,7 @@ class ActionRegistry {
                         },
                       // Values by name from the context's fields.
                       ParamType.fields => {'type': 'object'},
+                      ParamType.object => p.value.schema,
                     }
                 },
                 'required': [

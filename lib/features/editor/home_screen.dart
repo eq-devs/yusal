@@ -98,7 +98,8 @@ Map<String, String> kazakhTemplateNames() => isRu
         'boil': '锅炉房',
       };
 
-class _HouseHomeState extends State<HouseHome> implements DesignList {
+class _HouseHomeState extends State<HouseHome>
+    implements DesignList, HouseLibrary {
   late final store =
       widget.store ?? ProjectStore(previewRenderer: renderProjectPreview);
   static const importChannel = MethodChannel('yusal/house_import');
@@ -118,6 +119,7 @@ class _HouseHomeState extends State<HouseHome> implements DesignList {
   @override
   void initState() {
     super.initState();
+    HouseLibrary.instance = this;
     widget.reload?.addListener(refresh);
     widget.createRequest?.addListener(_onCreateRequest);
     refresh().then((_) => reopenLast());
@@ -141,6 +143,7 @@ class _HouseHomeState extends State<HouseHome> implements DesignList {
 
   @override
   void dispose() {
+    if (identical(HouseLibrary.instance, this)) HouseLibrary.instance = null;
     widget.reload?.removeListener(refresh);
     widget.createRequest?.removeListener(_onCreateRequest);
     if (!kIsWeb) importChannel.setMethodCallHandler(null);
@@ -230,6 +233,62 @@ class _HouseHomeState extends State<HouseHome> implements DesignList {
       message(
           tr3('这个设计无法打开，请检查文件', 'Жобаны ашу мүмкін емес, файлды тексеріңіз', 'Не удалось открыть проект, проверьте файл'));
     }
+  }
+
+  @override
+  List<({String id, String name})> get designs =>
+      [for (final p in projects) (id: p.id, name: p.document.meta.name)];
+
+  /// Closes an open editor, saving it first, so a design opened by voice
+  /// is not stacked on top of another.
+  Future<void> _closeEditor() async {
+    for (final s in VoiceScreens.mounted.toList()) {
+      if (s is DesignHost) await (s as DesignHost).saveNow();
+    }
+    if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
+    await refresh();
+  }
+
+  @override
+  Future<void> openDesign(String id) async {
+    await _closeEditor();
+    final entry = projects.where((p) => p.id == id).firstOrNull;
+    // Not awaited: it completes when the editor closes.
+    if (entry != null && mounted) unawaited(open(entry));
+  }
+
+  @override
+  Future<void> addDesign(HouseDocument doc) async {
+    await _closeEditor();
+    final id = await store.createProject(doc);
+    if (mounted) unawaited(open(ProjectEntry(id, doc)));
+  }
+
+  @override
+  HouseDocument newDesign(String template,
+      {String? name, int? width, int? depth}) {
+    var doc = template == 'blank'
+        ? withRoof(
+            createHouse(
+                name: tr3('我的房屋', 'Менің үйім', 'Мой дом'),
+                width: width ?? 12000,
+                depth: depth ?? 10000,
+                columns: 1,
+                rows: 1,
+                initialRoom: true,
+                timestamp: DateTime.now().toUtc().toIso8601String(),
+                newId: () => const Uuid().v4()),
+            'gable')
+        : buildTemplate(template);
+    if (name != null && name.trim().isNotEmpty) {
+      doc = composeDocument(
+          Meta(
+              name: name.trim(),
+              createdAt: doc.meta.createdAt,
+              updatedAt: doc.meta.updatedAt),
+          extractDesignState(doc));
+    }
+    return doc;
   }
 
   HouseDocument buildTemplate(String key) {

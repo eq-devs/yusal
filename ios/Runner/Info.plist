@@ -109,5 +109,9 @@
 	<string>Yusal records your voice when you tap the microphone, to carry out a spoken request.</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

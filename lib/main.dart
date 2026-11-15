@@ -7,6 +7,7 @@ import 'app/tokens.dart';
 import 'platform/data/http/http_backend.dart';
 import 'platform/data/mock/mock_backend.dart';
 import 'platform/data/repositories.dart';
+import 'platform/firebase_setup.dart';
 import 'platform/push/push_setup.dart';
 import 'platform/ui/home/post_page.dart';
 import 'platform/ui/links.dart';
@@ -32,6 +33,8 @@ final AudioDevice? voiceAudio =
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppSettings.instance.load();
+  // Analytics and crash reports on iOS / Android; no-op on the web.
+  await FirebaseSetup.init();
   PlatformRepositories? repos;
   if (apiBaseUrl.isNotEmpty) {
     final api = HttpBackend(apiBaseUrl);
@@ -39,7 +42,7 @@ Future<void> main() async {
     // keeps restoring in the background and shows up when it is back.
     await api.restore().timeout(const Duration(seconds: 6), onTimeout: () {});
     repos = api;
-    // Push only with the real backend; the demo never touches Firebase.
+    // Push only with the real backend; the demo registers no token.
     unawaited(PushSetup(api, appNavigator).start());
   }
   runApp(ProviderScope(child: HouseApp(repos: repos)));
@@ -73,6 +76,7 @@ class _HouseAppState extends State<HouseApp> {
             isDemo: repos is MockBackend && repos is! HttpBackend,
             child: MaterialApp(
                 navigatorKey: appNavigator,
+                navigatorObservers: FirebaseSetup.observers,
                 title: 'Yusal',
                 debugShowCheckedModeBanner: false,
                 // System texts (back, close, copy / paste, pickers) and
@@ -83,8 +87,7 @@ class _HouseAppState extends State<HouseApp> {
                   Locale('ru'),
                   Locale('zh')
                 ],
-                localizationsDelegates:
-                    GlobalMaterialLocalizations.delegates,
+                localizationsDelegates: GlobalMaterialLocalizations.delegates,
                 theme: buildTheme(settings.theme == ThemeChoice.night
                     ? Tokens.night
                     : Tokens.light),

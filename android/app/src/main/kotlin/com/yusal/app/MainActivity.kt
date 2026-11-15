@@ -1,4 +1,4 @@
-package com.example.yusal
+package com.yusal.app
 
 import android.content.Intent
 import android.provider.OpenableColumns

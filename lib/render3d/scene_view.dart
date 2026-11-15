@@ -119,9 +119,19 @@ Camera orbitCamera(Vec3 target, double yaw, double pitch, double distance) {
 }
 
 class _Item {
-  _Item(this.path, this.color, this.depth, this.layer, this.source,
-      {this.stroke = 0, this.vertices, this.image, this.tiled = false});
-  final Path path;
+  _Item(Path? path, this.color, this.depth, this.layer, this.source,
+      {this.stroke = 0,
+      this.vertices,
+      this.image,
+      this.tiled = false,
+      this.points})
+      : _path = path;
+  Path? _path;
+
+  /// Screen outline of a plain face; its path is made only when needed
+  /// (drawing at rest, picking), not for the batched frames of an orbit.
+  final List<Offset>? points;
+  Path get path => _path ??= Path()..addPolygon(points!, true);
   final Color color;
   final double depth;
 
@@ -377,8 +387,9 @@ class ScenePainter extends CustomPainter {
       if (!shows(pts, enclosed)) return;
       var depth = 0.0;
       for (final c in cam) depth += c.z;
-      items.add(_Item(Path()..addPolygon(pts, true),
-          color.withValues(alpha: alpha), depth / cam.length, layer, source));
+      items.add(_Item(null, color.withValues(alpha: alpha), depth / cam.length,
+          layer, source,
+          points: pts));
     }
 
     // Ground: one large square, fading into the sky toward the horizon
@@ -583,7 +594,43 @@ class ScenePainter extends CustomPainter {
       if (groundPath != null) canvas.drawPath(groundPath!, groundPaint!);
     }
 
+    // While a finger turns the view, runs of plain faces go to the GPU as
+    // one triangle batch each, in the same back-to-front order, instead of
+    // one anti-aliased path (and seam hairline) per face: hundreds of draw
+    // calls become a handful. At rest every face is drawn smooth again.
+    final batchPos = <Offset>[];
+    final batchCol = <Color>[];
+    void flush() {
+      if (batchPos.isEmpty) return;
+      canvas.drawVertices(
+          ui.Vertices(ui.VertexMode.triangles, List.of(batchPos),
+              colors: List.of(batchCol)),
+          BlendMode.dst,
+          Paint());
+      batchPos.clear();
+      batchCol.clear();
+    }
+
     for (final i in items) {
+      if (fast && i.points != null && i.stroke == 0 && i.vertices == null) {
+        if (i.layer >= 1 && !groundDrawn) {
+          flush();
+          drawGround();
+        }
+        final p = i.points!;
+        for (var k = 1; k < p.length - 1; k++) {
+          batchPos
+            ..add(p[0])
+            ..add(p[k])
+            ..add(p[k + 1]);
+          batchCol
+            ..add(i.color)
+            ..add(i.color)
+            ..add(i.color);
+        }
+        continue;
+      }
+      flush();
       if (i.layer >= 1) drawGround();
       if (i.stroke > 0) {
         canvas.drawPath(
@@ -614,6 +661,7 @@ class ScenePainter extends CustomPainter {
         canvas.drawPath(i.path, edge);
       }
     }
+    flush();
     drawGround();
     if (labels && !walk && (settings.cut || !roofOn)) {
       // Nearest rooms first; a tag that would cover one already placed

@@ -98,9 +98,9 @@ void main() {
     await t.testTextInput.receiveAction(TextInputAction.send);
     await t.pumpAndSettle();
 
-    // The outcome is a banner; tapping it shows the steps that ran.
+    // The outcome is a bubble; tapping it shows the steps that ran.
     expect(find.text('这里没有主页面。'), findsOneWidget);
-    await t.tap(find.byKey(const Key('voice-bar')));
+    await t.tap(find.text('这里没有主页面。'));
     await t.pumpAndSettle();
     // The step ran and failed (no shell here): it is listed with its name.
     expect(find.text('切换主页面'), findsOneWidget);
@@ -114,8 +114,16 @@ void main() {
     expect(backend.said.map((s) => s.text), ['打开我的', '算了']);
     expect(find.text('好的。'), findsOneWidget);
 
-    // A finished reply gets out of the way.
-    await t.pump(VoiceBar.showFor);
+    // A finished reply stays beside the orb until it is closed.
+    await t.pump(const Duration(seconds: 30));
+    expect(find.text('好的。'), findsOneWidget);
+    final orb = t.getRect(find.byKey(const Key('voice-button')));
+    final bubble = t.getRect(find.byKey(const Key('voice-bar')));
+    expect(bubble.right, lessThan(orb.left));
+    expect(bubble.bottom, greaterThan(orb.top));
+    // A short answer is a small bubble, not a bar across the screen.
+    expect(bubble.width, lessThan(200));
+    await t.tap(find.byKey(const Key('voice-close')));
     await t.pumpAndSettle();
     expect(find.byKey(const Key('voice-bar')), findsNothing);
   });
@@ -220,6 +228,21 @@ void main() {
         home: const Scaffold()));
     await t.pump();
     expect(find.byKey(const Key('voice-button')), findsNothing);
+  });
+
+  testWidgets('the sign-in page has no orb over its buttons', (t) async {
+    await pump(t, VoiceMock(ScriptedBackend([])));
+    await t.pump();
+    expect(find.byKey(const Key('voice-button')), findsOneWidget);
+
+    // What the sign-in page does while it is open.
+    VoiceBar.hidden.value++;
+    await t.pump();
+    expect(find.byKey(const Key('voice-button')), findsNothing);
+
+    VoiceBar.hidden.value--;
+    await t.pump();
+    expect(find.byKey(const Key('voice-button')), findsOneWidget);
   });
 
   testWidgets('an outbound action asks first and runs only on confirm',

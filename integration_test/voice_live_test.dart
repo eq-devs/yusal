@@ -56,10 +56,10 @@ void main() {
     field.controller!.text = text;
     field.onSubmitted!(text);
     await t.pump();
-    // The model takes seconds; the field is disabled while it works.
+    // The model takes seconds; the answer's bubble can be closed once
+    // the sentence has ended.
     final end = DateTime.now().add(const Duration(seconds: 120));
-    bool busy() =>
-        !t.widget<TextField>(find.byKey(const Key('voice-input'))).enabled!;
+    bool busy() => find.byKey(const Key('voice-close')).evaluate().isEmpty;
     while (busy()) {
       if (DateTime.now().isAfter(end)) {
         throw TestFailure('"$text" did not finish');

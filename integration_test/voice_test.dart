@@ -88,6 +88,12 @@ void main() {
   Future<void> type(WidgetTester t, String text) async {
     // Set through the controller: the simulated keyboard does not always
     // reach a field in an overlay.
+    // A long press opens typing; a tap would start listening. The field
+    // closes again when a sentence is sent.
+    if (find.byKey(const Key('voice-input')).evaluate().isEmpty) {
+      await t.longPress(find.byKey(const Key('voice-button')));
+      await t.pumpAndSettle();
+    }
     final field = t.widget<TextField>(find.byKey(const Key('voice-input')));
     field.controller!.text = text;
     field.onSubmitted!(text);
@@ -114,9 +120,6 @@ void main() {
       expect(start, startsWith('shell.'));
       expect(start, isNot('shell.me'));
 
-      // A long press opens typing; a tap would start listening.
-      await t.longPress(find.byKey(const Key('voice-button')));
-      await t.pumpAndSettle();
       await type(t, '打开我的');
       await waitFor(t, () => find.text('已打开“我的”。').evaluate().isNotEmpty);
 
@@ -252,9 +255,6 @@ void main() {
       final before = '${shown('floor')} ${shown('room')} ${shown('opening')}';
       expect(shown('floor').keys, ['f1']);
 
-      // A long press opens typing; a tap would start listening.
-      await t.longPress(find.byKey(const Key('voice-button')));
-      await t.pumpAndSettle();
       await type(t, '加一层楼，把这间叫书房，再在北墙加窗');
       await waitFor(t, () => find.text('加好了。').evaluate().isNotEmpty);
       expect(shown('floor').keys, ['f1', 'f2']);

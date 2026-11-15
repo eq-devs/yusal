@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../app/settings.dart';
+import '../../../voice/voice_overlay.dart';
 import '../../data/http/http_backend.dart';
 import '../../data/mock/mock_backend.dart';
 import '../../data/repositories.dart';
@@ -146,8 +147,18 @@ class _LoginPageState extends State<LoginPage> {
     ]);
   }
 
+  // The voice orb would cover the test accounts at the bottom.
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => VoiceBar.hidden.value++);
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => VoiceBar.hidden.value--);
     phone.dispose();
     code.dispose();
     name.dispose();

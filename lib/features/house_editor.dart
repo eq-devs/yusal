@@ -1,3 +1,4 @@
+import '../core/number_input.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -11,6 +12,7 @@ import 'package:flutter/services.dart';
 import '../core/house_core.dart';
 import '../core/commands/room_commands.dart';
 import '../core/geometry/floor_base.dart';
+import '../core/geometry/furniture_snap.dart';
 import '../core/history/design_history.dart';
 import '../core/commands/delete_axis.dart';
 import '../core/commands/house_templates.dart';
@@ -50,6 +52,8 @@ import '../voice/action.dart';
 import '../voice/actions_design.dart';
 import '../voice/actions_houses.dart';
 import '../voice/screen.dart';
+import '../voice/session.dart';
+import 'house_wizard.dart';
 
 part 'editor/roof_picker.dart';
 part 'editor/editor_header.dart';
@@ -157,6 +161,9 @@ class _HouseEditorState extends State<HouseEditor>
   late final DesignHistory history;
   late FloorBase base;
   late DerivedHouse derived;
+  // The estimate shown beside the plan, worked out once per change.
+  HouseDocument? costChipFor;
+  String costChip = '';
   /// Current page: plan, ext (3D), walk, site, det, heat, qty, cost, build
   /// or iss.
   String tab = 'plan';
@@ -539,8 +546,8 @@ class _HouseEditorState extends State<HouseEditor>
                               const SizedBox(height: 16),
                               FilledButton(
                                   onPressed: () {
-                                    final w = double.tryParse(width.text),
-                                        d = double.tryParse(depth.text);
+                                    final w = parseNumber(width.text),
+                                        d = parseNumber(depth.text);
                                     if (w == null ||
                                         d == null ||
                                         !w.isFinite ||
@@ -589,6 +596,25 @@ class _HouseEditorState extends State<HouseEditor>
                                   },
                                   icon: const Icon(Icons.crop),
                                   label: Text(tr3('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)', 'Вырезать угол (Г-образная форма)'))),
+                              // The same plan for a plot whose road or sun
+                              // is on the other side.
+                              TextButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    action('MirrorPlan',
+                                        {'direction': 'horizontal'});
+                                  },
+                                  icon: const Icon(Icons.flip),
+                                  label: Text(tr3('整个房子左右翻转', 'Бүкіл үйді оңнан солға аудару', 'Отразить весь дом слева направо'))),
+                              TextButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    action('MirrorPlan',
+                                        {'direction': 'vertical'});
+                                  },
+                                  icon: const RotatedBox(
+                                      quarterTurns: 1, child: Icon(Icons.flip)),
+                                  label: Text(tr3('整个房子上下翻转', 'Бүкіл үйді жоғарыдан төменге аудару', 'Отразить весь дом сверху вниз'))),
                               if (hasOutline)
                                 TextButton.icon(
                                     onPressed: () {
@@ -628,6 +654,7 @@ class _HouseEditorState extends State<HouseEditor>
                         ])),
                   for (final entry in {
                     'fit': tr3('恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид'),
+                    'addRoom': tr3('按尺寸加房间', 'Өлшеммен бөлме қосу', 'Добавить комнату по размерам'),
                     'grid': tr3('网格', 'Тор', 'Сетка'),
                     'opening': tr3('门窗', 'Есік-терезе', 'Окна и двери'),
                     'stair': tr3('楼梯', 'Баспалдақ', 'Лестница'),
@@ -644,6 +671,7 @@ class _HouseEditorState extends State<HouseEditor>
       canvasTransform.value = Matrix4.identity();
       return;
     }
+    if (choice == 'addRoom') return addRoomBySize();
     setState(() {
       browse = false;
       erase = choice == 'erase';
@@ -655,6 +683,133 @@ class _HouseEditorState extends State<HouseEditor>
         if (!erase) brush = RoomType.values.firstWhere((t) => t.name == choice);
       }
     });
+  }
+
+  /// Usual sizes to start from, metres (width, depth).
+  static const roomSizes = {
+    RoomType.living: (4.5, 5.0),
+    RoomType.bedroom: (3.6, 4.0),
+    RoomType.kitchen: (3.0, 3.6),
+    RoomType.bathroom: (1.8, 2.4),
+    RoomType.dining: (3.0, 3.6),
+    RoomType.custom: (3.0, 3.0),
+  };
+
+  /// A room from its use, its size and the corner of the house it goes
+  /// in, for those who would rather type than draw.
+  Future<void> addRoomBySize() async {
+    var type = RoomType.bedroom, corner = 'bl';
+    final width = TextEditingController(), depth = TextEditingController();
+    void fill() {
+      width.text = dec('${roomSizes[type]!.$1}');
+      depth.text = dec('${roomSizes[type]!.$2}');
+    }
+
+    fill();
+    String? error;
+    final args = await showMotionSheet<Map<String, dynamic>>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => StatefulBuilder(
+            builder: (context, update) => SafeArea(
+                child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(20, 20, 20,
+                        MediaQuery.viewInsetsOf(context).bottom + 20),
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(tr3('按尺寸加房间', 'Өлшеммен бөлме қосу', 'Добавить комнату по размерам'),
+                              style: const TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 12),
+                          Wrap(spacing: 8, runSpacing: 4, children: [
+                            for (final t in RoomType.values)
+                              ChoiceChip(
+                                  key: Key('add-room-${t.name}'),
+                                  label: Text(roomTypeName(t)),
+                                  selected: type == t,
+                                  onSelected: (_) => update(() {
+                                        type = t;
+                                        fill();
+                                      }))
+                          ]),
+                          Row(children: [
+                            Expanded(
+                                child: TextField(
+                                    controller: width,
+                                    keyboardType: const TextInputType
+                                        .numberWithOptions(decimal: true),
+                                    decoration: InputDecoration(
+                                        labelText: tr3('宽（米）', 'Ені (м)', 'Ширина (м)')))),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: TextField(
+                                    controller: depth,
+                                    keyboardType: const TextInputType
+                                        .numberWithOptions(decimal: true),
+                                    decoration: InputDecoration(
+                                        labelText: tr3('长（米）', 'Ұзындығы (м)', 'Длина (м)')))),
+                          ]),
+                          const SizedBox(height: 12),
+                          Text(tr3('放在房子的哪个角', 'Үйдің қай бұрышына', 'В какой угол дома')),
+                          const SizedBox(height: 6),
+                          Wrap(spacing: 8, runSpacing: 4, children: [
+                            for (final c in {
+                              'tl': tr3('左上', 'Сол жақ жоғары', 'Слева вверху'),
+                              'tr': tr3('右上', 'Оң жақ жоғары', 'Справа вверху'),
+                              'bl': tr3('左下', 'Сол жақ төмен', 'Слева внизу'),
+                              'br': tr3('右下', 'Оң жақ төмен', 'Справа внизу'),
+                            }.entries)
+                              ChoiceChip(
+                                  key: Key('add-room-${c.key}'),
+                                  label: Text(c.value),
+                                  selected: corner == c.key,
+                                  onSelected: (_) =>
+                                      update(() => corner = c.key))
+                          ]),
+                          if (error != null)
+                            Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(error!,
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .error))),
+                          const SizedBox(height: 16),
+                          FilledButton(
+                              key: const Key('add-room-go'),
+                              onPressed: () {
+                                final fp = history.present.footprint;
+                                final w =
+                                        ((parseNumber(width.text) ?? 0) * 1000)
+                                            .round(),
+                                    d = ((parseNumber(depth.text) ?? 0) * 1000)
+                                        .round();
+                                if (w < 300 ||
+                                    d < 300 ||
+                                    w > fp.width ||
+                                    d > fp.depth) {
+                                  update(() => error = tr3('房间要在 0.3 米到房屋长宽之间', 'Бөлме 0,3 м мен үй өлшемі аралығында болуы керек', 'Комната должна быть от 0,3 м до размеров дома'));
+                                  return;
+                                }
+                                final left =
+                                        corner.endsWith('l') ? 0 : fp.width - w,
+                                    bottom = corner.startsWith('b')
+                                        ? 0
+                                        : fp.depth - d;
+                                Navigator.pop(context, <String, dynamic>{
+                                  'floorId': floor.id,
+                                  'left': left,
+                                  'bottom': bottom,
+                                  'right': left + w,
+                                  'top': bottom + d,
+                                  'roomType': type
+                                });
+                              },
+                              child: Text(tr3('加上', 'Қосу', 'Добавить'))),
+                        ])))));
+    if (args != null && mounted) action('CarveRoom', args);
   }
 
   OpeningKind? draggingNewOpening;
@@ -1493,8 +1648,8 @@ class _HouseEditorState extends State<HouseEditor>
     final result =
         await ask(tr3('$label（米）', '$label (м)', '$label (м)'), (value / 1000).toStringAsFixed(2),
         number: true);
-    final parsed = double.tryParse(result ?? '');
-    if (parsed == null || !parsed.isFinite) return null;
+    final parsed = parseNumber(result ?? '');
+    if (parsed == null) return null;
     return (parsed * 1000).round();
   }
 
@@ -2442,12 +2597,21 @@ class _HouseEditorState extends State<HouseEditor>
 
   Future<void> preciseWallLength() async {
     if (editStart == null || editEnd == null) return;
-    final start = editStart!, end = editEnd!;
-    final value = await length(tr3('墙长', 'Қабырға ұзындығы', 'Длина стены'), (end - start).distance.round());
-    if (value == null || !mounted) return;
-    // Keep the end that is joined to another wall; move the free one.
-    final keepEnd = selectedEndJoins(end) && !selectedEndJoins(start);
+    // Start at the left or bottom end, as the dialog names them.
+    final ordered = editStart!.dx + editStart!.dy <= editEnd!.dx + editEnd!.dy;
+    final start = ordered ? editStart! : editEnd!,
+        end = ordered ? editEnd! : editStart!;
     final vertical = start.dx == end.dx;
+    // Offer to keep the end that is joined to another wall and move the
+    // free one; the user can pick the other end.
+    final choice = await showDialog<WallResizeChoice>(
+        context: context,
+        builder: (_) => WallResizeDialog(
+            initial: (end - start).distance.round(),
+            vertical: vertical,
+            keepEnd: selectedEndJoins(end) && !selectedEndJoins(start)));
+    if (choice == null || !mounted) return;
+    final value = choice.length, keepEnd = choice.keepEnd;
     final direction = vertical ? const Offset(0, 1) : const Offset(1, 0);
     final from = keepEnd ? end - direction * value.toDouble() : start,
         to = keepEnd ? end : start + direction * value.toDouble();

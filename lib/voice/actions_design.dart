@@ -274,6 +274,23 @@ final designActions = [
     }),
   ),
   AppAction(
+    id: 'design.mirror',
+    title: const L3('把房子翻过来', 'Үйді айнадай аудару', 'Отразить дом зеркально'),
+    examples: const L3('把整个房子左右翻过来', 'Бүкіл үйді оңнан солға аудар',
+        'Отрази весь дом слева направо'),
+    params: const {
+      // left_right swaps west and east on the plan; top_bottom swaps
+      // the front and the back.
+      'direction': Param.choice(['left_right', 'top_bottom']),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) => _design('MirrorPlan', {
+      'direction':
+          args.choice('direction') == 'top_bottom' ? 'vertical' : 'horizontal'
+    }),
+  ),
+  AppAction(
     id: 'design.rename_room',
     title: const L3('给房间改名', 'Бөлме атауын өзгерту', 'Переименовать комнату'),
     examples: const L3(
@@ -364,6 +381,92 @@ final designActions = [
     risk: Risk.undoable,
     run: (ctx, args) =>
         _design('DeleteOpening', {'openingId': args.id('opening')}),
+  ),
+  AppAction(
+    id: 'design.resize_opening',
+    title: const L3('改门窗宽度', 'Есік-терезе енін өзгерту', 'Изменить ширину двери или окна'),
+    examples: const L3('这扇窗改成一米五宽', 'Осы терезенің енін бір жарым метр қыл',
+        'Сделай это окно шириной полтора метра'),
+    params: const {
+      'opening': Param.entity('opening'),
+      'width_mm': Param.integer(),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) => _design('ResizeOpening',
+        {'openingId': args.id('opening'), 'width': args.integer('width_mm')},
+        changed: [args.id('opening')]),
+  ),
+  AppAction(
+    id: 'design.flip_door',
+    title: const L3('门换个方向开', 'Есіктің ашылу жағын өзгерту', 'Открывать дверь в другую сторону'),
+    examples: const L3('这扇门朝另一边开', 'Осы есік екінші жаққа ашылсын',
+        'Пусть эта дверь открывается в другую сторону'),
+    params: const {'opening': Param.entity('opening')},
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) async {
+      final door = _host!.document.floors
+          .expand((f) => f.openings)
+          .whereType<DoorOpening>()
+          .where((o) => o.id == args.id('opening'))
+          .firstOrNull;
+      return _design('FlipDoor', {
+        'openingId': args.id('opening'),
+        if (door != null)
+          'opensTo': (door.opensTo == OpeningSide.positiveSide
+                  ? OpeningSide.negativeSide
+                  : OpeningSide.positiveSide)
+              .name,
+      }, changed: [
+        args.id('opening')
+      ]);
+    },
+  ),
+  AppAction(
+    id: 'design.set_main_entrance',
+    title: const L3('设为主入口', 'Басты кіреберіс ету', 'Сделать главным входом'),
+    examples: const L3('这扇门是大门', 'Осы есік басты кіреберіс болсын',
+        'Эта дверь — главный вход'),
+    params: const {'opening': Param.entity('opening')},
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) => _design(
+        'SetMainEntrance', {'openingId': args.id('opening')},
+        changed: [args.id('opening')]),
+  ),
+  AppAction(
+    id: 'design.set_roof',
+    title: const L3('换屋顶样式', 'Шатыр түрін өзгерту', 'Изменить тип крыши'),
+    examples: const L3('屋顶改成四坡的', 'Шатырды төрт еңісті қыл',
+        'Сделай крышу четырёхскатной'),
+    params: {
+      // flat, gable (two slopes) or hip (four slopes).
+      'type': Param.choice([for (final t in RoofType.values) t.name]),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) {
+      final roof = _host!.document.roof;
+      final sloped = {
+        'pitchDeg': roof.pitchDeg ?? 30,
+        'overhang': roof.overhang ?? 500
+      };
+      return _design('SetRoof', {
+        'roof': switch (RoofType.values.byName(args.choice('type'))) {
+          RoofType.flat => {
+              'type': 'flat',
+              'parapetHeight': roof.parapetHeight ?? 900
+            },
+          RoofType.hip => {'type': 'hip', ...sloped},
+          RoofType.gable => {
+              'type': 'gable',
+              'ridgeDir': roof.ridgeDir?.name ?? 'H',
+              ...sloped
+            },
+        }
+      });
+    },
   ),
   AppAction(
     id: 'design.add_furniture',

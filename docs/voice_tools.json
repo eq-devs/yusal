@@ -591,6 +591,35 @@
     }
   },
   {
+    "name": "design.mirror",
+    "title": {
+      "zh": "把房子翻过来",
+      "kk": "Үйді айнадай аудару",
+      "ru": "Отразить дом зеркально"
+    },
+    "examples": {
+      "zh": "把整个房子左右翻过来",
+      "kk": "Бүкіл үйді оңнан солға аудар",
+      "ru": "Отрази весь дом слева направо"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": [
+            "left_right",
+            "top_bottom"
+          ]
+        }
+      },
+      "required": [
+        "direction"
+      ]
+    }
+  },
+  {
     "name": "design.rename_room",
     "title": {
       "zh": "给房间改名",
@@ -757,6 +786,118 @@
       },
       "required": [
         "opening"
+      ]
+    }
+  },
+  {
+    "name": "design.resize_opening",
+    "title": {
+      "zh": "改门窗宽度",
+      "kk": "Есік-терезе енін өзгерту",
+      "ru": "Изменить ширину двери или окна"
+    },
+    "examples": {
+      "zh": "这扇窗改成一米五宽",
+      "kk": "Осы терезенің енін бір жарым метр қыл",
+      "ru": "Сделай это окно шириной полтора метра"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "opening": {
+          "type": "string",
+          "entity": "opening"
+        },
+        "width_mm": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "opening",
+        "width_mm"
+      ]
+    }
+  },
+  {
+    "name": "design.flip_door",
+    "title": {
+      "zh": "门换个方向开",
+      "kk": "Есіктің ашылу жағын өзгерту",
+      "ru": "Открывать дверь в другую сторону"
+    },
+    "examples": {
+      "zh": "这扇门朝另一边开",
+      "kk": "Осы есік екінші жаққа ашылсын",
+      "ru": "Пусть эта дверь открывается в другую сторону"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "opening": {
+          "type": "string",
+          "entity": "opening"
+        }
+      },
+      "required": [
+        "opening"
+      ]
+    }
+  },
+  {
+    "name": "design.set_main_entrance",
+    "title": {
+      "zh": "设为主入口",
+      "kk": "Басты кіреберіс ету",
+      "ru": "Сделать главным входом"
+    },
+    "examples": {
+      "zh": "这扇门是大门",
+      "kk": "Осы есік басты кіреберіс болсын",
+      "ru": "Эта дверь — главный вход"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "opening": {
+          "type": "string",
+          "entity": "opening"
+        }
+      },
+      "required": [
+        "opening"
+      ]
+    }
+  },
+  {
+    "name": "design.set_roof",
+    "title": {
+      "zh": "换屋顶样式",
+      "kk": "Шатыр түрін өзгерту",
+      "ru": "Изменить тип крыши"
+    },
+    "examples": {
+      "zh": "屋顶改成四坡的",
+      "kk": "Шатырды төрт еңісті қыл",
+      "ru": "Сделай крышу четырёхскатной"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "flat",
+            "gable",
+            "hip"
+          ]
+        }
+      },
+      "required": [
+        "type"
       ]
     }
   },

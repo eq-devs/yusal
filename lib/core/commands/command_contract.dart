@@ -10,6 +10,7 @@ import 'drawn_wall_commands.dart';
 import '../geometry/opening_constraints.dart';
 import 'extras_commands.dart';
 import 'outline_commands.dart';
+import 'mirror_commands.dart';
 
 class DesignCommand {
   DesignCommand(this.kind, Map<String, dynamic> arguments)
@@ -154,6 +155,13 @@ CommandResult executeCommand(
               (args['width'] as num).round(), (args['depth'] as num).round(),
               context.newId)
           : restoreOutline(doc, ids);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('SPATIAL_CONFLICT', result.error!);
+    }
+    if (command.kind == 'MirrorPlan') {
+      final result =
+          mirrorPlan(doc, horizontal: args['direction'] != 'vertical');
       return result.accepted
           ? apply(result.document!)
           : Rejected('SPATIAL_CONFLICT', result.error!);

@@ -9,6 +9,8 @@ import '../platform/data/repositories.dart';
 import 'action.dart';
 import 'actions.dart';
 import 'executor.dart';
+import 'actions_design.dart';
+import 'screen.dart';
 import 'session.dart';
 import 'speech.dart';
 
@@ -52,8 +54,8 @@ String _failure(String? code) => switch (code) {
           '现在连不上服务器，请再试一次',
           'Серверге қосылу мүмкін болмады, қайталап көріңіз',
           'Нет связи с сервером, попробуйте ещё раз'),
-      ApiCodes.notSignedIn => tr3('请先登录，再用语音', 'Алдымен жүйеге кіріңіз',
-          'Сначала войдите в аккаунт'),
+      ApiCodes.notSignedIn =>
+        tr3('请先登录，再用语音', 'Алдымен жүйеге кіріңіз', 'Сначала войдите в аккаунт'),
       'RATE_LIMITED' => tr3('用得太频繁了，请稍后再试', 'Тым жиі, сәл кейінірек көріңіз',
           'Слишком часто, попробуйте чуть позже'),
       'VOICE_BUSY' => tr3(
@@ -68,8 +70,26 @@ String _failure(String? code) => switch (code) {
           'Не получилось, попробуйте ещё раз'),
     };
 
-/// The button that opens voice control and the bar above it that shows
-/// what was heard, what is being done and what came of it.
+/// Actions shown as "you can say" suggestions, most useful first.
+const _suggestionOrder = [
+  'design.create_house',
+  'design.add_opening',
+  'design.add_furniture',
+  'design.add_room',
+  'design.add_floor',
+  'houses.create',
+  'houses.open',
+  'form.fill',
+  'nav.tab',
+];
+
+/// Voice control in the manner of a phone assistant: a small orb in the
+/// corner that turns and breathes while it listens and works, what was
+/// heard in a pill at the bottom and the outcome in a banner at the top
+/// that gets out of the way. The page underneath stays visible.
+///
+/// Tapping the orb starts listening and tapping it again sends; without
+/// speech, or on a long press, it opens a text field instead.
 class VoiceBar extends StatefulWidget {
   const VoiceBar({super.key, required this.session, this.speech});
   final VoiceSession session;
@@ -77,46 +97,150 @@ class VoiceBar extends StatefulWidget {
   /// Null leaves the bar typed-only.
   final Speech? speech;
 
+  /// How long a finished reply stays before the banner hides.
+  static const showFor = Duration(seconds: 5);
+
   @override
   State<VoiceBar> createState() => _VoiceBarState();
 }
 
-class _VoiceBarState extends State<VoiceBar> {
+class _VoiceBarState extends State<VoiceBar>
+    with TickerProviderStateMixin {
   final input = TextEditingController();
-  bool open = false;
-  bool listening = false, transcribing = false;
+  final focus = FocusNode();
+  bool typing = false, listening = false, transcribing = false;
+  bool bannerShown = false, expanded = false;
   String? speechNote;
-  Timer? limit;
+  Timer? limit, hide;
+  // One turn of the orb, and how loud the voice is (0 to 1).
+  late final glow = AnimationController(vsync: this, duration: _calm);
+  late final level = AnimationController(vsync: this);
+  StreamSubscription<double>? levels;
+  static const _calm = Duration(milliseconds: 7000);
+  static const _quick = Duration(milliseconds: 2600);
 
   VoiceSession get s => widget.session;
+  bool get active => listening || transcribing || s.busy;
+
+  _Mood get mood => listening
+      ? _Mood.listening
+      : transcribing || s.busy
+          ? _Mood.thinking
+          : !bannerShown
+              ? _Mood.idle
+              : s.phase == VoicePhase.failed
+                  ? _Mood.failed
+                  : s.phase == VoicePhase.done
+                      ? _Mood.done
+                      : _Mood.idle;
+
+  @override
+  void initState() {
+    super.initState();
+    s.addListener(_changed);
+    // The suggestions show only while the field is empty.
+    input.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
+    s.removeListener(_changed);
     limit?.cancel();
+    hide?.cancel();
+    levels?.cancel();
+    glow.dispose();
+    level.dispose();
     input.dispose();
+    focus.dispose();
     super.dispose();
   }
 
-  /// First tap starts recording, the second sends what was said. A reply
-  /// to a spoken request is also read aloud.
-  Future<void> mic() async {
-    final speech = widget.speech!;
-    if (transcribing || s.busy) return;
-    if (!listening) {
-      await speech.audio.stopPlaying();
-      final ok = await speech.audio.startRecording();
-      if (!mounted) return;
-      setState(() {
-        listening = ok;
-        speechNote = ok
-            ? null
-            : tr3('请在系统设置里允许使用麦克风', 'Баптаулардан микрофонға рұқсат беріңіз',
-                'Разрешите доступ к микрофону в настройках');
+  void _changed() {
+    if (!mounted) return;
+    final finished = s.phase == VoicePhase.done || s.phase == VoicePhase.failed;
+    if (s.busy || finished) bannerShown = true;
+    hide?.cancel();
+    // A question with answers to pick, or an open banner, stays.
+    if (finished && s.options.isEmpty && !expanded) {
+      hide = Timer(VoiceBar.showFor, () {
+        if (mounted) setState(() => bannerShown = false);
       });
-      if (ok) limit = Timer(Speech.maxSentence, mic);
+    }
+    _animate();
+    setState(() {});
+  }
+
+  void _animate() {
+    final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (active && !still) {
+      // Slow while listening, quicker while working.
+      final turn = listening ? _calm : _quick;
+      if (!glow.isAnimating || glow.duration != turn) {
+        glow.duration = turn;
+        glow.repeat();
+      }
+    } else {
+      glow.stop();
+    }
+  }
+
+  /// The orb swells with the voice: quickly up, slowly down, eased between
+  /// the microphone's readings so it moves on every frame.
+  void _follow(bool on) {
+    levels?.cancel();
+    levels = null;
+    final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (!on || still) {
+      level.animateTo(0, duration: const Duration(milliseconds: 260));
       return;
     }
+    levels = widget.speech!.audio.levels.listen((v) {
+      level.animateTo(v,
+          duration: Duration(milliseconds: v > level.value ? 90 : 340),
+          curve: Curves.easeOut);
+    }, onError: (_) {});
+  }
+
+  /// The orb: listen, or send what was said.
+  Future<void> orb() async {
+    if (widget.speech == null) return toggleTyping();
+    if (transcribing || s.busy) return;
+    if (!listening) return startListening();
+    await stopListening();
+  }
+
+  void toggleTyping() {
+    setState(() {
+      typing = !typing;
+      speechNote = null;
+    });
+    if (typing) focus.requestFocus();
+  }
+
+  Future<void> startListening() async {
+    final speech = widget.speech!;
+    final ok = await speech.audio.startRecording();
+    if (!mounted) return;
+    setState(() {
+      typing = false;
+      listening = ok;
+      bannerShown = false;
+      speechNote = ok
+          ? null
+          : tr3('请在系统设置里允许使用麦克风', 'Баптаулардан микрофонға рұқсат беріңіз',
+              'Разрешите доступ к микрофону в настройках');
+    });
+    _animate();
+    if (ok) {
+      _follow(true);
+      limit = Timer(Speech.maxSentence, stopListening);
+    }
+  }
+
+  Future<void> stopListening() async {
+    if (!listening) return;
     limit?.cancel();
+    _follow(false);
     setState(() {
       listening = false;
       transcribing = true;
@@ -124,7 +248,7 @@ class _VoiceBarState extends State<VoiceBar> {
     var text = '';
     String? note;
     try {
-      text = (await speech.heard()).trim();
+      text = (await widget.speech!.heard()).trim();
       if (text.isEmpty) {
         note = tr3('没听清，请再说一次', 'Естілмеді, қайталап айтыңыз',
             'Не расслышал, повторите');
@@ -137,137 +261,418 @@ class _VoiceBarState extends State<VoiceBar> {
       transcribing = false;
       speechNote = note;
     });
+    _animate();
     if (text.isEmpty) return;
     await s.say(text, spoken: true);
-    if (s.phase != VoicePhase.done || s.reply.isEmpty) return;
-    try {
-      await speech.speak(s.reply);
-    } catch (_) {
-      // The reply is on screen either way.
-    }
   }
 
   void send([String? text]) {
     final t = (text ?? input.text).trim();
     if (t.isEmpty || s.busy) return;
     input.clear();
+    expanded = false;
     s.say(t, spoken: false);
   }
 
+  /// What this page offers, as things to say.
+  List<String> suggestions() {
+    final ctx = VoiceScreens.context(s.repos, loggedIn: s.loggedIn());
+    final offered = {for (final a in s.executor.registry.offered(ctx)) a.id: a};
+    final lang = AppSettings.instance.lang;
+    return [
+      for (final id in _suggestionOrder)
+        if (offered[id] != null) offered[id]!.examples.of(lang)
+    ].take(3).toList();
+  }
+
+  /// The sentence changed the open design, so one undo takes it back.
+  bool get canUndo {
+    final Object? screen = VoiceScreens.current;
+    return screen is DesignHost &&
+        s.phase == VoicePhase.done &&
+        s.steps.any((step) =>
+            step.result.ok && (step.action?.id.startsWith('design.') ?? false));
+  }
+
+  void undo() {
+    final Object? screen = VoiceScreens.current;
+    if (screen is DesignHost) screen.undoDesign();
+    setState(() => bannerShown = false);
+  }
+
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-      listenable: s,
-      builder: (context, _) {
-        final theme = Theme.of(context);
-        final lang = AppSettings.instance.lang;
-        final quiet = theme.textTheme.bodySmall
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant);
-        return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (open)
-                Material(
-                    key: const Key('voice-bar'),
-                    elevation: 6,
-                    borderRadius: BorderRadius.circular(16),
-                    color: theme.colorScheme.surface,
-                    child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-                        child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (s.heard.isNotEmpty)
-                                Text(s.heard, style: quiet),
-                              for (final step in s.steps)
-                                Row(mainAxisSize: MainAxisSize.min, children: [
-                                  Icon(
-                                      step.result.ok
-                                          ? Icons.check_circle
-                                          : Icons.error_outline,
-                                      size: 16,
-                                      color: step.result.ok
-                                          ? theme.colorScheme.primary
-                                          : theme.colorScheme.error),
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                      child: Text(
-                                          step.action?.title.of(lang) ?? '?')),
-                                ]),
-                              if (speechNote != null)
-                                Text(speechNote!,
-                                    style: TextStyle(
-                                        color: theme.colorScheme.error)),
-                              if (s.busy || transcribing)
-                                const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 8),
-                                    child: LinearProgressIndicator()),
-                              if (s.phase == VoicePhase.done &&
-                                  s.reply.isNotEmpty)
-                                Text(s.reply, style: theme.textTheme.bodyLarge),
-                              if (s.phase == VoicePhase.failed)
-                                Text(_failure(s.error),
-                                    style: TextStyle(
-                                        color: theme.colorScheme.error)),
-                              if (s.options.isNotEmpty)
-                                Wrap(spacing: 8, children: [
-                                  for (final o in s.options)
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final lang = AppSettings.instance.lang;
+    final insets = MediaQuery.paddingOf(context);
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final quiet =
+        theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant);
+    final failed = s.phase == VoicePhase.failed;
+
+    Widget card(
+            {required Widget child, Key? key, EdgeInsets? padding}) =>
+        Material(
+            key: key,
+            elevation: 6,
+            color: colors.surface,
+            shadowColor: Colors.black38,
+            borderRadius: BorderRadius.circular(22),
+            child: Padding(
+                padding: padding ??
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: child));
+
+    // Top: what came of the sentence.
+    final banner = bannerShown &&
+            (s.busy || s.phase == VoicePhase.done || failed)
+        ? card(
+            key: const Key('voice-bar'),
+            child: InkWell(
+                onTap: () => setState(() {
+                      expanded = !expanded;
+                      if (expanded) hide?.cancel();
+                    }),
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        _Orb(size: 26, glow: glow, mood: mood),
+                        const SizedBox(width: 10),
+                        Expanded(
+                            child: Text(
+                                s.busy
+                                    ? (s.heard.isEmpty
+                                        ? tr3(
+                                            '正在处理…', 'Орындалуда…', 'Выполняю…')
+                                        : s.heard)
+                                    : failed
+                                        ? _failure(s.error)
+                                        : s.reply.isNotEmpty
+                                            ? s.reply
+                                            : tr3('完成了', 'Дайын', 'Готово'),
+                                maxLines: expanded ? null : 2,
+                                overflow:
+                                    expanded ? null : TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: failed ? colors.error : null))),
+                        if (canUndo)
+                          TextButton(
+                              key: const Key('voice-undo'),
+                              onPressed: undo,
+                              child: Text(tr3('撤销', 'Болдырмау', 'Отменить'))),
+                        if (s.phase == VoicePhase.acting)
+                          IconButton(
+                              tooltip: tr3('停止', 'Тоқтату', 'Стоп'),
+                              icon: const Icon(Icons.stop_circle),
+                              onPressed: s.stop),
+                      ]),
+                      if (s.steps.isNotEmpty && (expanded || s.busy))
+                        Padding(
+                            padding: const EdgeInsets.only(top: 6, left: 36),
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (final step in s.steps)
+                                    Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                              step.result.ok
+                                                  ? Icons.check_circle
+                                                  : Icons.error_outline,
+                                              size: 14,
+                                              color: step.result.ok
+                                                  ? colors.primary
+                                                  : colors.error),
+                                          const SizedBox(width: 6),
+                                          Flexible(
+                                              child: Text(
+                                                  step.action?.title.of(lang) ??
+                                                      '?',
+                                                  style: quiet)),
+                                        ]),
+                                ])),
+                      if (s.options.isNotEmpty)
+                        Padding(
+                            padding: const EdgeInsets.only(top: 6, left: 36),
+                            child: Wrap(spacing: 8, children: [
+                              for (final o in s.options)
+                                ActionChip(
+                                    label: Text(o), onPressed: () => send(o)),
+                            ])),
+                    ])))
+        : null;
+
+    // Bottom: what is being heard, or the text field.
+    final hint = listening
+        ? tr3('正在听…说完点圆球', 'Тыңдап тұрмын… біткенде шарды басыңыз',
+            'Слушаю… нажмите на шар, когда закончите')
+        : transcribing
+            ? tr3('正在识别…', 'Танып жатырмын…', 'Распознаю…')
+            : speechNote;
+    final pill = typing
+        ? card(
+            padding: const EdgeInsets.fromLTRB(16, 2, 4, 2),
+            child: Row(children: [
+              Expanded(
+                  child: TextField(
+                      key: const Key('voice-input'),
+                      controller: input,
+                      focusNode: focus,
+                      enabled: !s.busy,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: send,
+                      // Plain text in the pill, whatever the app's
+                      // field style.
+                      decoration: InputDecoration(
+                          filled: false,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          hintText:
+                              tr3('想做什么？', 'Не істейміз?', 'Что сделать?')))),
+              if (widget.speech != null)
+                IconButton(
+                    key: const Key('voice-mic'),
+                    tooltip:
+                        tr3('说话（哈萨克语）', 'Сөйлеу', 'Говорить (по-казахски)'),
+                    icon: const Icon(Icons.mic),
+                    onPressed: s.busy ? null : startListening),
+              IconButton(
+                  tooltip: tr3('发送', 'Жіберу', 'Отправить'),
+                  icon: const Icon(Icons.arrow_upward),
+                  onPressed: s.busy ? null : send),
+            ]))
+        : hint != null
+            ? GestureDetector(
+                key: const Key('voice-pill'),
+                // Tapping the pill while listening switches to typing.
+                onTap: listening
+                    ? () async {
+                        limit?.cancel();
+                        _follow(false);
+                        await widget.speech!.audio.stopRecording();
+                        setState(() => listening = false);
+                        _animate();
+                        toggleTyping();
+                      }
+                    : null,
+                child: card(
+                    child: Text(hint,
+                        style: speechNote != null && !listening && !transcribing
+                            ? TextStyle(color: colors.error)
+                            : null)))
+            : null;
+    final tips = typing && !s.busy && input.text.isEmpty && !bannerShown
+        ? suggestions()
+        : const <String>[];
+
+    // Transparent: taps between the parts reach the page.
+    return Material(
+        type: MaterialType.transparency,
+        child: Stack(children: [
+          if (banner != null)
+            Positioned(
+                top: insets.top + 8,
+                left: 12,
+                right: 12,
+                child: Center(
+                    child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 480),
+                        child: banner))),
+          Positioned(
+              left: 16,
+              right: 16,
+              bottom: keyboard + 96,
+              child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Expanded(
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                      if (tips.isNotEmpty)
+                        Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Wrap(
+                                alignment: WrapAlignment.end,
+                                spacing: 8,
+                                runSpacing: 6,
+                                children: [
+                                  for (final tip in tips)
                                     ActionChip(
-                                        label: Text(o),
-                                        onPressed: () => send(o)),
-                                ]),
-                              Row(children: [
-                                Expanded(
-                                    child: TextField(
-                                        key: const Key('voice-input'),
-                                        controller: input,
-                                        enabled: !s.busy,
-                                        textInputAction: TextInputAction.send,
-                                        onSubmitted: send,
-                                        decoration: InputDecoration(
-                                            border: InputBorder.none,
-                                            hintText: tr3(
-                                                '想做什么？',
-                                                'Не істейміз?',
-                                                'Что сделать?')))),
-                                if (widget.speech != null)
-                                  IconButton(
-                                      key: const Key('voice-mic'),
-                                      tooltip: listening
-                                          ? tr3('说完了', 'Айтып болдым', 'Готово')
-                                          : tr3('说话（哈萨克语）', 'Сөйлеу',
-                                              'Говорить (по-казахски)'),
-                                      color: listening
-                                          ? theme.colorScheme.error
-                                          : null,
-                                      icon: Icon(listening
-                                          ? Icons.stop_circle_outlined
-                                          : Icons.mic),
-                                      onPressed:
-                                          s.busy || transcribing ? null : mic),
-                                s.phase == VoicePhase.acting
-                                    ? IconButton(
-                                        tooltip: tr3('停止', 'Тоқтату', 'Стоп'),
-                                        icon: const Icon(Icons.stop_circle),
-                                        onPressed: s.stop)
-                                    : IconButton(
-                                        tooltip:
-                                            tr3('发送', 'Жіберу', 'Отправить'),
-                                        icon: const Icon(Icons.send),
-                                        onPressed: s.busy ? null : send),
-                              ]),
-                            ]))),
-              const SizedBox(height: 8),
-              FloatingActionButton(
-                  key: const Key('voice-button'),
-                  heroTag: null,
-                  tooltip:
-                      tr3('语音操作', 'Дауыспен басқару', 'Голосовое управление'),
-                  onPressed: () => setState(() => open = !open),
-                  child: Icon(open ? Icons.close : Icons.mic_none)),
-            ]);
-      });
+                                        avatar: const Icon(
+                                            Icons.lightbulb_outline,
+                                            size: 16),
+                                        label: Text(tip,
+                                            style: theme.textTheme.bodyMedium),
+                                        onPressed: () => send(tip)),
+                                ])),
+                      // As tall as the orb, so the two share a centre line.
+                      if (pill != null)
+                        Container(
+                            constraints: const BoxConstraints(minHeight: 52),
+                            alignment: Alignment.centerRight,
+                            child: ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 420),
+                                child: pill)),
+                    ])),
+                const SizedBox(width: 10),
+                Semantics(
+                    button: true,
+                    label: listening
+                        ? tr3('说完了', 'Айтып болдым', 'Готово')
+                        : tr3(
+                            '语音操作', 'Дауыспен басқару', 'Голосовое управление'),
+                    child: GestureDetector(
+                        key: const Key('voice-button'),
+                        onTap: orb,
+                        onLongPress: toggleTyping,
+                        child: _Orb(
+                            size: 52,
+                            glow: glow,
+                            level: level,
+                            mood: mood,
+                            icon: listening
+                                ? Icons.stop_rounded
+                                : typing && widget.speech == null
+                                    ? Icons.close
+                                    : null))),
+              ])),
+        ]));
+  }
+}
+
+/// What the orb is doing; each has its own colours.
+enum _Mood { idle, listening, thinking, done, failed }
+
+/// The assistant's orb, in the app's colours of wood, clay and stone: a
+/// dark sphere with three soft lights turning inside it at different
+/// speeds, the way a phone assistant's does. It swells with the voice
+/// while listening, turns faster while working, and fades to green or red
+/// for an answer or a failure.
+///
+/// Every part is painted once and then only turned, scaled or faded by
+/// the compositor, so the motion repaints nothing, here or on the page.
+class _Orb extends StatelessWidget {
+  const _Orb(
+      {required this.size,
+      required this.glow,
+      required this.mood,
+      this.level,
+      this.icon});
+  final double size;
+  final Animation<double> glow;
+  final _Mood mood;
+
+  /// How loud the voice is, 0 to 1; the orb and its halo follow it.
+  final Animation<double>? level;
+  final IconData? icon;
+
+  static const _amber = Color(0xffF0A63C),
+      _clay = Color(0xffC8552D),
+      _wood = Color(0xff9A6232),
+      _moss = Color(0xff5F9B72),
+      _stone = Color(0xffB9C4C6),
+      _red = Color(0xffE0483C);
+
+  static const _lights = {
+    _Mood.idle: [_amber, _clay, _stone],
+    _Mood.listening: [_amber, _clay, _moss],
+    _Mood.thinking: [_amber, _stone, _wood],
+    _Mood.done: [_moss, _amber, _moss],
+    _Mood.failed: [_red, _clay, _wood],
+  };
+
+  // Whole turns, so the loop has no seam.
+  static const _turns = [1.0, -2.0, 3.0];
+  static const _at = [
+    Alignment(0.5, -0.25),
+    Alignment(-0.45, 0.4),
+    Alignment(0.1, 0.55)
+  ];
+
+  static final _breath = TweenSequence<double>([
+    TweenSequenceItem(tween: Tween(begin: 1, end: 1.05), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: 1.05, end: 1), weight: 1),
+  ]);
+
+  Widget _disc(Gradient gradient) => DecoratedBox(
+      decoration: BoxDecoration(shape: BoxShape.circle, gradient: gradient),
+      child: const SizedBox.expand());
+
+  @override
+  Widget build(BuildContext context) {
+    final lights = _lights[mood]!;
+    final sphere = SizedBox.square(
+        dimension: size,
+        child: DecoratedBox(
+            decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [
+              BoxShadow(
+                  color: lights.first.withValues(alpha: 0.35),
+                  blurRadius: size * 0.22,
+                  offset: Offset(0, size * 0.06))
+            ]),
+            child: Stack(fit: StackFit.expand, children: [
+              _disc(const RadialGradient(
+                  colors: [Color(0xff4A3524), Color(0xff1F1610)])),
+              for (final (i, color) in lights.indexed)
+                RotationTransition(
+                    turns: glow.drive(Tween(begin: 0, end: _turns[i])),
+                    child: RepaintBoundary(
+                        child: _disc(RadialGradient(
+                            center: _at[i],
+                            radius: 0.62,
+                            colors: [
+                          color.withValues(alpha: 0.95),
+                          color.withValues(alpha: 0)
+                        ])))),
+              // A fixed highlight makes it a sphere, not a disc.
+              _disc(RadialGradient(
+                  center: const Alignment(-0.35, -0.5),
+                  radius: 0.55,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.38),
+                    Colors.white.withValues(alpha: 0)
+                  ])),
+            ])));
+    // The colours of one mood fade into the next.
+    Widget orb = ScaleTransition(
+        scale: glow.drive(_breath),
+        child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 380),
+            child: KeyedSubtree(key: ValueKey(mood), child: sphere)));
+    final level = this.level;
+    if (level != null) {
+      orb = Stack(alignment: Alignment.center, children: [
+        // A halo that grows with the voice.
+        FadeTransition(
+            opacity: level.drive(Tween(begin: 0, end: 0.45)),
+            child: ScaleTransition(
+                scale: level.drive(Tween(begin: 1, end: 1.7)),
+                child: RepaintBoundary(
+                    child: SizedBox.square(
+                        dimension: size,
+                        child: _disc(RadialGradient(colors: [
+                          _amber,
+                          _amber.withValues(alpha: 0)
+                        ], stops: const [
+                          0.55,
+                          1
+                        ])))))),
+        ScaleTransition(
+            scale: level.drive(Tween(begin: 1, end: 1.22)), child: orb),
+      ]);
+    }
+    return Stack(alignment: Alignment.center, children: [
+      orb,
+      if (icon != null) Icon(icon, color: Colors.white, size: size * 0.46),
+    ]);
+  }
 }
 
 /// Puts the voice bar over every page. Wraps the app's content in
@@ -285,7 +690,7 @@ class VoiceHost extends StatefulWidget {
   final PlatformRepositories repos;
   final Widget child;
 
-  /// The microphone and speaker; without it, or with a backend that does
+  /// The microphone; without it, or with a backend that does
   /// no speech, the bar is typed-only. Disposed with this widget.
   final AudioDevice? audio;
   final bool enabled;
@@ -320,19 +725,12 @@ class _VoiceHostState extends State<VoiceHost> {
       final overlay = widget.navigator.currentState?.overlay;
       if (!mounted || overlay == null) return;
       entry = OverlayEntry(
-          builder: (context) => Positioned(
-              right: 16,
-              left: 16,
-              bottom: MediaQuery.viewInsetsOf(context).bottom + 96,
-              child: Align(
-                  alignment: Alignment.bottomRight,
-                  child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 420),
-                      child: VoiceBar(
-                          session: s,
-                          speech: audio != null && speaker is SpeechBackend
-                              ? Speech(speaker, audio)
-                              : null)))));
+          builder: (context) => Positioned.fill(
+              child: VoiceBar(
+                  session: s,
+                  speech: audio != null && speaker is SpeechBackend
+                      ? Speech(speaker, audio)
+                      : null)));
       overlay.insert(entry!);
     });
   }

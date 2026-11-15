@@ -68,6 +68,450 @@
     }
   },
   {
+    "name": "houses.create",
+    "title": {
+      "zh": "新建房屋设计",
+      "kk": "Жаңа үй жобасы",
+      "ru": "Новый проект дома"
+    },
+    "examples": {
+      "zh": "新建一个十二乘十米的房子",
+      "kk": "Он екіге он метр жаңа үй аш",
+      "ru": "Создай новый дом двенадцать на десять метров"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "template": {
+          "type": "string",
+          "enum": [
+            "blank",
+            "kz",
+            "three",
+            "five",
+            "two"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "width_mm": {
+          "type": "integer"
+        },
+        "depth_mm": {
+          "type": "integer"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "houses.open",
+    "title": {
+      "zh": "按名称打开设计",
+      "kk": "Жобаны атымен ашу",
+      "ru": "Открыть проект по имени"
+    },
+    "examples": {
+      "zh": "打开我的房子",
+      "kk": "«Менің үйім» жобасын аш",
+      "ru": "Открой проект «Мой дом»"
+    },
+    "risk": "read",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    }
+  },
+  {
+    "name": "design.create_house",
+    "title": {
+      "zh": "设计整栋房子",
+      "kk": "Бүкіл үйді жобалау",
+      "ru": "Спроектировать весь дом"
+    },
+    "examples": {
+      "zh": "设计一个三室一厅、十二乘十米的平房",
+      "kk": "Үш жатын бөлмелі, он екіге он метр бір қабатты үй жобала",
+      "ru": "Спроектируй одноэтажный дом двенадцать на десять с тремя спальнями"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "spec": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "width_mm": {
+              "type": "integer",
+              "description": "house size west to east, 4000-30000, millimetres"
+            },
+            "depth_mm": {
+              "type": "integer",
+              "description": "house size south to north, 4000-30000, millimetres"
+            },
+            "roof": {
+              "type": "string",
+              "enum": [
+                "flat",
+                "gable",
+                "hip"
+              ]
+            },
+            "outer_wall_mm": {
+              "type": "integer",
+              "description": "outer wall thickness, e.g. 400 for block walls, millimetres"
+            },
+            "floors": {
+              "type": "array",
+              "description": "ground floor first",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "height_mm": {
+                    "type": "integer",
+                    "description": "floor to floor height, millimetres"
+                  },
+                  "rooms": {
+                    "type": "array",
+                    "description": "rectangles that do not overlap and together fill the floor",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "short key, e.g. b1"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "living",
+                            "bedroom",
+                            "kitchen",
+                            "bathroom",
+                            "dining",
+                            "custom"
+                          ]
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "x_mm": {
+                          "type": "integer",
+                          "description": "west edge from the house's west wall, millimetres"
+                        },
+                        "y_mm": {
+                          "type": "integer",
+                          "description": "south edge from the house's south wall, millimetres"
+                        },
+                        "w_mm": {
+                          "type": "integer",
+                          "description": "size west to east, millimetres"
+                        },
+                        "d_mm": {
+                          "type": "integer",
+                          "description": "size south to north, millimetres"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "x_mm",
+                        "y_mm",
+                        "w_mm",
+                        "d_mm"
+                      ]
+                    }
+                  },
+                  "doors": {
+                    "type": "array",
+                    "description": "a door to another room (\"to\"), or in the outer wall on \"side\"",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "room": {
+                          "type": "string"
+                        },
+                        "to": {
+                          "type": "string"
+                        },
+                        "side": {
+                          "type": "string",
+                          "enum": [
+                            "north",
+                            "east",
+                            "south",
+                            "west"
+                          ]
+                        },
+                        "main": {
+                          "type": "boolean",
+                          "description": "the main entrance, ground floor"
+                        }
+                      },
+                      "required": [
+                        "room"
+                      ]
+                    }
+                  },
+                  "windows": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "room": {
+                          "type": "string"
+                        },
+                        "side": {
+                          "type": "string",
+                          "enum": [
+                            "north",
+                            "east",
+                            "south",
+                            "west"
+                          ]
+                        },
+                        "count": {
+                          "type": "integer"
+                        },
+                        "width_mm": {
+                          "type": "integer",
+                          "description": "window width, millimetres"
+                        }
+                      },
+                      "required": [
+                        "room",
+                        "side"
+                      ]
+                    }
+                  },
+                  "open": {
+                    "type": "array",
+                    "description": "pairs of rooms joined without a wall",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "furniture": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "room": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "bed",
+                            "singleBed",
+                            "wardrobe",
+                            "table",
+                            "diningTable",
+                            "chair",
+                            "sofa",
+                            "desk",
+                            "tvStand",
+                            "shelf",
+                            "rug",
+                            "alasha",
+                            "wallRug",
+                            "korpe",
+                            "cushion",
+                            "dastarkhan",
+                            "sandyq",
+                            "bench",
+                            "hooks",
+                            "counter",
+                            "stove",
+                            "sink",
+                            "fridge",
+                            "pantry",
+                            "bathtub",
+                            "shower",
+                            "toilet",
+                            "basin",
+                            "washer",
+                            "boiler",
+                            "shoeCabinet",
+                            "terrace",
+                            "porch",
+                            "custom"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "room",
+                        "kind"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "rooms"
+                ]
+              }
+            },
+            "stairs": {
+              "type": "array",
+              "description": "on the floor they start from (1 = ground)",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "floor": {
+                    "type": "integer"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "straight",
+                      "L",
+                      "U"
+                    ]
+                  },
+                  "x_mm": {
+                    "type": "integer",
+                    "description": "west edge from the house's west wall, millimetres"
+                  },
+                  "y_mm": {
+                    "type": "integer",
+                    "description": "south edge from the house's south wall, millimetres"
+                  },
+                  "w_mm": {
+                    "type": "integer",
+                    "description": "size west to east, millimetres"
+                  },
+                  "d_mm": {
+                    "type": "integer",
+                    "description": "size south to north, millimetres"
+                  }
+                },
+                "required": [
+                  "floor",
+                  "x_mm",
+                  "y_mm",
+                  "w_mm",
+                  "d_mm"
+                ]
+              }
+            }
+          },
+          "required": [
+            "width_mm",
+            "depth_mm",
+            "floors"
+          ]
+        }
+      },
+      "required": [
+        "spec"
+      ]
+    }
+  },
+  {
+    "name": "design.add_room",
+    "title": {
+      "zh": "画一个房间",
+      "kk": "Бөлме қосу",
+      "ru": "Добавить комнату"
+    },
+    "examples": {
+      "zh": "在西南角画一个三乘四米的卧室",
+      "kk": "Оңтүстік-батыс бұрышқа үшке төрт метр жатын бөлме қос",
+      "ru": "Добавь спальню три на четыре метра в юго-западном углу"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "living",
+            "bedroom",
+            "kitchen",
+            "bathroom",
+            "dining",
+            "custom"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "x_mm": {
+          "type": "integer"
+        },
+        "y_mm": {
+          "type": "integer"
+        },
+        "w_mm": {
+          "type": "integer"
+        },
+        "d_mm": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "x_mm",
+        "y_mm",
+        "w_mm",
+        "d_mm"
+      ]
+    }
+  },
+  {
+    "name": "design.split_room",
+    "title": {
+      "zh": "把房间分成两间",
+      "kk": "Бөлмені екіге бөлу",
+      "ru": "Разделить комнату на две"
+    },
+    "examples": {
+      "zh": "把这间从中间隔开",
+      "kk": "Бұл бөлмені ортасынан бөл",
+      "ru": "Раздели эту комнату пополам"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "room": {
+          "type": "string",
+          "entity": "room"
+        },
+        "wall": {
+          "type": "string",
+          "enum": [
+            "north_south",
+            "east_west"
+          ]
+        },
+        "at_mm": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "room",
+        "wall"
+      ]
+    }
+  },
+  {
     "name": "design.add_floor",
     "title": {
       "zh": "加一层楼",

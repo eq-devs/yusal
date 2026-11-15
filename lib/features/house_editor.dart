@@ -48,6 +48,7 @@ import '../render2d/site_plan_painter.dart';
 import '../motion/motion.dart';
 import '../voice/action.dart';
 import '../voice/actions_design.dart';
+import '../voice/actions_houses.dart';
 import '../voice/screen.dart';
 
 part 'editor/roof_picker.dart';
@@ -130,6 +131,21 @@ class _HouseEditorState extends State<HouseEditor>
 
   @override
   void endUndoGroup() => history.endGroup();
+
+  @override
+  void replaceDesign(HouseDocument doc) {
+    setState(() {
+      cancelDrag();
+      clearSelection();
+      if (history.commit(composeDocument(
+          history.present.meta, extractDesignState(doc)))) changed();
+      floorIndex = 0;
+      dropStaleWallState();
+    });
+  }
+
+  @override
+  Future<void> saveNow() => save();
 
   @override
   bool undoDesign() {

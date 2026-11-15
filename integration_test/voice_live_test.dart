@@ -49,7 +49,7 @@ void main() {
   /// Sends [text] through the voice bar and waits for the sentence to end.
   Future<void> say(WidgetTester t, String text) async {
     if (find.byKey(const Key('voice-input')).evaluate().isEmpty) {
-      await t.tap(find.byKey(const Key('voice-button')));
+      await t.longPress(find.byKey(const Key('voice-button')));
       await t.pumpAndSettle();
     }
     final field = t.widget<TextField>(find.byKey(const Key('voice-input')));

@@ -1,16 +1,14 @@
 import 'dart:typed_data';
 
 /// What speech needs from the server. yusal-api proxies the speech service
-/// (Kazakh only), so its key never ships in the app.
+/// (Kazakh only), so its key never ships in the app. Replies are shown as
+/// text, not read aloud.
 abstract interface class SpeechBackend {
   /// The text of a WAV recording; empty when nothing was said.
   Future<String> transcribe(Uint8List wav);
-
-  /// [text] read aloud, as WAV.
-  Future<Uint8List> synthesize(String text);
 }
 
-/// The microphone and the speaker.
+/// The microphone.
 abstract interface class AudioDevice {
   /// Starts recording; false when the microphone is not allowed.
   Future<bool> startRecording();
@@ -18,12 +16,14 @@ abstract interface class AudioDevice {
   /// Ends the recording and returns it as 16 kHz mono WAV.
   Future<Uint8List?> stopRecording();
 
-  Future<void> play(Uint8List wav);
-  Future<void> stopPlaying();
+  /// How loud the microphone hears, 0 (quiet) to 1 (loud), several times a
+  /// second while recording. For showing that the app is listening.
+  Stream<double> get levels;
+
   Future<void> dispose();
 }
 
-/// Push-to-talk: record a sentence, get its text, read the reply aloud.
+/// Push-to-talk: record a sentence and get its text.
 class Speech {
   const Speech(this.backend, this.audio);
   final SpeechBackend backend;
@@ -37,7 +37,4 @@ class Speech {
     if (wav == null || wav.isEmpty) return '';
     return backend.transcribe(wav);
   }
-
-  Future<void> speak(String text) async =>
-      audio.play(await backend.synthesize(text));
 }

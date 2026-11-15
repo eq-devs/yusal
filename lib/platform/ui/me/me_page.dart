@@ -170,8 +170,21 @@ class MePage extends StatelessWidget {
                                         icon: Icons.logout,
                                         title: tr3('退出登录', 'Шығу', 'Выйти'),
                                         trailing: const SizedBox.shrink(),
-                                        onTap: () => attempt(context,
-                                            () => context.repos.signOut())),
+                                        onTap: () async {
+                                          if (await confirmDialog(
+                                                  context,
+                                                  tr3('退出登录？', 'Шығасыз ба?',
+                                                      'Выйти из аккаунта?'),
+                                                  body: tr3(
+                                                      '本机的设计会保留，再次登录即可继续。',
+                                                      'Құрылғыдағы жобалар сақталады, қайта кірсеңіз жалғастырасыз.',
+                                                      'Проекты на этом устройстве сохранятся, войдите снова, чтобы продолжить.'),
+                                                  ok: tr3('退出', 'Шығу', 'Выйти')) &&
+                                              context.mounted) {
+                                            await attempt(context,
+                                                () => context.repos.signOut());
+                                          }
+                                        }),
                                     SettingsRow(
                                         key: const Key('me-delete-account'),
                                         icon: Icons.delete_outline,

@@ -1,17 +1,15 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 import 'speech.dart';
 
-/// The device's microphone and speaker through the `record` and
-/// `audioplayers` plugins. Both go through a file in the temp directory.
+/// The device's microphone through the `record` plugin, by way of a file
+/// in the temp directory.
 class PluginAudio implements AudioDevice {
   AudioRecorder? _recorder;
-  AudioPlayer? _player;
 
   Future<String> _file(String name) async =>
       '${(await getTemporaryDirectory()).path}/$name';
@@ -27,6 +25,13 @@ class PluginAudio implements AudioDevice {
     return true;
   }
 
+  // The plugin reports decibels below full scale: a quiet room is near
+  // -50, speech close to the phone near -10.
+  @override
+  Stream<double> get levels => (_recorder ??= AudioRecorder())
+      .onAmplitudeChanged(const Duration(milliseconds: 60))
+      .map((a) => ((a.current + 50) / 40).clamp(0.0, 1.0));
+
   @override
   Future<Uint8List?> stopRecording() async {
     final path = await _recorder?.stop();
@@ -38,18 +43,7 @@ class PluginAudio implements AudioDevice {
   }
 
   @override
-  Future<void> play(Uint8List wav) async {
-    final path = await _file('voice_out.wav');
-    await File(path).writeAsBytes(wav);
-    await (_player ??= AudioPlayer()).play(DeviceFileSource(path));
-  }
-
-  @override
-  Future<void> stopPlaying() async => _player?.stop();
-
-  @override
   Future<void> dispose() async {
     await _recorder?.dispose();
-    await _player?.dispose();
   }
 }

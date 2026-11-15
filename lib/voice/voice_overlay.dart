@@ -201,10 +201,11 @@ class _VoiceBarState extends State<VoiceBar>
     }, onError: (_) {});
   }
 
-  /// The orb: listen, or send what was said.
+  /// The orb: listen, or send what was said. Speaking while a sentence
+  /// is running interrupts it.
   Future<void> orb() async {
     if (widget.speech == null) return toggleTyping();
-    if (transcribing || s.busy) return;
+    if (transcribing) return;
     if (!listening) return startListening();
     await stopListening();
   }
@@ -268,7 +269,7 @@ class _VoiceBarState extends State<VoiceBar>
 
   void send([String? text]) {
     final t = (text ?? input.text).trim();
-    if (t.isEmpty || s.busy) return;
+    if (t.isEmpty) return;
     input.clear();
     expanded = false;
     // The answer takes the field's place beside the orb.

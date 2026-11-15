@@ -100,6 +100,10 @@ class VoiceBar extends StatefulWidget {
   /// How long a finished reply stays before the banner hides.
   static const showFor = Duration(seconds: 5);
 
+  /// How many open pages want the orb out of the way (the sign-in page:
+  /// its buttons reach the corner where the orb sits).
+  static final hidden = ValueNotifier<int>(0);
+
   @override
   State<VoiceBar> createState() => _VoiceBarState();
 }
@@ -138,6 +142,7 @@ class _VoiceBarState extends State<VoiceBar>
   void initState() {
     super.initState();
     s.addListener(_changed);
+    VoiceBar.hidden.addListener(_hiddenChanged);
     // The suggestions show only while the field is empty.
     input.addListener(() => setState(() {}));
   }
@@ -145,6 +150,7 @@ class _VoiceBarState extends State<VoiceBar>
   @override
   void dispose() {
     s.removeListener(_changed);
+    VoiceBar.hidden.removeListener(_hiddenChanged);
     limit?.cancel();
     hide?.cancel();
     levels?.cancel();
@@ -153,6 +159,10 @@ class _VoiceBarState extends State<VoiceBar>
     input.dispose();
     focus.dispose();
     super.dispose();
+  }
+
+  void _hiddenChanged() {
+    if (mounted) setState(() {});
   }
 
   void _changed() {
@@ -302,6 +312,7 @@ class _VoiceBarState extends State<VoiceBar>
 
   @override
   Widget build(BuildContext context) {
+    if (VoiceBar.hidden.value > 0 && !active) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final lang = AppSettings.instance.lang;

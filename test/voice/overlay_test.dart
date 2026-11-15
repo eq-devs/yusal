@@ -222,6 +222,21 @@ void main() {
     expect(find.byKey(const Key('voice-button')), findsNothing);
   });
 
+  testWidgets('the sign-in page has no orb over its buttons', (t) async {
+    await pump(t, VoiceMock(ScriptedBackend([])));
+    await t.pump();
+    expect(find.byKey(const Key('voice-button')), findsOneWidget);
+
+    // What the sign-in page does while it is open.
+    VoiceBar.hidden.value++;
+    await t.pump();
+    expect(find.byKey(const Key('voice-button')), findsNothing);
+
+    VoiceBar.hidden.value--;
+    await t.pump();
+    expect(find.byKey(const Key('voice-button')), findsOneWidget);
+  });
+
   testWidgets('an outbound action asks first and runs only on confirm',
       (t) async {
     var ran = 0;

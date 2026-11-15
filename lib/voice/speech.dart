@@ -16,6 +16,10 @@ abstract interface class AudioDevice {
   /// Ends the recording and returns it as 16 kHz mono WAV.
   Future<Uint8List?> stopRecording();
 
+  /// How loud the microphone hears, 0 (quiet) to 1 (loud), several times a
+  /// second while recording. For showing that the app is listening.
+  Stream<double> get levels;
+
   Future<void> dispose();
 }
 

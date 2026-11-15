@@ -57,6 +57,9 @@ class FakeAudio implements AudioDevice {
   Future<Uint8List?> stopRecording() async => Uint8List(4);
 
   @override
+  Stream<double> get levels => Stream.value(0.8);
+
+  @override
   Future<void> dispose() async => log.add('dispose');
 }
 

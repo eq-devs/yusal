@@ -105,18 +105,34 @@ class VoiceBar extends StatefulWidget {
 }
 
 class _VoiceBarState extends State<VoiceBar>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final input = TextEditingController();
   final focus = FocusNode();
   bool typing = false, listening = false, transcribing = false;
   bool bannerShown = false, expanded = false;
   String? speechNote;
   Timer? limit, hide;
-  late final glow = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 2400));
+  // One turn of the orb, and how loud the voice is (0 to 1).
+  late final glow = AnimationController(vsync: this, duration: _calm);
+  late final level = AnimationController(vsync: this);
+  StreamSubscription<double>? levels;
+  static const _calm = Duration(milliseconds: 7000);
+  static const _quick = Duration(milliseconds: 2600);
 
   VoiceSession get s => widget.session;
   bool get active => listening || transcribing || s.busy;
+
+  _Mood get mood => listening
+      ? _Mood.listening
+      : transcribing || s.busy
+          ? _Mood.thinking
+          : !bannerShown
+              ? _Mood.idle
+              : s.phase == VoicePhase.failed
+                  ? _Mood.failed
+                  : s.phase == VoicePhase.done
+                      ? _Mood.done
+                      : _Mood.idle;
 
   @override
   void initState() {
@@ -131,7 +147,9 @@ class _VoiceBarState extends State<VoiceBar>
     s.removeListener(_changed);
     limit?.cancel();
     hide?.cancel();
+    levels?.cancel();
     glow.dispose();
+    level.dispose();
     input.dispose();
     focus.dispose();
     super.dispose();
@@ -155,10 +173,32 @@ class _VoiceBarState extends State<VoiceBar>
   void _animate() {
     final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     if (active && !still) {
-      if (!glow.isAnimating) glow.repeat();
+      // Slow while listening, quicker while working.
+      final turn = listening ? _calm : _quick;
+      if (!glow.isAnimating || glow.duration != turn) {
+        glow.duration = turn;
+        glow.repeat();
+      }
     } else {
       glow.stop();
     }
+  }
+
+  /// The orb swells with the voice: quickly up, slowly down, eased between
+  /// the microphone's readings so it moves on every frame.
+  void _follow(bool on) {
+    levels?.cancel();
+    levels = null;
+    final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (!on || still) {
+      level.animateTo(0, duration: const Duration(milliseconds: 260));
+      return;
+    }
+    levels = widget.speech!.audio.levels.listen((v) {
+      level.animateTo(v,
+          duration: Duration(milliseconds: v > level.value ? 90 : 340),
+          curve: Curves.easeOut);
+    }, onError: (_) {});
   }
 
   /// The orb: listen, or send what was said.
@@ -191,12 +231,16 @@ class _VoiceBarState extends State<VoiceBar>
               'Разрешите доступ к микрофону в настройках');
     });
     _animate();
-    if (ok) limit = Timer(Speech.maxSentence, stopListening);
+    if (ok) {
+      _follow(true);
+      limit = Timer(Speech.maxSentence, stopListening);
+    }
   }
 
   Future<void> stopListening() async {
     if (!listening) return;
     limit?.cancel();
+    _follow(false);
     setState(() {
       listening = false;
       transcribing = true;
@@ -295,7 +339,7 @@ class _VoiceBarState extends State<VoiceBar>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(children: [
-                        _Orb(size: 26, glow: glow, busy: s.busy),
+                        _Orb(size: 26, glow: glow, mood: mood),
                         const SizedBox(width: 10),
                         Expanded(
                             child: Text(
@@ -410,6 +454,7 @@ class _VoiceBarState extends State<VoiceBar>
                 onTap: listening
                     ? () async {
                         limit?.cancel();
+                        _follow(false);
                         await widget.speech!.audio.stopRecording();
                         setState(() => listening = false);
                         _animate();
@@ -485,7 +530,8 @@ class _VoiceBarState extends State<VoiceBar>
                         child: _Orb(
                             size: 52,
                             glow: glow,
-                            busy: active,
+                            level: level,
+                            mood: mood,
                             icon: listening
                                 ? Icons.stop_rounded
                                 : typing && widget.speech == null
@@ -496,52 +542,130 @@ class _VoiceBarState extends State<VoiceBar>
   }
 }
 
-/// The assistant's orb: a colour wheel that turns and breathes while
-/// busy. The wheel is painted once and only moved by the compositor
-/// (rotation and scale), so the motion costs no repaint and nothing else
-/// on the page is redrawn.
+/// What the orb is doing; each has its own colours.
+enum _Mood { idle, listening, thinking, done, failed }
+
+/// The assistant's orb, in the app's colours of wood, clay and stone: a
+/// dark sphere with three soft lights turning inside it at different
+/// speeds, the way a phone assistant's does. It swells with the voice
+/// while listening, turns faster while working, and fades to green or red
+/// for an answer or a failure.
+///
+/// Every part is painted once and then only turned, scaled or faded by
+/// the compositor, so the motion repaints nothing, here or on the page.
 class _Orb extends StatelessWidget {
   const _Orb(
-      {required this.size, required this.glow, required this.busy, this.icon});
+      {required this.size,
+      required this.glow,
+      required this.mood,
+      this.level,
+      this.icon});
   final double size;
   final Animation<double> glow;
-  final bool busy;
+  final _Mood mood;
+
+  /// How loud the voice is, 0 to 1; the orb and its halo follow it.
+  final Animation<double>? level;
   final IconData? icon;
 
+  static const _amber = Color(0xffF0A63C),
+      _clay = Color(0xffC8552D),
+      _wood = Color(0xff9A6232),
+      _moss = Color(0xff5F9B72),
+      _stone = Color(0xffB9C4C6),
+      _red = Color(0xffE0483C);
+
+  static const _lights = {
+    _Mood.idle: [_amber, _clay, _stone],
+    _Mood.listening: [_amber, _clay, _moss],
+    _Mood.thinking: [_amber, _stone, _wood],
+    _Mood.done: [_moss, _amber, _moss],
+    _Mood.failed: [_red, _clay, _wood],
+  };
+
+  // Whole turns, so the loop has no seam.
+  static const _turns = [1.0, -2.0, 3.0];
+  static const _at = [
+    Alignment(0.5, -0.25),
+    Alignment(-0.45, 0.4),
+    Alignment(0.1, 0.55)
+  ];
+
   static final _breath = TweenSequence<double>([
-    TweenSequenceItem(tween: Tween(begin: 1, end: 1.08), weight: 1),
-    TweenSequenceItem(tween: Tween(begin: 1.08, end: 1), weight: 1),
-    TweenSequenceItem(tween: Tween(begin: 1, end: 1.08), weight: 1),
-    TweenSequenceItem(tween: Tween(begin: 1.08, end: 1), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: 1, end: 1.05), weight: 1),
+    TweenSequenceItem(tween: Tween(begin: 1.05, end: 1), weight: 1),
   ]);
+
+  Widget _disc(Gradient gradient) => DecoratedBox(
+      decoration: BoxDecoration(shape: BoxShape.circle, gradient: gradient),
+      child: const SizedBox.expand());
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final lights = _lights[mood]!;
+    final sphere = SizedBox.square(
+        dimension: size,
+        child: DecoratedBox(
+            decoration: BoxDecoration(shape: BoxShape.circle, boxShadow: [
+              BoxShadow(
+                  color: lights.first.withValues(alpha: 0.35),
+                  blurRadius: size * 0.22,
+                  offset: Offset(0, size * 0.06))
+            ]),
+            child: Stack(fit: StackFit.expand, children: [
+              _disc(const RadialGradient(
+                  colors: [Color(0xff4A3524), Color(0xff1F1610)])),
+              for (final (i, color) in lights.indexed)
+                RotationTransition(
+                    turns: glow.drive(Tween(begin: 0, end: _turns[i])),
+                    child: RepaintBoundary(
+                        child: _disc(RadialGradient(
+                            center: _at[i],
+                            radius: 0.62,
+                            colors: [
+                          color.withValues(alpha: 0.95),
+                          color.withValues(alpha: 0)
+                        ])))),
+              // A fixed highlight makes it a sphere, not a disc.
+              _disc(RadialGradient(
+                  center: const Alignment(-0.35, -0.5),
+                  radius: 0.55,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.38),
+                    Colors.white.withValues(alpha: 0)
+                  ])),
+            ])));
+    // The colours of one mood fade into the next.
+    Widget orb = ScaleTransition(
+        scale: glow.drive(_breath),
+        child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 380),
+            child: KeyedSubtree(key: ValueKey(mood), child: sphere)));
+    final level = this.level;
+    if (level != null) {
+      orb = Stack(alignment: Alignment.center, children: [
+        // A halo that grows with the voice.
+        FadeTransition(
+            opacity: level.drive(Tween(begin: 0, end: 0.45)),
+            child: ScaleTransition(
+                scale: level.drive(Tween(begin: 1, end: 1.7)),
+                child: RepaintBoundary(
+                    child: SizedBox.square(
+                        dimension: size,
+                        child: _disc(RadialGradient(colors: [
+                          _amber,
+                          _amber.withValues(alpha: 0)
+                        ], stops: const [
+                          0.55,
+                          1
+                        ])))))),
+        ScaleTransition(
+            scale: level.drive(Tween(begin: 1, end: 1.22)), child: orb),
+      ]);
+    }
     return Stack(alignment: Alignment.center, children: [
-      ScaleTransition(
-          scale: glow.drive(_breath),
-          child: RotationTransition(
-              turns: glow,
-              child: RepaintBoundary(
-                  child: Container(
-                      width: size,
-                      height: size,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: SweepGradient(colors: [
-                            colors.primary,
-                            colors.tertiary,
-                            colors.secondary,
-                            colors.primary
-                          ]),
-                          boxShadow: [
-                            BoxShadow(
-                                color: colors.primary
-                                    .withValues(alpha: busy ? 0.45 : 0.25),
-                                blurRadius: 8)
-                          ]))))),
-      if (icon != null) Icon(icon, color: colors.onPrimary, size: size * 0.5),
+      orb,
+      if (icon != null) Icon(icon, color: Colors.white, size: size * 0.46),
     ]);
   }
 }

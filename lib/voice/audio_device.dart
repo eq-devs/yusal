@@ -25,6 +25,13 @@ class PluginAudio implements AudioDevice {
     return true;
   }
 
+  // The plugin reports decibels below full scale: a quiet room is near
+  // -50, speech close to the phone near -10.
+  @override
+  Stream<double> get levels => (_recorder ??= AudioRecorder())
+      .onAmplitudeChanged(const Duration(milliseconds: 60))
+      .map((a) => ((a.current + 50) / 40).clamp(0.0, 1.0));
+
   @override
   Future<Uint8List?> stopRecording() async {
     final path = await _recorder?.stop();

@@ -10,8 +10,10 @@ import '../widgets.dart';
 import 'profile_edit_page.dart';
 
 class _ProfileData {
-  _ProfileData(this.profile, this.stats, this.owner, this.reviews);
+  _ProfileData(this.profile, this.stats, this.owner, this.reviews,
+      {this.favourite = false});
   final ServiceProfile? profile;
+  final bool favourite;
   final ProfileStats? stats;
   final Account? owner;
   final List<Review> reviews;
@@ -30,12 +32,14 @@ class ProfilePage extends StatelessWidget {
         load: (r) async {
           final p = await r.profile(profileId);
           if (p == null) return _ProfileData(null, null, null, const []);
-          final (stats, owner, reviews) = await (
+          final (stats, owner, reviews, favs) = await (
             r.stats(p.id),
             r.account(p.ownerId),
-            r.reviewsAbout(p.ownerId)
+            r.reviewsAbout(p.ownerId),
+            r.favourites()
           ).wait;
-          return _ProfileData(p, stats, owner, reviews);
+          return _ProfileData(p, stats, owner, reviews,
+              favourite: favs.contains(p.id));
         },
         loading: const SkeletonPage(avatar: true),
         builder: (context, data) => data.profile == null
@@ -91,7 +95,20 @@ class _ProfileView extends StatelessWidget {
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () =>
                     pushPage<void>(context, (_) => ProfileEditPage(profile: p)))
-          else
+          else ...[
+            IconButton(
+                key: const Key('profile-favourite'),
+                tooltip: data.favourite
+                    ? tr3('取消收藏', 'Таңдаулыдан алу', 'Убрать из избранного')
+                    : tr3('收藏', 'Таңдаулы', 'В избранное'),
+                icon: Icon(
+                    data.favourite ? Icons.favorite : Icons.favorite_border,
+                    color: data.favourite ? t.accent : null),
+                onPressed: () async {
+                  if (!await requireLogin(context) || !context.mounted) return;
+                  await attempt(
+                      context, () => context.repos.toggleFavourite(p.id));
+                }),
             PopupMenuButton<String>(
                 onSelected: (v) async {
                   if (v == 'report') {
@@ -119,6 +136,7 @@ class _ProfileView extends StatelessWidget {
                           value: 'block',
                           child: Text(tr3('拉黑', 'Бұғаттау', 'Заблокировать'))),
                     ]),
+          ],
         ],
         bottom: mine
             ? BusyButton(

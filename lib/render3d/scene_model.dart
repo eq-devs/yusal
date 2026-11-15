@@ -6,6 +6,7 @@ import '../core/document/house_document.dart';
 import '../core/geometry/derived_house.dart';
 import '../core/geometry/floor_base.dart';
 import 'bsp.dart';
+import 'scene_cleanup.dart';
 import 'textures.dart';
 
 /// World space for the 3D views, in metres: x to the right of the plan,
@@ -50,8 +51,28 @@ class Face3 {
       this.covering = false,
       this.textile,
       this.textileVariant = 0,
-      this.uv})
+      this.uv,
+      this.capOnly = false})
       : normal = normal ?? _normal(points);
+
+  /// The same face over [pts] (a piece of it, or several merged).
+  Face3 withPoints(List<Vec3> pts) => Face3(pts, color,
+      alpha: alpha,
+      layer: layer,
+      source: source,
+      doubleSided: doubleSided,
+      glow: glow,
+      roof: roof,
+      furniture: furniture,
+      floorIndex: floorIndex,
+      normal: normal,
+      castsShadow: castsShadow,
+      interior: interior,
+      covering: covering,
+      textile: textile,
+      textileVariant: textileVariant,
+      capOnly: capOnly)
+    ..enclosed = enclosed;
   final List<Vec3> points;
   final Vec3 normal;
   final Color color;
@@ -76,15 +97,47 @@ class Face3 {
   /// Floor the face belongs to; −1 for the roof above the top floor.
   final int floorIndex;
 
+  /// The top of a wall that the floor above stands on: drawn only while
+  /// that floor is hidden, so the cut-off walls read as solid.
+  final bool capOnly;
+
+  /// An inside face within the outer walls: with the shell closed it can
+  /// only be seen through a window or doorway (see [SceneModel.portals]).
+  bool enclosed = false;
+
   static Vec3 _normal(List<Vec3> p) {
     var n = const Vec3(0, 0, 0);
     for (var i = 0; i < p.length; i++) {
       final a = p[i], b = p[(i + 1) % p.length];
-      n = n + Vec3((a.y - b.y) * (a.z + b.z), (a.z - b.z) * (a.x + b.x),
-          (a.x - b.x) * (a.y + b.y));
+      n = n +
+          Vec3((a.y - b.y) * (a.z + b.z), (a.z - b.z) * (a.x + b.x),
+              (a.x - b.x) * (a.y + b.y));
     }
     return n.unit;
   }
+}
+
+/// A solid, opaque box: faces lying flat against it from outside are
+/// hidden whenever it shows (see [cleanFaces]).
+class SolidBox {
+  const SolidBox(this.lo, this.hi,
+      {required this.floor,
+      required this.roof,
+      required this.furniture,
+      required this.layer,
+      this.source});
+  final Vec3 lo, hi;
+  final int floor;
+  final bool roof, furniture;
+  final Layer3 layer;
+  final SourceRef? source;
+}
+
+/// A window or doorway hole in the outer walls, corner to corner.
+class Portal {
+  const Portal(this.lo, this.hi, this.floorIndex);
+  final Vec3 lo, hi;
+  final int floorIndex;
 }
 
 class Line3 {
@@ -130,10 +183,26 @@ class SceneOptions {
 }
 
 class SceneModel {
-  SceneModel(this.faces, this.lines, this.labels, this.colliders,
-      this.elevations, this.width, this.depth, this.height, this.groundLevel,
+  SceneModel(
+      this.faces,
+      this.lines,
+      this.labels,
+      this.colliders,
+      this.elevations,
+      this.width,
+      this.depth,
+      this.height,
+      this.groundLevel,
       this.frontZ);
   final List<Face3> faces;
+
+  /// Openings in the outer walls (and see-through outer walls): with the
+  /// roof on, the only places enclosed faces can be seen through.
+  final portals = <Portal>[];
+
+  /// Solid wall pieces, for filling the section where the cut plane
+  /// passes through them.
+  final sections = <SolidBox>[];
   final List<Line3> lines;
   final List<Label3> labels;
   final List<Collider> colliders;
@@ -158,8 +227,10 @@ class SceneModel {
     for (final f in faces) {
       if (f.layer == Layer3.buried || f.layer == Layer3.ground) continue;
       for (final p in f.points) {
-        lo = Vec3(math.min(lo.x, p.x), math.min(lo.y, p.y), math.min(lo.z, p.z));
-        hi = Vec3(math.max(hi.x, p.x), math.max(hi.y, p.y), math.max(hi.z, p.z));
+        lo =
+            Vec3(math.min(lo.x, p.x), math.min(lo.y, p.y), math.min(lo.z, p.z));
+        hi =
+            Vec3(math.max(hi.x, p.x), math.max(hi.y, p.y), math.max(hi.z, p.z));
       }
     }
     if (!lo.x.isFinite) {
@@ -211,9 +282,21 @@ class Mat {
     Color(0xff2C1A12),
     Color(0xff7A1B1B)
   ];
-  static const wallRugs = [Color(0xff2B0E16), Color(0xff14233A), Color(0xff3B1A10)];
-  static const korpe = [Color(0xffB0302A), Color(0xff7A2338), Color(0xff2E6A8E)];
-  static const sandyq = [Color(0xff7A1E1E), Color(0xff1F5E63), Color(0xff5E3A1E)];
+  static const wallRugs = [
+    Color(0xff2B0E16),
+    Color(0xff14233A),
+    Color(0xff3B1A10)
+  ];
+  static const korpe = [
+    Color(0xffB0302A),
+    Color(0xff7A2338),
+    Color(0xff2E6A8E)
+  ];
+  static const sandyq = [
+    Color(0xff7A1E1E),
+    Color(0xff1F5E63),
+    Color(0xff5E3A1E)
+  ];
 }
 
 SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
@@ -223,6 +306,11 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
   final lines = <Line3>[];
   final labels = <Label3>[];
   final colliders = <Collider>[];
+  final solids = <SolidBox>[];
+  final portals = <Portal>[];
+  final sections = <SolidBox>[];
+  // Inside of each floor (world x / z), for telling enclosed faces.
+  final insides = <int, List<(double, double, double, double)>>{};
   final w = doc.footprint.width / 1000, d = doc.footprint.depth / 1000;
   final spec = doc.extras.foundation;
   final gl = -spec.plinth / 1000;
@@ -243,6 +331,7 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       bool glow = false,
       bool interior = false,
       bool covering = false,
+      bool capTop = false,
       Textile? textile,
       int variant = 0}) {
     if (x1 - x0 <= 1e-4 || y1 - y0 <= 1e-4 || z1 - z0 <= 1e-4) return;
@@ -258,29 +347,35 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       if (textile == null) return null;
       if (tile == null)
         return const [Offset(0, 0), Offset(0, 1), Offset(1, 1), Offset(1, 0)];
-      final v = (pts[1] - pts[0]).length / tile, u = (pts[3] - pts[0]).length / tile;
+      final v = (pts[1] - pts[0]).length / tile,
+          u = (pts[3] - pts[0]).length / tile;
       return [Offset.zero, Offset(0, v), Offset(u, v), Offset(u, 0)];
     }
 
-    void f(List<Vec3> pts, {Layer3? l}) => faces.add(Face3(pts, color,
-        textile: textile,
-        textileVariant: variant,
-        uv: uvFor(pts),
-        alpha: alpha,
-        layer: l ?? layer,
-        source: source,
-        roof: roof,
-        furniture: furniture,
-        floorIndex: floor,
-        castsShadow: shadow,
-        glow: glow,
-        interior: interior || furniture,
-        covering: covering));
+    if (alpha >= 1 && !glow)
+      solids.add(SolidBox(Vec3(x0, y0, z0), Vec3(x1, y1, z1),
+          floor: floor, roof: roof, furniture: furniture, layer: layer));
+    void f(List<Vec3> pts, {Layer3? l, bool cap = false}) =>
+        faces.add(Face3(pts, color,
+            capOnly: cap,
+            textile: textile,
+            textileVariant: variant,
+            uv: uvFor(pts),
+            alpha: alpha,
+            layer: l ?? layer,
+            source: source,
+            roof: roof,
+            furniture: furniture,
+            floorIndex: floor,
+            castsShadow: shadow,
+            glow: glow,
+            interior: interior || furniture,
+            covering: covering));
     // Counter-clockwise seen from outside.
     if (top)
-      f([p(x0, y1, z0), p(x0, y1, z1), p(x1, y1, z1), p(x1, y1, z0)]);
-    if (bottom)
-      f([p(x0, y0, z0), p(x1, y0, z0), p(x1, y0, z1), p(x0, y0, z1)]);
+      f([p(x0, y1, z0), p(x0, y1, z1), p(x1, y1, z1), p(x1, y1, z0)],
+          cap: capTop);
+    if (bottom) f([p(x0, y0, z0), p(x1, y0, z0), p(x1, y0, z1), p(x0, y0, z1)]);
     f([p(x0, y0, z1), p(x1, y0, z1), p(x1, y1, z1), p(x0, y1, z1)]); // +z
     f([p(x1, y0, z0), p(x0, y0, z0), p(x0, y1, z0), p(x1, y1, z0)]); // −z
     f([p(x1, y0, z1), p(x1, y0, z0), p(x1, y1, z0), p(x1, y1, z1)]); // +x
@@ -300,7 +395,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
           bool bottom = false,
           bool glow = false,
           bool interior = false,
-          bool covering = false}) =>
+          bool covering = false,
+          bool capTop = false}) =>
       box(px(r.left), y0, pz(r.top), px(r.right), y1, pz(r.bottom), color,
           alpha: alpha,
           layer: layer,
@@ -313,7 +409,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
           bottom: bottom,
           glow: glow,
           interior: interior,
-          covering: covering);
+          covering: covering,
+          capTop: capTop);
 
   final elevations = <double>[];
   var elevation = 0.0;
@@ -334,7 +431,17 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
                 doc.footprint.depth.toDouble())
           ]
         : insideRects(g.base);
-    for (final r in outline)
+    insides[f] = [
+      for (final r in outline)
+        (px(r.left), pz(r.top), px(r.right), pz(r.bottom))
+    ];
+    // An upper slab stops at the outer walls' inner faces: run on to the
+    // outside it showed on the facade as a grey band fighting the walls.
+    final outerRects = [
+      for (final w in wallsOf(g.base, spec))
+        if (w.role == WallRole.exterior) w.rect
+    ];
+    for (final r in f == 0 ? outline : _subtract(outline, outerRects))
       planBox(r, elevation - slab, elevation, Mat.slab,
           layer: f == 0 ? Layer3.floorSurface : Layer3.sorted,
           floor: f,
@@ -384,38 +491,71 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
             e.vertices.map((v) => v.z).reduce(math.min) / 1000
           )
     ];
+    final outerWalls = [
+      for (final w in walls)
+        if (w.role == WallRole.exterior) w.rect
+    ];
     for (final e in derived.scene3d
         .where((e) => e.floorIndex == f && e.kind == 'WallPiece')) {
-      final xs = e.vertices.map((v) => v.x), ys = e.vertices.map((v) => v.y),
+      final xs = e.vertices.map((v) => v.x),
+          ys = e.vertices.map((v) => v.y),
           zs = e.vertices.map((v) => v.z);
-      final r = PlanRect(xs.reduce(math.min), ys.reduce(math.min),
+      final whole = PlanRect(xs.reduce(math.min), ys.reduce(math.min),
           xs.reduce(math.max), ys.reduce(math.max));
-      final z0 = zs.reduce(math.min) / 1000, z1 = zs.reduce(math.max) / 1000;
       final source = e.source as WallSource?;
-      final info = walls
-          .where((w) => w.segment.ref == source?.wall)
-          .firstOrNull;
-      final color = e.materialRole == 'wallTemporary'
-          ? Mat.part
-          : switch (info?.role) {
-              WallRole.bearing => Mat.bear,
-              WallRole.partition => Mat.part,
-              _ => Mat.wall
-            };
-      final covered = above.any((a) =>
-          (a.$2 - z1).abs() < slab + 0.02 &&
-          a.$1.left <= r.left + 1 &&
-          a.$1.right >= r.right - 1 &&
-          a.$1.bottom <= r.bottom + 1 &&
-          a.$1.top >= r.top - 1);
-      planBox(r, z0, z1, color,
-          alpha: e.materialRole == 'wallTemporary' ? 0.45 : 1,
-          source: source,
-          floor: f,
-          top: !covered,
-          interior: info?.role != WallRole.exterior);
-      if (z0 - elevation < 0.3 && z1 - elevation > 0.3)
-        colliders.add(Collider(px(r.left), pz(r.top), px(r.right), pz(r.bottom), f));
+      final info =
+          walls.where((w) => w.segment.ref == source?.wall).firstOrNull;
+      // An inner wall runs on through the outer wall it meets, to the
+      // outside face; that end would show on the facade as a strip of
+      // another colour fighting with the outer wall. Stop it at the
+      // outer wall's inner face.
+      final cut = info?.role == WallRole.exterior
+          ? const <PlanRect>[]
+          : [
+              for (final o in outerWalls)
+                if (o.left < whole.right &&
+                    o.right > whole.left &&
+                    o.bottom < whole.top &&
+                    o.top > whole.bottom)
+                  o
+            ];
+      for (final r in cut.isEmpty ? [whole] : _subtract([whole], cut)) {
+        final z0 = zs.reduce(math.min) / 1000, z1 = zs.reduce(math.max) / 1000;
+        final color = e.materialRole == 'wallTemporary'
+            ? Mat.part
+            : switch (info?.role) {
+                WallRole.bearing => Mat.bear,
+                WallRole.partition => Mat.part,
+                _ => Mat.wall
+              };
+        final covered = above.any((a) =>
+            (a.$2 - z1).abs() < slab + 0.02 &&
+            a.$1.left <= r.left + 1 &&
+            a.$1.right >= r.right - 1 &&
+            a.$1.bottom <= r.bottom + 1 &&
+            a.$1.top >= r.top - 1);
+        if (e.materialRole == 'wallTemporary' &&
+            info?.role == WallRole.exterior)
+          portals.add(Portal(Vec3(px(r.left), z0, pz(r.top)),
+              Vec3(px(r.right), z1, pz(r.bottom)), f));
+        if (e.materialRole != 'wallTemporary')
+          sections.add(SolidBox(Vec3(px(r.left), z0, pz(r.top)),
+              Vec3(px(r.right), z1, pz(r.bottom)),
+              floor: f,
+              roof: false,
+              furniture: false,
+              layer: Layer3.sorted,
+              source: source));
+        planBox(r, z0, z1, color,
+            alpha: e.materialRole == 'wallTemporary' ? 0.45 : 1,
+            source: source,
+            floor: f,
+            capTop: covered,
+            interior: info?.role != WallRole.exterior);
+        if (z0 - elevation < 0.3 && z1 - elevation > 0.3)
+          colliders.add(
+              Collider(px(r.left), pz(r.top), px(r.right), pz(r.bottom), f));
+      }
     }
     // Plinth under the exterior walls of the ground floor.
     if (f == 0)
@@ -428,7 +568,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
     // Windows (glass + frame) and doors (leaf swung open).
     for (final p in g.openings.where((p) => p.status == 'ok')) {
       final o = p.opening, horizontal = p.axis.dir == AxisDir.H;
-      final hostIndex = g.base.wallSegments.indexWhere((s) => s.ref == p.host!.ref);
+      final hostIndex =
+          g.base.wallSegments.indexWhere((s) => s.ref == p.host!.ref);
       final host = g.base.wallRects[hostIndex];
       final c0 = horizontal ? host.bottom : host.left,
           c1 = horizontal ? host.top : host.right;
@@ -436,15 +577,27 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       final y0 = elevation + o.sill / 1000, y1 = y0 + o.height / 1000;
       final source = OpeningSource(o.id);
       final inner = p.host?.kind != 'exterior';
-      void along(double a0, double a1, double ya, double yb, double t,
-          Color color,
+      if (!inner) {
+        final hole = horizontal
+            ? PlanRect(p.start, c0, p.end, c1)
+            : PlanRect(c0, p.start, c1, p.end);
+        portals.add(Portal(Vec3(px(hole.left), y0, pz(hole.top)),
+            Vec3(px(hole.right), y1, pz(hole.bottom)), f));
+      }
+      void along(
+          double a0, double a1, double ya, double yb, double t, Color color,
           {double alpha = 1, bool glow = false, bool doubleSided = false}) {
         final r = horizontal
             ? PlanRect(a0, c - t / 2, a1, c + t / 2)
             : PlanRect(c - t / 2, a0, c + t / 2, a1);
         planBox(r, ya, yb, color,
-            alpha: alpha, source: source, floor: f, glow: glow,
-            bottom: true, shadow: !glow, interior: inner);
+            alpha: alpha,
+            source: source,
+            floor: f,
+            glow: glow,
+            bottom: true,
+            shadow: !glow,
+            interior: inner);
       }
 
       if (o is DoorOpening) {
@@ -487,8 +640,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
         final r = horizontal
             ? PlanRect(p.start - 50, out < 0 ? fz - 80 : fz, p.end + 50,
                 out < 0 ? fz : fz + 80)
-            : PlanRect(out < 0 ? fz - 80 : fz, p.start - 50, out < 0 ? fz : fz + 80,
-                p.end + 50);
+            : PlanRect(out < 0 ? fz - 80 : fz, p.start - 50,
+                out < 0 ? fz : fz + 80, p.end + 50);
         planBox(r, y0 - 0.04, y0, Mat.plinth, floor: f);
       }
     }
@@ -519,7 +672,9 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
   final top = elevation;
   final showRoof = options.roof && visibleFloors >= doc.floors.length - 1;
   final roof = doc.roof;
-  if (showRoof && !options.walk) {
+  // Built for the walk-through too: from outside, the house must not
+  // lose its roof (it is hidden again once the walker steps inside).
+  if (showRoof) {
     if (roof.type == RoofType.flat) {
       // Slab on the walls, insulation and membrane inside the parapet,
       // scuppers and downpipes at the back, a roof hatch.
@@ -548,9 +703,14 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
           for (final r in _joinRuns(outer)) {
             planBox(r, rs, top + parH, Mat.bear,
                 roof: true, floor: -1, covering: true);
-            planBox(PlanRect(r.left - 40, r.bottom - 40, r.right + 40, r.top + 40),
-                top + parH, top + parH + 0.05, Mat.coping,
-                roof: true, floor: -1, covering: true);
+            planBox(
+                PlanRect(r.left - 40, r.bottom - 40, r.right + 40, r.top + 40),
+                top + parH,
+                top + parH + 0.05,
+                Mat.coping,
+                roof: true,
+                floor: -1,
+                covering: true);
           }
         final hatch = rects.reduce((a, b) => a.area >= b.area ? a : b);
         final cx = (hatch.left + hatch.right) / 2,
@@ -559,33 +719,33 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
             Mat.coping,
             roof: true, floor: -1, covering: true);
       } else {
-      box(0, top, 0, w, rs, d, Mat.wall,
-          roof: true, floor: -1, covering: true);
-      box(parT, rs, parT, w - parT, rt, d - parT, Mat.membrane,
-          roof: true, floor: -1, covering: true);
-      if (parH > slab)
-        for (final (x0, z0, x1, z1) in [
-          (0.0, 0.0, w, parT),
-          (0.0, d - parT, w, d),
-          (0.0, parT, parT, d - parT),
-          (w - parT, parT, w, d - parT)
-        ]) {
-          box(x0, rs, z0, x1, top + parH, z1, Mat.bear,
-              roof: true, floor: -1, covering: true);
-          box(x0 - 0.04, top + parH, z0 - 0.04, x1 + 0.04, top + parH + 0.05,
-              z1 + 0.04, Mat.coping,
-              roof: true, floor: -1, covering: true);
+        box(0, top, 0, w, rs, d, Mat.wall,
+            roof: true, floor: -1, covering: true);
+        box(parT, rs, parT, w - parT, rt, d - parT, Mat.membrane,
+            roof: true, floor: -1, covering: true);
+        if (parH > slab)
+          for (final (x0, z0, x1, z1) in [
+            (0.0, 0.0, w, parT),
+            (0.0, d - parT, w, d),
+            (0.0, parT, parT, d - parT),
+            (w - parT, parT, w, d - parT)
+          ]) {
+            box(x0, rs, z0, x1, top + parH, z1, Mat.bear,
+                roof: true, floor: -1, covering: true);
+            box(x0 - 0.04, top + parH, z0 - 0.04, x1 + 0.04, top + parH + 0.05,
+                z1 + 0.04, Mat.coping,
+                roof: true, floor: -1, covering: true);
+          }
+        for (final x in [1.5, w - 1.5]) {
+          if (x < 0.5 || x > w - 0.5) continue;
+          box(x - 0.15, rt, -0.18, x + 0.15, rt + 0.12, parT, Mat.coping,
+              roof: true, floor: -1);
+          box(x - 0.06, gl, -0.35, x + 0.06, rt + 0.1, -0.23, Mat.pipe,
+              roof: true, floor: -1);
         }
-      for (final x in [1.5, w - 1.5]) {
-        if (x < 0.5 || x > w - 0.5) continue;
-        box(x - 0.15, rt, -0.18, x + 0.15, rt + 0.12, parT, Mat.coping,
-            roof: true, floor: -1);
-        box(x - 0.06, gl, -0.35, x + 0.06, rt + 0.1, -0.23, Mat.pipe,
-            roof: true, floor: -1);
-      }
-      box(w / 2 - 0.4, rt, d / 2 - 0.4, w / 2 + 0.4, rt + 0.35, d / 2 + 0.4,
-          Mat.coping,
-          roof: true, floor: -1, covering: true);
+        box(w / 2 - 0.4, rt, d / 2 - 0.4, w / 2 + 0.4, rt + 0.35, d / 2 + 0.4,
+            Mat.coping,
+            roof: true, floor: -1, covering: true);
       }
     } else {
       for (final e in derived.scene3d.where((e) => e.floorIndex == -1)) {
@@ -625,7 +785,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       final horizontal = s.wall.horizontal;
       final a0 = horizontal ? px(r.left) : pz(r.top),
           a1 = horizontal ? px(r.right) : pz(r.bottom);
-      final cc = horizontal ? pz((r.bottom + r.top) / 2) : px((r.left + r.right) / 2);
+      final cc =
+          horizontal ? pz((r.bottom + r.top) / 2) : px((r.left + r.right) / 2);
       final half = s.width / 2000 - cover;
       final bars = main ? math.max(spec.topBars, spec.bottomBars) : 2;
       for (final y in [-hh + cover, -cover])
@@ -661,7 +822,13 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       final h = siteHeights[item.kind]! / 1000;
       switch (item.kind) {
         case SiteKind.garden || SiteKind.yard || SiteKind.septic:
-          box(x0, gl, z0, x1, gl + h, z1,
+          box(
+              x0,
+              gl,
+              z0,
+              x1,
+              gl + h,
+              z1,
               item.kind == SiteKind.garden
                   ? Mat.garden
                   : item.kind == SiteKind.yard
@@ -759,8 +926,19 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       .firstOrNull;
   var frontZ = 1.0;
   if (entrance != null && entrance.axis.id == '@top') frontZ = -1.0;
-  return SceneModel(faces, lines, labels, colliders, elevations, w, d,
-      math.max(top, 1), gl, frontZ);
+  for (final face in faces) {
+    if (!face.interior || face.floorIndex < 0) continue;
+    final rects = insides[face.floorIndex] ?? const [];
+    face.enclosed = face.points.every((p) => rects.any((r) =>
+        p.x >= r.$1 - 0.01 &&
+        p.x <= r.$3 + 0.01 &&
+        p.z >= r.$2 - 0.01 &&
+        p.z <= r.$4 + 0.01));
+  }
+  return SceneModel(cleanFaces(faces, solids), lines, labels, colliders,
+      elevations, w, d, math.max(top, 1), gl, frontZ)
+    ..portals.addAll(portals)
+    ..sections.addAll(sections);
 }
 
 /// Rectangles on the same line that touch or overlap, joined into runs.
@@ -770,8 +948,14 @@ List<PlanRect> _joinRuns(List<PlanRect> rects) {
       ? a.left.compareTo(b.left)
       : a.bottom.compareTo(b.bottom))) {
     final i = out.indexWhere((o) =>
-        (o.bottom == r.bottom && o.top == r.top && r.left <= o.right && o.left <= r.right) ||
-        (o.left == r.left && o.right == r.right && r.bottom <= o.top && o.bottom <= r.top));
+        (o.bottom == r.bottom &&
+            o.top == r.top &&
+            r.left <= o.right &&
+            o.left <= r.right) ||
+        (o.left == r.left &&
+            o.right == r.right &&
+            r.bottom <= o.top &&
+            o.bottom <= r.top));
     if (i < 0) {
       out.add(r);
     } else {
@@ -785,9 +969,13 @@ List<PlanRect> _joinRuns(List<PlanRect> rects) {
 
 /// [area] less [holes], as rectangles merged row by row.
 List<PlanRect> _subtract(List<PlanRect> area, List<PlanRect> holes) {
-  final xs = {for (final r in [...area, ...holes]) ...[r.left, r.right]}.toList()
+  final xs = {
+    for (final r in [...area, ...holes]) ...[r.left, r.right]
+  }.toList()
     ..sort();
-  final ys = {for (final r in [...area, ...holes]) ...[r.bottom, r.top]}.toList()
+  final ys = {
+    for (final r in [...area, ...holes]) ...[r.bottom, r.top]
+  }.toList()
     ..sort();
   bool keep(int i, int j) {
     final x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2;
@@ -886,15 +1074,18 @@ void furnitureFaces(FurnitureItem item, double elevation, int floor, _BoxFn box,
                   cz + rr * math.sin(k * 2 * math.pi / n))
           ];
       final topRing = ring(y0 + h, r), midRing = ring(y0 + h - 0.05, r);
-      final legTop = ring(y0 + h - 0.05, r * 0.75), legBottom = ring(y0, r * 0.8);
+      final legTop = ring(y0 + h - 0.05, r * 0.75),
+          legBottom = ring(y0, r * 0.8);
       faces.add(Face3(topRing.reversed.toList(), Mat.dastTop,
           source: source, furniture: true, floorIndex: floor));
       for (var k = 0; k < n; k++) {
         final k1 = (k + 1) % n;
-        faces.add(Face3([topRing[k], topRing[k1], midRing[k1], midRing[k]],
-            Mat.dastTop, source: source, furniture: true, floorIndex: floor));
-        faces.add(Face3([legTop[k], legTop[k1], legBottom[k1], legBottom[k]],
-            Mat.table, source: source, furniture: true, floorIndex: floor));
+        faces.add(Face3(
+            [topRing[k], topRing[k1], midRing[k1], midRing[k]], Mat.dastTop,
+            source: source, furniture: true, floorIndex: floor));
+        faces.add(Face3(
+            [legTop[k], legTop[k1], legBottom[k1], legBottom[k]], Mat.table,
+            source: source, furniture: true, floorIndex: floor));
       }
     case FurnitureKind.sandyq:
       b(x0, y0, z0, x1, y0 + h, z1, Mat.sandyq[v],
@@ -912,12 +1103,14 @@ void furnitureFaces(FurnitureItem item, double elevation, int floor, _BoxFn box,
       // Patchwork quilt and a pillow.
       if (long) {
         b(x0 + 0.04, y0 + h, z0 + 0.04, x1 - 0.42, y0 + h + 0.06, z1 - 0.04,
-            Mat.korpe[2], textile: Textile.kurak, variant: 2);
+            Mat.korpe[2],
+            textile: Textile.kurak, variant: 2);
         b(x1 - 0.38, y0 + h, z0 + 0.12, x1 - 0.06, y0 + h + 0.14, z1 - 0.12,
             Mat.korpe[1]);
       } else {
         b(x0 + 0.04, y0 + h, z0 + 0.42, x1 - 0.04, y0 + h + 0.06, z1 - 0.04,
-            Mat.korpe[2], textile: Textile.kurak, variant: 2);
+            Mat.korpe[2],
+            textile: Textile.kurak, variant: 2);
         b(x0 + 0.12, y0 + h, z0 + 0.06, x1 - 0.12, y0 + h + 0.14, z0 + 0.38,
             Mat.korpe[1]);
       }
@@ -927,12 +1120,14 @@ void furnitureFaces(FurnitureItem item, double elevation, int floor, _BoxFn box,
       long
           ? b(x0, y0 + h * 0.5, z0, x1, y0 + h, z0 + 0.2, Mat.sofa)
           : b(x0, y0 + h * 0.5, z0, x0 + 0.2, y0 + h, z1, Mat.sofa);
-    case FurnitureKind.table ||
-          FurnitureKind.diningTable ||
-          FurnitureKind.desk:
+    case FurnitureKind.table || FurnitureKind.diningTable || FurnitureKind.desk:
       b(x0, y0 + h - 0.04, z0, x1, y0 + h, z1, Mat.table);
-      for (final (lx, lz) in [(x0, z0), (x1 - 0.05, z0), (x0, z1 - 0.05), (x1 - 0.05, z1 - 0.05)])
-        b(lx, y0, lz, lx + 0.05, y0 + h - 0.04, lz + 0.05, Mat.table);
+      for (final (lx, lz) in [
+        (x0, z0),
+        (x1 - 0.05, z0),
+        (x0, z1 - 0.05),
+        (x1 - 0.05, z1 - 0.05)
+      ]) b(lx, y0, lz, lx + 0.05, y0 + h - 0.04, lz + 0.05, Mat.table);
     case FurnitureKind.terrace || FurnitureKind.porch:
       b(x0, y0 - 0.25, z0, x1, y0 + h - 0.25, z1, Mat.deck);
     default:

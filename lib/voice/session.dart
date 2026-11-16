@@ -22,13 +22,15 @@ class VoiceTurn {
       {this.reply = '',
       this.turnId,
       this.calls = const [],
-      this.options = const []});
+      this.options = const [],
+      this.brief = const {}});
 
   /// From `{reply, events}`; events this app does not know are ignored.
   factory VoiceTurn.fromJson(Map<String, dynamic> json) {
     String? turnId;
     var calls = const <ActionCall>[];
     var options = const <String>[];
+    var brief = const <String, Object?>{};
     for (final e in (json['events'] as List? ?? const [])
         .whereType<Map<String, dynamic>>()) {
       switch (e['type']) {
@@ -47,13 +49,16 @@ class VoiceTurn {
           options = [
             ...(e['options'] as List? ?? const []).whereType<String>()
           ];
+        case 'brief':
+          brief = (e['brief'] as Map?)?.cast<String, Object?>() ?? const {};
       }
     }
     return VoiceTurn(
         reply: json['reply'] as String? ?? '',
         turnId: turnId,
         calls: calls,
-        options: options);
+        options: options,
+        brief: brief);
   }
 
   final String reply;
@@ -62,6 +67,10 @@ class VoiceTurn {
 
   /// Answers to offer as buttons when the reply is a question.
   final List<String> options;
+
+  /// What is known so far of the house being asked about: `width_m`,
+  /// `depth_m`, `area_m2`, `floors`, `bedrooms`, `entrance`, `notes`.
+  final Map<String, Object?> brief;
 }
 
 /// The server side of a turn: yusal-api, which forwards to the AI
@@ -156,6 +165,7 @@ class VoiceSession extends ChangeNotifier {
   String? error;
   List<VoiceStep> steps = const [];
   List<String> options = const [];
+  Map<String, Object?> brief = const {};
   bool _stop = false;
 
   /// A sentence said while another was running; it runs next.
@@ -190,6 +200,7 @@ class VoiceSession extends ChangeNotifier {
     error = null;
     steps = const [];
     options = const [];
+    brief = const {};
     _stop = false;
     _set(VoicePhase.thinking);
 
@@ -219,6 +230,7 @@ class VoiceSession extends ChangeNotifier {
       if (_next != null) return;
       reply = turn.reply;
       options = turn.options;
+      brief = turn.brief;
       _set(VoicePhase.done);
     } catch (e) {
       if (_next != null) return;

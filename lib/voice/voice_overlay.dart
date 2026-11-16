@@ -405,6 +405,11 @@ class _VoiceBarState extends State<VoiceBar>
                                                   style: quiet)),
                                         ]),
                                 ])),
+                      if (briefLine(s.brief).isNotEmpty)
+                        Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(briefLine(s.brief),
+                                key: const Key('voice-brief'), style: quiet)),
                       if (s.options.isNotEmpty)
                         Padding(
                             padding: const EdgeInsets.only(top: 6),
@@ -762,4 +767,31 @@ class _VoiceHostState extends State<VoiceHost> {
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+/// What the assistant has noted of the house it is asking about, in one
+/// line: "12 × 13 м · 2 қабат · 3 жатын бөлме". Empty when nothing is.
+String briefLine(Map<String, Object?> brief) {
+  String n(Object? v) => v is num && v == v.roundToDouble() ? '${v.round()}' : '$v';
+  final width = brief['width_m'], depth = brief['depth_m'];
+  final entrance = switch (brief['entrance']) {
+    'north' => tr3('北', 'солтүстік', 'север'),
+    'east' => tr3('东', 'шығыс', 'восток'),
+    'south' => tr3('南', 'оңтүстік', 'юг'),
+    'west' => tr3('西', 'батыс', 'запад'),
+    _ => null,
+  };
+  return [
+    if (width != null && depth != null)
+      '${n(width)} × ${n(depth)} ${tr3('米', 'м', 'м')}'
+    else if (brief['area_m2'] case final area?)
+      '${n(area)} ${tr3('平米', 'м²', 'м²')}',
+    if (brief['floors'] case final floors?)
+      tr3('${n(floors)} 层', '${n(floors)} қабат', 'этажей: ${n(floors)}'),
+    if (brief['bedrooms'] case final bedrooms?)
+      tr3('${n(bedrooms)} 间卧室', '${n(bedrooms)} жатын бөлме',
+          'спален: ${n(bedrooms)}'),
+    if (entrance != null)
+      tr3('入口朝$entrance', 'кіреберіс: $entrance', 'вход: $entrance'),
+  ].join(' · ');
 }

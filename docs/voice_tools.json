@@ -994,6 +994,212 @@
     }
   },
   {
+    "name": "design.resize_room",
+    "title": {
+      "zh": "改房间大小",
+      "kk": "Бөлме өлшемін өзгерту",
+      "ru": "Изменить размер комнаты"
+    },
+    "examples": {
+      "zh": "把主卧往东加宽到四米",
+      "kk": "Жатын бөлмені шығысқа қарай төрт метрге кеңейт",
+      "ru": "Расширь спальню на восток до четырёх метров"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "room": {
+          "type": "string",
+          "entity": "room"
+        },
+        "side": {
+          "type": "string",
+          "enum": [
+            "north",
+            "east",
+            "south",
+            "west"
+          ]
+        },
+        "size_mm": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "room",
+        "side",
+        "size_mm"
+      ]
+    }
+  },
+  {
+    "name": "design.swap_rooms",
+    "title": {
+      "zh": "交换两个房间",
+      "kk": "Екі бөлмені ауыстыру",
+      "ru": "Поменять две комнаты местами"
+    },
+    "examples": {
+      "zh": "把厨房和书房对调",
+      "kk": "Асхана мен кабинетті ауыстыр",
+      "ru": "Поменяй местами кухню и кабинет"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string",
+          "entity": "room"
+        },
+        "b": {
+          "type": "string",
+          "entity": "room"
+        }
+      },
+      "required": [
+        "a",
+        "b"
+      ]
+    }
+  },
+  {
+    "name": "design.move_opening",
+    "title": {
+      "zh": "移动门窗",
+      "kk": "Есік-терезені жылжыту",
+      "ru": "Передвинуть дверь или окно"
+    },
+    "examples": {
+      "zh": "这扇窗往东移半米",
+      "kk": "Осы терезені шығысқа жарты метр жылжыт",
+      "ru": "Передвинь это окно на полметра к востоку"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "opening": {
+          "type": "string",
+          "entity": "opening"
+        },
+        "shift_mm": {
+          "type": "integer"
+        },
+        "room": {
+          "type": "string",
+          "entity": "room"
+        },
+        "side": {
+          "type": "string",
+          "enum": [
+            "north",
+            "east",
+            "south",
+            "west"
+          ]
+        }
+      },
+      "required": [
+        "opening"
+      ]
+    }
+  },
+  {
+    "name": "design.move_furniture",
+    "title": {
+      "zh": "移动家具",
+      "kk": "Жиһазды жылжыту",
+      "ru": "Передвинуть мебель"
+    },
+    "examples": {
+      "zh": "把床往北挪一米",
+      "kk": "Төсекті солтүстікке бір метр жылжыт",
+      "ru": "Передвинь кровать на метр к северу"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "furniture": {
+          "type": "string",
+          "entity": "furniture"
+        },
+        "east_mm": {
+          "type": "integer"
+        },
+        "north_mm": {
+          "type": "integer"
+        },
+        "turn": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "furniture"
+      ]
+    }
+  },
+  {
+    "name": "editor.select",
+    "title": {
+      "zh": "选中并显示",
+      "kk": "Таңдап көрсету",
+      "ru": "Выбрать и показать"
+    },
+    "examples": {
+      "zh": "哪个是主卧，指给我看",
+      "kk": "Жатын бөлме қайсы, көрсет",
+      "ru": "Покажи, где спальня"
+    },
+    "risk": "read",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "room": {
+          "type": "string",
+          "entity": "room"
+        },
+        "opening": {
+          "type": "string",
+          "entity": "opening"
+        },
+        "furniture": {
+          "type": "string",
+          "entity": "furniture"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "editor.show_floor",
+    "title": {
+      "zh": "切换楼层",
+      "kk": "Қабатты ауыстыру",
+      "ru": "Перейти на этаж"
+    },
+    "examples": {
+      "zh": "看二楼",
+      "kk": "Екінші қабатты көрсет",
+      "ru": "Покажи второй этаж"
+    },
+    "risk": "read",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floor": {
+          "type": "string",
+          "entity": "floor"
+        }
+      },
+      "required": [
+        "floor"
+      ]
+    }
+  },
+  {
     "name": "editor.undo",
     "title": {
       "zh": "撤销",

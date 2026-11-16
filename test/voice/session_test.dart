@@ -145,6 +145,10 @@ void main() {
           'type': 'options',
           'options': ['主卧', '次卧']
         },
+        {
+          'type': 'brief',
+          'brief': {'width_m': 12, 'floors': 1}
+        },
       ]
     });
     expect(turn.reply, '哪一间？');
@@ -158,6 +162,7 @@ void main() {
       <String, Object?>{}
     ]);
     expect(turn.options, ['主卧', '次卧']);
+    expect(turn.brief, {'width_m': 12, 'floors': 1});
     expect(VoiceTurn.fromJson({}).turnId, isNull);
   });
 

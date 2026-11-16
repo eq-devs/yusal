@@ -46,6 +46,27 @@ class _PostPageState extends State<PostPage> {
   /// picture flashing at its landing spot while the flying copy fades.
   final _cover = GlobalKey();
 
+  /// Where "comments" in the bottom bar scrolls to.
+  final _critiques = GlobalKey();
+  final _scroll = ScrollController();
+
+  /// True once the cover has scrolled away: the bar then names the house.
+  final _collapsed = ValueNotifier(false);
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(() => _collapsed.value =
+        _scroll.hasClients && _scroll.offset > _coverHeight - 40);
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    _collapsed.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     AppScope.watch(context);
@@ -259,12 +280,37 @@ class _PostPageState extends State<PostPage> {
           }
 
           final fromLink = !Navigator.of(context).canPop();
+          final visitorBar =
+              !mine && !(isPro && (open.isNotEmpty || p.openForBuilders));
+          void openPlan() {
+            if (snap == null) return;
+            Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => PlanViewer(snapshot: snap)));
+          }
+
           return Scaffold(
-              body: CustomScrollView(slivers: [
+              body: CustomScrollView(controller: _scroll, slivers: [
                 SliverAppBar(
                     pinned: true,
-                    expandedHeight: 280,
+                    expandedHeight: _coverHeight,
                     backgroundColor: t.bg,
+                    surfaceTintColor: Colors.transparent,
+                    titleSpacing: 0,
+                    title: ValueListenableBuilder<bool>(
+                        valueListenable: _collapsed,
+                        // Built only once collapsed: while the big title
+                        // is on screen there is just one title.
+                        builder: (context, collapsed, _) => AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 160),
+                            child: collapsed
+                                ? Text(p.title,
+                                    key: const ValueKey('bar-title'),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontSize: YFont.body,
+                                        fontWeight: FontWeight.w700))
+                                : const SizedBox.shrink())),
                     // Opened from a shared link: no page to go back to, so
                     // offer the home feed instead.
                     // Every control sits on a round backing: the cover is
@@ -275,23 +321,24 @@ class _PostPageState extends State<PostPage> {
                           label: tr3('分享', 'Бөлісу', 'Поделиться'),
                           icon: const Icon(Icons.ios_share, size: 20),
                           onPressed: share),
-                      IconAction(
-                          label: liked
-                              ? tr3('取消喜欢', 'Ұнатуды алу', 'Убрать лайк')
-                              : tr3('喜欢', 'Ұнайды', 'Нравится'),
-                          color: liked ? t.accent : null,
-                          icon: PopOnActive(
-                              active: liked,
-                              child: Icon(
-                                  liked
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  size: 20)),
-                          onPressed: () {
-                            if (!liked) HapticFeedback.lightImpact();
-                            attempt(
-                                context, () => context.repos.toggleLike(p.id));
-                          }),
+                      if (!visitorBar)
+                        IconAction(
+                            label: liked
+                                ? tr3('取消喜欢', 'Ұнатуды алу', 'Убрать лайк')
+                                : tr3('喜欢', 'Ұнайды', 'Нравится'),
+                            color: liked ? t.accent : null,
+                            icon: PopOnActive(
+                                active: liked,
+                                child: Icon(
+                                    liked
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    size: 20)),
+                            onPressed: () {
+                              if (!liked) HapticFeedback.lightImpact();
+                              attempt(context,
+                                  () => context.repos.toggleLike(p.id));
+                            }),
                       IconAction(
                           label: tr3('更多', 'Тағы', 'Ещё'),
                           icon: const Icon(Icons.more_horiz, size: 20),
@@ -299,8 +346,8 @@ class _PostPageState extends State<PostPage> {
                       const SizedBox(width: YSpace.sm),
                     ],
                     flexibleSpace: FlexibleSpaceBar(
-                        background: Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+                        background: _CoverFrame(
+                            onTap: snap == null ? null : openPlan,
                             child: _PostCover(
                                 key: _cover, post: p, image: image)))),
                 SliverToBoxAdapter(
@@ -314,31 +361,11 @@ class _PostPageState extends State<PostPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(p.title, style: display(size: 26)),
-                                      const SizedBox(height: 4),
-                                      Text(regionName(p.region),
-                                          style: TextStyle(
-                                              color: t.muted,
-                                              fontSize: YFont.body)),
-                                      const SizedBox(height: 6),
-                                      Row(children: [
-                                        if (p.rating != null) ...[
-                                          Icon(Icons.star,
-                                              size: 16, color: t.ink),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                              '${p.rating!.toStringAsFixed(1)} · ${p.ratingCount} ${tr3('个评分', 'баға', 'оценок')}',
-                                              style: const TextStyle(
-                                                  fontWeight: FontWeight.w600)),
-                                          const SizedBox(width: 14),
-                                        ],
-                                        Icon(Icons.favorite,
-                                            size: 15, color: t.faint),
-                                        const SizedBox(width: 4),
-                                        Text('${p.likeCount}',
-                                            style: TextStyle(color: t.muted)),
-                                      ]),
-                                      if (shownTags.isNotEmpty)
+                                      Text(p.title, style: display(size: 24)),
+                                      const SizedBox(height: 8),
+                                      _MetaLine(post: p),
+                                      if (shownTags.isNotEmpty ||
+                                          p.reuseCount > 0)
                                         Padding(
                                             padding:
                                                 const EdgeInsets.only(top: 10),
@@ -347,18 +374,28 @@ class _PostPageState extends State<PostPage> {
                                                 runSpacing: 6,
                                                 children: [
                                                   for (final tag in shownTags)
-                                                    StatusPill(postTagName(tag))
+                                                    StatusPill(
+                                                        postTagName(tag)),
+                                                  if (p.reuseCount > 0)
+                                                    StatusPill(
+                                                        reusedTimes(
+                                                            p.reuseCount),
+                                                        color: t.accent),
                                                 ])),
-                                      if (p.reuseCount > 0)
-                                        Padding(
-                                            padding:
-                                                const EdgeInsets.only(top: 10),
-                                            child: StatusPill(
-                                                reusedTimes(p.reuseCount),
-                                                color: t.accent)),
                                       const SizedBox(height: 16),
-                                      _FactSheet(post: p, snapshot: snap),
+                                      // Who and what they say, before the
+                                      // numbers: the post reads like a post.
+                                      _Byline(
+                                          post: p,
+                                          mine: mine,
+                                          onContact: contact),
+                                      if (p.story.isNotEmpty) ...[
+                                        const SizedBox(height: 12),
+                                        _Story(text: p.story),
+                                      ],
                                       const SizedBox(height: 20),
+                                      _FactSheet(post: p, snapshot: snap),
+                                      const SizedBox(height: 16),
                                       // Shared to hear opinions: the ask
                                       // replaces the build progress.
                                       if (!p.openForBuilders &&
@@ -389,59 +426,6 @@ class _PostPageState extends State<PostPage> {
                                                           fontWeight: FontWeight
                                                               .w600))),
                                             ])),
-                                      const Divider(height: 32),
-                                      // Owner.
-                                      Live<Account?>(
-                                          load: (r) => r.account(p.ownerId),
-                                          loading: const SkeletonRow(
-                                              avatar: true, avatarSize: 44),
-                                          builder: (context, a) =>
-                                              Row(children: [
-                                                Avatar(a?.displayName ?? '',
-                                                    size: 44),
-                                                const SizedBox(width: 12),
-                                                Expanded(
-                                                    child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                      Text(deletedName(a),
-                                                          style:
-                                                              const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w700,
-                                                                  fontSize:
-                                                                      15)),
-                                                      Text(
-                                                          mine
-                                                              ? tr3(
-                                                                  '这是你的设计',
-                                                                  'Сіздің жобаңыз',
-                                                                  'Ваш проект')
-                                                              : tr3(
-                                                                  '设计者 · ${fmtDay(p.createdAt)} 发布',
-                                                                  'Автор',
-                                                                  'Автор · ${fmtDay(p.createdAt)}'),
-                                                          style: TextStyle(
-                                                              color: t.muted,
-                                                              fontSize:
-                                                                  YFont.small)),
-                                                    ])),
-                                                if (!mine)
-                                                  OutlinedButton(
-                                                      onPressed: contact,
-                                                      child: Text(tr3('私信',
-                                                          'Жазу', 'Написать'))),
-                                              ])),
-                                      if (p.story.isNotEmpty) ...[
-                                        const SizedBox(height: 18),
-                                        Text(p.story,
-                                            style: const TextStyle(
-                                                fontSize: YFont.body,
-                                                height: 1.5)),
-                                      ],
                                       PlanAttachment(snapshot: snap),
                                       // Facts from the design.
                                       if (snap != null &&
@@ -508,6 +492,7 @@ class _PostPageState extends State<PostPage> {
                                             shown: p.showBuild),
                                       // Critiques.
                                       CritiqueSection(
+                                          key: _critiques,
                                           post: p,
                                           comments: comments,
                                           mine: mine,
@@ -605,27 +590,59 @@ class _PostPageState extends State<PostPage> {
               ? tr3('我能建这栋房子', 'Мен сала аламын', 'Я могу построить')
               : tr3('去报名 / 报价', 'Өтінім беру', 'Откликнуться')));
     } else {
-      if (!canReuse) return null;
+      // A visitor: like and comment sit in the bar with their counts, as
+      // in any feed; the main button starts their own house from this one.
+      final like = _CountAction(
+          tooltip: tr3('收藏', 'Сақтау', 'Сохранить'),
+          count: post.likeCount,
+          color: liked ? t.accent : null,
+          icon: PopOnActive(
+              active: liked,
+              child: Icon(liked ? Icons.favorite : Icons.favorite_border,
+                  size: 22, color: liked ? t.accent : null)),
+          onTap: () {
+            if (!liked) HapticFeedback.lightImpact();
+            attempt(context, () => context.repos.toggleLike(post.id));
+          });
+      final comment = _CountAction(
+          key: const Key('post-comment'),
+          tooltip: tr3('写点评', 'Пікір жазу', 'Написать отзыв'),
+          count: post.commentCount,
+          icon: const Icon(Icons.chat_bubble_outline, size: 21),
+          onTap: () => openCritiqueComposer(context, post));
       return ActionBar(
           child: Row(children: [
-        IconButton.outlined(
-            tooltip: tr3('收藏', 'Сақтау', 'Сохранить'),
-            onPressed: () {
-              if (!liked) HapticFeedback.lightImpact();
-              attempt(context, () => context.repos.toggleLike(post.id));
-            },
-            icon: PopOnActive(
-                active: liked,
-                child: Icon(liked ? Icons.favorite : Icons.favorite_border,
-                    color: liked ? t.accent : null))),
-        const SizedBox(width: 12),
-        Expanded(
-            child: FilledButton.icon(
-                key: const Key('post-main-action'),
-                onPressed: () => startFromPost(context, post),
-                icon: const Icon(Icons.content_copy_outlined, size: 18),
-                label: Text(startFromThis(),
-                    maxLines: 1, overflow: TextOverflow.ellipsis))),
+        if (canReuse) ...[
+          like,
+          comment,
+          const SizedBox(width: 8),
+          Expanded(
+              child: FilledButton.icon(
+                  key: const Key('post-main-action'),
+                  onPressed: () => startFromPost(context, post),
+                  icon: const Icon(Icons.content_copy_outlined, size: 18),
+                  label: Text(startFromThis(),
+                      maxLines: 1, overflow: TextOverflow.ellipsis))),
+        ] else ...[
+          Expanded(
+              child: InkWell(
+                  borderRadius: BorderRadius.circular(YRadius.pill),
+                  onTap: () => openCritiqueComposer(context, post),
+                  child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      alignment: Alignment.centerLeft,
+                      decoration: BoxDecoration(
+                          color: t.surface,
+                          borderRadius: BorderRadius.circular(YRadius.pill)),
+                      child: Text(tr3('说说你的看法…', 'Пікіріңіз…', 'Что думаете?'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: t.muted))))),
+          const SizedBox(width: 4),
+          like,
+          comment,
+        ],
       ]));
     }
     return ActionBar(
@@ -856,17 +873,19 @@ class _PostSkeleton extends StatelessWidget {
         body: CustomScrollView(slivers: [
       SliverAppBar(
           pinned: true,
-          expandedHeight: 280,
+          expandedHeight: _coverHeight,
           backgroundColor: t.bg,
+          surfaceTintColor: Colors.transparent,
           leading: _PostLeading(fromLink: !Navigator.of(context).canPop()),
           flexibleSpace: FlexibleSpaceBar(
-              background: PostPicture(
-                  post: post,
-                  builder: (context, image, loading) => _PostCover(
-                      key: coverKey,
+              background: _CoverFrame(
+                  child: PostPicture(
                       post: post,
-                      image: image,
-                      loading: loading)))),
+                      builder: (context, image, loading) => _PostCover(
+                          key: coverKey,
+                          post: post,
+                          image: image,
+                          loading: loading))))),
       SliverToBoxAdapter(
           child: Center(
               child: ConstrainedBox(
@@ -876,10 +895,205 @@ class _PostSkeleton extends StatelessWidget {
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(post.title, style: display(size: 26)),
+                            Text(post.title, style: display(size: 24)),
                             const SizedBox(height: YSpace.xl),
                             const SkeletonList(count: 4),
                           ]))))),
     ]));
+  }
+}
+
+/// Height of the cover while the page is at the top: the drawing gets most
+/// of the first screen, as a photo does in a feed post.
+const double _coverHeight = 340;
+
+/// The cover's frame: the drawing sits below the status bar and the back /
+/// share controls instead of under them, on the same paper as the sheet,
+/// and a tap opens the full drawings.
+class _CoverFrame extends StatelessWidget {
+  const _CoverFrame({required this.child, this.onTap});
+  final Widget child;
+  final VoidCallback? onTap;
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top + kToolbarHeight - 8;
+    return ColoredBox(
+        color: YTokens.paper,
+        child: Padding(
+            padding: EdgeInsets.only(top: top),
+            child: Semantics(
+                button: onTap != null,
+                label: onTap == null
+                    ? null
+                    : tr3('查看图纸', 'Сызбаны көру', 'Посмотреть чертежи'),
+                child: GestureDetector(onTap: onTap, child: child))));
+  }
+}
+
+/// Region, rating and likes on one line under the title.
+class _MetaLine extends StatelessWidget {
+  const _MetaLine({required this.post});
+  final HousePost post;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    final muted = TextStyle(color: t.muted, fontSize: YFont.small);
+    Widget dot() => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Text('·', style: muted));
+    return Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
+      Icon(Icons.place_outlined, size: 15, color: t.muted),
+      const SizedBox(width: 2),
+      Text(regionName(post.region), style: muted),
+      if (post.rating != null) ...[
+        dot(),
+        Icon(Icons.star_rounded, size: 15, color: t.accent),
+        const SizedBox(width: 2),
+        Text('${post.rating!.toStringAsFixed(1)} (${post.ratingCount})',
+            style: muted.copyWith(color: t.ink, fontWeight: FontWeight.w600)),
+      ],
+      if (post.likeCount > 0) ...[
+        dot(),
+        Text(
+            tr3('${post.likeCount} 人喜欢', '${post.likeCount} ұнатты',
+                'Нравится: ${post.likeCount}'),
+            style: muted),
+      ],
+    ]);
+  }
+}
+
+/// The author, right under the title, with a way to write to them.
+class _Byline extends StatelessWidget {
+  const _Byline(
+      {required this.post, required this.mine, required this.onContact});
+  final HousePost post;
+  final bool mine;
+  final VoidCallback onContact;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    return Live<Account?>(
+        load: (r) => r.account(post.ownerId),
+        loading: const SkeletonRow(avatar: true, avatarSize: 36),
+        builder: (context, a) => Row(children: [
+              Avatar(a?.displayName ?? '', size: 36),
+              const SizedBox(width: 10),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text(deletedName(a),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: YFont.label)),
+                    Text(
+                        mine
+                            ? tr3('这是你的设计', 'Сіздің жобаңыз', 'Ваш проект')
+                            : tr3('设计者 · ${fmtDay(post.createdAt)} 发布', 'Автор',
+                                'Автор · ${fmtDay(post.createdAt)}'),
+                        style:
+                            TextStyle(color: t.muted, fontSize: YFont.caption)),
+                  ])),
+              if (!mine)
+                OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact),
+                    onPressed: onContact,
+                    icon: const Icon(Icons.chat_outlined, size: 16),
+                    label: Text(tr3('私信', 'Жазу', 'Написать'))),
+            ]));
+  }
+}
+
+/// The author's words. A long story folds after a few lines so the facts
+/// and the drawings stay close; one tap opens the rest.
+class _Story extends StatefulWidget {
+  const _Story({required this.text});
+  final String text;
+  @override
+  State<_Story> createState() => _StoryState();
+}
+
+class _StoryState extends State<_Story> {
+  bool open = false;
+  static const _lines = 6;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    const style = TextStyle(fontSize: YFont.body, height: 1.6);
+    return LayoutBuilder(builder: (context, c) {
+      final tp = TextPainter(
+          text: TextSpan(text: widget.text, style: style),
+          maxLines: _lines,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context))
+        ..layout(maxWidth: c.maxWidth);
+      final long = tp.didExceedMaxLines;
+      tp.dispose();
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(widget.text,
+            style: style,
+            maxLines: open || !long ? null : _lines,
+            overflow: open || !long ? null : TextOverflow.ellipsis),
+        if (long)
+          TextButton(
+              style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: t.accent),
+              onPressed: () => setState(() => open = !open),
+              child: Text(open
+                  ? tr3('收起', 'Жию', 'Свернуть')
+                  : tr3('展开全文', 'Толығырақ', 'Читать полностью'))),
+      ]);
+    });
+  }
+}
+
+/// An icon with its count beside it, as in a feed's action bar.
+class _CountAction extends StatelessWidget {
+  const _CountAction(
+      {super.key,
+      required this.tooltip,
+      required this.count,
+      required this.icon,
+      required this.onTap,
+      this.color});
+  final String tooltip;
+  final int count;
+  final Widget icon;
+  final VoidCallback onTap;
+  final Color? color;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    return Tooltip(
+        message: tooltip,
+        child: Semantics(
+            button: true,
+            label: tooltip,
+            excludeSemantics: true,
+            child: InkWell(
+                borderRadius: BorderRadius.circular(YRadius.pill),
+                onTap: onTap,
+                child: ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(minHeight: 44, minWidth: 44),
+                    child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          icon,
+                          if (count > 0) ...[
+                            const SizedBox(width: 4),
+                            Text('$count',
+                                style: TextStyle(
+                                    color: color ?? t.ink,
+                                    fontWeight: FontWeight.w600,
+                                    fontFeatures: YText.tabular)),
+                          ],
+                        ]))))));
   }
 }

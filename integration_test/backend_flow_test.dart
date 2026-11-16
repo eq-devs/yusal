@@ -133,9 +133,10 @@ void main() {
       expect(await t.runAsync(() => repos.liked(post.id)), isTrue);
       expect(await t.runAsync(() => repos.likedPosts()), contains(post.id));
 
+      // The composer opens in a sheet from the bar's comment button.
+      await tapIt(t, find.byKey(const Key('post-comment')));
       final composer = find.byKey(const Key('critique-text'));
-      await t.ensureVisible(composer);
-      await t.pumpAndSettle();
+      await waitFor(t, composer);
       // Fourth star: rating 4.
       await t.tap(find.byIcon(Icons.star_border).at(3));
       await t.pumpAndSettle();

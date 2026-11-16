@@ -28,6 +28,10 @@ mixin VoiceScreen<T extends StatefulWidget> on State<T> {
   /// One line for the language model about what the page shows.
   String get summary => '';
 
+  /// What the page holds in detail, as a few lines of text for the
+  /// language model. Sent with every step, so keep it short.
+  String get scene => '';
+
   /// The inputs showing that voice can fill.
   List<VoiceField> get fields => const [];
 

@@ -40,6 +40,13 @@ abstract interface class DesignHost {
 
   /// Writes unsaved changes now, before the editor is closed.
   Future<void> saveNow();
+
+  /// Selects the room, opening or piece of furniture with [id] on the
+  /// floor being edited, as a tap on it would. False when it is not there.
+  bool select(String id);
+
+  /// Shows the floor with [floorId]. False when there is none.
+  bool showFloor(String floorId);
 }
 
 /// Failure code of a command that needs the user to choose how to go on.
@@ -70,6 +77,9 @@ String _floor(Args args) =>
 
 /// Failure code when a room has no wall on the side asked for.
 const noWallThere = 'no_wall_on_that_side';
+
+/// Failure code when the wall asked to move is the house's outer wall.
+const outerWall = 'outer_wall';
 
 /// Failure code of a house spec that cannot be built; `say.errors` lists
 /// what to fix.
@@ -515,6 +525,226 @@ final designActions = [
     risk: Risk.undoable,
     run: (ctx, args) =>
         _design('DeleteFurniture', {'furnitureId': args.id('furniture')}),
+  ),
+  AppAction(
+    id: 'design.resize_room',
+    title: const L3('改房间大小', 'Бөлме өлшемін өзгерту', 'Изменить размер комнаты'),
+    examples: const L3('把主卧往东加宽到四米', 'Жатын бөлмені шығысқа қарай төрт метрге кеңейт',
+        'Расширь спальню на восток до четырёх метров'),
+    params: {
+      'room': const Param.entity('room'),
+      // The wall that moves; the opposite one stays. The whole wall line
+      // moves, so the rooms on its other side change by as much.
+      'side': Param.choice([for (final f in Facing.values) f.name]),
+      // The room's new size across that wall.
+      'size_mm': const Param.integer(),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) async {
+      final host = _host!;
+      final base = host.floorBase;
+      final id = args.id('room');
+      final spot = roomWall(base, id, Facing.values.byName(args.choice('side')),
+          host.document.footprint.northAngleDeg);
+      if (spot == null) return const ActionResult.fail(noWallThere);
+      final axis = spot.wall.axis;
+      if (axis.kind == 'boundary') {
+        return const ActionResult.fail(outerWall,
+            say: {'hint': 'design.set_size changes the size of the house'});
+      }
+      final r = _bounds(base, id);
+      final (low, high) =
+          axis.dir == AxisDir.V ? (r.left, r.right) : (r.bottom, r.top);
+      final size = args.integer('size_mm');
+      // Rooms the wall line bounds on either side change with it.
+      final touched = {
+        for (final e in base.edges)
+          if (e.axis.id == axis.id)
+            for (final cell in [e.negative, e.positive])
+              if (cell != null) base.owners[cell]
+      }.whereType<String>();
+      return _design('MoveAxis', {
+        'axisId': axis.id,
+        'pos': (axis.pos == high ? low + size : high - size).round(),
+      }, changed: [
+        id,
+        ...touched.where((room) => room != id)
+      ]);
+    },
+  ),
+  AppAction(
+    id: 'design.swap_rooms',
+    title: const L3('交换两个房间', 'Екі бөлмені ауыстыру', 'Поменять две комнаты местами'),
+    examples: const L3('把厨房和书房对调', 'Асхана мен кабинетті ауыстыр',
+        'Поменяй местами кухню и кабинет'),
+    // The two rooms trade their use and name; walls, doors and windows
+    // stay where they are.
+    params: const {'a': Param.entity('room'), 'b': Param.entity('room')},
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) async {
+      final host = _host!;
+      final rooms = {
+        for (final f in host.document.floors)
+          for (final r in f.rooms) r.id: r
+      };
+      final a = rooms[args.id('a')], b = rooms[args.id('b')];
+      if (a == null || b == null || a.id == b.id) {
+        return ActionResult.fail(ActionCodes.unknownEntity,
+            say: {'param': a == null ? 'a' : 'b'});
+      }
+      for (final (to, from) in [(a, b), (b, a)]) {
+        host.runDesign('SetRoomType', {'roomId': to.id, 'value': from.type});
+        host.runDesign('RenameRoom', {'roomId': to.id, 'value': from.name});
+      }
+      return ActionResult.ok(changed: [a.id, b.id]);
+    },
+  ),
+  AppAction(
+    id: 'design.move_opening',
+    title: const L3('移动门窗', 'Есік-терезені жылжыту', 'Передвинуть дверь или окно'),
+    examples: const L3('这扇窗往东移半米', 'Осы терезені шығысқа жарты метр жылжыт',
+        'Передвинь это окно на полметра к востоку'),
+    params: {
+      'opening': const Param.entity('opening'),
+      // Along its wall: to the east or north when positive, to the west
+      // or south when negative.
+      'shift_mm': const Param.integer(optional: true),
+      // Or to the middle of another wall: the side of a room.
+      'room': const Param.entity('room', optional: true),
+      'side': Param.choice([for (final f in Facing.values) f.name],
+          optional: true),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) async {
+      final host = _host!;
+      final id = args.id('opening');
+      final floor = deriveHouse(host.document)
+          .floors
+          .where((f) => f.openings.any((p) => p.opening.id == id))
+          .firstOrNull;
+      final placed =
+          floor?.openings.where((p) => p.opening.id == id).firstOrNull;
+      if (placed == null) {
+        return const ActionResult.fail(ActionCodes.unknownEntity,
+            say: {'param': 'opening'});
+      }
+      final width = placed.opening.width;
+      final WallSegment wall;
+      final double start;
+      if (args.has('room') && args.has('side')) {
+        final spot = roomWall(
+            floor!.base,
+            args.id('room'),
+            Facing.values.byName(args.choice('side')),
+            host.document.footprint.northAngleDeg);
+        if (spot == null) return const ActionResult.fail(noWallThere);
+        wall = spot.wall;
+        start = (spot.from + spot.to) / 2 - width / 2;
+      } else if (args.has('shift_mm') && placed.host != null) {
+        wall = placed.host!;
+        start = placed.start + args.integer('shift_mm');
+      } else {
+        return const ActionResult.fail(ActionCodes.badArgs,
+            say: {'hint': 'give shift_mm, or room and side'});
+      }
+      if (start < wall.start.pos || start + width > wall.end.pos) {
+        return ActionResult.fail(ActionCodes.badArgs, say: {
+          'hint': 'the wall runs from ${wall.start.pos} to ${wall.end.pos}'
+              ' and the opening is $width wide',
+          'at': placed.start.round(),
+        });
+      }
+      return _design('MoveOpening', {
+        'openingId': id,
+        'anchor': wall.ref.anchor,
+        'position': {
+          'type': 'fromStart',
+          'd': (start - wall.start.pos).round()
+        },
+      }, changed: [
+        id
+      ]);
+    },
+  ),
+  AppAction(
+    id: 'design.move_furniture',
+    title: const L3('移动家具', 'Жиһазды жылжыту', 'Передвинуть мебель'),
+    examples: const L3(
+        '把床往北挪一米', 'Төсекті солтүстікке бір метр жылжыт', 'Передвинь кровать на метр к северу'),
+    params: const {
+      'furniture': Param.entity('furniture'),
+      // On the plan; negative is west or south.
+      'east_mm': Param.integer(optional: true),
+      'north_mm': Param.integer(optional: true),
+      // A quarter turn where it stands.
+      'turn': Param.flag(optional: true),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) async {
+      final host = _host!;
+      final id = args.id('furniture');
+      final item =
+          host.document.extras.furniture.where((f) => f.id == id).firstOrNull;
+      if (item == null) {
+        return const ActionResult.fail(ActionCodes.unknownEntity,
+            say: {'param': 'furniture'});
+      }
+      if (args.has('turn') && args.flag('turn')) {
+        final turned = await _design('RotateFurniture', {'furnitureId': id});
+        if (!turned.ok) return turned;
+      }
+      if (!args.has('east_mm') && !args.has('north_mm')) {
+        return ActionResult.ok(changed: [id]);
+      }
+      final now =
+          host.document.extras.furniture.firstWhere((f) => f.id == id);
+      return _design('UpdateFurniture', {
+        'furnitureId': id,
+        'x': now.x + (args.has('east_mm') ? args.integer('east_mm') : 0),
+        'y': now.y + (args.has('north_mm') ? args.integer('north_mm') : 0),
+      }, changed: [
+        id
+      ]);
+    },
+  ),
+  AppAction(
+    id: 'editor.select',
+    title: const L3('选中并显示', 'Таңдап көрсету', 'Выбрать и показать'),
+    examples:
+        const L3('哪个是主卧，指给我看', 'Жатын бөлме қайсы, көрсет', 'Покажи, где спальня'),
+    // One of the three: what to select on the plan.
+    params: const {
+      'room': Param.entity('room', optional: true),
+      'opening': Param.entity('opening', optional: true),
+      'furniture': Param.entity('furniture', optional: true),
+    },
+    when: _inEditor,
+    risk: Risk.read,
+    run: (ctx, args) async {
+      for (final kind in ['room', 'opening', 'furniture']) {
+        if (!args.has(kind)) continue;
+        return _host!.select(args.id(kind))
+            ? ActionResult.ok(changed: [args.id(kind)])
+            : ActionResult.fail(ActionCodes.unknownEntity, say: {'param': kind});
+      }
+      return const ActionResult.fail(ActionCodes.badArgs);
+    },
+  ),
+  AppAction(
+    id: 'editor.show_floor',
+    title: const L3('切换楼层', 'Қабатты ауыстыру', 'Перейти на этаж'),
+    examples: const L3('看二楼', 'Екінші қабатты көрсет', 'Покажи второй этаж'),
+    params: const {'floor': Param.entity('floor')},
+    when: _inEditor,
+    risk: Risk.read,
+    run: (ctx, args) async => _host!.showFloor(args.id('floor'))
+        ? const ActionResult.ok()
+        : const ActionResult.fail(ActionCodes.unknownEntity,
+            say: {'param': 'floor'}),
   ),
   AppAction(
     id: 'editor.undo',

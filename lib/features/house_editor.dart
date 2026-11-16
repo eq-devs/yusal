@@ -51,6 +51,7 @@ import '../motion/motion.dart';
 import '../voice/action.dart';
 import '../voice/actions_design.dart';
 import '../voice/actions_houses.dart';
+import '../voice/scene.dart';
 import '../voice/screen.dart';
 import '../voice/session.dart';
 import 'house_wizard.dart';
@@ -115,6 +116,14 @@ class _HouseEditorState extends State<HouseEditor>
       ];
 
   @override
+  String get scene => designScene(
+      doc: history.present,
+      derived: derived,
+      floorIndex: floorIndex,
+      aliases: {for (final e in entities) e.id: e.alias},
+      selectedId: selectedFurnitureId ?? selectedOpeningId ?? selectedRoomId);
+
+  @override
   HouseDocument get document => history.present;
 
   @override
@@ -150,6 +159,37 @@ class _HouseEditorState extends State<HouseEditor>
 
   @override
   Future<void> saveNow() => save();
+
+  @override
+  bool select(String id) {
+    final room = floor.rooms.any((r) => r.id == id),
+        opening = floor.openings.any((o) => o.id == id),
+        piece = history.present.extras.furniture
+            .any((f) => f.id == id && f.floorId == floor.id);
+    if (!room && !opening && !piece) return false;
+    setState(() {
+      clearSelection();
+      clearWallSelection();
+      if (room) selectedRoomId = id;
+      if (opening) selectedOpeningId = id;
+      if (piece) selectedFurnitureId = id;
+    });
+    return true;
+  }
+
+  @override
+  bool showFloor(String floorId) {
+    final index = history.present.floors.indexWhere((f) => f.id == floorId);
+    if (index < 0) return false;
+    setState(() {
+      cancelDrag();
+      clearSelection();
+      clearWallSelection();
+      floorIndex = index;
+      derive();
+    });
+    return true;
+  }
 
   @override
   bool undoDesign() {

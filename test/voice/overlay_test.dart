@@ -83,7 +83,10 @@ void main() {
       act('t1', [
         ('nav.tab', {'tab': 'me'})
       ]),
-      const VoiceTurn(reply: '这里没有主页面。', options: ['回到首页', '算了']),
+      const VoiceTurn(
+          reply: '这里没有主页面。',
+          options: ['回到首页', '算了'],
+          brief: {'width_m': 12, 'depth_m': 13.5, 'floors': 2}),
       const VoiceTurn(reply: '好的。'),
     ]);
     await pump(t, VoiceMock(backend));
@@ -108,11 +111,20 @@ void main() {
     // Nothing changed a design, so there is nothing to undo.
     expect(find.byKey(const Key('voice-undo')), findsNothing);
 
+    // What is known of the house so far goes with the question, and
+    // leaves with it.
+    expect(t.widget<Text>(find.byKey(const Key('voice-brief'))).data,
+        briefLine(const {'width_m': 12, 'depth_m': 13.5, 'floors': 2}));
+    expect(briefLine(const {'width_m': 12, 'depth_m': 13.5, 'floors': 2}),
+        startsWith('12 × 13.5 '));
+    expect(briefLine(const {'notes': '老人房在一楼'}), '');
+
     // An offered answer is sent as the next sentence.
     await t.tap(find.text('算了'));
     await t.pumpAndSettle();
     expect(backend.said.map((s) => s.text), ['打开我的', '算了']);
     expect(find.text('好的。'), findsOneWidget);
+    expect(find.byKey(const Key('voice-brief')), findsNothing);
 
     // A finished reply stays beside the orb until it is closed.
     await t.pump(const Duration(seconds: 30));

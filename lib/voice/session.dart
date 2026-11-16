@@ -22,13 +22,15 @@ class VoiceTurn {
       {this.reply = '',
       this.turnId,
       this.calls = const [],
-      this.options = const []});
+      this.options = const [],
+      this.brief = const {}});
 
   /// From `{reply, events}`; events this app does not know are ignored.
   factory VoiceTurn.fromJson(Map<String, dynamic> json) {
     String? turnId;
     var calls = const <ActionCall>[];
     var options = const <String>[];
+    var brief = const <String, Object?>{};
     for (final e in (json['events'] as List? ?? const [])
         .whereType<Map<String, dynamic>>()) {
       switch (e['type']) {
@@ -47,13 +49,16 @@ class VoiceTurn {
           options = [
             ...(e['options'] as List? ?? const []).whereType<String>()
           ];
+        case 'brief':
+          brief = (e['brief'] as Map?)?.cast<String, Object?>() ?? const {};
       }
     }
     return VoiceTurn(
         reply: json['reply'] as String? ?? '',
         turnId: turnId,
         calls: calls,
-        options: options);
+        options: options,
+        brief: brief);
   }
 
   final String reply;
@@ -62,6 +67,10 @@ class VoiceTurn {
 
   /// Answers to offer as buttons when the reply is a question.
   final List<String> options;
+
+  /// What is known so far of the house being asked about: `width_m`,
+  /// `depth_m`, `area_m2`, `floors`, `bedrooms`, `entrance`, `notes`.
+  final Map<String, Object?> brief;
 }
 
 /// The server side of a turn: yusal-api, which forwards to the AI
@@ -107,6 +116,7 @@ Map<String, Object?> voiceContext({List<String> actions = const []}) {
     'lang': AppSettings.instance.lang.name,
     'actions': actions,
     if (screen != null && screen.summary.isNotEmpty) 'summary': screen.summary,
+    if (screen != null && screen.scene.isNotEmpty) 'scene': screen.scene,
     'entities': [
       for (final e in screen?.entities ?? const <Entity>[])
         {
@@ -155,20 +165,42 @@ class VoiceSession extends ChangeNotifier {
   String? error;
   List<VoiceStep> steps = const [];
   List<String> options = const [];
+  Map<String, Object?> brief = const {};
   bool _stop = false;
+
+  /// A sentence said while another was running; it runs next.
+  (String, bool)? _next;
 
   bool get busy => phase == VoicePhase.thinking || phase == VoicePhase.acting;
 
   /// Stops running further actions of the current sentence.
   void stop() => _stop = true;
 
+  /// Runs [text] to its end. Said while another sentence is running, it
+  /// interrupts that one: no further actions of it run, its reply is
+  /// dropped, and [text] starts as soon as the step in flight returns.
   Future<void> say(String text, {required bool spoken}) async {
-    if (busy) return;
+    if (busy) {
+      _stop = true;
+      _next = (text, spoken);
+      heard = text;
+      return notifyListeners();
+    }
+    await _say(text, spoken: spoken);
+    while (_next != null) {
+      final (text, spoken) = _next!;
+      _next = null;
+      await _say(text, spoken: spoken);
+    }
+  }
+
+  Future<void> _say(String text, {required bool spoken}) async {
     heard = text;
     reply = '';
     error = null;
     steps = const [];
     options = const [];
+    brief = const {};
     _stop = false;
     _set(VoicePhase.thinking);
 
@@ -183,20 +215,25 @@ class VoiceSession extends ChangeNotifier {
           spoken: spoken,
           context: _context());
       for (var step = 0; turn.turnId != null; step++) {
+        if (_next != null) return;
         if (step == maxSteps) {
           error = VoiceCodes.tooManySteps;
           return _set(VoicePhase.failed);
         }
         _set(VoicePhase.acting);
         final results = await _run(turn.calls);
+        if (_next != null) return;
         _set(VoicePhase.thinking);
         turn = await backend.results(
             turnId: turn.turnId!, results: results, context: _context());
       }
+      if (_next != null) return;
       reply = turn.reply;
       options = turn.options;
+      brief = turn.brief;
       _set(VoicePhase.done);
     } catch (e) {
+      if (_next != null) return;
       error = e is ApiFailure ? e.code : VoiceCodes.network;
       _set(VoicePhase.failed);
     } finally {
@@ -224,11 +261,20 @@ class VoiceSession extends ChangeNotifier {
       halted = halted || !result.ok;
       steps = [...steps, VoiceStep(executor.registry[call.action], result)];
       notifyListeners();
+      // Under the names the model knows them by; what was removed has
+      // none any more.
+      final entities = VoiceScreens.current?.entities ?? const <Entity>[];
+      final changed = [
+        for (final id in result.changed)
+          for (final e in entities)
+            if (e.id == id) e.alias
+      ];
       out.add({
         'id': call.id,
         'ok': result.ok,
         if (!result.ok) 'code': result.code,
         if (result.say.isNotEmpty) 'say': result.say,
+        if (changed.isNotEmpty) 'changed': changed,
       });
     }
     return out;

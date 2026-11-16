@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/core/commands/room_commands.dart';
@@ -45,6 +47,37 @@ class ScriptedBackend implements VoiceBackend {
       required Map<String, Object?> context}) async {
     reported.add((turnId: turnId, results: results));
     return _next();
+  }
+}
+
+/// A server that answers when the test lets it.
+class SlowBackend implements VoiceBackend {
+  final pending = <Completer<VoiceTurn>>[];
+  final said = <String>[];
+  final reported = <String>[];
+
+  Future<VoiceTurn> _wait() {
+    pending.add(Completer());
+    return pending.last.future;
+  }
+
+  @override
+  Future<VoiceTurn> say(
+      {required String sessionId,
+      required String text,
+      required bool spoken,
+      required Map<String, Object?> context}) {
+    said.add(text);
+    return _wait();
+  }
+
+  @override
+  Future<VoiceTurn> results(
+      {required String turnId,
+      required List<Map<String, Object?>> results,
+      required Map<String, Object?> context}) {
+    reported.add(turnId);
+    return _wait();
   }
 }
 
@@ -112,6 +145,10 @@ void main() {
           'type': 'options',
           'options': ['主卧', '次卧']
         },
+        {
+          'type': 'brief',
+          'brief': {'width_m': 12, 'floors': 1}
+        },
       ]
     });
     expect(turn.reply, '哪一间？');
@@ -125,6 +162,7 @@ void main() {
       <String, Object?>{}
     ]);
     expect(turn.options, ['主卧', '次卧']);
+    expect(turn.brief, {'width_m': 12, 'floors': 1});
     expect(VoiceTurn.fromJson({}).turnId, isNull);
   });
 
@@ -180,12 +218,23 @@ void main() {
     expect(backend.reported.map((r) => r.results), [
       [
         {'id': 'c0', 'ok': true},
-        {'id': 'c1', 'ok': true}
+        {
+          'id': 'c1',
+          'ok': true,
+          'changed': ['r1']
+        }
       ],
       [
-        {'id': 'c0', 'ok': true}
+        {
+          'id': 'c0',
+          'ok': true,
+          'changed': ['o1']
+        }
       ],
     ]);
+    // The open design goes along as text.
+    expect(sent.context['scene'], contains(' r1 '));
+    expect(sent.context['scene'], contains('10000x8000'));
 
     expect(host.document.floors, hasLength(2));
     expect(host.document.floors.first.openings, hasLength(1));
@@ -277,5 +326,32 @@ void main() {
     await s.say('去我的，再去房子', spoken: false);
     expect(backend.reported.single.results.map((r) => r['code']),
         [ActionCodes.notAvailable, VoiceCodes.skipped]);
+  });
+
+  test('a sentence said while another runs interrupts it', () async {
+    final backend = SlowBackend();
+    final s = VoiceSession(
+        backend: backend,
+        executor: ActionExecutor(appActions, confirm: (_, __) async => true),
+        repos: repos,
+        loggedIn: () => true,
+        sessionId: 's1');
+    final first = s.say('加一层楼', spoken: true);
+    await s.say('不对，加一扇窗', spoken: true);
+    expect(s.busy, isTrue);
+    expect(s.heard, '不对，加一扇窗');
+    expect(backend.said, ['加一层楼']);
+
+    // The first sentence's actions come back too late: none of them run.
+    backend.pending[0].complete(act('t1', [('editor.undo', {})]));
+    await pumpEventQueue();
+    expect(s.steps, isEmpty);
+    expect(backend.reported, isEmpty);
+    expect(backend.said, ['加一层楼', '不对，加一扇窗']);
+
+    backend.pending[1].complete(const VoiceTurn(reply: '加好了。'));
+    await first;
+    expect(s.phase, VoicePhase.done);
+    expect(s.reply, '加好了。');
   });
 }

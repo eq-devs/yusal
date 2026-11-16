@@ -1,3 +1,4 @@
+import 'actions_coop.dart';
 import 'actions_demand.dart';
 import 'actions_design.dart';
 import 'actions_houses.dart';
@@ -10,6 +11,7 @@ final appActions = ActionRegistry([
   ...navActions,
   ...houseActions,
   ...demandActions,
+  ...coopActions,
   ...designActions,
   ...formActions
 ]);

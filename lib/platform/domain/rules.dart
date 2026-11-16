@@ -406,3 +406,48 @@ String autoTitle(
   final s = (scope == null || scope.isEmpty) ? tradeName : scope;
   return '$s · $regionName';
 }
+
+/// What one side can do with a cooperation now, beyond reading it: the
+/// cooperation page's buttons and the voice assistant's coop.* actions.
+enum CoopMove {
+  /// The provider says yes to an invitation.
+  confirm,
+
+  /// The provider says no to it.
+  decline,
+
+  /// The owner takes it back.
+  revoke,
+
+  /// The other side asked to end: say yes…
+  confirmEnd,
+
+  /// …or object.
+  disputeEnd,
+
+  /// Ask to end, unless an ask is waiting for an answer.
+  requestEnd,
+
+  /// Accept or reject the other side's proposed change of terms.
+  answerChange,
+}
+
+Set<CoopMove> coopMoves(Cooperation c, String me) {
+  switch (c.status) {
+    case CooperationStatus.pending:
+      return me == c.ownerId
+          ? {CoopMove.revoke}
+          : {CoopMove.confirm, CoopMove.decline};
+    case CooperationStatus.confirmed:
+      if (c.endAskedOf(me)) return {CoopMove.confirmEnd, CoopMove.disputeEnd};
+      if (c.endPhase == EndPhase.asked) return {};
+      final change = c.pendingChange;
+      return {
+        if (change != null && change.proposedBy != me) CoopMove.answerChange,
+        CoopMove.requestEnd,
+      };
+    case CooperationStatus.ended:
+    case CooperationStatus.notFormed:
+      return {};
+  }
+}

@@ -13,6 +13,8 @@ import '../houses/site_tab.dart';
 import 'milestone_editor.dart';
 import 'agreement_form.dart';
 import 'review_page.dart';
+import '../../../voice/actions_coop.dart';
+import '../../../voice/screen.dart';
 
 class _CoopData {
   _CoopData(this.coop, this.demand, this.owner, this.provider, this.profile,
@@ -58,9 +60,32 @@ class CooperationPage extends StatelessWidget {
   }
 }
 
-class _CoopView extends StatelessWidget {
+class _CoopView extends StatefulWidget {
   const _CoopView({required this.data});
   final _CoopData data;
+
+  @override
+  State<_CoopView> createState() => _CoopViewState();
+}
+
+class _CoopViewState extends State<_CoopView>
+    with VoiceScreen
+    implements CoopHost {
+  _CoopData get data => widget.data;
+
+  @override
+  String get screenId => 'coop.detail';
+
+  @override
+  Cooperation get coop => data.coop!;
+
+  /// Where it stands, so the assistant can say it; what can be done is
+  /// the offered coop.* actions.
+  @override
+  String get summary =>
+      'cooperation ${coop.status.name}, ending ${coop.endPhase.name}'
+      '${coop.pendingChange != null ? ', change proposed' : ''}: '
+      '${data.demand?.current.title ?? ''}';
 
   @override
   Widget build(BuildContext context) {
@@ -80,10 +105,12 @@ class _CoopView extends StatelessWidget {
 
     Future<void> run(Future<Object?> Function() f, String done) =>
         attempt(context, f, success: done);
+    // The same moves voice is offered.
+    final moves = coopMoves(c, me);
 
     final actions = <Widget>[];
     if (c.status == CooperationStatus.pending) {
-      if (!iAmOwner) {
+      if (moves.contains(CoopMove.confirm)) {
         actions.addAll([
           BusyButton(
               label: tr3('确认合作', 'Келісімді растау', 'Подтвердить'),
@@ -114,7 +141,7 @@ class _CoopView extends StatelessWidget {
       }
     } else if (c.status == CooperationStatus.confirmed) {
       final r = c.endRequest;
-      if (c.endAskedOf(me)) {
+      if (moves.contains(CoopMove.confirmEnd)) {
         actions.addAll([
           Hint(
               tr3(
@@ -175,7 +202,7 @@ class _CoopView extends StatelessWidget {
                     'Өзгеріс (${change.version})',
                     'Изменение (версия ${change.version})')),
             const SizedBox(height: 8),
-            if (change.proposedBy != me) ...[
+            if (moves.contains(CoopMove.answerChange)) ...[
               BusyButton(
                   label: tr3('接受变更', 'Қабылдау', 'Принять'),
                   onPressed: () => run(() => repos.answerChange(c.id, true),

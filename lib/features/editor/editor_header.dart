@@ -331,7 +331,7 @@ extension _EditorHeader on _HouseEditorState {
               updatedAt: DateTime.now().toUtc().toIso8601String()),
           extractDesignState(history.present));
       dirty = true;
-      status = '未保存';
+      status = _SaveStatus.unsaved;
       timer?.cancel();
       timer = Timer(const Duration(milliseconds: 1500), save);
     });

@@ -91,6 +91,22 @@ class HouseEditor extends StatefulWidget {
   State<HouseEditor> createState() => _HouseEditorState();
 }
 
+/// The open design's state on disk. An edit makes it unsaved; a save
+/// leaves it saved (or saved with the project index still to repair), or
+/// unsaved again when it changed meanwhile, or failed, which retries every
+/// five seconds until a save works.
+enum _SaveStatus {
+  saved('已保存'),
+  indexPending('已保存，索引待恢复'),
+  unsaved('未保存'),
+  failed('保存失败');
+
+  const _SaveStatus(this.label);
+
+  /// What screen readers are told, as before.
+  final String label;
+}
+
 class _HouseEditorState extends State<HouseEditor>
     with WidgetsBindingObserver, TickerProviderStateMixin, VoiceScreen
     implements DesignHost {
@@ -1078,7 +1094,7 @@ class _HouseEditorState extends State<HouseEditor>
   int floorIndex = 0;
   RoomType brush = RoomType.living;
   bool browse = true, erase = false, dirty = false, saving = false;
-  String status = '已保存';
+  _SaveStatus status = _SaveStatus.saved;
   final stroke = <Cell>[];
   final pointers = <int>{};
   bool cancelledStroke = false;
@@ -1193,13 +1209,13 @@ class _HouseEditorState extends State<HouseEditor>
       if (mounted)
         setState(() {
           dirty = history.present != doc;
-          status = dirty ? '未保存' : widget.store.indexWarning != null ? '已保存，索引待恢复' : '已保存';
+          status = dirty ? _SaveStatus.unsaved : widget.store.indexWarning != null ? _SaveStatus.indexPending : _SaveStatus.saved;
         });
     } catch (_) {
       failed = true;
       if (mounted) {
-        final firstFailure = status != '保存失败';
-        setState(() => status = '保存失败');
+        final firstFailure = status != _SaveStatus.failed;
+        setState(() => status = _SaveStatus.failed);
         if (firstFailure) notify(tr3('没能保存到本机，请检查存储空间；稍后会自动重试，也可导出备份', 'Құрылғыға сақталмады, жадты тексеріңіз; кейін қайталанады, файлды экспорттауға болады', 'Не удалось сохранить. Проверьте место; повторим автоматически. Можно экспортировать файл'));
       }
     } finally {
@@ -1216,7 +1232,7 @@ class _HouseEditorState extends State<HouseEditor>
     if (highlights.isNotEmpty) flash(const []);
     derive();
     dirty = true;
-    status = '未保存';
+    status = _SaveStatus.unsaved;
     timer?.cancel();
     timer = Timer(const Duration(milliseconds: 1500), save);
   }
@@ -3589,11 +3605,11 @@ class _HouseEditorState extends State<HouseEditor>
 
   /// Saved state at a glance: icon plus a word, red when saving failed.
   Widget saveIndicator() {
-    final failed = status == '保存失败',
+    final failed = status == _SaveStatus.failed,
         color = failed ? Theme.of(context).colorScheme.error : null;
     return Semantics(
         liveRegion: true,
-        label: status,
+        label: status.label,
         child: ExcludeSemantics(
             child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(
@@ -3612,11 +3628,10 @@ class _HouseEditorState extends State<HouseEditor>
                   saving
                       ? tr3('保存中', 'Сақталуда', 'Сохранение')
                       : switch (status) {
-                          '已保存' => tr3('已保存', 'Сақталды', 'Сохранено'),
-                          '已保存，索引待恢复' => tr3('设计已保存，索引待恢复', 'Жоба сақталды, индекс қалпына келеді', 'Проект сохранён, индекс требует восстановления'),
-                          '未保存' => tr3('未保存', 'Сақталмаған', 'Не сохранено'),
-                          '保存失败' => tr3('保存失败', 'Сақталмады', 'Ошибка сохранения'),
-                          _ => status
+                          _SaveStatus.saved => tr3('已保存', 'Сақталды', 'Сохранено'),
+                          _SaveStatus.indexPending => tr3('设计已保存，索引待恢复', 'Жоба сақталды, индекс қалпына келеді', 'Проект сохранён, индекс требует восстановления'),
+                          _SaveStatus.unsaved => tr3('未保存', 'Сақталмаған', 'Не сохранено'),
+                          _SaveStatus.failed => tr3('保存失败', 'Сақталмады', 'Ошибка сохранения'),
                         },
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

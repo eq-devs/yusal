@@ -92,7 +92,7 @@ class _CritiqueSectionState extends State<CritiqueSection> {
                       'Полезных: $helpful'),
                   style: TextStyle(color: t.muted, fontSize: YFont.small))
               : null),
-      if (!widget.mine) _CritiqueBox(post: widget.post),
+      if (!widget.mine) _ComposerEntry(post: widget.post),
       if (topics.length > 1 || (topics.isNotEmpty && topic != null))
         Padding(
             padding: const EdgeInsets.only(top: 12),
@@ -143,6 +143,72 @@ class _CritiqueSectionState extends State<CritiqueSection> {
   }
 }
 
+/// Opens the critique composer in a sheet. A guest signs in first, so no
+/// one types a critique only to be stopped at "send".
+Future<void> openCritiqueComposer(BuildContext context, HousePost post) async {
+  if (!await requireLogin(context) || !context.mounted) return;
+  await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheet) => Padding(
+          padding: EdgeInsets.fromLTRB(
+              16, 0, 16, MediaQuery.viewInsetsOf(sheet).bottom + 16),
+          child: SingleChildScrollView(
+              child: _CritiqueBox(
+                  post: post,
+                  autofocus: true,
+                  onSent: () => Navigator.of(sheet).pop()))));
+}
+
+/// What stands in for the composer in the list: one line that looks like
+/// a field. The full composer (topic, stars, text) opens in a sheet, so the
+/// critiques themselves come first, not a form.
+class _ComposerEntry extends StatelessWidget {
+  const _ComposerEntry({required this.post});
+  final HousePost post;
+  @override
+  Widget build(BuildContext context) {
+    final t = YTokens.of(context);
+    final me = context.repos.currentAccount;
+    return Semantics(
+        button: true,
+        label: tr3('写点评', 'Пікір жазу', 'Написать отзыв'),
+        excludeSemantics: true,
+        child: InkWell(
+            key: const Key('critique-open'),
+            borderRadius: BorderRadius.circular(YRadius.pill),
+            onTap: () => openCritiqueComposer(context, post),
+            child: Container(
+                padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
+                decoration: BoxDecoration(
+                    color: t.surface,
+                    borderRadius: BorderRadius.circular(YRadius.pill)),
+                child: Row(children: [
+                  me == null
+                      ? SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: Icon(Icons.edit_outlined,
+                              size: 18, color: t.muted))
+                      : Avatar(me.displayName, size: 28),
+                  const SizedBox(width: 10),
+                  Expanded(
+                      child: Text(
+                          post.focus.isEmpty
+                              ? tr3('说说你的看法…', 'Пікіріңіз…', 'Что думаете?')
+                              : tr3(
+                                  '聊聊${post.focus.map(feedbackTopicName).join('、')}…',
+                                  'Пікіріңіз…',
+                                  'Что думаете о: ${post.focus.map(feedbackTopicName).join(', ')}?'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: t.muted))),
+                ]))));
+  }
+}
+
 class _Chip extends StatelessWidget {
   const _Chip(
       {super.key,
@@ -163,8 +229,10 @@ class _Chip extends StatelessWidget {
 }
 
 class _CritiqueBox extends StatefulWidget {
-  const _CritiqueBox({required this.post});
+  const _CritiqueBox({required this.post, this.autofocus = false, this.onSent});
   final HousePost post;
+  final bool autofocus;
+  final VoidCallback? onSent;
   @override
   State<_CritiqueBox> createState() => _CritiqueBoxState();
 }
@@ -189,10 +257,12 @@ class _CritiqueBoxState extends State<_CritiqueBox> {
       await context.repos
           .comment(widget.post.id, text.text, rating: rating, topic: topic);
       text.clear();
+      if (!mounted) return;
       setState(() {
         rating = null;
         topic = null;
       });
+      widget.onSent?.call();
     } on ApiFailure catch (f) {
       if (mounted) toast(context, failureText(f));
     } finally {
@@ -209,87 +279,81 @@ class _CritiqueBoxState extends State<_CritiqueBox> {
       for (final k in feedbackTopics)
         if (!focus.contains(k)) k
     ];
-    return YCard(
-        color: t.surface,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(
-              tr3('说说哪方面？（可选）', 'Қай жағы туралы?',
-                  'О чём отзыв? (необязательно)'),
-              style: TextStyle(color: t.muted, fontSize: YFont.small)),
-          const SizedBox(height: 6),
-          Wrap(spacing: 6, runSpacing: 6, children: [
-            for (final k in order)
-              ChoiceChip(
-                  key: Key('critique-pick-$k'),
-                  label: Text(feedbackTopicName(k)),
-                  selected: topic == k,
-                  showCheckmark: false,
-                  avatar: focus.contains(k) && topic != k
-                      ? Icon(Icons.star_rounded, size: 14, color: t.accent)
-                      : null,
-                  onSelected: (_) =>
-                      setState(() => topic = topic == k ? null : k)),
-          ]),
-          const SizedBox(height: 8),
-          Row(children: [
-            for (var i = 1; i <= 5; i++)
-              Semantics(
-                  button: true,
-                  selected: i <= (rating ?? 0),
-                  label: tr3('$i 星', '$i жұлдыз', 'Оценка $i из 5'),
-                  child: InkWell(
-                      borderRadius: BorderRadius.circular(YRadius.pill),
-                      onTap: () =>
-                          setState(() => rating = rating == i ? null : i),
-                      child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 10),
-                          child: Icon(
-                              i <= (rating ?? 0)
-                                  ? Icons.star
-                                  : Icons.star_border,
-                              size: 26,
-                              color: t.accent)))),
-            const SizedBox(width: 6),
-            Expanded(
-                child: Text(
-                    rating == null
-                        ? tr3('整体打个分（可选）', 'Бағалаңыз', 'Общая оценка')
-                        : [
-                            '',
-                            tr3('不推荐', 'Ұсынбаймын', 'Не советую'),
-                            tr3('一般', 'Орташа', 'Так себе'),
-                            tr3('还行', 'Жақсы', 'Нормально'),
-                            tr3('不错', 'Өте жақсы', 'Хорошо'),
-                            tr3('很好', 'Керемет', 'Отлично'),
-                          ][rating!],
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: t.muted, fontSize: YFont.small))),
-          ]),
-          const SizedBox(height: YSpace.xs),
-          // The field takes the full width; the button sits under it, so
-          // the hint and the text being written are never squeezed.
-          TextField(
-              key: const Key('critique-text'),
-              controller: text,
-              minLines: 2,
-              maxLines: 5,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                  hintText: topic == null
-                      ? tr3('说说布局、造价、施工上的看法…', 'Пікіріңіз…',
-                          'Что думаете о планировке, цене, стройке…')
-                      : tr3('关于${feedbackTopicName(topic!)}，你的建议是…',
-                          'Ұсынысыңыз…', 'Ваш совет…'))),
-          const SizedBox(height: YSpace.md),
-          Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton(
-                  key: const Key('critique-send'),
-                  onPressed: busy ? null : send,
-                  child: Text(tr3('发布', 'Жіберу', 'Отправить')))),
-        ]));
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(
+          tr3('说说哪方面？（可选）', 'Қай жағы туралы?', 'О чём отзыв? (необязательно)'),
+          style: TextStyle(color: t.muted, fontSize: YFont.small)),
+      const SizedBox(height: 6),
+      Wrap(spacing: 6, runSpacing: 6, children: [
+        for (final k in order)
+          ChoiceChip(
+              key: Key('critique-pick-$k'),
+              label: Text(feedbackTopicName(k)),
+              selected: topic == k,
+              showCheckmark: false,
+              avatar: focus.contains(k) && topic != k
+                  ? Icon(Icons.star_rounded, size: 14, color: t.accent)
+                  : null,
+              onSelected: (_) => setState(() => topic = topic == k ? null : k)),
+      ]),
+      const SizedBox(height: 8),
+      Row(children: [
+        for (var i = 1; i <= 5; i++)
+          Semantics(
+              button: true,
+              selected: i <= (rating ?? 0),
+              label: tr3('$i 星', '$i жұлдыз', 'Оценка $i из 5'),
+              child: InkWell(
+                  borderRadius: BorderRadius.circular(YRadius.pill),
+                  onTap: () => setState(() => rating = rating == i ? null : i),
+                  child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 10),
+                      child: Icon(
+                          i <= (rating ?? 0) ? Icons.star : Icons.star_border,
+                          size: 26,
+                          color: t.accent)))),
+        const SizedBox(width: 6),
+        Expanded(
+            child: Text(
+                rating == null
+                    ? tr3('整体打个分（可选）', 'Бағалаңыз', 'Общая оценка')
+                    : [
+                        '',
+                        tr3('不推荐', 'Ұсынбаймын', 'Не советую'),
+                        tr3('一般', 'Орташа', 'Так себе'),
+                        tr3('还行', 'Жақсы', 'Нормально'),
+                        tr3('不错', 'Өте жақсы', 'Хорошо'),
+                        tr3('很好', 'Керемет', 'Отлично'),
+                      ][rating!],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: t.muted, fontSize: YFont.small))),
+      ]),
+      const SizedBox(height: YSpace.xs),
+      // The field takes the full width; the button sits under it, so
+      // the hint and the text being written are never squeezed.
+      TextField(
+          key: const Key('critique-text'),
+          controller: text,
+          autofocus: widget.autofocus,
+          minLines: 2,
+          maxLines: 5,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+              hintText: topic == null
+                  ? tr3('说说布局、造价、施工上的看法…', 'Пікіріңіз…',
+                      'Что думаете о планировке, цене, стройке…')
+                  : tr3('关于${feedbackTopicName(topic!)}，你的建议是…', 'Ұсынысыңыз…',
+                      'Ваш совет…'))),
+      const SizedBox(height: YSpace.md),
+      Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton(
+              key: const Key('critique-send'),
+              onPressed: busy ? null : send,
+              child: Text(tr3('发布', 'Жіберу', 'Отправить')))),
+    ]);
   }
 }
 
@@ -358,7 +422,8 @@ class _CritiqueTile extends StatelessWidget {
                                       color: t.accent),
                                 Text(ago(c.createdAt, context.now),
                                     style: TextStyle(
-                                        color: t.muted, fontSize: YFont.caption)),
+                                        color: t.muted,
+                                        fontSize: YFont.caption)),
                               ]),
                           if (c.helpful || c.topic != null)
                             Padding(

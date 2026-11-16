@@ -105,7 +105,7 @@ const flows = {
     await tap(page, 'Дома', { exact: true });
     await tap(page, 'Одноэтажный кирпичный дом для родителей');
     await expectText(page, 'Чертежи проекта');
-    await tap(page, 'Нравится');
+    await tap(page, 'Сохранить');
     await expectText(page, 'Получить код', '(liking needs an account)');
     await back(page);
     await reach(page, 'Открыть чертежи');
@@ -257,12 +257,13 @@ const flows = {
     await tap(page, 'Обзор');
     await tap(page, 'Дом с мансардой');
     await page.waitForTimeout(1500);
-    await reach(page, 'Что думаете', { field: true });
+    // The bar's comment button opens the composer in a sheet.
+    await tap(page, 'Написать отзыв');
+    await page.waitForTimeout(800);
     await fill(page, 'Что думаете', 'Лестницу лучше поставить у входа');
-    await reach(page, 'Отправить');
     await tap(page, 'Отправить');
     await page.waitForTimeout(1200);
-    await scroll(page, 400);
+    await reach(page, 'Лестницу лучше поставить у входа');
     await expectText(page, 'Лестницу лучше поставить у входа');
   },
 

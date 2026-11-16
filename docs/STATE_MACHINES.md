@@ -23,7 +23,7 @@ Every status write in `MockBackend` and in the server goes through an event (`de
 
 Events that move several records together: `invite` (application → pendingConfirm, a new cooperation pending with agreement proposed); both sides confirming (cooperation `confirm`, agreement `accept`, application `cooperate`); decline/revoke/withdraw (cooperation `notForm`, its agreements `reject`, application `uninvite` or `withdraw`); an accepted change (the new agreement `accept`, the old one `supersede`); an upheld report on a demand (report `uphold`, demand `reject`).
 
-Not in the status: a confirmed cooperation's end request (`endRequest`: none → asked → disputed → asked again; a week unanswered fires `end`), and who has confirmed an agreement (`confirmedBy`).
+A confirmed cooperation's ending is its own small machine, `EndPhase` (`Cooperation.endPhase`, server `Cooperation.EndPhase()`), read from `endRequest`: none → asked → `end` fired by the other side's yes or after a week unanswered, or → disputed → asked again by a new request. `endAskedOf(me)` says whether it is mine to answer. Who has confirmed an agreement (`confirmedBy`) stays a set, not a state.
 
 ### Voice
 
@@ -45,6 +45,8 @@ Not in the status: a confirmed cooperation's end request (`endRequest`: none →
 
 Worth making explicit next, highest value first:
 
-1. **Demand edit page** (`publish_page.dart`): which save a change takes (`saveDraft` for draft and rejected, `revise` otherwise) is chosen by status checks in the page; it could ask `demandMachine` (`recheck`).
-2. **Sign-in page** (`login_page.dart`, `codeSent`): enter phone → code sent → verifying.
-3. **HTTP read retries** (`http_backend.dart`): attempt counter over a backoff list; fine as it is, documented here for completeness.
+1. **Sign-in page** (`login_page.dart`, `codeSent`): two steps, one flag; an enum would add nothing.
+2. **Demand edit page** (`publish_page.dart`): picks `saveDraft` for a draft and `revise` otherwise; the server's machine (`recheck`) already guards it.
+3. **HTTP read retries** (`http_backend.dart`): an attempt counter over a backoff list.
+
+Checked and left as they are: none of these has a state that can't be told apart or a combination that shouldn't exist.

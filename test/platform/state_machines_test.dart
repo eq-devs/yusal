@@ -80,4 +80,32 @@ void main() {
     await expectLater(b.resolveReport('rep_seed', false, 'again'),
         throwsA(isA<ApiFailure>()));
   });
+
+  test('a confirmed cooperation\'s ending: none, asked, disputed, asked again',
+      () {
+    final at = DateTime.utc(2026);
+    Cooperation coop(CooperationStatus status, EndRequest? r) => Cooperation(
+        id: 'c',
+        demandId: 'd',
+        applicationId: 'a',
+        ownerId: 'owner',
+        providerId: 'worker',
+        profileId: 'p',
+        status: status,
+        agreements: const [],
+        createdAt: at,
+        endRequest: r);
+    final asked = EndRequest(by: 'worker', at: at);
+    final disputed = EndRequest(by: 'worker', at: at, dispute: '还没完工');
+    expect(coop(CooperationStatus.confirmed, null).endPhase, EndPhase.none);
+    expect(coop(CooperationStatus.confirmed, asked).endPhase, EndPhase.asked);
+    expect(coop(CooperationStatus.confirmed, disputed).endPhase,
+        EndPhase.disputed);
+    // An ended one keeps its last request but has nothing left to answer.
+    expect(coop(CooperationStatus.ended, asked).endPhase, EndPhase.none);
+    expect(
+        coop(CooperationStatus.confirmed, asked).endAskedOf('owner'), isTrue);
+    expect(
+        coop(CooperationStatus.confirmed, asked).endAskedOf('worker'), isFalse);
+  });
 }

@@ -119,10 +119,7 @@ class _JobCard extends StatelessWidget {
           .where((m) => m.status != MilestoneStatus.accepted)
           .firstOrNull;
       final me = context.repos.currentAccount?.id;
-      final asked = c.status == CooperationStatus.confirmed &&
-          c.endRequest != null &&
-          c.endRequest!.dispute == null;
-      status = asked
+      status = c.endPhase == EndPhase.asked
           ? c.endRequest!.by == me
               ? tr3('已请求结束，等业主确认', 'Аяқтау сұралды',
                   'Ждём подтверждения завершения')

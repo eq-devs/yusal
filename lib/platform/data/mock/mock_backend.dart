@@ -163,10 +163,8 @@ class MockBackend implements PlatformRepositories {
     }
     for (final c in cooperations.values.toList()) {
       final r = c.endRequest;
-      if (c.status == CooperationStatus.confirmed &&
-          r != null &&
-          r.dispute == null &&
-          !r.at.add(unilateralEndAfter).isAfter(t)) {
+      if (c.endPhase == EndPhase.asked &&
+          !r!.at.add(unilateralEndAfter).isAfter(t)) {
         cooperations[c.id] = c.copyWith(
             status: _next(cooperationMachine, c.status, CooperationEvent.end),
             endKind: EndKind.unilateral,
@@ -1201,7 +1199,7 @@ class MockBackend implements PlatformRepositories {
         final c = _coop(cooperationId);
         if (c.status != CooperationStatus.confirmed)
           throw const ApiFailure(ApiCodes.invalidState);
-        if (c.endRequest != null && c.endRequest!.dispute == null)
+        if (c.endPhase == EndPhase.asked)
           throw const ApiFailure(ApiCodes.invalidState, 'pending');
         cooperations[c.id] = c.copyWith(
             endRequest: EndRequest(by: me, at: now, note: note.trim()));
@@ -1216,10 +1214,7 @@ class MockBackend implements PlatformRepositories {
         final me = _me;
         final c = _coop(cooperationId);
         final r = c.endRequest;
-        if (!cooperationMachine.can(c.status, CooperationEvent.end) ||
-            r == null ||
-            r.by == me ||
-            r.dispute != null) throw const ApiFailure(ApiCodes.invalidState);
+        if (!c.endAskedOf(me)) throw const ApiFailure(ApiCodes.invalidState);
         cooperations[c.id] = c.copyWith(
             status: _next(cooperationMachine, c.status, CooperationEvent.end),
             endKind: EndKind.mutual,
@@ -1237,7 +1232,7 @@ class MockBackend implements PlatformRepositories {
                 cooperationId: c.id)
           ]);
         }
-        notice(r.by, NoticeKind.ended, RefType.cooperation, c.id,
+        notice(r!.by, NoticeKind.ended, RefType.cooperation, c.id,
             title: _title(c));
         return cooperations[c.id]!;
       });
@@ -1247,7 +1242,8 @@ class MockBackend implements PlatformRepositories {
         final me = _me;
         final c = _coop(cooperationId);
         final r = c.endRequest;
-        if (c.status != CooperationStatus.confirmed || r == null || r.by == me)
+        // Asked, or disputed already (a new objection replaces the old).
+        if (c.endPhase == EndPhase.none || r!.by == me)
           throw const ApiFailure(ApiCodes.invalidState);
         if (note.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
         cooperations[c.id] = c.copyWith(

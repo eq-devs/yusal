@@ -114,11 +114,11 @@ class _CoopView extends StatelessWidget {
       }
     } else if (c.status == CooperationStatus.confirmed) {
       final r = c.endRequest;
-      if (r != null && r.dispute == null && r.by != me) {
+      if (c.endAskedOf(me)) {
         actions.addAll([
           Hint(
               tr3(
-                  '${nameOf(r.by)} 请求结束合作${r.note.isEmpty ? '' : '：${r.note}'}',
+                  '${nameOf(r!.by)} 请求结束合作${r.note.isEmpty ? '' : '：${r.note}'}',
                   '${nameOf(r.by)} аяқтауды сұрады',
                   '${nameOf(r.by)} просит завершить'),
               warn: true),
@@ -150,13 +150,13 @@ class _CoopView extends StatelessWidget {
                   },
                   child: Text(tr3('提出异议', 'Қарсылық', 'Оспорить')))),
         ]);
-      } else if (r != null && r.dispute == null) {
+      } else if (c.endPhase == EndPhase.asked) {
         actions.add(Hint(tr3(
             '已请求结束，等待对方确认。对方 7 天未回应将记为“单方报告结束”，不显示为双方验收。',
             'Аяқтау сұралды. 7 күн жауап болмаса, бір жақты аяқталды деп белгіленеді.',
             'Запрос отправлен. Без ответа 7 дней — «завершено одной стороной».')));
       } else {
-        if (r?.dispute != null)
+        if (c.endPhase == EndPhase.disputed)
           actions.addAll([
             Hint(
                 tr3('结束有异议：${r!.dispute}', 'Қарсылық: ${r.dispute}',

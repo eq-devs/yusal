@@ -112,7 +112,12 @@ class _VoiceBarState extends State<VoiceBar>
     with TickerProviderStateMixin {
   final input = TextEditingController();
   final focus = FocusNode();
-  bool typing = false, listening = false, transcribing = false;
+  bool typing = false;
+
+  /// What the microphone is doing: one thing at a time.
+  _Mic mic = _Mic.off;
+  bool get listening => mic == _Mic.listening;
+  bool get transcribing => mic == _Mic.transcribing;
   bool bannerShown = false, expanded = false;
 
   /// The card that says what the orb is, until the orb is first used.
@@ -243,12 +248,14 @@ class _VoiceBarState extends State<VoiceBar>
   }
 
   Future<void> startListening() async {
+    // The microphone is already in use for the last sentence.
+    if (mic != _Mic.off) return;
     final speech = widget.speech!;
     final ok = await speech.audio.startRecording();
     if (!mounted) return;
     setState(() {
       typing = false;
-      listening = ok;
+      mic = ok ? _Mic.listening : _Mic.off;
       bannerShown = false;
       speechNote = ok
           ? null
@@ -267,8 +274,7 @@ class _VoiceBarState extends State<VoiceBar>
     limit?.cancel();
     _follow(false);
     setState(() {
-      listening = false;
-      transcribing = true;
+      mic = _Mic.transcribing;
     });
     var text = '';
     String? note;
@@ -283,7 +289,7 @@ class _VoiceBarState extends State<VoiceBar>
     }
     if (!mounted) return;
     setState(() {
-      transcribing = false;
+      mic = _Mic.off;
       speechNote = note;
     });
     _animate();
@@ -502,7 +508,7 @@ class _VoiceBarState extends State<VoiceBar>
                         limit?.cancel();
                         _follow(false);
                         await widget.speech!.audio.stopRecording();
-                        setState(() => listening = false);
+                        setState(() => mic = _Mic.off);
                         _animate();
                         toggleTyping();
                       }
@@ -652,6 +658,11 @@ class _VoiceBarState extends State<VoiceBar>
         ]));
   }
 }
+
+/// The microphone: off, hearing a sentence, or turning it into text.
+/// off → listening (tap the orb) → transcribing (tap again, or the time
+/// limit) → off; tapping the pill while listening goes straight to off.
+enum _Mic { off, listening, transcribing }
 
 /// What the orb is doing; each has its own colours.
 enum _Mood { idle, listening, thinking, done, failed }

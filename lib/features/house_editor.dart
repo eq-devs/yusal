@@ -91,6 +91,75 @@ class HouseEditor extends StatefulWidget {
   State<HouseEditor> createState() => _HouseEditorState();
 }
 
+/// What a press on the plan does. One at a time; [EditorTool.browse] is
+/// the rest state every other tool goes back to (Esc, the browse button,
+/// another tab or floor).
+enum EditorTool {
+  /// Pan, zoom and tap to pick.
+  browse,
+
+  /// Draw walls from point to point; a wall tapped while drawing is edited.
+  drawWall,
+
+  /// Pick a wall to edit (phone: under 更多工具).
+  selectWall,
+
+  /// Move or retype the picked wall's ends.
+  editWall,
+
+  /// Drag a straight line across a room to split it.
+  split,
+
+  /// Drag a rectangle to carve a room.
+  box,
+
+  /// Drag the outline's handles to change the house size.
+  resize,
+
+  /// Tap a wall to put the chosen door or window there.
+  placeOpening,
+
+  /// Tap to put the chosen furniture.
+  placeFurniture,
+
+  /// Tap to put the chosen socket, switch, light or pipe point.
+  placeUtility,
+
+  /// Tap points to measure between them.
+  measure,
+
+  /// Drag the picked grid wall to move it (advanced).
+  wall,
+
+  /// Select openings (advanced).
+  opening,
+
+  /// Edit the grid (advanced).
+  grid,
+
+  /// Paint or erase rooms over grid cells (advanced, see `erase`).
+  room,
+
+  /// Place a stair (advanced).
+  stair,
+}
+
+/// The open design's state on disk. An edit makes it unsaved; a save
+/// leaves it saved (or saved with the project index still to repair), or
+/// unsaved again when it changed meanwhile, or failed, which retries every
+/// five seconds until a save works.
+enum _SaveStatus {
+  saved('已保存'),
+  indexPending('已保存，索引待恢复'),
+  unsaved('未保存'),
+  failed('保存失败');
+
+  const _SaveStatus(this.label);
+
+  /// What screen readers are told, as before.
+  final String label;
+}
+
 class _HouseEditorState extends State<HouseEditor>
     with WidgetsBindingObserver, TickerProviderStateMixin, VoiceScreen
     implements DesignHost {
@@ -122,6 +191,11 @@ class _HouseEditorState extends State<HouseEditor>
       floorIndex: floorIndex,
       aliases: {for (final e in entities) e.id: e.alias},
       selectedId: selectedFurnitureId ?? selectedOpeningId ?? selectedRoomId);
+
+  /// The tool in hand, so the assistant knows what a tap on the plan does
+  /// right now; nothing while browsing.
+  @override
+  String get summary => browse ? '' : 'tool: ${tool.name}';
 
   @override
   HouseDocument get document => history.present;
@@ -291,8 +365,7 @@ class _HouseEditorState extends State<HouseEditor>
       clearWallSelection();
       tab = value;
       if (value != 'plan') {
-        tool = 'browse';
-        browse = true;
+        tool = EditorTool.browse;
         drawingOrigin = null;
         drawingEnd = null;
         placementHint = null;
@@ -377,7 +450,10 @@ class _HouseEditorState extends State<HouseEditor>
     }
   }
 
-  String tool = 'browse';
+  EditorTool tool = EditorTool.browse;
+
+  /// Panning and tapping to pick, nothing being drawn or placed.
+  bool get browse => tool == EditorTool.browse;
   PlanRect? focus;
   Offset? spatialStart, spatialEnd;
   FloorPlanPainter? dragCoordinatePainter;
@@ -622,8 +698,7 @@ class _HouseEditorState extends State<HouseEditor>
                                     Navigator.pop(context);
                                     setState(() {
                                       view3d = false;
-                                      browse = false;
-                                      tool = 'resize';
+                                      tool = EditorTool.resize;
                                       placementHint = null;
                                     });
                                   },
@@ -713,13 +788,12 @@ class _HouseEditorState extends State<HouseEditor>
     }
     if (choice == 'addRoom') return addRoomBySize();
     setState(() {
-      browse = false;
       erase = choice == 'erase';
       placementHint = null;
       if (['grid', 'opening', 'stair'].contains(choice))
-        tool = choice;
+        tool = EditorTool.values.byName(choice);
       else {
-        tool = 'room';
+        tool = EditorTool.room;
         if (!erase) brush = RoomType.values.firstWhere((t) => t.name == choice);
       }
     });
@@ -874,10 +948,9 @@ class _HouseEditorState extends State<HouseEditor>
 
   Widget openingTool(OpeningKind kind, IconData icon, String label) {
     final button = basicTool(
-        icon, label, tool == 'placeOpening' && placingOpening == kind, () {
+        icon, label, tool == EditorTool.placeOpening && placingOpening == kind, () {
       placingOpening = kind;
-      browse = false;
-      tool = 'placeOpening';
+      tool = EditorTool.placeOpening;
       placementHint = tr3('点一下墙面放置，也可以从工具栏直接拖入', 'Қабырғаны басып қойыңыз, не құралдар жолынан сүйреп әкеліңіз', 'Нажмите на стену, чтобы поставить, или перетащите с панели инструментов');
     });
     return Draggable<OpeningKind>(
@@ -916,7 +989,7 @@ class _HouseEditorState extends State<HouseEditor>
         child: button);
   }
 
-  bool get spatialTool => tool == 'box' || tool == 'split';
+  bool get spatialTool => tool == EditorTool.box || tool == EditorTool.split;
 
   void updateSpatial(Offset point, Size size) {
     final painter = interactionPainter();
@@ -933,7 +1006,7 @@ class _HouseEditorState extends State<HouseEditor>
     spatialEnd = Offset(snap(world.x, base.axes.v).toDouble(),
         snap(world.y, base.axes.h).toDouble());
     spatialStart ??= spatialEnd;
-    if (tool == 'split') {
+    if (tool == EditorTool.split) {
       final vertical = (spatialEnd!.dy - spatialStart!.dy).abs() >=
           (spatialEnd!.dx - spatialStart!.dx).abs();
       spatialPreview = vertical
@@ -963,7 +1036,7 @@ class _HouseEditorState extends State<HouseEditor>
     final rect = spatialPreview;
     if (rect == null || spatialStart == null || spatialEnd == null) return;
     if ((spatialStart! - spatialEnd!).distance < 300 ||
-        tool == 'box' &&
+        tool == EditorTool.box &&
             (rect.right - rect.left < 300 || rect.top - rect.bottom < 300)) {
       spatialError = null;
       spatialDocument = null;
@@ -974,7 +1047,7 @@ class _HouseEditorState extends State<HouseEditor>
     final vertical = (spatialEnd!.dy - spatialStart!.dy).abs() >=
         (spatialEnd!.dx - spatialStart!.dx).abs();
     final midpoint = (spatialStart! + spatialEnd!) / 2;
-    final arguments = tool == 'split'
+    final arguments = tool == EditorTool.split
         ? <String, dynamic>{
             'floorId': floor.id,
             'dir': vertical ? AxisDir.V : AxisDir.H,
@@ -996,7 +1069,7 @@ class _HouseEditorState extends State<HouseEditor>
           };
     final result = executeCommand(
         presentState,
-        DesignCommand(tool == 'split' ? 'SplitSpace' : 'CarveRoom', arguments),
+        DesignCommand(tool == EditorTool.split ? 'SplitSpace' : 'CarveRoom', arguments),
         CommandContext(newId: () => const Uuid().v4(), now: () => 'unused'));
     spatialError = result is Rejected ? result.message : null;
     if (result is Applied) {
@@ -1030,7 +1103,7 @@ class _HouseEditorState extends State<HouseEditor>
       return;
     }
     final rectangle = spatialPreview;
-    if (tool == 'split' &&
+    if (tool == EditorTool.split &&
         spatialStart != null &&
         spatialEnd != null &&
         (spatialStart! - spatialEnd!).distance >= 300) {
@@ -1077,8 +1150,8 @@ class _HouseEditorState extends State<HouseEditor>
   final planSheetKey = GlobalKey();
   int floorIndex = 0;
   RoomType brush = RoomType.living;
-  bool browse = true, erase = false, dirty = false, saving = false;
-  String status = '已保存';
+  bool erase = false, dirty = false, saving = false;
+  _SaveStatus status = _SaveStatus.saved;
   final stroke = <Cell>[];
   final pointers = <int>{};
   bool cancelledStroke = false;
@@ -1193,13 +1266,13 @@ class _HouseEditorState extends State<HouseEditor>
       if (mounted)
         setState(() {
           dirty = history.present != doc;
-          status = dirty ? '未保存' : widget.store.indexWarning != null ? '已保存，索引待恢复' : '已保存';
+          status = dirty ? _SaveStatus.unsaved : widget.store.indexWarning != null ? _SaveStatus.indexPending : _SaveStatus.saved;
         });
     } catch (_) {
       failed = true;
       if (mounted) {
-        final firstFailure = status != '保存失败';
-        setState(() => status = '保存失败');
+        final firstFailure = status != _SaveStatus.failed;
+        setState(() => status = _SaveStatus.failed);
         if (firstFailure) notify(tr3('没能保存到本机，请检查存储空间；稍后会自动重试，也可导出备份', 'Құрылғыға сақталмады, жадты тексеріңіз; кейін қайталанады, файлды экспорттауға болады', 'Не удалось сохранить. Проверьте место; повторим автоматически. Можно экспортировать файл'));
       }
     } finally {
@@ -1216,13 +1289,13 @@ class _HouseEditorState extends State<HouseEditor>
     if (highlights.isNotEmpty) flash(const []);
     derive();
     dirty = true;
-    status = '未保存';
+    status = _SaveStatus.unsaved;
     timer?.cancel();
     timer = Timer(const Duration(milliseconds: 1500), save);
   }
 
   void beginDrag(Offset point, Size size) {
-    if (tool == 'selectWall') return;
+    if (tool == EditorTool.selectWall) return;
     draggingAxis = null;
     draggingOpening = null;
     dragArguments = null;
@@ -1235,14 +1308,14 @@ class _HouseEditorState extends State<HouseEditor>
     final x = painter.worldPoint(point, size).x,
         y = painter.worldPoint(point, size).y,
         tolerance = 12 / scale;
-    if (tool == 'wall' && selectedWall != null) {
+    if (tool == EditorTool.wall && selectedWall != null) {
       final wall = selectedWall!;
       final along = (wall.start.pos + wall.end.pos) / 2;
       final center = wall.axis.dir == AxisDir.V
           ? painter.point(wall.axis.pos.toDouble(), along, size)
           : painter.point(along, wall.axis.pos.toDouble(), size);
       if ((point - center).distance <= 24) draggingAxis = wall.axis;
-    } else if (tool == 'resize') {
+    } else if (tool == EditorTool.resize) {
       final width = history.present.footprint.width.toDouble(),
           depth = history.present.footprint.depth.toDouble();
       final reach = 28 / canvasZoom;
@@ -1252,7 +1325,7 @@ class _HouseEditorState extends State<HouseEditor>
           reach) {
         draggingAxis = base.axes.h.last;
       }
-    } else if (tool == 'grid') {
+    } else if (tool == EditorTool.grid) {
       final axes = base.axes.all
           .where((a) =>
               a.kind != 'boundary' &&
@@ -1262,7 +1335,7 @@ class _HouseEditorState extends State<HouseEditor>
           .abs()
           .compareTo(((b.dir == AxisDir.V ? x : y) - b.pos).abs()));
       draggingAxis = axes.firstOrNull;
-    } else if (tool == 'opening' || browse) {
+    } else if (tool == EditorTool.opening || browse) {
       draggingOpening = openingAt(point, size);
     }
   }
@@ -1314,7 +1387,7 @@ class _HouseEditorState extends State<HouseEditor>
         y = painter.worldPoint(point, size).y;
     if (draggingAxis != null) {
       final axis = draggingAxis!;
-      if (tool == 'wall' && selectedWall != null) {
+      if (tool == EditorTool.wall && selectedWall != null) {
         final originalAxes = resolveFloorAxes(history.present, floor.id)!;
         final originalList =
             axis.dir == AxisDir.V ? originalAxes.v : originalAxes.h;
@@ -1417,7 +1490,7 @@ class _HouseEditorState extends State<HouseEditor>
     spatialEnd = null;
     spatialPreview = null;
     downPoint = null;
-    if (tool == 'drawWall' && drawingStrokeActive)
+    if (tool == EditorTool.drawWall && drawingStrokeActive)
       drawingOrigin = drawingBefore;
     drawingStrokeActive = false;
     drawingBefore = null;
@@ -1614,9 +1687,8 @@ class _HouseEditorState extends State<HouseEditor>
       history.undo();
       changed();
       dropStaleWallState();
-      if (tool == 'editWall') {
-        tool = 'browse';
-        browse = true;
+      if (tool == EditorTool.editWall) {
+        tool = EditorTool.browse;
       }
     });
     notify(tr3('已撤销上一步', 'Соңғы әрекет болдырылмады', 'Последнее действие отменено'));
@@ -1629,9 +1701,8 @@ class _HouseEditorState extends State<HouseEditor>
       history.redo();
       changed();
       dropStaleWallState();
-      if (tool == 'editWall') {
-        tool = 'browse';
-        browse = true;
+      if (tool == EditorTool.editWall) {
+        tool = EditorTool.browse;
       }
     });
     notify(tr3('已重做', 'Қайталанды', 'Действие повторено'));
@@ -2043,8 +2114,7 @@ class _HouseEditorState extends State<HouseEditor>
       setState(() {
         floorIndex = index!;
         view3d = false;
-        browse = true;
-        tool = 'browse';
+        tool = EditorTool.browse;
         derive();
         focus = selected;
       });
@@ -2067,7 +2137,7 @@ class _HouseEditorState extends State<HouseEditor>
           .abs()
           .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
     final utility = utilityAt(point, size);
-    if (utility != null && tool != 'selectWall') {
+    if (utility != null && tool != EditorTool.selectWall) {
       setState(() {
         clearSelection();
         clearWallSelection();
@@ -2078,7 +2148,7 @@ class _HouseEditorState extends State<HouseEditor>
       return;
     }
     final opening = placements.firstOrNull;
-    if (opening != null && tool != 'selectWall') {
+    if (opening != null && tool != EditorTool.selectWall) {
       selectOpening(opening.opening);
       return;
     }
@@ -2088,7 +2158,7 @@ class _HouseEditorState extends State<HouseEditor>
     final piece = furnitureAtWorld(Offset(x, y));
     // Rugs cover rooms: the first tap picks the room, the next the rug.
     if (piece != null &&
-        tool != 'selectWall' &&
+        tool != EditorTool.selectWall &&
         (!isFlatFurniture(piece.kind) ||
             (roomHere != null && roomHere == selectedRoomId) ||
             roomHere == null)) {
@@ -2150,8 +2220,7 @@ class _HouseEditorState extends State<HouseEditor>
       if (choice == 'move') {
         setState(() {
           selectedWall = wall;
-          tool = 'wall';
-          browse = false;
+          tool = EditorTool.wall;
           placementHint = null;
         });
         return;
@@ -2193,13 +2262,12 @@ class _HouseEditorState extends State<HouseEditor>
       }
       return;
     }
-    if (tool == 'editWall' || menuWall != null) {
+    if (tool == EditorTool.editWall || menuWall != null) {
       // A tap beside the selected wall just ends the selection.
       setState(() {
         clearWallSelection();
-        if (tool == 'editWall') {
-          tool = 'browse';
-          browse = true;
+        if (tool == EditorTool.editWall) {
+          tool = EditorTool.browse;
         }
         placementHint = null;
       });
@@ -2357,8 +2425,7 @@ class _HouseEditorState extends State<HouseEditor>
           ? Offset(c.carrier.pos.toDouble(), c.endPos.toDouble())
           : Offset(c.endPos.toDouble(), c.carrier.pos.toDouble());
       if (!keepTool) {
-        tool = 'editWall';
-        browse = false;
+        tool = EditorTool.editWall;
       }
       placementHint = tr3('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз', 'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить');
     });
@@ -2580,9 +2647,8 @@ class _HouseEditorState extends State<HouseEditor>
     }).firstOrNull;
     if (solid == null) {
       clearWallSelection();
-      if (tool == 'editWall') {
-        tool = 'browse';
-        browse = true;
+      if (tool == EditorTool.editWall) {
+        tool = EditorTool.browse;
       }
       return;
     }
@@ -2764,9 +2830,8 @@ class _HouseEditorState extends State<HouseEditor>
     if (history.present != before) {
       setState(() {
         cancelDrag();
-        if (tool == 'editWall') {
-          tool = 'browse';
-          browse = true;
+        if (tool == EditorTool.editWall) {
+          tool = EditorTool.browse;
         }
         clearWallSelection();
         placementHint = null;
@@ -2799,7 +2864,7 @@ class _HouseEditorState extends State<HouseEditor>
   )? attachmentMemo;
 
   List<Offset> visibleWallAttachments(Size size) {
-    final seed = tool == 'drawWall' ? drawingOrigin : null;
+    final seed = tool == EditorTool.drawWall ? drawingOrigin : null;
     final memo = attachmentMemo;
     if (memo != null &&
         identical(memo.$1, base) &&
@@ -2818,7 +2883,7 @@ class _HouseEditorState extends State<HouseEditor>
     final result = <Offset>[];
     // The active start point and the selected wall's grips own their spots.
     final reserved = [
-      if (tool == 'drawWall' && drawingOrigin != null)
+      if (tool == EditorTool.drawWall && drawingOrigin != null)
         painter.point(drawingOrigin!.dx, drawingOrigin!.dy, size)
     ];
     bool onSelected(Offset p) {
@@ -2850,7 +2915,7 @@ class _HouseEditorState extends State<HouseEditor>
   Offset? attachmentAt(Offset local, Size size) {
     final painter = interactionPainter();
     final candidates = [
-      if (tool == 'drawWall' && drawingOrigin != null) drawingOrigin!,
+      if (tool == EditorTool.drawWall && drawingOrigin != null) drawingOrigin!,
       ...visibleWallAttachments(size)
     ];
     candidates.sort((a, b) => (painter.point(a.dx, a.dy, size) - local)
@@ -2887,11 +2952,11 @@ class _HouseEditorState extends State<HouseEditor>
     wallHoldTimer?.cancel();
     wallHoldScreen = screen;
     if (!(browse ||
-        tool == 'drawWall' ||
-        tool == 'editWall' ||
-        tool == 'selectWall')) return;
+        tool == EditorTool.drawWall ||
+        tool == EditorTool.editWall ||
+        tool == EditorTool.selectWall)) return;
     // Pressing a plus before dragging is common; it must not open a menu.
-    if ((tool == 'drawWall' || tool == 'selectWall') &&
+    if ((tool == EditorTool.drawWall || tool == EditorTool.selectWall) &&
         attachmentAt(local, size) != null) return;
     final wall = wallAtPoint(local, size);
     if (wall == null) return;
@@ -2914,7 +2979,7 @@ class _HouseEditorState extends State<HouseEditor>
   void showWallContext(WallSegment wall, Offset point) {
     final inner = wall.axis.kind != 'boundary';
     if (inner) {
-      selectWallForEdit(wall, point.dx, point.dy, keepTool: tool == 'drawWall');
+      selectWallForEdit(wall, point.dx, point.dy, keepTool: tool == EditorTool.drawWall);
     } else {
       clearWallSelection();
     }
@@ -3183,9 +3248,8 @@ class _HouseEditorState extends State<HouseEditor>
 
   void startWallDrawing() {
     cancelDrag();
-    browse = false;
     view3d = false;
-    tool = 'drawWall';
+    tool = EditorTool.drawWall;
     drawingOrigin = null;
     placingWallStart = false;
     drawingEnd = null;
@@ -3202,7 +3266,7 @@ class _HouseEditorState extends State<HouseEditor>
       base.wallSegments.any((w) => w.axis.kind != 'boundary');
 
   bool get showWallCoach =>
-      tool == 'drawWall' &&
+      tool == EditorTool.drawWall &&
       !coachDismissed &&
       !drawingStrokeActive &&
       drawingOrigin == null &&
@@ -3210,7 +3274,7 @@ class _HouseEditorState extends State<HouseEditor>
       !floorHasInnerWalls;
 
   bool get showStartCoach =>
-      tool == 'browse' &&
+      tool == EditorTool.browse &&
       !view3d &&
       !coachDismissed &&
       !floorHasInnerWalls &&
@@ -3244,7 +3308,7 @@ class _HouseEditorState extends State<HouseEditor>
 
   /// In-canvas label for the wall being drawn, resized or moved.
   String? get wallDraftLabel {
-    if (tool == 'drawWall' && drawingEnd != null && drawingOrigin != null)
+    if (tool == EditorTool.drawWall && drawingEnd != null && drawingOrigin != null)
       return '${meters((drawingEnd! - drawingOrigin!).distance)} $unitM';
     if (wallGrip == null || editPreviewStart == null || editPreviewEnd == null)
       return null;
@@ -3262,7 +3326,7 @@ class _HouseEditorState extends State<HouseEditor>
         warn = Color(0xff8a5a00),
         bad = Color(0xffa14539),
         info = Color(0xff4a5548);
-    if (tool == 'drawWall' &&
+    if (tool == EditorTool.drawWall &&
         drawingStrokeActive &&
         drawingOrigin != null &&
         drawingEnd != null) {
@@ -3533,15 +3597,15 @@ class _HouseEditorState extends State<HouseEditor>
 
   String get interactionHint =>
       (placementHint == null ? null : coreMessage(placementHint!)) ??
-      (tool == 'drawWall'
+      (tool == EditorTool.drawWall
           ? tr3('按住 ＋ 拖出新墙 · 点墙修改 · 拖空白处移动画布', '＋ белгісін ұстап қабырға тартыңыз · қабырғаны басып өзгертіңіз · бос жерді сүйреп жылжытыңыз', 'Зажмите ＋ и вытяните стену · нажмите на стену, чтобы изменить · тяните пустое место, чтобы сдвинуть чертёж')
-          : tool == 'selectWall'
+          : tool == EditorTool.selectWall
               ? tr3('点墙修改 · 拖 ＋ 接墙 · 拖空白处移动画布', 'Қабырғаны басып өзгертіңіз · ＋ белгісінен жалғаңыз · бос жерді сүйреп жылжытыңыз', 'Нажмите на стену, чтобы изменить · тяните ＋, чтобы пристроить стену · тяните пустое место, чтобы сдвинуть чертёж')
-              : tool == 'editWall'
+              : tool == EditorTool.editWall
                   ? tr3('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз', 'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить')
                   : spatialTool
-                      ? (tool == 'split' ? tr3('拉一条横线或竖线，松手分房', 'Көлденең не тік сызық тартып, жіберсеңіз бөлінеді', 'Проведите горизонтальную или вертикальную линию и отпустите — комната разделится') : tr3('从一角拖到另一角，松手创建房间', 'Бір бұрыштан екіншісіне тартып жіберсеңіз, бөлме жасалады', 'Протяните от одного угла к другому и отпустите — комната будет создана'))
-                      : tool == 'resize'
+                      ? (tool == EditorTool.split ? tr3('拉一条横线或竖线，松手分房', 'Көлденең не тік сызық тартып, жіберсеңіз бөлінеді', 'Проведите горизонтальную или вертикальную линию и отпустите — комната разделится') : tr3('从一角拖到另一角，松手创建房间', 'Бір бұрыштан екіншісіне тартып жіберсеңіз, бөлме жасалады', 'Протяните от одного угла к другому и отпустите — комната будет создана'))
+                      : tool == EditorTool.resize
                           ? tr3('拖右边或上边的圆形手柄改长宽 · 所有楼层一起改', 'Оң не жоғарғы дөңгелек тұтқаны сүйреп өлшемін өзгертіңіз · барлық қабат бірге өзгереді', 'Тяните круглую ручку справа или сверху, чтобы изменить размер · меняются все этажи')
                           : tr3('拖动画布 · 点选对象调整 · 双指缩放', 'Сызбаны сүйреп жылжытыңыз · нысанды басып өзгертіңіз · екі саусақпен үлкейтіңіз', 'Тяните, чтобы сдвинуть чертёж · нажмите на объект, чтобы изменить · масштаб двумя пальцами'));
 
@@ -3550,7 +3614,7 @@ class _HouseEditorState extends State<HouseEditor>
   /// What the mouse pointer would do here, shown before pressing.
   MouseCursor hoverCursor(Offset local, Size size) {
     if (view3d) return MouseCursor.defer;
-    final wallTools = tool == 'drawWall' || tool == 'editWall';
+    final wallTools = tool == EditorTool.drawWall || tool == EditorTool.editWall;
     if (wallTools && editStart != null && editEnd != null) {
       final painter = interactionPainter();
       final a = painter.point(editStart!.dx, editStart!.dy, size),
@@ -3565,7 +3629,7 @@ class _HouseEditorState extends State<HouseEditor>
       if (distanceToSegment(local, a, b) * canvasZoom <= 18)
         return SystemMouseCursors.move;
     }
-    if (tool == 'resize') {
+    if (tool == EditorTool.resize) {
       final painter = interactionPainter();
       final width = base.axes.v.last.pos.toDouble(),
           depth = base.axes.h.last.pos.toDouble();
@@ -3576,24 +3640,24 @@ class _HouseEditorState extends State<HouseEditor>
               canvasZoom <=
           28) return SystemMouseCursors.resizeUpDown;
     }
-    if ((tool == 'drawWall' || tool == 'selectWall') &&
+    if ((tool == EditorTool.drawWall || tool == EditorTool.selectWall) &&
         attachmentAt(local, size) != null) return SystemMouseCursors.click;
     if (openingAt(local, size) != null) return SystemMouseCursors.grab;
-    if ((browse || wallTools || tool == 'selectWall') &&
+    if ((browse || wallTools || tool == EditorTool.selectWall) &&
         wallAtPoint(local, size, radius: 16) != null)
       return SystemMouseCursors.click;
-    return browse || wallTools || tool == 'selectWall'
+    return browse || wallTools || tool == EditorTool.selectWall
         ? SystemMouseCursors.grab
         : MouseCursor.defer;
   }
 
   /// Saved state at a glance: icon plus a word, red when saving failed.
   Widget saveIndicator() {
-    final failed = status == '保存失败',
+    final failed = status == _SaveStatus.failed,
         color = failed ? Theme.of(context).colorScheme.error : null;
     return Semantics(
         liveRegion: true,
-        label: status,
+        label: status.label,
         child: ExcludeSemantics(
             child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(
@@ -3612,11 +3676,10 @@ class _HouseEditorState extends State<HouseEditor>
                   saving
                       ? tr3('保存中', 'Сақталуда', 'Сохранение')
                       : switch (status) {
-                          '已保存' => tr3('已保存', 'Сақталды', 'Сохранено'),
-                          '已保存，索引待恢复' => tr3('设计已保存，索引待恢复', 'Жоба сақталды, индекс қалпына келеді', 'Проект сохранён, индекс требует восстановления'),
-                          '未保存' => tr3('未保存', 'Сақталмаған', 'Не сохранено'),
-                          '保存失败' => tr3('保存失败', 'Сақталмады', 'Ошибка сохранения'),
-                          _ => status
+                          _SaveStatus.saved => tr3('已保存', 'Сақталды', 'Сохранено'),
+                          _SaveStatus.indexPending => tr3('设计已保存，索引待恢复', 'Жоба сақталды, индекс қалпына келеді', 'Проект сохранён, индекс требует восстановления'),
+                          _SaveStatus.unsaved => tr3('未保存', 'Сақталмаған', 'Не сохранено'),
+                          _SaveStatus.failed => tr3('保存失败', 'Сақталмады', 'Ошибка сохранения'),
                         },
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -3632,13 +3695,11 @@ class _HouseEditorState extends State<HouseEditor>
         cancelDrag();
       } else if (menuWall != null || editStart != null) {
         clearWallSelection();
-        if (tool == 'editWall') {
-          tool = 'browse';
-          browse = true;
+        if (tool == EditorTool.editWall) {
+          tool = EditorTool.browse;
         }
-      } else if (tool != 'browse') {
-        tool = 'browse';
-        browse = true;
+      } else if (tool != EditorTool.browse) {
+        tool = EditorTool.browse;
         drawingOrigin = null;
         placingWallStart = false;
         placingUtility = null;
@@ -3729,9 +3790,9 @@ class _HouseEditorState extends State<HouseEditor>
                                   transformationController: canvasTransform,
                                   boundaryMargin: const EdgeInsets.all(200),
                                   panEnabled: ((browse ||
-                                              tool == 'measure' ||
-                                              tool == 'placeFurniture' ||
-                                              tool == 'placeUtility') &&
+                                              tool == EditorTool.measure ||
+                                              tool == EditorTool.placeFurniture ||
+                                              tool == EditorTool.placeUtility) &&
                                           draggingOpening == null &&
                                           furnitureGrip == null &&
                                           utilityDown == null) ||
@@ -3769,14 +3830,13 @@ class _HouseEditorState extends State<HouseEditor>
                                                   beginFurnitureGesture(
                                                       e.localPosition, size)) {
                                                 setState(() {});
-                                              } else if (tool == 'selectWall') {
+                                              } else if (tool == EditorTool.selectWall) {
                                                 if (attachmentAt(
                                                         e.localPosition,
                                                         size) !=
                                                     null)
                                                   setState(() {
-                                                    tool = 'drawWall';
-                                                    browse = false;
+                                                    tool = EditorTool.drawWall;
                                                     wallFromAdjust = true;
                                                     wallGesture = 'draw';
                                                     clearWallSelection();
@@ -3787,10 +3847,10 @@ class _HouseEditorState extends State<HouseEditor>
                                                   // 改墙 selects walls even where
                                                   // a door sits on them.
                                                   wallGesture = 'tap';
-                                              } else if (tool == 'drawWall') {
+                                              } else if (tool == EditorTool.drawWall) {
                                                 setState(() => beginWallTool(
                                                     e.localPosition, size));
-                                              } else if (tool == 'editWall') {
+                                              } else if (tool == EditorTool.editWall) {
                                                 setState(() {
                                                   beginWallEdit(
                                                       e.localPosition, size);
@@ -3831,17 +3891,17 @@ class _HouseEditorState extends State<HouseEditor>
                                             }
                                             if (!browse &&
                                                 !spatialTool &&
-                                                tool != 'editWall' &&
-                                                tool != 'selectWall' &&
-                                                tool != 'drawWall' &&
-                                                tool != 'placeOpening' &&
-                                                tool != 'resize' &&
-                                                tool != 'wall' &&
-                                                tool != 'opening' &&
-                                                tool != 'grid' &&
-                                                tool != 'measure' &&
-                                                tool != 'placeFurniture' &&
-                                                tool != 'placeUtility')
+                                                tool != EditorTool.editWall &&
+                                                tool != EditorTool.selectWall &&
+                                                tool != EditorTool.drawWall &&
+                                                tool != EditorTool.placeOpening &&
+                                                tool != EditorTool.resize &&
+                                                tool != EditorTool.wall &&
+                                                tool != EditorTool.opening &&
+                                                tool != EditorTool.grid &&
+                                                tool != EditorTool.measure &&
+                                                tool != EditorTool.placeFurniture &&
+                                                tool != EditorTool.placeUtility)
                                               setState(() => record(
                                                   e.localPosition, size));
                                           },
@@ -3901,17 +3961,17 @@ class _HouseEditorState extends State<HouseEditor>
                                                   e.localPosition, size));
                                             if (!browse &&
                                                 !spatialTool &&
-                                                tool != 'editWall' &&
-                                                tool != 'selectWall' &&
-                                                tool != 'drawWall' &&
-                                                tool != 'placeOpening' &&
-                                                tool != 'resize' &&
-                                                tool != 'wall' &&
-                                                tool != 'opening' &&
-                                                tool != 'grid' &&
-                                                tool != 'measure' &&
-                                                tool != 'placeFurniture' &&
-                                                tool != 'placeUtility' &&
+                                                tool != EditorTool.editWall &&
+                                                tool != EditorTool.selectWall &&
+                                                tool != EditorTool.drawWall &&
+                                                tool != EditorTool.placeOpening &&
+                                                tool != EditorTool.resize &&
+                                                tool != EditorTool.wall &&
+                                                tool != EditorTool.opening &&
+                                                tool != EditorTool.grid &&
+                                                tool != EditorTool.measure &&
+                                                tool != EditorTool.placeFurniture &&
+                                                tool != EditorTool.placeUtility &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1)
                                               setState(() => record(
@@ -3970,7 +4030,7 @@ class _HouseEditorState extends State<HouseEditor>
                                                         canvasZoom <
                                                     8;
                                             if (tapped &&
-                                                tool == 'placeFurniture') {
+                                                tool == EditorTool.placeFurniture) {
                                               placeFurnitureAt(
                                                   e.localPosition, size);
                                               pointers.remove(e.pointer);
@@ -3978,14 +4038,14 @@ class _HouseEditorState extends State<HouseEditor>
                                               return;
                                             }
                                             if (tapped &&
-                                                tool == 'placeUtility') {
+                                                tool == EditorTool.placeUtility) {
                                               placeUtilityAt(
                                                   e.localPosition, size);
                                               pointers.remove(e.pointer);
                                               downPoint = null;
                                               return;
                                             }
-                                            if (tapped && tool == 'measure') {
+                                            if (tapped && tool == EditorTool.measure) {
                                               addMeasurePoint(
                                                   e.localPosition, size);
                                               pointers.remove(e.pointer);
@@ -4014,7 +4074,7 @@ class _HouseEditorState extends State<HouseEditor>
                                               downPoint = null;
                                               return;
                                             }
-                                            if (tool == 'drawWall' &&
+                                            if (tool == EditorTool.drawWall &&
                                                 single &&
                                                 gesture == 'tap') {
                                               wallToolTap(
@@ -4023,7 +4083,7 @@ class _HouseEditorState extends State<HouseEditor>
                                               downPoint = null;
                                               return;
                                             }
-                                            if (tool == 'drawWall' &&
+                                            if (tool == EditorTool.drawWall &&
                                                 single &&
                                                 gesture == 'draw' &&
                                                 !wallFromAdjust &&
@@ -4039,7 +4099,7 @@ class _HouseEditorState extends State<HouseEditor>
                                               downPoint = null;
                                               return;
                                             }
-                                            if (tool == 'drawWall' &&
+                                            if (tool == EditorTool.drawWall &&
                                                 single &&
                                                 gesture == 'draw') {
                                               final tapFromAdjust =
@@ -4052,7 +4112,7 @@ class _HouseEditorState extends State<HouseEditor>
                                               if (tapFromAdjust) {
                                                 setState(() {
                                                   cancelDrag();
-                                                  tool = 'selectWall';
+                                                  tool = EditorTool.selectWall;
                                                 });
                                                 tapObject(
                                                     e.localPosition, size);
@@ -4063,7 +4123,7 @@ class _HouseEditorState extends State<HouseEditor>
                                               downPoint = null;
                                               return;
                                             }
-                                            if (tool == 'placeOpening' &&
+                                            if (tool == EditorTool.placeOpening &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1 &&
                                                 downPoint != null &&
@@ -4114,10 +4174,9 @@ class _HouseEditorState extends State<HouseEditor>
                                                   notify(message);
                                               }
 
-                                              if (tool == 'wall')
+                                              if (tool == EditorTool.wall)
                                                 setState(() {
-                                                  tool = 'browse';
-                                                  browse = true;
+                                                  tool = EditorTool.browse;
                                                   selectedWall = null;
                                                   placementHint = null;
                                                 });
@@ -4127,10 +4186,10 @@ class _HouseEditorState extends State<HouseEditor>
                                               return;
                                             }
                                             if ((browse ||
-                                                    tool == 'editWall' ||
-                                                    tool == 'selectWall' ||
-                                                    tool == 'opening' ||
-                                                    tool == 'grid') &&
+                                                    tool == EditorTool.editWall ||
+                                                    tool == EditorTool.selectWall ||
+                                                    tool == EditorTool.opening ||
+                                                    tool == EditorTool.grid) &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1 &&
                                                 downPoint != null &&
@@ -4139,7 +4198,7 @@ class _HouseEditorState extends State<HouseEditor>
                                                     8) {
                                               tapObject(e.localPosition, size);
                                             }
-                                            if (tool == 'stair' &&
+                                            if (tool == EditorTool.stair &&
                                                 !cancelledStroke &&
                                                 stroke.isNotEmpty &&
                                                 pointers.length == 1) {
@@ -4166,7 +4225,7 @@ class _HouseEditorState extends State<HouseEditor>
                                               });
                                               stroke.clear();
                                             }
-                                            if (tool == 'room' &&
+                                            if (tool == EditorTool.room &&
                                                 !browse &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1 &&
@@ -4248,12 +4307,12 @@ class _HouseEditorState extends State<HouseEditor>
                                                               .footprint
                                                               .northAngleDeg,
                                                           focus: focus,
-                                                          editableWall: (tool == 'editWall' || tool == 'drawWall') && editStart != null && editEnd != null ? PlanRect((editPreviewStart ?? editStart)!.dx, (editPreviewStart ?? editStart)!.dy, (editPreviewEnd ?? editEnd)!.dx, (editPreviewEnd ?? editEnd)!.dy) : null,
-                                                          wallSeed: tool == 'drawWall' ? drawingOrigin : null,
-                                                          wallAttachments: (tool == 'drawWall' || tool == 'selectWall') && drawingEnd == null && editPreviewStart == null ? visibleWallAttachments(size) : const [],
+                                                          editableWall: (tool == EditorTool.editWall || tool == EditorTool.drawWall) && editStart != null && editEnd != null ? PlanRect((editPreviewStart ?? editStart)!.dx, (editPreviewStart ?? editStart)!.dy, (editPreviewEnd ?? editEnd)!.dx, (editPreviewEnd ?? editEnd)!.dy) : null,
+                                                          wallSeed: tool == EditorTool.drawWall ? drawingOrigin : null,
+                                                          wallAttachments: (tool == EditorTool.drawWall || tool == EditorTool.selectWall) && drawingEnd == null && editPreviewStart == null ? visibleWallAttachments(size) : const [],
                                                           handleScale: canvasZoom,
                                                           draftLabel: wallDraftLabel,
-                                                          draftEnd: tool == 'drawWall' && drawingStrokeActive && drawingEnd != null
+                                                          draftEnd: tool == EditorTool.drawWall && drawingStrokeActive && drawingEnd != null
                                                               ? drawingEnd
                                                               : wallGrip == 'start'
                                                                   ? editPreviewStart
@@ -4263,16 +4322,16 @@ class _HouseEditorState extends State<HouseEditor>
                                                           draftConnected: drawConnected,
                                                           guides: [
                                                             if (alignGuide case final g?
-                                                                when (tool == 'drawWall' && drawingStrokeActive && drawingEnd != null) ||
+                                                                when (tool == EditorTool.drawWall && drawingStrokeActive && drawingEnd != null) ||
                                                                     wallGrip == 'start' ||
                                                                     wallGrip == 'end')
                                                               g
                                                           ],
                                                           coach: coachArrow(size),
-                                                          draft: tool == 'drawWall' && drawingEnd != null && drawingOrigin != null ? PlanRect(math.min(drawingOrigin!.dx, drawingEnd!.dx), math.min(drawingOrigin!.dy, drawingEnd!.dy), math.max(drawingOrigin!.dx, drawingEnd!.dx), math.max(drawingOrigin!.dy, drawingEnd!.dy)) : spatialPreview,
-                                                          showGridDimensions: tool == 'grid',
+                                                          draft: tool == EditorTool.drawWall && drawingEnd != null && drawingOrigin != null ? PlanRect(math.min(drawingOrigin!.dx, drawingEnd!.dx), math.min(drawingOrigin!.dy, drawingEnd!.dy), math.max(drawingOrigin!.dx, drawingEnd!.dx), math.max(drawingOrigin!.dy, drawingEnd!.dy)) : spatialPreview,
+                                                          showGridDimensions: tool == EditorTool.grid,
                                                           draftInvalid: spatialError != null,
-                                                          draftIsLine: tool == 'split' || tool == 'drawWall',
+                                                          draftIsLine: tool == EditorTool.split || tool == EditorTool.drawWall,
                                                           viewport: draggingAxis?.kind == 'boundary' && dragAttempted && dragCoordinatePainter != null
                                                               ? (
                                                                   scale: dragCoordinatePainter!
@@ -4283,8 +4342,8 @@ class _HouseEditorState extends State<HouseEditor>
                                                                           size)
                                                                 )
                                                               : null,
-                                                          resizeHandles: tool == 'resize',
-                                                          wallHandle: tool == 'wall' && selectedWall != null ? (selectedWall!.axis.dir == AxisDir.V ? PlanRect((dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble()) : PlanRect(selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()))) : null,
+                                                          resizeHandles: tool == EditorTool.resize,
+                                                          wallHandle: tool == EditorTool.wall && selectedWall != null ? (selectedWall!.axis.dir == AxisDir.V ? PlanRect((dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble()) : PlanRect(selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()))) : null,
                                                           tokens: Tokens.of(context),
                                                           bearingMin: history.present.extras.foundation.bearingMin,
                                                           furniture: [for (final f in history.present.extras.furniture) if (f.floorId == floor.id && f.id != furnitureDraft?.id) f],

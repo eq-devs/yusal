@@ -60,11 +60,7 @@ class MyHouse {
 
   /// The other side asked to end and waits for my answer.
   int endAsks(String me) => cooperations
-      .where((c) =>
-          c.status == CooperationStatus.confirmed &&
-          c.endRequest != null &&
-          c.endRequest!.by != me &&
-          c.endRequest!.dispute == null)
+      .where((c) => c.endAskedOf(me))
       .length;
 
   /// Whether the next step is mine to take now.

@@ -17,6 +17,8 @@ import 'publish_page.dart';
 import 'share_page.dart';
 import '../home/post_page.dart';
 import '../../../motion/motion.dart';
+import '../../../voice/actions_demand.dart';
+import '../../../voice/screen.dart';
 
 class _DetailData {
   _DetailData(this.demand, this.owner, this.snapshot, this.myApps, this.coops,
@@ -77,11 +79,34 @@ class DemandDetailPage extends StatelessWidget {
   }
 }
 
-class _DemandDetail extends StatelessWidget {
+class _DemandDetail extends StatefulWidget {
   const _DemandDetail({required this.data});
   final _DetailData data;
 
+  @override
+  State<_DemandDetail> createState() => _DemandDetailState();
+}
+
+class _DemandDetailState extends State<_DemandDetail>
+    with VoiceScreen
+    implements DemandHost {
+  _DetailData get data => widget.data;
   Demand get d => data.demand!;
+
+  @override
+  String get screenId => 'demand.detail';
+
+  @override
+  Demand? get ownDemand =>
+      context.repos.currentAccount?.id == d.ownerId ? d : null;
+
+  @override
+  bool get hiredSomeone => hiredCount(data.coops) > 0;
+
+  /// The status, so the assistant can say where the demand stands; what
+  /// can be done with it is the offered demand.* actions.
+  @override
+  String get summary => 'demand ${d.status.name}: ${d.current.title}';
 
   @override
   Widget build(BuildContext context) {
@@ -452,6 +477,9 @@ class _DemandDetail extends StatelessWidget {
     final h = d.current.hire;
     Future<void> act(Future<Object?> Function() f, String done) =>
         attempt(context, f, success: done);
+    // The buttons are the events the demand's status allows, the same
+    // ones voice is offered.
+    bool can(DemandEvent e) => demandButton(d.status, e);
     return [
       SectionTitle(tr3('管理需求', 'Басқару', 'Управление')),
       if (h != null)
@@ -500,7 +528,7 @@ class _DemandDetail extends StatelessWidget {
           ])),
       const SizedBox(height: 12),
       Wrap(spacing: 8, runSpacing: 8, children: [
-        if (d.status == DemandStatus.draft || d.status == DemandStatus.rejected)
+        if (can(DemandEvent.publish))
           FilledButton(
               onPressed: () => act(
                   () => repos.publish(d.id),
@@ -512,23 +540,22 @@ class _DemandDetail extends StatelessWidget {
               onPressed: () =>
                   pushPage<void>(context, (_) => PublishPage(editing: d)),
               child: Text(tr3('修改（生成新版本）', 'Өзгерту', 'Изменить'))),
-        if (d.status == DemandStatus.open)
+        if (can(DemandEvent.pause))
           OutlinedButton(
               onPressed: () => act(() => repos.pause(d.id),
                   tr3('已暂停', 'Тоқтатылды', 'Приостановлено')),
               child: Text(tr3('暂停', 'Тоқтату', 'Пауза'))),
-        if (d.status == DemandStatus.paused || d.status == DemandStatus.found)
+        if (can(DemandEvent.resume))
           OutlinedButton(
               onPressed: () => act(() => repos.resume(d.id),
                   tr3('继续招募', 'Жалғасты', 'Набор возобновлён')),
               child: Text(tr3('继续招募', 'Жалғастыру', 'Возобновить'))),
-        if (d.status == DemandStatus.expired || d.status == DemandStatus.open)
+        if (can(DemandEvent.renew))
           OutlinedButton(
               onPressed: () => act(() => repos.renew(d.id),
                   tr3('已续期 30 天', '30 күнге ұзартылды', 'Продлено на 30 дней')),
               child: Text(tr3('续期', 'Ұзарту', 'Продлить'))),
-        if (const {DemandStatus.open, DemandStatus.paused, DemandStatus.expired}
-            .contains(d.status))
+        if (can(DemandEvent.markFound))
           OutlinedButton(
               onPressed: () async {
                 final o = await pickOutcome(context, hired > 0);
@@ -537,7 +564,7 @@ class _DemandDetail extends StatelessWidget {
                       tr3('已标记找到人，停止接收新申请', 'Белгіленді', 'Отмечено'));
               },
               child: Text(tr3('已找到人', 'Адам табылды', 'Исполнитель найден'))),
-        if (d.status != DemandStatus.closed)
+        if (can(DemandEvent.close))
           OutlinedButton(
               onPressed: () async {
                 final reason = await askText(

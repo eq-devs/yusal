@@ -13,6 +13,8 @@ import '../houses/site_tab.dart';
 import 'milestone_editor.dart';
 import 'agreement_form.dart';
 import 'review_page.dart';
+import '../../../voice/actions_coop.dart';
+import '../../../voice/screen.dart';
 
 class _CoopData {
   _CoopData(this.coop, this.demand, this.owner, this.provider, this.profile,
@@ -58,9 +60,41 @@ class CooperationPage extends StatelessWidget {
   }
 }
 
-class _CoopView extends StatelessWidget {
+class _CoopView extends StatefulWidget {
   const _CoopView({required this.data});
   final _CoopData data;
+
+  @override
+  State<_CoopView> createState() => _CoopViewState();
+}
+
+class _CoopViewState extends State<_CoopView>
+    with VoiceScreen
+    implements CoopHost {
+  _CoopData get data => widget.data;
+
+  @override
+  String get screenId => 'coop.detail';
+
+  @override
+  Cooperation get coop => data.coop!;
+
+  /// Where it stands, so the assistant can say it; what can be done is
+  /// the offered coop.* actions.
+  @override
+  String get summary =>
+      'cooperation ${coop.status.name}, ending ${coop.endPhase.name}'
+      '${coop.pendingChange != null ? ', change proposed' : ''}'
+      '${_milestoneNote()}: '
+      '${data.demand?.current.title ?? ''}';
+
+  /// The inspection point voice acts on, and where it stands.
+  String _milestoneNote() {
+    final i = currentMilestone(coop);
+    if (i == null) return '';
+    final m = coop.milestones[i];
+    return ', milestone ${m.key} ${m.status.name}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,10 +114,12 @@ class _CoopView extends StatelessWidget {
 
     Future<void> run(Future<Object?> Function() f, String done) =>
         attempt(context, f, success: done);
+    // The same moves voice is offered.
+    final moves = coopMoves(c, me);
 
     final actions = <Widget>[];
     if (c.status == CooperationStatus.pending) {
-      if (!iAmOwner) {
+      if (moves.contains(CoopMove.confirm)) {
         actions.addAll([
           BusyButton(
               label: tr3('确认合作', 'Келісімді растау', 'Подтвердить'),
@@ -114,11 +150,11 @@ class _CoopView extends StatelessWidget {
       }
     } else if (c.status == CooperationStatus.confirmed) {
       final r = c.endRequest;
-      if (r != null && r.dispute == null && r.by != me) {
+      if (moves.contains(CoopMove.confirmEnd)) {
         actions.addAll([
           Hint(
               tr3(
-                  '${nameOf(r.by)} 请求结束合作${r.note.isEmpty ? '' : '：${r.note}'}',
+                  '${nameOf(r!.by)} 请求结束合作${r.note.isEmpty ? '' : '：${r.note}'}',
                   '${nameOf(r.by)} аяқтауды сұрады',
                   '${nameOf(r.by)} просит завершить'),
               warn: true),
@@ -150,13 +186,13 @@ class _CoopView extends StatelessWidget {
                   },
                   child: Text(tr3('提出异议', 'Қарсылық', 'Оспорить')))),
         ]);
-      } else if (r != null && r.dispute == null) {
+      } else if (c.endPhase == EndPhase.asked) {
         actions.add(Hint(tr3(
             '已请求结束，等待对方确认。对方 7 天未回应将记为“单方报告结束”，不显示为双方验收。',
             'Аяқтау сұралды. 7 күн жауап болмаса, бір жақты аяқталды деп белгіленеді.',
             'Запрос отправлен. Без ответа 7 дней — «завершено одной стороной».')));
       } else {
-        if (r?.dispute != null)
+        if (c.endPhase == EndPhase.disputed)
           actions.addAll([
             Hint(
                 tr3('结束有异议：${r!.dispute}', 'Қарсылық: ${r.dispute}',
@@ -175,7 +211,7 @@ class _CoopView extends StatelessWidget {
                     'Өзгеріс (${change.version})',
                     'Изменение (версия ${change.version})')),
             const SizedBox(height: 8),
-            if (change.proposedBy != me) ...[
+            if (moves.contains(CoopMove.answerChange)) ...[
               BusyButton(
                   label: tr3('接受变更', 'Қабылдау', 'Принять'),
                   onPressed: () => run(() => repos.answerChange(c.id, true),

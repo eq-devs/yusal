@@ -132,6 +132,355 @@
     }
   },
   {
+    "name": "demand.publish",
+    "title": {
+      "zh": "提交审核",
+      "kk": "Тексеруге жіберу",
+      "ru": "Отправить на проверку"
+    },
+    "examples": {
+      "zh": "提交审核",
+      "kk": "Тексеруге жібер",
+      "ru": "Отправь на проверку"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "demand.pause",
+    "title": {
+      "zh": "暂停招募",
+      "kk": "Іздеуді тоқтату",
+      "ru": "Приостановить набор"
+    },
+    "examples": {
+      "zh": "先暂停招人",
+      "kk": "Іздеуді уақытша тоқтат",
+      "ru": "Приостанови набор"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "demand.resume",
+    "title": {
+      "zh": "继续招募",
+      "kk": "Іздеуді жалғастыру",
+      "ru": "Возобновить набор"
+    },
+    "examples": {
+      "zh": "继续招人",
+      "kk": "Іздеуді жалғастыр",
+      "ru": "Возобнови набор"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "demand.renew",
+    "title": {
+      "zh": "续期 30 天",
+      "kk": "30 күнге ұзарту",
+      "ru": "Продлить на 30 дней"
+    },
+    "examples": {
+      "zh": "再延长一个月",
+      "kk": "Тағы бір айға ұзарт",
+      "ru": "Продли ещё на месяц"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "demand.mark_found",
+    "title": {
+      "zh": "标记已找到人",
+      "kk": "Адам табылды деп белгілеу",
+      "ru": "Отметить, что исполнитель найден"
+    },
+    "examples": {
+      "zh": "已经找到瓦工了，不再招人",
+      "kk": "Қалаушы табылды, енді іздемеймін",
+      "ru": "Каменщика нашли, больше не ищем"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "platformConfirmed",
+            "selfReportedYusal",
+            "otherChannel",
+            "notFound",
+            "notNeeded"
+          ]
+        }
+      },
+      "required": [
+        "outcome"
+      ]
+    }
+  },
+  {
+    "name": "demand.close",
+    "title": {
+      "zh": "关闭需求",
+      "kk": "Тапсырысты жабу",
+      "ru": "Закрыть заявку"
+    },
+    "examples": {
+      "zh": "关掉这个需求，不需要了",
+      "kk": "Бұл тапсырысты жап, керек емес",
+      "ru": "Закрой заявку, уже не нужно"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ]
+    }
+  },
+  {
+    "name": "coop.confirm",
+    "title": {
+      "zh": "确认合作",
+      "kk": "Келісімді растау",
+      "ru": "Подтвердить сотрудничество"
+    },
+    "examples": {
+      "zh": "同意，确认合作",
+      "kk": "Келісемін, раста",
+      "ru": "Согласен, подтверди"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "coop.decline",
+    "title": {
+      "zh": "拒绝邀请",
+      "kk": "Шақырудан бас тарту",
+      "ru": "Отказаться от приглашения"
+    },
+    "examples": {
+      "zh": "这个活我不接了",
+      "kk": "Бұл жұмысты алмаймын",
+      "ru": "Я не возьму эту работу"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "coop.revoke",
+    "title": {
+      "zh": "撤回邀请",
+      "kk": "Шақыруды қайтару",
+      "ru": "Отозвать приглашение"
+    },
+    "examples": {
+      "zh": "把邀请撤回来",
+      "kk": "Шақыруды қайтар",
+      "ru": "Отзови приглашение"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "coop.request_end",
+    "title": {
+      "zh": "请求结束合作",
+      "kk": "Аяқтауды сұрау",
+      "ru": "Попросить завершить"
+    },
+    "examples": {
+      "zh": "活干完了，请求结束",
+      "kk": "Жұмыс бітті, аяқтауды сұра",
+      "ru": "Работа сделана, попроси завершить"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "coop.confirm_end",
+    "title": {
+      "zh": "确认结束合作",
+      "kk": "Аяқтауды растау",
+      "ru": "Подтвердить завершение"
+    },
+    "examples": {
+      "zh": "同意结束",
+      "kk": "Аяқтауға келісемін",
+      "ru": "Согласен завершить"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "coop.dispute_end",
+    "title": {
+      "zh": "对结束提出异议",
+      "kk": "Аяқтауға қарсылық",
+      "ru": "Оспорить завершение"
+    },
+    "examples": {
+      "zh": "还没干完，不同意结束",
+      "kk": "Әлі бітпеді, келіспеймін",
+      "ru": "Ещё не закончено, не согласен"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "note"
+      ]
+    }
+  },
+  {
+    "name": "coop.answer_change",
+    "title": {
+      "zh": "答复约定变更",
+      "kk": "Өзгеріске жауап беру",
+      "ru": "Ответить на изменение"
+    },
+    "examples": {
+      "zh": "接受新的约定",
+      "kk": "Жаңа келісімді қабылда",
+      "ru": "Прими новые условия"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "accept": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "accept"
+      ]
+    }
+  },
+  {
+    "name": "coop.request_milestone",
+    "title": {
+      "zh": "申请节点验收",
+      "kk": "Кезеңді қабылдауды сұрау",
+      "ru": "Попросить принять этап"
+    },
+    "examples": {
+      "zh": "地基做完了，请房主来验收",
+      "kk": "Іргетас бітті, қабылдауды сұра",
+      "ru": "Фундамент готов, попроси принять"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "coop.accept_milestone",
+    "title": {
+      "zh": "验收通过",
+      "kk": "Кезеңді қабылдау",
+      "ru": "Принять этап"
+    },
+    "examples": {
+      "zh": "看过了，验收通过",
+      "kk": "Көрдім, қабылдаймын",
+      "ru": "Посмотрел, принимаю"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "coop.dispute_milestone",
+    "title": {
+      "zh": "验收有问题",
+      "kk": "Кезеңге ескерту",
+      "ru": "Замечания по этапу"
+    },
+    "examples": {
+      "zh": "墙不直，这个节点不通过",
+      "kk": "Қабырға қисық, қабылдамаймын",
+      "ru": "Стена кривая, не принимаю"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "note"
+      ]
+    }
+  },
+  {
     "name": "design.create_house",
     "title": {
       "zh": "设计整栋房子",

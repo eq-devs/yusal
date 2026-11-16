@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../app/settings.dart';
 import '../../domain/models.dart';
+import '../../domain/rules.dart';
 import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
@@ -89,22 +90,21 @@ class SiteSection extends StatelessWidget {
               milestone: c.milestones[i],
               amount: amount,
               current: live && i == current,
-              onRequest: pro &&
-                      live &&
-                      i == current &&
-                      c.milestones[i].status != MilestoneStatus.requested
+              // The same moves voice is offered.
+              onRequest: milestoneMoves(c, me, i)
+                      .contains(MilestoneEvent.request)
                   ? () => _request(context, i)
                   : null,
-              onAccept: owner &&
-                      c.milestones[i].status == MilestoneStatus.requested
+              onAccept: milestoneMoves(c, me, i)
+                      .contains(MilestoneEvent.accept)
                   ? () => attempt(context,
                       () => context.repos.answerMilestone(c.id, i, true),
                       success: tr3('已记录验收', 'Қабылданды', 'Приёмка записана'))
                   : null,
-              onDispute:
-                  owner && c.milestones[i].status == MilestoneStatus.requested
-                      ? () => _dispute(context, i)
-                      : null),
+              onDispute: milestoneMoves(c, me, i)
+                      .contains(MilestoneEvent.dispute)
+                  ? () => _dispute(context, i)
+                  : null),
         Padding(
             padding: const EdgeInsets.only(top: 4, bottom: 12),
             child: Text(

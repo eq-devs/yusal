@@ -268,11 +268,11 @@ extension _PlanTab on _HouseEditorState {
   bool get phoneTools => !compact && MediaQuery.sizeOf(context).width < 600;
 
   static const secondaryTools = {
-    'split': ['split'],
-    'box': ['box'],
-    'utility': ['placeUtility'],
-    'selectWall': ['selectWall', 'editWall'],
-    'resize': ['resize'],
+    'split': [EditorTool.split],
+    'box': [EditorTool.box],
+    'utility': [EditorTool.placeUtility],
+    'selectWall': [EditorTool.selectWall, EditorTool.editWall],
+    'resize': [EditorTool.resize],
   };
 
   List<Widget> toolButtons() => [
@@ -292,44 +292,39 @@ extension _PlanTab on _HouseEditorState {
   List<(String, Widget)> keyedTools() {
     return [
       ('browse', basicTool(Icons.pan_tool_outlined, tr3('浏览', 'Шолу', 'Просмотр'), browse, () {
-        tool = 'browse';
-        browse = true;
+        tool = EditorTool.browse;
       })),
-      ('wall', basicTool(Icons.add_outlined, '墙体', tool == 'drawWall', startWallDrawing)),
-      if (tool == 'drawWall')
+      ('wall', basicTool(Icons.add_outlined, '墙体', tool == EditorTool.drawWall, startWallDrawing)),
+      if (tool == EditorTool.drawWall)
         ('freeWall', basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
           drawingOrigin = null;
           placingWallStart = true;
           placementHint = tr3('在空白处拖出独立墙，或点一下选起点',
               'Бос жерден қабырға тартыңыз немесе бастауды басыңыз', 'Протяните стену на свободном месте или нажмите, чтобы задать начало');
         })),
-      ('split', basicTool(Icons.vertical_split_outlined, '拉线分房', tool == 'split', () {
+      ('split', basicTool(Icons.vertical_split_outlined, '拉线分房', tool == EditorTool.split, () {
         view3d = false;
-        browse = false;
-        tool = 'split';
+        tool = EditorTool.split;
       })),
-      ('box', basicTool(Icons.crop_square, '拖动划房', tool == 'box', () {
+      ('box', basicTool(Icons.crop_square, '拖动划房', tool == EditorTool.box, () {
         view3d = false;
-        browse = false;
-        tool = 'box';
+        tool = EditorTool.box;
         brush = RoomType.custom;
       })),
       ('door', openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门')),
       ('window', openingTool(OpeningKind.window, Icons.window_outlined, '拖入窗')),
-      ('furniture', basicTool(Icons.chair_outlined, '家具', tool == 'placeFurniture',
+      ('furniture', basicTool(Icons.chair_outlined, '家具', tool == EditorTool.placeFurniture,
           chooseFurniture)),
       ('utility', basicTool(Icons.electrical_services_outlined, '水电',
-          tool == 'placeUtility', chooseUtility)),
+          tool == EditorTool.placeUtility, chooseUtility)),
       ('selectWall', basicTool(Icons.view_week_outlined, '墙体调整',
-          tool == 'selectWall' || tool == 'editWall', () {
+          tool == EditorTool.selectWall || tool == EditorTool.editWall, () {
         view3d = false;
-        tool = 'selectWall';
-        browse = false;
+        tool = EditorTool.selectWall;
       })),
-      ('resize', basicTool(Icons.open_in_full, '房屋尺寸', tool == 'resize', () {
+      ('resize', basicTool(Icons.open_in_full, '房屋尺寸', tool == EditorTool.resize, () {
         view3d = false;
-        browse = false;
-        tool = 'resize';
+        tool = EditorTool.resize;
       })),
       ('more', basicTool(Icons.more_horiz, '更多工具', false, moreTools)),
     ];
@@ -354,9 +349,8 @@ extension _PlanTab on _HouseEditorState {
                   showUtilities = v;
                   if (!v) {
                     selectedUtilityId = null;
-                    if (tool == 'placeUtility') {
-                      tool = 'browse';
-                      browse = true;
+                    if (tool == EditorTool.placeUtility) {
+                      tool = EditorTool.browse;
                       placementHint = null;
                     }
                   }
@@ -375,13 +369,12 @@ extension _PlanTab on _HouseEditorState {
             label: tr3('测距', 'Қашықтық өлшеу', 'Измерить расстояние'),
             icon: Icons.straighten,
             checkbox: false,
-            selected: tool == 'measure',
+            selected: tool == EditorTool.measure,
             onChanged: (v) => update(() {
                   cancelDrag();
                   clearWallSelection();
                   measurePoints = [];
-                  tool = v ? 'measure' : 'browse';
-                  browse = !v;
+                  tool = v ? EditorTool.measure : EditorTool.browse;
                   placementHint = null;
                 })),
       ];
@@ -428,25 +421,24 @@ extension _PlanTab on _HouseEditorState {
                       fontSize: coach ? 13 : 12,
                       fontWeight: coach ? FontWeight.w600 : FontWeight.w400,
                       color: coach ? t.accent : t.muted))),
-          if (tool == 'resize')
+          if (tool == EditorTool.resize)
             TextButton.icon(
                 onPressed: footprintOptions,
                 icon: const Icon(Icons.edit_outlined, size: 18),
                 label: Text(tr3('输入长宽', 'Өлшем енгізу', 'Ввести размеры'))),
-          if (tool == 'drawWall')
+          if (tool == EditorTool.drawWall)
             IconButton(
                 tooltip: '输入墙长',
                 onPressed: drawingOrigin == null ? null : addWallByLength,
                 icon: const Icon(Icons.straighten, size: 18)),
-          if (tool == 'drawWall' ||
-              tool == 'placeFurniture' ||
-              tool == 'placeUtility' ||
-              tool == 'measure')
+          if (tool == EditorTool.drawWall ||
+              tool == EditorTool.placeFurniture ||
+              tool == EditorTool.placeUtility ||
+              tool == EditorTool.measure)
             TextButton(
                 onPressed: () => update(() {
                       cancelDrag();
-                      tool = 'browse';
-                      browse = true;
+                      tool = EditorTool.browse;
                       drawingOrigin = null;
                       drawingEnd = null;
                       placementHint = null;

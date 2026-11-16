@@ -552,6 +552,12 @@ enum CooperationStatus { pending, confirmed, ended, notFormed }
 
 enum EndKind { mutual, unilateral, cancelled, disputed }
 
+/// Where a confirmed cooperation's ending stands, from
+/// [Cooperation.endRequest]: none → asked (one side asked to end) →
+/// ended by the other side's yes or after seven days unanswered, or →
+/// disputed (the other side objected) → asked again by a new request.
+enum EndPhase { none, asked, disputed }
+
 enum AgreementStatus { proposed, active, superseded, rejected }
 
 /// One version of the cooperation agreement ("合作约定"). It is not
@@ -751,6 +757,18 @@ class Cooperation {
   final List<ProgressUpdate> updates;
   final List<Milestone> milestones;
   final List<WorkLog> workLogs;
+
+  /// None unless confirmed: an ended one keeps its last request.
+  EndPhase get endPhase => status != CooperationStatus.confirmed ||
+          endRequest == null
+      ? EndPhase.none
+      : endRequest!.dispute == null
+          ? EndPhase.asked
+          : EndPhase.disputed;
+
+  /// The other side asked to end and waits for [me] to confirm or object.
+  bool endAskedOf(String? me) =>
+      endPhase == EndPhase.asked && endRequest!.by != me;
 
   /// Share of the agreed amount whose milestones the owner accepted.
   int get acceptedPercent => milestones

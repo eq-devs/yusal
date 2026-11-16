@@ -78,8 +78,7 @@ extension _UtilityTool on _HouseEditorState {
       clearSelection();
       showUtilities = true;
       placingUtility = kind;
-      tool = 'placeUtility';
-      browse = false;
+      tool = EditorTool.placeUtility;
       placementHint = tr3('点平面放置「${utilityName(kind)}」，可连续放置',
           '«${utilityName(kind)}» қою үшін жоспарды басыңыз, бірнеше рет қоюға болады', 'Нажмите на план, чтобы поставить «${utilityName(kind)}»; можно ставить несколько раз подряд');
     });

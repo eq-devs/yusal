@@ -89,11 +89,13 @@ String applicationStatusName(ApplicationStatus s) => switch (s) {
 String cooperationStatusName(Cooperation c) => switch (c.status) {
       CooperationStatus.pending =>
         tr3('待双方确认', 'Екі жақ растауын күтуде', 'Ждёт подтверждения сторон'),
-      CooperationStatus.confirmed => c.endRequest == null
-          ? tr3('已确认合作', 'Келісім расталды', 'Подтверждено')
-          : c.endRequest!.dispute != null
-              ? tr3('结束有异议', 'Аяқтауға қарсылық', 'Спор о завершении')
-              : tr3('结束待确认', 'Аяқтау расталуда', 'Завершение ждёт ответа'),
+      CooperationStatus.confirmed => switch (c.endPhase) {
+          EndPhase.none => tr3('已确认合作', 'Келісім расталды', 'Подтверждено'),
+          EndPhase.disputed =>
+            tr3('结束有异议', 'Аяқтауға қарсылық', 'Спор о завершении'),
+          EndPhase.asked =>
+            tr3('结束待确认', 'Аяқтау расталуда', 'Завершение ждёт ответа'),
+        },
       CooperationStatus.ended => switch (c.endKind) {
           EndKind.unilateral =>
             tr3('单方报告结束', 'Бір жақ аяқтады', 'Завершено одной стороной'),

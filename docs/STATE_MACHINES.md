@@ -34,6 +34,7 @@ Not in the status: a confirmed cooperation's end request (`endRequest`: none →
 
 ### Other
 
+- Editor tool, `EditorTool` in `lib/features/house_editor.dart`: the one thing a press on the plan does (browse, drawWall, selectWall, editWall, split, box, resize, placeOpening, placeFurniture, placeUtility, measure, and the advanced wall, opening, grid, room, stair). Browse is the rest state that Esc, the browse button, a tab or a floor change go back to; `browse` is derived from it, not stored. The voice context's `summary` says `tool: <name>` while any other tool is in hand.
 - Editor save status, `_SaveStatus` in `lib/features/house_editor.dart`: saved | indexPending | unsaved | failed (retries every 5 s). An edit makes it unsaved.
 - `HouseStage` (design → finding → building → done), derived from demands in `house_progress.dart`.
 - `BackupState` (none, inSync, localNewer, cloudNewer, diverged), derived by comparing a design with its backup.
@@ -44,7 +45,6 @@ Not in the status: a confirmed cooperation's end request (`endRequest`: none →
 
 Worth making explicit next, highest value first:
 
-1. **Editor tool** (`String tool` in `house_editor.dart`, about 130 uses: browse, drawWall, editWall, selectWall, split, resize, placeOpening, placeFurniture, placeUtility, measure, box, grid, room, stair…) together with the `browse` and `erase` booleans. A typo is a silent dead mode and the voice assistant cannot list the modes. An enum with the toolbar, voice and gestures switching on it would cover all three.
-2. **Demand edit page** (`publish_page.dart`): which save a change takes (`saveDraft` for draft and rejected, `revise` otherwise) is chosen by status checks in the page; it could ask `demandMachine` (`recheck`).
-3. **Sign-in page** (`login_page.dart`, `codeSent`): enter phone → code sent → verifying.
-4. **HTTP read retries** (`http_backend.dart`): attempt counter over a backoff list; fine as it is, documented here for completeness.
+1. **Demand edit page** (`publish_page.dart`): which save a change takes (`saveDraft` for draft and rejected, `revise` otherwise) is chosen by status checks in the page; it could ask `demandMachine` (`recheck`).
+2. **Sign-in page** (`login_page.dart`, `codeSent`): enter phone → code sent → verifying.
+3. **HTTP read retries** (`http_backend.dart`): attempt counter over a backoff list; fine as it is, documented here for completeness.

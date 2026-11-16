@@ -1121,8 +1121,7 @@ extension _OtherTabs on _HouseEditorState {
       derive();
       if (foundation) showFoundation = true;
       tab = 'plan';
-      tool = 'browse';
-      browse = true;
+      tool = EditorTool.browse;
       focus = null;
       flash([
         for (final a in areas)

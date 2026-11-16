@@ -43,8 +43,7 @@ extension _FurnitureTool on _HouseEditorState {
       clearSelection();
       showFurniture = true;
       placingFurniture = kind;
-      tool = 'placeFurniture';
-      browse = false;
+      tool = EditorTool.placeFurniture;
       placementHint = tr3('点平面放置「${furnitureName(kind)}」，可连续放置',
           '«${furnitureName(kind)}» қою үшін жоспарды басыңыз, бірнеше рет қоюға болады', 'Нажмите на план, чтобы поставить «${furnitureName(kind)}»; можно ставить несколько раз подряд');
     });

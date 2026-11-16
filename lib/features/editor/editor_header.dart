@@ -306,8 +306,7 @@ extension _EditorHeader on _HouseEditorState {
         clearWallSelection();
         clearSelection();
         floorIndex = value;
-        tool = 'browse';
-        browse = true;
+        tool = EditorTool.browse;
         selectedWall = null;
         drawingOrigin = null;
         drawingEnd = null;

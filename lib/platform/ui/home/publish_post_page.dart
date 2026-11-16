@@ -206,8 +206,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
                             '最想请大家看哪些方面？（最多 3 个，可不选）',
                             'Нені көрсін? (3-ке дейін)',
                             'На что обратить внимание? (до 3)'),
-                        style:
-                            TextStyle(color: t.muted, fontSize: YFont.small)),
+                        style: TextStyle(color: t.muted, fontSize: YFont.small)),
                     const SizedBox(height: 6),
                     Wrap(spacing: 8, runSpacing: 8, children: [
                       for (final k in feedbackTopics)
@@ -233,8 +232,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
                             '想盖的时候，在房子页点“准备开建？”就能找人，点评都会保留。',
                             'Кейін «Салуға дайынсыз ба?» басыңыз.',
                             'Когда решите строить — нажмите «Готовы строить?».'),
-                        style:
-                            TextStyle(color: t.muted, fontSize: YFont.caption)),
+                        style: TextStyle(color: t.muted, fontSize: YFont.caption)),
                   ],
                   const SizedBox(height: 18),
                   TextField(
@@ -314,8 +312,7 @@ class _IntentCard extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w700)),
                       const SizedBox(height: 2),
                       Text(body,
-                          style: TextStyle(
-                              color: t.muted, fontSize: YFont.caption)),
+                          style: TextStyle(color: t.muted, fontSize: YFont.caption)),
                     ]))));
   }
 }

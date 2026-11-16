@@ -34,195 +34,168 @@ class HouseCard extends StatelessWidget {
     final p = post;
     return HeroTapArea(
         child: Pressable(
-            child: InkWell(
-                onTap: onTap,
+        child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(yRadius),
+        splashFactory: NoSplash.splashFactory,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Stack(children: [
+            HeroSource(
+                heroKey: houseHeroKey(p.id),
                 borderRadius: BorderRadius.circular(yRadius),
-                splashFactory: NoSplash.splashFactory,
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Stack(children: [
-                        HeroSource(
-                            heroKey: houseHeroKey(p.id),
-                            borderRadius: BorderRadius.circular(yRadius),
-                            child: PostPicture(
-                                post: p,
-                                builder: (context, image, loading) => Cover(
-                                    icon: Icons.home_outlined,
-                                    seed: p.id,
-                                    height: compact ? 150 : 230,
-                                    image: image,
-                                    child: image == null &&
-                                            !loading &&
-                                            p.snapshotId.isNotEmpty
-                                        ? PlanCover(
-                                            snapshotId: p.snapshotId,
-                                            postId: p.id)
-                                        : null))),
-                        if (onLike != null)
-                          Positioned(
-                              top: 10,
-                              right: 10,
-                              child: Material(
-                                  color: t.card.withValues(alpha: 0.9),
-                                  shape: const CircleBorder(),
-                                  child: InkWell(
-                                      customBorder: const CircleBorder(),
-                                      onTap: () {
-                                        if (!liked)
-                                          HapticFeedback.lightImpact();
-                                        onLike!();
-                                      },
-                                      child: Padding(
-                                          padding: const EdgeInsets.all(14),
-                                          child: PopOnActive(
-                                              active: liked,
-                                              child: Icon(
-                                                  liked
-                                                      ? Icons.favorite
-                                                      : Icons.favorite_border,
-                                                  size: 20,
-                                                  color: liked
-                                                      ? t.accent
-                                                      : t.ink)))))),
-                        if (p.openForBuilders)
-                          Positioned(
-                              left: 10,
-                              top: 10,
-                              child: StatusPill(
-                                  tr3('正在找施工方', 'Құрылысшы іздейді',
-                                      'Ищет строителей'),
-                                  color: t.accent,
-                                  filled: true))
-                        else if (p.focus.isNotEmpty)
-                          Positioned(
-                              left: 10,
-                              top: 10,
-                              child: StatusPill(
-                                  tr3('求点评 · ${p.focus.map(feedbackTopicName).join('、')}',
-                                      'Пікір сұрайды', 'Просит отзывы'),
-                                  color: t.ink,
-                                  filled: true)),
-                      ]),
-                      const SizedBox(height: 10),
-                      Row(children: [
-                        Expanded(
-                            child: Text(p.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: display(
-                                    size: compact ? 16 : 18,
-                                    weight: FontWeight.w600,
-                                    color: t.ink))),
-                        if (p.rating != null) ...[
-                          Icon(Icons.star, size: 15, color: t.ink),
+                child: PostPicture(
+                    post: p,
+                    builder: (context, image, loading) => Cover(
+                        icon: Icons.home_outlined,
+                        seed: p.id,
+                        height: compact ? 150 : 230,
+                        image: image,
+                        child: image == null &&
+                                !loading &&
+                                p.snapshotId.isNotEmpty
+                            ? PlanCover(snapshotId: p.snapshotId, postId: p.id)
+                            : null))),
+            if (onLike != null)
+              Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Material(
+                      color: t.card.withValues(alpha: 0.9),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () {
+                            if (!liked) HapticFeedback.lightImpact();
+                            onLike!();
+                          },
+                          child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: PopOnActive(
+                                  active: liked,
+                                  child: Icon(
+                                      liked
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      size: 20,
+                                      color: liked ? t.accent : t.ink)))))),
+            if (p.openForBuilders)
+              Positioned(
+                  left: 10,
+                  top: 10,
+                  child: StatusPill(
+                      tr3('正在找施工方', 'Құрылысшы іздейді', 'Ищет строителей'),
+                      color: t.accent,
+                      filled: true))
+            else if (p.focus.isNotEmpty)
+              Positioned(
+                  left: 10,
+                  top: 10,
+                  child: StatusPill(
+                      tr3('求点评 · ${p.focus.map(feedbackTopicName).join('、')}',
+                          'Пікір сұрайды', 'Просит отзывы'),
+                      color: t.ink,
+                      filled: true)),
+          ]),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(
+                child: Text(p.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: display(
+                        size: compact ? 16 : 18,
+                        weight: FontWeight.w600,
+                        color: t.ink))),
+            if (p.rating != null) ...[
+              Icon(Icons.star, size: 15, color: t.ink),
+              const SizedBox(width: 3),
+              Text(p.rating!.toStringAsFixed(1),
+                  style: TextStyle(fontSize: YFont.label, color: t.ink)),
+            ],
+          ]),
+          if (p.rating == null)
+            Text(
+                p.commentCount > 0
+                    ? tr3('${p.commentCount} 条点评', '${p.commentCount} пікір',
+                        'Отзывов: ${p.commentCount}')
+                    : p.openForBuilders
+                        ? tr3('暂无评价', 'Пікір жоқ', 'Нет оценок')
+                        : tr3('等你来点评', 'Пікір қалдырыңыз', 'Оставьте отзыв'),
+                style: TextStyle(fontSize: YFont.caption, color: t.muted)),
+          const SizedBox(height: 2),
+          Text(houseFacts(p), style: TextStyle(color: t.muted, fontSize: YFont.label)),
+          if (p.estimatedCost != null)
+            Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text.rich(
+                    TextSpan(
+                        style: TextStyle(color: t.ink, fontSize: YFont.label),
+                        children: [
+                          TextSpan(
+                              text: '≈ ${money(p.estimatedCost)}',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontFeatures: [
+                                    FontFeature.tabularFigures()
+                                  ])),
+                          TextSpan(
+                              text:
+                                  ' ${tr3('预估造价', 'болжамды құн', 'оценка стоимости')}',
+                              style: TextStyle(color: t.muted)),
+                        ]),
+                    // One line, so long labels (Russian) cannot push the
+                    // card past a fixed-height list such as the Me tab.
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis)),
+          if (!compact)
+            Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Live<Account?>(
+                    reloadKey: p.ownerId,
+                    load: (r) => r.account(p.ownerId),
+                    loading: const SizedBox(height: 24),
+                    builder: (context, a) => Row(children: [
+                          Avatar(a?.displayName ?? '', size: 24),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: Text(
+                                  a == null ? deletedName(null) : a.displayName,
+                                  style:
+                                      TextStyle(color: t.muted, fontSize: YFont.small))),
+                          Icon(Icons.favorite, size: 14, color: t.faint),
                           const SizedBox(width: 3),
-                          Text(p.rating!.toStringAsFixed(1),
-                              style: TextStyle(
-                                  fontSize: YFont.label, color: t.ink)),
-                        ],
-                      ]),
-                      if (p.rating == null)
-                        Text(
-                            p.commentCount > 0
-                                ? tr3(
-                                    '${p.commentCount} 条点评',
-                                    '${p.commentCount} пікір',
-                                    'Отзывов: ${p.commentCount}')
-                                : p.openForBuilders
-                                    ? tr3('暂无评价', 'Пікір жоқ', 'Нет оценок')
-                                    : tr3('等你来点评', 'Пікір қалдырыңыз',
-                                        'Оставьте отзыв'),
-                            style: TextStyle(
-                                fontSize: YFont.caption, color: t.muted)),
-                      const SizedBox(height: 2),
-                      Text(houseFacts(p),
-                          style:
-                              TextStyle(color: t.muted, fontSize: YFont.label)),
-                      if (p.estimatedCost != null)
-                        Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text.rich(
-                                TextSpan(
-                                    style: TextStyle(
-                                        color: t.ink, fontSize: YFont.label),
-                                    children: [
-                                      TextSpan(
-                                          text: '≈ ${money(p.estimatedCost)}',
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              fontFeatures: [
-                                                FontFeature.tabularFigures()
-                                              ])),
-                                      TextSpan(
-                                          text:
-                                              ' ${tr3('预估造价', 'болжамды құн', 'оценка стоимости')}',
-                                          style: TextStyle(color: t.muted)),
-                                    ]),
-                                // One line, so long labels (Russian) cannot push the
-                                // card past a fixed-height list such as the Me tab.
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis)),
-                      if (!compact)
-                        Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Live<Account?>(
-                                reloadKey: p.ownerId,
-                                load: (r) => r.account(p.ownerId),
-                                loading: const SizedBox(height: 24),
-                                builder: (context, a) => Row(children: [
-                                      Avatar(a?.displayName ?? '', size: 24),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                          child: Text(
-                                              a == null
-                                                  ? deletedName(null)
-                                                  : a.displayName,
-                                              style: TextStyle(
-                                                  color: t.muted,
-                                                  fontSize: YFont.small))),
-                                      Icon(Icons.favorite,
-                                          size: 14, color: t.faint),
-                                      const SizedBox(width: 3),
-                                      Text('${p.likeCount}',
-                                          style: TextStyle(
-                                              color: t.muted,
-                                              fontSize: YFont.small)),
-                                      const SizedBox(width: 10),
-                                      Icon(Icons.chat_bubble_outline,
-                                          size: 14, color: t.faint),
-                                      const SizedBox(width: 3),
-                                      Text('${p.commentCount}',
-                                          style: TextStyle(
-                                              color: t.muted,
-                                              fontSize: YFont.small)),
-                                    ]))),
-                      if (onReuse != null)
-                        Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Wrap(
-                                alignment: WrapAlignment.spaceBetween,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                spacing: 8,
-                                runSpacing: 4,
-                                children: [
-                                  OutlinedButton.icon(
-                                      onPressed: onReuse,
-                                      style: OutlinedButton.styleFrom(
-                                          foregroundColor: t.accent,
-                                          side: BorderSide(color: t.accent),
-                                          visualDensity: VisualDensity.compact),
-                                      icon: const Icon(
-                                          Icons.content_copy_outlined,
-                                          size: 16),
-                                      label: Text(startFromThis())),
-                                  if (p.reuseCount > 0)
-                                    Text(reusedTimes(p.reuseCount),
-                                        style: TextStyle(
-                                            color: t.muted,
-                                            fontSize: YFont.small)),
-                                ])),
-                    ]))));
+                          Text('${p.likeCount}',
+                              style: TextStyle(color: t.muted, fontSize: YFont.small)),
+                          const SizedBox(width: 10),
+                          Icon(Icons.chat_bubble_outline,
+                              size: 14, color: t.faint),
+                          const SizedBox(width: 3),
+                          Text('${p.commentCount}',
+                              style: TextStyle(color: t.muted, fontSize: YFont.small)),
+                        ]))),
+          if (onReuse != null)
+            Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      OutlinedButton.icon(
+                          onPressed: onReuse,
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: t.accent,
+                              side: BorderSide(color: t.accent),
+                              visualDensity: VisualDensity.compact),
+                          icon:
+                              const Icon(Icons.content_copy_outlined, size: 16),
+                          label: Text(startFromThis())),
+                      if (p.reuseCount > 0)
+                        Text(reusedTimes(p.reuseCount),
+                            style: TextStyle(color: t.muted, fontSize: YFont.small)),
+                    ])),
+        ]))));
   }
 }
 
@@ -232,8 +205,8 @@ class HouseCard extends StatelessWidget {
 class PostPicture extends StatefulWidget {
   const PostPicture({super.key, required this.post, required this.builder});
   final HousePost post;
-  final Widget Function(
-      BuildContext context, ImageProvider? image, bool loading) builder;
+  final Widget Function(BuildContext context, ImageProvider? image, bool loading)
+      builder;
   @override
   State<PostPicture> createState() => _PostPictureState();
 }

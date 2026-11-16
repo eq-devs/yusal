@@ -13,41 +13,280 @@ const chatLimitPerMinute = 20;
 /// for a hiring deposit.
 const bannedWords = ['押金', 'депозит', 'залог', 'кепілақы', 'кепіл ақы'];
 
-/// Allowed demand status changes. Everything else is refused.
-const demandTransitions = <DemandStatus, Set<DemandStatus>>{
-  DemandStatus.draft: {DemandStatus.pendingReview, DemandStatus.closed},
-  DemandStatus.pendingReview: {
-    DemandStatus.open,
-    DemandStatus.rejected,
-    DemandStatus.closed
-  },
-  DemandStatus.open: {
-    DemandStatus.paused,
-    DemandStatus.found,
-    DemandStatus.expired,
-    DemandStatus.closed,
-    DemandStatus.rejected,
-    DemandStatus.pendingReview,
-  },
-  DemandStatus.paused: {
-    DemandStatus.open,
-    DemandStatus.found,
-    DemandStatus.closed,
-    DemandStatus.expired,
-    DemandStatus.pendingReview,
-  },
-  DemandStatus.found: {DemandStatus.open, DemandStatus.closed},
-  DemandStatus.expired: {
-    DemandStatus.open,
-    DemandStatus.found,
-    DemandStatus.closed
-  },
-  DemandStatus.rejected: {DemandStatus.pendingReview, DemandStatus.closed},
-  DemandStatus.closed: {},
-};
+/// One record kind's statuses and the named events that move them. Each
+/// event fires from the statuses it lists and leads to one; anything else
+/// is refused. yusal-api's `market/lifecycle.go` holds the same machines,
+/// and `docs/state_machines.json` is both written out: a test on each side
+/// fails when its machines and that file differ.
+class StateMachine<S extends Enum, E extends Enum> {
+  const StateMachine(this.name,
+      {required this.initial, required this.statuses, required this.events});
 
-bool canMoveDemand(DemandStatus from, DemandStatus to) =>
-    demandTransitions[from]?.contains(to) ?? false;
+  final String name;
+
+  /// The status a new record starts in.
+  final S initial;
+  final List<S> statuses;
+
+  /// In the order of the doc; each event once.
+  final List<Transition<S, E>> events;
+
+  Transition<S, E>? _of(E event) {
+    for (final t in events) {
+      if (t.event == event) return t;
+    }
+    return null;
+  }
+
+  bool can(S from, E event) => _of(event)?.from.contains(from) ?? false;
+
+  /// Where [event] leads from [from], or null when it may not fire.
+  S? next(S from, E event) => can(from, event) ? _of(event)!.to : null;
+
+  /// The events that may fire from [from], in table order: what a person
+  /// or the voice assistant can do with the record now.
+  List<E> allowed(S from) => [
+        for (final t in events)
+          if (t.from.contains(from)) t.event
+      ];
+
+  Map<String, Object?> toJson() => {
+        'name': name,
+        'initial': initial.name,
+        'statuses': [for (final s in statuses) s.name],
+        'events': [
+          for (final t in events)
+            {
+              'name': t.event.name,
+              'from': [for (final f in t.from) f.name],
+              'to': t.to.name
+            }
+        ],
+      };
+}
+
+class Transition<S extends Enum, E extends Enum> {
+  const Transition(this.event, this.from, this.to);
+  final E event;
+  final List<S> from;
+  final S to;
+}
+
+enum DemandEvent {
+  /// Sent to review by its owner. A published one goes back to review only
+  /// through [recheck].
+  publish,
+
+  /// A new version that was rejected or has a banned word is reviewed again.
+  recheck,
+  approve,
+
+  /// By the review, a moderator, or an upheld report.
+  reject,
+  pause,
+  resume,
+
+  /// Another 30 days.
+  renew,
+  markFound,
+
+  /// When the expiry passes.
+  expire,
+
+  /// By its owner, or when the account is deleted.
+  close,
+}
+
+const _notClosed = [
+  DemandStatus.draft,
+  DemandStatus.pendingReview,
+  DemandStatus.open,
+  DemandStatus.paused,
+  DemandStatus.found,
+  DemandStatus.expired,
+  DemandStatus.rejected,
+];
+
+const demandMachine = StateMachine<DemandStatus, DemandEvent>('demand',
+    initial: DemandStatus.draft,
+    statuses: DemandStatus.values,
+    events: [
+      Transition(
+          DemandEvent.publish,
+          [DemandStatus.draft, DemandStatus.rejected],
+          DemandStatus.pendingReview),
+      Transition(
+          DemandEvent.recheck,
+          [
+            DemandStatus.pendingReview,
+            DemandStatus.open,
+            DemandStatus.paused,
+            DemandStatus.found,
+            DemandStatus.expired,
+            DemandStatus.rejected
+          ],
+          DemandStatus.pendingReview),
+      Transition(
+          DemandEvent.approve, [DemandStatus.pendingReview], DemandStatus.open),
+      Transition(
+          DemandEvent.reject,
+          [DemandStatus.pendingReview, DemandStatus.open, DemandStatus.paused],
+          DemandStatus.rejected),
+      Transition(DemandEvent.pause, [DemandStatus.open], DemandStatus.paused),
+      Transition(
+          DemandEvent.resume,
+          [DemandStatus.paused, DemandStatus.found, DemandStatus.expired],
+          DemandStatus.open),
+      Transition(DemandEvent.renew, [DemandStatus.open, DemandStatus.expired],
+          DemandStatus.open),
+      Transition(
+          DemandEvent.markFound,
+          [DemandStatus.open, DemandStatus.paused, DemandStatus.expired],
+          DemandStatus.found),
+      Transition(DemandEvent.expire, [DemandStatus.open, DemandStatus.paused],
+          DemandStatus.expired),
+      Transition(DemandEvent.close, _notClosed, DemandStatus.closed),
+    ]);
+
+enum ApplicationEvent {
+  /// Sending again adds a version.
+  resubmit,
+  withdraw,
+  notSelect,
+
+  /// The demand's owner proposes a cooperation.
+  invite,
+
+  /// That cooperation was declined or revoked.
+  uninvite,
+
+  /// Both sides confirmed it.
+  cooperate,
+}
+
+const applicationMachine = StateMachine<ApplicationStatus, ApplicationEvent>(
+    'application',
+    initial: ApplicationStatus.submitted,
+    statuses: ApplicationStatus.values,
+    events: [
+      Transition(
+          ApplicationEvent.resubmit,
+          [
+            ApplicationStatus.submitted,
+            ApplicationStatus.withdrawn,
+            ApplicationStatus.notSelected
+          ],
+          ApplicationStatus.submitted),
+      Transition(
+          ApplicationEvent.withdraw,
+          [
+            ApplicationStatus.submitted,
+            ApplicationStatus.notSelected,
+            ApplicationStatus.pendingConfirm
+          ],
+          ApplicationStatus.withdrawn),
+      Transition(ApplicationEvent.notSelect, [ApplicationStatus.submitted],
+          ApplicationStatus.notSelected),
+      Transition(ApplicationEvent.invite, [ApplicationStatus.submitted],
+          ApplicationStatus.pendingConfirm),
+      Transition(ApplicationEvent.uninvite, [ApplicationStatus.pendingConfirm],
+          ApplicationStatus.submitted),
+      Transition(ApplicationEvent.cooperate, [ApplicationStatus.pendingConfirm],
+          ApplicationStatus.cooperating),
+    ]);
+
+enum CooperationEvent {
+  confirm,
+
+  /// Declined, revoked, or its application withdrawn.
+  notForm,
+
+  /// Both sides agreed, or the other side did not answer in seven days.
+  end,
+}
+
+/// Who asked to end a confirmed one and whether that is disputed is in
+/// [Cooperation.endRequest].
+const cooperationMachine = StateMachine<CooperationStatus, CooperationEvent>(
+    'cooperation',
+    initial: CooperationStatus.pending,
+    statuses: CooperationStatus.values,
+    events: [
+      Transition(CooperationEvent.confirm, [CooperationStatus.pending],
+          CooperationStatus.confirmed),
+      Transition(CooperationEvent.notForm, [CooperationStatus.pending],
+          CooperationStatus.notFormed),
+      Transition(CooperationEvent.end, [CooperationStatus.confirmed],
+          CooperationStatus.ended),
+    ]);
+
+enum AgreementEvent {
+  accept,
+  reject,
+
+  /// A newer version was accepted.
+  supersede,
+}
+
+const agreementMachine = StateMachine<AgreementStatus, AgreementEvent>(
+    'agreement',
+    initial: AgreementStatus.proposed,
+    statuses: AgreementStatus.values,
+    events: [
+      Transition(AgreementEvent.accept, [AgreementStatus.proposed],
+          AgreementStatus.active),
+      Transition(AgreementEvent.reject, [AgreementStatus.proposed],
+          AgreementStatus.rejected),
+      Transition(AgreementEvent.supersede, [AgreementStatus.active],
+          AgreementStatus.superseded),
+    ]);
+
+enum MilestoneEvent {
+  /// Asking again replaces the note and photos.
+  request,
+  accept,
+  dispute,
+}
+
+const milestoneMachine = StateMachine<MilestoneStatus, MilestoneEvent>(
+    'milestone',
+    initial: MilestoneStatus.planned,
+    statuses: MilestoneStatus.values,
+    events: [
+      Transition(
+          MilestoneEvent.request,
+          [
+            MilestoneStatus.planned,
+            MilestoneStatus.requested,
+            MilestoneStatus.disputed
+          ],
+          MilestoneStatus.requested),
+      Transition(MilestoneEvent.accept, [MilestoneStatus.requested],
+          MilestoneStatus.accepted),
+      Transition(MilestoneEvent.dispute, [MilestoneStatus.requested],
+          MilestoneStatus.disputed),
+    ]);
+
+enum ReportEvent { uphold, dismiss }
+
+const reportMachine = StateMachine<ReportStatus, ReportEvent>('report',
+    initial: ReportStatus.open,
+    statuses: ReportStatus.values,
+    events: [
+      Transition(ReportEvent.uphold, [ReportStatus.open], ReportStatus.upheld),
+      Transition(
+          ReportEvent.dismiss, [ReportStatus.open], ReportStatus.dismissed),
+    ]);
+
+/// All of the above, in the order of `docs/state_machines.json`.
+const List<StateMachine> marketMachines = [
+  demandMachine,
+  applicationMachine,
+  cooperationMachine,
+  agreementMachine,
+  milestoneMachine,
+  reportMachine,
+];
 
 /// New sign-ups and quotes are accepted only while recruiting and before
 /// the expiry. Existing cooperations are never affected.

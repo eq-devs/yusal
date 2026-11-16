@@ -143,7 +143,7 @@ class MockBackend implements PlatformRepositories {
       if ((d.status == DemandStatus.open || d.status == DemandStatus.paused) &&
           d.expiresAt != null &&
           !d.expiresAt!.isAfter(t)) {
-        demands[d.id] = d.copyWith(status: DemandStatus.expired);
+        demands[d.id] = _fire(d, DemandEvent.expire);
         notice(d.ownerId, NoticeKind.demandExpired, RefType.demand, d.id,
             title: d.current.title);
         if (d.outcome == null && d.followUpsSent < 2) {
@@ -168,7 +168,7 @@ class MockBackend implements PlatformRepositories {
           r.dispute == null &&
           !r.at.add(unilateralEndAfter).isAfter(t)) {
         cooperations[c.id] = c.copyWith(
-            status: CooperationStatus.ended,
+            status: _next(cooperationMachine, c.status, CooperationEvent.end),
             endKind: EndKind.unilateral,
             endedAt: t);
         for (final p in [c.ownerId, c.providerId]) {
@@ -253,9 +253,9 @@ class MockBackend implements PlatformRepositories {
           profiles[p.id] = p.copyWith(status: ProfileStatus.hidden);
         }
         for (final d in demands.values.where((d) => d.ownerId == me).toList()) {
-          if (d.status != DemandStatus.closed)
-            demands[d.id] = d.copyWith(
-                status: DemandStatus.closed, closeReason: 'accountDeleted');
+          if (demandMachine.can(d.status, DemandEvent.close))
+            demands[d.id] = _fire(d, DemandEvent.close)
+                .copyWith(closeReason: 'accountDeleted');
         }
         backupsByAccount.remove(me);
         currentId = null;
@@ -581,11 +581,23 @@ class MockBackend implements PlatformRepositories {
     return d;
   }
 
-  Demand _move(Demand d, DemandStatus to) {
-    if (!canMoveDemand(d.status, to))
-      throw ApiFailure(ApiCodes.invalidState, '${d.status.name}→${to.name}');
+  /// [d] moved by [event] of [demandMachine]; refused naming the move.
+  Demand _fire(Demand d, DemandEvent event) {
+    final to = demandMachine.next(d.status, event);
+    if (to == null) {
+      final target =
+          demandMachine.events.firstWhere((t) => t.event == event).to;
+      throw ApiFailure(
+          ApiCodes.invalidState, '${d.status.name}→${target.name}');
+    }
     return d.copyWith(status: to);
   }
+
+  /// [status] moved by [event] of [machine], or a refusal.
+  static S _next<S extends Enum, E extends Enum>(
+          StateMachine<S, E> machine, S status, E event) =>
+      machine.next(status, event) ??
+      (throw const ApiFailure(ApiCodes.invalidState));
 
   @override
   Future<Demand> saveDraft(DemandType type, DemandVersion draft,
@@ -634,8 +646,7 @@ class MockBackend implements PlatformRepositories {
   void _decide(Demand d, bool approve, String by, String reason) {
     if (approve) {
       final first = d.publishedAt == null;
-      demands[d.id] = d.copyWith(
-          status: DemandStatus.open,
+      demands[d.id] = _fire(d, DemandEvent.approve).copyWith(
           publishedAt: first ? now : d.publishedAt,
           expiresAt: d.expiresAt != null && d.expiresAt!.isAfter(now)
               ? d.expiresAt
@@ -644,7 +655,7 @@ class MockBackend implements PlatformRepositories {
           title: d.current.title);
     } else {
       demands[d.id] =
-          d.copyWith(status: DemandStatus.rejected, rejectReason: reason);
+          _fire(d, DemandEvent.reject).copyWith(rejectReason: reason);
       notice(d.ownerId, NoticeKind.reviewRejected, RefType.demand, d.id,
           title: d.current.title);
     }
@@ -673,7 +684,7 @@ class MockBackend implements PlatformRepositories {
   Future<Demand> publish(String demandId) => _io(() {
         _requireActive();
         final d = _owned(demandId);
-        demands[d.id] = _move(d, DemandStatus.pendingReview);
+        demands[d.id] = _fire(d, DemandEvent.publish);
         _queueReview(d.id);
         return demands[d.id]!;
       });
@@ -682,27 +693,21 @@ class MockBackend implements PlatformRepositories {
   Future<Demand> revise(String demandId, DemandVersion next) => _io(() {
         _requireActive();
         final d = _owned(demandId);
-        if (!const {
-          DemandStatus.open,
-          DemandStatus.paused,
-          DemandStatus.expired,
-          DemandStatus.rejected,
-          DemandStatus.pendingReview,
-          DemandStatus.found,
-        }.contains(d.status)) throw const ApiFailure(ApiCodes.invalidState);
+        if (!demandMachine.can(d.status, DemandEvent.recheck))
+          throw const ApiFailure(ApiCodes.invalidState);
         _validateDemand(d.type, next);
         final version = _numbered(next, d.current.no + 1);
         var updated = d.copyWith(versions: [...d.versions, version]);
         // Rejected content goes back to review; a published one is checked
         // again for banned words.
         if (d.status == DemandStatus.rejected) {
-          updated = updated.copyWith(status: DemandStatus.pendingReview);
+          updated = _fire(updated, DemandEvent.recheck);
           demands[d.id] = updated;
           _queueReview(d.id);
         } else if (bannedWordIn(
                 '${version.title} ${version.description} ${version.siteNotes}') !=
             null) {
-          demands[d.id] = updated.copyWith(status: DemandStatus.pendingReview);
+          demands[d.id] = _fire(updated, DemandEvent.recheck);
           _queueReview(d.id);
         } else {
           demands[d.id] = updated;
@@ -721,34 +726,33 @@ class MockBackend implements PlatformRepositories {
       });
 
   @override
-  Future<Demand> pause(String demandId) => _io(
-      () => demands[demandId] = _move(_owned(demandId), DemandStatus.paused));
+  Future<Demand> pause(String demandId) =>
+      _io(() => demands[demandId] = _fire(_owned(demandId), DemandEvent.pause));
 
   @override
   Future<Demand> resume(String demandId) => _io(() {
         final d = _owned(demandId);
         if (d.status == DemandStatus.found) {
-          return demands[d.id] = _move(d, DemandStatus.open).copyWith(
+          return demands[d.id] = _fire(d, DemandEvent.resume).copyWith(
               expiresAt: d.expiresAt != null && d.expiresAt!.isAfter(now)
                   ? d.expiresAt
                   : now.add(demandLifetime));
         }
-        return demands[d.id] = _move(d, DemandStatus.open);
+        return demands[d.id] = _fire(d, DemandEvent.resume);
       });
 
   @override
   Future<Demand> renew(String demandId) => _io(() {
         final d = _owned(demandId);
-        if (d.status != DemandStatus.expired && d.status != DemandStatus.open)
-          throw const ApiFailure(ApiCodes.invalidState);
         return demands[d.id] = d.copyWith(
-            status: DemandStatus.open, expiresAt: now.add(demandLifetime));
+            status: _next(demandMachine, d.status, DemandEvent.renew),
+            expiresAt: now.add(demandLifetime));
       });
 
   @override
   Future<Demand> markFound(String demandId, OutcomeKind outcome) => _io(() {
         final d = _owned(demandId);
-        return demands[d.id] = _move(d, DemandStatus.found)
+        return demands[d.id] = _fire(d, DemandEvent.markFound)
             .copyWith(outcome: outcome, outcomeAt: now);
       });
 
@@ -758,7 +762,7 @@ class MockBackend implements PlatformRepositories {
         if (reason.trim().isEmpty)
           throw const ApiFailure(ApiCodes.invalidInput);
         return demands[d.id] =
-            _move(d, DemandStatus.closed).copyWith(closeReason: reason.trim());
+            _fire(d, DemandEvent.close).copyWith(closeReason: reason.trim());
       });
 
   @override
@@ -938,9 +942,8 @@ class MockBackend implements PlatformRepositories {
             .where((a) => a.demandId == d.id && a.profileId == p.id)
             .firstOrNull;
         if (existing != null) {
-          if (existing.status == ApplicationStatus.cooperating ||
-              existing.status == ApplicationStatus.pendingConfirm)
-            throw const ApiFailure(ApiCodes.invalidState);
+          final status = _next(
+              applicationMachine, existing.status, ApplicationEvent.resubmit);
           final next =
               _numberedApp(version, existing.current.no + 1, d.current.no);
           applications[existing.id] = Application(
@@ -948,7 +951,7 @@ class MockBackend implements PlatformRepositories {
               demandId: existing.demandId,
               profileId: existing.profileId,
               applicantId: existing.applicantId,
-              status: ApplicationStatus.submitted,
+              status: status,
               versions: [...existing.versions, next],
               createdAt: existing.createdAt,
               requestId: requestId);
@@ -976,23 +979,16 @@ class MockBackend implements PlatformRepositories {
         final a = applications[applicationId];
         if (a == null) throw const ApiFailure(ApiCodes.notFound);
         if (a.applicantId != _me) throw const ApiFailure(ApiCodes.forbidden);
-        if (a.status == ApplicationStatus.cooperating ||
-            a.status == ApplicationStatus.withdrawn)
-          throw const ApiFailure(ApiCodes.invalidState);
+        final withdrawn =
+            _next(applicationMachine, a.status, ApplicationEvent.withdraw);
         for (final c in cooperations.values
             .where((c) =>
                 c.applicationId == a.id &&
                 c.status == CooperationStatus.pending)
             .toList()) {
-          cooperations[c.id] = c.copyWith(
-              status: CooperationStatus.notFormed,
-              agreements: [
-                for (final g in c.agreements)
-                  g.copyWith(status: AgreementStatus.rejected)
-              ]);
+          cooperations[c.id] = _notFormedTerms(c);
         }
-        return applications[a.id] =
-            a.copyWith(status: ApplicationStatus.withdrawn);
+        return applications[a.id] = a.copyWith(status: withdrawn);
       });
 
   @override
@@ -1000,13 +996,12 @@ class MockBackend implements PlatformRepositories {
         final a = applications[applicationId];
         if (a == null) throw const ApiFailure(ApiCodes.notFound);
         _owned(a.demandId);
-        if (a.status != ApplicationStatus.submitted)
-          throw const ApiFailure(ApiCodes.invalidState);
+        final notSelected =
+            _next(applicationMachine, a.status, ApplicationEvent.notSelect);
         notice(a.applicantId, NoticeKind.applicationNotSelected, RefType.demand,
             a.demandId,
             title: demands[a.demandId]!.current.title);
-        return applications[a.id] =
-            a.copyWith(status: ApplicationStatus.notSelected);
+        return applications[a.id] = a.copyWith(status: notSelected);
       });
 
   // ───────────────────────── cooperations ─────────────────────────
@@ -1048,7 +1043,7 @@ class MockBackend implements PlatformRepositories {
         final a = applications[applicationId];
         if (a == null) throw const ApiFailure(ApiCodes.notFound);
         final d = _owned(a.demandId);
-        if (a.status != ApplicationStatus.submitted)
+        if (!applicationMachine.can(a.status, ApplicationEvent.invite))
           throw const ApiFailure(ApiCodes.invalidState);
         if (d.status == DemandStatus.closed)
           throw const ApiFailure(ApiCodes.invalidState);
@@ -1074,8 +1069,9 @@ class MockBackend implements PlatformRepositories {
             milestones:
                 d.type == DemandType.contract ? defaultMilestones : const [],
             createdAt: now);
-        applications[a.id] =
-            a.copyWith(status: ApplicationStatus.pendingConfirm);
+        applications[a.id] = a.copyWith(
+            status:
+                _next(applicationMachine, a.status, ApplicationEvent.invite));
         notice(
             a.applicantId, NoticeKind.confirmRequest, RefType.cooperation, id,
             title: d.current.title);
@@ -1086,7 +1082,7 @@ class MockBackend implements PlatformRepositories {
   Future<Cooperation> confirm(String cooperationId) => _io(() {
         final me = _me;
         final c = _coop(cooperationId);
-        if (c.status != CooperationStatus.pending)
+        if (!cooperationMachine.can(c.status, CooperationEvent.confirm))
           throw const ApiFailure(ApiCodes.invalidState);
         final g = c.agreements.first;
         if (g.confirmedBy.contains(me))
@@ -1095,16 +1091,21 @@ class MockBackend implements PlatformRepositories {
         final both =
             confirmed.contains(c.ownerId) && confirmed.contains(c.providerId);
         cooperations[c.id] = c.copyWith(
-            status: both ? CooperationStatus.confirmed : null,
+            status: both
+                ? _next(cooperationMachine, c.status, CooperationEvent.confirm)
+                : null,
             agreements: [
               g.copyWith(
                   confirmedBy: confirmed,
-                  status: both ? AgreementStatus.active : null)
+                  status: both
+                      ? _next(agreementMachine, g.status, AgreementEvent.accept)
+                      : null)
             ]);
         if (both) {
           final a = applications[c.applicationId]!;
-          applications[a.id] =
-              a.copyWith(status: ApplicationStatus.cooperating);
+          applications[a.id] = a.copyWith(
+              status: _next(
+                  applicationMachine, a.status, ApplicationEvent.cooperate));
           notice(c.otherSide(me), NoticeKind.cooperationConfirmed,
               RefType.cooperation, c.id,
               title: _title(c));
@@ -1112,14 +1113,21 @@ class MockBackend implements PlatformRepositories {
         return cooperations[c.id]!;
       });
 
+  /// A pending invitation that is not formed, its proposed terms rejected.
+  Cooperation _notFormedTerms(Cooperation c) => c.copyWith(
+          status: _next(cooperationMachine, c.status, CooperationEvent.notForm),
+          agreements: [
+            for (final g in c.agreements)
+              g.copyWith(
+                  status:
+                      _next(agreementMachine, g.status, AgreementEvent.reject))
+          ]);
+
   Cooperation _notFormed(Cooperation c, NoticeKind kind, String to) {
-    cooperations[c.id] = c
-        .copyWith(status: CooperationStatus.notFormed, agreements: [
-      for (final g in c.agreements) g.copyWith(status: AgreementStatus.rejected)
-    ]);
+    cooperations[c.id] = _notFormedTerms(c);
     final a = applications[c.applicationId]!;
-    if (a.status == ApplicationStatus.pendingConfirm)
-      applications[a.id] = a.copyWith(status: ApplicationStatus.submitted);
+    final back = applicationMachine.next(a.status, ApplicationEvent.uninvite);
+    if (back != null) applications[a.id] = a.copyWith(status: back);
     notice(to, kind, RefType.cooperation, c.id, title: _title(c));
     return cooperations[c.id]!;
   }
@@ -1127,16 +1135,16 @@ class MockBackend implements PlatformRepositories {
   @override
   Future<Cooperation> decline(String cooperationId) => _io(() {
         final c = _coop(cooperationId);
-        if (c.status != CooperationStatus.pending || c.providerId != _me)
-          throw const ApiFailure(ApiCodes.invalidState);
+        if (!cooperationMachine.can(c.status, CooperationEvent.notForm) ||
+            c.providerId != _me) throw const ApiFailure(ApiCodes.invalidState);
         return _notFormed(c, NoticeKind.cooperationDeclined, c.ownerId);
       });
 
   @override
   Future<Cooperation> revoke(String cooperationId) => _io(() {
         final c = _coop(cooperationId);
-        if (c.status != CooperationStatus.pending || c.ownerId != _me)
-          throw const ApiFailure(ApiCodes.invalidState);
+        if (!cooperationMachine.can(c.status, CooperationEvent.notForm) ||
+            c.ownerId != _me) throw const ApiFailure(ApiCodes.invalidState);
         return _notFormed(c, NoticeKind.cooperationDeclined, c.providerId);
       });
 
@@ -1171,11 +1179,12 @@ class MockBackend implements PlatformRepositories {
             if (identical(g, change))
               g.copyWith(
                   confirmedBy: accept ? {...g.confirmedBy, me} : g.confirmedBy,
-                  status: accept
-                      ? AgreementStatus.active
-                      : AgreementStatus.rejected)
+                  status: _next(agreementMachine, g.status,
+                      accept ? AgreementEvent.accept : AgreementEvent.reject))
             else if (accept && g.status == AgreementStatus.active)
-              g.copyWith(status: AgreementStatus.superseded)
+              g.copyWith(
+                  status: _next(
+                      agreementMachine, g.status, AgreementEvent.supersede))
             else
               g
         ];
@@ -1207,12 +1216,12 @@ class MockBackend implements PlatformRepositories {
         final me = _me;
         final c = _coop(cooperationId);
         final r = c.endRequest;
-        if (c.status != CooperationStatus.confirmed ||
+        if (!cooperationMachine.can(c.status, CooperationEvent.end) ||
             r == null ||
             r.by == me ||
             r.dispute != null) throw const ApiFailure(ApiCodes.invalidState);
         cooperations[c.id] = c.copyWith(
-            status: CooperationStatus.ended,
+            status: _next(cooperationMachine, c.status, CooperationEvent.end),
             endKind: EndKind.mutual,
             endedAt: now);
         // Record the cooperation on the profile; no owner drawings or
@@ -1272,11 +1281,13 @@ class MockBackend implements PlatformRepositories {
         if (index < 0 || index >= c.milestones.length)
           throw const ApiFailure(ApiCodes.invalidInput, 'milestone');
         final m = c.milestones[index];
-        if (m.status == MilestoneStatus.accepted)
+        final requested =
+            milestoneMachine.next(m.status, MilestoneEvent.request);
+        if (requested == null)
           throw const ApiFailure(ApiCodes.invalidState, 'accepted');
         final list = [...c.milestones];
         list[index] = m.copyWith(
-            status: MilestoneStatus.requested,
+            status: requested,
             note: note.trim(),
             photos: photos.take(9).toList(),
             requestedAt: now);
@@ -1331,14 +1342,14 @@ class MockBackend implements PlatformRepositories {
         if (index < 0 || index >= c.milestones.length)
           throw const ApiFailure(ApiCodes.invalidInput, 'milestone');
         final m = c.milestones[index];
-        if (m.status != MilestoneStatus.requested)
-          throw const ApiFailure(ApiCodes.invalidState);
+        final answered = milestoneMachine.next(
+            m.status, accept ? MilestoneEvent.accept : MilestoneEvent.dispute);
+        if (answered == null) throw const ApiFailure(ApiCodes.invalidState);
         if (!accept && note.trim().isEmpty)
           throw const ApiFailure(ApiCodes.invalidInput, 'note');
         final list = [...c.milestones];
         list[index] = m.copyWith(
-            status:
-                accept ? MilestoneStatus.accepted : MilestoneStatus.disputed,
+            status: answered,
             note: accept ? m.note : note.trim(),
             answeredAt: now);
         notice(c.providerId, NoticeKind.milestoneAnswered, RefType.cooperation,
@@ -2186,7 +2197,7 @@ class MockBackend implements PlatformRepositories {
   Future<void> approve(String demandId) => _io(() {
         _requireAdmin();
         final d = demands[demandId];
-        if (d == null || d.status != DemandStatus.pendingReview)
+        if (d == null || !demandMachine.can(d.status, DemandEvent.approve))
           throw const ApiFailure(ApiCodes.invalidState);
         _decide(d, true, _me, 'manual');
       });
@@ -2195,10 +2206,7 @@ class MockBackend implements PlatformRepositories {
   Future<void> reject(String demandId, String reason) => _io(() {
         _requireAdmin();
         final d = demands[demandId];
-        if (d == null ||
-            (d.status != DemandStatus.pendingReview &&
-                d.status != DemandStatus.open &&
-                d.status != DemandStatus.paused))
+        if (d == null || !demandMachine.can(d.status, DemandEvent.reject))
           throw const ApiFailure(ApiCodes.invalidState);
         if (reason.trim().isEmpty)
           throw const ApiFailure(ApiCodes.invalidInput);
@@ -2218,19 +2226,19 @@ class MockBackend implements PlatformRepositories {
         _requireAdmin();
         final me = _me;
         final r = reportsById[reportId];
-        if (r == null || r.status != ReportStatus.open)
+        final handled = r == null
+            ? null
+            : reportMachine.next(
+                r.status, upheld ? ReportEvent.uphold : ReportEvent.dismiss);
+        if (r == null || handled == null)
           throw const ApiFailure(ApiCodes.invalidState);
         if (note.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
-        reportsById[r.id] = r.handle(
-            upheld ? ReportStatus.upheld : ReportStatus.dismissed,
-            me,
-            now,
-            note.trim());
+        reportsById[r.id] = r.handle(handled, me, now, note.trim());
         if (upheld) {
           switch (r.target) {
             case ReportTarget.demand:
               final d = demands[r.targetId];
-              if (d != null && canMoveDemand(d.status, DemandStatus.rejected))
+              if (d != null && demandMachine.can(d.status, DemandEvent.reject))
                 _decide(d, false, me, note.trim());
             case ReportTarget.profile:
               final p = profiles[r.targetId];

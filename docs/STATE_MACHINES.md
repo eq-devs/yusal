@@ -41,9 +41,7 @@ A confirmed cooperation's ending is its own small machine, `EndPhase` (`Cooperat
 - `SendState` of a chat message: sending → sent | failed → (retry) sent.
 - Posts (`published` ⇄ `hidden`), profiles (`active` ⇄ `hidden`), accounts (`active`, `blocked`, `deleted`): two- or three-state flags whose rules live in their services.
 
-## Still implicit
-
-Worth making explicit next, highest value first:
+## Still implicit, on purpose
 
 1. **Sign-in page** (`login_page.dart`, `codeSent`): two steps, one flag; an enum would add nothing.
 2. **Demand edit page** (`publish_page.dart`): picks `saveDraft` for a draft and `revise` otherwise; the server's machine (`recheck`) already guards it.

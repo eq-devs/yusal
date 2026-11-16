@@ -10,7 +10,7 @@ For people and agents alike: to know what can happen to a record now, read its m
 
 `lib/platform/domain/rules.dart` (`demandMachine`, `applicationMachine`, `cooperationMachine`, `agreementMachine`, `milestoneMachine`, `reportMachine`) and yusal-api `internal/module/market/lifecycle.go` hold the same six machines. [`state_machines.json`](state_machines.json) is them written out, and a test on each side fails when its code and that file differ: after changing a machine, run `go test ./internal/module/market -run TestMachinesMatchDoc -update` in yusal-api, copy `docs/state_machines.json` here, and update `rules.dart` until `test/platform/state_machines_test.dart` passes.
 
-Every status write in `MockBackend` and in the server goes through an event (`demandMachine.next(status, DemandEvent.pause)`, `DemandMachine.Fire(&d.Status, "pause")`). `allowed(status)` lists what can be done now; the demand page's owner buttons are those events.
+Every status write in `MockBackend` and in the server goes through an event (`demandMachine.next(status, DemandEvent.pause)`, `DemandMachine.Fire(&d.Status, "pause")`). `allowed(status)` lists what can be done now; the demand page's owner buttons are those events. The voice assistant gets the same set: on the owner's demand page it is offered `demand.publish`, `demand.pause`, `demand.resume`, `demand.renew`, `demand.mark_found` and `demand.close` only when `demandButton(status, event)` is true (`lib/voice/actions_demand.dart`), each confirmed before it runs, and the page's `summary` names the status.
 
 | Machine | States | Events |
 |---|---|---|

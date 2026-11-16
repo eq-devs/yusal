@@ -132,6 +132,139 @@
     }
   },
   {
+    "name": "demand.publish",
+    "title": {
+      "zh": "提交审核",
+      "kk": "Тексеруге жіберу",
+      "ru": "Отправить на проверку"
+    },
+    "examples": {
+      "zh": "提交审核",
+      "kk": "Тексеруге жібер",
+      "ru": "Отправь на проверку"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "demand.pause",
+    "title": {
+      "zh": "暂停招募",
+      "kk": "Іздеуді тоқтату",
+      "ru": "Приостановить набор"
+    },
+    "examples": {
+      "zh": "先暂停招人",
+      "kk": "Іздеуді уақытша тоқтат",
+      "ru": "Приостанови набор"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "demand.resume",
+    "title": {
+      "zh": "继续招募",
+      "kk": "Іздеуді жалғастыру",
+      "ru": "Возобновить набор"
+    },
+    "examples": {
+      "zh": "继续招人",
+      "kk": "Іздеуді жалғастыр",
+      "ru": "Возобнови набор"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "demand.renew",
+    "title": {
+      "zh": "续期 30 天",
+      "kk": "30 күнге ұзарту",
+      "ru": "Продлить на 30 дней"
+    },
+    "examples": {
+      "zh": "再延长一个月",
+      "kk": "Тағы бір айға ұзарт",
+      "ru": "Продли ещё на месяц"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "demand.mark_found",
+    "title": {
+      "zh": "标记已找到人",
+      "kk": "Адам табылды деп белгілеу",
+      "ru": "Отметить, что исполнитель найден"
+    },
+    "examples": {
+      "zh": "已经找到瓦工了，不再招人",
+      "kk": "Қалаушы табылды, енді іздемеймін",
+      "ru": "Каменщика нашли, больше не ищем"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "platformConfirmed",
+            "selfReportedYusal",
+            "otherChannel",
+            "notFound",
+            "notNeeded"
+          ]
+        }
+      },
+      "required": [
+        "outcome"
+      ]
+    }
+  },
+  {
+    "name": "demand.close",
+    "title": {
+      "zh": "关闭需求",
+      "kk": "Тапсырысты жабу",
+      "ru": "Закрыть заявку"
+    },
+    "examples": {
+      "zh": "关掉这个需求，不需要了",
+      "kk": "Бұл тапсырысты жап, керек емес",
+      "ru": "Закрой заявку, уже не нужно"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ]
+    }
+  },
+  {
     "name": "design.create_house",
     "title": {
       "zh": "设计整栋房子",

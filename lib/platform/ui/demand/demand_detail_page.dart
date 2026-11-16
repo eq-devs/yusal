@@ -17,6 +17,8 @@ import 'publish_page.dart';
 import 'share_page.dart';
 import '../home/post_page.dart';
 import '../../../motion/motion.dart';
+import '../../../voice/actions_demand.dart';
+import '../../../voice/screen.dart';
 
 class _DetailData {
   _DetailData(this.demand, this.owner, this.snapshot, this.myApps, this.coops,
@@ -77,11 +79,34 @@ class DemandDetailPage extends StatelessWidget {
   }
 }
 
-class _DemandDetail extends StatelessWidget {
+class _DemandDetail extends StatefulWidget {
   const _DemandDetail({required this.data});
   final _DetailData data;
 
+  @override
+  State<_DemandDetail> createState() => _DemandDetailState();
+}
+
+class _DemandDetailState extends State<_DemandDetail>
+    with VoiceScreen
+    implements DemandHost {
+  _DetailData get data => widget.data;
   Demand get d => data.demand!;
+
+  @override
+  String get screenId => 'demand.detail';
+
+  @override
+  Demand? get ownDemand =>
+      context.repos.currentAccount?.id == d.ownerId ? d : null;
+
+  @override
+  bool get hiredSomeone => hiredCount(data.coops) > 0;
+
+  /// The status, so the assistant can say where the demand stands; what
+  /// can be done with it is the offered demand.* actions.
+  @override
+  String get summary => 'demand ${d.status.name}: ${d.current.title}';
 
   @override
   Widget build(BuildContext context) {
@@ -452,8 +477,9 @@ class _DemandDetail extends StatelessWidget {
     final h = d.current.hire;
     Future<void> act(Future<Object?> Function() f, String done) =>
         attempt(context, f, success: done);
-    // The buttons are the events the demand's status allows.
-    bool can(DemandEvent e) => demandMachine.can(d.status, e);
+    // The buttons are the events the demand's status allows, the same
+    // ones voice is offered.
+    bool can(DemandEvent e) => demandButton(d.status, e);
     return [
       SectionTitle(tr3('管理需求', 'Басқару', 'Управление')),
       if (h != null)
@@ -519,8 +545,7 @@ class _DemandDetail extends StatelessWidget {
               onPressed: () => act(() => repos.pause(d.id),
                   tr3('已暂停', 'Тоқтатылды', 'Приостановлено')),
               child: Text(tr3('暂停', 'Тоқтату', 'Пауза'))),
-        // An expired one is renewed instead.
-        if (can(DemandEvent.resume) && d.status != DemandStatus.expired)
+        if (can(DemandEvent.resume))
           OutlinedButton(
               onPressed: () => act(() => repos.resume(d.id),
                   tr3('继续招募', 'Жалғасты', 'Набор возобновлён')),

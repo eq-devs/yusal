@@ -96,4 +96,59 @@ final coopActions = [
       const L3('接受新的约定', 'Жаңа келісімді қабылда', 'Прими новые условия'),
       (repos, id, args) => repos.answerChange(id, args.flag('accept')),
       params: const {'accept': Param.flag()}),
+  _milestoneAction(
+      MilestoneEvent.request,
+      'coop.request_milestone',
+      const L3('申请节点验收', 'Кезеңді қабылдауды сұрау', 'Попросить принять этап'),
+      const L3('地基做完了，请房主来验收', 'Іргетас бітті, қабылдауды сұра',
+          'Фундамент готов, попроси принять'),
+      (repos, id, i, args) => repos.requestMilestone(id, i,
+          note: args.has('note') ? args.text('note') : ''),
+      params: const {'note': Param.text(optional: true)}),
+  _milestoneAction(
+      MilestoneEvent.accept,
+      'coop.accept_milestone',
+      const L3('验收通过', 'Кезеңді қабылдау', 'Принять этап'),
+      const L3('看过了，验收通过', 'Көрдім, қабылдаймын', 'Посмотрел, принимаю'),
+      (repos, id, i, _) => repos.answerMilestone(id, i, true)),
+  _milestoneAction(
+      MilestoneEvent.dispute,
+      'coop.dispute_milestone',
+      const L3('验收有问题', 'Кезеңге ескерту', 'Замечания по этапу'),
+      const L3('墙不直，这个节点不通过', 'Қабырға қисық, қабылдамаймын',
+          'Стена кривая, не принимаю'),
+      (repos, id, i, args) =>
+          repos.answerMilestone(id, i, false, note: args.text('note')),
+      params: const {'note': Param.text()}),
 ];
+
+/// Acts on the first milestone not yet accepted, offered only while
+/// [milestoneMoves] has [event] for it, as the site section's buttons are.
+AppAction _milestoneAction(
+        MilestoneEvent event,
+        String id,
+        L3 title,
+        L3 examples,
+        Future<Object?> Function(
+                PlatformRepositories repos, String id, int index, Args args)
+            call,
+        {Map<String, Param> params = const {}}) =>
+    AppAction(
+      id: id,
+      title: title,
+      examples: examples,
+      params: params,
+      when: (ctx) {
+        final c = _coop(), me = ctx.repos.currentAccount?.id;
+        final i = c == null ? null : currentMilestone(c);
+        return i != null && milestoneMoves(c!, me, i).contains(event);
+      },
+      risk: Risk.outbound,
+      run: (ctx, args) async {
+        final c = _coop()!;
+        final i = currentMilestone(c)!;
+        await call(ctx.repos, c.id, i, args);
+        return ActionResult.ok(
+            changed: [c.id], say: {'milestone': c.milestones[i].key});
+      },
+    );

@@ -84,8 +84,17 @@ class _CoopViewState extends State<_CoopView>
   @override
   String get summary =>
       'cooperation ${coop.status.name}, ending ${coop.endPhase.name}'
-      '${coop.pendingChange != null ? ', change proposed' : ''}: '
+      '${coop.pendingChange != null ? ', change proposed' : ''}'
+      '${_milestoneNote()}: '
       '${data.demand?.current.title ?? ''}';
+
+  /// The inspection point voice acts on, and where it stands.
+  String _milestoneNote() {
+    final i = currentMilestone(coop);
+    if (i == null) return '';
+    final m = coop.milestones[i];
+    return ', milestone ${m.key} ${m.status.name}';
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -451,3 +451,33 @@ Set<CoopMove> coopMoves(Cooperation c, String me) {
       return {};
   }
 }
+
+/// What one side can do with milestone [i] of a cooperation now: the
+/// provider asks for inspection of the first open point while the
+/// cooperation runs; the owner accepts or questions a requested one. The
+/// site section's buttons and the voice assistant's milestone actions both
+/// come from it.
+Set<MilestoneEvent> milestoneMoves(Cooperation c, String? me, int i) {
+  final m = c.milestones[i];
+  final current =
+      c.milestones.indexWhere((m) => m.status != MilestoneStatus.accepted);
+  return {
+    if (me == c.providerId &&
+        c.status == CooperationStatus.confirmed &&
+        i == current &&
+        m.status != MilestoneStatus.requested)
+      MilestoneEvent.request,
+    if (me == c.ownerId && m.status == MilestoneStatus.requested) ...[
+      MilestoneEvent.accept,
+      MilestoneEvent.dispute,
+    ],
+  };
+}
+
+/// The milestone voice acts on: the first one not yet accepted, since
+/// inspections go in order. Null when all are accepted or there are none.
+int? currentMilestone(Cooperation c) {
+  final i =
+      c.milestones.indexWhere((m) => m.status != MilestoneStatus.accepted);
+  return i < 0 ? null : i;
+}

@@ -414,6 +414,73 @@
     }
   },
   {
+    "name": "coop.request_milestone",
+    "title": {
+      "zh": "申请节点验收",
+      "kk": "Кезеңді қабылдауды сұрау",
+      "ru": "Попросить принять этап"
+    },
+    "examples": {
+      "zh": "地基做完了，请房主来验收",
+      "kk": "Іргетас бітті, қабылдауды сұра",
+      "ru": "Фундамент готов, попроси принять"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "coop.accept_milestone",
+    "title": {
+      "zh": "验收通过",
+      "kk": "Кезеңді қабылдау",
+      "ru": "Принять этап"
+    },
+    "examples": {
+      "zh": "看过了，验收通过",
+      "kk": "Көрдім, қабылдаймын",
+      "ru": "Посмотрел, принимаю"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "coop.dispute_milestone",
+    "title": {
+      "zh": "验收有问题",
+      "kk": "Кезеңге ескерту",
+      "ru": "Замечания по этапу"
+    },
+    "examples": {
+      "zh": "墙不直，这个节点不通过",
+      "kk": "Қабырға қисық, қабылдамаймын",
+      "ru": "Стена кривая, не принимаю"
+    },
+    "risk": "outbound",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "note"
+      ]
+    }
+  },
+  {
     "name": "design.create_house",
     "title": {
       "zh": "设计整栋房子",

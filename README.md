@@ -153,6 +153,8 @@ flutter run \
   --dart-define=GOOGLE_IOS_CLIENT_ID=<iOS 客户端 ID>
 ```
 
+装到手机上测试用 `scripts/install_dev.sh`：它按 `config/dart_defines.dev.json` 打包（测试登录和语音控制都打开），并装到所有连着电脑的 Android 手机和 iPhone 上。应用上线前，装到手机上的都应该是这个测试包；`config/dart_defines.release.json` 是正式包用的，没有测试登录和语音。
+
 `HttpBackend`（`lib/platform/data/http/http_backend.dart`）把登录和账号、设计快照、发布的房子（点赞、点评）、云备份交给后端；名片、需求、报价、合作、聊天、通知、审核暂时仍在内存里运行，用的是真实账号 ID，等后端有了对应模块再切过去。
 
 登录只有 Google 和 Apple，第一次接入需要：

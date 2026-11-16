@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yusal/platform/domain/models.dart';
 import 'package:yusal/platform/data/mock/mock_backend.dart';
 import 'package:yusal/voice/action.dart';
 import 'package:yusal/voice/executor.dart';
@@ -13,7 +15,16 @@ import 'session_test.dart' show ScriptedBackend, act;
 
 /// A backend that also serves voice, as the real one does.
 class VoiceMock extends MockBackend implements VoiceBackend {
-  VoiceMock(this.inner) : super(latency: Duration.zero, seed: false);
+  /// Signed in, as the orb is only there for someone who is.
+  VoiceMock(this.inner, {bool signedIn = true})
+      : super(latency: Duration.zero, seed: false) {
+    accounts['me'] = Account(
+        id: 'me',
+        phone: '',
+        displayName: 'Me',
+        createdAt: DateTime.utc(2026, 11, 1));
+    if (signedIn) signInAs('me');
+  }
   final ScriptedBackend inner;
 
   @override
@@ -240,6 +251,48 @@ void main() {
         home: const Scaffold()));
     await t.pump();
     expect(find.byKey(const Key('voice-button')), findsNothing);
+  });
+
+  testWidgets('the orb is there only for someone signed in', (t) async {
+    final repos = VoiceMock(ScriptedBackend([]), signedIn: false);
+    await pump(t, repos);
+    await t.pump();
+    expect(find.byKey(const Key('voice-button')), findsNothing);
+    repos.signInAs('me');
+    await t.pump();
+    expect(find.byKey(const Key('voice-button')), findsOneWidget);
+    // At rest the orb says what a tap does.
+    expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+    repos.signInAs(null);
+    await t.pump();
+    expect(find.byKey(const Key('voice-button')), findsNothing);
+  });
+
+  testWidgets('the orb introduces itself until it is first used', (t) async {
+    SharedPreferences.setMockInitialValues({});
+    final backend = ScriptedBackend([const VoiceTurn(reply: '好的。')]);
+    await pump(t, VoiceMock(backend));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('voice-intro')), findsOneWidget);
+    expect(find.text('AI 助手'), findsOneWidget);
+    // An example on the card is sent as a sentence, and the card is gone
+    // for good.
+    final example = find.descendant(
+        of: find.byKey(const Key('voice-intro')),
+        matching: find.byType(ActionChip));
+    expect(example, findsWidgets);
+    await t.tap(example.first);
+    await t.pumpAndSettle();
+    expect(backend.said, hasLength(1));
+    expect(find.byKey(const Key('voice-intro')), findsNothing);
+    expect((await SharedPreferences.getInstance()).getBool('voice-intro-seen'),
+        isTrue);
+
+    await t.pumpWidget(const SizedBox.shrink());
+    await pump(t, VoiceMock(ScriptedBackend([])));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('voice-button')), findsOneWidget);
+    expect(find.byKey(const Key('voice-intro')), findsNothing);
   });
 
   testWidgets('the sign-in page has no orb over its buttons', (t) async {

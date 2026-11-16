@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../app/settings.dart';
@@ -73,6 +74,7 @@ String _failure(String? code) => switch (code) {
 /// Actions shown as "you can say" suggestions, most useful first.
 const _suggestionOrder = [
   'design.create_house',
+  'design.resize_room',
   'design.add_opening',
   'design.add_furniture',
   'design.add_room',
@@ -112,6 +114,10 @@ class _VoiceBarState extends State<VoiceBar>
   final focus = FocusNode();
   bool typing = false, listening = false, transcribing = false;
   bool bannerShown = false, expanded = false;
+
+  /// The card that says what the orb is, until the orb is first used.
+  bool intro = false;
+  static const _introSeen = 'voice-intro-seen';
   String? speechNote;
   Timer? limit;
   // One turn of the orb, and how loud the voice is (0 to 1).
@@ -141,14 +147,30 @@ class _VoiceBarState extends State<VoiceBar>
     super.initState();
     s.addListener(_changed);
     VoiceBar.hidden.addListener(_hiddenChanged);
+    // Signing in and out shows and hides the orb.
+    s.repos.changes.addListener(_hiddenChanged);
     // The suggestions show only while the field is empty.
     input.addListener(() => setState(() {}));
+    SharedPreferences.getInstance().then((prefs) {
+      if (mounted && prefs.getBool(_introSeen) != true) {
+        setState(() => intro = true);
+      }
+    }).catchError((_) {/* No storage: no introduction. */});
+  }
+
+  void closeIntro() {
+    if (!intro) return;
+    setState(() => intro = false);
+    SharedPreferences.getInstance()
+        .then((prefs) => prefs.setBool(_introSeen, true))
+        .catchError((_) => false);
   }
 
   @override
   void dispose() {
     s.removeListener(_changed);
     VoiceBar.hidden.removeListener(_hiddenChanged);
+    s.repos.changes.removeListener(_hiddenChanged);
     limit?.cancel();
     levels?.cancel();
     glow.dispose();
@@ -204,6 +226,7 @@ class _VoiceBarState extends State<VoiceBar>
   /// The orb: listen, or send what was said. Speaking while a sentence
   /// is running interrupts it.
   Future<void> orb() async {
+    closeIntro();
     if (widget.speech == null) return toggleTyping();
     if (transcribing) return;
     if (!listening) return startListening();
@@ -211,6 +234,7 @@ class _VoiceBarState extends State<VoiceBar>
   }
 
   void toggleTyping() {
+    closeIntro();
     setState(() {
       typing = !typing;
       speechNote = null;
@@ -270,6 +294,7 @@ class _VoiceBarState extends State<VoiceBar>
   void send([String? text]) {
     final t = (text ?? input.text).trim();
     if (t.isEmpty) return;
+    closeIntro();
     input.clear();
     expanded = false;
     // The answer takes the field's place beside the orb.
@@ -305,7 +330,11 @@ class _VoiceBarState extends State<VoiceBar>
 
   @override
   Widget build(BuildContext context) {
-    if (VoiceBar.hidden.value > 0 && !active) return const SizedBox.shrink();
+    // Out of the way on the sign-in page, and for someone not signed in:
+    // the assistant acts on an account's own designs.
+    if ((VoiceBar.hidden.value > 0 || !s.loggedIn()) && !active) {
+      return const SizedBox.shrink();
+    }
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final lang = AppSettings.instance.lang;
@@ -487,6 +516,54 @@ class _VoiceBarState extends State<VoiceBar>
     final tips = typing && !s.busy && input.text.isEmpty && !bannerShown
         ? suggestions()
         : const <String>[];
+    // What the orb is and what to say to it, until it is first used.
+    final welcome = intro && !active && !typing && !bannerShown && pill == null
+        ? card(
+            key: const Key('voice-intro'),
+            padding: const EdgeInsets.fromLTRB(14, 6, 4, 10),
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.auto_awesome, size: 18, color: colors.primary),
+                    const SizedBox(width: 6),
+                    Flexible(
+                        child: Text(
+                            tr3('AI 助手', 'AI көмекші', 'AI-помощник'),
+                            style: theme.textTheme.titleSmall)),
+                    IconButton(
+                        key: const Key('voice-intro-close'),
+                        visualDensity: VisualDensity.compact,
+                        tooltip: tr3('知道了', 'Түсінікті', 'Понятно'),
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: closeIntro),
+                  ]),
+                  Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Text(
+                          widget.speech != null
+                              ? tr3(
+                                  '点右边的圆球，直接说你想做什么。比如：',
+                                  'Оң жақтағы шарды басып, не керегін айтыңыз. Мысалы:',
+                                  'Нажмите на шар справа и скажите, что нужно. Например:')
+                              : tr3(
+                                  '点右边的圆球，写下你想做什么。比如：',
+                                  'Оң жақтағы шарды басып, не керегін жазыңыз. Мысалы:',
+                                  'Нажмите на шар справа и напишите, что нужно. Например:'),
+                          style: theme.textTheme.bodyMedium)),
+                  const SizedBox(height: 6),
+                  Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Wrap(spacing: 8, runSpacing: 6, children: [
+                        for (final tip in suggestions())
+                          ActionChip(
+                              label:
+                                  Text(tip, style: theme.textTheme.bodyMedium),
+                              onPressed: () => send(tip)),
+                      ])),
+                ]))
+        : null;
 
     // Transparent: taps between the parts reach the page.
     return Material(
@@ -519,6 +596,10 @@ class _VoiceBarState extends State<VoiceBar>
                                             style: theme.textTheme.bodyMedium),
                                         onPressed: () => send(tip)),
                                 ])),
+                      if (welcome != null)
+                        ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 420),
+                            child: welcome),
                       if (banner != null)
                         Container(
                             constraints: BoxConstraints(
@@ -561,7 +642,12 @@ class _VoiceBarState extends State<VoiceBar>
                                 ? Icons.stop_rounded
                                 : typing && widget.speech == null
                                     ? Icons.close
-                                    : null))),
+                                    // At rest it says what a tap does.
+                                    : !active
+                                        ? (widget.speech != null
+                                            ? Icons.mic
+                                            : Icons.auto_awesome)
+                                        : null))),
               ])),
         ]));
   }

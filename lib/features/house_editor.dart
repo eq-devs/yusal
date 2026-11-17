@@ -596,8 +596,9 @@ class _HouseEditorState extends State<HouseEditor>
                       if (mounted) setState(() {});
                     },
                     child: SizedBox(
+                        // Seven tools fit a phone row at 45 wide.
                         width: math.max(
-                            52,
+                            phoneTools ? 45 : 52,
                             MediaQuery.textScalerOf(context).scale(11) *
                                     (toolLabel(label).length *
                                         (isKk ? 0.62 : 1.0)) +
@@ -3599,13 +3600,80 @@ class _HouseEditorState extends State<HouseEditor>
     });
   }
 
+  /// The wall a stroke was pulled out of, while its foot may still slide.
+  WallSegment? slideHost;
+
+  /// Clear distances along [host] from a new wall at [p] to the walls on
+  /// either side of it: the figures the plan will show once it is built.
+  (double, double) clearAlong(WallSegment host, double p) {
+    final vertical = host.axis.dir == AxisDir.V;
+    final c = host.axis.pos.toDouble();
+    var lo = host.start.pos.toDouble(), hi = host.end.pos.toDouble();
+    for (final w in wallsOf(base, const FoundationSpec())) {
+      if (w.horizontal != vertical || w.role == WallRole.temporary) continue;
+      final r = w.rect;
+      final crosses = vertical
+          ? r.left <= c + 1 && r.right >= c - 1
+          : r.bottom <= c + 1 && r.top >= c - 1;
+      if (!crosses) continue;
+      final a = vertical ? r.bottom : r.left, b = vertical ? r.top : r.right;
+      if (b <= p && b > lo) lo = b;
+      if (a >= p && a < hi) hi = a;
+    }
+    final half = history.present.defaults.innerWallThickness / 2;
+    return (p - half - lo, hi - p - half);
+  }
+
+  String? slideNote;
+
+  void slideFoot(double x, double y) {
+    final host = slideHost;
+    if (host == null) return;
+    final vertical = host.axis.dir == AxisDir.V;
+    final lo = host.start.pos + 300.0, hi = host.end.pos - 300.0;
+    if (hi <= lo) return;
+    // Once the finger has left the wall the foot stays where it was put,
+    // so a hand that drifts while drawing does not drag the wall along.
+    if (((vertical ? x : y) - host.axis.pos).abs() > 500) {
+      slideHost = null;
+      return;
+    }
+    final along =
+        (((vertical ? y : x) / 100).round() * 100.0).clamp(lo, hi).toDouble();
+    final p = vertical
+        ? Offset(host.axis.pos.toDouble(), along)
+        : Offset(along, host.axis.pos.toDouble());
+    if (!canExtendWallFrom(base, derived.floors[floorIndex].openings, p))
+      return;
+    drawingOrigin = p;
+    final (a, b) = clearAlong(host, along);
+    slideNote = vertical
+        ? tr3('下边 ${m2dp(a)} 米 · 上边 ${m2dp(b)} 米',
+            'Төменде ${m2dp(a)} м · жоғарыда ${m2dp(b)} м',
+            'Снизу ${m2dp(a)} м · сверху ${m2dp(b)} м')
+        : tr3('左边 ${m2dp(a)} 米 · 右边 ${m2dp(b)} 米',
+            'Сол жақта ${m2dp(a)} м · оң жақта ${m2dp(b)} м',
+            'Слева ${m2dp(a)} м · справа ${m2dp(b)} м');
+  }
+
   void beginWallStroke(Offset local, Size size) {
     drawingStrokeActive = true;
     drawingBefore = drawingOrigin;
     final hit = attachmentAt(local, size);
     strokeFromAttachment = hit != null;
+    slideHost = null;
     if (hit != null) {
       drawingOrigin = hit;
+      // Pulled from the middle of a wall, the new wall's foot follows the
+      // finger along that wall until it is pulled into the room.
+      slideHost = base.wallSegments.where((w) {
+        final vertical = w.axis.dir == AxisDir.V;
+        final along = vertical ? hit.dy : hit.dx,
+            cross = vertical ? hit.dx : hit.dy;
+        return cross == w.axis.pos &&
+            along > w.start.pos &&
+            along < w.end.pos;
+      }).firstOrNull;
     } else if (placingWallStart) {
       drawingOrigin = wallPoint(local, size);
       placingWallStart = false;
@@ -3634,6 +3702,8 @@ class _HouseEditorState extends State<HouseEditor>
     final painter = interactionPainter(),
         world = painter.worldPoint(local, size),
         pixel = 1 / (painter.scale(size) * canvasZoom);
+    slideNote = null;
+    slideFoot(world.x, world.y);
     final snap = snapWallEnd(base, drawingOrigin!, Offset(world.x, world.y),
         connectRadius: 22 * pixel, alignRadius: 14 * pixel);
     if (snap.end != drawingEnd && snap.connected && !drawConnected)
@@ -3646,10 +3716,16 @@ class _HouseEditorState extends State<HouseEditor>
       spatialDocument = null;
       spatialBase = null;
       spatialError = null;
+      // Still on the wall: say where the new wall would stand.
+      if (slideNote != null)
+        placementHint = tr3('$slideNote · 往里拖出墙', '$slideNote · ішке тартыңыз',
+            '$slideNote · тяните внутрь');
       return;
     }
+    final ok = tr3('松手建墙，末端可以继续拖', 'Жіберсеңіз қабырға салынады, ұшынан жалғастыруға болады', 'Отпустите, чтобы построить стену; от её конца можно продолжить');
     schedulePreview('AddDrawnWall', drawingArguments,
-        ok: tr3('松手建墙，末端可以继续拖', 'Жіберсеңіз қабырға салынады, ұшынан жалғастыруға болады', 'Отпустите, чтобы построить стену; от её конца можно продолжить'), failed: tr3('此处无法建墙', 'Мұнда қабырға салу мүмкін емес', 'Здесь нельзя построить стену'));
+        ok: slideNote == null ? ok : '$slideNote · ${tr3('松手建墙', 'жіберіңіз', 'отпустите')}',
+        failed: tr3('此处无法建墙', 'Мұнда қабырға салу мүмкін емес', 'Здесь нельзя построить стену'));
   }
 
   void finishWallStroke() {

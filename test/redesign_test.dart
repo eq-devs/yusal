@@ -180,4 +180,38 @@ void main() {
     expect(find.byKey(const Key('room-door')), findsOneWidget);
     expect(t.takeException(), isNull);
   });
+
+  testWidgets('a wall pulled from the middle of a wall slides along it first',
+      (t) async {
+    final session = await mount(t, house());
+    await t.tap(find.byTooltip('墙体'));
+    await t.pumpAndSettle();
+    // Pressed on the top wall's middle, slid left to 4 m, then pulled down
+    // to the opposite wall.
+    final g = await t.startGesture(point(t, 5000, 12000));
+    await t.pump();
+    for (final p in [
+      [4500.0, 11950.0],
+      [4020.0, 11900.0],
+      [4020.0, 9000.0],
+      [4020.0, 3000.0],
+      [4020.0, 60.0]
+    ]) {
+      await g.moveTo(point(t, p[0], p[1]));
+      await t.pump(const Duration(milliseconds: 80));
+    }
+    await g.up();
+    await t.pumpAndSettle();
+    final doc = await saved(t, session);
+    expect(doc.floors.single.rooms, hasLength(2));
+    final base = deriveFloorBase(doc, doc.floors.single.id);
+    expect(
+        base.wallSegments.any((w) =>
+            w.axis.dir == AxisDir.V &&
+            w.axis.pos == 4000 &&
+            w.start.pos == 0 &&
+            w.end.pos == 12000),
+        isTrue);
+    expect(t.takeException(), isNull);
+  });
 }

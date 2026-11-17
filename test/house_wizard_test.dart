@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/app/settings.dart';
+import 'package:yusal/core/house_core.dart';
 import 'package:yusal/features/house_editor.dart';
 import 'package:yusal/features/house_wizard.dart';
 import 'package:yusal/storage/project_store.dart';
@@ -73,15 +74,60 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('without the assistant the start sheet does not offer it',
+  testWidgets('without the assistant the answers are drawn on the spot',
       (t) async {
+    t.view.physicalSize = const Size(390, 844);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.resetPhysicalSize);
+    addTearDown(t.view.resetDevicePixelRatio);
+    final store = ProjectStore(fileSystem: MemoryFiles());
     await t.pumpWidget(MaterialApp(
         builder: (context, child) => AppScope(child: child!),
-        home: HouseHome(store: ProjectStore(fileSystem: MemoryFiles()))));
+        home: HouseHome(store: store)));
     await t.pumpAndSettle();
+    addTearDown(() async {
+      await t.pumpWidget(const SizedBox.shrink());
+      await t.pumpAndSettle();
+    });
     await t.tap(find.text('也可以从示例开始'));
     await t.pumpAndSettle();
     expect(find.text('按长宽新建'), findsOneWidget);
-    expect(find.text('回答几个问题，帮我出一套'), findsNothing);
+    await t.tap(find.text('回答几个问题，帮我出一套'));
+    await t.pumpAndSettle();
+    expect(find.textContaining('马上画出第一版'), findsOneWidget);
+
+    // Five bedrooms do not go into six by six metres: said here.
+    await t.enterText(find.byType(TextField).first, '6');
+    await t.enterText(find.byType(TextField).last, '6');
+    await t.tap(find.byKey(const Key('wizard-bedrooms-5')));
+    await t.ensureVisible(find.byKey(const Key('wizard-go')));
+    await t.tap(find.byKey(const Key('wizard-go')));
+    await t.pump();
+    expect(find.textContaining('放不下这么多房间'), findsOneWidget);
+
+    await t.enterText(find.byType(TextField).first, '12');
+    await t.enterText(find.byType(TextField).last, '10');
+    await t.ensureVisible(find.byKey(const Key('wizard-floors-2')));
+    await t.tap(find.byKey(const Key('wizard-floors-2')));
+    await t.tap(find.byKey(const Key('wizard-bedrooms-4')));
+    await t.ensureVisible(find.byKey(const Key('wizard-go')));
+    await t.tap(find.byKey(const Key('wizard-go')));
+    await t.pumpAndSettle();
+
+    // The editor is open on a two-floor house with its rooms and stair.
+    expect(find.byType(HouseEditor), findsOneWidget);
+    final projects = await store.listProjects();
+    final doc = await store.openProject(projects.single.id);
+    expect(doc.floors, hasLength(2));
+    expect(doc.floors.first.stairs, hasLength(1));
+    expect(
+        [
+          for (final f in doc.floors)
+            for (final r in f.rooms)
+              if (r.type == RoomType.bedroom) r
+        ],
+        hasLength(4));
+    expect(doc.floors.first.rooms.map((r) => r.name), contains('门厅'));
+    expect(t.takeException(), isNull);
   });
 }

@@ -412,8 +412,18 @@ EditResult placeStair(HouseDocument doc, String floorId, int left, int bottom,
     if (original.stairs.any((s) =>
         cellsOfRect(resolveRect(axes, s.region).rect!).any(cells.contains)))
       return const EditResult(null, '这里已经有楼梯了');
+    // The first step is on a side the room can be walked to from.
+    bool reached(int di, int dj) => cells.any((c) =>
+        roomOf[Cell(c.i + di, c.j + dj)] == host &&
+        !cells.contains(Cell(c.i + di, c.j + dj)));
     final edge = previous?.startEdge ??
-        (top - bottom >= right - left ? StairEdge.bottom : StairEdge.left);
+        (top - bottom >= right - left
+            ? (reached(0, -1) || !reached(0, 1)
+                ? StairEdge.bottom
+                : StairEdge.top)
+            : (reached(-1, 0) || !reached(1, 0)
+                ? StairEdge.left
+                : StairEdge.right));
     final shapes = type != null
         ? [type]
         : [

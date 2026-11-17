@@ -15,6 +15,7 @@ import '../core/geometry/floor_base.dart';
 import '../core/geometry/furniture_snap.dart';
 import '../core/history/design_history.dart';
 import '../core/commands/delete_axis.dart';
+import '../core/commands/house_spec.dart';
 import '../core/commands/house_templates.dart';
 import '../core/commands/kz_template.dart';
 import '../core/geometry/derived_house.dart';

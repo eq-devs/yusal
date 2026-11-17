@@ -411,6 +411,18 @@ class _HouseHomeState extends State<HouseHome>
                                     'Кейін бәрін өзгертуге болады.', 'Потом всё можно изменить: стены, комнаты, окна и двери двигаются.'),
                                 style: TextStyle(color: t.muted)),
                             const SizedBox(height: 12),
+                            // The questions come first: most people know how
+                            // many rooms they want before any size of wall.
+                            way(
+                                'wizard',
+                                Icons.auto_awesome,
+                                tr3('回答几个问题，帮我出一套', 'Сұрақтарға жауап беріп, жоба алу', 'Ответить на вопросы и получить проект'),
+                                VoiceSession.current != null
+                                    ? tr3('选好大小、层数和房间，助手画出第一版',
+                                        'Өлшемін, қабатын, бөлмелерін таңдаңыз — көмекші сызады', 'Выберите размер, этажи и комнаты — помощник начертит')
+                                    : tr3('选好大小、层数和房间，马上画出第一版',
+                                        'Өлшемін, қабатын, бөлмелерін таңдаңыз — бірден сызылады', 'Выберите размер, этажи и комнаты — сразу начертим')),
+                            const SizedBox(height: 8),
                             way(
                                 'blank',
                                 Icons.crop_square,
@@ -424,16 +436,6 @@ class _HouseHomeState extends State<HouseHome>
                                 tr3('在画布上拖出外形', 'Пішінді сызып беру', 'Нарисовать контур'),
                                 tr3('用手指拉出房子的大小',
                                     'Үйдің өлшемін саусақпен тартыңыз', 'Растяните размер дома пальцем')),
-                            // Only where the assistant is there to draw it.
-                            if (VoiceSession.current != null) ...[
-                              const SizedBox(height: 8),
-                              way(
-                                  'wizard',
-                                  Icons.auto_awesome,
-                                  tr3('回答几个问题，帮我出一套', 'Сұрақтарға жауап беріп, жоба алу', 'Ответить на вопросы и получить проект'),
-                                  tr3('选好大小、层数和房间，助手画出第一版',
-                                      'Өлшемін, қабатын, бөлмелерін таңдаңыз — көмекші сызады', 'Выберите размер, этажи и комнаты — помощник начертит')),
-                            ],
                             const SizedBox(height: 16),
                             Text(tr3('或者从模板改', 'Немесе үлгіден', 'Или с шаблона'),
                                 style: const TextStyle(
@@ -455,9 +457,29 @@ class _HouseHomeState extends State<HouseHome>
     if (key == 'blank') return create();
     if (key == 'sketch') return create(sketch: true);
     if (key == 'wizard') {
-      final wish = await showHouseWizard(context);
-      if (wish != null)
-        VoiceSession.current?.say(wish.sentence(), spoken: false);
+      final assistant = VoiceSession.current;
+      final wish = await showHouseWizard(context, draft: assistant == null);
+      if (wish == null) return;
+      if (assistant != null) {
+        assistant.say(wish.sentence(), spoken: false);
+        return;
+      }
+      // No assistant: the first version is drawn here, at once.
+      final built = buildHouseFromSpec(
+          wish.spec(tr3('我的房屋', 'Менің үйім', 'Мой дом')),
+          DateTime.now().toUtc().toIso8601String(),
+          () => const Uuid().v4());
+      final doc = built.document;
+      if (doc == null) {
+        message(tr3('这套要求画不出来，换个大小或少几间试试', 'Бұл талаппен сызу мүмкін болмады, өлшемін не бөлме санын өзгертіп көріңіз', 'По этим пожеланиям начертить не удалось, измените размер или число комнат'));
+        return;
+      }
+      try {
+        final id = await store.createProject(doc);
+        if (mounted) await open(ProjectEntry(id, doc));
+      } catch (_) {
+        message(tr3('无法创建，请检查存储空间', 'Жасау мүмкін емес, жадты тексеріңіз', 'Не удалось создать, проверьте свободное место'));
+      }
       return;
     }
     try {

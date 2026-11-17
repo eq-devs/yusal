@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../app/settings.dart';
+import '../core/commands/house_wish.dart';
+import '../core/document/house_document.dart';
 import '../core/number_input.dart';
+import '../render2d/furniture_names.dart';
 import '../motion/motion.dart';
 
 /// What the questions collect before a house is asked for.
@@ -20,6 +23,25 @@ class HouseWish {
   final double width, depth;
   final int floors, bedrooms, bathrooms;
   final bool hall, boiler, storage, dining;
+
+  /// The wish as a house spec drawn without the assistant: two rows of
+  /// rooms along a corridor, named in the app's language.
+  Map<String, Object?> spec(String name) => wishSpec(
+          name: name,
+          width: (width * 1000).round(),
+          depth: (depth * 1000).round(),
+          floors: floors,
+          bedrooms: bedrooms,
+          bathrooms: bathrooms,
+          hall: hall,
+          boiler: boiler,
+          storage: storage,
+          dining: dining,
+          names: {
+            for (final t in RoomType.values)
+              if (t != RoomType.custom) t.name: roomTypeName(t),
+            'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл'),
+          });
 
   /// The wish as one sentence in the app's language, for the assistant
   /// that designs whole houses.
@@ -44,7 +66,11 @@ class HouseWish {
 
 /// A few questions instead of a blank sheet; returns the wish, or null
 /// when the sheet is closed.
-Future<HouseWish?> showHouseWizard(BuildContext context) {
+///
+/// With [draft] the first version is drawn on the spot, so a wish the
+/// house is too small for is turned down here, where it can be changed.
+Future<HouseWish?> showHouseWizard(BuildContext context,
+    {bool draft = false}) {
   final width = TextEditingController(text: '12'),
       depth = TextEditingController(text: '10');
   var floors = 1, bedrooms = 3, bathrooms = 1;
@@ -91,7 +117,11 @@ Future<HouseWish?> showHouseWizard(BuildContext context) {
                               style: const TextStyle(
                                   fontSize: 20, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
-                          Text(tr3('回答几项，助手画出第一版，之后都能改。',
+                          Text(draft
+                              ? tr3('回答几项，马上画出第一版，之后都能改。',
+                                  'Бірнеше сұраққа жауап беріңіз, алғашқы нұсқасы бірден сызылады. Кейін бәрін өзгертуге болады.',
+                                  'Ответьте на несколько вопросов — первый вариант будет начерчен сразу. Потом всё можно изменить.')
+                              : tr3('回答几项，助手画出第一版，之后都能改。',
                               'Бірнеше сұраққа жауап беріңіз, көмекші алғашқы нұсқасын сызады. Кейін бәрін өзгертуге болады.',
                               'Ответьте на несколько вопросов — помощник начертит первый вариант. Потом всё можно изменить.')),
                           title(tr3('房子外形（米）', 'Үйдің өлшемі (м)', 'Размер дома (м)')),
@@ -140,6 +170,23 @@ Future<HouseWish?> showHouseWizard(BuildContext context) {
                                     w > 100 ||
                                     d > 100) {
                                   update(() => error = tr3('长宽需在 3–100 米之间', 'Өлшем 3–100 м аралығында болуы керек', 'Размер должен быть в пределах 3–100 м'));
+                                  return;
+                                }
+                                final wish = HouseWish(
+                                    width: w,
+                                    depth: d,
+                                    floors: floors,
+                                    bedrooms: bedrooms,
+                                    bathrooms: bathrooms,
+                                    hall: hall,
+                                    boiler: boiler,
+                                    storage: storage,
+                                    dining: dining);
+                                if (draft && wishTooSmall(wish.spec(''))) {
+                                  update(() => error = tr3(
+                                      '这么大的房子放不下这么多房间。减几间，加一层，或者把房子加大。',
+                                      'Мұндай үйге осынша бөлме сыймайды. Бөлмені азайтыңыз, қабат қосыңыз не үйді үлкейтіңіз.',
+                                      'В дом такого размера столько комнат не поместится. Уберите часть комнат, добавьте этаж или увеличьте дом.'));
                                   return;
                                 }
                                 Navigator.pop(

@@ -11,6 +11,7 @@ import 'package:yusal/features/house_editor.dart';
 import 'package:yusal/render2d/furniture_names.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
+import 'tabs.dart';
 
 /// Letters that exist in Kazakh but not in Russian, and Chinese characters:
 /// neither belongs on a Russian screen.
@@ -120,9 +121,8 @@ void main() {
         'iss',
         'plan'
       ]) {
-        await t.ensureVisible(find.byKey(ValueKey('tab-$key')));
         await t.pumpAndSettle();
-        await t.tap(find.byKey(ValueKey('tab-$key')));
+        await openTab(t, key);
         await t.pumpAndSettle();
         scan(key);
         // Scroll each page once: most are longer than the screen.

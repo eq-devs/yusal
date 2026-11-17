@@ -78,7 +78,15 @@ extension _EditorHeader on _HouseEditorState {
             onPressed: onTap,
             visualDensity: wide ? null : VisualDensity.compact,
             icon: Icon(data, size: size));
-    final addFloor = Padding(
+    // The wide header has no room for words; there a pointer shows the
+    // tooltip.
+    final addFloor = wide
+        ? IconButton(
+            key: const Key('add-floor'),
+            tooltip: '加一层'.trKey('Қабат қосу', 'Добавить этаж'),
+            onPressed: addFloorAbove,
+            icon: const Icon(Icons.add, size: 20))
+        : Padding(
         padding: const EdgeInsets.only(left: 6),
         child: OutlinedButton.icon(
             key: const Key('add-floor'),
@@ -198,6 +206,106 @@ extension _EditorHeader on _HouseEditorState {
                 saveIndicator(),
               ])),
         ]));
+  }
+
+  /// Three groups on top, the pages of the open group under them, and
+  /// one button between the drawing and the 3D view.
+  Widget groupedTabs() {
+    final t = Tokens.of(context);
+    final labels = {for (final (key, label) in editorTabs) key: label};
+    final group = tabGroup;
+    Widget segment(String key, String label) => Expanded(
+        child: Semantics(
+            button: true,
+            selected: key == group,
+            child: Material(
+                color: key == group ? t.panel : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                    key: ValueKey('group-$key'),
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () =>
+                        showTab(lastInGroup[key] ?? _HouseEditorState.tabGroups[key]!.first),
+                    child: SizedBox(
+                        height: 38,
+                        child: Center(
+                            child: Text(label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: key == group ? t.ink : t.muted,
+                                    fontWeight: key == group
+                                        ? FontWeight.w700
+                                        : FontWeight.w400))))))));
+    Widget page(String key) => Padding(
+        padding: const EdgeInsets.only(right: 6),
+        child: Semantics(
+            button: true,
+            selected: key == tab,
+            child: Material(
+                color: key == tab
+                    ? Tokens.mix(t.accent, 0.14, t.panel)
+                    : t.panel,
+                shape: StadiumBorder(
+                    side: BorderSide(
+                        color: key == tab ? t.accent : t.line,
+                        width: key == tab ? 1.5 : 1)),
+                child: InkWell(
+                    key: ValueKey('tab-$key'),
+                    customBorder: const StadiumBorder(),
+                    onTap: () => showTab(key),
+                    child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 13, vertical: 7),
+                        child: Text(labels[key]!,
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: key == tab ? t.accent : t.ink,
+                                fontWeight: key == tab
+                                    ? FontWeight.w700
+                                    : FontWeight.w400)))))));
+    final flat = tab == 'plan';
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+          margin: const EdgeInsets.fromLTRB(12, 2, 12, 0),
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+              color: Tokens.mix(t.line, 0.55, t.bg),
+              borderRadius: BorderRadius.circular(10)),
+          child: Row(children: [
+            segment('draw', tr3('画图', 'Сызу', 'Чертёж')),
+            segment('view', tr3('看效果', 'Көрініс', 'Вид')),
+            segment('build', tr3('造价与施工', 'Смета, құрылыс', 'Смета и стройка')),
+          ])),
+      Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+          child: Row(children: [
+            Expanded(
+                child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(children: [
+                      for (final key in _HouseEditorState.tabGroups[group]!) page(key)
+                    ]))),
+            // Drawing and looking are one tap apart, either way.
+            if (group != 'build')
+              FilledButton.tonalIcon(
+                  key: ValueKey(flat || group == 'draw' ? 'quick-3d' : 'quick-2d'),
+                  style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 12)),
+                  onPressed: () => showTab(group == 'draw' ? 'ext' : 'plan'),
+                  icon: Icon(
+                      group == 'draw'
+                          ? Icons.view_in_ar_outlined
+                          : Icons.grid_on_outlined,
+                      size: 16),
+                  label: Text(group == 'draw'
+                      ? tr3('看 3D', '3D көру', 'В 3D')
+                      : tr3('回平面', 'Жоспарға', 'К плану'))),
+          ])),
+      Divider(height: 1, color: t.line),
+    ]);
   }
 
   /// One bar for short screens: back, name, page tabs, history, menu.

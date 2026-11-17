@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/app/messages.dart';
 import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
 import 'package:yusal/core/geometry/floor_base.dart';
 import 'package:yusal/core/house_core.dart';
 import 'package:yusal/features/house_editor.dart';
@@ -46,13 +45,6 @@ void main() {
     return doc;
   }
 
-  final canvas = find.byWidgetPredicate(
-      (w) => w is CustomPaint && w.painter is FloorPlanPainter);
-  FloorPlanPainter painter(WidgetTester t) =>
-      t.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
-  Offset point(WidgetTester t, double x, double y) =>
-      t.getTopLeft(canvas) + painter(t).point(x, y, t.getSize(canvas));
-
   Future<(ProjectStore, String)> mount(
       WidgetTester t, HouseDocument doc) async {
     t.view.physicalSize = const Size(390, 844);
@@ -68,13 +60,6 @@ void main() {
       await t.pumpAndSettle();
     });
     return (store, id);
-  }
-
-  Future<HouseDocument> saved(
-      WidgetTester t, (ProjectStore, String) session) async {
-    await t.pump(const Duration(milliseconds: 1600));
-    await t.pumpAndSettle();
-    return session.$1.openProject(session.$2);
   }
 
   group('a wall that stops midway knows where the wall ahead is', () {

@@ -316,4 +316,36 @@ void main() {
         isTrue);
     expect(t.takeException(), isNull);
   });
+
+  testWidgets('ten pages sit in three groups, 2D and 3D one tap apart',
+      (t) async {
+    await mount(t, house());
+    // Only the drawing group's pages show at first.
+    for (final key in ['plan', 'site', 'iss'])
+      expect(find.byKey(ValueKey('tab-$key')), findsOneWidget, reason: key);
+    expect(find.byKey(const ValueKey('tab-cost')), findsNothing);
+    await t.tap(find.byKey(const ValueKey('group-build')));
+    await t.pumpAndSettle();
+    for (final key in ['cost', 'qty', 'build', 'det', 'heat'])
+      expect(find.byKey(ValueKey('tab-$key')), findsOneWidget, reason: key);
+    await t.tap(find.byKey(const ValueKey('tab-qty')));
+    await t.pumpAndSettle();
+    // A group remembers its page.
+    await t.tap(find.byKey(const ValueKey('group-draw')));
+    await t.pumpAndSettle();
+    expect(canvas, findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('group-build')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('tab-plan')), findsNothing);
+    await t.tap(find.byKey(const ValueKey('group-draw')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('quick-3d')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('tab-walk')), findsOneWidget);
+    expect(canvas, findsNothing);
+    await t.tap(find.byKey(const ValueKey('quick-2d')));
+    await t.pumpAndSettle();
+    expect(canvas, findsOneWidget);
+    expect(t.takeException(), isNull);
+  });
 }

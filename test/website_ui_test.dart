@@ -10,6 +10,7 @@ import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/render3d/scene_view.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
+import 'tabs.dart';
 
 void main() {
   var sequence = 0;
@@ -166,7 +167,7 @@ void main() {
   testWidgets('an issue is located on the plan and user issues are kept',
       (t) async {
     final s = await mount(t, village());
-    await t.tap(find.byKey(const ValueKey('tab-iss')));
+    await openTab(t, 'iss');
     await t.pumpAndSettle();
     expect(find.text('隔墙下面没有基础'), findsOneWidget);
     await t.tap(find.text('添加问题'));
@@ -188,7 +189,7 @@ void main() {
   testWidgets('foundation parameters and the window schedule are editable',
       (t) async {
     final s = await mount(t, village());
-    await t.tap(find.byKey(const ValueKey('tab-det')));
+    await openTab(t, 'det');
     await t.pumpAndSettle();
     await t.tap(find.text('450').first);
     await t.pumpAndSettle();
@@ -197,7 +198,7 @@ void main() {
     await t.pumpAndSettle();
     var doc = await saved(t, s.store, s.id);
     expect(doc.extras.foundation.width, 500);
-    await t.tap(find.byKey(const ValueKey('tab-qty')));
+    await openTab(t, 'qty');
     await t.pumpAndSettle();
     await t.tap(find.text('1600 × 1400'));
     await t.pumpAndSettle();
@@ -218,7 +219,7 @@ void main() {
   testWidgets('the walk-through moves with W and walls stop the walker',
       (t) async {
     await mount(t, village());
-    await t.tap(find.byKey(const ValueKey('tab-walk')));
+    await openTab(t, 'walk');
     await t.pumpAndSettle();
     final state = t.state<SceneViewState>(find.byType(SceneView));
     final z0 = state.wz;

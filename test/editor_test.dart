@@ -5,6 +5,7 @@ import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/features/house_editor.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
+import 'tabs.dart';
 
 void main() {
   for (final size in [const Size(320, 568), const Size(844, 390)]) {
@@ -30,8 +31,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('我的房屋'), findsOneWidget);
       for (final tab in ['ext', 'walk', 'det', 'qty', 'iss', 'plan']) {
-        await tester.ensureVisible(find.byKey(ValueKey('tab-$tab')));
-        await tester.tap(find.byKey(ValueKey('tab-$tab')));
+        await openTab(tester, tab);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: tab);
       }

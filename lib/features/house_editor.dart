@@ -356,18 +356,32 @@ class _HouseEditorState extends State<HouseEditor>
     return (box?.hasSize ?? false) ? box!.size.height + 16 : 16;
   }
 
+  /// The ten pages in the order of their three groups.
   List<(String, String)> get editorTabs => [
         ('plan', tr3('2D 平面', '2D жоспар', '2D-план')),
+        ('site', tr3('宅基地', 'Учаске', 'Участок')),
+        ('iss', tr3('问题清单', 'Мәселелер тізімі', 'Список замечаний')),
         ('ext', tr3('3D 外观', '3D сыртқы көрініс', '3D-вид снаружи')),
         ('walk', tr3('室内漫游', 'Ішкі серуен', 'Прогулка по дому')),
-        ('site', tr3('宅基地', 'Учаске', 'Участок')),
+        ('cost', tr3('预算', 'Смета', 'Смета')),
+        ('qty', tr3('门窗与工程量', 'Есік-терезе және көлем', 'Проёмы и объёмы работ')),
+        ('build', tr3('施工进度', 'Құрылыс кестесі', 'График строительства')),
         ('det', tr3('构造细节', 'Құрылым бөлшектері', 'Детали конструкции')),
         ('heat', tr3('保温采暖', 'Жылу', 'Тепло')),
-        ('qty', tr3('门窗与工程量', 'Есік-терезе және көлем', 'Проёмы и объёмы работ')),
-        ('cost', tr3('预算', 'Смета', 'Смета')),
-        ('build', tr3('施工进度', 'Құрылыс кестесі', 'График строительства')),
-        ('iss', tr3('问题清单', 'Мәселелер тізімі', 'Список замечаний')),
       ];
+
+  /// Ten pages are too many to choose from in one row, so they sit in
+  /// three groups by what one comes to do: draw, look, or count and build.
+  static const tabGroups = {
+    'draw': ['plan', 'site', 'iss'],
+    'view': ['ext', 'walk'],
+    'build': ['cost', 'qty', 'build', 'det', 'heat'],
+  };
+  String get tabGroup =>
+      tabGroups.entries.firstWhere((e) => e.value.contains(tab)).key;
+
+  /// The page last open in each group; its group button returns there.
+  final lastInGroup = <String, String>{};
 
   void showTab(String value) {
     if (value == tab) return;
@@ -375,6 +389,7 @@ class _HouseEditorState extends State<HouseEditor>
       cancelDrag();
       clearWallSelection();
       tab = value;
+      lastInGroup[tabGroup] = value;
       if (value != 'plan') {
         tool = EditorTool.browse;
         drawingOrigin = null;
@@ -4503,13 +4518,7 @@ class _HouseEditorState extends State<HouseEditor>
                                       compactBar()
                                     else ...[
                                       editorHeader(wide),
-                                      Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 12),
-                                          child: TabStrip(
-                                              tabs: editorTabs,
-                                              current: tab,
-                                              onSelect: showTab)),
+                                      groupedTabs(),
                                     ],
                                     Expanded(child: tabBody(wide)),
                                   ])));

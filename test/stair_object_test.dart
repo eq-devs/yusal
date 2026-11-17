@@ -69,10 +69,11 @@ void main() {
     var doc = twoFloors();
     doc = run(doc, 'PlaceStair', at(doc, 0, 0, 1200, 5000));
     expect(doc.floors.first.stairs.single.type, StairType.straight);
-    // Lying down, it starts from the left instead.
+    // Lying down in the corner, its first step is at the end the room
+    // reaches, not the one against the outer wall.
     var wide = twoFloors();
     wide = run(wide, 'PlaceStair', at(wide, 0, 0, 5000, 1200));
-    expect(wide.floors.first.stairs.single.startEdge, StairEdge.left);
+    expect(wide.floors.first.stairs.single.startEdge, StairEdge.right);
     expect(deriveHouse(wide).floors.first.stairs.single.fits, isTrue);
   });
 

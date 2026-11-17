@@ -25,10 +25,7 @@ void main() {
     await t.pumpWidget(MaterialApp(
         home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
     await t.pumpAndSettle();
-    await t.tap(find.byTooltip('更多工具'));
-    await t.pumpAndSettle();
-    await t.ensureVisible(find.text('按尺寸加房间'));
-    await t.tap(find.text('按尺寸加房间'));
+    await t.tap(find.byTooltip('加房间'));
     await t.pumpAndSettle();
 
     // Picking a use fills in its usual size.
@@ -47,6 +44,9 @@ void main() {
     await t.enterText(find.byType(TextField).first, '1,5+0,5');
     await t.tap(find.byKey(const Key('add-room-tr')));
     await t.tap(find.byKey(const Key('add-room-go')));
+    await t.pumpAndSettle();
+    // The room lies on the plan to be slid about; 放下 builds it.
+    await t.tap(find.byKey(const Key('stamp-place')));
     await t.pumpAndSettle();
     await t.pump(const Duration(milliseconds: 1600));
     await t.pumpAndSettle();

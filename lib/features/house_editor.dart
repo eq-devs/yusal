@@ -539,6 +539,7 @@ class _HouseEditorState extends State<HouseEditor>
     '独立墙': ('独立墙', 'Бөлек қабырға', 'Бөлек'),
     '拉线分房': ('分房', 'Сызықпен бөлу', 'Бөлу'),
     '拖动划房': ('框房', 'Бөлме сызу', 'Бөлме'),
+    '加房间': ('加房间', 'Бөлме қосу', 'Бөлме +'),
     '拖入门': ('门', 'Есік қосу', 'Есік'),
     '拖入窗': ('窗', 'Терезе қосу', 'Терезе'),
     '家具': ('家具', 'Жиһаз қою', 'Жиһаз'),
@@ -590,6 +591,7 @@ class _HouseEditorState extends State<HouseEditor>
                       placingFurniture = null;
                       placingUtility = null;
                       measurePoints = [];
+                      roomStamp = null;
                       onTap();
                       if (mounted) setState(() {});
                     },
@@ -925,17 +927,19 @@ class _HouseEditorState extends State<HouseEditor>
                                         ? 0
                                         : fp.depth - d;
                                 Navigator.pop(context, <String, dynamic>{
-                                  'floorId': floor.id,
+                                  'w': w,
+                                  'd': d,
                                   'left': left,
                                   'bottom': bottom,
-                                  'right': left + w,
-                                  'top': bottom + d,
-                                  'roomType': type
+                                  'roomType': type,
+                                  'corner': corner
                                 });
                               },
-                              child: Text(tr3('加上', 'Қосу', 'Добавить'))),
+                              child: Text(tr3('放到图上', 'Сызбаға қою', 'Поставить на план'))),
                         ])))));
-    if (args != null && mounted) action('CarveRoom', args);
+    if (args != null && mounted)
+      startStamp(args['roomType'] as RoomType, args['w'] as int,
+          args['d'] as int, args['corner'] as String);
   }
 
   OpeningKind? draggingNewOpening;
@@ -1003,9 +1007,108 @@ class _HouseEditorState extends State<HouseEditor>
 
   bool get spatialTool => tool == EditorTool.box || tool == EditorTool.split;
 
+  /// A room of a set size being slid into place: the box tool with the
+  /// rectangle given instead of drawn. Null while a rectangle is drawn.
+  ({int w, int d})? roomStamp;
+
+  /// Where in the stamp the finger holds it, from its lower left corner.
+  Offset stampGrab = Offset.zero;
+  bool get stamping => tool == EditorTool.box && roomStamp != null;
+
+  /// Puts the stamp's lower left corner near ([x], [y]): inside the house,
+  /// on a wall line when one is close, else on the 100 mm grid.
+  void setStamp(double x, double y, {double reach = 250}) {
+    final s = roomStamp!, fp = history.present.footprint;
+    int place(double low, int length, int extent, List<ResolvedAxis> axes) {
+      final v = low.round().clamp(0, math.max(0, extent - length));
+      for (final a in axes) {
+        if ((a.pos - v).abs() < reach) return a.pos;
+      }
+      for (final a in axes) {
+        if ((a.pos - (v + length)).abs() < reach) return a.pos - length;
+      }
+      return ((v / 100).round() * 100).clamp(0, math.max(0, extent - length));
+    }
+
+    final left = place(x, s.w, fp.width, base.axes.v),
+        bottom = place(y, s.d, fp.depth, base.axes.h);
+    spatialStart = Offset(left.toDouble(), bottom.toDouble());
+    spatialEnd = Offset((left + s.w).toDouble(), (bottom + s.d).toDouble());
+    spatialPreview = PlanRect(spatialStart!.dx, spatialStart!.dy,
+        spatialEnd!.dx, spatialEnd!.dy);
+    validateSpatialPreview();
+    if (spatialError == null) placementHint = null;
+  }
+
+  /// Starts sliding a [type] room of [w] × [d] mm, first in the corner
+  /// asked for, or the first corner where it fits.
+  void startStamp(RoomType type, int w, int d, String corner) {
+    final fp = history.present.footprint;
+    setState(() {
+      clearSelection();
+      clearWallSelection();
+      view3d = false;
+      tool = EditorTool.box;
+      brush = type;
+      roomStamp = (w: w, d: d);
+      for (final c in [corner, 'bl', 'br', 'tl', 'tr']) {
+        setStamp(c.endsWith('l') ? 0 : (fp.width - w).toDouble(),
+            c.startsWith('b') ? 0 : (fp.depth - d).toDouble());
+        if (spatialError == null) break;
+      }
+    });
+    if (spatialPreview != null) reveal(spatialPreview!);
+  }
+
+  void cancelStamp() => setState(() {
+        roomStamp = null;
+        spatialStart = null;
+        spatialEnd = null;
+        spatialPreview = null;
+        spatialDocument = null;
+        spatialBase = null;
+        spatialError = null;
+        placementHint = null;
+        tool = EditorTool.browse;
+      });
+
+  /// Builds the room where the stamp lies and shows its card.
+  void placeStamp() {
+    final r = spatialPreview;
+    if (r == null) return;
+    if (spatialError != null) {
+      notify(spatialError!);
+      return;
+    }
+    final known = {for (final room in floor.rooms) room.id};
+    final args = <String, dynamic>{
+      'floorId': floor.id,
+      'left': r.left.round(),
+      'bottom': r.bottom.round(),
+      'right': r.right.round(),
+      'top': r.top.round(),
+      'roomType': brush
+    };
+    cancelStamp();
+    action('CarveRoom', args);
+    final added =
+        floor.rooms.where((room) => !known.contains(room.id)).firstOrNull;
+    if (added == null) return;
+    setState(() {
+      selectedRoomId = added.id;
+      panelCollapsed = phoneTools;
+    });
+    revealRoom(added.id);
+  }
+
   void updateSpatial(Offset point, Size size) {
     final painter = interactionPainter();
     final world = painter.worldPoint(point, size);
+    if (stamping) {
+      setStamp(world.x - stampGrab.dx, world.y - stampGrab.dy,
+          reach: math.min(14 / painter.scale(size), 250));
+      return;
+    }
     int snap(double value, List<ResolvedAxis> axes) {
       final clamped = value.round().clamp(axes.first.pos, axes.last.pos);
       for (final axis in axes) {
@@ -3988,6 +4091,8 @@ class _HouseEditorState extends State<HouseEditor>
                   ? tr3('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз', 'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить')
                   : tool == EditorTool.stair
                       ? tr3('在放楼梯的房间里点一下，或拖过几个格子', 'Баспалдақ тұратын бөлмені басыңыз не бірнеше ұяшықты сүйреңіз', 'Нажмите в комнате, где будет лестница, или проведите по нескольким клеткам')
+                  : stamping
+                      ? tr3('拖动房间到想要的位置，靠近墙会自动贴上', 'Бөлмені керек жерге сүйреңіз, қабырғаға жақындаса өзі жабысады', 'Перетащите комнату на место: у стены она прилипнет сама')
                   : spatialTool
                       ? (tool == EditorTool.split ? tr3('拉一条横线或竖线，松手分房', 'Көлденең не тік сызық тартып, жіберсеңіз бөлінеді', 'Проведите горизонтальную или вертикальную линию и отпустите — комната разделится') : tr3('从一角拖到另一角，松手创建房间', 'Бір бұрыштан екіншісіне тартып жіберсеңіз, бөлме жасалады', 'Протяните от одного угла к другому и отпустите — комната будет создана'))
                       : tool == EditorTool.resize
@@ -4255,7 +4360,29 @@ class _HouseEditorState extends State<HouseEditor>
                                                     closeWallMenu();
                                                 });
                                               } else if (spatialTool) {
-                                                spatialStart = null;
+                                                if (stamping) {
+                                                  // Held where it is touched;
+                                                  // by its middle when the
+                                                  // finger lands elsewhere.
+                                                  final w = interactionPainter()
+                                                      .worldPoint(
+                                                          e.localPosition,
+                                                          size);
+                                                  final r = spatialPreview;
+                                                  final inside = r != null &&
+                                                      w.x >= r.left &&
+                                                      w.x <= r.right &&
+                                                      w.y >= r.bottom &&
+                                                      w.y <= r.top;
+                                                  stampGrab = inside
+                                                      ? Offset(w.x - r.left,
+                                                          w.y - r.bottom)
+                                                      : Offset(
+                                                          roomStamp!.w / 2,
+                                                          roomStamp!.d / 2);
+                                                } else {
+                                                  spatialStart = null;
+                                                }
                                                 setState(() => updateSpatial(
                                                     e.localPosition, size));
                                               } else {
@@ -4536,7 +4663,12 @@ class _HouseEditorState extends State<HouseEditor>
                                             if (spatialTool &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1) {
-                                              finishSpatial();
+                                              // A stamp stays until 放下.
+                                              if (stamping) {
+                                                setState(() {});
+                                              } else {
+                                                finishSpatial();
+                                              }
                                               pointers.remove(e.pointer);
                                               downPoint = null;
                                               return;

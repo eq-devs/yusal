@@ -294,6 +294,9 @@ extension _PlanTab on _HouseEditorState {
       ('browse', basicTool(Icons.pan_tool_outlined, tr3('浏览', 'Шолу', 'Просмотр'), browse, () {
         tool = EditorTool.browse;
       })),
+      // A room with a use and a size, slid into place: the way most
+      // people think of a house, so it comes before drawing walls.
+      ('room', basicTool(Icons.add_home_outlined, '加房间', stamping, addRoomBySize)),
       ('wall', basicTool(Icons.add_outlined, '墙体', tool == EditorTool.drawWall, startWallDrawing)),
       if (tool == EditorTool.drawWall)
         ('freeWall', basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
@@ -309,6 +312,7 @@ extension _PlanTab on _HouseEditorState {
       ('box', basicTool(Icons.crop_square, '拖动划房', tool == EditorTool.box, () {
         view3d = false;
         tool = EditorTool.box;
+        roomStamp = null;
         brush = RoomType.custom;
       })),
       ('door', openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门')),
@@ -458,6 +462,22 @@ extension _PlanTab on _HouseEditorState {
                     padding: const EdgeInsets.symmetric(horizontal: 8)),
                 onPressed: reachAcross,
                 child: Text(tr3('接到对面', 'Қарсы қабырғаға дейін', 'До стены напротив'))),
+          if (stamping) ...[
+            TextButton(
+                key: const Key('stamp-cancel'),
+                style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8)),
+                onPressed: cancelStamp,
+                child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
+            FilledButton(
+                key: const Key('stamp-place'),
+                style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 14)),
+                onPressed: spatialError == null ? placeStamp : null,
+                child: Text(tr3('放下', 'Қою', 'Поставить'))),
+          ],
           if (tool == EditorTool.drawWall)
             IconButton(
                 tooltip: '输入墙长',

@@ -141,4 +141,43 @@ void main() {
     expect(deriveHouse(doc).floors.first.base.roomGeometry, hasLength(2));
     expect(t.takeException(), isNull);
   });
+
+  testWidgets('a room of a set size is slid to a wall and put down',
+      (t) async {
+    final session = await mount(t, house());
+    await t.tap(find.byTooltip('加房间'));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('add-room-kitchen')));
+    await t.pump();
+    await t.tap(find.byKey(const Key('add-room-go')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('stamp-place')), findsOneWidget);
+    // Starts in the lower left corner; dragged by its middle to the
+    // upper right, it stops against both outer walls.
+    final g = await t.startGesture(point(t, 1500, 1800));
+    await t.pump();
+    for (final p in [
+      [4000.0, 6000.0],
+      [8000.0, 9800.0],
+      [8600.0, 10300.0]
+    ]) {
+      await g.moveTo(point(t, p[0], p[1]));
+      await t.pump();
+    }
+    await g.up();
+    await t.pumpAndSettle();
+    // Nothing is built until 放下.
+    expect((await saved(t, session)).floors.single.rooms, hasLength(1));
+    await t.tap(find.byKey(const Key('stamp-place')));
+    await t.pumpAndSettle();
+    final doc = await saved(t, session);
+    final kitchen = doc.floors.single.rooms
+        .singleWhere((r) => r.type == RoomType.kitchen);
+    final axes = resolveFloorAxes(doc, doc.floors.single.id)!;
+    final r = resolveRect(axes, kitchen.regions.single).rect!;
+    expect((r.left, r.bottom, r.right, r.top), (7000, 8400, 10000, 12000));
+    // Its folded card is up, ready for a door.
+    expect(find.byKey(const Key('room-door')), findsOneWidget);
+    expect(t.takeException(), isNull);
+  });
 }

@@ -146,6 +146,10 @@ String _name(String zh) {
     '厨房': ('Ас үй', 'Кухня'),
     '卫生间': ('Жуыну бөлмесі', 'Санузел'),
     '餐厅': ('Асхана', 'Столовая'),
+    '门厅': ('Кіреберіс', 'Прихожая'),
+    '走廊': ('Дәліз', 'Коридор'),
+    '储藏间': ('Қойма', 'Кладовая'),
+    '锅炉房': ('Қазандық', 'Котельная'),
     '房间': ('Бөлме', 'Комната'),
   };
   final room = rooms[zh];
@@ -159,7 +163,14 @@ String _name(String zh) {
   return zh;
 }
 
+/// Two objects claim the same cells. The core names them by id, which
+/// means nothing to the person drawing.
+final _overlap = RegExp(r'^对象 \S+ 与 \S+ 占用重叠$');
+
 String coreMessage(String zh) {
+  if (_overlap.hasMatch(zh))
+    return tr3('这里已经被占用了，换个位置试试。', 'Бұл жер бос емес, басқа орынды таңдаңыз.',
+        'Это место уже занято, выберите другое.');
   if (!isKk) return zh;
   final exact = _exact[zh];
   if (exact != null) return isRu ? ruText(exact) : exact;

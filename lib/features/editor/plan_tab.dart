@@ -407,6 +407,30 @@ extension _PlanTab on _HouseEditorState {
     return costChip;
   }
 
+  /// Findings that ask for a change, as the issues tab would list them.
+  ({int crit, int warn}) get openIssues {
+    if (!identical(issueCountFor, history.present)) {
+      final doc = history.present;
+      var crit = 0, warn = 0;
+      void count(Level l) {
+        if (l == Level.crit) crit++;
+        if (l == Level.warn) warn++;
+      }
+
+      for (final i in doc.extras.issues) count(Level.values[i.level.index]);
+      for (final r in runChecks(doc, derived))
+        count(r.level == 'important' ? Level.crit : Level.warn);
+      for (final c in [
+        ...constructionChecks(doc, derived, nameOf: displayRoomName),
+        ...heatChecks(doc, heatLoss(doc, derived)),
+        ...siteChecks(doc, nameOf: siteItemName),
+      ]) count(Level.values[c.level.index]);
+      issueCountFor = doc;
+      issueCount = (crit: crit, warn: warn);
+    }
+    return issueCount;
+  }
+
   List<Widget> hintChildren(Tokens t, bool coach) {
     return [
           if (coach) ...[
@@ -426,12 +450,21 @@ extension _PlanTab on _HouseEditorState {
                 onPressed: footprintOptions,
                 icon: const Icon(Icons.edit_outlined, size: 18),
                 label: Text(tr3('输入长宽', 'Өлшем енгізу', 'Ввести размеры'))),
+          if (reachAcrossPoint != null)
+            TextButton(
+                key: const Key('wall-reach-across'),
+                style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8)),
+                onPressed: reachAcross,
+                child: Text(tr3('接到对面', 'Қарсы қабырғаға дейін', 'До стены напротив'))),
           if (tool == EditorTool.drawWall)
             IconButton(
                 tooltip: '输入墙长',
                 onPressed: drawingOrigin == null ? null : addWallByLength,
                 icon: const Icon(Icons.straighten, size: 18)),
           if (tool == EditorTool.drawWall ||
+              tool == EditorTool.stair ||
               tool == EditorTool.placeFurniture ||
               tool == EditorTool.placeUtility ||
               tool == EditorTool.measure)
@@ -447,6 +480,24 @@ extension _PlanTab on _HouseEditorState {
                       measurePoints = [];
                     }),
                 child: Text(tr3('结束', 'Аяқтау', 'Завершить'))),
+          // While just looking at the plan: how much the checks found,
+          // so nobody has to reach the last tab to learn of it.
+          if (!coach && browse && openIssues.crit + openIssues.warn > 0)
+            TextButton.icon(
+                key: const Key('plan-issues'),
+                style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor:
+                        openIssues.crit > 0 ? t.crit : t.warn,
+                    padding: const EdgeInsets.symmetric(horizontal: 8)),
+                onPressed: () => showTab('iss'),
+                icon: const Icon(Icons.error_outline, size: 16),
+                label: Text(
+                    tr3('问题 ${openIssues.crit + openIssues.warn}',
+                        'Ескерту ${openIssues.crit + openIssues.warn}',
+                        'Замечания: ${openIssues.crit + openIssues.warn}'),
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600))),
           // While just looking at the plan: what it would cost to build.
           if (!coach && browse && costChipText.isNotEmpty)
             TextButton(

@@ -550,6 +550,10 @@
                             "kitchen",
                             "bathroom",
                             "dining",
+                            "hall",
+                            "corridor",
+                            "storage",
+                            "boiler",
                             "custom"
                           ]
                         },
@@ -795,6 +799,10 @@
             "kitchen",
             "bathroom",
             "dining",
+            "hall",
+            "corridor",
+            "storage",
+            "boiler",
             "custom"
           ]
         },
@@ -1026,6 +1034,10 @@
             "kitchen",
             "bathroom",
             "dining",
+            "hall",
+            "corridor",
+            "storage",
+            "boiler",
             "custom"
           ]
         }

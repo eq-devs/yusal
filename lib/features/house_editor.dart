@@ -278,6 +278,11 @@ class _HouseEditorState extends State<HouseEditor>
   // The estimate shown beside the plan, worked out once per change.
   HouseDocument? costChipFor;
   String costChip = '';
+
+  /// How many findings of the issues tab ask for a change (严重 and 建议改),
+  /// counted once per document for the plan page's reminder.
+  HouseDocument? issueCountFor;
+  ({int crit, int warn}) issueCount = (crit: 0, warn: 0);
   /// Current page: plan, ext (3D), walk, site, det, heat, qty, cost, build
   /// or iss.
   String tab = 'plan';
@@ -806,6 +811,10 @@ class _HouseEditorState extends State<HouseEditor>
     RoomType.kitchen: (3.0, 3.6),
     RoomType.bathroom: (1.8, 2.4),
     RoomType.dining: (3.0, 3.6),
+    RoomType.hall: (2.0, 2.4),
+    RoomType.corridor: (1.2, 3.0),
+    RoomType.storage: (1.5, 2.0),
+    RoomType.boiler: (2.0, 2.5),
     RoomType.custom: (3.0, 3.0),
   };
 
@@ -2329,6 +2338,108 @@ class _HouseEditorState extends State<HouseEditor>
     }
   }
 
+  /// A stair over [region] of this floor, in the first shape that fits
+  /// there: straight, then L, then U. Where none fits nothing is placed
+  /// and the message says how much room a stair needs. On the top floor
+  /// the message offers to add the floor the stair would lead to.
+  void placeStair(AxisRectangle region) {
+    final floorId = floor.id;
+    if (floorIndex == history.present.floors.length - 1) {
+      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(
+          key: const Key('stair-needs-floor'),
+          content: Text(tr3('楼梯要通到上面一层，现在还没有。',
+              'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
+              'Лестница ведёт на этаж выше, а его пока нет.')),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
+          duration: const Duration(seconds: 8),
+          persist: false,
+          action: SnackBarAction(
+              label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
+                  'Добавить этаж и лестницу'),
+              onPressed: () {
+                final before = history.present;
+                action('AddFloor', {'floorId': floorId});
+                if (history.present == before || !mounted) return;
+                setState(() => derive());
+                placeStair(region);
+              })),
+          snackBarAnimationStyle: Motion.toastStyle);
+      return;
+    }
+    final rect = resolveRect(base.axes, region).rect;
+    if (rect != null) {
+      final cells = cellsOfRect(rect).toSet();
+      final taken = floor.stairs.any((s) {
+        final r = resolveRect(base.axes, s.region).rect;
+        return r != null && cellsOfRect(r).any(cells.contains);
+      });
+      if (taken) {
+        setState(() => tool = EditorTool.browse);
+        notify(tr3('这里已经有楼梯了。点一下楼梯可以换样式或删除。',
+            'Мұнда баспалдақ бар. Оны басып түрін өзгертуге не жоюға болады.',
+            'Здесь уже есть лестница. Нажмите на неё, чтобы сменить вид или удалить.'));
+        return;
+      }
+    }
+    String? refusal;
+    StairGeometry? tight;
+    for (final type in StairType.values) {
+      final args = {'floorId': floorId, 'type': type, 'region': region};
+      final result = executeCommand(
+          presentState,
+          DesignCommand('AddStair', args),
+          CommandContext(
+              newId: () => const Uuid().v4(),
+              now: () => DateTime.now().toUtc().toIso8601String()));
+      if (result is! Applied) {
+        refusal = result is Rejected
+            ? result.message
+            : (result as NeedsResolution).conflict.message;
+        break;
+      }
+      final next = composeDocument(history.present.meta, result.newState);
+      final known = {for (final s in floor.stairs) s.id};
+      final added = deriveHouse(next)
+          .floors[floorIndex]
+          .stairs
+          .where((s) => !known.contains(s.stairId))
+          .firstOrNull;
+      if (added != null && !added.fits) {
+        tight ??= added;
+        if (added.requiredA * added.requiredB <
+            tight.requiredA * tight.requiredB) tight = added;
+        continue;
+      }
+      setState(() {
+        if (history.commit(next)) changed();
+        tool = EditorTool.browse;
+        placementHint = null;
+      });
+      notify(
+          switch (type) {
+            StairType.straight => tr3('已放直梯 · 点楼梯可换样式',
+                'Тік баспалдақ қойылды · түрін өзгерту үшін оны басыңыз',
+                'Прямая лестница поставлена · нажмите на неё, чтобы сменить вид'),
+            StairType.L => tr3('直梯放不下，已换成 L 型 · 点楼梯可换样式',
+                'Тік баспалдақ сыймады, L тәрізді қойылды · түрін өзгерту үшін оны басыңыз',
+                'Прямая не поместилась, поставлена Г-образная · нажмите на неё, чтобы сменить вид'),
+            StairType.U => tr3('直梯放不下，已换成 U 型 · 点楼梯可换样式',
+                'Тік баспалдақ сыймады, U тәрізді қойылды · түрін өзгерту үшін оны басыңыз',
+                'Прямая не поместилась, поставлена П-образная · нажмите на неё, чтобы сменить вид'),
+          },
+          undo: undo);
+      return;
+    }
+    if (refusal != null) return notify(refusal);
+    final need = tight!;
+    notify(tr3(
+        '这里放不下楼梯，至少要 ${meters(need.requiredA)} × ${meters(need.requiredB)} 米。换一个大些的房间，或先把墙挪开。',
+        'Мұнда баспалдақ сыймайды, кемінде ${meters(need.requiredA)} × ${meters(need.requiredB)} м керек. Үлкенірек бөлмені таңдаңыз не қабырғаны жылжытыңыз.',
+        'Лестница здесь не поместится: нужно не меньше ${meters(need.requiredA)} × ${meters(need.requiredB)} м. Выберите комнату побольше или сдвиньте стену.'));
+  }
+
   /// Show the card of [opening]; it can also be dragged on the plan.
   void selectOpening(Opening opening) => setState(() {
         clearSelection();
@@ -3132,6 +3243,42 @@ class _HouseEditorState extends State<HouseEditor>
   /// Whether the active stroke started on a plus (rather than a free start).
   bool strokeFromAttachment = false;
 
+  /// The loose end of the wall just drawn and the way it was heading,
+  /// kept while that end is still where the next wall would start.
+  ({Offset at, Offset heading})? looseEnd;
+
+  /// Where the wall just drawn would meet the next wall if it ran on,
+  /// for the "接到对面" button; null once its end is no longer loose.
+  Offset? get reachAcrossPoint {
+    final loose = looseEnd, origin = drawingOrigin;
+    if (tool != EditorTool.drawWall ||
+        drawingStrokeActive ||
+        loose == null ||
+        origin == null ||
+        loose.at != origin) return null;
+    return wallAhead(base, loose.at, loose.heading);
+  }
+
+  /// Runs the wall just drawn on to the wall it was heading for.
+  void reachAcross() {
+    final to = reachAcrossPoint, from = drawingOrigin;
+    if (to == null || from == null) return;
+    final before = history.present;
+    action('AddDrawnWall', {
+      'floorId': floor.id,
+      'x0': from.dx.round(),
+      'y0': from.dy.round(),
+      'x1': to.dx.round(),
+      'y1': to.dy.round()
+    });
+    if (history.present == before) return;
+    setState(() {
+      looseEnd = null;
+      drawingOrigin = null;
+      placementHint = null;
+    });
+  }
+
   void beginWallStroke(Offset local, Size size) {
     drawingStrokeActive = true;
     drawingBefore = drawingOrigin;
@@ -3207,14 +3354,33 @@ class _HouseEditorState extends State<HouseEditor>
       // The guide has done its job once a wall exists.
       if (history.present != before) coachDismissed = true;
       // Continue from the new end only where another wall can still start.
-      if (history.present != before)
+      if (history.present != before) {
+        final from = Offset((args['x0'] as int).toDouble(),
+            (args['y0'] as int).toDouble());
         drawingOrigin =
             canExtendWallFrom(base, derived.floors[floorIndex].openings, end!)
                 ? end
                 : null;
+        final step = end - from;
+        looseEnd = drawingOrigin == null ||
+                endJoinsWall(base, end,
+                    horizontal: step.dx != 0,
+                    ignore: (w) =>
+                        (w.axis.dir == AxisDir.H) == (step.dx != 0) &&
+                        w.axis.pos == (step.dx != 0 ? end.dy : end.dx))
+            ? null
+            : (
+                at: end,
+                heading: step.dx != 0
+                    ? Offset(step.dx.sign, 0)
+                    : Offset(0, step.dy.sign)
+              );
+      }
     }
     if (error != null) notify(error);
-    placementHint = tapped
+    placementHint = reachAcrossPoint != null
+        ? tr3('墙停在了半路。可以接着拖，或点「接到对面」', 'Қабырға жарты жолда тоқтады. Жалғастырып тартыңыз не «Қарсы қабырғаға дейін» басыңыз', 'Стена остановилась на полпути. Тяните дальше или нажмите «До стены напротив»')
+        : tapped
         ? tr3('按住大 ＋ 拖出新墙 · 也可点尺子输入长度', 'Үлкен ＋ белгісін ұстап тартыңыз · не сызғышты басып ұзындық енгізіңіз', 'Удерживайте большой ＋ и тяните · или нажмите на линейку и введите длину')
         : !accepted && error == null
             ? tr3('墙至少 0.30 米，请拖远一些', 'Қабырға кемінде 0,30 м, әріректе жіберіңіз', 'Стена не короче 0,30 м, протяните дальше')
@@ -3603,6 +3769,8 @@ class _HouseEditorState extends State<HouseEditor>
               ? tr3('点墙修改 · 拖 ＋ 接墙 · 拖空白处移动画布', 'Қабырғаны басып өзгертіңіз · ＋ белгісінен жалғаңыз · бос жерді сүйреп жылжытыңыз', 'Нажмите на стену, чтобы изменить · тяните ＋, чтобы пристроить стену · тяните пустое место, чтобы сдвинуть чертёж')
               : tool == EditorTool.editWall
                   ? tr3('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз', 'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить')
+                  : tool == EditorTool.stair
+                      ? tr3('在放楼梯的房间里点一下，或拖过几个格子', 'Баспалдақ тұратын бөлмені басыңыз не бірнеше ұяшықты сүйреңіз', 'Нажмите в комнате, где будет лестница, или проведите по нескольким клеткам')
                   : spatialTool
                       ? (tool == EditorTool.split ? tr3('拉一条横线或竖线，松手分房', 'Көлденең не тік сызық тартып, жіберсеңіз бөлінеді', 'Проведите горизонтальную или вертикальную линию и отпустите — комната разделится') : tr3('从一角拖到另一角，松手创建房间', 'Бір бұрыштан екіншісіне тартып жіберсеңіз, бөлме жасалады', 'Протяните от одного угла к другому и отпустите — комната будет создана'))
                       : tool == EditorTool.resize
@@ -4214,15 +4382,11 @@ class _HouseEditorState extends State<HouseEditor>
                                                   j1 = math.max(
                                                           first.j, last.j) +
                                                       1;
-                                              action('AddStair', {
-                                                'floorId': floor.id,
-                                                'type': StairType.straight,
-                                                'region': AxisRectangle(
-                                                    x0: base.axes.v[i0].id,
-                                                    x1: base.axes.v[i1].id,
-                                                    y0: base.axes.h[j0].id,
-                                                    y1: base.axes.h[j1].id)
-                                              });
+                                              placeStair(AxisRectangle(
+                                                  x0: base.axes.v[i0].id,
+                                                  x1: base.axes.v[i1].id,
+                                                  y0: base.axes.h[j0].id,
+                                                  y1: base.axes.h[j1].id));
                                               stroke.clear();
                                             }
                                             if (tool == EditorTool.room &&
@@ -4293,7 +4457,22 @@ class _HouseEditorState extends State<HouseEditor>
                                                                 in displayRooms)
                                                               r.id: displayRoomName(r)
                                                           },
-                                                          const {},
+                                                          {
+                                                            // A room with a use is tinted by it, lightly: the
+                                                            // sheet stays a drawing, and uses read at a glance.
+                                                            for (final r
+                                                                in displayRooms)
+                                                              if (r.type !=
+                                                                  RoomType
+                                                                      .custom)
+                                                                r.id: Color.lerp(
+                                                                    Tokens.of(
+                                                                            context)
+                                                                        .room,
+                                                                    roomColors[r
+                                                                        .type],
+                                                                    0.42)!
+                                                          },
                                                           viewportInsets:
                                                               canvasInsets,
                                                           openings:

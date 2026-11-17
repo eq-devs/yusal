@@ -17,6 +17,10 @@ const roomColors = {
   RoomType.kitchen: Color(0xfff2d499),
   RoomType.bathroom: Color(0xffaacae0),
   RoomType.dining: Color(0xffdbc3c7),
+  RoomType.hall: Color(0xffd9d2bd),
+  RoomType.corridor: Color(0xffd6d6cc),
+  RoomType.storage: Color(0xffcfc4b4),
+  RoomType.boiler: Color(0xffe3b7a0),
   RoomType.custom: Color(0xffc9c6dc)
 };
 

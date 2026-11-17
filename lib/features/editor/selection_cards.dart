@@ -286,6 +286,10 @@ extension _SelectionCards on _HouseEditorState {
       RoomType.kitchen: ('厨房', 'Ас үй'),
       RoomType.bathroom: ('卫生间', 'Жуыну бөлмесі'),
       RoomType.dining: ('餐厅', 'Асхана'),
+      RoomType.hall: ('门厅', 'Кіреберіс'),
+      RoomType.corridor: ('走廊', 'Дәліз'),
+      RoomType.storage: ('储藏间', 'Қойма'),
+      RoomType.boiler: ('锅炉房', 'Қазандық'),
       RoomType.custom: ('房间', 'Бөлме'),
     }[type]!;
     return zh ? names.$1 : names.$2;

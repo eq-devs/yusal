@@ -950,10 +950,31 @@ extension _OtherTabs on _HouseEditorState {
       'R12': ('厨房或客厅没有窗', 'Асүйде не қонақ бөлмеде терезе жоқ'),
       'R13': ('门偏窄', 'Есік тар'),
     };
+    // Which floor and which room a finding is about: several rooms are
+    // often all called "房间", and their messages then read the same.
+    String? where(String? floorId, [List<String> ids = const []]) {
+      final f = doc.floors.indexWhere((x) => x.id == floorId);
+      if (f < 0) return null;
+      final name = displayFloorName(doc.floors[f].name);
+      final room =
+          doc.floors[f].rooms.where((r) => ids.contains(r.id)).firstOrNull;
+      if (room == null) return name;
+      final area = derived.floors[f].base.roomGeometry
+          .where((g) => g.id == room.id)
+          .firstOrNull
+          ?.clearArea;
+      return [
+        name,
+        displayRoomName(room),
+        if (area != null) '${dec((area / 1e6).toStringAsFixed(1))} ㎡'
+      ].join(' · ');
+    }
+
     final items = <({
       Level level,
       String title,
       String text,
+      String? where,
       String? floorId,
       List<PlanRect> areas,
       bool foundation,
@@ -965,6 +986,7 @@ extension _OtherTabs on _HouseEditorState {
           level: Level.values[i.level.index],
           title: i.title,
           text: i.text,
+          where: where(i.floorId),
           floorId: i.floorId,
           areas: [
             for (final a in i.areas)
@@ -981,6 +1003,7 @@ extension _OtherTabs on _HouseEditorState {
           title:
               '${r.ruleId} · ${tr(ruleTitles[r.ruleId]!.$1, ruleTitles[r.ruleId]!.$2)}',
           text: coreMessage(r.message),
+          where: where(r.floorId, r.objectIds),
           floorId: r.floorId,
           areas: [if (r.focus != null) r.focus!],
           foundation: false,
@@ -992,6 +1015,7 @@ extension _OtherTabs on _HouseEditorState {
           level: Level.values[c.level.index],
           title: tr3(c.title.$1, c.title.$2, c.title.$3),
           text: tr3(c.text.$1, c.text.$2, c.text.$3),
+          where: where(c.floorId),
           floorId: c.floorId,
           areas: c.areas,
           foundation: c.showFoundation,
@@ -1061,6 +1085,16 @@ extension _OtherTabs on _HouseEditorState {
                       if (i.own != null) ...[
                         const SizedBox(width: 6),
                         TagPill(tr3('我的记录', 'Менің жазбам', 'Моя запись'), t.muted),
+                      ],
+                      if (i.where != null) ...[
+                        const SizedBox(width: 6),
+                        Flexible(
+                            child: Text(i.where!,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: t.muted))),
                       ],
                     ]),
                     const SizedBox(height: 4),

@@ -71,6 +71,10 @@ const roomNames = {
   RoomType.kitchen: '厨房',
   RoomType.bathroom: '卫生间',
   RoomType.dining: '餐厅',
+  RoomType.hall: '门厅',
+  RoomType.corridor: '走廊',
+  RoomType.storage: '储藏间',
+  RoomType.boiler: '锅炉房',
   RoomType.custom: '房间'
 };
 

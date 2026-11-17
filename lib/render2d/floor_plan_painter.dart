@@ -52,6 +52,7 @@ class FloorPlanPainter extends CustomPainter {
       this.bearingMin = 240,
       this.furniture = const [],
       this.selectedFurniture,
+      this.selectedDimension,
       this.selectedRoom,
       this.showFurniture = true,
       this.showDimensions = true,
@@ -76,6 +77,8 @@ class FloorPlanPainter extends CustomPainter {
   /// First-use guide: a dashed arrow from a wall attachment into the house.
   final (Offset, Offset)? coach;
   final List<Offset> wallAttachments;
+  /// The dimension figure being edited, drawn in the accent colour.
+  final DimensionSpan? selectedDimension;
   final double handleScale;
   final String? draftLabel;
   final bool draftIsLine, draftInvalid, resizeHandles, showGridDimensions;
@@ -986,18 +989,17 @@ class FloorPlanPainter extends CustomPainter {
     return best;
   }
 
-  /// Chains of wall-face dimensions on four sides plus the overall sizes,
-  /// in millimetres, like a construction drawing.
-  void drawDimensions(Canvas canvas, Size size, List<WallInfo> walls,
-      double width, double depth) {
-    final t = tokens, pen = Paint()
-      ..color = t.dim
-      ..strokeWidth = math.max(0.6, px(0.9));
+  /// Every figure of the dimension chains with where it is drawn, so a
+  /// tap can find the figure under it. Same geometry as [drawDimensions].
+  List<DimensionSpan> dimensionSpans(Size size, {List<WallInfo>? walls}) {
+    final width = base.axes.v.last.pos.toDouble(),
+        depth = base.axes.h.last.pos.toDouble();
+    walls ??= wallsOf(base, FoundationSpec(bearingMin: bearingMin));
     const eps = 1.0;
     List<double> faces(bool vertical, bool Function(PlanRect) touches,
         double extent) {
       final out = <double>{0, extent};
-      for (final w in walls.where((w) =>
+      for (final w in walls!.where((w) =>
           w.role != WallRole.temporary &&
           (vertical ? !w.horizontal : w.horizontal) &&
           touches(w.rect))) {
@@ -1010,9 +1012,9 @@ class FloorPlanPainter extends CustomPainter {
       return out.where((v) => v >= -eps && v <= extent + eps).toList()..sort();
     }
 
-    void chain(List<double> stops, bool horizontal, double offset, {
-      required bool before,
-    }) {
+    final spans = <DimensionSpan>[];
+    void chain(List<double> stops, bool horizontal, double offset, String side,
+        {required bool before, bool overall = false}) {
       // [offset] in screen pixels from the outer face.
       for (var i = 0; i < stops.length - 1; i++) {
         final a = stops[i], b = stops[i + 1];
@@ -1027,44 +1029,80 @@ class FloorPlanPainter extends CustomPainter {
             ? Offset(0, before ? -px(offset) : px(offset))
             : Offset(before ? -px(offset) : px(offset), 0);
         final q0 = p0 + shift, q1 = p1 + shift;
-        canvas.drawLine(q0, q1, pen);
-        final tick = px(4);
-        for (final q in [q0, q1]) {
-          canvas.drawLine(q + Offset(-tick, tick), q + Offset(tick, -tick), pen);
-          canvas.drawLine(
-              horizontal ? q + Offset(0, -tick * 1.4) : q + Offset(-tick * 1.4, 0),
-              horizontal ? q + Offset(0, tick * 1.4) : q + Offset(tick * 1.4, 0),
-              pen);
-        }
         final lengthPx = (q1 - q0).distance;
         final text = '${(b - a).round()}';
-        if (lengthPx < px(text.length * 6.0 + 4)) continue;
         final mid = (q0 + q1) / 2;
-        label(
-            canvas,
-            text,
-            horizontal
-                ? mid + Offset(0, -px(7))
-                : mid + Offset(-px(7), 0),
-            font: 10,
-            color: t.dim,
-            weight: FontWeight.w400,
-            monospace: true,
-            halo: t.panel.withValues(alpha: 0.85),
-            angle: horizontal ? 0 : -math.pi / 2);
+        spans.add(DimensionSpan(
+            a: a,
+            b: b,
+            horizontal: horizontal,
+            side: side,
+            overall: overall,
+            from: q0,
+            to: q1,
+            labelled: lengthPx >= px(text.length * 6.0 + 4),
+            label: horizontal ? mid + Offset(0, -px(7)) : mid + Offset(-px(7), 0)));
       }
     }
 
-    final top = faces(true, (r) => r.top >= depth - 600, width),
-        bottom = faces(true, (r) => r.bottom <= 600, width),
-        left = faces(false, (r) => r.left <= 600, depth),
-        right = faces(false, (r) => r.right >= width - 600, depth);
-    chain(top, true, 22, before: true);
-    chain([0, width], true, 42, before: true);
-    chain(bottom, true, 26, before: false);
-    chain(left, false, 22, before: true);
-    chain([0, depth], false, 42, before: true);
-    chain(right, false, 22, before: false);
+    chain(faces(true, (r) => r.top >= depth - 600, width), true, 22, 'top',
+        before: true);
+    chain([0, width], true, 42, 'top', before: true, overall: true);
+    chain(faces(true, (r) => r.bottom <= 600, width), true, 26, 'bottom',
+        before: false);
+    chain(faces(false, (r) => r.left <= 600, depth), false, 22, 'left',
+        before: true);
+    chain([0, depth], false, 42, 'left', before: true, overall: true);
+    chain(faces(false, (r) => r.right >= width - 600, depth), false, 22,
+        'right',
+        before: false);
+    return spans;
+  }
+
+  /// The labelled figure under [local], if any. [reach] is in the same
+  /// units as [px], so the target stays finger-sized at any zoom.
+  DimensionSpan? dimensionAt(Offset local, Size size, {double reach = 16}) {
+    for (final s in dimensionSpans(size)) {
+      if (!s.labelled) continue;
+      final half = math.max(px(22), (s.to - s.from).distance / 2 - px(4));
+      final box = s.horizontal
+          ? Rect.fromCenter(
+              center: s.label, width: half * 2, height: px(reach) * 2)
+          : Rect.fromCenter(
+              center: s.label, width: px(reach) * 2, height: half * 2);
+      if (box.contains(local)) return s;
+    }
+    return null;
+  }
+
+  /// Chains of wall-face dimensions on four sides plus the overall sizes,
+  /// in millimetres, like a construction drawing.
+  void drawDimensions(Canvas canvas, Size size, List<WallInfo> walls,
+      double width, double depth) {
+    final t = tokens, pen = Paint()
+      ..color = t.dim
+      ..strokeWidth = math.max(0.6, px(0.9));
+    for (final s in dimensionSpans(size, walls: walls)) {
+      final q0 = s.from, q1 = s.to;
+      canvas.drawLine(q0, q1, pen);
+      final tick = px(4);
+      for (final q in [q0, q1]) {
+        canvas.drawLine(q + Offset(-tick, tick), q + Offset(tick, -tick), pen);
+        canvas.drawLine(
+            s.horizontal ? q + Offset(0, -tick * 1.4) : q + Offset(-tick * 1.4, 0),
+            s.horizontal ? q + Offset(0, tick * 1.4) : q + Offset(tick * 1.4, 0),
+            pen);
+      }
+      if (!s.labelled) continue;
+      final picked = s.sameAs(selectedDimension);
+      label(canvas, '${(s.b - s.a).round()}', s.label,
+          font: 10,
+          color: picked ? t.accent : t.dim,
+          weight: picked ? FontWeight.w700 : FontWeight.w400,
+          monospace: true,
+          halo: t.panel.withValues(alpha: 0.85),
+          angle: s.horizontal ? 0 : -math.pi / 2);
+    }
   }
 
   void drawFurniture(Canvas canvas, Size size, FurnitureItem f,
@@ -1298,4 +1336,33 @@ class FloorPlanPainter extends CustomPainter {
     end: center + direction * half,
     middle: null
   );
+}
+
+/// One figure of a dimension chain: the clear distance from [a] to [b]
+/// along the plan's x ([horizontal]) or y, drawn on [side] of the house.
+class DimensionSpan {
+  const DimensionSpan(
+      {required this.a,
+      required this.b,
+      required this.horizontal,
+      required this.side,
+      required this.overall,
+      required this.from,
+      required this.to,
+      required this.label,
+      required this.labelled});
+  final double a, b;
+  final bool horizontal, overall, labelled;
+  final String side;
+
+  /// Ends of the dimension line and the centre of its figure, in the
+  /// painter's own coordinates.
+  final Offset from, to, label;
+  double get length => b - a;
+  bool sameAs(DimensionSpan? o) =>
+      o != null &&
+      o.side == side &&
+      o.overall == overall &&
+      (o.a - a).abs() < 1 &&
+      (o.b - b).abs() < 1;
 }

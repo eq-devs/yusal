@@ -247,7 +247,10 @@ class _HouseEditorState extends State<HouseEditor>
       if (room) selectedRoomId = id;
       if (opening) selectedOpeningId = id;
       if (piece) selectedFurnitureId = id;
+      panelCollapsed = phoneTools;
+      tab = 'plan';
     });
+    if (room) revealRoom(id);
     return true;
   }
 
@@ -2131,6 +2134,15 @@ class _HouseEditorState extends State<HouseEditor>
 
   Future<void> tapObject(Offset point, Size size) async {
     final painter = interactionPainter();
+    if (showDimensions && (browse || tool == EditorTool.drawWall)) {
+      final span = FloorPlanPainter(base, {}, {},
+              viewportInsets: canvasInsets, handleScale: canvasZoom)
+          .dimensionAt(point, size);
+      if (span != null) {
+        await editDimension(span);
+        return;
+      }
+    }
     // Tolerances are screen pixels, so they stay finger-sized at any zoom.
     final x = painter.worldPoint(point, size).x,
         y = painter.worldPoint(point, size).y,
@@ -2290,9 +2302,11 @@ class _HouseEditorState extends State<HouseEditor>
       setState(() {
         clearSelection();
         selectedRoomId = room.id;
-        panelCollapsed = false;
+        // Phones: one line, so the room stays in view (see [panel]).
+        panelCollapsed = phoneTools;
         if (highlights.isNotEmpty) flash(const []);
       });
+      revealRoom(room.id);
       return;
     }
     if (id == null)
@@ -3161,6 +3175,209 @@ class _HouseEditorState extends State<HouseEditor>
         showWallContext(wall, attachmentOnWall(wall, local, size));
       }
     });
+  }
+
+  /// The figure of the dimension chain being typed over.
+  DimensionSpan? editingDimension;
+
+  /// A figure on the plan was tapped: type the size wanted and say which
+  /// wall gives way. The number asked for is the number drawn, wall face
+  /// to wall face, so there is nothing to convert.
+  Future<void> editDimension(DimensionSpan span) async {
+    final fp = history.present.footprint;
+    if (span.overall) {
+      setState(() => editingDimension = span);
+      final value = await length(
+          span.horizontal
+              ? tr3('房屋总宽', 'Үйдің жалпы ені', 'Общая ширина дома')
+              : tr3('房屋总深', 'Үйдің жалпы тереңдігі', 'Общая глубина дома'),
+          span.length.round());
+      if (mounted) setState(() => editingDimension = null);
+      if (value != null && mounted)
+        action('SetFootprintSize',
+            {span.horizontal ? 'width' : 'depth': value});
+      return;
+    }
+    final walls = wallsOf(base, const FoundationSpec()).where((w) =>
+        w.role != WallRole.temporary &&
+        w.horizontal != span.horizontal &&
+        switch (span.side) {
+          'top' => w.rect.top >= fp.depth - 600,
+          'bottom' => w.rect.bottom <= 600,
+          'left' => w.rect.left <= 600,
+          _ => w.rect.right >= fp.width - 600,
+        });
+    double lo(WallInfo w) => span.horizontal ? w.rect.left : w.rect.bottom;
+    double hi(WallInfo w) => span.horizontal ? w.rect.right : w.rect.top;
+    if (walls.any(
+        (w) => (lo(w) - span.a).abs() < 2 && (hi(w) - span.b).abs() < 2)) {
+      notify(tr3('这是墙的厚度。点一下墙可以改厚度。',
+          'Бұл қабырғаның қалыңдығы. Өзгерту үшін қабырғаны басыңыз.',
+          'Это толщина стены. Нажмите на стену, чтобы изменить её.'));
+      return;
+    }
+    bool inner(WallInfo w) => w.segment.axis.kind != 'boundary';
+    final low = walls
+            .where((w) => (hi(w) - span.a).abs() < 2 && inner(w))
+            .firstOrNull,
+        high = walls
+            .where((w) => (lo(w) - span.b).abs() < 2 && inner(w))
+            .firstOrNull;
+    setState(() => editingDimension = span);
+    final lowName = span.horizontal
+            ? tr3('动左边的墙', 'Сол қабырға жылжиды', 'Двигать левую стену')
+            : tr3('动下边的墙', 'Төменгі қабырға жылжиды', 'Двигать нижнюю стену'),
+        highName = span.horizontal
+            ? tr3('动右边的墙', 'Оң қабырға жылжиды', 'Двигать правую стену')
+            : tr3('动上边的墙', 'Жоғарғы қабырға жылжиды', 'Двигать верхнюю стену');
+    final field = TextEditingController(
+        text: (span.length / 1000).toStringAsFixed(2));
+    field.selection =
+        TextSelection(baseOffset: 0, extentOffset: field.text.length);
+    var moveHigh = high != null;
+    final choice = await showDialog<({int length, bool moveHigh})>(
+        context: context,
+        builder: (context) => StatefulBuilder(builder: (context, setDialog) {
+              void done() {
+                final v = parseNumber(field.text);
+                if (v == null || v <= 0) return;
+                Navigator.pop(
+                    context, (length: (v * 1000).round(), moveHigh: moveHigh));
+              }
+
+              return AlertDialog(
+                  title: Text(span.horizontal
+                      ? tr3('这一段的净宽（米）', 'Осы бөліктің таза ені (м)',
+                          'Ширина этого участка в свету (м)')
+                      : tr3('这一段的净深（米）', 'Осы бөліктің таза тереңдігі (м)',
+                          'Глубина этого участка в свету (м)')),
+                  content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextField(
+                            key: const Key('dim-field'),
+                            controller: field,
+                            autofocus: true,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            onSubmitted: (_) => done()),
+                        const SizedBox(height: 12),
+                        if (low != null && high != null)
+                          Wrap(spacing: 8, children: [
+                            ChoiceChip(
+                                key: const Key('dim-low'),
+                                label: Text(lowName),
+                                selected: !moveHigh,
+                                onSelected: (_) =>
+                                    setDialog(() => moveHigh = false)),
+                            ChoiceChip(
+                                key: const Key('dim-high'),
+                                label: Text(highName),
+                                selected: moveHigh,
+                                onSelected: (_) =>
+                                    setDialog(() => moveHigh = true)),
+                          ])
+                        else
+                          Text(
+                              low == null && high == null
+                                  ? tr3('两边都是外墙，房屋会跟着变大或变小。',
+                                      'Екі жағы да сыртқы қабырға, үй өлшемі өзгереді.',
+                                      'С обеих сторон наружные стены: изменится размер дома.')
+                                  : (high != null ? highName : lowName),
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: Tokens.of(context).muted)),
+                      ]),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
+                    FilledButton(
+                        key: const Key('dim-ok'),
+                        onPressed: done,
+                        child: Text(tr3('好了', 'Дайын', 'Готово'))),
+                  ]);
+            }));
+    if (mounted) setState(() => editingDimension = null);
+    if (choice == null || !mounted) return;
+    final delta = choice.length - span.length.round();
+    if (delta == 0) return;
+    if (low == null && high == null) {
+      action('SetFootprintSize', {
+        span.horizontal ? 'width' : 'depth':
+            (span.horizontal ? fp.width : fp.depth) + delta
+      });
+      return;
+    }
+    final wall = (choice.moveHigh ? high : low)!.segment;
+    final along = (wall.start.pos + wall.end.pos) / 2;
+    final solid = floor.wallOverrides.whereType<SolidWall>().where((w) {
+      final c = resolveAnchor(base.axes, w.anchor).chain!;
+      return c.carrier.id == wall.axis.id &&
+          c.startPos <= along &&
+          c.endPos >= along;
+    }).firstOrNull;
+    action('MoveDrawnWall', {
+      'floorId': floor.id,
+      if (solid != null) 'wallId': solid.id,
+      if (solid == null) 'anchor': wall.ref.anchor,
+      'pos': wall.axis.pos + (choice.moveHigh ? delta : -delta),
+    });
+  }
+
+  /// The plan rectangle around the cells of the room with [roomId].
+  PlanRect? roomBox(String roomId) {
+    final cells = [
+      for (final e in base.owners.entries)
+        if (e.value == roomId) e.key
+    ];
+    if (cells.isEmpty) return null;
+    final v = base.axes.v, h = base.axes.h;
+    var box = PlanRect(v[cells.first.i].pos.toDouble(),
+        h[cells.first.j].pos.toDouble(), v[cells.first.i + 1].pos.toDouble(),
+        h[cells.first.j + 1].pos.toDouble());
+    for (final c in cells.skip(1))
+      box = PlanRect(
+          math.min(box.left, v[c.i].pos.toDouble()),
+          math.min(box.bottom, h[c.j].pos.toDouble()),
+          math.max(box.right, v[c.i + 1].pos.toDouble()),
+          math.max(box.top, h[c.j + 1].pos.toDouble()));
+    return box;
+  }
+
+  /// Height the folded selection card takes from the bottom of the plan.
+  static const foldedCardHeight = 132.0;
+
+  /// Slides the plan, without zooming, until [box] shows above the folded
+  /// selection card. A selection the card would cover is no selection.
+  void reveal(PlanRect box) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || canvasSize.isEmpty || !phoneTools) return;
+      final m = canvasTransform.value;
+      final r = MatrixUtils.transformRect(
+          m, interactionPainter().rectangle(box, canvasSize));
+      final view = Rect.fromLTRB(12, 12, canvasSize.width - 12,
+          canvasSize.height - foldedCardHeight);
+      if (view.height < 80) return;
+      double shift(double lo, double hi, double viewLo, double viewHi) {
+        if (hi - lo > viewHi - viewLo)
+          return (viewLo + viewHi) / 2 - (lo + hi) / 2;
+        if (lo < viewLo) return viewLo - lo;
+        if (hi > viewHi) return viewHi - hi;
+        return 0;
+      }
+
+      final dx = shift(r.left, r.right, view.left, view.right),
+          dy = shift(r.top, r.bottom, view.top, view.bottom);
+      if (dx == 0 && dy == 0) return;
+      canvasTransform.value = Matrix4.translationValues(dx, dy, 0)..multiply(m);
+    });
+  }
+
+  void revealRoom(String roomId) {
+    final box = roomBox(roomId);
+    if (box != null) reveal(box);
   }
 
   /// Move the canvas with one finger when a gesture started on nothing
@@ -4490,6 +4707,7 @@ class _HouseEditorState extends State<HouseEditor>
                                                           wallSeed: tool == EditorTool.drawWall ? drawingOrigin : null,
                                                           wallAttachments: (tool == EditorTool.drawWall || tool == EditorTool.selectWall) && drawingEnd == null && editPreviewStart == null ? visibleWallAttachments(size) : const [],
                                                           handleScale: canvasZoom,
+                                                          selectedDimension: editingDimension,
                                                           draftLabel: wallDraftLabel,
                                                           draftEnd: tool == EditorTool.drawWall && drawingStrokeActive && drawingEnd != null
                                                               ? drawingEnd

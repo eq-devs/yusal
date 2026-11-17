@@ -78,6 +78,16 @@ extension _EditorHeader on _HouseEditorState {
             onPressed: onTap,
             visualDensity: wide ? null : VisualDensity.compact,
             icon: Icon(data, size: size));
+    final addFloor = Padding(
+        padding: const EdgeInsets.only(left: 6),
+        child: OutlinedButton.icon(
+            key: const Key('add-floor'),
+            style: OutlinedButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 10)),
+            onPressed: addFloorAbove,
+            icon: const Icon(Icons.add, size: 16),
+            label: Text(tr3('加一层', 'Қабат қосу', 'Этаж'))));
     final floorOps = icon('楼层操作', 'Қабат әрекеттері', 'Действия с этажом',
         Icons.layers_outlined,
         floorOptions);
@@ -157,6 +167,7 @@ extension _EditorHeader on _HouseEditorState {
             Expanded(child: title),
             const SizedBox(width: 12),
             floors,
+            addFloor,
             floorOps,
             sizeButton,
             history_,
@@ -180,6 +191,7 @@ extension _EditorHeader on _HouseEditorState {
               padding: const EdgeInsets.fromLTRB(12, 2, 4, 4),
               child: Row(children: [
                 floors,
+                addFloor,
                 floorOps,
                 sizeButton,
                 saveButton,

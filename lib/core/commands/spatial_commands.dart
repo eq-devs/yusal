@@ -1,6 +1,8 @@
 import '../axis/axis_resolver.dart';
 import '../canonicalization/room_canonicalizer.dart';
 import '../document/house_document.dart';
+import '../geometry/derived_house.dart';
+import '../geometry/floor_base.dart';
 import '../geometry/opening_constraints.dart';
 import '../validation/document_validator.dart';
 import 'design_commands.dart';
@@ -236,4 +238,267 @@ EditResult splitSpace(HouseDocument doc, String floorId, AxisDir dir, int pos,
     return const EditResult(null, '分隔线影响已有门窗，请换一个位置');
   }
   return EditResult(result, null);
+}
+
+HouseDocument _with(HouseDocument doc,
+        {AxisSystem? axes, List<Floor>? floors}) =>
+    HouseDocument(
+        schemaVersion: doc.schemaVersion,
+        meta: doc.meta,
+        mainEntranceOpeningId: doc.mainEntranceOpeningId,
+        defaults: doc.defaults,
+        footprint: doc.footprint,
+        axes: axes ?? doc.axes,
+        floors: floors ?? doc.floors,
+        roof: doc.roof);
+
+/// Takes a stair out and gives its place back to the room it stood in, so
+/// no walled-off hole is left behind. Axes only the stair used go with it.
+EditResult removeStair(
+    HouseDocument doc, String stairId, String Function() newId) {
+  final floor =
+      doc.floors.where((f) => f.stairs.any((s) => s.id == stairId)).firstOrNull;
+  if (floor == null) return const EditResult(null, '找不到这部楼梯');
+  final stair = floor.stairs.firstWhere((s) => s.id == stairId);
+  final axes = resolveFloorAxes(doc, floor.id)!;
+  final rect = resolveRect(axes, stair.region).rect!;
+  final cells = cellsOfRect(rect).toSet();
+  final roomOf = <Cell, String>{
+    for (final room in floor.rooms)
+      for (final c in regionCells(axes, room.regions).cells) c: room.id
+  };
+  // The room that shares the most of the stair's edge takes the space.
+  final shared = <String, int>{};
+  Cell? hostCell;
+  for (final c in cells)
+    for (final n in [
+      Cell(c.i - 1, c.j),
+      Cell(c.i + 1, c.j),
+      Cell(c.i, c.j - 1),
+      Cell(c.i, c.j + 1)
+    ]) {
+      final room = roomOf[n];
+      if (room != null) shared[room] = (shared[room] ?? 0) + 1;
+    }
+  if (shared.isNotEmpty) {
+    final host =
+        (shared.entries.toList()..sort((a, b) => b.value - a.value)).first.key;
+    hostCell = roomOf.entries.firstWhere((e) => e.value == host).key;
+  }
+  final removed =
+      executeDocumentCommand(doc, 'DeleteStair', {'stairId': stairId}, newId);
+  if (!removed.accepted) return removed;
+  var next = removed.document!;
+  // Openings in the walls around the stair were made for it.
+  bool around(WallOverride w) {
+    if (w is! OpenWall) return false;
+    final chain = resolveAnchor(axes, w.anchor).chain;
+    if (chain == null) return false;
+    final p = chain.carrier.pos;
+    return chain.carrier.dir == AxisDir.V
+        ? (p == rect.left || p == rect.right) &&
+            chain.startPos >= rect.bottom &&
+            chain.endPos <= rect.top
+        : (p == rect.bottom || p == rect.top) &&
+            chain.startPos >= rect.left &&
+            chain.endPos <= rect.right;
+  }
+
+  Floor copy(Floor f, {List<WallOverride>? wallOverrides}) => Floor(
+      explicitWalls: f.explicitWalls,
+      id: f.id,
+      name: f.name,
+      height: f.height,
+      rooms: f.rooms,
+      wallOverrides: wallOverrides ?? f.wallOverrides,
+      openings: f.openings,
+      stairs: f.stairs,
+      outside: f.outside);
+  next = _with(next, floors: [
+    for (final f in next.floors)
+      f.id == floor.id
+          ? copy(f, wallOverrides: [
+              for (final w in f.wallOverrides)
+                if (!around(w)) w
+            ])
+          : f
+  ]);
+  if (hostCell != null)
+    next = paintCells(
+        next, floor.id, [hostCell, ...cells], RoomType.custom, newId);
+  final refs = <String>{};
+  void use(AxisRectangle r) => refs.addAll([r.x0, r.x1, r.y0, r.y1]);
+  for (final f in next.floors) {
+    for (final r in f.rooms) r.regions.forEach(use);
+    for (final s in f.stairs) use(s.region);
+    for (final r in f.outside) use(r);
+    for (final w in f.wallOverrides)
+      refs.addAll([w.anchor.axisId, w.anchor.startAxisId, w.anchor.endAxisId]);
+    for (final o in f.openings)
+      refs.addAll([o.anchor.axisId, o.anchor.startAxisId, o.anchor.endAxisId]);
+  }
+  final own = {
+    stair.region.x0,
+    stair.region.x1,
+    stair.region.y0,
+    stair.region.y1
+  };
+  final pruned = _with(next,
+      axes: AxisSystem(global: next.axes.global, floor: [
+        for (final a in next.axes.floor)
+          if (!own.contains(a.id) || refs.contains(a.id)) a
+      ]));
+  return EditResult(validateHouse(pruned).isEmpty ? pruned : next, null);
+}
+
+/// A stair as a thing put down in a room: a rectangle in millimetres, in
+/// the first shape that fits it (straight, L, then U) unless [type] says
+/// which. Its sides are open to the room. With [stairId] an existing stair
+/// moves there instead and keeps its shape where that still fits.
+EditResult placeStair(HouseDocument doc, String floorId, int left, int bottom,
+    int right, int top, String Function() newId,
+    {StairType? type, String? stairId}) {
+  final index = doc.floors.indexWhere((f) => f.id == floorId);
+  if (index < 0) return const EditResult(null, '找不到这一层');
+  if (index == doc.floors.length - 1)
+    return const EditResult(null, '楼梯需要上方还有楼层');
+  if (left < 0 ||
+      bottom < 0 ||
+      right > doc.footprint.width ||
+      top > doc.footprint.depth ||
+      right - left < 300 ||
+      top - bottom < 300) return const EditResult(null, '楼梯需在房屋内');
+  Stair? previous;
+  if (stairId != null) {
+    previous = doc.floors[index].stairs.where((s) => s.id == stairId).firstOrNull;
+    if (previous == null) return const EditResult(null, '找不到这部楼梯');
+    final lifted = removeStair(doc, stairId, newId);
+    if (!lifted.accepted) return lifted;
+    doc = lifted.document!;
+  }
+  final original = doc.floors[index];
+  final oldAxes = resolveFloorAxes(doc, floorId)!;
+  final additions = <FloorAxis>[];
+  String boundary(AxisDir dir, int position) {
+    for (final axis in dir == AxisDir.V ? oldAxes.v : oldAxes.h) {
+      if (axis.pos == position) return axis.id;
+      if ((axis.pos - position).abs() < 300)
+        throw const FormatException('离已有墙线太近，请贴齐或留出至少 0.30 米');
+    }
+    final id = newId();
+    additions.add(FloorAxis(id: id, floorId: floorId, dir: dir, pos: position));
+    return id;
+  }
+
+  try {
+    final region = AxisRectangle(
+        x0: boundary(AxisDir.V, left),
+        x1: boundary(AxisDir.V, right),
+        y0: boundary(AxisDir.H, bottom),
+        y1: boundary(AxisDir.H, top));
+    final staged = _with(doc,
+        axes: AxisSystem(
+            global: doc.axes.global, floor: [...doc.axes.floor, ...additions]));
+    final axes = resolveFloorAxes(staged, floorId)!;
+    final cells = cellsOfRect(resolveRect(axes, region).rect!).toSet();
+    final roomOf = <Cell, String>{
+      for (final room in original.rooms)
+        for (final c in regionCells(axes, room.regions).cells) c: room.id
+    };
+    final owners = {for (final c in cells) roomOf[c]};
+    if (owners.length != 1 || owners.first == null)
+      return const EditResult(null, '楼梯要整个放在同一个房间里');
+    final host = owners.first!;
+    if (original.stairs.any((s) =>
+        cellsOfRect(resolveRect(axes, s.region).rect!).any(cells.contains)))
+      return const EditResult(null, '这里已经有楼梯了');
+    final edge = previous?.startEdge ??
+        (top - bottom >= right - left ? StairEdge.bottom : StairEdge.left);
+    final shapes = type != null
+        ? [type]
+        : [
+            if (previous != null) previous.type,
+            for (final t in StairType.values)
+              if (t != previous?.type) t
+          ];
+    ({double a, double b})? need;
+    String? refusal;
+    for (final shape in shapes) {
+      final added = executeDocumentCommand(staged, 'AddStair',
+          {'floorId': floorId, 'type': shape, 'region': region}, newId);
+      if (!added.accepted) {
+        refusal = added.error;
+        break;
+      }
+      var next = added.document!;
+      final id = next.floors[index].stairs
+          .firstWhere((s) => original.stairs.every((o) => o.id != s.id))
+          .id;
+      final turn = previous is TurnStair ? previous.turn : null;
+      if (edge != StairEdge.bottom || turn == StairTurn.right) {
+        final turned = executeDocumentCommand(
+            next,
+            'UpdateStair',
+            {
+              'stairId': id,
+              'startEdge': edge.name,
+              if (shape != StairType.straight && turn != null) 'turn': turn.name
+            },
+            newId);
+        if (turned.accepted) next = turned.document!;
+      }
+      // Open every side that faces the room the stair stands in.
+      final hostCells = {
+        for (final e in roomOf.entries)
+          if (e.value == host && !cells.contains(e.key)) e.key
+      };
+      // Edges rather than walls: where walls are drawn by hand there is
+      // none yet, and an opening keeps one from being built.
+      final runs = <List<UnitEdge>>[];
+      for (final e in deriveFloorBase(next, floorId).edges) {
+        if (!((cells.contains(e.negative) && hostCells.contains(e.positive)) ||
+            (cells.contains(e.positive) && hostCells.contains(e.negative))))
+          continue;
+        final run = runs
+            .where((r) =>
+                r.last.axis.id == e.axis.id && r.last.end.id == e.start.id)
+            .firstOrNull;
+        run == null ? runs.add([e]) : run.add(e);
+      }
+      for (final run in runs) {
+        final opened = executeDocumentCommand(
+            next,
+            'SetWallOverride',
+            {
+              'floorId': floorId,
+              'anchor': BoundaryAnchor(
+                  axisId: run.first.axis.id,
+                  startAxisId: run.first.start.id,
+                  endAxisId: run.last.end.id),
+              'type': 'open'
+            },
+            newId);
+        if (opened.accepted) next = opened.document!;
+      }
+      final errors = validateHouse(next);
+      if (errors.isNotEmpty) {
+        refusal = errors.first.message;
+        break;
+      }
+      final geometry = deriveHouse(next)
+          .floors[index]
+          .stairs
+          .firstWhere((s) => s.stairId == id);
+      if (geometry.fits) return EditResult(next, null);
+      if (need == null ||
+          geometry.requiredA * geometry.requiredB < need.a * need.b)
+        need = (a: geometry.requiredA, b: geometry.requiredB);
+    }
+    if (refusal != null) return EditResult(null, refusal);
+    String m(double v) => (v / 1000).toStringAsFixed(1);
+    return EditResult(
+        null, '这里放不下楼梯，净空至少要 ${m(need!.a)} × ${m(need.b)} 米');
+  } on FormatException catch (error) {
+    return EditResult(null, error.message);
+  }
 }

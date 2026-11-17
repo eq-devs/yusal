@@ -798,6 +798,7 @@ class _HouseEditorState extends State<HouseEditor>
       return;
     }
     if (choice == 'addRoom') return addRoomBySize();
+    if (choice == 'stair') return startStairStamp();
     setState(() {
       erase = choice == 'erase';
       placementHint = null;
@@ -1016,6 +1017,99 @@ class _HouseEditorState extends State<HouseEditor>
   Offset stampGrab = Offset.zero;
   bool get stamping => tool == EditorTool.box && roomStamp != null;
 
+  /// The stamp is a stair, not a room; with [movingStairId] one that is
+  /// already there, being put somewhere else or given another size.
+  bool stampStair = false;
+  String? movingStairId;
+  bool get stairStamping => stamping && stampStair;
+
+  /// A stair to slide into place, like a room of a set size. On the top
+  /// floor it first offers the floor the stair would lead to.
+  void startStairStamp({Stair? moving, ({int w, int d})? size}) {
+    if (floorIndex == history.present.floors.length - 1) {
+      final floorId = floor.id;
+      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(
+          key: const Key('stair-needs-floor'),
+          content: Text(tr3('楼梯要通到上面一层，现在还没有。',
+              'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
+              'Лестница ведёт на этаж выше, а его пока нет.')),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
+          duration: const Duration(seconds: 8),
+          persist: false,
+          action: SnackBarAction(
+              label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
+                  'Добавить этаж и лестницу'),
+              onPressed: () {
+                final before = history.present;
+                action('AddFloor', {'floorId': floorId});
+                if (history.present == before || !mounted) return;
+                setState(() => derive());
+                startStairStamp();
+              })),
+          snackBarAnimationStyle: Motion.toastStyle);
+      return;
+    }
+    final fp = history.present.footprint;
+    final at = moving == null ? null : resolveRect(base.axes, moving.region).rect;
+    // A two-flight stair first: it is what most self-built houses have.
+    final sizes = size != null
+        ? [size]
+        : at != null
+            ? [(w: at.right - at.left, d: at.top - at.bottom)]
+            : const [
+                (w: 2400, d: 3600),
+                (w: 3600, d: 2400),
+                (w: 1200, d: 4800),
+                (w: 4800, d: 1200)
+              ];
+    setState(() {
+      clearSelection();
+      clearWallSelection();
+      view3d = false;
+      tool = EditorTool.box;
+      stampStair = true;
+      movingStairId = moving?.id;
+      search:
+      for (final s in sizes) {
+        roomStamp = s;
+        if (at != null) {
+          setStamp(at.left.toDouble(), at.bottom.toDouble(), reach: 0);
+          break;
+        }
+        for (final c in ['bl', 'br', 'tl', 'tr']) {
+          setStamp(c.endsWith('l') ? 0 : (fp.width - s.w).toDouble(),
+              c.startsWith('b') ? 0 : (fp.depth - s.d).toDouble());
+          if (spatialError == null) break search;
+        }
+      }
+      if (spatialError != null && at == null) {
+        roomStamp = sizes.first;
+        setStamp(0, 0);
+      }
+    });
+    if (spatialPreview != null) reveal(spatialPreview!);
+  }
+
+  /// Whether the floor underneath shows through the plan of this one.
+  bool showBelow = true;
+
+  /// The stair's width and length typed in; it stays on its corner.
+  Future<void> resizeStair(Stair stair) async {
+    final at = resolveRect(base.axes, stair.region).rect;
+    if (at == null) return;
+    final w = await length(tr3('楼梯间的宽（米）', 'Баспалдақ орнының ені (м)', 'Ширина места под лестницу (м)'),
+        at.right - at.left);
+    if (w == null || !mounted) return;
+    final d = await length(tr3('楼梯间的长（米）', 'Баспалдақ орнының ұзындығы (м)', 'Длина места под лестницу (м)'),
+        at.top - at.bottom);
+    if (d == null || !mounted) return;
+    startStairStamp(moving: stair, size: (w: w, d: d));
+    setState(() =>
+        setStamp(at.left.toDouble(), at.bottom.toDouble(), reach: 0));
+  }
+
   /// Puts the stamp's lower left corner near ([x], [y]): inside the house,
   /// on a wall line when one is close, else on the 100 mm grid.
   void setStamp(double x, double y, {double reach = 250}) {
@@ -1051,6 +1145,8 @@ class _HouseEditorState extends State<HouseEditor>
       view3d = false;
       tool = EditorTool.box;
       brush = type;
+      stampStair = false;
+      movingStairId = null;
       roomStamp = (w: w, d: d);
       for (final c in [corner, 'bl', 'br', 'tl', 'tr']) {
         setStamp(c.endsWith('l') ? 0 : (fp.width - w).toDouble(),
@@ -1063,6 +1159,8 @@ class _HouseEditorState extends State<HouseEditor>
 
   void cancelStamp() => setState(() {
         roomStamp = null;
+        stampStair = false;
+        movingStairId = null;
         spatialStart = null;
         spatialEnd = null;
         spatialPreview = null;
@@ -1090,6 +1188,21 @@ class _HouseEditorState extends State<HouseEditor>
       'top': r.top.round(),
       'roomType': brush
     };
+    if (stampStair) {
+      final moving = movingStairId, before = history.present;
+      cancelStamp();
+      action('PlaceStair', {...args, if (moving != null) 'stairId': moving}
+        ..remove('roomType'));
+      if (history.present != before)
+        notify(
+            moving != null
+                ? tr3('楼梯已挪好', 'Баспалдақ жылжытылды', 'Лестница перенесена')
+                : tr3('楼梯已放好，楼上自动留出洞口 · 点楼梯可以挪动或换样式',
+                    'Баспалдақ қойылды, жоғарғы қабатта ойық қалдырылды · оны басып жылжытуға не түрін өзгертуге болады',
+                    'Лестница поставлена, проём наверху оставлен · нажмите на неё, чтобы передвинуть или сменить вид'),
+            undo: undo);
+      return;
+    }
     cancelStamp();
     action('CarveRoom', args);
     final added =
@@ -1183,9 +1296,19 @@ class _HouseEditorState extends State<HouseEditor>
             'top': rect.top.round(),
             'roomType': brush
           };
+    if (stairStamping) {
+      arguments.remove('roomType');
+      if (movingStairId != null) arguments['stairId'] = movingStairId;
+    }
     final result = executeCommand(
         presentState,
-        DesignCommand(tool == EditorTool.split ? 'SplitSpace' : 'CarveRoom', arguments),
+        DesignCommand(
+            tool == EditorTool.split
+                ? 'SplitSpace'
+                : stairStamping
+                    ? 'PlaceStair'
+                    : 'CarveRoom',
+            arguments),
         CommandContext(newId: () => const Uuid().v4(), now: () => 'unused'));
     spatialError = result is Rejected ? result.message : null;
     if (result is Applied) {
@@ -1880,6 +2003,49 @@ class _HouseEditorState extends State<HouseEditor>
     return (parsed * 1000).round();
   }
 
+  /// A floor on top of the house, by a button that says so: empty with
+  /// the outer walls, or a copy of the floor under it.
+  Future<void> addFloorAbove() async {
+    final choice = await showMotionSheet<String>(
+        context: context,
+        builder: (context) => SafeArea(
+                child: ListView(shrinkWrap: true, children: [
+              ListTile(
+                  key: const Key('add-floor-empty'),
+                  leading: const Icon(Icons.crop_square),
+                  title: Text(tr3('空的一层', 'Бос қабат', 'Пустой этаж')),
+                  subtitle: Text(tr3('只带外墙，楼下的墙会淡淡地显示出来，照着画',
+                      'Тек сыртқы қабырғалар; астыңғы қабаттың қабырғалары бозғылт көрінеді',
+                      'Только наружные стены; стены нижнего этажа видны бледно, по ним удобно чертить')),
+                  onTap: () => Navigator.pop(context, 'AddFloor')),
+              ListTile(
+                  key: const Key('add-floor-copy'),
+                  leading: const Icon(Icons.copy_all_outlined),
+                  title: Text(tr3('照楼下复制一层', 'Астыңғы қабатты көшіру', 'Скопировать нижний этаж')),
+                  subtitle: Text(tr3('房间、墙和门窗都一样，再改不一样的地方',
+                      'Бөлмелер, қабырғалар, есік-терезелер бірдей; кейін өзгертесіз',
+                      'Те же комнаты, стены, окна и двери; потом измените, что нужно')),
+                  onTap: () => Navigator.pop(context, 'CopyFloor')),
+            ])));
+    if (choice == null || !mounted) return;
+    final before = history.present;
+    action(choice, {'floorId': before.floors.last.id});
+    if (history.present == before || !mounted) return;
+    setState(() {
+      cancelDrag();
+      clearSelection();
+      clearWallSelection();
+      drawingOrigin = null;
+      floorIndex = history.present.floors.length - 1;
+      derive();
+    });
+    notify(
+        tr3('已加上「${displayFloorName(floor.name)}」，现在画的是这一层',
+            '«${displayFloorName(floor.name)}» қосылды, енді осы қабатты сызасыз',
+            'Добавлен «${displayFloorName(floor.name)}», теперь вы чертите этот этаж'),
+        undo: undo);
+  }
+
   Future<void> floorOptions() async {
     final choice = await showMotionSheet<String>(
         context: context,
@@ -2425,6 +2591,8 @@ class _HouseEditorState extends State<HouseEditor>
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 for (final e in {
+                  'move': tr3('挪位置', 'Орнын ауыстыру', 'Передвинуть'),
+                  'size': tr3('改尺寸', 'Өлшемін өзгерту', 'Изменить размер'),
                   'straight': tr3('直梯', 'Тік баспалдақ', 'Прямая лестница'),
                   'L': tr3('L 型楼梯', 'L тәрізді баспалдақ', 'Г-образная лестница'),
                   'U': tr3('U 型楼梯', 'U тәрізді баспалдақ', 'П-образная лестница'),
@@ -2433,12 +2601,17 @@ class _HouseEditorState extends State<HouseEditor>
                   'delete': tr3('删除楼梯', 'Баспалдақты жою', 'Удалить лестницу')
                 }.entries)
                   ListTile(
+                      key: Key('stair-${e.key}'),
                       title: Text(e.value),
                       onTap: () => Navigator.pop(context, e.key))
               ])));
-      if (choice == null) return;
-      if (choice == 'delete')
-        action('DeleteStair', {'stairId': stair.id});
+      if (choice == null || !mounted) return;
+      if (choice == 'move')
+        startStairStamp(moving: stair);
+      else if (choice == 'size')
+        await resizeStair(stair);
+      else if (choice == 'delete')
+        action('RemoveStair', {'stairId': stair.id});
       else if (choice == 'turn')
         action('UpdateStair', {
           'stairId': stair.id,
@@ -4167,6 +4340,8 @@ class _HouseEditorState extends State<HouseEditor>
                   ? tr3('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз', 'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить')
                   : tool == EditorTool.stair
                       ? tr3('在放楼梯的房间里点一下，或拖过几个格子', 'Баспалдақ тұратын бөлмені басыңыз не бірнеше ұяшықты сүйреңіз', 'Нажмите в комнате, где будет лестница, или проведите по нескольким клеткам')
+                  : stairStamping
+                      ? tr3('拖动楼梯到想要的位置，一般靠墙角放', 'Баспалдақты керек жерге сүйреңіз, әдетте бұрышқа қойылады', 'Перетащите лестницу на место, обычно её ставят в угол')
                   : stamping
                       ? tr3('拖动房间到想要的位置，靠近墙会自动贴上', 'Бөлмені керек жерге сүйреңіз, қабырғаға жақындаса өзі жабысады', 'Перетащите комнату на место: у стены она прилипнет сама')
                   : spatialTool
@@ -4902,6 +5077,15 @@ class _HouseEditorState extends State<HouseEditor>
                                                               canvasInsets,
                                                           openings:
                                                               displayOpenings,
+                                                          below: floorIndex > 0 && showBelow
+                                                              ? derived.floors[floorIndex - 1].base
+                                                              : null,
+                                                          belowOpenings: [
+                                                            if (floorIndex > 0)
+                                                              for (final s in derived.floors[floorIndex - 1].stairs)
+                                                                s.opening
+                                                          ],
+                                                          belowLabel: tr3('楼梯口', 'Баспалдақ ойығы', 'Проём лестницы'),
                                                           stairs: derived
                                                               .floors[
                                                                   floorIndex]

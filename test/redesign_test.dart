@@ -214,4 +214,106 @@ void main() {
         isTrue);
     expect(t.takeException(), isNull);
   });
+
+  Future<void> pickStair(WidgetTester t) async {
+    await t.tap(find.byTooltip('更多工具'));
+    await t.pumpAndSettle();
+    await t.ensureVisible(find.text('楼梯'));
+    await t.tap(find.text('楼梯'));
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 500));
+  }
+
+  testWidgets('a stair is put down like a thing, moved, and taken away',
+      (t) async {
+    final session = await mount(t, house());
+    // One floor only: the stair first asks for the floor it leads to.
+    await pickStair(t);
+    expect(find.text('楼梯要通到上面一层，现在还没有。'), findsOneWidget);
+    await t.tap(find.text('加一层并放楼梯'));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('stamp-place')), findsOneWidget);
+    await t.tap(find.byKey(const Key('stamp-place')));
+    await t.pumpAndSettle();
+    var doc = await saved(t, session);
+    expect(doc.floors, hasLength(2));
+    final stair = doc.floors.first.stairs.single;
+    expect(doc.floors.first.rooms, hasLength(1));
+    var axes = resolveFloorAxes(doc, doc.floors.first.id)!;
+    var r = resolveRect(axes, stair.region).rect!;
+    expect((r.left, r.bottom, r.right, r.top), (0, 0, 2400, 3600));
+    expect(deriveHouse(doc).floors.first.stairs.single.fits, isTrue);
+    // Tapped, it offers to move; slid to the far corner and put down.
+    ScaffoldMessenger.of(t.element(canvas)).clearSnackBars();
+    await t.pumpAndSettle();
+    await t.tapAt(point(t, 1200, 1800));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('stair-move')));
+    await t.pumpAndSettle();
+    final g = await t.startGesture(point(t, 1200, 1800));
+    await t.pump();
+    for (final p in [
+      [5000.0, 6000.0],
+      [8600.0, 10000.0],
+      [8800.0, 10200.0]
+    ]) {
+      await g.moveTo(point(t, p[0], p[1]));
+      await t.pump();
+    }
+    await g.up();
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('stamp-place')));
+    await t.pumpAndSettle();
+    doc = await saved(t, session);
+    axes = resolveFloorAxes(doc, doc.floors.first.id)!;
+    r = resolveRect(axes, doc.floors.first.stairs.single.region).rect!;
+    expect((r.left, r.bottom, r.right, r.top), (7600, 8400, 10000, 12000));
+    expect([for (final a in axes.v) a.pos], [0, 7600, 10000]);
+    // Deleted, the room is whole again.
+    ScaffoldMessenger.of(t.element(canvas)).clearSnackBars();
+    await t.pumpAndSettle();
+    await t.tapAt(point(t, 8800, 10200));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('stair-delete')));
+    await t.pumpAndSettle();
+    doc = await saved(t, session);
+    expect(doc.floors.first.stairs, isEmpty);
+    expect(doc.floors.first.rooms.single.regions, hasLength(1));
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('a floor is added by a button that says so, over the one below',
+      (t) async {
+    var doc = house(walls: [
+      [0, 5000, 10000, 5000]
+    ]);
+    doc = run(doc, 'AddFloor', {'floorId': doc.floors.first.id});
+    doc = run(doc, 'PlaceStair', {
+      'floorId': doc.floors.first.id,
+      'left': 0,
+      'bottom': 0,
+      'right': 2400,
+      'top': 3600
+    });
+    final session = await mount(t, doc);
+    expect(painter(t).below, isNull, reason: 'nothing under the ground floor');
+    await t.ensureVisible(find.byKey(const Key('add-floor')));
+    await t.tap(find.byKey(const Key('add-floor')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('add-floor-empty')));
+    await t.pumpAndSettle();
+    final after = await saved(t, session);
+    expect(after.floors, hasLength(3));
+    // Now on the new top floor, the one under it shows through.
+    expect(painter(t).below, isNotNull);
+    expect(painter(t).belowOpenings, isEmpty);
+    // The second floor shows where the stair comes up.
+    await t.ensureVisible(find.text('二楼'));
+    await t.tap(find.text('二楼'));
+    await t.pumpAndSettle();
+    expect(painter(t).belowOpenings, hasLength(1));
+    expect(painter(t).below!.wallSegments.any((w) => w.axis.pos == 5000),
+        isTrue);
+    expect(t.takeException(), isNull);
+  });
 }

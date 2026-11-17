@@ -77,14 +77,6 @@ void main() {
     return session.$1.openProject(session.$2);
   }
 
-  Future<void> pickStair(WidgetTester t) async {
-    await t.tap(find.byTooltip('更多工具'));
-    await t.pumpAndSettle();
-    await t.ensureVisible(find.text('楼梯'));
-    await t.tap(find.text('楼梯'));
-    await t.pumpAndSettle();
-  }
-
   group('a wall that stops midway knows where the wall ahead is', () {
     test('the crossing wall ahead, in the heading it was drawn', () {
       final doc = house(walls: [
@@ -125,79 +117,6 @@ void main() {
     expect(RoomType.values.last, RoomType.custom);
     expect(roomNames[RoomType.hall], '门厅');
     expect(roomNames[RoomType.boiler], '锅炉房');
-  });
-
-  testWidgets('a stair on the only floor offers to add the floor above',
-      (t) async {
-    final session = await mount(
-        t,
-        house(walls: [
-          [3000, 0, 3000, 10000]
-        ]));
-    await pickStair(t);
-    await t.tapAt(point(t, 1500, 5000));
-    await t.pump();
-    await t.pump(const Duration(milliseconds: 400));
-    expect(find.text('楼梯要通到上面一层，现在还没有。'), findsOneWidget);
-    await t.tap(find.text('加一层并放楼梯'));
-    await t.pumpAndSettle();
-    final doc = await saved(t, session);
-    expect(doc.floors, hasLength(2));
-    expect(doc.floors.first.stairs, hasLength(1));
-    expect(t.takeException(), isNull);
-  });
-
-  testWidgets('a stair too long for the room becomes one that fits',
-      (t) async {
-    // 2.6 m wide and 3.7 m deep: a straight flight runs out of the room.
-    var doc = house(walls: [
-      [2600, 0, 2600, 10000],
-      [0, 3700, 2600, 3700]
-    ]);
-    final added = executeCommand(extractDesignState(doc),
-        DesignCommand('AddFloor', {'floorId': doc.floors.first.id}), ctx);
-    doc = composeDocument(doc.meta, (added as Applied).newState);
-    final session = await mount(t, doc);
-    await pickStair(t);
-    await t.tapAt(point(t, 1300, 1800));
-    await t.pumpAndSettle();
-    final after = await saved(t, session);
-    final stairs = after.floors.first.stairs;
-    expect(stairs, hasLength(1));
-    expect(stairs.single.type, isNot(StairType.straight));
-    final geometry = deriveHouse(after)
-        .floors
-        .first
-        .stairs
-        .firstWhere((s) => s.stairId == stairs.single.id);
-    expect(geometry.fits, isTrue);
-    // A second stair on the same spot is told so, in words.
-    await pickStair(t);
-    await t.tapAt(point(t, 1300, 1800));
-    await t.pump();
-    await t.pump(const Duration(milliseconds: 400));
-    expect(find.textContaining('这里已经有楼梯了'), findsOneWidget);
-    expect((await saved(t, session)).floors.first.stairs, hasLength(1));
-    expect(t.takeException(), isNull);
-  });
-
-  testWidgets('a stair that fits nowhere in the room is not placed',
-      (t) async {
-    var doc = house(walls: [
-      [1200, 0, 1200, 10000],
-      [0, 1200, 1200, 1200]
-    ]);
-    final added = executeCommand(extractDesignState(doc),
-        DesignCommand('AddFloor', {'floorId': doc.floors.first.id}), ctx);
-    doc = composeDocument(doc.meta, (added as Applied).newState);
-    final session = await mount(t, doc);
-    await pickStair(t);
-    await t.tapAt(point(t, 600, 600));
-    await t.pump();
-    await t.pump(const Duration(milliseconds: 400));
-    expect(find.textContaining('这里放不下楼梯'), findsOneWidget);
-    expect((await saved(t, session)).floors.first.stairs, isEmpty);
-    expect(t.takeException(), isNull);
   });
 
   testWidgets('the plan says how many problems the checks found', (t) async {

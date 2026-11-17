@@ -54,6 +54,9 @@ class FloorPlanPainter extends CustomPainter {
       this.selectedFurniture,
       this.selectedDimension,
       this.selectedRoom,
+      this.below,
+      this.belowOpenings = const [],
+      this.belowLabel,
       this.showFurniture = true,
       this.showDimensions = true,
       this.foundation,
@@ -160,6 +163,39 @@ class FloorPlanPainter extends CustomPainter {
   /// their on-screen size.
   double px(double value) => value / handleScale;
 
+  /// The floor underneath, drawn faintly so the walls of this one can be
+  /// put over the walls that carry them, and the holes its stairs come up
+  /// through, which must stay clear.
+  final FloorBase? below;
+  final List<PlanRect> belowOpenings;
+  final String? belowLabel;
+
+  void drawBelow(Canvas canvas, Size size) {
+    final t = tokens;
+    if (below != null) {
+      final ghost = Paint()..color = Tokens.mix(t.ink, 0.22, t.panel);
+      for (final w in wallsOf(below!, FoundationSpec(bearingMin: bearingMin))) {
+        if (w.role == WallRole.temporary) continue;
+        // Inner walls only: the outer ones lie under this floor's own.
+        if (w.segment.axis.kind == 'boundary') continue;
+        canvas.drawRect(rectangle(w.rect, size), ghost);
+      }
+    }
+    for (final hole in belowOpenings) {
+      final r = rectangle(hole, size);
+      canvas.drawRect(r, Paint()..color = t.panel);
+      final line = Paint()
+        ..color = t.accent
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = px(1.4);
+      dashedRect(canvas, r, line, dash: 6, gap: 4);
+      canvas.drawLine(r.topLeft, r.bottomRight, line..strokeWidth = px(0.8));
+      canvas.drawLine(r.topRight, r.bottomLeft, line);
+      if (belowLabel != null && r.width > 40)
+        label(canvas, belowLabel!, r.center);
+    }
+  }
+
   void dashedLine(Canvas canvas, Offset a, Offset b, Paint paint,
       {double dash = 5, double gap = 4}) {
     final length = (b - a).distance;
@@ -253,6 +289,7 @@ class FloorPlanPainter extends CustomPainter {
               (entry.key == null ? Tokens.mix(t.line, 0.35, t.panel) : t.room);
       canvas.drawPath(entry.value, paint);
     }
+    drawBelow(canvas, size);
     if (showGridDimensions)
       for (final entry in base.owners.entries) {
         final c = entry.key;

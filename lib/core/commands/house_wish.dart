@@ -118,13 +118,14 @@ Map<String, Object?> wishSpec(
                 : (k.least + (x1 - floor) * k.weight / total) ~/ 100 * 100;
         final n = counts[type] = (counts[type] ?? 0) + 1;
         final id = '$type$n';
-        final many = types.where((t) => t == type).length > 1 ||
-            (counts[type] ?? 0) > 1;
+        final many = [...day, ...night].where((t) => t == type).length > 1;
+        // Upstairs the room people sit in is a family room.
+        final label =
+            type == 'living' && !ground ? names['family'] ?? names[type] : names[type];
         rooms.add({
           'id': id,
           'type': type,
-          if (names[type] != null)
-            'name': many ? '${names[type]} $n' : names[type],
+          if (label != null) 'name': many ? '$label $n' : label,
           'x_mm': x,
           'y_mm': y,
           'w_mm': w,

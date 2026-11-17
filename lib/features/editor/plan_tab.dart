@@ -277,9 +277,12 @@ extension _PlanTab on _HouseEditorState {
 
   List<Widget> toolButtons() => [
         for (final (key, widget) in keyedTools())
+          // A room or stair being slid into place is the box tool
+          // underneath; its button stays in the sheet meanwhile.
           if (!phoneTools ||
               !secondaryTools.containsKey(key) ||
-              secondaryTools[key]!.contains(tool))
+              (secondaryTools[key]!.contains(tool) &&
+                  !(key == 'box' && stamping)))
             widget
       ];
 
@@ -296,7 +299,7 @@ extension _PlanTab on _HouseEditorState {
       })),
       // A room with a use and a size, slid into place: the way most
       // people think of a house, so it comes before drawing walls.
-      ('room', basicTool(Icons.add_home_outlined, '加房间', stamping, addRoomBySize)),
+      ('room', basicTool(Icons.add_home_outlined, '加房间', stamping && !stampStair, addRoomBySize)),
       ('wall', basicTool(Icons.add_outlined, '墙体', tool == EditorTool.drawWall, startWallDrawing)),
       if (tool == EditorTool.drawWall)
         ('freeWall', basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
@@ -309,7 +312,7 @@ extension _PlanTab on _HouseEditorState {
         view3d = false;
         tool = EditorTool.split;
       })),
-      ('box', basicTool(Icons.crop_square, '拖动划房', tool == EditorTool.box, () {
+      ('box', basicTool(Icons.crop_square, '拖动划房', tool == EditorTool.box && !stamping, () {
         view3d = false;
         tool = EditorTool.box;
         roomStamp = null;

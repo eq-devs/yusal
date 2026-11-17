@@ -117,7 +117,7 @@ class _HousesView extends StatelessWidget {
                   Wrap(spacing: YSpace.md, runSpacing: YSpace.sm, children: [
                     FilledButton.icon(
                         key: const Key('designs-new'),
-                        onPressed: list.create,
+                        onPressed: list.createFromTemplate,
                         icon: const Icon(Icons.add, size: 20),
                         label: Text(tr3('新建设计', 'Жаңа жоба', 'Новый проект'))),
                     OutlinedButton.icon(

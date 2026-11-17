@@ -41,6 +41,7 @@ class HouseWish {
             for (final t in RoomType.values)
               if (t != RoomType.custom) t.name: roomTypeName(t),
             'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл'),
+            'family': tr3('起居室', 'Отбасы бөлмесі', 'Общая комната'),
           });
 
   /// The wish as one sentence in the app's language, for the assistant
@@ -97,6 +98,14 @@ Future<HouseWish?> showHouseWizard(BuildContext context,
             Widget extra(String label, bool value, void Function(bool) set) =>
                 FilterChip(
                     label: Text(label),
+                    // A chosen chip is dark: its words take the light
+                    // colour the number chips use.
+                    labelStyle: value
+                        ? ChipTheme.of(context).secondaryLabelStyle
+                        : null,
+                    checkmarkColor: value
+                        ? ChipTheme.of(context).secondaryLabelStyle?.color
+                        : null,
                     selected: value,
                     onSelected: (v) => update(() => set(v)));
             Widget size(TextEditingController c, String label) => Expanded(

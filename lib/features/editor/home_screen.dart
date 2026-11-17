@@ -864,8 +864,10 @@ class _HouseHomeState extends State<HouseHome>
               style: TextStyle(color: t.muted)),
           const SizedBox(height: 16),
           Wrap(spacing: 10, runSpacing: 10, children: [
+            // A new design starts from the choice of how: a few questions,
+            // a size, a sketch or a template.
             FilledButton.icon(
-                onPressed: create,
+                onPressed: createFromTemplate,
                 icon: const Icon(Icons.add),
                 label: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),

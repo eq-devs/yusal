@@ -204,6 +204,9 @@ void main() {
       expect(find.text('Найти мастеров'), findsOneWidget);
       await t.tap(find.byKey(const Key('designs-new')));
       await t.pumpAndSettle();
+      // The ways to start, then the one that asks for a size.
+      await t.tap(find.text('Начать с размеров'));
+      await t.pumpAndSettle();
       expect(find.text('Название проекта'), findsOneWidget);
       expect(find.text('Ширина (слева направо)'), findsOneWidget);
       // Nothing Kazakh is left in the dialog.

@@ -191,8 +191,10 @@ class FloorPlanPainter extends CustomPainter {
       dashedRect(canvas, r, line, dash: 6, gap: 4);
       canvas.drawLine(r.topLeft, r.bottomRight, line..strokeWidth = px(0.8));
       canvas.drawLine(r.topRight, r.bottomLeft, line);
+      // Low in the hole, clear of the name of the room around it.
       if (belowLabel != null && r.width > 40)
-        label(canvas, belowLabel!, r.center);
+        label(canvas, belowLabel!,
+            Offset(r.center.dx, r.bottom - math.min(14, r.height / 4)));
     }
   }
 

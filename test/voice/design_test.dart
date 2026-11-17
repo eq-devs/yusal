@@ -221,4 +221,73 @@ void main() {
             .map((a) => a.id),
         isNot(contains('design.add_floor')));
   });
+
+  testWidgets('stairs and floors are spoken into place', (t) async {
+    t.view.physicalSize = const Size(844, 390);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    var sequence = 0;
+    final doc = createHouse(
+        name: '楼梯',
+        width: 10000,
+        depth: 12000,
+        columns: 1,
+        rows: 1,
+        initialRoom: true,
+        timestamp: '2026-11-17T00:00:00Z',
+        newId: () => 'st${sequence++}');
+    await t.pumpWidget(MaterialApp(
+        home: HouseEditor(
+            entry: ProjectEntry('project', doc),
+            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpAndSettle();
+    final host = VoiceScreens.current! as DesignHost;
+
+    // No floor above yet: said so, nothing placed.
+    final early = await say('design.add_stair');
+    expect(early.ok, isFalse);
+    expect(early.say['message'], contains('上方'));
+    expect((await say('design.delete_stair')).code, noStair);
+
+    // 二楼和一楼一样, then a stair with nothing else said.
+    expect((await say('design.copy_floor')).ok, isTrue);
+    await t.pump();
+    expect(host.document.floors, hasLength(2));
+    expect(host.document.floors.last.rooms, hasLength(1));
+    final placed = await say('design.add_stair');
+    expect(placed.ok, isTrue, reason: '${placed.say}');
+    expect(placed.changed, hasLength(1));
+    await t.pump();
+    expect(shown('stair').keys, ['s1']);
+    expect(VoiceScreens.current!.scene, contains('s1 stair U x0 y0 2400x3600'));
+    expect(host.document.floors.first.rooms, hasLength(1));
+
+    // Moved to the north-east corner; it keeps its size.
+    final moved = await say(
+        'design.move_stair', {'stair': 's1', 'x_mm': 7600, 'y_mm': 8400});
+    expect(moved.ok, isTrue, reason: '${moved.say}');
+    await t.pump();
+    expect(VoiceScreens.current!.scene,
+        contains('s1 stair U x7600 y8400 2400x3600'));
+
+    // Upstairs the hole it comes up through is in the scene.
+    expect((await say('editor.show_floor', {'floor': 'f2'})).ok, isTrue);
+    await t.pump();
+    expect(VoiceScreens.current!.scene,
+        contains('stair opening from the floor below'));
+    expect((await say('editor.show_floor', {'floor': 'f1'})).ok, isTrue);
+    await t.pump();
+
+    expect((await say('design.set_stair', {'turn': 'right'})).ok, isTrue);
+    expect((await say('design.delete_stair')).ok, isTrue);
+    await t.pump();
+    expect(host.document.floors.first.stairs, isEmpty);
+    expect(shown('stair'), isEmpty);
+    // One sentence back.
+    expect((await say('editor.undo')).ok, isTrue);
+    await t.pump();
+    expect(host.document.floors.first.stairs, hasLength(1));
+    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpAndSettle();
+  });
 }

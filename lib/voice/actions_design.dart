@@ -134,6 +134,23 @@ PlanRect _bounds(FloorBase base, String roomId) {
           .toDouble());
 }
 
+/// Failure code when a stair is asked about on a floor that has none.
+const noStair = 'no_stair_here';
+
+Future<ActionResult> get _noStair async => const ActionResult.fail(noStair);
+
+/// The stair named, else the one on the floor being edited.
+Stair? _stair(Args args) {
+  final host = _host!;
+  final floor =
+      host.document.floors.firstWhere((f) => f.id == host.currentFloorId);
+  if (args.has('stair')) {
+    final id = args.id('stair');
+    return floor.stairs.where((s) => s.id == id).firstOrNull;
+  }
+  return floor.stairs.firstOrNull;
+}
+
 Set<String> _rooms() => {
       for (final f in _host!.document.floors)
         for (final r in f.rooms) r.id
@@ -248,6 +265,149 @@ final designActions = [
     when: _inEditor,
     risk: Risk.undoable,
     run: (ctx, args) => _design('AddFloor', {'floorId': _floor(args)}),
+  ),
+  AppAction(
+    id: 'design.copy_floor',
+    title: const L3('照这一层再盖一层', 'Қабатты көшіріп қосу',
+        'Добавить этаж как этот'),
+    examples: const L3('二楼和一楼一样', 'Екінші қабат біріншідей болсын',
+        'Сделай второй этаж таким же, как первый'),
+    params: const {'floor': Param.entity('floor', optional: true)},
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) => _design('CopyFloor', {'floorId': _floor(args)}),
+  ),
+  AppAction(
+    id: 'design.add_stair',
+    title: const L3('放一部楼梯', 'Баспалдақ қою', 'Поставить лестницу'),
+    examples: const L3('在西北角放一部楼梯', 'Солтүстік-батыс бұрышқа баспалдақ қой',
+        'Поставь лестницу в северо-западном углу'),
+    // The rectangle the stair takes up, south-west corner and size. Left
+    // out, a two-flight stair goes in the first corner where it fits.
+    params: {
+      'floor': const Param.entity('floor', optional: true),
+      'x_mm': const Param.integer(optional: true),
+      'y_mm': const Param.integer(optional: true),
+      'w_mm': const Param.integer(optional: true),
+      'd_mm': const Param.integer(optional: true),
+      'type': Param.choice([for (final t in StairType.values) t.name],
+          optional: true),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) async {
+      final host = _host!;
+      final floorId = _floor(args);
+      final fp = host.document.footprint;
+      final type =
+          args.has('type') ? StairType.values.byName(args.choice('type')) : null;
+      Set<String> stairs() => {
+            for (final f in host.document.floors)
+              for (final s in f.stairs) s.id
+          };
+      final before = stairs();
+      final sizes = args.has('w_mm') && args.has('d_mm')
+          ? [(args.integer('w_mm'), args.integer('d_mm'))]
+          : const [(2400, 3600), (3600, 2400), (1200, 4800), (4800, 1200)];
+      ActionResult? last;
+      for (final (w, d) in sizes) {
+        final spots = args.has('x_mm') && args.has('y_mm')
+            ? [(args.integer('x_mm'), args.integer('y_mm'))]
+            : [
+                (0, 0),
+                (fp.width - w, 0),
+                (0, fp.depth - d),
+                (fp.width - w, fp.depth - d)
+              ];
+        for (final (x, y) in spots) {
+          last = await _design('PlaceStair', {
+            'floorId': floorId,
+            'left': x,
+            'bottom': y,
+            'right': x + w,
+            'top': y + d,
+            if (type != null) 'type': type,
+          });
+          if (last.ok)
+            return ActionResult.ok(changed: [...stairs().difference(before)]);
+        }
+      }
+      return last!;
+    },
+  ),
+  AppAction(
+    id: 'design.move_stair',
+    title: const L3('挪楼梯或改大小', 'Баспалдақты жылжыту', 'Передвинуть лестницу'),
+    examples: const L3('把楼梯挪到东北角', 'Баспалдақты солтүстік-шығыс бұрышқа жылжыт',
+        'Передвинь лестницу в северо-восточный угол'),
+    params: const {
+      'stair': Param.entity('stair', optional: true),
+      'x_mm': Param.integer(),
+      'y_mm': Param.integer(),
+      'w_mm': Param.integer(optional: true),
+      'd_mm': Param.integer(optional: true),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) {
+      final stair = _stair(args);
+      if (stair == null) return _noStair;
+      final host = _host!;
+      final axes = host.floorBase.axes;
+      final at = resolveRect(axes, stair.region).rect!;
+      final x = args.integer('x_mm'), y = args.integer('y_mm');
+      return _design('PlaceStair', {
+        'floorId': host.currentFloorId,
+        'stairId': stair.id,
+        'left': x,
+        'bottom': y,
+        'right': x + (args.has('w_mm') ? args.integer('w_mm') : at.right - at.left),
+        'top': y + (args.has('d_mm') ? args.integer('d_mm') : at.top - at.bottom),
+      });
+    },
+  ),
+  AppAction(
+    id: 'design.set_stair',
+    title: const L3('换楼梯样式', 'Баспалдақ түрін өзгерту', 'Сменить вид лестницы'),
+    examples: const L3('楼梯换成 L 型', 'Баспалдақты L тәрізді қыл',
+        'Сделай лестницу Г-образной'),
+    params: {
+      'stair': const Param.entity('stair', optional: true),
+      'type': Param.choice([for (final t in StairType.values) t.name],
+          optional: true),
+      // The side the first step is on, and which way it turns.
+      'start': Param.choice([for (final e in StairEdge.values) e.name],
+          optional: true),
+      'turn': Param.choice([for (final t in StairTurn.values) t.name],
+          optional: true),
+    },
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) {
+      final stair = _stair(args);
+      if (stair == null) return _noStair;
+      return _design('UpdateStair', {
+        'stairId': stair.id,
+        if (args.has('type')) 'type': args.choice('type'),
+        if (args.has('start')) 'startEdge': args.choice('start'),
+        if (args.has('turn')) 'turn': args.choice('turn'),
+      }, changed: [
+        stair.id
+      ]);
+    },
+  ),
+  AppAction(
+    id: 'design.delete_stair',
+    title: const L3('拆掉楼梯', 'Баспалдақты алып тастау', 'Убрать лестницу'),
+    examples: const L3('把楼梯删掉', 'Баспалдақты алып таста', 'Убери лестницу'),
+    params: const {'stair': Param.entity('stair', optional: true)},
+    when: _inEditor,
+    risk: Risk.undoable,
+    run: (ctx, args) {
+      final stair = _stair(args);
+      if (stair == null) return _noStair;
+      return _design('RemoveStair', {'stairId': stair.id});
+    },
   ),
   AppAction(
     id: 'design.set_floor_height',

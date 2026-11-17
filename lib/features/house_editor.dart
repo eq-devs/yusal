@@ -182,6 +182,9 @@ class _HouseEditorState extends State<HouseEditor>
             .indexed)
           Entity('furniture', f.id,
               alias: 'u${i + 1}', title: furnitureName(f.kind)),
+        for (final (i, s) in floor.stairs.indexed)
+          Entity('stair', s.id,
+              alias: 's${i + 1}', title: tr3('楼梯', 'Баспалдақ', 'Лестница')),
       ];
 
   @override

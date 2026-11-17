@@ -893,6 +893,185 @@
     }
   },
   {
+    "name": "design.copy_floor",
+    "title": {
+      "zh": "照这一层再盖一层",
+      "kk": "Қабатты көшіріп қосу",
+      "ru": "Добавить этаж как этот"
+    },
+    "examples": {
+      "zh": "二楼和一楼一样",
+      "kk": "Екінші қабат біріншідей болсын",
+      "ru": "Сделай второй этаж таким же, как первый"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floor": {
+          "type": "string",
+          "entity": "floor"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "design.add_stair",
+    "title": {
+      "zh": "放一部楼梯",
+      "kk": "Баспалдақ қою",
+      "ru": "Поставить лестницу"
+    },
+    "examples": {
+      "zh": "在西北角放一部楼梯",
+      "kk": "Солтүстік-батыс бұрышқа баспалдақ қой",
+      "ru": "Поставь лестницу в северо-западном углу"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floor": {
+          "type": "string",
+          "entity": "floor"
+        },
+        "x_mm": {
+          "type": "integer"
+        },
+        "y_mm": {
+          "type": "integer"
+        },
+        "w_mm": {
+          "type": "integer"
+        },
+        "d_mm": {
+          "type": "integer"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "straight",
+            "L",
+            "U"
+          ]
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "design.move_stair",
+    "title": {
+      "zh": "挪楼梯或改大小",
+      "kk": "Баспалдақты жылжыту",
+      "ru": "Передвинуть лестницу"
+    },
+    "examples": {
+      "zh": "把楼梯挪到东北角",
+      "kk": "Баспалдақты солтүстік-шығыс бұрышқа жылжыт",
+      "ru": "Передвинь лестницу в северо-восточный угол"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "stair": {
+          "type": "string",
+          "entity": "stair"
+        },
+        "x_mm": {
+          "type": "integer"
+        },
+        "y_mm": {
+          "type": "integer"
+        },
+        "w_mm": {
+          "type": "integer"
+        },
+        "d_mm": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x_mm",
+        "y_mm"
+      ]
+    }
+  },
+  {
+    "name": "design.set_stair",
+    "title": {
+      "zh": "换楼梯样式",
+      "kk": "Баспалдақ түрін өзгерту",
+      "ru": "Сменить вид лестницы"
+    },
+    "examples": {
+      "zh": "楼梯换成 L 型",
+      "kk": "Баспалдақты L тәрізді қыл",
+      "ru": "Сделай лестницу Г-образной"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "stair": {
+          "type": "string",
+          "entity": "stair"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "straight",
+            "L",
+            "U"
+          ]
+        },
+        "start": {
+          "type": "string",
+          "enum": [
+            "bottom",
+            "top",
+            "left",
+            "right"
+          ]
+        },
+        "turn": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right"
+          ]
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "design.delete_stair",
+    "title": {
+      "zh": "拆掉楼梯",
+      "kk": "Баспалдақты алып тастау",
+      "ru": "Убрать лестницу"
+    },
+    "examples": {
+      "zh": "把楼梯删掉",
+      "kk": "Баспалдақты алып таста",
+      "ru": "Убери лестницу"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "stair": {
+          "type": "string",
+          "entity": "stair"
+        }
+      },
+      "required": []
+    }
+  },
+  {
     "name": "design.set_floor_height",
     "title": {
       "zh": "改层高",

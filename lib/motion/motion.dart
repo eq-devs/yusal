@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:cue/cue.dart' as cue;
 import 'package:motor/motor.dart' as motor;
 
+import '../voice/voice_overlay.dart' show VoiceBar;
 import 'motion_tokens.dart';
 
 export 'motion_stack.dart';
@@ -118,6 +119,8 @@ Future<T?> showMotionSheet<T>({
 }) {
   final reduced = Motion.reduced(context);
   if (haptic) HapticFeedback.selectionClick();
+  // The assistant's orb steps aside: a sheet's own buttons are under it.
+  VoiceBar.hidden.value++;
   return showModalBottomSheet<T>(
       context: context,
       builder: (context) => StaggerScope(
@@ -143,7 +146,7 @@ Future<T?> showMotionSheet<T>({
       // Reduce motion: no slide, the sheet is simply there.
       sheetAnimationStyle: sheetAnimationStyle ??
           (reduced ? AnimationStyle.noAnimation : Motion.sheetStyle),
-      requestFocus: requestFocus);
+      requestFocus: requestFocus).whenComplete(() => VoiceBar.hidden.value--);
 }
 
 /// Fades its child in once over [Motion.fadeIn].

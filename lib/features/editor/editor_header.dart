@@ -163,6 +163,7 @@ extension _EditorHeader on _HouseEditorState {
             saveButton,
             saveIndicator(),
             more,
+            const VoiceSlot(),
             const SizedBox(width: 8),
             language,
             const SizedBox(width: 8),
@@ -175,16 +176,23 @@ extension _EditorHeader on _HouseEditorState {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
           Row(children: [back, Expanded(child: title), history_, more]),
-          SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(12, 2, 4, 4),
-              child: Row(children: [
-                floors,
-                floorOps,
-                sizeButton,
-                saveButton,
-                saveIndicator(),
-              ])),
+          // The assistant's orb has its place at the end of this row,
+          // off the drawing and the tools.
+          Row(children: [
+            Expanded(
+                child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.fromLTRB(12, 2, 4, 4),
+                    child: Row(children: [
+                      floors,
+                      floorOps,
+                      sizeButton,
+                      saveButton,
+                      saveIndicator(),
+                    ]))),
+            const Padding(
+                padding: EdgeInsets.only(right: 8), child: VoiceSlot()),
+          ]),
         ]));
   }
 
@@ -211,6 +219,7 @@ extension _EditorHeader on _HouseEditorState {
           Expanded(
               child: TabStrip(
                   tabs: editorTabs, current: tab, onSelect: showTab)),
+          const VoiceSlot(size: 40),
           IconButton(
               tooltip: '撤销'.trKey('Болдырмау', 'Отменить'),
               visualDensity: VisualDensity.compact,

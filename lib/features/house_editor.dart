@@ -54,6 +54,7 @@ import '../voice/actions_houses.dart';
 import '../voice/scene.dart';
 import '../voice/screen.dart';
 import '../voice/session.dart';
+import '../voice/voice_overlay.dart';
 import 'house_wizard.dart';
 
 part 'editor/roof_picker.dart';

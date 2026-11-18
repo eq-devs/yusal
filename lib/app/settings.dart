@@ -90,6 +90,9 @@ String tr3(String zh, String kk, String ru) =>
       AppLang.ru => ru,
     };
 
+/// Between items of a list: 、 in Chinese, a comma in Kazakh and Russian.
+String get listSep => tr3('、', ', ', ', ');
+
 /// Kazakh writes decimals with a comma.
 String dec(String number) => isKk ? number.replaceAll('.', ',') : number;
 

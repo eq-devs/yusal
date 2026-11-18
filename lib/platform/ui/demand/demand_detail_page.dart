@@ -238,7 +238,7 @@ class _DemandDetailState extends State<_DemandDetail>
         const SizedBox(height: 12),
       ],
       InfoRow(tr3('工种', 'Мамандық', 'Специальность'),
-          v.trades.map(tradeName).join('、'),
+          v.trades.map(tradeName).join(listSep),
           icon: Icons.handyman_outlined),
       InfoRow(tr3('开工', 'Басталуы', 'Начало'), fmtDay(v.startDate),
           icon: Icons.event_outlined),
@@ -399,7 +399,7 @@ class _DemandDetailState extends State<_DemandDetail>
   List<Widget> _contract(BuildContext context, ContractTerms c) => [
         SectionTitle(tr3('承包范围', 'Мердігерлік көлемі', 'Объём подряда')),
         InfoRow(tr3('范围', 'Көлемі', 'Объём'),
-            '${scopeKindName(c.scopeKind)}${c.stages.isEmpty ? '' : ' · ${c.stages.map(stageLabel).join('、')}'}'),
+            '${scopeKindName(c.scopeKind)}${c.stages.isEmpty ? '' : ' · ${c.stages.map(stageLabel).join(listSep)}'}'),
         InfoRow(tr3('人工／材料', 'Жұмыс / материал', 'Работа / материалы'),
             materialName(c.materials)),
         if (c.targetDays != null)
@@ -460,7 +460,7 @@ class _DemandDetailState extends State<_DemandDetail>
                     if (vis.quantities) tr3('工程量', 'көлем', 'объёмы'),
                     if (vis.plan) tr3('平面图', 'жоспар', 'план'),
                     if (vis.render) tr3('效果图', 'көрініс', 'визуализация'),
-                  ].join('、')}. ${tr3('完整 .house 文件不公开。', '.house файлы жарияланбайды.', 'Файл .house не публикуется.')}',
+                  ].join(listSep)}. ${tr3('完整 .house 文件不公开。', '.house файлы жарияланбайды.', 'Файл .house не публикуется.')}',
                   style: TextStyle(color: t.muted, fontSize: YFont.caption))),
       ])),
     ];

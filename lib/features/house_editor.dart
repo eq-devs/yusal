@@ -717,7 +717,7 @@ class _HouseEditorState extends State<HouseEditor>
                                             newId: () => const Uuid().v4(),
                                             now: () => 'unused'));
                                     if (result is Rejected) {
-                                      update(() => error = result.message);
+                                      update(() => error = coreMessage(result.message));
                                       return;
                                     }
                                     Navigator.pop(context);

@@ -105,7 +105,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
     if (c != null) {
       scope.text = c.stages.isEmpty
           ? scopeKindName(c.scopeKind)
-          : c.stages.map(stageLabel).join('、');
+          : c.stages.map(stageLabel).join(listSep);
       if (c.targetDays != null) days.text = '${c.targetDays}';
     }
     final e = widget.existing;

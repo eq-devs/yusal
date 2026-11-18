@@ -173,7 +173,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   ? tr3('团队名称', 'Бригада атауы', 'Название бригады')
                   : tr3('姓名', 'Аты-жөні', 'Имя')),
           picker(tr3('工种', 'Мамандық', 'Специальности'),
-              trades.map(tradeName).join('、'), () async {
+              trades.map(tradeName).join(listSep), () async {
             final v = await pickMany<String>(
                 context,
                 tr3('工种', 'Мамандық', 'Специальности'),
@@ -182,7 +182,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
             if (v != null) setState(() => trades = v);
           }),
           picker(
-              tr3('服务地区', 'Аймақ', 'Районы'), regions.map(regionName).join('、'),
+              tr3('服务地区', 'Аймақ', 'Районы'), regions.map(regionName).join(listSep),
               () async {
             final v = await pickMany<String>(
                 context,

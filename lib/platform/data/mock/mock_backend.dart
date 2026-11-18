@@ -742,6 +742,8 @@ class MockBackend implements PlatformRepositories {
 
   @override
   Future<Demand> resume(String demandId) => _io(() {
+        // Showing a listing again is publishing.
+        _requireActive();
         final d = _owned(demandId);
         if (d.status == DemandStatus.found) {
           return demands[d.id] = _fire(d, DemandEvent.resume).copyWith(
@@ -754,6 +756,7 @@ class MockBackend implements PlatformRepositories {
 
   @override
   Future<Demand> renew(String demandId) => _io(() {
+        _requireActive();
         final d = _owned(demandId);
         return demands[d.id] = d.copyWith(
             status: _next(demandMachine, d.status, DemandEvent.renew),

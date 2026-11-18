@@ -414,7 +414,7 @@ class _PostPageState extends State<PostPage> {
                                               const SizedBox(width: 6),
                                               Expanded(
                                                   child: Text(
-                                                      '${tr3('正在招', 'Іздеуде', 'Ищут')}：${open.map((d) => d.current.title).join('、')}',
+                                                      '${tr3('正在招：', 'Іздеуде: ', 'Ищут: ')}${open.map((d) => d.current.title).join(listSep)}',
                                                       style: TextStyle(
                                                           color: t.accent,
                                                           fontWeight: FontWeight

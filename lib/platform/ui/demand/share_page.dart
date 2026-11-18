@@ -147,7 +147,7 @@ class _PublicPreview extends StatelessWidget {
           const SizedBox(height: 8),
           Text(budgetText(v.budget),
               style: const TextStyle(fontWeight: FontWeight.w700)),
-          Text(v.trades.map(tradeName).join('、')),
+          Text(v.trades.map(tradeName).join(listSep)),
           if (v.description.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(v.description),

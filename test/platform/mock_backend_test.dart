@@ -590,6 +590,27 @@ void main() {
       expect(detail.audit.map((e) => e.action), containsAll(['restrict', 'unrestrict']));
     });
 
+    test('a restricted owner cannot show a paused listing again', () async {
+      final b = backend();
+      final d = await publishAsOwner(b);
+      if (b.demands[d.id]!.status != DemandStatus.open) {
+        b.signInAs(SeedIds.admin);
+        await b.approve(d.id);
+        b.signInAs(SeedIds.owner);
+      }
+      await b.pause(d.id);
+      b.signInAs(SeedIds.admin);
+      await b.setRestriction(SeedIds.owner, true, 'code:spam');
+      b.signInAs(SeedIds.owner);
+      for (final f in [b.resume, b.renew]) {
+        await expectLater(
+            f(d.id),
+            throwsA(predicate(
+                (e) => (e as ApiFailure).code == ApiCodes.restricted)));
+      }
+      expect(b.demands[d.id]!.status, DemandStatus.paused);
+    });
+
     test('batch decisions report what changed meanwhile', () async {
       final b = backend();
       b.autoReviewDelay = null;

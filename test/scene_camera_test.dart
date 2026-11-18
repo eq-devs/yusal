@@ -124,4 +124,24 @@ void main() {
         expect(math.max(maxX, maxY), greaterThan(0.8), reason: reason);
       }
   });
+
+  testWidgets('zooming in stops before the camera enters the house',
+      (t) async {
+    final s = await mount(t);
+    bool inside(Vec3 e) {
+      final (lo, hi) = s.model.bounds;
+      return e.x > lo.x && e.x < hi.x && e.y > lo.y && e.y < hi.y &&
+          e.z > lo.z && e.z < hi.z;
+    }
+
+    for (final (yaw, pitch) in [(s.yaw, s.pitch), (0.3, 0.12), (2.0, 0.5)]) {
+      s.yaw = yaw;
+      s.pitch = pitch;
+      for (var i = 0; i < 40; i++) s.zoomAt(const Offset(400, 300), s.distance * 0.7);
+      s.setState(() {});
+      await t.pump();
+      expect(inside(s.camera.eye), isFalse);
+      expect(s.distance, greaterThan(3));
+    }
+  });
 }

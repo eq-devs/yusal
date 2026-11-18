@@ -297,7 +297,10 @@ class ShellBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sections = destinations.length - 1;
+    // With the assistant, its orb takes the place at the right end and Me
+    // joins the other sections; without it Me keeps that place.
+    final voice = VoiceSession.current != null;
+    final sections = voice ? destinations.length : destinations.length - 1;
     return SafeArea(
         top: false,
         minimum: const EdgeInsets.only(bottom: 8),
@@ -329,23 +332,21 @@ class ShellBar extends StatelessWidget {
                                         onTap: () => onSelect(i)),
                                 ]))),
                         const SizedBox(width: 10),
-                        // The assistant's orb has its own place in the
-                        // bar, between the sections and Me.
-                        VoiceSlot(size: lerpDouble(52, 44, t)!),
-                        if (VoiceSession.current != null)
-                          const SizedBox(width: 10),
-                        _GlassPill(
-                            height: height,
-                            width: lerpDouble(72, 50, t),
-                            child: Row(children: [
-                              ShellBarTab(
-                                  icon: destinations[sections].$1,
-                                  activeIcon: destinations[sections].$2,
-                                  label: destinations[sections].$3,
-                                  selected: selected == sections,
-                                  fold: t,
-                                  onTap: () => onSelect(sections)),
-                            ])),
+                        if (voice)
+                          VoiceSlot(size: lerpDouble(52, 44, t)!)
+                        else
+                          _GlassPill(
+                              height: height,
+                              width: lerpDouble(72, 50, t),
+                              child: Row(children: [
+                                ShellBarTab(
+                                    icon: destinations[sections].$1,
+                                    activeIcon: destinations[sections].$2,
+                                    label: destinations[sections].$3,
+                                    selected: selected == sections,
+                                    fold: t,
+                                    onTap: () => onSelect(sections)),
+                              ])),
                       ]));
                 })));
   }

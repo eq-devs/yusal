@@ -7,11 +7,27 @@ import 'package:yusal/platform/data/mock/mock_backend.dart';
 import 'package:yusal/voice/action.dart';
 import 'package:yusal/voice/executor.dart';
 import 'package:yusal/voice/registry.dart';
+import 'package:yusal/voice/screen.dart';
 import 'package:yusal/voice/session.dart';
 import 'package:yusal/voice/speech.dart';
 import 'package:yusal/voice/voice_overlay.dart';
 
 import 'session_test.dart' show ScriptedBackend, act;
+
+/// A page the assistant can act on, so its orb shows.
+class VoicePage extends StatefulWidget {
+  const VoicePage({super.key, this.child = const Text('page')});
+  final Widget child;
+  @override
+  State<VoicePage> createState() => _VoicePageState();
+}
+
+class _VoicePageState extends State<VoicePage> with VoiceScreen {
+  @override
+  String get screenId => 'test';
+  @override
+  Widget build(BuildContext context) => Scaffold(body: widget.child);
+}
 
 /// A backend that also serves voice, as the real one does.
 class VoiceMock extends MockBackend implements VoiceBackend {
@@ -87,7 +103,7 @@ void main() {
               enabled: enabled,
               audio: audio,
               child: child!),
-          home: const Scaffold(body: Text('page'))));
+          home: const VoicePage()));
 
   testWidgets('typing a request shows what was done and the reply', (t) async {
     final backend = ScriptedBackend([

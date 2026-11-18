@@ -340,6 +340,7 @@ extension _SceneTab on _HouseEditorState {
             tooltip: tr3('更多设置', 'Басқа баптаулар', 'Другие настройки'),
             onPressed: sceneMoreSheet,
             icon: const Icon(Icons.tune, size: 20)),
+        const VoiceSlot(),
       ]),
       if (s.cut) cutSlider(170),
     ];
@@ -350,7 +351,10 @@ extension _SceneTab on _HouseEditorState {
     final c = walkControls();
     final go = c.first as Wrap;
     return [
-      fadeRow(go.children.skip(1).toList()),
+      Row(children: [
+        Expanded(child: fadeRow(go.children.skip(1).toList())),
+        const VoiceSlot(),
+      ]),
       if (history.present.floors.length > 1) c[1],
     ];
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yusal/platform/ui/shell.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/main.dart';
 import 'package:yusal/platform/data/mock/mock_backend.dart';
@@ -68,13 +69,13 @@ void main() {
     await launch(t, size: const Size(412, 915));
     expect(find.byType(NavigationRail), findsNothing);
     for (final label in ['发现', '我的房子', '消息', '我的'])
-      expect(find.widgetWithText(NavigationDestination, label), findsOneWidget);
+      expect(find.widgetWithText(ShellBarTab, label), findsOneWidget);
   });
 
   testWidgets('a wide window has the same four places in a side rail',
       (t) async {
     await launch(t);
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(ShellBar), findsNothing);
     for (final label in ['发现', '我的房子', '消息', '我的'])
       expect(
           find.descendant(
@@ -87,8 +88,8 @@ void main() {
     await t.pumpAndSettle();
     t.view.physicalSize = const Size(412, 915);
     await t.pumpAndSettle();
-    expect(find.byType(NavigationBar), findsOneWidget);
-    expect(t.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+    expect(find.byType(ShellBar), findsOneWidget);
+    expect(t.widget<ShellBar>(find.byType(ShellBar)).selected,
         3);
   });
 

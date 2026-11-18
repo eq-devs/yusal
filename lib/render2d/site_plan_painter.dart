@@ -76,21 +76,26 @@ class SitePlanPainter extends CustomPainter {
     canvas.rotate(angle);
     p.paint(canvas, Offset(-p.width / 2, -p.height / 2));
     canvas.restore();
+    p.dispose();
   }
 
   String _m(double mm) => dec((mm / 1000).toStringAsFixed(1));
 
-  double _textWidth(String value, double font) => (TextPainter(
-          text: TextSpan(
-              text: value,
-              style: TextStyle(
-                  fontFamily: fontBody,
-                  fontFamilyFallback: bodyFallback,
-                  fontSize: font,
-                  fontWeight: FontWeight.w600)),
-          textDirection: TextDirection.ltr)
-        ..layout())
-      .width;
+  double _textWidth(String value, double font) {
+    final p = TextPainter(
+        text: TextSpan(
+            text: value,
+            style: TextStyle(
+                fontFamily: fontBody,
+                fontFamilyFallback: bodyFallback,
+                fontSize: font,
+                fontWeight: FontWeight.w600)),
+        textDirection: TextDirection.ltr)
+      ..layout();
+    final width = p.width;
+    p.dispose();
+    return width;
+  }
 
   void _dim(Canvas canvas, Offset a, Offset b, String text, {bool vertical = false}) {
     final paint = Paint()

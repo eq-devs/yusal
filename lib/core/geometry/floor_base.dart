@@ -99,7 +99,37 @@ class FloorBase {
   }
 }
 
-FloorBase deriveFloorBase(HouseDocument doc, String floorId) {
+/// The last few results of [deriveFloorBase] and `deriveHouse`, by document
+/// identity. Documents and derived geometry are immutable, so the same
+/// document always gives the same result; widgets that derive in `build`
+/// then pay for it once, not on every rebuild. Small and bounded, so the
+/// undo history does not keep a derived copy of every past state alive.
+class DerivedCache<K extends Object, V> {
+  DerivedCache([this.capacity = 6]);
+  final int capacity;
+  final _entries = <(HouseDocument, K, V)>[];
+
+  V get(HouseDocument doc, K key, V Function() compute) {
+    for (var i = _entries.length - 1; i >= 0; i--) {
+      final e = _entries[i];
+      if (identical(e.$1, doc) && e.$2 == key) {
+        if (i != _entries.length - 1) _entries..removeAt(i)..add(e);
+        return e.$3;
+      }
+    }
+    final value = compute();
+    if (_entries.length >= capacity) _entries.removeAt(0);
+    _entries.add((doc, key, value));
+    return value;
+  }
+}
+
+final _floorBases = DerivedCache<String, FloorBase>(8);
+
+FloorBase deriveFloorBase(HouseDocument doc, String floorId) =>
+    _floorBases.get(doc, floorId, () => _deriveFloorBase(doc, floorId));
+
+FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
   final floor = doc.floors.firstWhere((f) => f.id == floorId);
   final axes = resolveFloorAxes(doc, floorId)!;
   final owners = <Cell, String?>{

@@ -45,6 +45,7 @@ class _ExplorePageState extends State<ExplorePage> {
   void _external() {
     final v = widget.segment?.value;
     if (v == null) return;
+    _dropKeyboard();
     setState(() {
       current = v;
       picked = true;
@@ -69,10 +70,18 @@ class _ExplorePageState extends State<ExplorePage> {
     } catch (_) {}
   }
 
-  void select(int i) => setState(() {
-        current = i;
-        picked = true;
-      });
+  void select(int i) {
+    _dropKeyboard();
+    setState(() {
+      current = i;
+      picked = true;
+    });
+  }
+
+  /// A search field on the segment being left keeps its focus while it is
+  /// hidden: the keyboard would stay up over the new segment and type into
+  /// the old one.
+  void _dropKeyboard() => FocusManager.instance.primaryFocus?.unfocus();
 
   @override
   Widget build(BuildContext context) {

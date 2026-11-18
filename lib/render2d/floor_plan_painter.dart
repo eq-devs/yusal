@@ -123,17 +123,23 @@ class FloorPlanPainter extends CustomPainter {
   /// Room names, furniture names and the north arrow; off for thumbnails.
   final bool showLabels;
 
+  /// Room left around the plan when the caller gives no insets. The
+  /// overall dimension chains sit 42 px out with their figures beyond, so
+  /// with dimensions shown each side needs about 60 px or the outer
+  /// figures are cut off at the edge.
+  double get _fitMargin => viewportInsets != EdgeInsets.zero
+      ? 48
+      : showDimensions && !showGridDimensions
+          ? 128
+          : 96;
+
   double scale(Size size) =>
       viewport?.scale ??
       math
           .min(
-              (size.width -
-                      viewportInsets.horizontal -
-                      (viewportInsets == EdgeInsets.zero ? 96 : 48)) /
+              (size.width - viewportInsets.horizontal - _fitMargin) /
                   base.axes.v.last.pos,
-              (size.height -
-                      viewportInsets.vertical -
-                      (viewportInsets == EdgeInsets.zero ? 96 : 48)) /
+              (size.height - viewportInsets.vertical - _fitMargin) /
                   base.axes.h.last.pos)
           .clamp(0.001, 0.4);
   Offset origin(Size size) =>

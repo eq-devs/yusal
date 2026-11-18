@@ -44,6 +44,20 @@ class MemoryFiles implements ProjectFileSystem {
   }
 }
 
+/// Index writes that share one temporary file, as on a phone: a second
+/// write while one is in flight fails.
+class SharedTempFiles extends MemoryFiles {
+  bool writing = false;
+  @override
+  Future<void> writeIndex(String text) async {
+    if (writing) throw const StorageFailure('IO_ERROR', 'index.json.tmp gone');
+    writing = true;
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    index = text;
+    writing = false;
+  }
+}
+
 class MemoryOwners implements ProjectOwners {
   Map<String, String> map = {};
   @override
@@ -133,6 +147,13 @@ void main() {
     expect((await store.openProject(id)).meta.name, doc.meta.name);
     files.failIndex = false;
     await store.rebuildIndex();
+    expect(store.indexWarning, isNull);
+  });
+  test('two lists loading at once do not warn about the index', () async {
+    final files = SharedTempFiles();
+    final store = ProjectStore(fileSystem: files);
+    await store.createProject(doc);
+    await Future.wait([store.listProjects(), store.listProjects()]);
     expect(store.indexWarning, isNull);
   });
   test('known oversized imports are rejected without reading their stream',

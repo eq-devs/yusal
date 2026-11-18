@@ -110,8 +110,13 @@ class _HousesView extends StatelessWidget {
         child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1100),
             child: ListView(
-                padding: const EdgeInsets.fromLTRB(
-                    YSpace.gutter, YSpace.sm, YSpace.gutter, YSpace.huge),
+                // A list given its own padding no longer clears the
+                // floating tab bar by itself: add the bar's height, or the
+                // last row sits under the bar and the page cannot scroll
+                // to it.
+                padding: EdgeInsets.fromLTRB(YSpace.gutter, YSpace.sm,
+                    YSpace.gutter,
+                    YSpace.huge + MediaQuery.paddingOf(context).bottom),
                 children: [
                   // The two ways to start, always in reach.
                   Wrap(spacing: YSpace.md, runSpacing: YSpace.sm, children: [

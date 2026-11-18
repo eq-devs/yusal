@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yusal/platform/ui/widgets.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/platform/data/mock/mock_seed.dart';
 import 'package:yusal/platform/ui/coop/coop_page.dart';
@@ -32,7 +33,7 @@ void main() {
     await t.tap(find.text('提出异议'));
     // Settles: nothing spins while the person types the reason.
     await t.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byType(SheetBody), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     await t.enterText(find.byType(TextField), '还差收尾');
     await t.tap(find.text('确定'));

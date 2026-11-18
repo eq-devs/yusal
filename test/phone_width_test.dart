@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yusal/platform/ui/shell.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/main.dart';
 import 'package:yusal/platform/data/mock/mock_backend.dart';
@@ -56,7 +57,7 @@ void main() {
       await t.drag(find.byType(CustomScrollView).first, const Offset(0, -900));
       await t.pumpAndSettle();
       for (final i in [1, 2, 3]) {
-        await t.tap(find.byType(NavigationDestination).at(i));
+        await t.tap(find.byType(ShellBarTab).at(i));
         await t.pumpAndSettle();
       }
       await t.drag(find.byType(ListView).first, const Offset(0, -900));

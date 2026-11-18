@@ -66,7 +66,14 @@ class ProjectStore {
   /// The index is rebuildable; failure must not hide readable source files.
   String? indexWarning;
 
-  Future<void> _index() async {
+  /// Index writes run one after another. Two at once (the list loading
+  /// twice as an account signs in) share one temporary file: the second
+  /// rename finds it gone and the list warns for nothing.
+  Future<void> _indexing = Future.value();
+
+  Future<void> _index() => _indexing = _indexing.then((_) => _writeIndex());
+
+  Future<void> _writeIndex() async {
     try {
       await files.writeIndex(jsonEncode([
         for (final entry in _entries)

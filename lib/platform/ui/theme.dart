@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/settings.dart';
 import '../../app/tokens.dart';
 import '../../motion/motion.dart';
@@ -276,6 +277,12 @@ ThemeData buildPlatformTheme(YTokens t) {
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           centerTitle: false,
+          // Frosted bars are transparent, from which the app bar would
+          // guess a dark background and paint white status-bar text on
+          // the light page. The icons follow the page's own brightness.
+          systemOverlayStyle: t.dark
+              ? SystemUiOverlayStyle.light
+              : SystemUiOverlayStyle.dark,
           // Detail pages: a back chevron and a plain left-aligned title;
           // the page's own headline carries the weight.
           titleTextStyle: TextStyle(

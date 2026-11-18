@@ -1670,6 +1670,8 @@ class MockBackend implements PlatformRepositories {
   @override
   Future<ChatMessage> sharePhone(String conversationId) => _io(() {
         final me = _me;
+        // Sharing a phone is sending a message.
+        _requireActive();
         final c = _conv(conversationId);
         if (_isBlocked(me, c.otherSide(me)))
           throw const ApiFailure(ApiCodes.blocked);

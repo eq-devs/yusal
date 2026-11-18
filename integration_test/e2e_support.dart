@@ -131,6 +131,9 @@ Future<void> signOut(WidgetTester t, HttpBackend repos) async {
   await home(t);
   await tab(t, '我的');
   await scrollTap(t, find.text('退出登录'));
+  // Signing out asks first.
+  final confirm = find.text('退出');
+  if (confirm.evaluate().isNotEmpty) await tapIt(t, confirm.last);
   expect(repos.currentAccount, isNull);
 }
 

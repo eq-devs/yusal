@@ -611,6 +611,19 @@ void main() {
       expect(b.demands[d.id]!.status, DemandStatus.paused);
     });
 
+    test('a restricted account cannot share its phone in chat', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final c = await b.openConversation(SeedIds.mason);
+      b.signInAs(SeedIds.admin);
+      await b.setRestriction(SeedIds.owner, true, 'code:spam');
+      b.signInAs(SeedIds.owner);
+      await expectLater(
+          b.sharePhone(c.id),
+          throwsA(predicate(
+              (e) => (e as ApiFailure).code == ApiCodes.restricted)));
+    });
+
     test('batch decisions report what changed meanwhile', () async {
       final b = backend();
       b.autoReviewDelay = null;

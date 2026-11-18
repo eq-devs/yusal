@@ -204,10 +204,16 @@ class _PlatformShellState extends State<PlatformShell>
                     Expanded(
                         // The demo notice already sits below the status
                         // bar; neither the pages nor the side rail may
-                        // leave room for it a second time.
-                        child: MediaQuery.removePadding(
-                            context: context,
-                            removeTop: context.isDemo,
+                        // leave room for it a second time. This reads the
+                        // shell's MediaQuery, from above the scaffold, so
+                        // the keyboard inset the scaffold already took off
+                        // has to go again: otherwise each page's own
+                        // scaffold shrinks for the keyboard a second time
+                        // and the page is cut off under its search field.
+                        child: MediaQuery(
+                            data: MediaQuery.of(context)
+                                .removePadding(removeTop: context.isDemo)
+                                .removeViewInsets(removeBottom: true),
                             child: wide
                                 ? Row(children: [
                                 SafeArea(

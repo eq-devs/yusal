@@ -9,6 +9,7 @@ import 'package:yusal/platform/data/mock/mock_backend.dart';
 import 'package:yusal/platform/data/mock/mock_clock.dart';
 import 'package:yusal/platform/data/mock/mock_seed.dart';
 import 'package:yusal/platform/domain/models.dart';
+import 'package:yusal/platform/ui/components.dart';
 import 'package:yusal/platform/ui/demand/publish_page.dart';
 import 'package:yusal/platform/ui/discover/discover_page.dart';
 import 'package:yusal/platform/ui/home/home_page.dart';
@@ -134,5 +135,20 @@ void main() {
     await t.pumpAndSettle();
     expect((await store.listProjects()).length, before + 1);
     expect((await repos.post('post_aigerim'))!.reuseCount, 1);
+  });
+
+  testWidgets('the keyboard shrinks the work tab once, not twice', (t) async {
+    // A phone: 448 x 997 dp, with a 330 dp keyboard.
+    await launch(t, as: SeedIds.mason, size: const Size(448, 997));
+    final work = find.byWidgetPredicate(
+        (w) => w is DiscoverPage && w.people == false);
+    final top = t.getTopLeft(work).dy;
+    await t.tap(find.descendant(of: work, matching: find.byType(SearchField)));
+    t.view.viewInsets = const FakeViewPadding(bottom: 330);
+    await t.pumpAndSettle();
+    // The page reaches the top of the keyboard. Before, the shell handed
+    // the keyboard inset back to the pages, so it was taken off twice and
+    // only the top of the search field was left.
+    expect(top + t.getSize(work).height, closeTo(997 - 330, 0.5));
   });
 }

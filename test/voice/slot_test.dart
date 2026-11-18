@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/app/settings.dart';
+import 'package:yusal/app/ui.dart';
 import 'package:yusal/core/commands/kz_template.dart';
 import 'package:yusal/features/house_editor.dart';
 import 'package:yusal/motion/motion.dart';
@@ -18,7 +19,9 @@ void main() {
   final orb = find.byKey(const Key('voice-button'));
 
   Future<GlobalKey<NavigatorState>> pump(WidgetTester t, Widget home,
-      {List<Object> script = const [], bool introSeen = true}) async {
+      {List<Object> script = const [],
+      bool introSeen = true,
+      bool signedIn = true}) async {
     SharedPreferences.setMockInitialValues(
         {if (introSeen) 'voice-intro-seen': true});
     final navigator = GlobalKey<NavigatorState>();
@@ -27,7 +30,7 @@ void main() {
         builder: (context, child) => AppScope(
             child: VoiceHost(
                 navigator: navigator,
-                repos: VoiceMock(ScriptedBackend([...script])),
+                repos: VoiceMock(ScriptedBackend([...script]), signedIn: signedIn),
                 enabled: true,
                 child: child!)),
         home: home));
@@ -155,6 +158,51 @@ void main() {
     await sheet;
     await t.pumpAndSettle();
     expect(orb, findsOneWidget);
+  });
+
+  testWidgets('signed out, a slot takes no room', (t) async {
+    await pump(t, const VoicePage(child: Center(child: VoiceSlot())),
+        signedIn: false);
+    expect(orb, findsNothing);
+    expect(t.getSize(find.byType(VoiceSlot)), Size.zero);
+  });
+
+  testWidgets('in the 3D view on a phone the orb covers no switch', (t) async {
+    t.view.physicalSize = const Size(390, 844);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    var n = 0;
+    final doc = createKazakhTemplate('2026-11-17T00:00:00Z', () => 'id${n++}');
+    await pump(
+        t,
+        HouseEditor(
+            entry: ProjectEntry('project', doc),
+            store: ProjectStore(fileSystem: MemoryFiles())));
+    for (final tab in ['ext', 'walk']) {
+      await t.tap(find.byKey(ValueKey(tab == 'ext' ? 'group-view' : 'tab-walk')));
+      await t.pump(const Duration(seconds: 1));
+      await t.pump(const Duration(seconds: 1));
+      await t.pump();
+      final at = t.getRect(orb);
+      expect(at, t.getRect(find.byType(VoiceSlot)), reason: tab);
+      for (final finder in [
+        find.byType(IconButton),
+        find.byType(PillToggle),
+        find.byType(ActionChip),
+        find.byType(Btn),
+      ])
+        for (final e in finder.evaluate()) {
+          final box = e.renderObject! as RenderBox;
+          var rect = box.localToGlobal(Offset.zero) & box.size;
+          // Only the part its scrolling row shows.
+          final row = Scrollable.maybeOf(e)?.context.findRenderObject();
+          if (row is RenderBox) {
+            rect = rect.intersect(row.localToGlobal(Offset.zero) & row.size);
+          }
+          expect(rect.overlaps(at.deflate(4)), isFalse,
+              reason: '$tab: ${e.widget.runtimeType} at $rect under $at');
+        }
+    }
   });
 
   for (final size in [

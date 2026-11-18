@@ -1,4 +1,3 @@
-import '../../voice/session.dart';
 import '../../voice/voice_overlay.dart' show VoiceSlot;
 import 'dart:ui' show ImageFilter, lerpDouble;
 
@@ -299,7 +298,7 @@ class ShellBar extends StatelessWidget {
   Widget build(BuildContext context) {
     // With the assistant, its orb takes the place at the right end and Me
     // joins the other sections; without it Me keeps that place.
-    final voice = VoiceSession.current != null;
+    final voice = VoiceSlot.wanted;
     final sections = voice ? destinations.length : destinations.length - 1;
     return SafeArea(
         top: false,

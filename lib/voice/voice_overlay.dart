@@ -749,6 +749,9 @@ class VoiceSlot extends StatefulWidget {
 
   static final _mounted = <_VoiceSlotState>[];
 
+  /// Whether the orb can appear at all: built in and signed in.
+  static bool get wanted => VoiceSession.current?.loggedIn() ?? false;
+
   /// Where the orb goes on screen now, if the page on top keeps a place.
   static Rect? get rect {
     for (final slot in _mounted.reversed) {
@@ -783,9 +786,9 @@ class _VoiceSlotState extends State<VoiceSlot> {
   Widget build(BuildContext context) {
     // Off while another page covers this one.
     onTop = TickerMode.valuesOf(context).enabled;
-    return VoiceSession.current == null
-        ? const SizedBox.shrink()
-        : SizedBox.square(dimension: widget.size);
+    return VoiceSlot.wanted
+        ? SizedBox.square(dimension: widget.size)
+        : const SizedBox.shrink();
   }
 }
 

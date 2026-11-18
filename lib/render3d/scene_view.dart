@@ -956,6 +956,42 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
             walk: widget.walk),
         widget.roomName,
         areaUnit: widget.areaUnit);
+    // A house that grew or shrank (a floor added, walls moved) is framed
+    // again while the view is still the untouched preset.
+    if (framed && !widget.walk && mounted) applyView(widget.view);
+  }
+
+  /// Closest the orbit camera may come to its target along the current
+  /// direction: the eye stays outside the house (above the cut when the
+  /// house is cut open), so zooming or panning never puts it inside a
+  /// wall, where the exterior view shows only wall faces from up close.
+  double get minDistance {
+    var (lo, hi) = model.bounds;
+    final s = widget.settings;
+    if (s.cut) hi = Vec3(hi.x, math.min(hi.y, s.cutHeight), hi.z);
+    const margin = 1.5;
+    lo = lo - const Vec3(margin, margin, margin);
+    hi = hi + const Vec3(margin, margin, margin);
+    final d = Vec3(math.cos(pitch) * math.sin(yaw), math.sin(pitch),
+        math.cos(pitch) * math.cos(yaw));
+    // Where the ray from the target toward the eye leaves the box.
+    var tNear = -double.infinity, tFar = double.infinity;
+    for (final (o, v, a, b) in [
+      (target.x, d.x, lo.x, hi.x),
+      (target.y, d.y, lo.y, hi.y),
+      (target.z, d.z, lo.z, hi.z),
+    ]) {
+      if (v.abs() < 1e-9) {
+        if (o < a || o > b) return 3;
+        continue;
+      }
+      var t0 = (a - o) / v, t1 = (b - o) / v;
+      if (t0 > t1) (t0, t1) = (t1, t0);
+      tNear = math.max(tNear, t0);
+      tFar = math.min(tFar, t1);
+    }
+    if (tFar < math.max(tNear, 0)) return 3;
+    return math.max(3, tFar);
   }
 
   /// The camera still shows a preset view as framed, untouched: when the
@@ -1066,7 +1102,7 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
 
   /// Zoom to [next] keeping the point under [focal] (view-local) still.
   void zoomAt(Offset focal, double next) {
-    next = next.clamp(3.0, 90.0);
+    next = next.clamp(math.min(minDistance, 90.0), 90.0);
     final cam = orbitCamera(target, yaw, pitch, distance);
     final f = viewSize.height / 2 / math.tan(cam.fov / 2);
     final dx = focal.dx - viewSize.width / 2,
@@ -1142,6 +1178,7 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.walk) distance = distance.clamp(minDistance, 90.0);
     painter = ScenePainter(
         model: model,
         camera: camera,

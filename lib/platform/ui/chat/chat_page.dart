@@ -44,6 +44,10 @@ class _ChatPageState extends State<ChatPage>
   @override
   String get screenId => 'chat';
 
+  // The page has its own input and send button where the orb would be.
+  @override
+  bool get showsAssistant => false;
+
   @override
   List<VoiceField> get fields => [
         VoiceField.text('message',

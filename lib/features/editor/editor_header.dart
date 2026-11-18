@@ -182,7 +182,6 @@ extension _EditorHeader on _HouseEditorState {
             saveButton,
             saveIndicator(),
             more,
-            const VoiceSlot(),
             const SizedBox(width: 8),
             language,
             const SizedBox(width: 8),
@@ -195,11 +194,7 @@ extension _EditorHeader on _HouseEditorState {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
           Row(children: [back, Expanded(child: title), history_, more]),
-          // The assistant's orb has its place at the end of this row,
-          // off the drawing and the tools.
-          Row(children: [
-            Expanded(
-                child: SingleChildScrollView(
+          SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.fromLTRB(12, 2, 4, 4),
                     child: Row(children: [
@@ -209,10 +204,7 @@ extension _EditorHeader on _HouseEditorState {
                       sizeButton,
                       saveButton,
                       saveIndicator(),
-                    ]))),
-            const Padding(
-                padding: EdgeInsets.only(right: 8), child: VoiceSlot()),
-          ]),
+                    ])),
         ]));
   }
 

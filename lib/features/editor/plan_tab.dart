@@ -397,8 +397,11 @@ extension _PlanTab on _HouseEditorState {
             for (final c in children)
               if (c is Expanded) c.child else c
           ]);
+    // The assistant's orb has its place at the end of this line, in the
+    // corner it has on other pages and off the tools.
     return Padding(
-        padding: const EdgeInsets.only(top: 6), child: Row(children: children));
+        padding: const EdgeInsets.only(top: 6),
+        child: Row(children: [...children, const VoiceSlot()]));
   }
 
   /// The whole budget in a few characters, e.g. "≈ ₸ 18,4 млн".

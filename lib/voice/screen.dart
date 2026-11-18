@@ -25,6 +25,10 @@ mixin VoiceScreen<T extends StatefulWidget> on State<T> {
   /// Ids of the actions that belong to this page.
   List<String> get actions => const [];
 
+  /// Whether the assistant's orb shows on this page. Off where it would
+  /// only be in the way, as beside a conversation's own input.
+  bool get showsAssistant => true;
+
   /// One line for the language model about what the page shows.
   String get summary => '';
 

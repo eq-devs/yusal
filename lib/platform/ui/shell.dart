@@ -1,3 +1,5 @@
+import '../../voice/session.dart';
+import '../../voice/voice_overlay.dart' show VoiceSlot;
 import 'dart:ui' show ImageFilter, lerpDouble;
 
 import 'package:flutter/material.dart';
@@ -220,6 +222,9 @@ class _PlatformShellState extends State<PlatformShell>
                                             NavigationRailLabelType.all,
                                         groupAlignment: -0.9,
                                         minWidth: 88,
+                                        trailing: const Padding(
+                                            padding: EdgeInsets.only(top: 12),
+                                            child: VoiceSlot(size: 52)),
                                         destinations: [
                                           for (final (icon, selected, label)
                                               in destinations)
@@ -324,6 +329,11 @@ class ShellBar extends StatelessWidget {
                                         onTap: () => onSelect(i)),
                                 ]))),
                         const SizedBox(width: 10),
+                        // The assistant's orb has its own place in the
+                        // bar, between the sections and Me.
+                        VoiceSlot(size: lerpDouble(52, 44, t)!),
+                        if (VoiceSession.current != null)
+                          const SizedBox(width: 10),
                         _GlassPill(
                             height: height,
                             width: lerpDouble(72, 50, t),

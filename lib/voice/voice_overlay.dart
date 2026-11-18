@@ -128,6 +128,8 @@ class _VoiceBarState extends State<VoiceBar>
   Timer? limit;
   // The place the page on top keeps for the orb, if it keeps one.
   Rect? slot;
+  // The page on top is one the assistant can do something on.
+  bool here = false;
   // One turn of the orb, and how loud the voice is (0 to 1).
   late final glow = AnimationController(vsync: this, duration: _calm);
   late final level = AnimationController(vsync: this);
@@ -159,6 +161,8 @@ class _VoiceBarState extends State<VoiceBar>
     s.repos.changes.addListener(_hiddenChanged);
     // The suggestions show only while the field is empty.
     input.addListener(() => setState(() {}));
+    here = VoiceScreens.current?.showsAssistant ?? false;
+    slot = VoiceSlot.rect;
     WidgetsBinding.instance.addPostFrameCallback(_followSlot);
     SharedPreferences.getInstance().then((prefs) {
       if (mounted && prefs.getBool(_introSeen) != true) {
@@ -171,7 +175,13 @@ class _VoiceBarState extends State<VoiceBar>
   void _followSlot(Duration _) {
     if (!mounted) return;
     final now = VoiceSlot.rect;
-    if (now != slot) setState(() => slot = now);
+    final onPage = VoiceScreens.current?.showsAssistant ?? false;
+    if (now != slot || onPage != here) {
+      setState(() {
+        slot = now;
+        here = onPage;
+      });
+    }
     WidgetsBinding.instance.addPostFrameCallback(_followSlot);
   }
 
@@ -353,10 +363,18 @@ class _VoiceBarState extends State<VoiceBar>
     if ((VoiceBar.hidden.value > 0 || !s.loggedIn()) && !active) {
       return const SizedBox.shrink();
     }
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    // At rest it shows only where it can do something (not over a
+    // settings page, a picture, a dialog), and never over someone
+    // typing into the page. A sentence in hand or an answer stays.
+    final answer = bannerShown &&
+        (s.phase == VoicePhase.done || s.phase == VoicePhase.failed);
+    if ((!here || keyboard > 0) && !active && !typing && !answer) {
+      return const SizedBox.shrink();
+    }
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final lang = AppSettings.instance.lang;
-    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     final quiet =
         theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant);
     final failed = s.phase == VoicePhase.failed;
@@ -642,56 +660,82 @@ class _VoiceBarState extends State<VoiceBar>
                                 child: pill)),
     ];
 
+    final orbButton = Semantics(
+    button: true,
+    label: listening
+        ? tr3('说完了', 'Айтып болдым', 'Готово')
+        : tr3(
+            '语音操作', 'Дауыспен басқару', 'Голосовое управление'),
+    child: GestureDetector(
+        key: const Key('voice-button'),
+        onTap: orb,
+        onLongPress: toggleTyping,
+        child: _Orb(
+            size: orbSize,
+            glow: glow,
+            level: level,
+            mood: mood,
+            icon: listening
+                ? Icons.stop_rounded
+                : typing && widget.speech == null
+                    ? Icons.close
+                    // At rest it says what a tap does.
+                    : !active
+                        ? (widget.speech != null
+                            ? Icons.mic
+                            : Icons.auto_awesome)
+                        : null)));
+    final bubbles = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: down ? parts.reversed.toList() : parts);
+    final padding = MediaQuery.viewPaddingOf(context);
+    final edged =
+        Padding(padding: const EdgeInsets.only(right: 16), child: bubbles);
+
     // Transparent: taps between the parts reach the page.
     return Material(
         type: MaterialType.transparency,
         child: Stack(children: [
-          Positioned(
-              left: 16,
-              right: slot == null ? 16 : screen.width - slot.right,
-              top: down ? slot.top : null,
-              bottom: down
-                  ? null
-                  : slot == null
-                      ? keyboard + 96
-                      : math.max(keyboard + 16, screen.height - slot.bottom),
-              child: Row(
-                  crossAxisAlignment: down
-                      ? CrossAxisAlignment.start
-                      : CrossAxisAlignment.end,
-                  children: [
-                Expanded(
-                    child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: down ? parts.reversed.toList() : parts)),
-                const SizedBox(width: 10),
-                Semantics(
-                    button: true,
-                    label: listening
-                        ? tr3('说完了', 'Айтып болдым', 'Готово')
-                        : tr3(
-                            '语音操作', 'Дауыспен басқару', 'Голосовое управление'),
-                    child: GestureDetector(
-                        key: const Key('voice-button'),
-                        onTap: orb,
-                        onLongPress: toggleTyping,
-                        child: _Orb(
-                            size: orbSize,
-                            glow: glow,
-                            level: level,
-                            mood: mood,
-                            icon: listening
-                                ? Icons.stop_rounded
-                                : typing && widget.speech == null
-                                    ? Icons.close
-                                    // At rest it says what a tap does.
-                                    : !active
-                                        ? (widget.speech != null
-                                            ? Icons.mic
-                                            : Icons.auto_awesome)
-                                        : null))),
-              ])),
+          if (slot == null)
+            // No place kept for it: the bottom right corner, what it says
+            // beside it.
+            Positioned(
+                left: 16,
+                right: 16,
+                bottom: keyboard > 0 ? keyboard + 12 : padding.bottom + 20,
+                child:
+                    Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  Expanded(child: bubbles),
+                  const SizedBox(width: 10),
+                  orbButton,
+                ]))
+          else
+            // On the page's slot; what it says opens above it, or below a
+            // slot in the top half of the screen, clear of what is beside
+            // the slot.
+            Positioned(
+                left: 16,
+                right: 0,
+                top: down ? slot.top : null,
+                bottom: down
+                    ? null
+                    : keyboard > 0
+                        ? math.max(keyboard + 12, screen.height - slot.bottom)
+                        : screen.height - slot.bottom,
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (!down) edged,
+                      if (!down && parts.isNotEmpty) const SizedBox(height: 8),
+                      Padding(
+                          padding: EdgeInsets.only(
+                              right: math.max(0, screen.width - slot.right)),
+                          child: orbButton),
+                      if (down && parts.isNotEmpty) const SizedBox(height: 8),
+                      if (down) edged,
+                    ])),
         ]));
   }
 }

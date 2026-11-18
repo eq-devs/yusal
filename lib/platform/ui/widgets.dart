@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../voice/voice_overlay.dart' show VoiceSlot;
 import '../../app/settings.dart';
 import 'theme.dart';
 import '../../motion/motion.dart';
@@ -100,6 +101,14 @@ class ActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
+    // The assistant's orb waits just above the bar, not on its button.
+    return Stack(clipBehavior: Clip.none, children: [
+      const Positioned(right: 16, top: -36, child: VoiceSlot(size: 52)),
+      _bar(context, t),
+    ]);
+  }
+
+  Widget _bar(BuildContext context, YTokens t) {
     return DecoratedBox(
         decoration: BoxDecoration(
             gradient: LinearGradient(

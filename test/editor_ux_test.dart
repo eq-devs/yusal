@@ -8,6 +8,7 @@ import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/render3d/scene_view.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
+import 'tabs.dart';
 
 void main() {
   var sequence = 0;
@@ -132,8 +133,7 @@ void main() {
   testWidgets('the phone 3D page gives the stage the screen and folds settings away',
       (t) async {
     await mount(t, initial(), size: const Size(390, 844));
-    await t.ensureVisible(find.byKey(const ValueKey('tab-ext')));
-    await t.tap(find.byKey(const ValueKey('tab-ext')));
+    await openTab(t, 'ext');
     await t.pumpAndSettle();
     final stage = t.getSize(find.byType(SceneView));
     expect(stage.height, greaterThan(844 * 0.45));

@@ -110,6 +110,36 @@ WallEndSnap snapWallEnd(FloorBase base, Offset origin, Offset raw,
       aligned: aligned);
 }
 
+/// Where a wall that runs on from [from] along [heading] (a unit step on
+/// one axis, world millimetres) first meets another wall: the nearest
+/// wall crossing its line, or the near end of a wall already on that
+/// line. Null when nothing lies ahead.
+Offset? wallAhead(FloorBase base, Offset from, Offset heading) {
+  final horizontal = heading.dx != 0;
+  final sign = horizontal ? heading.dx.sign : heading.dy.sign;
+  final carrier = horizontal ? from.dy : from.dx;
+  final start = horizontal ? from.dx : from.dy;
+  double? best;
+  void consider(double value) {
+    final ahead = (value - start) * sign;
+    if (ahead <= 0) return;
+    if (best == null || ahead < (best! - start) * sign) best = value;
+  }
+
+  for (final w in base.wallSegments) {
+    final perpendicular = (w.axis.dir == AxisDir.H) != horizontal;
+    if (perpendicular) {
+      if (carrier >= w.start.pos && carrier <= w.end.pos)
+        consider(w.axis.pos.toDouble());
+    } else if (w.axis.pos == carrier) {
+      consider(w.start.pos.toDouble());
+      consider(w.end.pos.toDouble());
+    }
+  }
+  if (best == null) return null;
+  return horizontal ? Offset(best!, carrier) : Offset(carrier, best!);
+}
+
 /// The physical wall nearest to [p] within [tolerance] (world millimetres).
 /// At junctions several walls are equally close; inner walls win over the
 /// outer footprint and shorter walls over longer ones, because short and

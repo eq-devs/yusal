@@ -45,6 +45,10 @@ void main() {
     final store = await mount(t);
     await t.tap(find.text('新建设计'));
     await t.pumpAndSettle();
+    // The questions lead the ways to start.
+    expect(find.text('回答几个问题，帮我出一套'), findsOneWidget);
+    await t.tap(find.text('按长宽新建'));
+    await t.pumpAndSettle();
     await t.tap(find.text('10×13'));
     await t.pump();
     final fields = t.widgetList<TextField>(find.byType(TextField)).toList();

@@ -77,6 +77,8 @@ CommandResult executeCommand(
       'AddStair',
       'UpdateStair',
       'DeleteStair',
+      'PlaceStair',
+      'RemoveStair',
       'CutOutline',
       'RestoreOutline'
     ].contains(command.kind)) {
@@ -202,6 +204,28 @@ CommandResult executeCommand(
       return result.accepted
           ? apply(result.document!)
           : Rejected('SPATIAL_CONFLICT', result.error!);
+    }
+    if (command.kind == 'PlaceStair') {
+      final result = placeStair(
+          doc,
+          args['floorId'] as String,
+          args['left'] as int,
+          args['bottom'] as int,
+          args['right'] as int,
+          args['top'] as int,
+          context.newId,
+          type: args['type'] as StairType?,
+          stairId: args['stairId'] as String?);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('SPATIAL_CONFLICT', result.error!);
+    }
+    if (command.kind == 'RemoveStair') {
+      final result =
+          removeStair(doc, args['stairId'] as String, context.newId);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('NOT_FOUND', result.error!);
     }
     if (command.kind == 'DeleteAxis') {
       final result = deleteAxis(doc, args['axisId'] as String, context.newId,

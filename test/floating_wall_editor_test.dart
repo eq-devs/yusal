@@ -7,6 +7,7 @@ import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/render3d/scene_view.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
+import 'tabs.dart';
 
 void main() {
   var sequence = 0;
@@ -73,8 +74,7 @@ void main() {
   }
 
   Future<void> showTab(WidgetTester t, String key) async {
-    await t.ensureVisible(find.byKey(ValueKey('tab-$key')));
-    await t.tap(find.byKey(ValueKey('tab-$key')));
+    await openTab(t, key);
   }
 
   Future<void> saved(WidgetTester t) async {

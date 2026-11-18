@@ -70,10 +70,31 @@ extension _SelectionCards on _HouseEditorState {
           onPressed: () => update(clearSelection),
           icon: const Icon(Icons.close, size: 18)),
     ]);
+    // Phones: a grip to pull the card open or push it shut, as on any
+    // bottom sheet.
+    final grip = GestureDetector(
+        key: const Key('selection-grip'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => update(() => panelCollapsed = !panelCollapsed),
+        onVerticalDragEnd: (d) {
+          final v = d.primaryVelocity ?? 0;
+          if (v.abs() < 40) return;
+          update(() => panelCollapsed = v > 0);
+        },
+        child: Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Center(
+                child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: t.line,
+                        borderRadius: BorderRadius.circular(2))))));
     final body = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (!wide) grip,
           head,
           if (subtitle != null && (wide || !panelCollapsed))
             Text(subtitle, style: TextStyle(fontSize: 12, color: t.muted)),
@@ -181,6 +202,31 @@ extension _SelectionCards on _HouseEditorState {
         subtitle: other,
         summary:
             '${stats.clearWidth.round()} × ${stats.clearDepth.round()} · ${dec(area.toStringAsFixed(1))} $unitM2',
+        // The three things done to a room most, in reach while folded.
+        actions: [
+          Btn(
+              key: const Key('room-use'),
+              label: tr3('改用途', 'Түрін өзгерту', 'Назначение'),
+              icon: Icons.label_outline,
+              onPressed: () => update(() => panelCollapsed = false)),
+          Btn(
+              key: const Key('room-door'),
+              label: tr3('加门', 'Есік қосу', 'Дверь'),
+              icon: Icons.door_front_door_outlined,
+              onPressed: () => update(() {
+                    clearSelection();
+                    placingOpening = OpeningKind.door;
+                    tool = EditorTool.placeOpening;
+                    placementHint = tr3('点这间房的一面墙，门就放在那里',
+                        'Осы бөлменің қабырғасын басыңыз, есік сонда қойылады',
+                        'Нажмите на стену этой комнаты, дверь встанет там');
+                  })),
+          Btn(
+              key: const Key('room-furniture'),
+              label: tr3('放家具', 'Жиһаз қою', 'Мебель'),
+              icon: Icons.chair_outlined,
+              onPressed: () => chooseFurniture()),
+        ],
         children: [
           KvGrid([
             Kv('${stats.clearWidth.round()} × ${stats.clearDepth.round()}',
@@ -286,6 +332,10 @@ extension _SelectionCards on _HouseEditorState {
       RoomType.kitchen: ('厨房', 'Ас үй'),
       RoomType.bathroom: ('卫生间', 'Жуыну бөлмесі'),
       RoomType.dining: ('餐厅', 'Асхана'),
+      RoomType.hall: ('门厅', 'Кіреберіс'),
+      RoomType.corridor: ('走廊', 'Дәліз'),
+      RoomType.storage: ('储藏间', 'Қойма'),
+      RoomType.boiler: ('锅炉房', 'Қазандық'),
       RoomType.custom: ('房间', 'Бөлме'),
     }[type]!;
     return zh ? names.$1 : names.$2;

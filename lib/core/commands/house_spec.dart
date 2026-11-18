@@ -459,6 +459,17 @@ HouseSpecResult buildHouseFromSpec(
     final axes = resolveFloorAxes(doc, doc.floors[f].id)!;
     String axis(List<ResolvedAxis> list, int pos) =>
         list.firstWhere((a) => a.pos == pos).id;
+    // Inside one room the stair stands in it, open to it; else it is a
+    // stairwell of its own.
+    if (run('PlaceStair', {
+          'floorId': doc.floors[f].id,
+          'left': r.x0,
+          'bottom': r.y0,
+          'right': r.x1,
+          'top': r.y1,
+          'type': type == StairType.straight ? null : type,
+        }) ==
+        null) continue;
     final why = run('AddStair', {
       'floorId': doc.floors[f].id,
       'type': type,

@@ -14,6 +14,10 @@ List<LoadError> validateSchemaV1(Object? value) {
       'kitchen',
       'bathroom',
       'dining',
+      'hall',
+      'corridor',
+      'storage',
+      'boiler',
       'custom'
     ],
     'Hinge': ['start', 'end'],

@@ -180,6 +180,10 @@ String roomTypeName(RoomType type) => switch (type) {
       RoomType.kitchen => tr3('厨房', 'Ас үй', 'Кухня'),
       RoomType.bathroom => tr3('卫生间', 'Жуыну бөлмесі', 'Санузел'),
       RoomType.dining => tr3('餐厅', 'Асхана', 'Столовая'),
+      RoomType.hall => tr3('门厅', 'Кіреберіс', 'Прихожая'),
+      RoomType.corridor => tr3('走廊', 'Дәліз', 'Коридор'),
+      RoomType.storage => tr3('储藏间', 'Қойма', 'Кладовая'),
+      RoomType.boiler => tr3('锅炉房', 'Қазандық', 'Котельная'),
       RoomType.custom => tr3('房间', 'Бөлме', 'Комната'),
     };
 

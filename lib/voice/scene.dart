@@ -130,6 +130,27 @@ String designScene({
     }
     out.writeln();
   }
+  // Stairs stand in a room and stay open to it; the hole they come up
+  // through on the floor above has to stay clear of walls and furniture.
+  for (final stair in floor.stairs) {
+    final name = aliases[stair.id];
+    final r = resolveRect(base.axes, stair.region).rect;
+    if (name == null || r == null) continue;
+    final fits =
+        level.stairs.where((s) => s.stairId == stair.id).firstOrNull?.fits ??
+            true;
+    out.writeln(' $name stair ${stair.type.name} x${r.left} y${r.bottom} '
+        '${r.right - r.left}x${r.top - r.bottom}'
+        '${fits ? '' : ' (too small to climb)'}');
+  }
+  if (floorIndex > 0) {
+    for (final s in derived.floors[floorIndex - 1].stairs) {
+      final o = s.opening;
+      out.writeln(' stair opening from the floor below x${o.left.round()} '
+          'y${o.bottom.round()} ${(o.right - o.left).round()}x'
+          '${(o.top - o.bottom).round()} (keep clear)');
+    }
+  }
   if (base.unassignedNominalArea > 0) {
     out.writeln('no room yet on '
         '${(base.unassignedNominalArea / 1e6).toStringAsFixed(1)}m2');

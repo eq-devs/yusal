@@ -14,6 +14,8 @@ import '../components.dart';
 import '../widgets.dart';
 import 'chat_page.dart';
 import '../../../motion/motion.dart';
+import '../me/trust_pages.dart';
+import '../profile/profile_page.dart';
 
 /// Unread chats and notices together, asked for at the same time.
 Future<int> _unread(PlatformRepositories r) async {
@@ -281,13 +283,50 @@ IconData noticeIcon(NoticeKind k) => switch (k) {
         Icons.chat_bubble_outline,
       NoticeKind.commentHelpful => Icons.thumb_up_alt_outlined,
       NoticeKind.outcomeFollowUp => Icons.help_outline,
+      NoticeKind.contentRemoved ||
+      NoticeKind.accountRestricted =>
+        Icons.gpp_maybe_outlined,
+      NoticeKind.reportResolved => Icons.flag_outlined,
+      NoticeKind.accountRestored || NoticeKind.appealAnswered => Icons.gavel_outlined,
+      NoticeKind.verificationApproved ||
+      NoticeKind.verificationRejected =>
+        Icons.verified_outlined,
+      NoticeKind.newDemandMatch => Icons.notifications_active_outlined,
       _ => Icons.notifications_none,
     };
 
 /// Opens the object a notice points to; closed or missing objects show
 /// their own clear state on the target page.
-Future<void> openNotice(BuildContext context, AppNotification n) =>
-    openRef(context, n.refType, n.refId);
+Future<void> openNotice(BuildContext context, AppNotification n) async {
+  if (n.kind == NoticeKind.contentRemoved ||
+      n.kind == NoticeKind.accountRestricted) {
+    // A moderator's decision about my own record: say so and offer an appeal.
+    final target = n.kind == NoticeKind.accountRestricted ? 'account' : n.refType.name;
+    final restricted = n.kind == NoticeKind.accountRestricted;
+    final v = await showDialog<String>(
+        context: context,
+        builder: (context) => PlatformTheme(
+                child: AlertDialog(
+                    title: Text(noticeText(n)),
+                    content: restricted && n.title.isNotEmpty
+                        ? Text('${tr3('原因', 'Себебі', 'Причина')}: ${reasonText(n.title)}')
+                        : null,
+                    actions: [
+                  if (!restricted)
+                    TextButton(
+                        onPressed: () => Navigator.pop(context, 'open'),
+                        child: Text(tr3('查看', 'Ашу', 'Открыть'))),
+                  FilledButton(
+                      onPressed: () => Navigator.pop(context, 'appeal'),
+                      child: Text(tr3('申诉', 'Шағымдану', 'Обжаловать'))),
+                ])));
+    if (!context.mounted) return;
+    if (v == 'appeal') return appealDecision(context, target, n.refId);
+    if (v == 'open') return openRef(context, n.refType, n.refId);
+    return;
+  }
+  return openRef(context, n.refType, n.refId);
+}
 
 /// Opens the page for a referenced object (notices and tapped pushes).
 Future<void> openRef(BuildContext context, RefType type, String id) =>
@@ -297,5 +336,10 @@ Future<void> openRef(BuildContext context, RefType type, String id) =>
       RefType.conversation =>
         pushPage<void>(context, (_) => ChatPage(conversationId: id)),
       RefType.post => pushPage<void>(context, (_) => PostPage(postId: id)),
+      RefType.profile => pushPage<void>(context, (_) => ProfilePage(profileId: id)),
+      RefType.appeal ||
+      RefType.account =>
+        pushPage<void>(context, (_) => const MyAppealsPage()),
+      RefType.report => Future<void>.value(),
       _ => pushPage<void>(context, (_) => DemandDetailPage(demandId: id)),
     };

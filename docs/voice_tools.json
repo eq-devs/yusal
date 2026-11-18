@@ -54,7 +54,10 @@
             "cooperation",
             "conversation",
             "profile",
-            "post"
+            "post",
+            "report",
+            "appeal",
+            "account"
           ]
         },
         "ref": {

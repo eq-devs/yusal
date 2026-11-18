@@ -23,6 +23,7 @@ import 'house_card.dart';
 import 'reuse.dart';
 import '../house_progress.dart';
 import '../../../motion/motion.dart';
+import '../me/trust_pages.dart';
 
 /// One house: the plan, the facts, the story, the people recruiting for
 /// it, and what others think. The owner recruits from here; a
@@ -268,14 +269,7 @@ class _PostPageState extends State<PostPage> {
                   if (context.mounted) Navigator.of(context).pop();
                 }
               case 'report':
-                final reason =
-                    await askText(context, tr3('举报原因', 'Себебі', 'Причина'));
-                if (reason != null && context.mounted)
-                  await attempt(
-                      context,
-                      () => context.repos.report(ReportTarget.account,
-                          p.ownerId, '[post ${p.id}] $reason'),
-                      success: tr3('已收到举报', 'Қабылданды', 'Жалоба отправлена'));
+                await reportContent(context, ReportTarget.post, p.id);
             }
           }
 
@@ -322,23 +316,23 @@ class _PostPageState extends State<PostPage> {
                           icon: const Icon(Icons.ios_share, size: 20),
                           onPressed: share),
                       if (!visitorBar)
-                        IconAction(
-                            label: liked
-                                ? tr3('取消喜欢', 'Ұнатуды алу', 'Убрать лайк')
-                                : tr3('喜欢', 'Ұнайды', 'Нравится'),
-                            color: liked ? t.accent : null,
-                            icon: PopOnActive(
-                                active: liked,
-                                child: Icon(
-                                    liked
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    size: 20)),
-                            onPressed: () {
-                              if (!liked) HapticFeedback.lightImpact();
-                              attempt(context,
-                                  () => context.repos.toggleLike(p.id));
-                            }),
+                        OptimisticLike(
+                          liked: liked,
+                          toggle: () => attempt(
+                              context, () => context.repos.toggleLike(p.id)),
+                          builder: (context, liked, toggle) => IconAction(
+                              label: liked
+                                  ? tr3('取消喜欢', 'Ұнатуды алу', 'Убрать лайк')
+                                  : tr3('喜欢', 'Ұнайды', 'Нравится'),
+                              color: liked ? t.accent : null,
+                              icon: PopOnActive(
+                                  active: liked,
+                                  child: Icon(
+                                      liked
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      size: 20)),
+                              onPressed: toggle)),
                       IconAction(
                           label: tr3('更多', 'Тағы', 'Ещё'),
                           icon: const Icon(Icons.more_horiz, size: 20),
@@ -592,18 +586,19 @@ class _PostPageState extends State<PostPage> {
     } else {
       // A visitor: like and comment sit in the bar with their counts, as
       // in any feed; the main button starts their own house from this one.
-      final like = _CountAction(
-          tooltip: tr3('收藏', 'Сақтау', 'Сохранить'),
-          count: post.likeCount,
-          color: liked ? t.accent : null,
-          icon: PopOnActive(
-              active: liked,
-              child: Icon(liked ? Icons.favorite : Icons.favorite_border,
-                  size: 22, color: liked ? t.accent : null)),
-          onTap: () {
-            if (!liked) HapticFeedback.lightImpact();
-            attempt(context, () => context.repos.toggleLike(post.id));
-          });
+      final like = OptimisticLike(
+          liked: liked,
+          toggle: () =>
+              attempt(context, () => context.repos.toggleLike(post.id)),
+          builder: (context, liked, toggle) => _CountAction(
+              tooltip: tr3('收藏', 'Сақтау', 'Сохранить'),
+              count: post.likeCount,
+              color: liked ? t.accent : null,
+              icon: PopOnActive(
+                  active: liked,
+                  child: Icon(liked ? Icons.favorite : Icons.favorite_border,
+                      size: 22, color: liked ? t.accent : null)),
+              onTap: toggle));
       final comment = _CountAction(
           key: const Key('post-comment'),
           tooltip: tr3('写点评', 'Пікір жазу', 'Написать отзыв'),

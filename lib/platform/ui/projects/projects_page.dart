@@ -489,6 +489,66 @@ class _ActiveHouses extends StatelessWidget {
         (_) => h.shareOnly
             ? PostPage(postId: h.postId!)
             : HouseWorkspacePage(houseKey: h.key, initialTab: tab));
+    // Finished houses move out of the ongoing ones.
+    final done = houses.where((h) => h.stage == HouseStage.done).toList();
+    final ongoing = houses.where((h) => h.stage != HouseStage.done).toList();
+    Widget strip(List<MyHouse> list) =>
+        SizedBox(
+            height: 104,
+            child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: list.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, i) {
+                  final h = list[i];
+                  return SizedBox(
+                      width: 290,
+                      child: Card(
+                          margin: EdgeInsets.zero,
+                          child: InkWell(
+                              key: Key('house-card-${h.key}'),
+                              borderRadius: BorderRadius.circular(yRadius),
+                              onTap: () => open(h, 0),
+                              child: Padding(
+                                  padding: const EdgeInsets.all(10),
+                                  child: Row(children: [
+                                    HouseThumb(house: h, size: 80),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                        child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                          Text(h.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.w700)),
+                                          const SizedBox(height: 4),
+                                          StatusPill(
+                                              h.shareOnly
+                                                  ? tr3('已分享', 'Бөлісілді',
+                                                      'Опубликован')
+                                                  : houseStageName(h.stage),
+                                              color: t.accent),
+                                          const SizedBox(height: 4),
+                                          Text(h.nextStep(me),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                  color: h.needsMe(me)
+                                                      ? t.accent
+                                                      : t.muted,
+                                                  fontWeight: h.newQuotes > 0
+                                                      ? FontWeight.w600
+                                                      : null,
+                                                  fontSize: YFont.caption)),
+                                        ])),
+                                  ])))));
+                }));
     return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -522,63 +582,15 @@ class _ActiveHouses extends StatelessWidget {
                                 ])))),
                 ])),
           ],
-          SectionTitle(tr3('进行中的房子', 'Жүріп жатқан үйлер', 'Дома в работе')),
-          SizedBox(
-              height: 104,
-              child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: houses.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (context, i) {
-                    final h = houses[i];
-                    return SizedBox(
-                        width: 290,
-                        child: Card(
-                            margin: EdgeInsets.zero,
-                            child: InkWell(
-                                key: Key('house-card-${h.key}'),
-                                borderRadius: BorderRadius.circular(yRadius),
-                                onTap: () => open(h, 0),
-                                child: Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Row(children: [
-                                      HouseThumb(house: h, size: 80),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                          child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                            Text(h.name,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.w700)),
-                                            const SizedBox(height: 4),
-                                            StatusPill(
-                                                h.shareOnly
-                                                    ? tr3('已分享', 'Бөлісілді',
-                                                        'Опубликован')
-                                                    : houseStageName(h.stage),
-                                                color: t.accent),
-                                            const SizedBox(height: 4),
-                                            Text(h.nextStep(me),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                    color: h.needsMe(me)
-                                                        ? t.accent
-                                                        : t.muted,
-                                                    fontWeight: h.newQuotes > 0
-                                                        ? FontWeight.w600
-                                                        : null,
-                                                    fontSize: YFont.caption)),
-                                          ])),
-                                    ])))));
-                  })),
+          if (ongoing.isNotEmpty) ...[
+            SectionTitle(
+                tr3('进行中的房子', 'Жүріп жатқан үйлер', 'Дома в работе')),
+            strip(ongoing),
+          ],
+          if (done.isNotEmpty) ...[
+            SectionTitle(tr3('已完工', 'Аяқталған', 'Готовые')),
+            strip(done),
+          ],
         ]);
   }
 }

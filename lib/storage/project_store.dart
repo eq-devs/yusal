@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../core/document/house_document.dart';
 import '../core/serialization/house_codec.dart';
@@ -13,11 +14,52 @@ class ProjectEntry {
   final List<int>? preview;
 }
 
+/// Which account each local design belongs to, so one phone shared by
+/// several accounts does not show one person's drafts to the next.
+abstract class ProjectOwners {
+  Future<Map<String, String>> load();
+  Future<void> save(Map<String, String> owners);
+}
+
+/// Owners kept in shared preferences; failures leave designs unowned.
+class PrefsProjectOwners implements ProjectOwners {
+  static const _key = 'project-owners';
+  @override
+  Future<Map<String, String>> load() async {
+    try {
+      final text = (await SharedPreferences.getInstance()).getString(_key);
+      return text == null
+          ? {}
+          : (jsonDecode(text) as Map).cast<String, String>();
+    } catch (_) {
+      return {};
+    }
+  }
+
+  @override
+  Future<void> save(Map<String, String> owners) async {
+    try {
+      await (await SharedPreferences.getInstance())
+          .setString(_key, jsonEncode(owners));
+    } catch (_) {}
+  }
+}
+
 class ProjectStore {
-  ProjectStore({ProjectFileSystem? fileSystem, this.previewRenderer})
+  ProjectStore(
+      {ProjectFileSystem? fileSystem,
+      this.previewRenderer,
+      this.owners})
       : files = fileSystem ?? ProjectFiles();
   final ProjectFileSystem files;
   final Future<List<int>?> Function(HouseDocument)? previewRenderer;
+  /// Null keeps no owners: every design is listed (tests, tools).
+  final ProjectOwners? owners;
+
+  /// The signed-in account, read on every listing. Null shows the designs
+  /// made while signed out. A design made signed out joins the first
+  /// account that signs in on this device; after that only it sees it.
+  String? Function()? currentOwner;
   final Map<String, String> corruptProjects = {};
   List<ProjectEntry> _entries = [];
 
@@ -78,6 +120,22 @@ class ProjectStore {
         corruptProjects[id] = '无法读取设计文件';
       }
     }
+    final owners = this.owners;
+    if (owners != null) {
+      final me = currentOwner?.call();
+      final owned = await owners.load();
+      var claimed = false;
+      list.removeWhere((e) {
+        if (owned[e.id] == null && me != null) {
+          owned[e.id] = me;
+          claimed = true;
+        }
+        return owned[e.id] != me;
+      });
+      corruptProjects
+          .removeWhere((id, _) => owned[id] != null && owned[id] != me);
+      if (claimed) await owners.save(owned);
+    }
     list.sort((a, b) => DateTime.parse(b.document.meta.updatedAt)
         .compareTo(DateTime.parse(a.document.meta.updatedAt)));
     _entries = list;
@@ -88,6 +146,9 @@ class ProjectStore {
   Future<String> createProject(HouseDocument doc) async {
     final id = const Uuid().v4();
     await files.write(id, encodeHouse(doc));
+    final me = currentOwner?.call(), owners = this.owners;
+    if (me != null && owners != null)
+      await owners.save({...await owners.load(), id: me});
     final preview = await _preview(id, doc);
     _entries.add(ProjectEntry(id, doc, preview: preview));
     await _index();

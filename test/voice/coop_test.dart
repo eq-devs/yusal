@@ -110,9 +110,9 @@ void main() {
 
     await open(SeedIds.team);
     expect(offered(), {'coop.request_milestone'});
-    expect(VoiceScreens.current?.summary,
-        contains('milestone foundation planned'));
-    expect((await say('coop.request_milestone', {'note': '地基做完了'})).ok, isTrue);
+    // A walls contract starts at the walls stage.
+    expect(VoiceScreens.current?.summary, contains('milestone walls planned'));
+    expect((await say('coop.request_milestone', {'note': '墙砌完了'})).ok, isTrue);
     await t.pumpAndSettle();
     expect(status(0), MilestoneStatus.requested);
     expect(offered(), isEmpty); // The owner's turn.
@@ -130,9 +130,9 @@ void main() {
     expect((await say('coop.accept_milestone')).ok, isTrue);
     await t.pumpAndSettle();
     expect(status(0), MilestoneStatus.accepted);
-    // The next point is now the one voice acts on.
+    // The contract covers walls only, so no inspection is left to ask for.
     await open(SeedIds.team);
-    expect(VoiceScreens.current?.summary, contains('milestone walls planned'));
-    expect(offered(), {'coop.request_milestone'});
+    expect(VoiceScreens.current?.summary, isNot(contains('milestone')));
+    expect(offered(), isEmpty);
   });
 }

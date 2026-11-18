@@ -121,9 +121,9 @@ class SiteSection extends StatelessWidget {
         if (pro && live)
           FilledButton.tonalIcon(
               key: const Key('log-work'),
-              onPressed: () => logToday(context, c),
+              onPressed: onLogToday(context, c),
               icon: const Icon(Icons.event_available_outlined, size: 18),
-              label: Text(tr3('今天记工', 'Бүгінді жазу', 'Отметить день'))),
+              label: Text(logTodayLabel(c))),
       ]),
       const SizedBox(height: 6),
       if (c.workLogs.isEmpty)
@@ -183,7 +183,29 @@ class SiteSection extends StatelessWidget {
   }
 }
 
-/// "今天记工": crew on site today, with photos and an optional note.
+/// Today's work log, by the Kazakhstan calendar day (UTC+5) the server uses.
+WorkLog? todayLog(Cooperation c) {
+  final kz = DateTime.now().toUtc().add(const Duration(hours: 5));
+  return c.workLogs.where((w) {
+    final d = w.day.toUtc();
+    return d.year == kz.year && d.month == kz.month && d.day == kz.day;
+  }).firstOrNull;
+}
+
+/// The "log today" button's label: log, edit today's, or already confirmed.
+String logTodayLabel(Cooperation c) => switch (todayLog(c)) {
+      null => tr3('今天记工', 'Бүгінді жазу', 'Отметить день'),
+      WorkLog(confirmed: true) =>
+        tr3('今天已确认', 'Бүгін расталды', 'Сегодня подтверждено'),
+      _ => tr3('修改今天记工', 'Бүгінгіні түзету', 'Изменить сегодня'),
+    };
+
+/// Null (disabled) once the owner confirmed today's log: it is locked.
+VoidCallback? onLogToday(BuildContext context, Cooperation c) =>
+    todayLog(c)?.confirmed == true ? null : () => logToday(context, c);
+
+/// "今天记工": crew on site today, with photos and an optional note. A second
+/// log the same day replaces today's unconfirmed one.
 Future<void> logToday(BuildContext context, Cooperation c) async {
   final r = await composeSiteEntry(context,
       title: tr3('今天记工', 'Бүгінгі жұмыс', 'Рабочий день'),

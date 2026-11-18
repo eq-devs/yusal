@@ -23,7 +23,9 @@ class HouseCard extends StatelessWidget {
   final HousePost post;
   final VoidCallback onTap;
   final bool liked, compact;
-  final VoidCallback? onLike;
+
+  /// Toggles the like; answers the new state, or null when it failed.
+  final Future<bool?> Function()? onLike;
 
   /// "Start from this one": copies the plan into my houses.
   final VoidCallback? onReuse;
@@ -59,15 +61,15 @@ class HouseCard extends StatelessWidget {
               Positioned(
                   top: 10,
                   right: 10,
-                  child: Material(
+                  child: OptimisticLike(
+                      liked: liked,
+                      toggle: onLike!,
+                      builder: (context, liked, toggle) => Material(
                       color: t.card.withValues(alpha: 0.9),
                       shape: const CircleBorder(),
                       child: InkWell(
                           customBorder: const CircleBorder(),
-                          onTap: () {
-                            if (!liked) HapticFeedback.lightImpact();
-                            onLike!();
-                          },
+                          onTap: toggle,
                           child: Padding(
                               padding: const EdgeInsets.all(14),
                               child: PopOnActive(
@@ -77,7 +79,7 @@ class HouseCard extends StatelessWidget {
                                           ? Icons.favorite
                                           : Icons.favorite_border,
                                       size: 20,
-                                      color: liked ? t.accent : t.ink)))))),
+                                      color: liked ? t.accent : t.ink))))))),
             if (p.openForBuilders)
               Positioned(
                   left: 10,
@@ -280,3 +282,47 @@ String startFromThis() => tr3('用这套开始', 'Осыдан бастау', '�
 /// "已被复用 23 次"
 String reusedTimes(int n) =>
     tr3('已被复用 $n 次', '$n рет қолданылды', 'Взяли за основу: $n');
+
+/// Shows a like at once and sends it after; goes back if the call fails,
+/// and follows [liked] again once the page reloads with the server's view.
+class OptimisticLike extends StatefulWidget {
+  const OptimisticLike(
+      {super.key, required this.liked, required this.toggle, required this.builder});
+  final bool liked;
+  final Future<bool?> Function() toggle;
+  final Widget Function(BuildContext context, bool liked, VoidCallback toggle) builder;
+  @override
+  State<OptimisticLike> createState() => _OptimisticLikeState();
+}
+
+class _OptimisticLikeState extends State<OptimisticLike> {
+  bool? _shown;
+  bool _busy = false;
+
+  @override
+  void didUpdateWidget(OptimisticLike old) {
+    super.didUpdateWidget(old);
+    if (!_busy && widget.liked != old.liked) _shown = null;
+  }
+
+  Future<void> _toggle() async {
+    if (_busy) return;
+    final before = _shown ?? widget.liked;
+    if (!before) HapticFeedback.lightImpact();
+    setState(() {
+      _busy = true;
+      _shown = !before;
+    });
+    final result = await widget.toggle();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _shown = result ?? before;
+      if (_shown == widget.liked) _shown = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      widget.builder(context, _shown ?? widget.liked, _toggle);
+}

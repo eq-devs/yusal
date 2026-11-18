@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -125,6 +126,8 @@ class _VoiceBarState extends State<VoiceBar>
   static const _introSeen = 'voice-intro-seen';
   String? speechNote;
   Timer? limit;
+  // The place the page on top keeps for the orb, if it keeps one.
+  Rect? slot;
   // One turn of the orb, and how loud the voice is (0 to 1).
   late final glow = AnimationController(vsync: this, duration: _calm);
   late final level = AnimationController(vsync: this);
@@ -156,11 +159,20 @@ class _VoiceBarState extends State<VoiceBar>
     s.repos.changes.addListener(_hiddenChanged);
     // The suggestions show only while the field is empty.
     input.addListener(() => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback(_followSlot);
     SharedPreferences.getInstance().then((prefs) {
       if (mounted && prefs.getBool(_introSeen) != true) {
         setState(() => intro = true);
       }
     }).catchError((_) {/* No storage: no introduction. */});
+  }
+
+  /// Keeps the orb on the page's slot as the page lays out and changes.
+  void _followSlot(Duration _) {
+    if (!mounted) return;
+    final now = VoiceSlot.rect;
+    if (now != slot) setState(() => slot = now);
+    WidgetsBinding.instance.addPostFrameCallback(_followSlot);
   }
 
   void closeIntro() {
@@ -523,7 +535,13 @@ class _VoiceBarState extends State<VoiceBar>
         ? suggestions()
         : const <String>[];
     // What the orb is and what to say to it, until it is first used.
-    final welcome = intro && !active && !typing && !bannerShown && pill == null
+    // Not over a page that keeps a slot: there it would cover the work.
+    final welcome = intro &&
+            this.slot == null &&
+            !active &&
+            !typing &&
+            !bannerShown &&
+            pill == null
         ? card(
             key: const Key('voice-intro'),
             padding: const EdgeInsets.fromLTRB(14, 6, 4, 10),
@@ -571,23 +589,17 @@ class _VoiceBarState extends State<VoiceBar>
                 ]))
         : null;
 
-    // Transparent: taps between the parts reach the page.
-    return Material(
-        type: MaterialType.transparency,
-        child: Stack(children: [
-          Positioned(
-              left: 16,
-              right: 16,
-              bottom: keyboard + 96,
-              child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Expanded(
-                    child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
+    // On a page's slot the orb is the slot's size; in the top half of
+    // the screen what it says opens downwards, away from the edge.
+    final screen = MediaQuery.sizeOf(context);
+    final slot = this.slot;
+    final orbSize = slot?.shortestSide.clamp(36.0, 52.0) ?? 52.0;
+    final down = slot != null && slot.center.dy < screen.height / 2;
+    final parts = [
                       if (tips.isNotEmpty)
                         Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
+                            padding: EdgeInsets.only(
+                                top: down ? 8 : 0, bottom: down ? 0 : 8),
                             child: Wrap(
                                 alignment: WrapAlignment.end,
                                 spacing: 8,
@@ -609,11 +621,12 @@ class _VoiceBarState extends State<VoiceBar>
                       if (banner != null)
                         Container(
                             constraints: BoxConstraints(
-                                minHeight: 52,
+                                minHeight: orbSize,
                                 maxWidth: 420,
-                                maxHeight:
-                                    MediaQuery.sizeOf(context).height * 0.45),
-                            margin: EdgeInsets.only(bottom: pill == null ? 0 : 8),
+                                maxHeight: screen.height * 0.45),
+                            margin: EdgeInsets.only(
+                                top: pill != null && down ? 8 : 0,
+                                bottom: pill != null && !down ? 8 : 0),
                             child: Align(
                                 alignment: Alignment.centerRight,
                                 heightFactor: 1,
@@ -621,13 +634,37 @@ class _VoiceBarState extends State<VoiceBar>
                       // As tall as the orb, so the two share a centre line.
                       if (pill != null)
                         Container(
-                            constraints: const BoxConstraints(minHeight: 52),
+                            constraints: BoxConstraints(minHeight: orbSize),
                             alignment: Alignment.centerRight,
                             child: ConstrainedBox(
                                 constraints:
                                     const BoxConstraints(maxWidth: 420),
                                 child: pill)),
-                    ])),
+    ];
+
+    // Transparent: taps between the parts reach the page.
+    return Material(
+        type: MaterialType.transparency,
+        child: Stack(children: [
+          Positioned(
+              left: 16,
+              right: slot == null ? 16 : screen.width - slot.right,
+              top: down ? slot.top : null,
+              bottom: down
+                  ? null
+                  : slot == null
+                      ? keyboard + 96
+                      : math.max(keyboard + 16, screen.height - slot.bottom),
+              child: Row(
+                  crossAxisAlignment: down
+                      ? CrossAxisAlignment.start
+                      : CrossAxisAlignment.end,
+                  children: [
+                Expanded(
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: down ? parts.reversed.toList() : parts)),
                 const SizedBox(width: 10),
                 Semantics(
                     button: true,
@@ -640,7 +677,7 @@ class _VoiceBarState extends State<VoiceBar>
                         onTap: orb,
                         onLongPress: toggleTyping,
                         child: _Orb(
-                            size: 52,
+                            size: orbSize,
                             glow: glow,
                             level: level,
                             mood: mood,
@@ -656,6 +693,55 @@ class _VoiceBarState extends State<VoiceBar>
                                         : null))),
               ])),
         ]));
+  }
+}
+
+/// A place a page keeps free for the orb, so it floats over nothing the
+/// page needs: the orb sits there while the page is on top, and what it
+/// says opens beside it. Takes no room where there is no assistant.
+class VoiceSlot extends StatefulWidget {
+  const VoiceSlot({super.key, this.size = 44});
+  final double size;
+
+  static final _mounted = <_VoiceSlotState>[];
+
+  /// Where the orb goes on screen now, if the page on top keeps a place.
+  static Rect? get rect {
+    for (final slot in _mounted.reversed) {
+      final box = slot.context.findRenderObject();
+      if (slot.onTop && box is RenderBox && box.attached && box.hasSize) {
+        return box.localToGlobal(Offset.zero) & box.size;
+      }
+    }
+    return null;
+  }
+
+  @override
+  State<VoiceSlot> createState() => _VoiceSlotState();
+}
+
+class _VoiceSlotState extends State<VoiceSlot> {
+  bool onTop = true;
+
+  @override
+  void initState() {
+    super.initState();
+    VoiceSlot._mounted.add(this);
+  }
+
+  @override
+  void dispose() {
+    VoiceSlot._mounted.remove(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Off while another page covers this one.
+    onTop = TickerMode.valuesOf(context).enabled;
+    return VoiceSession.current == null
+        ? const SizedBox.shrink()
+        : SizedBox.square(dimension: widget.size);
   }
 }
 

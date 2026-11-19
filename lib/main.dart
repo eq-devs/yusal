@@ -20,9 +20,13 @@ import 'voice/audio_device.dart';
 import 'voice/speech.dart';
 import 'voice/voice_overlay.dart';
 
-/// Real backend address, e.g. `--dart-define=YUSAL_API=https://api.example.com`.
-/// Empty: the in-memory demo backend.
-const apiBaseUrl = String.fromEnvironment('YUSAL_API');
+/// The backend every build talks to: eqserver, unless
+/// `--dart-define=YUSAL_API=<address>` names another one (a local API, for
+/// example). `--dart-define=YUSAL_API=demo` runs the in-memory demo backend
+/// instead, which has no sign-in and no voice.
+const _apiDefine = String.fromEnvironment('YUSAL_API',
+    defaultValue: 'https://eqserver.tail920a63.ts.net');
+const apiBaseUrl = _apiDefine == 'demo' ? '' : _apiDefine;
 
 /// The app's navigator, for opening what a tapped push points to.
 final appNavigator = GlobalKey<NavigatorState>();
@@ -54,8 +58,8 @@ Future<void> main() async {
 class HouseApp extends StatefulWidget {
   const HouseApp({super.key, this.repos, this.store});
 
-  /// Platform backend: [HttpBackend] when built with YUSAL_API, else the
-  /// in-memory mock.
+  /// Platform backend: [HttpBackend] for eqserver (or YUSAL_API), else
+  /// the in-memory mock.
   final PlatformRepositories? repos;
   final ProjectStore? store;
 

@@ -12,7 +12,8 @@ import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/core/house_core.dart';
 import 'package:yusal/core/geometry/derived_house.dart';
 
-// Runs on a phone or simulator: flutter test integration_test -d <device>.
+// Runs on a phone or simulator, against the demo backend:
+// flutter test integration_test/app_test.dart -d <device> --dart-define=YUSAL_API=demo
 // Without one, on Linux: flutter create --platforms=linux . (not committed),
 // install libgtk-3-dev and xdg-user-dirs, then
 // xvfb-run -a flutter test integration_test/app_test.dart -d linux

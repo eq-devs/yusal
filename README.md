@@ -144,11 +144,10 @@ See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conforman
 
 ## 连接真实后端（yusal-api）
 
-不带参数运行时用内存里的演示后端。连接 Go 后端：
+直接 `flutter run`、`flutter build` 不带任何参数就连 eqserver（`https://eqserver.tail920a63.ts.net`），语音和测试登录默认都打开。连别的后端（比如本机的 API）用 `--dart-define=YUSAL_API=<地址>`；要离线演示后端用 `--dart-define=YUSAL_API=demo`（没有登录也没有语音）。Google 登录还需要：
 
 ```bash
 flutter run \
-  --dart-define=YUSAL_API=https://<后端地址> \
   --dart-define=GOOGLE_SERVER_CLIENT_ID=<Web 客户端 ID> \
   --dart-define=GOOGLE_IOS_CLIENT_ID=<iOS 客户端 ID>
 ```

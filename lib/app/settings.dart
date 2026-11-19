@@ -90,9 +90,8 @@ String tr3(String zh, String kk, String ru) =>
       AppLang.ru => ru,
     };
 
-/// Between the items of a list written in a row: "、" belongs to Chinese
-/// only.
-String get listSep => isKk ? ', ' : '、';
+/// Between items of a list: 、 in Chinese, a comma in Kazakh and Russian.
+String get listSep => tr3('、', ', ', ', ');
 
 /// Kazakh writes decimals with a comma.
 String dec(String number) => isKk ? number.replaceAll('.', ',') : number;
@@ -105,14 +104,3 @@ String get unitM2 => tr3('㎡', 'м²', 'м²');
 String get unitM3 => tr3('m³', 'м³', 'м³');
 String get unitMm => tr3('mm', 'мм', 'мм');
 String get unitPcs => tr3('个', 'дана', 'шт.');
-
-/// Floors named automatically ("一楼", "二楼 副本") are stored in Chinese and
-/// shown in the interface language; a name the user typed is kept.
-String floorDisplayName(String name) {
-  const numerals = '一二三四五六七八九十';
-  final m = RegExp(r'^([一二三四五六七八九十])楼( 副本)?$').firstMatch(name);
-  if (m == null || !isKk) return name;
-  final n = numerals.indexOf(m[1]!) + 1;
-  if (isRu) return '$n-й этаж${m[2] == null ? '' : ' (копия)'}';
-  return '$n-қабат${m[2] == null ? '' : ' (көшірме)'}';
-}

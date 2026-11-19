@@ -414,7 +414,7 @@ class _PostPageState extends State<PostPage> {
                                               const SizedBox(width: 6),
                                               Expanded(
                                                   child: Text(
-                                                      '${tr3('正在招', 'Іздеуде', 'Ищут')}${isKk ? ': ' : '：'}${open.map((d) => d.current.title).join(listSep)}',
+                                                      '${tr3('正在招：', 'Іздеуде: ', 'Ищут: ')}${open.map((d) => d.current.title).join(listSep)}',
                                                       style: TextStyle(
                                                           color: t.accent,
                                                           fontWeight: FontWeight
@@ -644,16 +644,9 @@ class _PostPageState extends State<PostPage> {
         child: Row(children: [
       Expanded(
           child: Text(summary,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w600))),
       const SizedBox(width: 12),
-      // The button takes the width its words need (up to most of the
-      // bar) rather than half of it, where a long label broke in two.
-      ConstrainedBox(
-          constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width * 0.62),
-          child: main),
+      Flexible(child: main),
     ]));
   }
 }
@@ -739,7 +732,7 @@ class _FactSheet extends StatelessWidget {
     final summary = snapshot?.summary ?? '';
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Row(children: [
-        cell(Icons.square_foot, '${post.area.round()} $sqm',
+        cell(Icons.square_foot, '${post.area.round()} m²',
             tr3('建筑面积', 'Ауданы', 'Площадь')),
         const SizedBox(width: 8),
         cell(Icons.layers_outlined, '${post.floors}',

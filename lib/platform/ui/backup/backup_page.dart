@@ -54,9 +54,20 @@ class _Row {
 /// Account backup and restore of local designs. Local saving keeps working
 /// offline; a failed upload changes nothing locally; conflicts are never
 /// resolved silently.
-class BackupPage extends StatelessWidget {
+class BackupPage extends StatefulWidget {
   const BackupPage({super.key, this.highlight});
   final String? highlight;
+
+  @override
+  State<BackupPage> createState() => _BackupPageState();
+}
+
+class _BackupPageState extends State<BackupPage> {
+  String? get highlight => widget.highlight;
+
+  /// A restore writes to this device only, which the backend does not
+  /// report: the list is read again by hand.
+  final refresh = LiveRefresh();
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +90,7 @@ class BackupPage extends StatelessWidget {
                         onPressed: () => requireLogin(context),
                         child: Text(tr3('登录', 'Кіру', 'Войти'))))
                 : Live<List<_Row>>(
+                    refresh: refresh,
                     load: (r) async {
                       final local = await store.listProjects();
                       final cloud = {
@@ -116,6 +128,7 @@ class BackupPage extends StatelessWidget {
                                     padding: const EdgeInsets.only(bottom: 12),
                                     child: _BackupTile(
                                         row: row,
+                                        onRestored: refresh.call,
                                         highlighted:
                                             row.entry?.id == highlight)),
                               if (context.mock != null &&
@@ -144,8 +157,10 @@ class BackupPage extends StatelessWidget {
 }
 
 class _BackupTile extends StatelessWidget {
-  const _BackupTile({required this.row, required this.highlighted});
+  const _BackupTile(
+      {required this.row, required this.highlighted, required this.onRestored});
   final _Row row;
+  final Future<void> Function() onRestored;
   final bool highlighted;
 
   @override
@@ -208,9 +223,15 @@ class _BackupTile extends StatelessWidget {
                   createdAt: doc.meta.createdAt,
                   updatedAt: doc.meta.updatedAt),
               extractDesignState(doc))
-          : doc);
+          : doc,
+          // Restored in place of the lost design: the same design, so its
+          // row reads "backed up" rather than a new one beside a copy
+          // that is "only in the account".
+          id: copy ? null : cloud.projectId);
       if (!copy) await BackupMarks.write(id, doc.meta.updatedAt);
+      // My houses lists it too, when this page sits over the shell.
       PlatformReload.of(context)?.bump();
+      await onRestored();
       if (context.mounted)
         toast(context, tr3('已恢复到本设备', 'Қалпына келтірілді', 'Восстановлено'));
     }

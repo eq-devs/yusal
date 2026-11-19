@@ -43,6 +43,10 @@ HouseDocument createTemplate(
   if (kind == 'two') {
     doc = executeDocumentCommand(doc, 'CopyFloor', {'floorId': floor}, newId)
         .document!;
+    // A copy is named "一楼 副本"; here it is the house's second floor.
+    doc = executeDocumentCommand(doc, 'RenameFloor',
+            {'floorId': doc.floors[1].id, 'value': '二楼'}, newId)
+        .document!;
     final axes = resolveFloorAxes(doc, floor)!;
     doc = executeDocumentCommand(
             doc,

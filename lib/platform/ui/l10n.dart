@@ -33,11 +33,25 @@ String regionName(String code) => switch (code) {
       _ => code,
     };
 
+/// "Талгар · северная часть": the region and the place inside it, once.
+/// People often start the place with the town's own name ("Талгар, северная
+/// часть", or just "Есик"); then it is not printed a second time.
+String placeText(String region, String locality) {
+  final r = regionName(region), l = locality.trim();
+  if (l.isEmpty) return r;
+  if (r.isEmpty || l.toLowerCase().startsWith(r.toLowerCase())) return l;
+  return '$r · $l';
+}
+
+/// Square and cubic metres: Cyrillic "м" outside Chinese.
+String get sqm => isKk ? 'м²' : 'm²';
+String get sqm3 => isKk ? 'м³' : 'm³';
+
 String unitLabel(String code) => switch (code) {
       'total' => tr3('总价', 'жалпы', 'итого'),
       'day' => tr3('天', 'күн', 'день'),
-      'm3' => 'm³',
-      'm2' => 'm²',
+      'm3' => sqm3,
+      'm2' => sqm,
       'm' => tr3('米', 'м', 'м'),
       'pcs' => tr3('个', 'дана', 'шт.'),
       't' => tr3('吨', 'т', 'т'),
@@ -381,6 +395,8 @@ String budgetText(Budget b) => switch (b.mode) {
 String fmtDay(DateTime? d) {
   if (d == null) return tr3('待协商', 'Келісіледі', 'По договорённости');
   String two(int n) => n.toString().padLeft(2, '0');
+  // Day first, as dates are written in Kazakhstan.
+  if (isKk) return '${two(d.day)}.${two(d.month)}.${d.year}';
   return '${d.year}-${two(d.month)}-${two(d.day)}';
 }
 

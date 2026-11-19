@@ -8,6 +8,7 @@ import 'package:yusal/features/house_editor.dart';
 import 'package:yusal/main.dart';
 import 'package:yusal/platform/data/mock/mock_backend.dart';
 import 'package:yusal/platform/data/mock/mock_seed.dart';
+import 'package:yusal/platform/ui/shell.dart';
 import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 
@@ -50,24 +51,27 @@ void main() {
       await t.pumpWidget(
           ProviderScope(child: HouseApp(repos: backend, store: store)));
       await hold('discover');
-      await t.tap(find.byType(NavigationDestination).at(1));
+      await t.tap(find.byType(ShellBarTab).at(1));
       await hold('houses');
       await t.tap(find.text('Tour house'));
+      // The design opens on its drawing; 3D is one button away.
       for (var i = 0;
-          i < 50 && find.byKey(const ValueKey('tab-ext')).evaluate().isEmpty;
+          i < 50 && find.byKey(const ValueKey('tab-plan')).evaluate().isEmpty;
           i++) {
         await t.pump(const Duration(milliseconds: 100));
       }
+      expect(find.byKey(const ValueKey('tab-plan')), findsOneWidget);
       await hold('editor');
-      await t.tap(find.byKey(const ValueKey('tab-ext')));
+      await t.tap(find.byKey(const ValueKey('quick-3d')));
       await hold('editor-3d');
+      expect(find.byKey(const ValueKey('tab-ext')), findsOneWidget);
       await t.tap(find.byType(BackButton).first);
       await hold('houses-again');
-      await t.tap(find.byType(NavigationDestination).at(2));
+      await t.tap(find.byType(ShellBarTab).at(2));
       await hold('messages');
-      await t.tap(find.byType(NavigationDestination).at(3));
+      await t.tap(find.byType(ShellBarTab).at(3));
       await hold('me');
-      await t.tap(find.byType(NavigationDestination).at(0));
+      await t.tap(find.byType(ShellBarTab).at(0));
       await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('explore-seg-1')));
       await hold('work');

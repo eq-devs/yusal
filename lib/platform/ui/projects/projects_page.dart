@@ -253,7 +253,7 @@ class _DesignCard extends StatelessWidget {
                       style: YText.label.copyWith(
                           color: t.muted, fontFeatures: YText.tabular)),
                   Text(
-                      '${tr3('更新于', 'Жаңартылды', 'Обновлён')} ${doc.meta.updatedAt.split('T').first}',
+                      '${tr3('更新于', 'Жаңартылды', 'Обновлён')} ${fmtDay(DateTime.tryParse(doc.meta.updatedAt))}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: YText.caption.copyWith(

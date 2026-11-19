@@ -37,7 +37,8 @@ void main() {
       if (repos.currentAccount != null) await signOut(t, repos);
       await home(t);
       await tab(t, '我的');
-      await tapIt(t, find.widgetWithText(FilledButton, '登录或注册'));
+      await tapIt(t,
+          find.widgetWithText(FilledButton, '登录或注册').hitTestable().first);
       final chip = find.byKey(Key('test-login-$key'));
       await waitFor(t, chip);
       await scrollTo(t, chip);

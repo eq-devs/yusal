@@ -337,6 +337,8 @@ void main() {
       await waitFor(t, find.byType(PopupMenuButton<String>));
       await tapIt(t, find.byType(PopupMenuButton<String>));
       await tapIt(t, find.text('举报'));
+      // The report sheet asks for a reason first.
+      await tapIt(t, find.text('其他，自己填写'));
       await answerDialog(t, '测试举报 $run');
       await idle(t, 1000);
       await shot(t, 'm13-report-sent');

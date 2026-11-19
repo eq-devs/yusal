@@ -3,13 +3,14 @@
 // edited and undone by one sentence. The language model and the speech
 // service are scripted here, so no server is needed.
 //
-//   xcrun simctl privacy <simulator-id> grant microphone com.example.yusal
+//   xcrun simctl privacy <simulator-id> grant microphone com.yusal.client
 //   flutter test integration_test/voice_test.dart -d <simulator-id> \
 //       --dart-define=YUSAL_VOICE=true
 //
-// The grant must come after the app is installed, and a reinstall drops it:
-// run once, grant, run again. Without it the two tests that record fail
-// with "the microphone must be allowed".
+// `flutter test` removes the app when a run ends, and that drops the grant:
+// grant before every run (granting while the app runs stops the app).
+// Without it iOS asks on screen and the two tests that record fail with
+// "the microphone must be allowed".
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -22,6 +23,7 @@ import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/features/house_editor.dart';
 import 'package:yusal/main.dart';
 import 'package:yusal/platform/data/mock/mock_backend.dart';
+import 'package:yusal/platform/domain/models.dart';
 import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'package:yusal/voice/audio_device.dart';
@@ -38,7 +40,17 @@ VoiceTurn act(String turnId, List<(String, Map<String, Object?>)> calls) =>
 /// The in-memory backend plus a scripted language model and speech service.
 class VoiceMock extends MockBackend implements VoiceBackend, SpeechBackend {
   VoiceMock(this.turns, {this.hears = ''})
-      : super(latency: Duration.zero, seed: false);
+      : super(latency: Duration.zero, seed: false) {
+    // The orb shows only for someone signed in (the assistant acts on an
+    // account's own designs), and this backend starts with no accounts.
+    accounts[_user] = Account(
+        id: _user,
+        phone: '+77010000000',
+        displayName: 'Voice test',
+        createdAt: now);
+    signInAs(_user);
+  }
+  static const _user = 'acc_voice_test';
   final List<VoiceTurn> turns;
   final String hears;
   final said = <({String text, bool spoken, Map<String, Object?> context})>[];
@@ -78,11 +90,14 @@ void main() {
     await t.pump();
   }
 
-  Future<void> waitFor(WidgetTester t, bool Function() done) async {
+  /// [settle] is off while the orb listens: it turns for as long as it
+  /// does, so the page never settles until the sentence's time is up.
+  Future<void> waitFor(WidgetTester t, bool Function() done,
+      {bool settle = true}) async {
     for (var i = 0; i < 100 && !done(); i++) {
       await real(t, 100);
     }
-    await t.pumpAndSettle();
+    if (settle) await t.pumpAndSettle();
   }
 
   Future<void> type(WidgetTester t, String text) async {
@@ -97,6 +112,13 @@ void main() {
     final field = t.widget<TextField>(find.byKey(const Key('voice-input')));
     field.controller!.text = text;
     field.onSubmitted!(text);
+    await t.pumpAndSettle();
+  }
+
+  /// The answer's bubble lists what was done only while the sentence runs;
+  /// afterwards a tap on the bubble opens the list.
+  Future<void> showSteps(WidgetTester t, String reply) async {
+    await t.tap(find.text(reply));
     await t.pumpAndSettle();
   }
 
@@ -124,6 +146,7 @@ void main() {
       await waitFor(t, () => find.text('已打开“我的”。').evaluate().isNotEmpty);
 
       expect(VoiceScreens.current!.screenId, 'shell.me');
+      await showSteps(t, '已打开“我的”。');
       expect(find.text('切换主页面'), findsOneWidget);
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
       // The model was told where the user was and what could run there.
@@ -154,7 +177,8 @@ void main() {
       // Tap the orb to listen, tap it again when done.
       await t.tap(find.byKey(const Key('voice-button')));
       await waitFor(
-          t, () => find.byIcon(Icons.stop_rounded).evaluate().isNotEmpty);
+          t, () => find.byIcon(Icons.stop_rounded).evaluate().isNotEmpty,
+          settle: false);
       expect(find.byIcon(Icons.stop_rounded), findsOneWidget,
           reason: 'the microphone must be allowed (see the top of this file)');
       await real(t, 1500);
@@ -260,6 +284,7 @@ void main() {
       expect(shown('floor').keys, ['f1', 'f2']);
       expect(shown('room').values, contains('书房'));
       expect(shown('opening'), hasLength(openings + 1));
+      await showSteps(t, '加好了。');
       expect(find.byIcon(Icons.check_circle), findsNWidgets(3));
       // Aliases only: no id of the design left the app.
       expect('${repos.said.single.context}', isNot(contains('voice_')));

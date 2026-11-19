@@ -9,8 +9,10 @@ import 'package:yusal/platform/ui/scope.dart';
 import 'package:yusal/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
-Future<MockBackend> pumpAdmin(WidgetTester t, String account) async {
-  AppSettings.instance.lang = AppLang.zh;
+Future<MockBackend> pumpAdmin(WidgetTester t, String account,
+    {AppLang lang = AppLang.zh}) async {
+  AppSettings.instance.lang = lang;
+  addTearDown(() => AppSettings.instance.lang = AppLang.zh);
   t.view.physicalSize = const Size(1200, 2400);
   t.view.devicePixelRatio = 2;
   addTearDown(t.view.reset);
@@ -63,4 +65,38 @@ void main() {
     await pumpAdmin(t, SeedIds.owner);
     expect(find.text('没有后台权限'), findsOneWidget);
   });
+
+  for (final lang in [AppLang.kk, AppLang.ru])
+    testWidgets('in ${lang.name} the back office shows no Chinese', (t) async {
+      final b = await pumpAdmin(t, SeedIds.admin, lang: lang);
+      // What the seed's users wrote stays as they wrote it.
+      final chinese = RegExp('[一-鿿]');
+      final found = <String>{};
+      void scan() {
+        for (final w in t.widgetList<Text>(find.byType(Text))) {
+          final s = w.data ?? w.textSpan?.toPlainText() ?? '';
+          if (chinese.hasMatch(s)) found.add(s);
+        }
+      }
+
+      expect(find.text(lang == AppLang.ru ? 'Сводка' : 'Шолу'), findsWidgets);
+      scan();
+      for (var i = 1; i < 4; i++) {
+        await t.tap(find.descendant(
+            of: find.byType(NavigationBar),
+            matching: find.byType(NavigationDestination).at(i)));
+        await t.pumpAndSettle();
+        scan();
+      }
+      await t.pumpWidget(PlatformScope(
+          repos: b,
+          store: ProjectStore(fileSystem: MemoryFiles()),
+          child: MaterialApp(
+              builder: (_, child) => AppScope(child: child!),
+              home: const AccountDetailPage(accountId: SeedIds.mason))));
+      await t.pumpAndSettle();
+      scan();
+      expect(found, isEmpty);
+      expect(t.takeException(), isNull);
+    });
 }

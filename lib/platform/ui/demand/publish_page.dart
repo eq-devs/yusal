@@ -237,7 +237,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
       regionName: region == null ? '' : regionName(region!),
       headcount: int.tryParse(headcount.text),
       scope: type == DemandType.contract && stages.isNotEmpty
-          ? stages.map(stageLabel).join('、')
+          ? stages.map(stageLabel).join(listSep)
           : null);
 
   String? validate(int s) {
@@ -613,7 +613,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
               'Жария бетте тек елді мекен көрсетіледі.',
               'Публично виден только населённый пункт; точный адрес — по вашему решению.')),
       _pickerTile(tr3('工种', 'Мамандық', 'Специальность'),
-          trades.map(tradeName).join('、'), () async {
+          trades.map(tradeName).join(listSep), () async {
         final v = await pickMany<String>(
             context,
             tr3('工种（可多选）', 'Мамандық', 'Специальности'),

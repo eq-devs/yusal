@@ -600,13 +600,20 @@ class _FadeRowState extends State<FadeRow> {
           for (final w in widget.children)
             Padding(padding: const EdgeInsets.only(right: 6), child: w)
         ]));
-    if (!more) return row;
+    // The mask stays in the tree at the row's end too, with nothing faded:
+    // taking it away there rebuilt the scroll view, which jumped back to
+    // its start, so the last tool could never be brought fully into view.
     return ShaderMask(
         blendMode: BlendMode.dstIn,
-        shaderCallback: (r) => const LinearGradient(
-                colors: [Colors.black, Colors.black, Colors.transparent],
-                stops: [0, 0.86, 1])
-            .createShader(r),
+        shaderCallback: (r) => LinearGradient(colors: [
+              Colors.black,
+              Colors.black,
+              more ? Colors.transparent : Colors.black
+            ], stops: const [
+              0,
+              0.86,
+              1
+            ]).createShader(r),
         child: row);
   }
 }

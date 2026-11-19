@@ -94,9 +94,9 @@ class _FromDesignPageState extends State<FromDesignPage> {
           const SizedBox(height: 4),
           Text(
               tr3(
-                  '设计版本：${widget.entry.document.meta.updatedAt.substring(0, 10)}',
-                  'Жоба нұсқасы: ${widget.entry.document.meta.updatedAt.substring(0, 10)}',
-                  'Версия проекта: ${widget.entry.document.meta.updatedAt.substring(0, 10)}'),
+                  '设计版本：${fmtDay(DateTime.tryParse(widget.entry.document.meta.updatedAt))}',
+                  'Жоба нұсқасы: ${fmtDay(DateTime.tryParse(widget.entry.document.meta.updatedAt))}',
+                  'Версия проекта: ${fmtDay(DateTime.tryParse(widget.entry.document.meta.updatedAt))}'),
               style: TextStyle(color: t.muted)),
           SectionTitle(tr3('选择范围', 'Көлемді таңдау', 'Что поручить')),
           Wrap(spacing: 8, runSpacing: 8, children: [

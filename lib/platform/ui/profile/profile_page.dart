@@ -163,7 +163,7 @@ class _ProfileView extends StatelessWidget {
                         fontSize: YFont.display, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
                 Text(
-                    '${profileKindName(p.kind)} · ${p.trades.map(tradeName).join('、')}',
+                    '${profileKindName(p.kind)} · ${p.trades.map(tradeName).join(listSep)}',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: t.muted)),
                 const Divider(height: 28),
@@ -188,7 +188,7 @@ class _ProfileView extends StatelessWidget {
               '${availabilityName(p)} · ${tr3('确认于 ${fmtDay(p.availabilityConfirmedAt)}', '${fmtDay(p.availabilityConfirmedAt)} расталды', 'обновлено ${fmtDay(p.availabilityConfirmedAt)}')}${stale ? tr3('（较久未更新）', ' (ескі)', ' (давно)') : ''}',
               icon: Icons.event_available_outlined),
           InfoRow(tr3('服务地区', 'Аймақ', 'Районы'),
-              p.regions.map(regionName).join('、'),
+              p.regions.map(regionName).join(listSep),
               icon: Icons.place_outlined),
           if (p.teamSize != null)
             InfoRow(tr3('团队人数', 'Бригада', 'Бригада'), '${p.teamSize}',

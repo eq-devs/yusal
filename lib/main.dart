@@ -65,12 +65,10 @@ class HouseApp extends StatefulWidget {
 
 class _HouseAppState extends State<HouseApp> {
   late final PlatformRepositories repos = widget.repos ?? MockBackend();
-  late final ProjectStore store =
-      (widget.store ??
-          ProjectStore(
-              previewRenderer: renderProjectPreview,
-              owners: PrefsProjectOwners()))
-        ..currentOwner ??= () => repos.currentAccount?.id;
+  late final ProjectStore store = (widget.store ??
+      ProjectStore(
+          previewRenderer: renderProjectPreview, owners: PrefsProjectOwners()))
+    ..currentOwner ??= () => repos.currentAccount?.id;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -82,6 +80,7 @@ class _HouseAppState extends State<HouseApp> {
             store: store,
             isDemo: repos is MockBackend && repos is! HttpBackend,
             child: MaterialApp(
+                showPerformanceOverlay: true,
                 navigatorKey: appNavigator,
                 navigatorObservers: FirebaseSetup.observers,
                 title: 'Yusal',

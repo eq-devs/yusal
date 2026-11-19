@@ -94,7 +94,12 @@ List<OpeningPlacement> deriveOpenings(
   }));
 }
 
-DerivedHouse deriveHouse(HouseDocument doc) {
+final _houses = DerivedCache<int, DerivedHouse>(4);
+
+DerivedHouse deriveHouse(HouseDocument doc) =>
+    _houses.get(doc, 0, () => _deriveHouse(doc));
+
+DerivedHouse _deriveHouse(HouseDocument doc) {
   final elements = <SceneElement>[], floors = <DerivedFloor>[];
   final width = doc.footprint.width.toDouble(),
       depth = doc.footprint.depth.toDouble(),

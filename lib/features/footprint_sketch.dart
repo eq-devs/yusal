@@ -215,5 +215,9 @@ class _SketchPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _SketchPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _SketchPainter old) =>
+      old.start != start ||
+      old.end != end ||
+      old.scale != scale ||
+      old.valid != valid;
 }

@@ -1131,6 +1131,7 @@ class _SizePreviewPainter extends CustomPainter {
       if (vertical) canvas.rotate(-math.pi / 2);
       tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
       canvas.restore();
+      tp.dispose();
     }
 
     String m(double v) => v == v.roundToDouble() ? '${v.round()}' : v.toStringAsFixed(1);

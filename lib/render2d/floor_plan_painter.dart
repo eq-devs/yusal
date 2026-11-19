@@ -24,6 +24,47 @@ const roomColors = {
   RoomType.custom: Color(0xffc9c6dc)
 };
 
+/// Text the plan has laid out recently. A plan is repainted on every edit
+/// and most of its labels (room names, areas, dimension figures) are the
+/// same from one frame to the next; shaping them again was most of the cost
+/// of a repaint. Keyed by everything that decides the layout, so a hit is
+/// exactly what a fresh layout would give.
+abstract final class _PlanText {
+  static const _capacity = 600;
+  static final _cache =
+      <(String, TextStyle, double?, int?, TextAlign), TextPainter>{};
+
+  static var _listening = false;
+
+  static void _clear() {
+    for (final p in _cache.values) p.dispose();
+    _cache.clear();
+  }
+
+  static TextPainter laidOut(
+      String value, TextStyle style, double? maxWidth, int? maxLines,
+      {TextAlign align = TextAlign.center}) {
+    if (!_listening) {
+      // A font that arrives later changes every measure taken before it.
+      _listening = true;
+      PaintingBinding.instance.systemFonts.addListener(_clear);
+    }
+    final key = (value, style, maxWidth, maxLines, align);
+    final hit = _cache[key];
+    if (hit != null) return hit;
+    // Zooming makes new sizes every frame: start over rather than track
+    // which of them is oldest.
+    if (_cache.length >= _capacity) _clear();
+    return _cache[key] = TextPainter(
+        text: TextSpan(text: value, style: style),
+        textDirection: TextDirection.ltr,
+        maxLines: maxLines,
+        ellipsis: maxWidth == null ? null : '…',
+        textAlign: align)
+      ..layout(maxWidth: maxWidth ?? double.infinity);
+  }
+}
+
 class FloorPlanPainter extends CustomPainter {
   FloorPlanPainter(this.base, this.labels, this.colors,
       {this.preview = const [],
@@ -241,13 +282,8 @@ class FloorPlanPainter extends CustomPainter {
             fontSize: px(font),
             height: 1.25,
             fontWeight: weight);
-    final t = TextPainter(
-        text: TextSpan(text: value, style: style),
-        textDirection: TextDirection.ltr,
-        maxLines: maxWidth == null ? null : maxLines ?? 3,
-        ellipsis: maxWidth == null ? null : '…',
-        textAlign: TextAlign.center)
-      ..layout(maxWidth: maxWidth ?? double.infinity);
+    final t = _PlanText.laidOut(value, style, maxWidth,
+        maxWidth == null ? null : maxLines ?? 3);
     canvas.save();
     canvas.translate(at.dx, at.dy);
     canvas.rotate(angle);
@@ -261,7 +297,6 @@ class FloorPlanPainter extends CustomPainter {
     }
     t.paint(canvas, Offset(-t.width / 2, -t.height / 2));
     canvas.restore();
-    t.dispose();
   }
 
   @override
@@ -956,23 +991,20 @@ class FloorPlanPainter extends CustomPainter {
   }
 
   double textWidth(String text, double fontSize, FontWeight weight,
-      {bool monospace = false}) {
-    final tp = TextPainter(
-        text: TextSpan(
-            text: text,
-            style: monospace
-                ? mono(size: fontSize, weight: weight)
-                : TextStyle(
-                    fontFamily: fontBody,
-                    fontFamilyFallback: bodyFallback,
-                    fontSize: fontSize,
-                    fontWeight: weight)),
-        textDirection: TextDirection.ltr)
-      ..layout();
-    final width = tp.width;
-    tp.dispose();
-    return width;
-  }
+          {bool monospace = false}) =>
+      _PlanText.laidOut(
+              text,
+              monospace
+                  ? mono(size: fontSize, weight: weight)
+                  : TextStyle(
+                      fontFamily: fontBody,
+                      fontFamilyFallback: bodyFallback,
+                      fontSize: fontSize,
+                      fontWeight: weight),
+              null,
+              null,
+              align: TextAlign.start)
+          .width;
 
   /// Rugs big enough to carry their name along the lower edge (like the
   /// drafting page, above 12 m²).

@@ -98,10 +98,35 @@ class PushSetup {
       // Let the first frame build the navigator.
       WidgetsBinding.instance.addPostFrameCallback((_) => open(launch));
     }
+    // The system asks "allow notifications?" the moment permission is
+    // requested. Pushes are about an account's deals and chats, so the
+    // question waits for a sign-in instead of covering the first launch.
+    if (api.currentAccount != null) {
+      await _askAndRegister();
+    } else {
+      unawaited(_signedIn().then((_) => _askAndRegister()));
+    }
+  }
+
+  Future<void> _askAndRegister() async {
     if (!await messaging.requestPermission()) return;
     _subs.add(messaging.tokenRefreshes.listen(_register));
     final t = await messaging.token();
     if (t != null) await _register(t);
+  }
+
+  /// Completes at once for a restored session, else on the first sign-in.
+  Future<void> _signedIn() {
+    if (api.currentAccount != null) return Future<void>.value();
+    final done = Completer<void>();
+    void check() {
+      if (api.currentAccount == null) return;
+      api.changes.removeListener(check);
+      done.complete();
+    }
+
+    api.changes.addListener(check);
+    return done.future;
   }
 
   Future<void> _register(String token) => api.setPushToken(token,

@@ -4,7 +4,7 @@
     <!-- Voice control: recording a spoken request. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
-        android:label="自建房设计"
+        android:label="Yusal"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

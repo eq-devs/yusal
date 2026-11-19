@@ -333,11 +333,33 @@ class _ChatPageState extends State<ChatPage>
                                 text: _pending[_pending.length - 1 - i]);
                           }
                           i -= _pending.length;
-                          final m = data.messages[data.messages.length - 1 - i];
-                          return _Bubble(
+                          final at = data.messages.length - 1 - i;
+                          final m = data.messages[at];
+                          final bubble = _Bubble(
                               message: m,
                               mine: m.senderId == me,
                               cards: data.cards);
+                          // The time under a message has no date: the
+                          // first message of each day is headed by its day.
+                          if (at > 0 &&
+                              _sameDay(data.messages[at - 1].sentAt, m.sentAt)) {
+                            return bubble;
+                          }
+                          return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8),
+                                    child: Text(
+                                        _dayLabel(m.sentAt, context.now),
+                                        key: const Key('chat-day'),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            color: t.muted,
+                                            fontSize: YFont.caption))),
+                                bubble,
+                              ]);
                         })),
                 if (data.blocked)
                   Padding(
@@ -394,6 +416,17 @@ class _ChatPageState extends State<ChatPage>
               ]));
         });
   }
+}
+
+bool _sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+String _dayLabel(DateTime day, DateTime now) {
+  if (_sameDay(day, now)) return tr3('今天', 'Бүгін', 'Сегодня');
+  if (_sameDay(day, now.subtract(const Duration(days: 1)))) {
+    return tr3('昨天', 'Кеше', 'Вчера');
+  }
+  return fmtDay(day);
 }
 
 class _Bubble extends StatelessWidget {

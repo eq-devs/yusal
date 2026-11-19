@@ -448,14 +448,7 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   /// Floors named automatically ("一楼", "二楼 副本") follow the language.
-  String displayFloorName(String name) {
-    const numerals = '一二三四五六七八九十';
-    final m = RegExp(r'^([一二三四五六七八九十])楼( 副本)?$').firstMatch(name);
-    if (m == null || !isKk) return name;
-    final n = numerals.indexOf(m[1]!) + 1;
-    if (isRu) return '$n-й этаж${m[2] == null ? '' : ' (копия)'}';
-    return '$n-қабат${m[2] == null ? '' : ' (көшірме)'}';
-  }
+  String displayFloorName(String name) => floorDisplayName(name);
 
   /// Rooms keep the name the user gave; automatic names follow the language.
   String displayRoomName(Room r) {
@@ -1466,15 +1459,24 @@ class _HouseEditorState extends State<HouseEditor>
 
   double lastCanvasZoom = 1;
 
-  /// A pure pan only moves the cached drawing; rebuild the editor (grip
-  /// sizes, hit radii, the wall menu's position) when the zoom changes or a
-  /// floating menu has to follow the wall.
+  /// Ticks when the zoom changes: only the plan canvas listens, so a pinch
+  /// rebuilds the drawing (grip and label sizes) and not the whole editor.
+  final canvasZoomChanged = ValueNotifier<double>(1);
+
+  /// A pure pan only moves the cached drawing. A zoom change rebuilds the
+  /// plan canvas alone; the whole editor is rebuilt only while something
+  /// outside the canvas follows the view (the wall menu, the loupe).
   void onCanvasTransformChanged() {
     if (!mounted) return;
     final zoom = canvasZoom;
-    if (zoom == lastCanvasZoom && menuWall == null) return;
+    final follows = menuWall != null || loupeAt != null;
+    if (zoom == lastCanvasZoom && !follows) return;
     lastCanvasZoom = zoom;
-    setState(() {});
+    if (follows) {
+      setState(() {});
+    } else {
+      canvasZoomChanged.value = zoom;
+    }
   }
 
   void derive() {
@@ -1495,6 +1497,7 @@ class _HouseEditorState extends State<HouseEditor>
     previewTimer?.cancel();
     canvasTransform.removeListener(onCanvasTransformChanged);
     canvasTransform.dispose();
+    canvasZoomChanged.dispose();
     pulse.dispose();
     timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
@@ -4528,7 +4531,9 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   /// The plan drawing with all editing gestures; sized by its sheet.
-  Widget planCanvas() => LayoutBuilder(builder: (context, constraints) {
+  Widget planCanvas() => ListenableBuilder(
+      listenable: canvasZoomChanged,
+      builder: (context, _) => LayoutBuilder(builder: (context, constraints) {
                               final size = Size(
                                   constraints.maxWidth, constraints.maxHeight);
                               canvasSize = size;
@@ -5163,5 +5168,5 @@ class _HouseEditorState extends State<HouseEditor>
                                                           pulse: pulse,
                                                           measure: measurePoints,
                                                           preview: List.of(stroke))))))));
-                            });
+                            }));
 }

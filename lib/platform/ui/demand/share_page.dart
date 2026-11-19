@@ -142,7 +142,7 @@ class _PublicPreview extends StatelessWidget {
           Text(v.title,
               style:
                   const TextStyle(fontSize: YFont.section, fontWeight: FontWeight.w700)),
-          Text('${regionName(v.region)} · ${v.locality}',
+          Text(placeText(v.region, v.locality),
               style: TextStyle(color: t.muted)),
           const SizedBox(height: 8),
           Text(budgetText(v.budget),

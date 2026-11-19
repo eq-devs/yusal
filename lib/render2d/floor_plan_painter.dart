@@ -261,6 +261,7 @@ class FloorPlanPainter extends CustomPainter {
     }
     t.paint(canvas, Offset(-t.width / 2, -t.height / 2));
     canvas.restore();
+    t.dispose();
   }
 
   @override
@@ -756,6 +757,7 @@ class FloorPlanPainter extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = px(1.2));
       tp.paint(canvas, box.center - Offset(tp.width / 2, tp.height / 2));
+      tp.dispose();
     }
 
     if (coach != null) {
@@ -967,7 +969,9 @@ class FloorPlanPainter extends CustomPainter {
                     fontWeight: weight)),
         textDirection: TextDirection.ltr)
       ..layout();
-    return tp.width;
+    final width = tp.width;
+    tp.dispose();
+    return width;
   }
 
   /// Rugs big enough to carry their name along the lower edge (like the

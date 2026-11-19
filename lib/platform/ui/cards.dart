@@ -67,7 +67,7 @@ class DemandCard extends StatelessWidget {
       ]),
       const SizedBox(height: 3),
       Text(
-          '${regionName(v.region)}${v.locality.isEmpty ? '' : ' · ${v.locality}'}',
+          placeText(v.region, v.locality),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(color: t.muted, fontSize: YFont.label)),

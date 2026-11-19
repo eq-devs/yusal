@@ -93,7 +93,7 @@ class HouseCard extends StatelessWidget {
                   left: 10,
                   top: 10,
                   child: StatusPill(
-                      tr3('求点评 · ${p.focus.map(feedbackTopicName).join('、')}',
+                      tr3('求点评 · ${p.focus.map(feedbackTopicName).join(listSep)}',
                           'Пікір сұрайды', 'Просит отзывы'),
                       color: t.ink,
                       filled: true)),
@@ -266,7 +266,7 @@ String houseHeroKey(String postId) => 'house:$postId';
 /// "塔尔加尔 · 130 m² · 一层 · 4 个房间"
 String houseFacts(HousePost p) => [
       regionName(p.region),
-      '${p.area.round()} m²',
+      '${p.area.round()} $sqm',
       switch (p.floors) {
         1 => tr3('一层', 'Бір қабат', '1 этаж'),
         2 => tr3('两层', 'Екі қабат', '2 этажа'),

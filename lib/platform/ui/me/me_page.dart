@@ -51,8 +51,10 @@ class MePage extends StatelessWidget {
                       // reloaded) the ones at the edge of its cache over and
                       // over while their height changed.
                       child: SingleChildScrollView(
+                          // Room at the end for the tab bar that floats
+                          // over the page, so the last line clears it.
                           padding: const EdgeInsets.fromLTRB(YSpace.gutter,
-                              YSpace.md, YSpace.gutter, YSpace.huge),
+                              YSpace.md, YSpace.gutter, YSpace.huge + 56),
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [

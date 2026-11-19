@@ -191,7 +191,7 @@ class _DemandDetailState extends State<_DemandDetail>
           child: Text(v.title, style: display(size: 26, color: t.ink))),
       const SizedBox(height: 6),
       Text(
-          '${regionName(v.region)}${v.locality.isEmpty ? '' : ' · ${v.locality}'} · ${tr3('第 ${v.no} 版', '${v.no}-нұсқа', 'версия ${v.no}')} · ${ago(v.createdAt, context.now)}',
+          '${placeText(v.region, v.locality)} · ${tr3('第 ${v.no} 版', '${v.no}-нұсқа', 'версия ${v.no}')} · ${ago(v.createdAt, context.now)}',
           style: TextStyle(color: t.muted)),
       if (mine &&
           d.status == DemandStatus.rejected &&

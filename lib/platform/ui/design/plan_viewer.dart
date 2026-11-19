@@ -8,6 +8,7 @@ import '../../../render2d/furniture_names.dart';
 import '../../../render3d/scene_view.dart';
 import '../../domain/models.dart';
 import '../../../app/settings.dart';
+import '../l10n.dart';
 import '../scope.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -184,7 +185,7 @@ class _PlanViewerState extends State<PlanViewer> {
         Padding(
             padding: const EdgeInsets.all(12),
             child: Text(
-                '${widget.snapshot.projectName} · ${widget.snapshot.extractedAt.toIso8601String().substring(0, 10)}')),
+                '${widget.snapshot.projectName} · ${fmtDay(widget.snapshot.extractedAt)}')),
         if (doc != null) ...[
           SegmentedButton<bool>(segments: const [
             ButtonSegment(value: false, label: Text('2D')),
@@ -201,7 +202,7 @@ class _PlanViewerState extends State<PlanViewer> {
                   for (var i = 0; i < doc.floors.length; i++)
                     DropdownMenuItem(
                         value: i,
-                        child: Text('${i + 1} · ${doc.floors[i].name}'))
+                        child: Text('${i + 1} · ${floorDisplayName(doc.floors[i].name)}'))
                 ],
                 onChanged: (value) {
                   if (value != null)

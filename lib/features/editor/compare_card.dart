@@ -118,7 +118,7 @@ extension _CompareCard on _HouseEditorState {
     String m(double mm) => dec((mm / 1000).toStringAsFixed(mm % 1000 == 0 ? 0 : 1));
     String m2(double mm2) => '${dec((mm2 / 1e6).toStringAsFixed(1))} $unitM2';
     String list(List<String> names) =>
-        names.isEmpty ? '—' : names.join(isKk ? ', ' : '、');
+        names.isEmpty ? '—' : names.join(listSep);
     String spans(List<double> s) => s.isEmpty
         ? '—'
         : '${s.map((x) => dec((x / 1000).toStringAsFixed(1))).join(' / ')} $unitM';

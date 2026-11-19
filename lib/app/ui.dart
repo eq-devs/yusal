@@ -537,8 +537,7 @@ class PlainTable extends StatelessWidget {
     return LayoutBuilder(builder: (context, c) {
       // Text columns wrap at under half the width so two fit a phone.
       if (c.maxWidth.isFinite) wrap = (c.maxWidth * 0.42).clamp(110.0, 220.0);
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
+      return _SidewaysHint(
         child: ConstrainedBox(
         constraints: BoxConstraints(
             minWidth: c.maxWidth.isFinite ? c.maxWidth : 0),
@@ -673,4 +672,32 @@ class ShareBars extends StatelessWidget {
                     ])))
         ]));
   }
+}
+
+/// A table wider than the page scrolls sideways; a bar under it says so
+/// while there is more to the side (nothing shows when it all fits).
+class _SidewaysHint extends StatefulWidget {
+  const _SidewaysHint({required this.child});
+  final Widget child;
+  @override
+  State<_SidewaysHint> createState() => _SidewaysHintState();
+}
+
+class _SidewaysHintState extends State<_SidewaysHint> {
+  final controller = ScrollController();
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scrollbar(
+      controller: controller,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+          controller: controller,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.only(bottom: 6),
+          child: widget.child));
 }

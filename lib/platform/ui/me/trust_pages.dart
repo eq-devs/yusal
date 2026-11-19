@@ -216,7 +216,7 @@ class DemandAlertPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     String all(List<String> names) =>
-        names.isEmpty ? tr3('不限', 'Барлығы', 'Любые') : names.join('、');
+        names.isEmpty ? tr3('不限', 'Барлығы', 'Любые') : names.join(listSep);
     return Scaffold(
         appBar: AppBar(title: Text(tr3('新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки'))),
         body: Live<DemandAlert>(

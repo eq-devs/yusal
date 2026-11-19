@@ -448,14 +448,7 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   /// Floors named automatically ("一楼", "二楼 副本") follow the language.
-  String displayFloorName(String name) {
-    const numerals = '一二三四五六七八九十';
-    final m = RegExp(r'^([一二三四五六七八九十])楼( 副本)?$').firstMatch(name);
-    if (m == null || !isKk) return name;
-    final n = numerals.indexOf(m[1]!) + 1;
-    if (isRu) return '$n-й этаж${m[2] == null ? '' : ' (копия)'}';
-    return '$n-қабат${m[2] == null ? '' : ' (көшірме)'}';
-  }
+  String displayFloorName(String name) => floorDisplayName(name);
 
   /// Rooms keep the name the user gave; automatic names follow the language.
   String displayRoomName(Room r) {

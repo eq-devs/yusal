@@ -15,13 +15,17 @@ import 'http_backend_test.dart' show FakeApi;
 class FakeMessaging implements PushMessaging {
   FakeMessaging({this.available = true, this.allowed = true});
   final bool available, allowed;
+  var asked = 0;
   final refreshes = StreamController<String>();
   final taps = StreamController<Map<String, dynamic>>();
   Map<String, dynamic>? launch;
   @override
   Future<bool> init() async => available;
   @override
-  Future<bool> requestPermission() async => allowed;
+  Future<bool> requestPermission() async {
+    asked++;
+    return allowed;
+  }
   @override
   Future<String?> token() async => 'tok-1';
   @override
@@ -73,6 +77,19 @@ void main() {
     m.refreshes.add('tok-2');
     await pumpEventQueue();
     expect(registrations().last['token'], 'tok-2');
+  });
+
+  test('permission is asked after sign-in, not at first launch', () async {
+    final m = FakeMessaging();
+    unawaited(
+        PushSetup(backend, GlobalKey<NavigatorState>(), messaging: m).start());
+    await pumpEventQueue();
+    expect(m.asked, 0, reason: 'nobody is signed in yet');
+    expect(registrations(), isEmpty);
+    await signIn();
+    await pumpEventQueue();
+    expect(m.asked, 1);
+    expect(registrations().single['token'], 'tok-1');
   });
 
   test('without Firebase config or permission nothing is registered',

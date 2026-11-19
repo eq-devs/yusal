@@ -150,8 +150,12 @@ class ProjectStore {
     return list;
   }
 
-  Future<String> createProject(HouseDocument doc) async {
-    final id = const Uuid().v4();
+  /// [id] keeps a design's identity when it comes back from its backup,
+  /// so the copy in the account stays tied to it; taken only when free.
+  Future<String> createProject(HouseDocument doc, {String? id}) async {
+    if (id == null || _entries.any((e) => e.id == id)) {
+      id = const Uuid().v4();
+    }
     await files.write(id, encodeHouse(doc));
     final me = currentOwner?.call(), owners = this.owners;
     if (me != null && owners != null)

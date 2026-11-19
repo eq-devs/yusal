@@ -79,6 +79,11 @@ Future<void> tapIt(WidgetTester t, Finder f) async {
   }
   await t.ensureVisible(f);
   await t.pumpAndSettle();
+  // ensureVisible can leave it under the frosted app bar or the floating
+  // tab bar, where a tap misses: bring it to the middle. Zero duration: a
+  // jump, done at once.
+  Scrollable.ensureVisible(f.evaluate().first, alignment: 0.5);
+  await t.pumpAndSettle();
   await t.tap(f);
   await idle(t);
 }
@@ -119,7 +124,10 @@ Future<void> signIn(WidgetTester t, HttpBackend repos, String name) async {
   if (repos.currentAccount != null) await signOut(t, repos);
   await home(t);
   await tab(t, '我的');
-  await tapIt(t, find.widgetWithText(FilledButton, '登录或注册'));
+  // After a sign-out two pages in the tree carry this button; the one on
+  // top is the one to tap.
+  await tapIt(
+      t, find.widgetWithText(FilledButton, '登录或注册').hitTestable().first);
   await waitFor(t, find.byKey(const Key('dev-login-name')));
   await t.enterText(find.byKey(const Key('dev-login-name')), name);
   await tapIt(t, find.byKey(const Key('dev-login')));
@@ -130,7 +138,13 @@ Future<void> signIn(WidgetTester t, HttpBackend repos, String name) async {
 Future<void> signOut(WidgetTester t, HttpBackend repos) async {
   await home(t);
   await tab(t, '我的');
-  await scrollTap(t, find.text('退出登录'));
+  await scrollTap(t, find.byKey(const Key('me-sign-out')));
+  // The app asks before signing out.
+  await waitFor(t, find.text('退出登录？'));
+  await tapIt(t, find.text('退出').last);
+  for (var i = 0; i < 20 && repos.currentAccount != null; i++) {
+    await idle(t, 250);
+  }
   expect(repos.currentAccount, isNull);
 }
 

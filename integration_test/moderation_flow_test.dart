@@ -54,7 +54,9 @@ Future<void> openAdmin(WidgetTester t, HttpBackend repos) async {
 
 /// The admin card whose texts include [text].
 Finder card(String text) =>
-    find.ancestor(of: find.text(text), matching: find.byType(Column)).first;
+    find
+        .ancestor(of: find.textContaining(text), matching: find.byType(Column))
+        .first;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -151,7 +153,8 @@ void main() {
       // ── Admin upholds the report: the account is restricted ──
       await openAdmin(t, repos);
       await tapIt(t, find.widgetWithText(FilterPill, '举报'));
-      await waitFor(t, find.text('要求先交押金 $run'));
+      // The queue shows it as "原因：<text>" in one line.
+      await waitFor(t, find.textContaining('要求先交押金 $run'));
       await shot(t, 'a05-report-queue');
       await tapIt(
           t,

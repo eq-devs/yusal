@@ -169,11 +169,18 @@ class _Segment extends StatelessWidget {
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Icon(icon, size: 22, color: selected ? t.ink : t.muted),
                   const SizedBox(height: 2),
-                  Text(label,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: YFont.small,
-                          color: selected ? t.ink : t.muted)),
+                  // With large system text a label would break inside a
+                  // word and push its underline below the others': it
+                  // stays on one line and shrinks to its third instead.
+                  FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(label,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: YFont.small,
+                              color: selected ? t.ink : t.muted))),
                 ]))));
   }
 }

@@ -105,7 +105,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
     if (c != null) {
       scope.text = c.stages.isEmpty
           ? scopeKindName(c.scopeKind)
-          : c.stages.map(stageLabel).join('、');
+          : c.stages.map(stageLabel).join(listSep);
       if (c.targetDays != null) days.text = '${c.targetDays}';
     }
     final e = widget.existing;
@@ -402,38 +402,44 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                         for (final (i, r) in rows.indexed)
                           Padding(
                               padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(children: [
-                                Expanded(
-                                    flex: 3,
-                                    child: TextField(
-                                        controller: r.name,
-                                        decoration: InputDecoration(
-                                            labelText:
-                                                tr3('分项', 'Жұмыс', 'Работа')))),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                    flex: 2,
-                                    child: TextField(
-                                        controller: r.qty,
-                                        onChanged: (_) => setState(() {}),
-                                        keyboardType: const TextInputType
-                                            .numberWithOptions(decimal: true),
-                                        decoration: InputDecoration(
-                                            labelText: unitLabel(r.unit)))),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                    flex: 2,
-                                    child: TextField(
-                                        controller: r.price,
-                                        onChanged: (_) => setState(() {}),
-                                        keyboardType: TextInputType.number,
-                                        decoration: InputDecoration(
-                                            labelText: '₸${perUnit(r.unit)}'))),
-                                IconButton(
-                                    tooltip: tr3('删除', 'Жою', 'Удалить'),
-                                    onPressed: () =>
-                                        setState(() => rows.removeAt(i)),
-                                    icon: const Icon(Icons.close, size: 18)),
+                              // The name gets the whole width: next to
+                              // the numbers a phone showed nine letters of it.
+                              child: Column(children: [
+                                Row(children: [
+                                  Expanded(
+                                      child: TextField(
+                                          controller: r.name,
+                                          decoration: InputDecoration(
+                                              labelText: tr3(
+                                                  '分项', 'Жұмыс', 'Работа')))),
+                                  IconButton(
+                                      tooltip: tr3('删除', 'Жою', 'Удалить'),
+                                      onPressed: () =>
+                                          setState(() => rows.removeAt(i)),
+                                      icon: const Icon(Icons.close, size: 18)),
+                                ]),
+                                const SizedBox(height: 6),
+                                Row(children: [
+                                  Expanded(
+                                      child: TextField(
+                                          controller: r.qty,
+                                          onChanged: (_) => setState(() {}),
+                                          keyboardType: const TextInputType
+                                              .numberWithOptions(decimal: true),
+                                          decoration: InputDecoration(
+                                              labelText: unitLabel(r.unit)))),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                      child: TextField(
+                                          controller: r.price,
+                                          onChanged: (_) => setState(() {}),
+                                          keyboardType: TextInputType.number,
+                                          decoration: InputDecoration(
+                                              labelText:
+                                                  '₸${perUnit(r.unit)}'))),
+                                  // Lines the numbers up under the name.
+                                  const SizedBox(width: 48),
+                                ]),
                               ])),
                         Row(children: [
                           TextButton.icon(

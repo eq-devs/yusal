@@ -194,7 +194,11 @@ extension _EditorHeader on _HouseEditorState {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
           Row(children: [back, Expanded(child: title), history_, more]),
-          SingleChildScrollView(
+          // The buttons scroll; whether the design is saved stays in
+          // sight at the end of the row, whatever the language's length.
+          Row(children: [
+            Expanded(
+                child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.fromLTRB(12, 2, 4, 4),
                     child: Row(children: [
@@ -203,8 +207,11 @@ extension _EditorHeader on _HouseEditorState {
                       floorOps,
                       sizeButton,
                       saveButton,
-                      saveIndicator(),
-                    ])),
+                    ]))),
+            Padding(
+                padding: const EdgeInsets.only(left: 4, right: 8),
+                child: saveIndicator()),
+          ]),
         ]));
   }
 

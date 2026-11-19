@@ -35,6 +35,8 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   if (finder.evaluate().isEmpty && more.evaluate().isNotEmpty) {
     await tester.ensureVisible(more);
     await tester.pumpAndSettle();
+    // The row must stay where it was scrolled to: it used to jump back to
+    // its start at its end, leaving this button cut by the row's edge.
     await tester.tap(more);
     await tester.pumpAndSettle();
   }
@@ -43,14 +45,37 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
   await tester.tap(finder);
 }
 
-const tab3d = ValueKey('tab-ext');
+/// The design tool's header: three groups of pages (画图 / 看效果 /
+/// 造价与施工), the pages of the open group under them, and one button
+/// between the drawing and the 3D view. The group buttons are there
+/// whichever page is open.
+final editorOpen = find.byKey(const ValueKey('group-draw'));
+final planTab = find.byKey(const ValueKey('tab-plan'));
 
 /// Creating a design writes it to disk before the editor opens: wait for
-/// the editor's tabs.
+/// the editor's header.
 Future<void> waitForEditor(WidgetTester tester) async {
-  for (var i = 0; i < 50 && find.byKey(tab3d).evaluate().isEmpty; i++) {
+  for (var i = 0; i < 50 && editorOpen.evaluate().isEmpty; i++) {
     await tester.pump(const Duration(milliseconds: 100));
   }
+  await tester.pumpAndSettle();
+}
+
+/// From the drawing to the 3D view, by the button beside the page chips.
+Future<void> show3d(WidgetTester tester) async {
+  await tapVisible(tester, find.byKey(const ValueKey('quick-3d')));
+  await tester.pumpAndSettle();
+  expect(find.byKey(const ValueKey('tab-ext')), findsOneWidget);
+  expect(find.byKey(const ValueKey('quick-2d')), findsOneWidget);
+}
+
+/// 新建设计 opens the "怎么开始？" sheet; 按长宽新建 there opens the dialog
+/// with the name, the size and the roof.
+Future<void> openSizeDialog(WidgetTester tester) async {
+  await tester.tap(find.text('新建设计'));
+  await tester.pumpAndSettle();
+  expect(find.text('怎么开始？'), findsOneWidget);
+  await tester.tap(find.text('按长宽新建'));
   await tester.pumpAndSettle();
 }
 
@@ -85,16 +110,17 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('也可以从示例开始'));
     await tester.pumpAndSettle();
+    expect(find.text('怎么开始？'), findsOneWidget);
+    await tester.ensureVisible(find.text('一层三间'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('一层三间'));
     await tester.pumpAndSettle(const Duration(milliseconds: 300));
     // Wait for native WebP encoding and the route transition.
-    for (var i = 0; i < 50 && find.byKey(tab3d).evaluate().isEmpty; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
+    await waitForEditor(tester);
+    expect(planTab, findsOneWidget);
     expect(find.text('一层三间'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    await tapVisible(tester, find.byKey(tab3d));
-    await tester.pumpAndSettle();
+    await show3d(tester);
     expect(find.byTooltip('适配画面'), findsOneWidget);
     await tester.tap(find.byTooltip('适配画面'));
     await tester.pumpAndSettle();
@@ -112,25 +138,22 @@ void main() {
     expect(find.text('我的设计'), findsOneWidget);
     await openDesign(tester, '一层三间');
     await tester.pumpAndSettle();
-    expect(find.byKey(tab3d), findsOneWidget);
+    await waitForEditor(tester);
+    expect(planTab, findsOneWidget);
     expect(tester.takeException(), isNull);
-    await tapVisible(tester, find.byKey(tab3d));
-    await tester.pumpAndSettle();
+    await show3d(tester);
     expect(find.byType(Scaffold), findsOneWidget);
   });
   testWidgets('direct dimensions, partitions, door, 3D and native reopen',
       (tester) async {
     await startApp(tester);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('新建设计'));
-    await tester.pumpAndSettle();
+    await openSizeDialog(tester);
     await tester.enterText(nameField, '交互改造验收');
     await tester.tap(find.text('开始设计'));
     await tester.pumpAndSettle();
-    for (var i = 0; i < 50 && find.byKey(tab3d).evaluate().isEmpty; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.byKey(tab3d), findsOneWidget);
+    await waitForEditor(tester);
+    expect(planTab, findsOneWidget);
     await tapVisible(tester, find.byTooltip('拉线分房'));
     await tester.pumpAndSettle();
     final canvas = find.byWidgetPredicate(
@@ -174,22 +197,20 @@ void main() {
     expect(created.document.floors.first.rooms.length, 3);
     expect(created.document.floors.first.openings.length, 1);
     if (nativePreview) expect(created.preview, isNotNull);
-    await tapVisible(tester, find.byKey(tab3d));
-    await tester.pumpAndSettle();
+    await show3d(tester);
     expect(tester.takeException(), isNull);
     await tester.tap(find.byTooltip('返回'));
     await tester.pumpAndSettle();
     await openDesign(tester, '交互改造验收');
-    await tester.pumpAndSettle();
-    expect(find.byKey(tab3d), findsOneWidget);
+    await waitForEditor(tester);
+    expect(planTab, findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   testWidgets('blank canvas sketch creates the exact exterior dimensions',
       (tester) async {
     await startApp(tester);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('新建设计'));
-    await tester.pumpAndSettle();
+    await openSizeDialog(tester);
     await tester.enterText(nameField, '外形草绘验收');
     await tester.ensureVisible(find.text('在画布上拖出外形'));
     await tester.tap(find.text('在画布上拖出外形'));
@@ -204,10 +225,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('使用这个外形'));
     await tester.pumpAndSettle();
-    for (var i = 0; i < 50 && find.byKey(tab3d).evaluate().isEmpty; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.byKey(tab3d), findsOneWidget);
+    await waitForEditor(tester);
+    expect(planTab, findsOneWidget);
     final created = (await ProjectStore().listProjects())
         .firstWhere((p) => p.document.meta.name == '外形草绘验收');
     expect(created.document.footprint.width, 12000);
@@ -220,8 +239,7 @@ void main() {
       (tester) async {
     await startApp(tester);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('新建设计'));
-    await tester.pumpAndSettle();
+    await openSizeDialog(tester);
     await tester.enterText(nameField, '浮层绘墙验收');
     await tester.tap(find.text('开始设计'));
     await tester.pumpAndSettle();
@@ -280,8 +298,7 @@ void main() {
     expect(opening.status, 'ok');
     expect(opening.axis.pos, 4500);
     if (nativePreview) expect(entry.preview, isNotNull);
-    await tapVisible(tester, find.byKey(tab3d));
-    await tester.pumpAndSettle();
+    await show3d(tester);
     expect(find.byTooltip('适配画面'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.tap(find.byTooltip('返回'));
@@ -295,8 +312,7 @@ void main() {
       (tester) async {
     await startApp(tester);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('新建设计'));
-    await tester.pumpAndSettle();
+    await openSizeDialog(tester);
     await tester.enterText(nameField, '接点长按验收');
     await tester.tap(find.text('开始设计'));
     await tester.pumpAndSettle();

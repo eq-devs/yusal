@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The app talks to the Yusal API. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Voice control: recording a spoken request. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
-        android:label="自建房设计"
+        android:label="Yusal"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

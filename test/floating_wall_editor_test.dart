@@ -7,6 +7,7 @@ import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/render3d/scene_view.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
+import 'tabs.dart';
 
 void main() {
   var sequence = 0;
@@ -59,6 +60,13 @@ void main() {
   }
 
   Future<void> tool(WidgetTester t, String name) async {
+    // On phones the less common tools sit in the "更多工具" sheet.
+    if (find.byTooltip(name).evaluate().isEmpty) {
+      await t.ensureVisible(find.byTooltip('更多工具'));
+      await t.pumpAndSettle();
+      await t.tap(find.byTooltip('更多工具'));
+      await t.pumpAndSettle();
+    }
     await t.ensureVisible(find.byTooltip(name));
     await t.pumpAndSettle();
     await t.tap(find.byTooltip(name));
@@ -66,8 +74,7 @@ void main() {
   }
 
   Future<void> showTab(WidgetTester t, String key) async {
-    await t.ensureVisible(find.byKey(ValueKey('tab-$key')));
-    await t.tap(find.byKey(ValueKey('tab-$key')));
+    await openTab(t, key);
   }
 
   Future<void> saved(WidgetTester t) async {
@@ -276,8 +283,7 @@ void main() {
     expect(session.files.writeCount, 1);
     expect(t.takeException(), isNull);
   });
-  testWidgets(
-      'switching page during a stroke cancels the interrupted preview',
+  testWidgets('switching page during a stroke cancels the interrupted preview',
       (t) async {
     final doc = initial(), session = await mount(t, doc);
     await t.tap(find.byTooltip('墙体'));
@@ -344,8 +350,7 @@ void main() {
     expect(t.takeException(), isNull);
   });
   for (final size in [const Size(320, 568), const Size(844, 390)]) {
-    testWidgets(
-        'every page and reduced motion fit $size with large text',
+    testWidgets('every page and reduced motion fit $size with large text',
         (t) async {
       t.view.physicalSize = size;
       t.view.devicePixelRatio = 1;
@@ -434,7 +439,7 @@ void main() {
     expect(find.byType(SceneView), findsOneWidget);
     expect(find.textContaining('双指缩放'), findsOneWidget);
     expect(t.widget<SceneView>(find.byType(SceneView)).viewToken, 0);
-    await t.tap(find.byTooltip('恢复视角'));
+    await t.tap(find.byTooltip('适配画面'));
     await t.pumpAndSettle();
     expect(t.widget<SceneView>(find.byType(SceneView)).viewToken, 1);
     expect(t.takeException(), isNull);

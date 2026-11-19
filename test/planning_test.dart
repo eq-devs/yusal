@@ -26,16 +26,20 @@ void main() {
       timestamp: stamp,
       newId: next);
   HouseDocument run(HouseDocument doc, String kind, Map<String, dynamic> args) {
-    final result = executeCommand(extractDesignState(doc),
-        DesignCommand(kind, args), CommandContext(newId: next, now: () => stamp));
+    final result = executeCommand(
+        extractDesignState(doc),
+        DesignCommand(kind, args),
+        CommandContext(newId: next, now: () => stamp));
     expect(result, isA<Applied>(),
         reason: result is Rejected ? result.message : kind);
     return composeDocument(doc.meta, (result as Applied).newState);
   }
 
   String? reject(HouseDocument doc, String kind, Map<String, dynamic> args) {
-    final result = executeCommand(extractDesignState(doc),
-        DesignCommand(kind, args), CommandContext(newId: next, now: () => stamp));
+    final result = executeCommand(
+        extractDesignState(doc),
+        DesignCommand(kind, args),
+        CommandContext(newId: next, now: () => stamp));
     return result is Rejected ? result.message : null;
   }
 
@@ -43,7 +47,9 @@ void main() {
     expect(validateHouse(doc), isEmpty);
     final loaded = loadHouse(utf8.encode(encodeHouse(doc)));
     expect(loaded.isSuccess, true,
-        reason: loaded.failure?.errors.map((e) => '${e.path} ${e.message}').join('; '));
+        reason: loaded.failure?.errors
+            .map((e) => '${e.path} ${e.message}')
+            .join('; '));
     expect(loaded.document, doc);
     return loaded.document!;
   }
@@ -79,10 +85,8 @@ void main() {
       final doc = run(box(width: 9000, depth: 9000), 'SetRoof', {
         'roof': {'type': 'hip', 'pitchDeg': 25, 'overhang': 300}
       });
-      final planes = deriveHouse(doc)
-          .scene3d
-          .where((e) => e.kind == 'RoofPlane')
-          .toList();
+      final planes =
+          deriveHouse(doc).scene3d.where((e) => e.kind == 'RoofPlane').toList();
       expect(planes, hasLength(4));
       expect(planes.every((p) => p.vertices.length == 6), true);
     });
@@ -111,8 +115,14 @@ void main() {
       final doc = kz(), derived = deriveHouse(doc);
       final e = estimateCost(doc, derived);
       expect(e.currency, Currency.cny);
-      for (final stage in ['found', 'walls', 'roof', 'openings', 'mep', 'finish'])
-        expect(e.stageMaterials(stage), greaterThan(0), reason: stage);
+      for (final stage in [
+        'found',
+        'walls',
+        'roof',
+        'openings',
+        'mep',
+        'finish'
+      ]) expect(e.stageMaterials(stage), greaterThan(0), reason: stage);
       expect(e.stageMaterials('site'), 0);
       expect(e.labour, closeTo(e.materials * 0.35, 1));
       expect(e.total, closeTo((e.materials + e.labour) * 1.10, 1));
@@ -125,8 +135,7 @@ void main() {
     test('prices, markups and own lines are saved and undone', () {
       var doc = kz();
       final before = estimateCost(doc, deriveHouse(doc));
-      final concrete =
-          before.lines.firstWhere((l) => l.key == 'concrete');
+      final concrete = before.lines.firstWhere((l) => l.key == 'concrete');
       doc = run(doc, 'SetCost', {'priceKey': 'concrete', 'price': 600});
       doc = run(doc, 'SetCost', {'labourPct': 40, 'contingencyPct': 5});
       doc = run(doc, 'AddCostItem',
@@ -170,7 +179,12 @@ void main() {
         'roof': {'type': 'flat', 'parapetHeight': 900}
       });
       final gable = run(doc, 'SetRoof', {
-        'roof': {'type': 'gable', 'ridgeDir': 'V', 'pitchDeg': 30, 'overhang': 500}
+        'roof': {
+          'type': 'gable',
+          'ridgeDir': 'V',
+          'pitchDeg': 30,
+          'overhang': 500
+        }
       });
       final keysFlat =
           estimateCost(flat, deriveHouse(flat)).lines.map((l) => l.key).toSet();
@@ -206,8 +220,8 @@ void main() {
       expect(loss.total, greaterThan(0));
       expect(loss.perArea, inInclusiveRange(25, 120));
       expect(loss.boilerKw, greaterThanOrEqualTo(loss.total * 1.15 / 1000));
-      final rooms = loss.spaces.where((s) =>
-          doc.floors.first.rooms.any((r) => r.id == s.id));
+      final rooms = loss.spaces
+          .where((s) => doc.floors.first.rooms.any((r) => r.id == s.id));
       expect(rooms, hasLength(doc.floors.first.rooms.length));
       expect(rooms.every((s) => s.floor > 0 && s.roof > 0 && s.air > 0), true);
       final sum = loss.spaces.fold(0.0, (t, s) => t + s.total);
@@ -230,14 +244,15 @@ void main() {
       final doc = run(kz(), 'SetHeat', {'fuel': FuelKind.gas});
       expect(doc.extras.heat.efficiency, 92);
       final loss = heatLoss(doc, deriveHouse(doc));
-      expect(loss.fuel,
-          closeTo(loss.seasonKwh / 0.92 / 9.3, 1e-6));
+      expect(loss.fuel, closeTo(loss.seasonKwh / 0.92 / 9.3, 1e-6));
     });
 
     test('a thin wall gets advice in the issue list', () {
       final doc = run(kz(), 'SetLayers', {
         'group': 'wall',
-        'layers': const [Layer('砖', 'Кірпіш', 370, LayerMaterial.block, lambda: 700)]
+        'layers': const [
+          Layer('砖', 'Кірпіш', 370, LayerMaterial.block, lambda: 700)
+        ]
       });
       expect(doc.schemaVersion, 4);
       final checks = heatChecks(doc, heatLoss(doc, deriveHouse(doc)));
@@ -348,8 +363,8 @@ void main() {
       final codes = siteChecks(doc).map((c) => c.code).toList();
       expect(codes, containsAll(['S05', 'S06', 'S03']));
       expect(siteChecks(doc).every((c) => c.site), true);
-      doc = run(doc, 'UpdateSiteItem',
-          {'siteItemId': 'wc', 'y': behind + 13000});
+      doc =
+          run(doc, 'UpdateSiteItem', {'siteItemId': 'wc', 'y': behind + 13000});
       expect(siteChecks(doc).where((c) => c.title.$1.contains('厕所')), isEmpty);
       doc = run(doc, 'RotateSiteItem', {'siteItemId': 'wc'});
       final wc = doc.extras.site!.items.firstWhere((i) => i.id == 'wc');
@@ -371,8 +386,11 @@ void main() {
         expect(stageNames[key], isNotNull);
         expect(stageChecks[key], isNotEmpty);
       }
-      doc = run(doc, 'SetStage',
-          {'stageKey': 'prep', 'start': '2027-04-01', 'status': StageStatus.done});
+      doc = run(doc, 'SetStage', {
+        'stageKey': 'prep',
+        'start': '2027-04-01',
+        'status': StageStatus.done
+      });
       doc = run(doc, 'SetStage', {'stageKey': 'found', 'toggleCheck': 2});
       doc = run(doc, 'SetStage', {'stageKey': 'found', 'toggleCheck': 0});
       doc = run(doc, 'SetStage', {'stageKey': 'found', 'toggleCheck': 2});

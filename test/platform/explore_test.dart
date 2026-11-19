@@ -1,0 +1,154 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yusal/platform/ui/shell.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/main.dart';
+import 'package:yusal/platform/data/mock/mock_backend.dart';
+import 'package:yusal/platform/data/mock/mock_clock.dart';
+import 'package:yusal/platform/data/mock/mock_seed.dart';
+import 'package:yusal/platform/domain/models.dart';
+import 'package:yusal/platform/ui/components.dart';
+import 'package:yusal/platform/ui/demand/publish_page.dart';
+import 'package:yusal/platform/ui/discover/discover_page.dart';
+import 'package:yusal/platform/ui/home/home_page.dart';
+import 'package:yusal/storage/project_store.dart';
+import '../storage_test.dart' show MemoryFiles;
+
+MockBackend backend() => MockBackend(
+    clock: MockClock(DateTime.utc(2026, 11, 3, 9)),
+    latency: Duration.zero,
+    autoReviewDelay: Duration.zero);
+
+Future<(MockBackend, ProjectStore)> launch(WidgetTester t,
+    {String? as,
+    String route = '/',
+    Size size = const Size(1200, 2400),
+    AppLang lang = AppLang.zh}) async {
+  SharedPreferences.setMockInitialValues({});
+  t.binding.platformDispatcher.defaultRouteNameTestValue = route;
+  addTearDown(t.binding.platformDispatcher.clearDefaultRouteNameTestValue);
+  AppSettings.instance.lang = lang;
+  addTearDown(() => AppSettings.instance.lang = AppLang.zh);
+  t.view.physicalSize = size;
+  t.view.devicePixelRatio = 1;
+  addTearDown(t.view.reset);
+  final repos = backend();
+  if (as != null) repos.signInAs(as);
+  final store = ProjectStore(fileSystem: MemoryFiles());
+  await t
+      .pumpWidget(ProviderScope(child: HouseApp(repos: repos, store: store)));
+  await t.pumpAndSettle();
+  return (repos, store);
+}
+
+bool showing<T>(WidgetTester t) =>
+    t.widgetList(find.byType(T, skipOffstage: true)).isNotEmpty;
+
+void main() {
+  test(
+      'starting from a design counts it, tells the author and returns the plan',
+      () async {
+    final b = backend()..signInAs(SeedIds.mason);
+    final plan = await b.reusePost('post_aigerim');
+    expect(plan, isNotNull);
+    expect((await b.post('post_aigerim'))!.reuseCount, 1);
+    b.signInAs(SeedIds.owner);
+    final notes = await b.notifications();
+    expect(notes.any((n) => n.kind == NoticeKind.postReused), isTrue);
+  });
+
+  test('a signed-out visitor can start from a design too', () async {
+    final b = backend();
+    expect(await b.reusePost('post_erlan'), isNotNull);
+    expect((await b.post('post_erlan'))!.reuseCount, 1);
+  });
+
+  testWidgets('a phone has the bottom bar: Discover, My houses, Messages, Me',
+      (t) async {
+    await launch(t, size: const Size(412, 915));
+    expect(find.byType(NavigationRail), findsNothing);
+    for (final label in ['发现', '我的房子', '消息', '我的'])
+      expect(find.widgetWithText(ShellBarTab, label), findsOneWidget);
+  });
+
+  testWidgets('a wide window has the same four places in a side rail',
+      (t) async {
+    await launch(t);
+    expect(find.byType(ShellBar), findsNothing);
+    for (final label in ['发现', '我的房子', '消息', '我的'])
+      expect(
+          find.descendant(
+              of: find.byType(NavigationRail), matching: find.text(label)),
+          findsOneWidget);
+    // Switching places works from the rail, and keeps the page state when
+    // the window is narrowed to a phone.
+    await t.tap(find.descendant(
+        of: find.byType(NavigationRail), matching: find.text('我的')));
+    await t.pumpAndSettle();
+    t.view.physicalSize = const Size(412, 915);
+    await t.pumpAndSettle();
+    expect(find.byType(ShellBar), findsOneWidget);
+    expect(t.widget<ShellBar>(find.byType(ShellBar)).selected,
+        3);
+  });
+
+  testWidgets('visitors open Discover on houses, pros open it on work',
+      (t) async {
+    await launch(t);
+    expect(showing<HomePage>(t), isTrue);
+    expect(find.text('挑一套，用它开始你的房子'), findsOneWidget);
+  });
+
+  testWidgets('a pro opens Discover on work and can switch to people',
+      (t) async {
+    await launch(t, as: SeedIds.mason);
+    final work = find.byWidgetPredicate(
+        (w) => w is DiscoverPage && w.people == false,
+        skipOffstage: true);
+    expect(work, findsOneWidget);
+    await t.tap(find.byKey(const Key('explore-seg-2')));
+    await t.pumpAndSettle();
+    expect(
+        find.byWidgetPredicate((w) => w is DiscoverPage && w.people == true,
+            skipOffstage: true),
+        findsOneWidget);
+  });
+
+  testWidgets('＋ offers three owner ways in plus joining as a pro and "find people" opens the form',
+      (t) async {
+    await launch(t, as: SeedIds.owner);
+    await t.tap(find.byKey(const Key('explore-create')));
+    await t.pumpAndSettle();
+    for (var i = 0; i < 4; i++)
+      expect(find.byKey(Key('create-option-$i')), findsOneWidget);
+    await t.tap(find.byKey(const Key('create-option-2')));
+    await t.pumpAndSettle();
+    expect(find.byType(PublishPage), findsOneWidget);
+  });
+
+  testWidgets('a visitor starts a house from a public design', (t) async {
+    final (repos, store) = await launch(t, route: '/h/post_aigerim');
+    final before = (await store.listProjects()).length;
+    await t.tap(find.byKey(const Key('post-main-action')));
+    await t.pumpAndSettle();
+    expect((await store.listProjects()).length, before + 1);
+    expect((await repos.post('post_aigerim'))!.reuseCount, 1);
+  });
+
+  testWidgets('the keyboard shrinks the work tab once, not twice', (t) async {
+    // A phone: 448 x 997 dp, with a 330 dp keyboard.
+    await launch(t, as: SeedIds.mason, size: const Size(448, 997));
+    final work = find.byWidgetPredicate(
+        (w) => w is DiscoverPage && w.people == false);
+    final top = t.getTopLeft(work).dy;
+    await t.tap(find.descendant(of: work, matching: find.byType(SearchField)));
+    t.view.viewInsets = const FakeViewPadding(bottom: 330);
+    await t.pumpAndSettle();
+    // The page reaches the top of the keyboard. Before, the shell handed
+    // the keyboard inset back to the pages, so it was taken off twice and
+    // only the top of the search field was left.
+    expect(top + t.getSize(work).height, closeTo(997 - 330, 0.5));
+  });
+}

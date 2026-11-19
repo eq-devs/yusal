@@ -7,14 +7,14 @@ import '../core/document/house_document.dart';
 /// items, estimate lines and units, fuels and building stages.
 
 String utilityName(UtilityKind kind) => switch (kind) {
-      UtilityKind.panel => tr('配电箱', 'Электр қалқаны'),
-      UtilityKind.socket => tr('插座', 'Розетка'),
-      UtilityKind.lightSwitch => tr('开关', 'Ажыратқыш'),
-      UtilityKind.light => tr('灯', 'Шам'),
-      UtilityKind.vent => tr('排气扇', 'Сорғыш желдеткіш'),
-      UtilityKind.water => tr('给水点', 'Су нүктесі'),
-      UtilityKind.drain => tr('排水点', 'Кәріз нүктесі'),
-      UtilityKind.radiator => tr('暖气片', 'Радиатор'),
+      UtilityKind.panel => tr3('配电箱', 'Электр қалқаны', 'Электрощит'),
+      UtilityKind.socket => tr3('插座', 'Розетка', 'Розетка'),
+      UtilityKind.lightSwitch => tr3('开关', 'Ажыратқыш', 'Выключатель'),
+      UtilityKind.light => tr3('灯', 'Шам', 'Светильник'),
+      UtilityKind.vent => tr3('排气扇', 'Сорғыш желдеткіш', 'Вытяжной вентилятор'),
+      UtilityKind.water => tr3('给水点', 'Су нүктесі', 'Точка водоснабжения'),
+      UtilityKind.drain => tr3('排水点', 'Кәріз нүктесі', 'Точка канализации'),
+      UtilityKind.radiator => tr3('暖气片', 'Радиатор', 'Радиатор'),
     };
 
 IconData utilityIcon(UtilityKind kind) => switch (kind) {
@@ -42,24 +42,24 @@ const utilityGroups = [
 ];
 
 String utilityGroupName(int group) => switch (group) {
-      0 => tr('电', 'Электр'),
-      1 => tr('水', 'Су'),
-      _ => tr('暖', 'Жылу'),
+      0 => tr3('电', 'Электр', 'Электрика'),
+      1 => tr3('水', 'Су', 'Вода'),
+      _ => tr3('暖', 'Жылу', 'Отопление'),
     };
 
 String siteName(SiteKind kind) => switch (kind) {
-      SiteKind.barn => tr('牲畜棚', 'Мал қорасы'),
-      SiteKind.bathhouse => tr('澡堂', 'Монша'),
-      SiteKind.garage => tr('车库', 'Гараж'),
-      SiteKind.toilet => tr('室外厕所', 'Аула дәретханасы'),
-      SiteKind.shed => tr('储物棚', 'Қойма'),
-      SiteKind.greenhouse => tr('温室', 'Жылыжай'),
-      SiteKind.well => tr('水井', 'Құдық'),
-      SiteKind.septic => tr('化粪池', 'Септик'),
-      SiteKind.garden => tr('菜园', 'Бақша'),
-      SiteKind.yard => tr('硬化院子', 'Төселген аула'),
-      SiteKind.gate => tr('大门', 'Қақпа'),
-      SiteKind.custom => tr('其他', 'Басқа'),
+      SiteKind.barn => tr3('牲畜棚', 'Мал қорасы', 'Сарай для скота'),
+      SiteKind.bathhouse => tr3('澡堂', 'Монша', 'Баня'),
+      SiteKind.garage => tr3('车库', 'Гараж', 'Гараж'),
+      SiteKind.toilet => tr3('室外厕所', 'Аула дәретханасы', 'Уличный туалет'),
+      SiteKind.shed => tr3('储物棚', 'Қойма', 'Хозблок'),
+      SiteKind.greenhouse => tr3('温室', 'Жылыжай', 'Теплица'),
+      SiteKind.well => tr3('水井', 'Құдық', 'Колодец'),
+      SiteKind.septic => tr3('化粪池', 'Септик', 'Септик'),
+      SiteKind.garden => tr3('菜园', 'Бақша', 'Огород'),
+      SiteKind.yard => tr3('硬化院子', 'Төселген аула', 'Мощёный двор'),
+      SiteKind.gate => tr3('大门', 'Қақпа', 'Ворота'),
+      SiteKind.custom => tr3('其他', 'Басқа', 'Другое'),
     };
 
 IconData siteIcon(SiteKind kind) => switch (kind) {
@@ -78,54 +78,54 @@ IconData siteIcon(SiteKind kind) => switch (kind) {
     };
 
 String costStageName(String stage) => switch (stage) {
-      'found' => tr('基础', 'Іргетас'),
-      'walls' => tr('墙体与楼板', 'Қабырға және плиталар'),
-      'roof' => tr('屋顶', 'Шатыр'),
-      'openings' => tr('门窗', 'Есік-терезе'),
-      'mep' => tr('水电暖', 'Су, электр, жылу'),
-      'finish' => tr('地面与装修', 'Еден және әрлеу'),
-      'site' => tr('院子与附属', 'Аула және қосалқы құрылыс'),
-      _ => tr('其他', 'Басқа'),
+      'found' => tr3('基础', 'Іргетас', 'Фундамент'),
+      'walls' => tr3('墙体与楼板', 'Қабырға және плиталар', 'Стены и перекрытия'),
+      'roof' => tr3('屋顶', 'Шатыр', 'Крыша'),
+      'openings' => tr3('门窗', 'Есік-терезе', 'Окна и двери'),
+      'mep' => tr3('水电暖', 'Су, электр, жылу', 'Вода, электрика, отопление'),
+      'finish' => tr3('地面与装修', 'Еден және әрлеу', 'Полы и отделка'),
+      'site' => tr3('院子与附属', 'Аула және қосалқы құрылыс', 'Двор и хозпостройки'),
+      _ => tr3('其他', 'Басқа', 'Другое'),
     };
 
 String costLineName(String key) => switch (key) {
-      'excavation' => tr('挖土', 'Топырақ қазу'),
-      'cushion' => tr('砂砾石垫层', 'Құм-қиыршық төсеме'),
-      'concrete' => tr('基础混凝土 (含损耗 3%)', 'Іргетас бетоны (+3%)'),
-      'rebar' => tr('基础钢筋', 'Іргетас арматурасы'),
-      'formwork' => tr('模板', 'Қалып'),
-      'xps' => tr('基础外侧 XPS', 'Іргетас сыртындағы XPS'),
-      'dampproof' => tr('水平防水', 'Көлденең гидрооқшау'),
-      'blind' => tr('保温散水', 'Жылы отмостка'),
-      'masonryExt' => tr('外墙砌体', 'Сыртқы қабырға қалауы'),
-      'masonryInt' => tr('内墙砌体', 'Ішкі қабырға қалауы'),
-      'wallIns' => tr('外墙保温', 'Қабырға жылытқышы'),
-      'facade' => tr('外墙饰面', 'Қасбет әрлеуі'),
-      'floorSlab' => tr('楼板', 'Қабатаралық плита'),
-      'roofSlab' => tr('屋面板 (含钢筋)', 'Жабын плитасы (арматурамен)'),
-      'roofMembrane' => tr('屋面防水', 'Шатыр гидрооқшауы'),
-      'roofIns' => tr('屋面保温', 'Шатыр жылытқышы'),
-      'parapetWp' => tr('女儿墙上翻防水', 'Парапет гидрооқшауы'),
-      'roofCover' => tr('屋面瓦', 'Шатыр жабыны'),
-      'roofFrame' => tr('屋架与挂瓦条', 'Шатыр қаңқасы және тақтайлар'),
-      'atticIns' => tr('顶棚保温', 'Төбе жылытқышы'),
-      'windows' => tr('窗 (三玻 PVC)', 'Терезе (үш әйнекті ПВХ)'),
-      'doorEntry' => tr('入户门', 'Кіреберіс есік'),
-      'doorsInt' => tr('室内门', 'Ішкі есік'),
-      'elecPoint' => tr('电气点位', 'Электр нүктелері'),
-      'cable' => tr('电线', 'Электр сымы'),
-      'pipe' => tr('水管与暖气管', 'Су және жылу құбыры'),
-      'radiator' => tr('暖气片', 'Радиатор'),
-      'boiler' => tr('锅炉', 'Қазандық'),
-      'sanitary' => tr('洁具', 'Санжабдық'),
-      'groundFloor' => tr('首层地坪', 'Бірінші қабат едені'),
-      'finishArea' => tr('室内装修', 'Ішкі әрлеу'),
-      'fence' => tr('院墙', 'Қоршау'),
-      'gate' => tr('大门', 'Қақпа'),
-      'outbuilding' => tr('附属建筑', 'Қосалқы құрылыстар'),
-      'paving' => tr('院子硬化', 'Аула төсемі'),
-      'well' => tr('水井', 'Құдық'),
-      'septic' => tr('化粪池', 'Септик'),
+      'excavation' => tr3('挖土', 'Топырақ қазу', 'Выемка грунта'),
+      'cushion' => tr3('砂砾石垫层', 'Құм-қиыршық төсеме', 'Песчано-гравийная подушка'),
+      'concrete' => tr3('基础混凝土 (含损耗 3%)', 'Іргетас бетоны (+3%)', 'Бетон фундамента (с запасом 3% на потери)'),
+      'rebar' => tr3('基础钢筋', 'Іргетас арматурасы', 'Арматура фундамента'),
+      'formwork' => tr3('模板', 'Қалып', 'Опалубка'),
+      'xps' => tr3('基础外侧 XPS', 'Іргетас сыртындағы XPS', 'XPS снаружи фундамента'),
+      'dampproof' => tr3('水平防水', 'Көлденең гидрооқшау', 'Горизонтальная гидроизоляция'),
+      'blind' => tr3('保温散水', 'Жылы отмостка', 'Утеплённая отмостка'),
+      'masonryExt' => tr3('外墙砌体', 'Сыртқы қабырға қалауы', 'Кладка наружных стен'),
+      'masonryInt' => tr3('内墙砌体', 'Ішкі қабырға қалауы', 'Кладка перегородок'),
+      'wallIns' => tr3('外墙保温', 'Қабырға жылытқышы', 'Утеплитель наружных стен'),
+      'facade' => tr3('外墙饰面', 'Қасбет әрлеуі', 'Отделка фасада'),
+      'floorSlab' => tr3('楼板', 'Қабатаралық плита', 'Межэтажное перекрытие'),
+      'roofSlab' => tr3('屋面板 (含钢筋)', 'Жабын плитасы (арматурамен)', 'Плита покрытия (с арматурой)'),
+      'roofMembrane' => tr3('屋面防水', 'Шатыр гидрооқшауы', 'Гидроизоляция кровли'),
+      'roofIns' => tr3('屋面保温', 'Шатыр жылытқышы', 'Утеплитель кровли'),
+      'parapetWp' => tr3('女儿墙上翻防水', 'Парапет гидрооқшауы', 'Гидроизоляция парапета'),
+      'roofCover' => tr3('屋面瓦', 'Шатыр жабыны', 'Кровельное покрытие'),
+      'roofFrame' => tr3('屋架与挂瓦条', 'Шатыр қаңқасы және тақтайлар', 'Стропила и обрешётка'),
+      'atticIns' => tr3('顶棚保温', 'Төбе жылытқышы', 'Утеплитель потолка'),
+      'windows' => tr3('窗 (三玻 PVC)', 'Терезе (үш әйнекті ПВХ)', 'Окно (ПВХ, тройное остекление)'),
+      'doorEntry' => tr3('入户门', 'Кіреберіс есік', 'Входная дверь'),
+      'doorsInt' => tr3('室内门', 'Ішкі есік', 'Межкомнатная дверь'),
+      'elecPoint' => tr3('电气点位', 'Электр нүктелері', 'Электроточки'),
+      'cable' => tr3('电线', 'Электр сымы', 'Электропровод'),
+      'pipe' => tr3('水管与暖气管', 'Су және жылу құбыры', 'Трубы водоснабжения и отопления'),
+      'radiator' => tr3('暖气片', 'Радиатор', 'Радиатор'),
+      'boiler' => tr3('锅炉', 'Қазандық', 'Рекомендуемый котёл'),
+      'sanitary' => tr3('洁具', 'Санжабдық', 'Сантехника'),
+      'groundFloor' => tr3('首层地坪', 'Бірінші қабат едені', 'Пол первого этажа'),
+      'finishArea' => tr3('室内装修', 'Ішкі әрлеу', 'Внутренняя отделка'),
+      'fence' => tr3('院墙', 'Қоршау', 'Забор'),
+      'gate' => tr3('大门', 'Қақпа', 'Ворота'),
+      'outbuilding' => tr3('附属建筑', 'Қосалқы құрылыстар', 'Хозпостройки'),
+      'paving' => tr3('院子硬化', 'Аула төсемі', 'Мощение двора'),
+      'well' => tr3('水井', 'Құдық', 'Колодец'),
+      'septic' => tr3('化粪池', 'Септик', 'Септик'),
       _ => key,
     };
 
@@ -133,7 +133,7 @@ String unitName(String unit) => switch (unit) {
       'm' => unitM,
       'm2' => unitM2,
       'm3' => unitM3,
-      't' => tr('吨', 'т'),
+      't' => tr3('吨', 'т', 'т'),
       'pcs' => unitPcs,
       _ => unit,
     };
@@ -141,7 +141,7 @@ String unitName(String unit) => switch (unit) {
 String currencySymbol(Currency c) => c == Currency.cny ? '¥' : '₸';
 
 String currencyName(Currency c) =>
-    c == Currency.cny ? tr('人民币 ¥', 'Юань ¥') : tr('坚戈 ₸', 'Теңге ₸');
+    c == Currency.cny ? tr3('人民币 ¥', 'Юань ¥', 'Юань ¥') : tr3('坚戈 ₸', 'Теңге ₸', 'Тенге ₸');
 
 /// The currency used when the design has not chosen one.
 Currency get languageCurrency => isKk ? Currency.kzt : Currency.cny;
@@ -159,16 +159,16 @@ String money(num value) {
 }
 
 String fuelName(FuelKind f) => switch (f) {
-      FuelKind.coal => tr('煤', 'Көмір'),
-      FuelKind.gas => tr('天然气', 'Газ'),
-      FuelKind.electricity => tr('电', 'Электр'),
-      FuelKind.wood => tr('木柴', 'Отын'),
+      FuelKind.coal => tr3('煤', 'Көмір', 'Уголь'),
+      FuelKind.gas => tr3('天然气', 'Газ', 'Газ'),
+      FuelKind.electricity => tr3('电', 'Электр', 'Электрика'),
+      FuelKind.wood => tr3('木柴', 'Отын', 'Дрова'),
     };
 
 String fuelUnit(FuelKind f) => switch (f) {
-      FuelKind.coal || FuelKind.wood => tr('吨', 'т'),
+      FuelKind.coal || FuelKind.wood => tr3('吨', 'т', 'т'),
       FuelKind.gas => unitM3,
-      FuelKind.electricity => tr('度', 'кВт·сағ'),
+      FuelKind.electricity => tr3('度', 'кВт·сағ', 'кВт·ч'),
     };
 
 String stageName(BuildStage s) {
@@ -178,7 +178,7 @@ String stageName(BuildStage s) {
 }
 
 String statusName(StageStatus s) => switch (s) {
-      StageStatus.todo => tr('未开始', 'Басталмаған'),
-      StageStatus.doing => tr('进行中', 'Жүріп жатыр'),
-      StageStatus.done => tr('已完成', 'Аяқталды'),
+      StageStatus.todo => tr3('未开始', 'Басталмаған', 'Не начато'),
+      StageStatus.doing => tr3('进行中', 'Жүріп жатыр', 'В работе'),
+      StageStatus.done => tr3('已完成', 'Аяқталды', 'Завершено'),
     };

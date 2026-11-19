@@ -1,4 +1,17 @@
-# Yusal · 自建房设计工具
+# Yusal · 房屋设计、作品展示与施工找人
+
+当前入口：**首页 · 项目 · 消息 · 我的**。以房屋项目为中心，保留离线设计；发布作品与找施工方是独立操作，询价不要求先公开作品。
+
+平台账号、聊天、作品、需求、报价与备份目前使用内存模拟后端，重启会重置；本地 `.house` 设计独立持久保存。真实后端尚未接入。
+
+- 当前产品方向：[产品重定位](docs/PRODUCT_REPOSITION.md)
+- 本轮目标与验证状态：[优化 Goal](docs/superpowers/plans/2026-11-04-yusal-goal.md)
+- 本轮计划：[优化计划](docs/superpowers/plans/2026-11-04-yusal-optimization.md)
+- 验证记录：[优化报告](docs/OPTIMIZATION_RESULT_2026-11-04.md)
+
+以下是设计工具的功能说明与历史版本记录，不代表本轮已重新完成所有验收。
+
+## 自建房设计工具
 
 Flutter house planning app for web, iOS and Android. Dimensions are integer millimeters in `.house` files; the editor displays meters.
 
@@ -128,3 +141,24 @@ See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conforman
 独立墙段至少 0.30 米，精确坐标以整数毫米保存。当前支持矩形外形和正交墙，斜墙、任意外轮廓不在本轮交付范围。手机上的吸附以屏幕距离计算，细微调整可使用数字输入。
 
 研究、取舍、证据范围与代码自评见 [UX_IMPLEMENTATION_PLAN.md](docs/UX_IMPLEMENTATION_PLAN.md)。最终验证及构建记录见 [DELIVERY_REPORT.md](docs/DELIVERY_REPORT.md)。
+
+## 连接真实后端（yusal-api）
+
+不带参数运行时用内存里的演示后端。连接 Go 后端：
+
+```bash
+flutter run \
+  --dart-define=YUSAL_API=https://<后端地址> \
+  --dart-define=GOOGLE_SERVER_CLIENT_ID=<Web 客户端 ID> \
+  --dart-define=GOOGLE_IOS_CLIENT_ID=<iOS 客户端 ID>
+```
+
+装到手机上测试用 `scripts/install_dev.sh`：它按 `config/dart_defines.dev.json` 打包（测试登录和语音控制都打开），并装到所有连着电脑的 Android 手机和 iPhone 上。应用上线前，装到手机上的都应该是这个测试包；`config/dart_defines.release.json` 是正式包用的，没有测试登录和语音。
+
+`HttpBackend`（`lib/platform/data/http/http_backend.dart`）把登录和账号、设计快照、发布的房子（点赞、点评）、云备份交给后端；名片、需求、报价、合作、聊天、通知、审核暂时仍在内存里运行，用的是真实账号 ID，等后端有了对应模块再切过去。
+
+登录只有 Google 和 Apple，第一次接入需要：
+
+1. Google Cloud Console 为 Yusal 建 OAuth 客户端：Web（作为 `GOOGLE_SERVER_CLIENT_ID`，也要写进后端的 `GOOGLE_CLIENT_IDS`）、iOS（bundle ID 与 Xcode 一致）、Android（包名 + 签名 SHA-1）。
+2. iOS：在 `ios/Runner/Info.plist` 的 `CFBundleURLTypes` 里加 iOS 客户端 ID 的反写形式（`com.googleusercontent.apps.xxxx`）。
+3. Apple：在 Xcode 给 Runner 打开 “Sign in with Apple” capability；后端 `APPLE_CLIENT_IDS` 填 bundle ID。

@@ -3,7 +3,20 @@ export 'house_extras.dart';
 
 enum AxisDir { V, H }
 
-enum RoomType { living, bedroom, kitchen, bathroom, dining, custom }
+/// What a room is for. [custom] ("房间") is a room nobody has named a use
+/// for yet; it stays last, so the pickers end with it.
+enum RoomType {
+  living,
+  bedroom,
+  kitchen,
+  bathroom,
+  dining,
+  hall,
+  corridor,
+  storage,
+  boiler,
+  custom
+}
 
 enum OpeningKind { door, window, sliding }
 

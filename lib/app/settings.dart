@@ -1,8 +1,10 @@
 import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'messages_ru.dart';
 
-enum AppLang { zh, kk }
+/// Chinese, Kazakh and Russian, everywhere in the app.
+enum AppLang { zh, kk, ru }
 
 enum ThemeChoice { auto, day, night }
 
@@ -22,9 +24,11 @@ class AppSettings extends ChangeNotifier {
       final savedLang = prefs.getString('house-lang'),
           savedTheme = prefs.getString('house-theme');
       lang = AppLang.values.where((l) => l.name == savedLang).firstOrNull ??
-          (PlatformDispatcher.instance.locale.languageCode == 'zh'
-              ? AppLang.zh
-              : AppLang.kk);
+          switch (PlatformDispatcher.instance.locale.languageCode) {
+            'zh' => AppLang.zh,
+            'ru' => AppLang.ru,
+            _ => AppLang.kk,
+          };
       theme = ThemeChoice.values.where((t) => t.name == savedTheme).firstOrNull ??
           ThemeChoice.auto;
     } catch (_) {
@@ -63,10 +67,31 @@ class AppScope extends InheritedNotifier<AppSettings> {
       AppSettings.instance;
 }
 
-bool get isKk => AppSettings.instance.lang == AppLang.kk;
+/// Cyrillic interface: Kazakh, or Russian falling back to Kazakh where only
+/// Chinese and Kazakh text exist.
+bool get isKk => AppSettings.instance.lang != AppLang.zh;
 
-/// Every interface string is written as a Chinese / Kazakh pair.
-String tr(String zh, String kk) => isKk ? kk : zh;
+bool get isRu => AppSettings.instance.lang == AppLang.ru;
+
+/// A Chinese / Kazakh pair from a table (names of furniture, stages,
+/// checklists). In Russian the Kazakh text is looked up in [ruText];
+/// strings written at a call use [tr3] instead.
+String tr(String zh, String kk) => switch (AppSettings.instance.lang) {
+      AppLang.zh => zh,
+      AppLang.kk => kk,
+      AppLang.ru => ruText(kk),
+    };
+
+/// Platform strings come in all three languages.
+String tr3(String zh, String kk, String ru) =>
+    switch (AppSettings.instance.lang) {
+      AppLang.zh => zh,
+      AppLang.kk => kk,
+      AppLang.ru => ru,
+    };
+
+/// Between items of a list: 、 in Chinese, a comma in Kazakh and Russian.
+String get listSep => tr3('、', ', ', ', ');
 
 /// Kazakh writes decimals with a comma.
 String dec(String number) => isKk ? number.replaceAll('.', ',') : number;
@@ -74,8 +99,19 @@ String dec(String number) => isKk ? number.replaceAll('.', ',') : number;
 /// Metres from millimetres, two decimals: 3600 → "3.60".
 String m2dp(num mm) => dec((mm / 1000).toStringAsFixed(2));
 
-String get unitM => tr('米', 'м');
-String get unitM2 => tr('㎡', 'м²');
-String get unitM3 => tr('m³', 'м³');
-String get unitMm => tr('mm', 'мм');
-String get unitPcs => tr('个', 'дана');
+String get unitM => tr3('米', 'м', 'м');
+String get unitM2 => tr3('㎡', 'м²', 'м²');
+String get unitM3 => tr3('m³', 'м³', 'м³');
+String get unitMm => tr3('mm', 'мм', 'мм');
+String get unitPcs => tr3('个', 'дана', 'шт.');
+
+/// Floors named automatically ("一楼", "二楼 副本") are stored in Chinese and
+/// shown in the interface language; a name the user typed is kept.
+String floorDisplayName(String name) {
+  const numerals = '一二三四五六七八九十';
+  final m = RegExp(r'^([一二三四五六七八九十])楼( 副本)?$').firstMatch(name);
+  if (m == null || !isKk) return name;
+  final n = numerals.indexOf(m[1]!) + 1;
+  if (isRu) return '$n-й этаж${m[2] == null ? '' : ' (копия)'}';
+  return '$n-қабат${m[2] == null ? '' : ' (көшірме)'}';
+}

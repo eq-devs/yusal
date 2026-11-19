@@ -4,5 +4,6 @@ analyzer:
     - android/**
     - ios/**
     - web/**
+    - macos/**
   language:
     strict-casts: true

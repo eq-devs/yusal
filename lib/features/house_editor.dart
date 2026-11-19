@@ -1,3 +1,4 @@
+import '../core/number_input.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -6,12 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/services.dart';
 import '../core/house_core.dart';
 import '../core/commands/room_commands.dart';
 import '../core/geometry/floor_base.dart';
+import '../core/geometry/furniture_snap.dart';
 import '../core/history/design_history.dart';
 import '../core/commands/delete_axis.dart';
+import '../core/commands/house_spec.dart';
 import '../core/commands/house_templates.dart';
 import '../core/commands/kz_template.dart';
 import '../core/geometry/derived_house.dart';
@@ -44,7 +48,17 @@ import '../core/analysis/site_analysis.dart';
 import '../core/analysis/utility_plan.dart';
 import '../render2d/planning_names.dart';
 import '../render2d/site_plan_painter.dart';
+import '../motion/motion.dart';
+import '../voice/action.dart';
+import '../voice/actions_design.dart';
+import '../voice/actions_houses.dart';
+import '../voice/scene.dart';
+import '../voice/screen.dart';
+import '../voice/session.dart';
+import '../voice/voice_overlay.dart';
+import 'house_wizard.dart';
 
+part 'editor/roof_picker.dart';
 part 'editor/editor_header.dart';
 part 'editor/plan_tab.dart';
 part 'editor/selection_cards.dart';
@@ -79,11 +93,204 @@ class HouseEditor extends StatefulWidget {
   State<HouseEditor> createState() => _HouseEditorState();
 }
 
+/// What a press on the plan does. One at a time; [EditorTool.browse] is
+/// the rest state every other tool goes back to (Esc, the browse button,
+/// another tab or floor).
+enum EditorTool {
+  /// Pan, zoom and tap to pick.
+  browse,
+
+  /// Draw walls from point to point; a wall tapped while drawing is edited.
+  drawWall,
+
+  /// Pick a wall to edit (phone: under 更多工具).
+  selectWall,
+
+  /// Move or retype the picked wall's ends.
+  editWall,
+
+  /// Drag a straight line across a room to split it.
+  split,
+
+  /// Drag a rectangle to carve a room.
+  box,
+
+  /// Drag the outline's handles to change the house size.
+  resize,
+
+  /// Tap a wall to put the chosen door or window there.
+  placeOpening,
+
+  /// Tap to put the chosen furniture.
+  placeFurniture,
+
+  /// Tap to put the chosen socket, switch, light or pipe point.
+  placeUtility,
+
+  /// Tap points to measure between them.
+  measure,
+
+  /// Drag the picked grid wall to move it (advanced).
+  wall,
+
+  /// Select openings (advanced).
+  opening,
+
+  /// Edit the grid (advanced).
+  grid,
+
+  /// Paint or erase rooms over grid cells (advanced, see `erase`).
+  room,
+
+  /// Place a stair (advanced).
+  stair,
+}
+
+/// The open design's state on disk. An edit makes it unsaved; a save
+/// leaves it saved (or saved with the project index still to repair), or
+/// unsaved again when it changed meanwhile, or failed, which retries every
+/// five seconds until a save works.
+enum _SaveStatus {
+  saved('已保存'),
+  indexPending('已保存，索引待恢复'),
+  unsaved('未保存'),
+  failed('保存失败');
+
+  const _SaveStatus(this.label);
+
+  /// What screen readers are told, as before.
+  final String label;
+}
+
 class _HouseEditorState extends State<HouseEditor>
-    with WidgetsBindingObserver, TickerProviderStateMixin {
+    with WidgetsBindingObserver, TickerProviderStateMixin, VoiceScreen
+    implements DesignHost {
+  @override
+  String get screenId => 'editor.$tab';
+
+  /// Floors as f1, f2…, and on the floor being edited rooms as r1…,
+  /// openings as o1… and furniture as u1…, in document order.
+  @override
+  List<Entity> get entities => [
+        for (final (i, f) in history.present.floors.indexed)
+          Entity('floor', f.id, alias: 'f${i + 1}', title: f.name),
+        for (final (i, r) in floor.rooms.indexed)
+          Entity('room', r.id, alias: 'r${i + 1}', title: r.name),
+        for (final (i, o) in floor.openings.indexed)
+          Entity('opening', o.id,
+              alias: 'o${i + 1}', title: openingKindName(o)),
+        for (final (i, f) in history.present.extras.furniture
+            .where((f) => f.floorId == floor.id)
+            .indexed)
+          Entity('furniture', f.id,
+              alias: 'u${i + 1}', title: furnitureName(f.kind)),
+        for (final (i, s) in floor.stairs.indexed)
+          Entity('stair', s.id,
+              alias: 's${i + 1}', title: tr3('楼梯', 'Баспалдақ', 'Лестница')),
+      ];
+
+  @override
+  String get scene => designScene(
+      doc: history.present,
+      derived: derived,
+      floorIndex: floorIndex,
+      aliases: {for (final e in entities) e.id: e.alias},
+      selectedId: selectedFurnitureId ?? selectedOpeningId ?? selectedRoomId);
+
+  /// The tool in hand, so the assistant knows what a tap on the plan does
+  /// right now; nothing while browsing.
+  @override
+  String get summary => browse ? '' : 'tool: ${tool.name}';
+
+  @override
+  HouseDocument get document => history.present;
+
+  @override
+  FloorBase get floorBase => base;
+
+  @override
+  List<String> get actions => [for (final a in designActions) a.id];
+
+  @override
+  String get currentFloorId => floor.id;
+
+  @override
+  CommandResult runDesign(String kind, Map<String, dynamic> args) =>
+      action(kind, args, quiet: true);
+
+  @override
+  void beginUndoGroup() => history.beginGroup();
+
+  @override
+  void endUndoGroup() => history.endGroup();
+
+  @override
+  void replaceDesign(HouseDocument doc) {
+    setState(() {
+      cancelDrag();
+      clearSelection();
+      if (history.commit(composeDocument(
+          history.present.meta, extractDesignState(doc)))) changed();
+      floorIndex = 0;
+      dropStaleWallState();
+    });
+  }
+
+  @override
+  Future<void> saveNow() => save();
+
+  @override
+  bool select(String id) {
+    final room = floor.rooms.any((r) => r.id == id),
+        opening = floor.openings.any((o) => o.id == id),
+        piece = history.present.extras.furniture
+            .any((f) => f.id == id && f.floorId == floor.id);
+    if (!room && !opening && !piece) return false;
+    setState(() {
+      clearSelection();
+      clearWallSelection();
+      if (room) selectedRoomId = id;
+      if (opening) selectedOpeningId = id;
+      if (piece) selectedFurnitureId = id;
+      panelCollapsed = phoneTools;
+      tab = 'plan';
+    });
+    if (room) revealRoom(id);
+    return true;
+  }
+
+  @override
+  bool showFloor(String floorId) {
+    final index = history.present.floors.indexWhere((f) => f.id == floorId);
+    if (index < 0) return false;
+    setState(() {
+      cancelDrag();
+      clearSelection();
+      clearWallSelection();
+      floorIndex = index;
+      derive();
+    });
+    return true;
+  }
+
+  @override
+  bool undoDesign() {
+    final can = history.canUndo;
+    undo();
+    return can;
+  }
+
   late final DesignHistory history;
   late FloorBase base;
   late DerivedHouse derived;
+  // The estimate shown beside the plan, worked out once per change.
+  HouseDocument? costChipFor;
+  String costChip = '';
+
+  /// How many findings of the issues tab ask for a change (严重 and 建议改),
+  /// counted once per document for the plan page's reminder.
+  HouseDocument? issueCountFor;
+  ({int crit, int warn}) issueCount = (crit: 0, warn: 0);
   /// Current page: plan, ext (3D), walk, site, det, heat, qty, cost, build
   /// or iss.
   String tab = 'plan';
@@ -151,18 +358,32 @@ class _HouseEditorState extends State<HouseEditor>
     return (box?.hasSize ?? false) ? box!.size.height + 16 : 16;
   }
 
+  /// The ten pages in the order of their three groups.
   List<(String, String)> get editorTabs => [
-        ('plan', tr('2D 平面', '2D жоспар')),
-        ('ext', tr('3D 外观', '3D сыртқы көрініс')),
-        ('walk', tr('室内漫游', 'Ішкі серуен')),
-        ('site', tr('宅基地', 'Учаске')),
-        ('det', tr('构造细节', 'Құрылым бөлшектері')),
-        ('heat', tr('保温采暖', 'Жылу')),
-        ('qty', tr('门窗与工程量', 'Есік-терезе және көлем')),
-        ('cost', tr('预算', 'Смета')),
-        ('build', tr('施工进度', 'Құрылыс кестесі')),
-        ('iss', tr('问题清单', 'Мәселелер тізімі')),
+        ('plan', tr3('2D 平面', '2D жоспар', '2D-план')),
+        ('site', tr3('宅基地', 'Учаске', 'Участок')),
+        ('iss', tr3('问题清单', 'Мәселелер тізімі', 'Список замечаний')),
+        ('ext', tr3('3D 外观', '3D сыртқы көрініс', '3D-вид снаружи')),
+        ('walk', tr3('室内漫游', 'Ішкі серуен', 'Прогулка по дому')),
+        ('cost', tr3('预算', 'Смета', 'Смета')),
+        ('qty', tr3('门窗与工程量', 'Есік-терезе және көлем', 'Проёмы и объёмы работ')),
+        ('build', tr3('施工进度', 'Құрылыс кестесі', 'График строительства')),
+        ('det', tr3('构造细节', 'Құрылым бөлшектері', 'Детали конструкции')),
+        ('heat', tr3('保温采暖', 'Жылу', 'Тепло')),
       ];
+
+  /// Ten pages are too many to choose from in one row, so they sit in
+  /// three groups by what one comes to do: draw, look, or count and build.
+  static const tabGroups = {
+    'draw': ['plan', 'site', 'iss'],
+    'view': ['ext', 'walk'],
+    'build': ['cost', 'qty', 'build', 'det', 'heat'],
+  };
+  String get tabGroup =>
+      tabGroups.entries.firstWhere((e) => e.value.contains(tab)).key;
+
+  /// The page last open in each group; its group button returns there.
+  final lastInGroup = <String, String>{};
 
   void showTab(String value) {
     if (value == tab) return;
@@ -170,9 +391,9 @@ class _HouseEditorState extends State<HouseEditor>
       cancelDrag();
       clearWallSelection();
       tab = value;
+      lastInGroup[tabGroup] = value;
       if (value != 'plan') {
-        tool = 'browse';
-        browse = true;
+        tool = EditorTool.browse;
         drawingOrigin = null;
         drawingEnd = null;
         placementHint = null;
@@ -227,13 +448,7 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   /// Floors named automatically ("一楼", "二楼 副本") follow the language.
-  String displayFloorName(String name) {
-    const numerals = '一二三四五六七八九十';
-    final m = RegExp(r'^([一二三四五六七八九十])楼( 副本)?$').firstMatch(name);
-    if (m == null || !isKk) return name;
-    final n = numerals.indexOf(m[1]!) + 1;
-    return '$n-қабат${m[2] == null ? '' : ' (көшірме)'}';
-  }
+  String displayFloorName(String name) => floorDisplayName(name);
 
   /// Rooms keep the name the user gave; automatic names follow the language.
   String displayRoomName(Room r) {
@@ -256,7 +471,10 @@ class _HouseEditorState extends State<HouseEditor>
     }
   }
 
-  String tool = 'browse';
+  EditorTool tool = EditorTool.browse;
+
+  /// Panning and tapping to pick, nothing being drawn or placed.
+  bool get browse => tool == EditorTool.browse;
   PlanRect? focus;
   Offset? spatialStart, spatialEnd;
   FloorPlanPainter? dragCoordinatePainter;
@@ -302,7 +520,7 @@ class _HouseEditorState extends State<HouseEditor>
     openingDrop = null;
     derive();
     if (wall == null) {
-      placementHint = tr('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады');
+      placementHint = tr3('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады', 'Перетащите на стену — окно или дверь встанет на место');
       return;
     }
     final arguments = <String, dynamic>{
@@ -321,9 +539,9 @@ class _HouseEditorState extends State<HouseEditor>
       derived =
           deriveHouse(composeDocument(history.present.meta, result.newState));
       base = derived.floors[floorIndex].base;
-      placementHint = tr('已贴合墙面，松手放置', 'Қабырғаға орнықты, жіберіңіз');
+      placementHint = tr3('已贴合墙面，松手放置', 'Қабырғаға орнықты, жіберіңіз', 'Привязано к стене, отпустите');
     } else {
-      placementHint = result is Rejected ? result.message : tr('此处无法放置', 'Мұнда қоюға болмайды');
+      placementHint = result is Rejected ? result.message : tr3('此处无法放置', 'Мұнда қоюға болмайды', 'Здесь поставить нельзя');
     }
   }
 
@@ -334,6 +552,7 @@ class _HouseEditorState extends State<HouseEditor>
     '独立墙': ('独立墙', 'Бөлек қабырға', 'Бөлек'),
     '拉线分房': ('分房', 'Сызықпен бөлу', 'Бөлу'),
     '拖动划房': ('框房', 'Бөлме сызу', 'Бөлме'),
+    '加房间': ('加房间', 'Бөлме қосу', 'Бөлме +'),
     '拖入门': ('门', 'Есік қосу', 'Есік'),
     '拖入窗': ('窗', 'Терезе қосу', 'Терезе'),
     '家具': ('家具', 'Жиһаз қою', 'Жиһаз'),
@@ -346,12 +565,12 @@ class _HouseEditorState extends State<HouseEditor>
   String toolLabel(String label) {
     final text = toolText[label];
     if (text == null) return label;
-    return isKk ? text.$3 : text.$1;
+    return tr(text.$1, text.$3);
   }
 
   String toolTip(String label) {
     final text = toolText[label];
-    return text == null || !isKk ? label : text.$2;
+    return text == null ? label : tr(label, text.$2);
   }
 
   Widget basicTool(
@@ -385,12 +604,14 @@ class _HouseEditorState extends State<HouseEditor>
                       placingFurniture = null;
                       placingUtility = null;
                       measurePoints = [];
+                      roomStamp = null;
                       onTap();
                       if (mounted) setState(() {});
                     },
                     child: SizedBox(
+                        // Seven tools fit a phone row at 45 wide.
                         width: math.max(
-                            52,
+                            phoneTools ? 45 : 52,
                             MediaQuery.textScalerOf(context).scale(11) *
                                     (toolLabel(label).length *
                                         (isKk ? 0.62 : 1.0)) +
@@ -420,7 +641,7 @@ class _HouseEditorState extends State<HouseEditor>
     final depth = TextEditingController(
         text: (history.present.footprint.depth / 1000).toStringAsFixed(2));
     String? error;
-    await showModalBottomSheet<void>(
+    await showMotionSheet<void>(
         context: context,
         isScrollControlled: true,
         builder: (context) => StatefulBuilder(
@@ -433,27 +654,27 @@ class _HouseEditorState extends State<HouseEditor>
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text(tr('房屋长宽', 'Үйдің ені мен ұзындығы'),
+                              Text(tr3('房屋长宽', 'Үйдің ені мен ұзындығы', 'Ширина и длина дома'),
                                   style: TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w600)),
                               Padding(
                                   padding: EdgeInsets.symmetric(vertical: 12),
-                                  child: Text(tr('外形尺寸用于全部楼层。内部房间位置保持不变。', 'Сыртқы өлшем барлық қабатқа қолданылады. Ішкі бөлмелердің орны сақталады.'))),
+                                  child: Text(tr3('外形尺寸用于全部楼层。内部房间位置保持不变。', 'Сыртқы өлшем барлық қабатқа қолданылады. Ішкі бөлмелердің орны сақталады.', 'Наружный размер применяется ко всем этажам. Положение внутренних комнат сохраняется.'))),
                               TextField(
                                   controller: width,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
                                           decimal: true),
                                   decoration: InputDecoration(
-                                      labelText: tr('宽（米，左右方向）', 'Ені (м, солдан оңға)'))),
+                                      labelText: tr3('宽（米，左右方向）', 'Ені (м, солдан оңға)', 'Ширина (м, слева направо)'))),
                               TextField(
                                   controller: depth,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
                                           decimal: true),
                                   decoration: InputDecoration(
-                                      labelText: tr('长（米，上下方向）', 'Ұзындығы (м, төменнен жоғары)'))),
+                                      labelText: tr3('长（米，上下方向）', 'Ұзындығы (м, төменнен жоғары)', 'Длина (м, снизу вверх)'))),
                               if (error != null)
                                 Padding(
                                     padding: const EdgeInsets.only(top: 8),
@@ -465,8 +686,8 @@ class _HouseEditorState extends State<HouseEditor>
                               const SizedBox(height: 16),
                               FilledButton(
                                   onPressed: () {
-                                    final w = double.tryParse(width.text),
-                                        d = double.tryParse(depth.text);
+                                    final w = parseNumber(width.text),
+                                        d = parseNumber(depth.text);
                                     if (w == null ||
                                         d == null ||
                                         !w.isFinite ||
@@ -475,7 +696,7 @@ class _HouseEditorState extends State<HouseEditor>
                                         d < 3 ||
                                         w > 100 ||
                                         d > 100) {
-                                      update(() => error = tr('长宽需在 3–100 米之间', 'Өлшем 3–100 м аралығында болуы керек'));
+                                      update(() => error = tr3('长宽需在 3–100 米之间', 'Өлшем 3–100 м аралығында болуы керек', 'Размер должен быть в пределах 3–100 м'));
                                       return;
                                     }
                                     final args = <String, dynamic>{
@@ -489,32 +710,50 @@ class _HouseEditorState extends State<HouseEditor>
                                             newId: () => const Uuid().v4(),
                                             now: () => 'unused'));
                                     if (result is Rejected) {
-                                      update(() => error = result.message);
+                                      update(() => error = coreMessage(result.message));
                                       return;
                                     }
                                     Navigator.pop(context);
                                     action('SetFootprintSize', args);
                                   },
-                                  child: Text(tr('应用尺寸', 'Өлшемді қолдану'))),
+                                  child: Text(tr3('应用尺寸', 'Өлшемді қолдану', 'Применить размер'))),
                               TextButton.icon(
                                   onPressed: () {
                                     Navigator.pop(context);
                                     setState(() {
                                       view3d = false;
-                                      browse = false;
-                                      tool = 'resize';
+                                      tool = EditorTool.resize;
                                       placementHint = null;
                                     });
                                   },
                                   icon: const Icon(Icons.open_in_full),
-                                  label: Text(tr('拖动外边框调整', 'Сыртқы жиекті сүйреп өзгерту'))),
+                                  label: Text(tr3('拖动外边框调整', 'Сыртқы жиекті сүйреп өзгерту', 'Изменить, перетаскивая внешний контур'))),
                               TextButton.icon(
                                   onPressed: () {
                                     Navigator.pop(context);
                                     cutCornerDialog();
                                   },
                                   icon: const Icon(Icons.crop),
-                                  label: Text(tr('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)'))),
+                                  label: Text(tr3('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)', 'Вырезать угол (Г-образная форма)'))),
+                              // The same plan for a plot whose road or sun
+                              // is on the other side.
+                              TextButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    action('MirrorPlan',
+                                        {'direction': 'horizontal'});
+                                  },
+                                  icon: const Icon(Icons.flip),
+                                  label: Text(tr3('整个房子左右翻转', 'Бүкіл үйді оңнан солға аудару', 'Отразить весь дом слева направо'))),
+                              TextButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    action('MirrorPlan',
+                                        {'direction': 'vertical'});
+                                  },
+                                  icon: const RotatedBox(
+                                      quarterTurns: 1, child: Icon(Icons.flip)),
+                                  label: Text(tr3('整个房子上下翻转', 'Бүкіл үйді жоғарыдан төменге аудару', 'Отразить весь дом сверху вниз'))),
                               if (hasOutline)
                                 TextButton.icon(
                                     onPressed: () {
@@ -522,12 +761,12 @@ class _HouseEditorState extends State<HouseEditor>
                                       restoreOutlineAction();
                                     },
                                     icon: const Icon(Icons.crop_square),
-                                    label: Text(tr('恢复矩形外形', 'Тіктөртбұрышқа қайтару'))),
+                                    label: Text(tr3('恢复矩形外形', 'Тіктөртбұрышқа қайтару', 'Вернуть прямоугольник'))),
                             ]))))));
   }
 
   Future<void> moreTools() async {
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showMotionSheet<String>(
         context: context,
         isScrollControlled: true,
         builder: (context) => SafeArea(
@@ -536,17 +775,31 @@ class _HouseEditorState extends State<HouseEditor>
                 child: ListView(children: [
                   Padding(
                       padding: EdgeInsets.all(16),
-                      child: Text(tr('更多工具', 'Басқа құралдар'),
+                      child: Text(tr3('更多工具', 'Басқа құралдар', 'Другие инструменты'),
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w600))),
+                  if (phoneTools)
+                    Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Wrap(spacing: 8, runSpacing: 8, children: [
+                          // A tool picked here closes the sheet.
+                          for (final w in secondaryToolButtons())
+                            Listener(
+                                onPointerUp: (_) => Future.microtask(() {
+                                      if (context.mounted)
+                                        Navigator.maybePop(context);
+                                    }),
+                                child: w)
+                        ])),
                   for (final entry in {
-                    'fit': tr('恢复画布视角', 'Көріністі қалпына келтіру'),
-                    'grid': tr('网格', 'Тор'),
-                    'opening': tr('门窗', 'Есік-терезе'),
-                    'stair': tr('楼梯', 'Баспалдақ'),
+                    'fit': tr3('恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид'),
+                    'addRoom': tr3('按尺寸加房间', 'Өлшеммен бөлме қосу', 'Добавить комнату по размерам'),
+                    'grid': tr3('网格', 'Тор', 'Сетка'),
+                    'opening': tr3('门窗', 'Есік-терезе', 'Окна и двери'),
+                    'stair': tr3('楼梯', 'Баспалдақ', 'Лестница'),
                     for (final type in RoomType.values)
                       type.name: roomTypeName(type),
-                    'erase': tr('擦除', 'Өшіру')
+                    'erase': tr3('擦除', 'Өшіру', 'Стереть')
                   }.entries)
                     ListTile(
                         title: Text(entry.value),
@@ -557,31 +810,165 @@ class _HouseEditorState extends State<HouseEditor>
       canvasTransform.value = Matrix4.identity();
       return;
     }
+    if (choice == 'addRoom') return addRoomBySize();
+    if (choice == 'stair') return startStairStamp();
     setState(() {
-      browse = false;
       erase = choice == 'erase';
       placementHint = null;
       if (['grid', 'opening', 'stair'].contains(choice))
-        tool = choice;
+        tool = EditorTool.values.byName(choice);
       else {
-        tool = 'room';
+        tool = EditorTool.room;
         if (!erase) brush = RoomType.values.firstWhere((t) => t.name == choice);
       }
     });
   }
 
+  /// Usual sizes to start from, metres (width, depth).
+  static const roomSizes = {
+    RoomType.living: (4.5, 5.0),
+    RoomType.bedroom: (3.6, 4.0),
+    RoomType.kitchen: (3.0, 3.6),
+    RoomType.bathroom: (1.8, 2.4),
+    RoomType.dining: (3.0, 3.6),
+    RoomType.hall: (2.0, 2.4),
+    RoomType.corridor: (1.2, 3.0),
+    RoomType.storage: (1.5, 2.0),
+    RoomType.boiler: (2.0, 2.5),
+    RoomType.custom: (3.0, 3.0),
+  };
+
+  /// A room from its use, its size and the corner of the house it goes
+  /// in, for those who would rather type than draw.
+  Future<void> addRoomBySize() async {
+    var type = RoomType.bedroom, corner = 'bl';
+    final width = TextEditingController(), depth = TextEditingController();
+    void fill() {
+      width.text = dec('${roomSizes[type]!.$1}');
+      depth.text = dec('${roomSizes[type]!.$2}');
+    }
+
+    fill();
+    String? error;
+    final args = await showMotionSheet<Map<String, dynamic>>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => StatefulBuilder(
+            builder: (context, update) => SafeArea(
+                child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(20, 20, 20,
+                        MediaQuery.viewInsetsOf(context).bottom + 20),
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(tr3('按尺寸加房间', 'Өлшеммен бөлме қосу', 'Добавить комнату по размерам'),
+                              style: const TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 12),
+                          Wrap(spacing: 8, runSpacing: 4, children: [
+                            for (final t in RoomType.values)
+                              ChoiceChip(
+                                  key: Key('add-room-${t.name}'),
+                                  label: Text(roomTypeName(t)),
+                                  selected: type == t,
+                                  onSelected: (_) => update(() {
+                                        type = t;
+                                        fill();
+                                      }))
+                          ]),
+                          Row(children: [
+                            Expanded(
+                                child: TextField(
+                                    controller: width,
+                                    keyboardType: const TextInputType
+                                        .numberWithOptions(decimal: true),
+                                    decoration: InputDecoration(
+                                        labelText: tr3('宽（米）', 'Ені (м)', 'Ширина (м)')))),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: TextField(
+                                    controller: depth,
+                                    keyboardType: const TextInputType
+                                        .numberWithOptions(decimal: true),
+                                    decoration: InputDecoration(
+                                        labelText: tr3('长（米）', 'Ұзындығы (м)', 'Длина (м)')))),
+                          ]),
+                          const SizedBox(height: 12),
+                          Text(tr3('放在房子的哪个角', 'Үйдің қай бұрышына', 'В какой угол дома')),
+                          const SizedBox(height: 6),
+                          Wrap(spacing: 8, runSpacing: 4, children: [
+                            for (final c in {
+                              'tl': tr3('左上', 'Сол жақ жоғары', 'Слева вверху'),
+                              'tr': tr3('右上', 'Оң жақ жоғары', 'Справа вверху'),
+                              'bl': tr3('左下', 'Сол жақ төмен', 'Слева внизу'),
+                              'br': tr3('右下', 'Оң жақ төмен', 'Справа внизу'),
+                            }.entries)
+                              ChoiceChip(
+                                  key: Key('add-room-${c.key}'),
+                                  label: Text(c.value),
+                                  selected: corner == c.key,
+                                  onSelected: (_) =>
+                                      update(() => corner = c.key))
+                          ]),
+                          if (error != null)
+                            Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(error!,
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .error))),
+                          const SizedBox(height: 16),
+                          FilledButton(
+                              key: const Key('add-room-go'),
+                              onPressed: () {
+                                final fp = history.present.footprint;
+                                final w =
+                                        ((parseNumber(width.text) ?? 0) * 1000)
+                                            .round(),
+                                    d = ((parseNumber(depth.text) ?? 0) * 1000)
+                                        .round();
+                                if (w < 300 ||
+                                    d < 300 ||
+                                    w > fp.width ||
+                                    d > fp.depth) {
+                                  update(() => error = tr3('房间要在 0.3 米到房屋长宽之间', 'Бөлме 0,3 м мен үй өлшемі аралығында болуы керек', 'Комната должна быть от 0,3 м до размеров дома'));
+                                  return;
+                                }
+                                final left =
+                                        corner.endsWith('l') ? 0 : fp.width - w,
+                                    bottom = corner.startsWith('b')
+                                        ? 0
+                                        : fp.depth - d;
+                                Navigator.pop(context, <String, dynamic>{
+                                  'w': w,
+                                  'd': d,
+                                  'left': left,
+                                  'bottom': bottom,
+                                  'roomType': type,
+                                  'corner': corner
+                                });
+                              },
+                              child: Text(tr3('放到图上', 'Сызбаға қою', 'Поставить на план'))),
+                        ])))));
+    if (args != null && mounted)
+      startStamp(args['roomType'] as RoomType, args['w'] as int,
+          args['d'] as int, args['corner'] as String);
+  }
+
   OpeningKind? draggingNewOpening;
 
   String openingName(Opening o) => switch (o) {
-        DoorOpening() => tr('门', 'есік'),
-        WindowOpening() => tr('窗', 'терезе'),
-        SlidingOpening() => tr('推拉门', 'сырғымалы есік')
+        DoorOpening() => tr3('门', 'есік', 'дверь'),
+        WindowOpening() => tr3('窗', 'терезе', 'окно'),
+        SlidingOpening() => tr3('推拉门', 'сырғымалы есік', 'раздвижная дверь')
       };
 
   Map<OpeningKind, String> get openingNames => {
-        OpeningKind.door: tr('门', 'есік'),
-        OpeningKind.window: tr('窗', 'терезе'),
-        OpeningKind.sliding: tr('推拉门', 'сырғымалы есік')
+        OpeningKind.door: tr3('门', 'есік', 'дверь'),
+        OpeningKind.window: tr3('窗', 'терезе', 'окно'),
+        OpeningKind.sliding: tr3('推拉门', 'сырғымалы есік', 'раздвижная дверь')
       };
 
   /// The dragged door or window floats above the finger so the snapped
@@ -592,11 +979,10 @@ class _HouseEditorState extends State<HouseEditor>
 
   Widget openingTool(OpeningKind kind, IconData icon, String label) {
     final button = basicTool(
-        icon, label, tool == 'placeOpening' && placingOpening == kind, () {
+        icon, label, tool == EditorTool.placeOpening && placingOpening == kind, () {
       placingOpening = kind;
-      browse = false;
-      tool = 'placeOpening';
-      placementHint = tr('点一下墙面放置，也可以从工具栏直接拖入', 'Қабырғаны басып қойыңыз, не құралдар жолынан сүйреп әкеліңіз');
+      tool = EditorTool.placeOpening;
+      placementHint = tr3('点一下墙面放置，也可以从工具栏直接拖入', 'Қабырғаны басып қойыңыз, не құралдар жолынан сүйреп әкеліңіз', 'Нажмите на стену, чтобы поставить, или перетащите с панели инструментов');
     });
     return Draggable<OpeningKind>(
         data: kind,
@@ -634,11 +1020,222 @@ class _HouseEditorState extends State<HouseEditor>
         child: button);
   }
 
-  bool get spatialTool => tool == 'box' || tool == 'split';
+  bool get spatialTool => tool == EditorTool.box || tool == EditorTool.split;
+
+  /// A room of a set size being slid into place: the box tool with the
+  /// rectangle given instead of drawn. Null while a rectangle is drawn.
+  ({int w, int d})? roomStamp;
+
+  /// Where in the stamp the finger holds it, from its lower left corner.
+  Offset stampGrab = Offset.zero;
+  bool get stamping => tool == EditorTool.box && roomStamp != null;
+
+  /// The stamp is a stair, not a room; with [movingStairId] one that is
+  /// already there, being put somewhere else or given another size.
+  bool stampStair = false;
+  String? movingStairId;
+  bool get stairStamping => stamping && stampStair;
+
+  /// A stair to slide into place, like a room of a set size. On the top
+  /// floor it first offers the floor the stair would lead to.
+  void startStairStamp({Stair? moving, ({int w, int d})? size}) {
+    if (floorIndex == history.present.floors.length - 1) {
+      final floorId = floor.id;
+      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(
+          key: const Key('stair-needs-floor'),
+          content: Text(tr3('楼梯要通到上面一层，现在还没有。',
+              'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
+              'Лестница ведёт на этаж выше, а его пока нет.')),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
+          duration: const Duration(seconds: 8),
+          persist: false,
+          action: SnackBarAction(
+              label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
+                  'Добавить этаж и лестницу'),
+              onPressed: () {
+                final before = history.present;
+                action('AddFloor', {'floorId': floorId});
+                if (history.present == before || !mounted) return;
+                setState(() => derive());
+                startStairStamp();
+              })),
+          snackBarAnimationStyle: Motion.toastStyle);
+      return;
+    }
+    final fp = history.present.footprint;
+    final at = moving == null ? null : resolveRect(base.axes, moving.region).rect;
+    // A two-flight stair first: it is what most self-built houses have.
+    final sizes = size != null
+        ? [size]
+        : at != null
+            ? [(w: at.right - at.left, d: at.top - at.bottom)]
+            : const [
+                (w: 2400, d: 3600),
+                (w: 3600, d: 2400),
+                (w: 1200, d: 4800),
+                (w: 4800, d: 1200)
+              ];
+    setState(() {
+      clearSelection();
+      clearWallSelection();
+      view3d = false;
+      tool = EditorTool.box;
+      stampStair = true;
+      movingStairId = moving?.id;
+      search:
+      for (final s in sizes) {
+        roomStamp = s;
+        if (at != null) {
+          setStamp(at.left.toDouble(), at.bottom.toDouble(), reach: 0);
+          break;
+        }
+        for (final c in ['bl', 'br', 'tl', 'tr']) {
+          setStamp(c.endsWith('l') ? 0 : (fp.width - s.w).toDouble(),
+              c.startsWith('b') ? 0 : (fp.depth - s.d).toDouble());
+          if (spatialError == null) break search;
+        }
+      }
+      if (spatialError != null && at == null) {
+        roomStamp = sizes.first;
+        setStamp(0, 0);
+      }
+    });
+    if (spatialPreview != null) reveal(spatialPreview!);
+  }
+
+  /// Whether the floor underneath shows through the plan of this one.
+  bool showBelow = true;
+
+  /// The stair's width and length typed in; it stays on its corner.
+  Future<void> resizeStair(Stair stair) async {
+    final at = resolveRect(base.axes, stair.region).rect;
+    if (at == null) return;
+    final w = await length(tr3('楼梯间的宽（米）', 'Баспалдақ орнының ені (м)', 'Ширина места под лестницу (м)'),
+        at.right - at.left);
+    if (w == null || !mounted) return;
+    final d = await length(tr3('楼梯间的长（米）', 'Баспалдақ орнының ұзындығы (м)', 'Длина места под лестницу (м)'),
+        at.top - at.bottom);
+    if (d == null || !mounted) return;
+    startStairStamp(moving: stair, size: (w: w, d: d));
+    setState(() =>
+        setStamp(at.left.toDouble(), at.bottom.toDouble(), reach: 0));
+  }
+
+  /// Puts the stamp's lower left corner near ([x], [y]): inside the house,
+  /// on a wall line when one is close, else on the 100 mm grid.
+  void setStamp(double x, double y, {double reach = 250}) {
+    final s = roomStamp!, fp = history.present.footprint;
+    int place(double low, int length, int extent, List<ResolvedAxis> axes) {
+      final v = low.round().clamp(0, math.max(0, extent - length));
+      for (final a in axes) {
+        if ((a.pos - v).abs() < reach) return a.pos;
+      }
+      for (final a in axes) {
+        if ((a.pos - (v + length)).abs() < reach) return a.pos - length;
+      }
+      return ((v / 100).round() * 100).clamp(0, math.max(0, extent - length));
+    }
+
+    final left = place(x, s.w, fp.width, base.axes.v),
+        bottom = place(y, s.d, fp.depth, base.axes.h);
+    spatialStart = Offset(left.toDouble(), bottom.toDouble());
+    spatialEnd = Offset((left + s.w).toDouble(), (bottom + s.d).toDouble());
+    spatialPreview = PlanRect(spatialStart!.dx, spatialStart!.dy,
+        spatialEnd!.dx, spatialEnd!.dy);
+    validateSpatialPreview();
+    if (spatialError == null) placementHint = null;
+  }
+
+  /// Starts sliding a [type] room of [w] × [d] mm, first in the corner
+  /// asked for, or the first corner where it fits.
+  void startStamp(RoomType type, int w, int d, String corner) {
+    final fp = history.present.footprint;
+    setState(() {
+      clearSelection();
+      clearWallSelection();
+      view3d = false;
+      tool = EditorTool.box;
+      brush = type;
+      stampStair = false;
+      movingStairId = null;
+      roomStamp = (w: w, d: d);
+      for (final c in [corner, 'bl', 'br', 'tl', 'tr']) {
+        setStamp(c.endsWith('l') ? 0 : (fp.width - w).toDouble(),
+            c.startsWith('b') ? 0 : (fp.depth - d).toDouble());
+        if (spatialError == null) break;
+      }
+    });
+    if (spatialPreview != null) reveal(spatialPreview!);
+  }
+
+  void cancelStamp() => setState(() {
+        roomStamp = null;
+        stampStair = false;
+        movingStairId = null;
+        spatialStart = null;
+        spatialEnd = null;
+        spatialPreview = null;
+        spatialDocument = null;
+        spatialBase = null;
+        spatialError = null;
+        placementHint = null;
+        tool = EditorTool.browse;
+      });
+
+  /// Builds the room where the stamp lies and shows its card.
+  void placeStamp() {
+    final r = spatialPreview;
+    if (r == null) return;
+    if (spatialError != null) {
+      notify(spatialError!);
+      return;
+    }
+    final known = {for (final room in floor.rooms) room.id};
+    final args = <String, dynamic>{
+      'floorId': floor.id,
+      'left': r.left.round(),
+      'bottom': r.bottom.round(),
+      'right': r.right.round(),
+      'top': r.top.round(),
+      'roomType': brush
+    };
+    if (stampStair) {
+      final moving = movingStairId, before = history.present;
+      cancelStamp();
+      action('PlaceStair', {...args, if (moving != null) 'stairId': moving}
+        ..remove('roomType'));
+      if (history.present != before)
+        notify(
+            moving != null
+                ? tr3('楼梯已挪好', 'Баспалдақ жылжытылды', 'Лестница перенесена')
+                : tr3('楼梯已放好，楼上自动留出洞口 · 点楼梯可以挪动或换样式',
+                    'Баспалдақ қойылды, жоғарғы қабатта ойық қалдырылды · оны басып жылжытуға не түрін өзгертуге болады',
+                    'Лестница поставлена, проём наверху оставлен · нажмите на неё, чтобы передвинуть или сменить вид'),
+            undo: undo);
+      return;
+    }
+    cancelStamp();
+    action('CarveRoom', args);
+    final added =
+        floor.rooms.where((room) => !known.contains(room.id)).firstOrNull;
+    if (added == null) return;
+    setState(() {
+      selectedRoomId = added.id;
+      panelCollapsed = phoneTools;
+    });
+    revealRoom(added.id);
+  }
 
   void updateSpatial(Offset point, Size size) {
     final painter = interactionPainter();
     final world = painter.worldPoint(point, size);
+    if (stamping) {
+      setStamp(world.x - stampGrab.dx, world.y - stampGrab.dy,
+          reach: math.min(14 / painter.scale(size), 250));
+      return;
+    }
     int snap(double value, List<ResolvedAxis> axes) {
       final clamped = value.round().clamp(axes.first.pos, axes.last.pos);
       for (final axis in axes) {
@@ -651,7 +1248,7 @@ class _HouseEditorState extends State<HouseEditor>
     spatialEnd = Offset(snap(world.x, base.axes.v).toDouble(),
         snap(world.y, base.axes.h).toDouble());
     spatialStart ??= spatialEnd;
-    if (tool == 'split') {
+    if (tool == EditorTool.split) {
       final vertical = (spatialEnd!.dy - spatialStart!.dy).abs() >=
           (spatialEnd!.dx - spatialStart!.dx).abs();
       spatialPreview = vertical
@@ -681,7 +1278,7 @@ class _HouseEditorState extends State<HouseEditor>
     final rect = spatialPreview;
     if (rect == null || spatialStart == null || spatialEnd == null) return;
     if ((spatialStart! - spatialEnd!).distance < 300 ||
-        tool == 'box' &&
+        tool == EditorTool.box &&
             (rect.right - rect.left < 300 || rect.top - rect.bottom < 300)) {
       spatialError = null;
       spatialDocument = null;
@@ -692,7 +1289,7 @@ class _HouseEditorState extends State<HouseEditor>
     final vertical = (spatialEnd!.dy - spatialStart!.dy).abs() >=
         (spatialEnd!.dx - spatialStart!.dx).abs();
     final midpoint = (spatialStart! + spatialEnd!) / 2;
-    final arguments = tool == 'split'
+    final arguments = tool == EditorTool.split
         ? <String, dynamic>{
             'floorId': floor.id,
             'dir': vertical ? AxisDir.V : AxisDir.H,
@@ -712,9 +1309,19 @@ class _HouseEditorState extends State<HouseEditor>
             'top': rect.top.round(),
             'roomType': brush
           };
+    if (stairStamping) {
+      arguments.remove('roomType');
+      if (movingStairId != null) arguments['stairId'] = movingStairId;
+    }
     final result = executeCommand(
         presentState,
-        DesignCommand(tool == 'split' ? 'SplitSpace' : 'CarveRoom', arguments),
+        DesignCommand(
+            tool == EditorTool.split
+                ? 'SplitSpace'
+                : stairStamping
+                    ? 'PlaceStair'
+                    : 'CarveRoom',
+            arguments),
         CommandContext(newId: () => const Uuid().v4(), now: () => 'unused'));
     spatialError = result is Rejected ? result.message : null;
     if (result is Applied) {
@@ -725,7 +1332,7 @@ class _HouseEditorState extends State<HouseEditor>
           .rooms
           .length;
       placementHint =
-          count > floor.rooms.length + 1 ? tr('分房后会得到 $count 个独立空间，松手完成', 'Бөлгенде $count бөлек кеңістік шығады, жіберіңіз') : null;
+          count > floor.rooms.length + 1 ? tr3('分房后会得到 $count 个独立空间，松手完成', 'Бөлгенде $count бөлек кеңістік шығады, жіберіңіз', 'Получится отдельных помещений: $count, отпустите') : null;
     } else {
       spatialDocument = null;
       spatialBase = null;
@@ -748,7 +1355,7 @@ class _HouseEditorState extends State<HouseEditor>
       return;
     }
     final rectangle = spatialPreview;
-    if (tool == 'split' &&
+    if (tool == EditorTool.split &&
         spatialStart != null &&
         spatialEnd != null &&
         (spatialStart! - spatialEnd!).distance >= 300) {
@@ -788,10 +1395,15 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   Offset? downPoint;
+
+  /// Screen point of a finger that is dragging a wall, door, room edge or
+  /// piece of furniture: a magnifier shows what the finger covers.
+  Offset? loupeAt;
+  final planSheetKey = GlobalKey();
   int floorIndex = 0;
   RoomType brush = RoomType.living;
-  bool browse = true, erase = false, dirty = false, saving = false;
-  String status = '已保存';
+  bool erase = false, dirty = false, saving = false;
+  _SaveStatus status = _SaveStatus.saved;
   final stroke = <Cell>[];
   final pointers = <int>{};
   bool cancelledStroke = false;
@@ -845,8 +1457,26 @@ class _HouseEditorState extends State<HouseEditor>
     WidgetsBinding.instance.addObserver(this);
   }
 
+  double lastCanvasZoom = 1;
+
+  /// Ticks when the zoom changes: only the plan canvas listens, so a pinch
+  /// rebuilds the drawing (grip and label sizes) and not the whole editor.
+  final canvasZoomChanged = ValueNotifier<double>(1);
+
+  /// A pure pan only moves the cached drawing. A zoom change rebuilds the
+  /// plan canvas alone; the whole editor is rebuilt only while something
+  /// outside the canvas follows the view (the wall menu, the loupe).
   void onCanvasTransformChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    final zoom = canvasZoom;
+    final follows = menuWall != null || loupeAt != null;
+    if (zoom == lastCanvasZoom && !follows) return;
+    lastCanvasZoom = zoom;
+    if (follows) {
+      setState(() {});
+    } else {
+      canvasZoomChanged.value = zoom;
+    }
   }
 
   void derive() {
@@ -867,6 +1497,7 @@ class _HouseEditorState extends State<HouseEditor>
     previewTimer?.cancel();
     canvasTransform.removeListener(onCanvasTransformChanged);
     canvasTransform.dispose();
+    canvasZoomChanged.dispose();
     pulse.dispose();
     timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
@@ -891,26 +1522,26 @@ class _HouseEditorState extends State<HouseEditor>
   Future<void> saveOnce() async {
     final doc = history.present;
     var failed = false;
-    saving = true;
+    if (mounted) setState(() => saving = true);
     try {
       await widget.store.saveProject(widget.entry.id, doc);
       if (mounted)
         setState(() {
           dirty = history.present != doc;
-          status = dirty ? '未保存' : '已保存';
+          status = dirty ? _SaveStatus.unsaved : widget.store.indexWarning != null ? _SaveStatus.indexPending : _SaveStatus.saved;
         });
     } catch (_) {
       failed = true;
       if (mounted) {
-        final firstFailure = status != '保存失败';
-        setState(() => status = '保存失败');
-        if (firstFailure) notify(tr('没能保存到本机，请检查存储空间；稍后会自动再试，也可点右上角保存', 'Құрылғыға сақталмады, жадты тексеріңіз; кейін өзі қайта көреді, не «Сақтау» батырмасын басыңыз'));
+        final firstFailure = status != _SaveStatus.failed;
+        setState(() => status = _SaveStatus.failed);
+        if (firstFailure) notify(tr3('没能保存到本机，请检查存储空间；稍后会自动重试，也可导出备份', 'Құрылғыға сақталмады, жадты тексеріңіз; кейін қайталанады, файлды экспорттауға болады', 'Не удалось сохранить. Проверьте место; повторим автоматически. Можно экспортировать файл'));
       }
     } finally {
       saving = false;
       if (failed && mounted)
         timer = Timer(const Duration(seconds: 5), save);
-      else if (dirty && history.present != doc)
+      else if (mounted && dirty && history.present != doc)
         timer = Timer(const Duration(milliseconds: 1500), save);
     }
   }
@@ -920,13 +1551,13 @@ class _HouseEditorState extends State<HouseEditor>
     if (highlights.isNotEmpty) flash(const []);
     derive();
     dirty = true;
-    status = '未保存';
+    status = _SaveStatus.unsaved;
     timer?.cancel();
     timer = Timer(const Duration(milliseconds: 1500), save);
   }
 
   void beginDrag(Offset point, Size size) {
-    if (tool == 'selectWall') return;
+    if (tool == EditorTool.selectWall) return;
     draggingAxis = null;
     draggingOpening = null;
     dragArguments = null;
@@ -939,14 +1570,14 @@ class _HouseEditorState extends State<HouseEditor>
     final x = painter.worldPoint(point, size).x,
         y = painter.worldPoint(point, size).y,
         tolerance = 12 / scale;
-    if (tool == 'wall' && selectedWall != null) {
+    if (tool == EditorTool.wall && selectedWall != null) {
       final wall = selectedWall!;
       final along = (wall.start.pos + wall.end.pos) / 2;
       final center = wall.axis.dir == AxisDir.V
           ? painter.point(wall.axis.pos.toDouble(), along, size)
           : painter.point(along, wall.axis.pos.toDouble(), size);
       if ((point - center).distance <= 24) draggingAxis = wall.axis;
-    } else if (tool == 'resize') {
+    } else if (tool == EditorTool.resize) {
       final width = history.present.footprint.width.toDouble(),
           depth = history.present.footprint.depth.toDouble();
       final reach = 28 / canvasZoom;
@@ -956,7 +1587,7 @@ class _HouseEditorState extends State<HouseEditor>
           reach) {
         draggingAxis = base.axes.h.last;
       }
-    } else if (tool == 'grid') {
+    } else if (tool == EditorTool.grid) {
       final axes = base.axes.all
           .where((a) =>
               a.kind != 'boundary' &&
@@ -966,7 +1597,7 @@ class _HouseEditorState extends State<HouseEditor>
           .abs()
           .compareTo(((b.dir == AxisDir.V ? x : y) - b.pos).abs()));
       draggingAxis = axes.firstOrNull;
-    } else if (tool == 'opening' || browse) {
+    } else if (tool == EditorTool.opening || browse) {
       draggingOpening = openingAt(point, size);
     }
   }
@@ -1018,7 +1649,7 @@ class _HouseEditorState extends State<HouseEditor>
         y = painter.worldPoint(point, size).y;
     if (draggingAxis != null) {
       final axis = draggingAxis!;
-      if (tool == 'wall' && selectedWall != null) {
+      if (tool == EditorTool.wall && selectedWall != null) {
         final originalAxes = resolveFloorAxes(history.present, floor.id)!;
         final originalList =
             axis.dir == AxisDir.V ? originalAxes.v : originalAxes.h;
@@ -1073,13 +1704,13 @@ class _HouseEditorState extends State<HouseEditor>
           .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
       final wall = candidates.firstOrNull;
       if (wall == null) {
-        placementHint = tr('拖到另一面墙，门窗会自动贴合', 'Басқа қабырғаға апарыңыз, есік-терезе өзі орнығады');
+        placementHint = tr3('拖到另一面墙，门窗会自动贴合', 'Басқа қабырғаға апарыңыз, есік-терезе өзі орнығады', 'Перетащите на другую стену — окно или дверь встанет на место');
         return;
       }
       final along = wall.axis.dir == AxisDir.H ? x : y;
       final available = wall.end.pos - wall.start.pos - opening.opening.width;
       if (available < 0) {
-        placementHint = tr('这段墙放不下这个门窗', 'Бұл қабырғаға есік-терезе сыймайды');
+        placementHint = tr3('这段墙放不下这个门窗', 'Бұл қабырғаға есік-терезе сыймайды', 'Окно или дверь не помещается на этой стене');
         return;
       }
       dragKind = 'MoveOpening';
@@ -1121,7 +1752,7 @@ class _HouseEditorState extends State<HouseEditor>
     spatialEnd = null;
     spatialPreview = null;
     downPoint = null;
-    if (tool == 'drawWall' && drawingStrokeActive)
+    if (tool == EditorTool.drawWall && drawingStrokeActive)
       drawingOrigin = drawingBefore;
     drawingStrokeActive = false;
     drawingBefore = null;
@@ -1134,6 +1765,7 @@ class _HouseEditorState extends State<HouseEditor>
     editCommand = null;
     editArgs = null;
     drawConnected = false;
+    alignGuide = null;
     resetPreview();
     spatialDocument = null;
     spatialBase = null;
@@ -1180,7 +1812,7 @@ class _HouseEditorState extends State<HouseEditor>
       final cleanedName = history.present.meta.name
           .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '')
           .trim();
-      final filename = '${cleanedName.isEmpty ? tr('房屋设计', 'Үй жобасы') : cleanedName}.house';
+      final filename = '${cleanedName.isEmpty ? tr3('房屋设计', 'Үй жобасы', 'Проект дома') : cleanedName}.house';
       final file = XFile.fromData(utf8.encode(raw),
           mimeType: 'application/json', name: filename);
       if (kIsWeb) {
@@ -1194,7 +1826,7 @@ class _HouseEditorState extends State<HouseEditor>
                 : box.localToGlobal(Offset.zero) & box.size));
       }
     } catch (_) {
-      notify(tr('暂时无法导出这个设计', 'Жобаны қазір шығару мүмкін емес'));
+      notify(tr3('暂时无法导出这个设计', 'Жобаны қазір шығару мүмкін емес', 'Сейчас не удаётся экспортировать проект'));
     }
   }
 
@@ -1203,7 +1835,7 @@ class _HouseEditorState extends State<HouseEditor>
   Future<void> exportDrawings({bool png = false}) async {
     await save();
     if (!mounted) return;
-    final progress = ValueNotifier<String>(tr('正在准备图纸…', 'Сызбалар дайындалып жатыр…'));
+    final progress = ValueNotifier<String>(tr3('正在准备图纸…', 'Сызбалар дайындалып жатыр…', 'Подготовка чертежей…'));
     final today = DateTime.now();
     final input = DrawingInput(
         doc: history.present,
@@ -1235,14 +1867,14 @@ class _HouseEditorState extends State<HouseEditor>
           ? await buildPlanPng(input, floorIndex)
           : await buildDrawingPdf(input,
               onProgress: (done, total) => progress.value =
-                  tr('正在绘制第 $done / $total 张图纸…', '$done / $total сызба салынып жатыр…'));
+                  tr3('正在绘制第 $done / $total 张图纸…', '$done / $total сызба салынып жатыр…', 'Создаётся чертёж $done / $total…'));
       final cleaned = history.present.meta.name
           .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '')
           .trim();
-      final base = cleaned.isEmpty ? tr('房屋设计', 'Үй жобасы') : cleaned;
+      final base = cleaned.isEmpty ? tr3('房屋设计', 'Үй жобасы', 'Проект дома') : cleaned;
       final filename = png
           ? '$base ${displayFloorName(floor.name)}.png'
-          : '$base ${tr('图纸', 'сызбалар')}.pdf';
+          : '$base ${tr3('图纸', 'сызбалар', 'чертежи')}.pdf';
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
       final file = XFile.fromData(bytes,
           mimeType: png ? 'image/png' : 'application/pdf', name: filename);
@@ -1259,7 +1891,7 @@ class _HouseEditorState extends State<HouseEditor>
     } catch (_) {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).maybePop();
-        notify(tr('暂时无法生成图纸', 'Сызбаларды қазір жасау мүмкін емес'));
+        notify(tr3('暂时无法生成图纸', 'Сызбаларды қазір жасау мүмкін емес', 'Сейчас не удаётся создать чертежи'));
       }
     } finally {
       progress.dispose();
@@ -1268,11 +1900,15 @@ class _HouseEditorState extends State<HouseEditor>
 
   void placeOpening(Map<String, dynamic> arguments) {
     final before = history.present;
+    final ids = {for (final o in floor.openings) o.id};
     action('AddOpening', arguments);
-    if (history.present != before)
-      notify(
-          tr('已放置${openingNames[arguments['kind']]} · 可以直接拖动它调整位置',
-              '${openingNames[arguments['kind']]} қойылды · оны сүйреп жылжытуға болады'),
+    if (history.present == before) return;
+    // Select it at once: its card says how to change or delete it.
+    final added = floor.openings.where((o) => !ids.contains(o.id)).firstOrNull;
+    if (added != null) selectOpening(added);
+    notify(
+          tr3('已放置${openingNames[arguments['kind']]} · 可以直接拖动它调整位置',
+              '${openingNames[arguments['kind']]} қойылды · оны сүйреп жылжытуға болады', 'Добавлено: ${openingNames[arguments['kind']]} · можно перетащить, чтобы изменить положение'),
           undo: undo);
   }
 
@@ -1289,7 +1925,8 @@ class _HouseEditorState extends State<HouseEditor>
         persist: false,
         action: undo == null
             ? null
-            : SnackBarAction(label: tr('撤销', 'Болдырмау'), onPressed: undo)));
+            : SnackBarAction(label: tr3('撤销', 'Болдырмау', 'Отменить'), onPressed: undo)),
+        snackBarAnimationStyle: Motion.toastStyle);
   }
 
   /// Forget a start point or selection that the document no longer has.
@@ -1312,12 +1949,11 @@ class _HouseEditorState extends State<HouseEditor>
       history.undo();
       changed();
       dropStaleWallState();
-      if (tool == 'editWall') {
-        tool = 'browse';
-        browse = true;
+      if (tool == EditorTool.editWall) {
+        tool = EditorTool.browse;
       }
     });
-    notify(tr('已撤销上一步', 'Соңғы әрекет болдырылмады'));
+    notify(tr3('已撤销上一步', 'Соңғы әрекет болдырылмады', 'Последнее действие отменено'));
   }
 
   void redo() {
@@ -1327,15 +1963,18 @@ class _HouseEditorState extends State<HouseEditor>
       history.redo();
       changed();
       dropStaleWallState();
-      if (tool == 'editWall') {
-        tool = 'browse';
-        browse = true;
+      if (tool == EditorTool.editWall) {
+        tool = EditorTool.browse;
       }
     });
-    notify(tr('已重做', 'Қайталанды'));
+    notify(tr3('已重做', 'Қайталанды', 'Действие повторено'));
   }
 
-  void action(String kind, Map<String, dynamic> args) {
+  /// Runs a design command and returns what came of it. A failure is
+  /// shown to the user unless [quiet], for callers that report it
+  /// themselves.
+  CommandResult action(String kind, Map<String, dynamic> args,
+      {bool quiet = false}) {
     final result = executeCommand(
         presentState,
         DesignCommand(kind, args),
@@ -1347,12 +1986,13 @@ class _HouseEditorState extends State<HouseEditor>
         if (history.commit(
             composeDocument(history.present.meta, result.newState))) changed();
       });
-    } else {
+    } else if (!quiet) {
       final message = result is Rejected
           ? result.message
           : (result as NeedsResolution).conflict.message;
       notify(message);
     }
+    return result;
   }
 
   Future<String?> ask(String label, String value, {bool number = false}) async {
@@ -1370,33 +2010,76 @@ class _HouseEditorState extends State<HouseEditor>
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text(tr('取消', 'Болдырмау'))),
+                      child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                   FilledButton(
                       onPressed: () => Navigator.pop(context, controller.text),
-                      child: Text(tr('确定', 'Жарайды')))
+                      child: Text(tr3('确定', 'Жарайды', 'ОК')))
                 ]));
   }
 
   Future<int?> length(String label, int value) async {
     final result =
-        await ask(tr('$label（米）', '$label (м)'), (value / 1000).toStringAsFixed(2),
+        await ask(tr3('$label（米）', '$label (м)', '$label (м)'), (value / 1000).toStringAsFixed(2),
         number: true);
-    final parsed = double.tryParse(result ?? '');
-    if (parsed == null || !parsed.isFinite) return null;
+    final parsed = parseNumber(result ?? '');
+    if (parsed == null) return null;
     return (parsed * 1000).round();
   }
 
+  /// A floor on top of the house, by a button that says so: empty with
+  /// the outer walls, or a copy of the floor under it.
+  Future<void> addFloorAbove() async {
+    final choice = await showMotionSheet<String>(
+        context: context,
+        builder: (context) => SafeArea(
+                child: ListView(shrinkWrap: true, children: [
+              ListTile(
+                  key: const Key('add-floor-empty'),
+                  leading: const Icon(Icons.crop_square),
+                  title: Text(tr3('空的一层', 'Бос қабат', 'Пустой этаж')),
+                  subtitle: Text(tr3('只带外墙，楼下的墙会淡淡地显示出来，照着画',
+                      'Тек сыртқы қабырғалар; астыңғы қабаттың қабырғалары бозғылт көрінеді',
+                      'Только наружные стены; стены нижнего этажа видны бледно, по ним удобно чертить')),
+                  onTap: () => Navigator.pop(context, 'AddFloor')),
+              ListTile(
+                  key: const Key('add-floor-copy'),
+                  leading: const Icon(Icons.copy_all_outlined),
+                  title: Text(tr3('照楼下复制一层', 'Астыңғы қабатты көшіру', 'Скопировать нижний этаж')),
+                  subtitle: Text(tr3('房间、墙和门窗都一样，再改不一样的地方',
+                      'Бөлмелер, қабырғалар, есік-терезелер бірдей; кейін өзгертесіз',
+                      'Те же комнаты, стены, окна и двери; потом измените, что нужно')),
+                  onTap: () => Navigator.pop(context, 'CopyFloor')),
+            ])));
+    if (choice == null || !mounted) return;
+    final before = history.present;
+    action(choice, {'floorId': before.floors.last.id});
+    if (history.present == before || !mounted) return;
+    setState(() {
+      cancelDrag();
+      clearSelection();
+      clearWallSelection();
+      drawingOrigin = null;
+      floorIndex = history.present.floors.length - 1;
+      derive();
+    });
+    notify(
+        tr3('已加上「${displayFloorName(floor.name)}」，现在画的是这一层',
+            '«${displayFloorName(floor.name)}» қосылды, енді осы қабатты сызасыз',
+            'Добавлен «${displayFloorName(floor.name)}», теперь вы чертите этот этаж'),
+        undo: undo);
+  }
+
   Future<void> floorOptions() async {
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showMotionSheet<String>(
         context: context,
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
               for (final entry in {
-                'AddFloor': tr('新增空层', 'Бос қабат қосу'),
-                'CopyFloor': tr('复制本层', 'Қабатты көшіру'),
-                'RenameFloor': tr('楼层名称', 'Қабат атауы'),
-                'SetFloorHeight': tr('层高', 'Қабат биіктігі'),
-                'DeleteFloor': tr('删除本层', 'Қабатты жою')
+                'AddFloor': tr3('新增空层', 'Бос қабат қосу', 'Добавить пустой этаж'),
+                'CopyFloor': tr3('复制本层', 'Қабатты көшіру', 'Копировать этаж'),
+                'RenameFloor': tr3('楼层名称', 'Қабат атауы', 'Название этажа'),
+                'SetFloorHeight': tr3('层高', 'Қабат биіктігі', 'Высота этажа'),
+                'DeleteFloor': tr3('删除本层', 'Қабатты жою', 'Удалить этаж')
               }.entries)
                 ListTile(
                     title: Text(entry.value),
@@ -1404,25 +2087,25 @@ class _HouseEditorState extends State<HouseEditor>
             ])));
     if (choice == null) return;
     if (choice == 'SetFloorHeight') {
-      final value = await length(tr('层高', 'Қабат биіктігі'), floor.height);
+      final value = await length(tr3('层高', 'Қабат биіктігі', 'Высота этажа'), floor.height);
       if (value != null) action(choice, {'floorId': floor.id, 'value': value});
     } else if (choice == 'RenameFloor') {
-      final value = await ask(tr('楼层名称', 'Қабат атауы'), floor.name);
+      final value = await ask(tr3('楼层名称', 'Қабат атауы', 'Название этажа'), floor.name);
       if (value != null) action(choice, {'floorId': floor.id, 'value': value});
     } else {
       if (choice == 'DeleteFloor') {
         final yes = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-                    title: Text(tr('删除本层及其全部内容？', 'Қабатты бүкіл ішімен жою керек пе?')),
-                    content: Text(tr('本层房间和门窗将删除。删除顶层时，下层通向本层的楼梯也会删除。', 'Қабаттағы бөлмелер мен есік-терезелер жойылады. Жоғарғы қабат жойылса, оған апаратын баспалдақ та жойылады.')),
+                    title: Text(tr3('删除本层及其全部内容？', 'Қабатты бүкіл ішімен жою керек пе?', 'Удалить этаж со всем содержимым?')),
+                    content: Text(tr3('本层房间和门窗将删除。删除顶层时，下层通向本层的楼梯也会删除。', 'Қабаттағы бөлмелер мен есік-терезелер жойылады. Жоғарғы қабат жойылса, оған апаратын баспалдақ та жойылады.', 'Комнаты, окна и двери этажа будут удалены. При удалении верхнего этажа лестница, ведущая на него, тоже удаляется.')),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: Text(tr('取消', 'Болдырмау'))),
+                          child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                       FilledButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: Text(tr('删除', 'Жою')))
+                          child: Text(tr3('删除', 'Жою', 'Удалить')))
                     ]));
         if (yes != true) return;
       }
@@ -1442,29 +2125,29 @@ class _HouseEditorState extends State<HouseEditor>
         derive();
       });
       notify(choice == 'DeleteFloor'
-          ? tr('已删除楼层，现在是「${displayFloorName(floor.name)}」',
-              'Қабат жойылды, қазір «${displayFloorName(floor.name)}»')
-          : tr('已新增「${displayFloorName(floor.name)}」，现在编辑这一层',
-              '«${displayFloorName(floor.name)}» қосылды, енді осы қабатты өзгертесіз'));
+          ? tr3('已删除楼层，现在是「${displayFloorName(floor.name)}」',
+              'Қабат жойылды, қазір «${displayFloorName(floor.name)}»', 'Этаж удалён, сейчас открыт «${displayFloorName(floor.name)}»')
+          : tr3('已新增「${displayFloorName(floor.name)}」，现在编辑这一层',
+              '«${displayFloorName(floor.name)}» қосылды, енді осы қабатты өзгертесіз', 'Добавлен «${displayFloorName(floor.name)}», теперь вы редактируете этот этаж'));
     }
   }
 
   Future<void> settings() async {
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showMotionSheet<String>(
         context: context,
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
               for (final e in {
-                'width': tr('房屋宽度', 'Үйдің ені'),
-                'depth': tr('房屋进深', 'Үйдің тереңдігі'),
-                'north': tr('正北方向', 'Солтүстік бағыты'),
-                'flat': tr('平屋顶', 'Тегіс шатыр'),
-                'gable': tr('双坡屋顶', 'Қос беткейлі шатыр'),
-                'hip': tr('四坡屋顶', 'Төрт беткейлі шатыр'),
-                'cut': tr('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)'),
-                if (hasOutline) 'restore': tr('恢复矩形外形', 'Тіктөртбұрышқа қайтару'),
-                'grid': tr('编辑网格', 'Торды өзгерту'),
-                'defaults': tr('默认尺寸', 'Әдепкі өлшемдер')
+                'width': tr3('房屋宽度', 'Үйдің ені', 'Ширина дома'),
+                'depth': tr3('房屋进深', 'Үйдің тереңдігі', 'Глубина дома'),
+                'north': tr3('正北方向', 'Солтүстік бағыты', 'Направление на север'),
+                'flat': tr3('平屋顶', 'Тегіс шатыр', 'Плоская крыша'),
+                'gable': tr3('双坡屋顶', 'Қос беткейлі шатыр', 'Двускатная крыша'),
+                'hip': tr3('四坡屋顶', 'Төрт беткейлі шатыр', 'Вальмовая крыша'),
+                'cut': tr3('切掉一个角（L 形）', 'Бұрышты кесу (L пішін)', 'Вырезать угол (Г-образная форма)'),
+                if (hasOutline) 'restore': tr3('恢复矩形外形', 'Тіктөртбұрышқа қайтару', 'Вернуть прямоугольник'),
+                'grid': tr3('编辑网格', 'Торды өзгерту', 'Изменить сетку'),
+                'defaults': tr3('默认尺寸', 'Әдепкі өлшемдер', 'Размеры по умолчанию')
               }.entries)
                 ListTile(
                     title: Text(e.value),
@@ -1472,7 +2155,7 @@ class _HouseEditorState extends State<HouseEditor>
             ])));
     if (choice == 'width' || choice == 'depth') {
       final value = await length(
-          choice == 'width' ? tr('房屋宽度', 'Үйдің ені') : tr('房屋进深', 'Үйдің тереңдігі'),
+          choice == 'width' ? tr3('房屋宽度', 'Үйдің ені', 'Ширина дома') : tr3('房屋进深', 'Үйдің тереңдігі', 'Глубина дома'),
           choice == 'width'
               ? history.present.footprint.width
               : history.present.footprint.depth);
@@ -1480,7 +2163,7 @@ class _HouseEditorState extends State<HouseEditor>
     }
     if (choice == 'flat') {
       final height =
-          await length(tr('女儿墙高度', 'Парапет биіктігі'), history.present.roof.parapetHeight ?? 900);
+          await length(tr3('女儿墙高度', 'Парапет биіктігі', 'Высота парапета'), history.present.roof.parapetHeight ?? 900);
       if (height != null)
         action('SetRoof', {
           'roof': {'type': 'flat', 'parapetHeight': height}
@@ -1488,12 +2171,12 @@ class _HouseEditorState extends State<HouseEditor>
     }
     if (choice == 'hip') {
       final pitchText = await ask(
-          tr('屋顶坡度（5–60°）', 'Шатыр еңісі (5–60°)'), '${history.present.roof.pitchDeg ?? 25}',
+          tr3('屋顶坡度（5–60°）', 'Шатыр еңісі (5–60°)', 'Уклон крыши (5–60°)'), '${history.present.roof.pitchDeg ?? 25}',
           number: true);
       final pitch = int.tryParse(pitchText ?? '');
       if (pitch == null) return;
       final overhang =
-          await length(tr('屋檐伸出', 'Карниз шығыңқылығы'), history.present.roof.overhang ?? 500);
+          await length(tr3('屋檐伸出', 'Карниз шығыңқылығы', 'Карнизный свес'), history.present.roof.overhang ?? 500);
       if (overhang == null) return;
       action('SetRoof', {
         'roof': {'type': 'hip', 'pitchDeg': pitch, 'overhang': overhang}
@@ -1501,23 +2184,23 @@ class _HouseEditorState extends State<HouseEditor>
     }
     if (choice == 'gable') {
       final pitchText = await ask(
-          tr('屋顶坡度（5–60°）', 'Шатыр еңісі (5–60°)'), '${history.present.roof.pitchDeg ?? 30}',
+          tr3('屋顶坡度（5–60°）', 'Шатыр еңісі (5–60°)', 'Уклон крыши (5–60°)'), '${history.present.roof.pitchDeg ?? 30}',
           number: true);
       if (pitchText == null) return;
       final pitch = int.tryParse(pitchText);
       if (pitch == null) return;
       final overhang =
-          await length(tr('屋檐伸出', 'Карниз шығыңқылығы'), history.present.roof.overhang ?? 500);
+          await length(tr3('屋檐伸出', 'Карниз шығыңқылығы', 'Карнизный свес'), history.present.roof.overhang ?? 500);
       if (overhang == null) return;
-      final direction = await showModalBottomSheet<String>(
+      final direction = await showMotionSheet<String>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 ListTile(
-                    title: Text(tr('屋脊沿进深方向', 'Жота тереңдік бойымен')),
+                    title: Text(tr3('屋脊沿进深方向', 'Жота тереңдік бойымен', 'Конёк вдоль глубины')),
                     onTap: () => Navigator.pop(context, 'V')),
                 ListTile(
-                    title: Text(tr('屋脊沿宽度方向', 'Жота ені бойымен')),
+                    title: Text(tr3('屋脊沿宽度方向', 'Жота ені бойымен', 'Конёк вдоль ширины')),
                     onTap: () => Navigator.pop(context, 'H')),
               ])));
       if (direction != null)
@@ -1535,20 +2218,20 @@ class _HouseEditorState extends State<HouseEditor>
           jsonDecode(encodeHouse(history.present)) as Map<String, dynamic>;
       final defaults = raw['defaults'] as Map<String, dynamic>;
       final labels = {
-        'outerWallThickness': tr('外墙厚度', 'Сыртқы қабырға қалыңдығы'),
-        'innerWallThickness': tr('内墙厚度', 'Ішкі қабырға қалыңдығы'),
-        'slabThickness': tr('楼板厚度', 'Плита қалыңдығы'),
-        'stairRiserMax': tr('楼梯最大步高', 'Баспалдақтың ең үлкен биіктігі'),
-        'stairTread': tr('楼梯踏步进深', 'Баспалдақ табанының тереңдігі'),
-        'stairWidthMin': tr('楼梯最小宽度', 'Баспалдақтың ең аз ені'),
-        'floorHeight': tr('默认层高', 'Әдепкі қабат биіктігі'),
-        'doorWidth': tr('默认门宽', 'Әдепкі есік ені'),
-        'doorHeight': tr('默认门高', 'Әдепкі есік биіктігі'),
-        'windowWidth': tr('默认窗宽', 'Әдепкі терезе ені'),
-        'windowHeight': tr('默认窗高', 'Әдепкі терезе биіктігі'),
-        'windowSill': tr('默认窗台高度', 'Әдепкі терезе алды биіктігі')
+        'outerWallThickness': tr3('外墙厚度', 'Сыртқы қабырға қалыңдығы', 'Толщина наружной стены'),
+        'innerWallThickness': tr3('内墙厚度', 'Ішкі қабырға қалыңдығы', 'Толщина перегородки'),
+        'slabThickness': tr3('楼板厚度', 'Плита қалыңдығы', 'Толщина плиты'),
+        'stairRiserMax': tr3('楼梯最大步高', 'Баспалдақтың ең үлкен биіктігі', 'Максимальная высота ступени'),
+        'stairTread': tr3('楼梯踏步进深', 'Баспалдақ табанының тереңдігі', 'Глубина проступи лестницы'),
+        'stairWidthMin': tr3('楼梯最小宽度', 'Баспалдақтың ең аз ені', 'Минимальная ширина лестницы'),
+        'floorHeight': tr3('默认层高', 'Әдепкі қабат биіктігі', 'Высота этажа по умолчанию'),
+        'doorWidth': tr3('默认门宽', 'Әдепкі есік ені', 'Ширина двери по умолчанию'),
+        'doorHeight': tr3('默认门高', 'Әдепкі есік биіктігі', 'Высота двери по умолчанию'),
+        'windowWidth': tr3('默认窗宽', 'Әдепкі терезе ені', 'Ширина окна по умолчанию'),
+        'windowHeight': tr3('默认窗高', 'Әдепкі терезе биіктігі', 'Высота окна по умолчанию'),
+        'windowSill': tr3('默认窗台高度', 'Әдепкі терезе алды биіктігі', 'Высота подоконника по умолчанию')
       };
-      final field = await showModalBottomSheet<String>(
+      final field = await showMotionSheet<String>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
@@ -1566,13 +2249,13 @@ class _HouseEditorState extends State<HouseEditor>
       }
     }
     if (choice == 'north') {
-      final value = await showModalBottomSheet<int>(
+      final value = await showMotionSheet<int>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 for (final angle in [0, 90, 180, 270])
                   ListTile(
-                      title: Text(tr('正北指向 $angle°', 'Солтүстік $angle° бағытта')),
+                      title: Text(tr3('正北指向 $angle°', 'Солтүстік $angle° бағытта', 'Направление на север: $angle°')),
                       onTap: () => Navigator.pop(context, angle))
               ])));
       if (value != null) action('SetNorthAngle', {'value': value});
@@ -1583,42 +2266,42 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   Future<void> grid() async {
-    final selected = await showModalBottomSheet<Object>(
+    final selected = await showMotionSheet<Object>(
         context: context,
         builder: (context) => SafeArea(
             child: SizedBox(
                 height: 360,
                 child: ListView(children: [
                   ListTile(
-                      title: Text(tr('新增竖向分隔线', 'Тік бөлу сызығын қосу')),
+                      title: Text(tr3('新增竖向分隔线', 'Тік бөлу сызығын қосу', 'Добавить вертикальную разделительную линию')),
                       onTap: () => Navigator.pop(context, AxisDir.V)),
                   ListTile(
-                      title: Text(tr('新增横向分隔线', 'Көлденең бөлу сызығын қосу')),
+                      title: Text(tr3('新增横向分隔线', 'Көлденең бөлу сызығын қосу', 'Добавить горизонтальную разделительную линию')),
                       onTap: () => Navigator.pop(context, AxisDir.H)),
                   for (final axis
                       in base.axes.all.where((a) => a.kind != 'boundary'))
                     ListTile(
                         title: Text(
-                            tr('${axis.dir == AxisDir.V ? '竖' : '横'}线 · ${(axis.pos / 1000).toStringAsFixed(2)} 米',
-                                '${axis.dir == AxisDir.V ? 'Тік' : 'Көлденең'} сызық · ${m2dp(axis.pos)} м')),
+                            tr3('${axis.dir == AxisDir.V ? '竖' : '横'}线 · ${(axis.pos / 1000).toStringAsFixed(2)} 米',
+                                '${axis.dir == AxisDir.V ? 'Тік' : 'Көлденең'} сызық · ${m2dp(axis.pos)} м', '${axis.dir == AxisDir.V ? 'Вертикальная' : 'Горизонтальная'} линия · ${m2dp(axis.pos)} м')),
                         onTap: () => Navigator.pop(context, axis))
                 ]))));
     if (selected is AxisDir) {
       final value = await length(
-          tr('新分隔线位置', 'Жаңа сызықтың орны'),
+          tr3('新分隔线位置', 'Жаңа сызықтың орны', 'Положение новой линии'),
           selected == AxisDir.V
               ? history.present.footprint.width ~/ 2
               : history.present.footprint.depth ~/ 2);
       if (value != null) {
-        final scope = await showModalBottomSheet<String>(
+        final scope = await showMotionSheet<String>(
             context: context,
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [
                   ListTile(
-                      title: Text(tr('所有楼层', 'Барлық қабат')),
+                      title: Text(tr3('所有楼层', 'Барлық қабат', 'Все этажи')),
                       onTap: () => Navigator.pop(context, 'global')),
                   ListTile(
-                      title: Text(tr('仅本层', 'Тек осы қабат')),
+                      title: Text(tr3('仅本层', 'Тек осы қабат', 'Только этот этаж')),
                       onTap: () => Navigator.pop(context, 'floor')),
                 ])));
         if (scope != null)
@@ -1630,24 +2313,24 @@ class _HouseEditorState extends State<HouseEditor>
       }
     }
     if (selected is ResolvedAxis) {
-      final operation = await showModalBottomSheet<String>(
+      final operation = await showMotionSheet<String>(
         context: context,
         builder: (context) => SafeArea(
             child: ListView(shrinkWrap: true, children: [
           ListTile(
-              title: Text(tr('修改位置', 'Орнын өзгерту')),
+              title: Text(tr3('修改位置', 'Орнын өзгерту', 'Изменить положение')),
               onTap: () => Navigator.pop(context, 'move')),
           if (selected.kind == 'floor')
             ListTile(
-                title: Text(tr('同步到所有楼层', 'Барлық қабатқа тарату')),
+                title: Text(tr3('同步到所有楼层', 'Барлық қабатқа тарату', 'Применить ко всем этажам')),
                 onTap: () => Navigator.pop(context, 'promote')),
           ListTile(
-              title: Text(tr('删除分隔线', 'Сызықты жою')),
+              title: Text(tr3('删除分隔线', 'Сызықты жою', 'Удалить линию')),
               onTap: () => Navigator.pop(context, 'delete')),
         ])),
       );
       if (operation == 'move') {
-        final value = await length(tr('分隔线位置', 'Сызықтың орны'), selected.pos);
+        final value = await length(tr3('分隔线位置', 'Сызықтың орны', 'Положение линии'), selected.pos);
         if (value != null)
           action('MoveAxis', {'axisId': selected.id, 'pos': value});
       }
@@ -1660,17 +2343,17 @@ class _HouseEditorState extends State<HouseEditor>
           final resolution = await showDialog<String>(
               context: context,
               builder: (context) => AlertDialog(
-                    title: Text(tr('删除分隔线', 'Сызықты жою')),
+                    title: Text(tr3('删除分隔线', 'Сызықты жою', 'Удалить линию')),
                     content: Text(
-                        '${coreMessage(result.message ?? '')}\n${result.hasHosted ? tr('这条线上的门窗和墙设置将删除。\n', 'Осы сызықтағы есік-терезе мен қабырға баптаулары жойылады.\n') : ''}${result.hasStairs ? tr('受影响的楼梯将删除。\n', 'Әсер ететін баспалдақтар жойылады.\n') : ''}${tr('请选择合并后保留的房间。', 'Біріктірген соң қалатын бөлмені таңдаңыз.')}'),
+                        '${coreMessage(result.message ?? '')}\n${result.hasHosted ? tr3('这条线上的门窗和墙设置将删除。\n', 'Осы сызықтағы есік-терезе мен қабырға баптаулары жойылады.\n', 'Окна, двери и настройки стен на этой линии будут удалены.\n') : ''}${result.hasStairs ? tr3('受影响的楼梯将删除。\n', 'Әсер ететін баспалдақтар жойылады.\n', 'Затронутые лестницы будут удалены.\n') : ''}${tr3('请选择合并后保留的房间。', 'Біріктірген соң қалатын бөлмені таңдаңыз.', 'Выберите комнату, которая останется после объединения.')}'),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: Text(tr('取消', 'Болдырмау'))),
+                          child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                       for (final entry in {
-                        'mergeRooms': tr('合并房间', 'Бөлмелерді біріктіру'),
-                        'keepLowSide': tr('保留左 / 下侧', 'Сол / төменгі жағын қалдыру'),
-                        'keepHighSide': tr('保留右 / 上侧', 'Оң / жоғарғы жағын қалдыру')
+                        'mergeRooms': tr3('合并房间', 'Бөлмелерді біріктіру', 'Объединить комнаты'),
+                        'keepLowSide': tr3('保留左 / 下侧', 'Сол / төменгі жағын қалдыру', 'Оставить левую / нижнюю сторону'),
+                        'keepHighSide': tr3('保留右 / 上侧', 'Оң / жоғарғы жағын қалдыру', 'Оставить правую / верхнюю сторону')
                       }.entries)
                         TextButton(
                             onPressed: () => Navigator.pop(context, entry.key),
@@ -1691,7 +2374,7 @@ class _HouseEditorState extends State<HouseEditor>
                 withExtras(result.document!, history.present.extras))) changed();
           });
         } else {
-          notify(result.message ?? tr('无法删除分隔线', 'Сызықты жою мүмкін емес'));
+          notify(result.message ?? tr3('无法删除分隔线', 'Сызықты жою мүмкін емес', 'Линию нельзя удалить'));
         }
       }
     }
@@ -1736,8 +2419,7 @@ class _HouseEditorState extends State<HouseEditor>
       setState(() {
         floorIndex = index!;
         view3d = false;
-        browse = true;
-        tool = 'browse';
+        tool = EditorTool.browse;
         derive();
         focus = selected;
       });
@@ -1745,6 +2427,15 @@ class _HouseEditorState extends State<HouseEditor>
 
   Future<void> tapObject(Offset point, Size size) async {
     final painter = interactionPainter();
+    if (showDimensions && (browse || tool == EditorTool.drawWall)) {
+      final span = FloorPlanPainter(base, {}, {},
+              viewportInsets: canvasInsets, handleScale: canvasZoom)
+          .dimensionAt(point, size);
+      if (span != null) {
+        await editDimension(span);
+        return;
+      }
+    }
     // Tolerances are screen pixels, so they stay finger-sized at any zoom.
     final x = painter.worldPoint(point, size).x,
         y = painter.worldPoint(point, size).y,
@@ -1760,7 +2451,7 @@ class _HouseEditorState extends State<HouseEditor>
           .abs()
           .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
     final utility = utilityAt(point, size);
-    if (utility != null && tool != 'selectWall') {
+    if (utility != null && tool != EditorTool.selectWall) {
       setState(() {
         clearSelection();
         clearWallSelection();
@@ -1771,7 +2462,7 @@ class _HouseEditorState extends State<HouseEditor>
       return;
     }
     final opening = placements.firstOrNull;
-    if (opening != null && tool != 'selectWall') {
+    if (opening != null && tool != EditorTool.selectWall) {
       selectOpening(opening.opening);
       return;
     }
@@ -1781,7 +2472,7 @@ class _HouseEditorState extends State<HouseEditor>
     final piece = furnitureAtWorld(Offset(x, y));
     // Rugs cover rooms: the first tap picks the room, the next the rug.
     if (piece != null &&
-        tool != 'selectWall' &&
+        tool != EditorTool.selectWall &&
         (!isFlatFurniture(piece.kind) ||
             (roomHere != null && roomHere == selectedRoomId) ||
             roomHere == null)) {
@@ -1789,7 +2480,9 @@ class _HouseEditorState extends State<HouseEditor>
         clearSelection();
         clearWallSelection();
         selectedFurnitureId = piece.id;
-        panelCollapsed = false;
+        // Phones: the card starts folded to its name and actions, so the
+        // piece stays in view; details unfold on demand.
+        panelCollapsed = phoneTools;
         placementHint = null;
       });
       return;
@@ -1802,54 +2495,77 @@ class _HouseEditorState extends State<HouseEditor>
             () => showWallContext(wall, attachmentOnWall(wall, point, size)));
         return;
       }
-      final choice = await showModalBottomSheet<String>(
+      // Tapping an outside wall: add an opening right here, or change the
+      // wall itself. Two labelled groups instead of one mixed list.
+      final t = Tokens.of(context);
+      Widget heading(String text) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+          child: Text(text,
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: t.muted)));
+      Widget item(String key, IconData icon, String label) => ListTile(
+          key: ValueKey('wall-sheet-$key'),
+          leading: Icon(icon),
+          title: Text(label),
+          onTap: () => Navigator.pop(context, key));
+      final choice = await showMotionSheet<String>(
           context: context,
+          showDragHandle: true,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
-                for (final entry in {
-                  'door': tr('门', 'Есік'),
-                  'window': tr('窗', 'Терезе'),
-                  'sliding': tr('推拉门', 'Сырғымалы есік'),
-                  if (wall.axis.kind != 'boundary') 'move': tr('拖动这段墙', 'Қабырғаны сүйреу'),
-                  if (wall.axis.kind != 'boundary') 'position': tr('精确调整这段墙', 'Қабырғаны дәл орналастыру'),
-                  'open': tr('开放（无墙）', 'Ашық (қабырғасыз)'),
-                  'thickness': tr('调整墙厚', 'Қалыңдығын өзгерту'),
-                  'default': tr('恢复默认墙', 'Әдепкі қабырғаны қайтару')
-                }.entries)
-                  ListTile(
-                      title: Text(entry.value),
-                      onTap: () => Navigator.pop(context, entry.key))
+                Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                        '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} · ${dec(((wall.end.pos - wall.start.pos) / 1000).toStringAsFixed(2))} $unitM',
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700))),
+                heading(tr3('在点的位置加', 'Осы жерге қосу', 'Добавить здесь')),
+                item('door', Icons.door_front_door_outlined, tr3('门', 'Есік', 'Дверь')),
+                item('window', Icons.window_outlined, tr3('窗', 'Терезе', 'Окно')),
+                item('sliding', Icons.door_sliding_outlined,
+                    tr3('推拉门', 'Сырғымалы есік', 'Раздвижная дверь')),
+                heading(tr3('这段墙', 'Осы қабырға', 'Эта стена')),
+                item('thickness', Icons.straighten, tr3('调整墙厚', 'Қалыңдығын өзгерту', 'Изменить толщину')),
+                item('open', Icons.crop_free, tr3('去掉这段墙（开放）', 'Қабырғасыз (ашық)', 'Без стены (открыто)')),
+                item('default', Icons.restart_alt,
+                    tr3('恢复默认墙', 'Әдепкі қабырғаны қайтару', 'Вернуть стену по умолчанию')),
               ])));
       if (choice == null) return;
       if (choice == 'move') {
         setState(() {
           selectedWall = wall;
-          tool = 'wall';
-          browse = false;
+          tool = EditorTool.wall;
           placementHint = null;
         });
         return;
       }
       if (choice == 'position') {
         final value = await length(
-            wall.axis.dir == AxisDir.V ? tr('距左侧外墙', 'Сол жақ сыртқы қабырғадан') : tr('距下侧外墙', 'Төменгі сыртқы қабырғадан'), wall.axis.pos);
+            wall.axis.dir == AxisDir.V ? tr3('距左侧外墙', 'Сол жақ сыртқы қабырғадан', 'От левой наружной стены') : tr3('距下侧外墙', 'Төменгі сыртқы қабырғадан', 'От нижней наружной стены'), wall.axis.pos);
         if (value != null)
           action('MoveLocalWall',
               {'floorId': floor.id, 'anchor': wall.ref.anchor, 'pos': value});
         return;
       }
       if (['door', 'window', 'sliding'].contains(choice)) {
+        final before = {for (final o in floor.openings) o.id};
         action('AddOpening', {
           'floorId': floor.id,
           'anchor': wall.ref.anchor,
           'kind': OpeningKind.values.firstWhere((k) => k.name == choice),
+          // Where the finger was, not 200 mm from a corner.
+          'centerAtTap': true,
           'tapT': ((wall.axis.dir == AxisDir.H ? x : y) - wall.start.pos)
               .clamp(0, wall.end.pos - wall.start.pos)
         });
+        // Select what was just added: its card offers change and delete.
+        final added =
+            floor.openings.where((o) => !before.contains(o.id)).firstOrNull;
+        if (added != null) selectOpening(added);
       } else {
         int? thickness;
         if (choice == 'thickness')
-          thickness = await length(tr('墙厚', 'Қабырға қалыңдығы'), wall.thickness.round());
+          thickness = await length(tr3('墙厚', 'Қабырға қалыңдығы', 'Толщина стены'), wall.thickness.round());
         if (choice != 'thickness' || thickness != null)
           action('SetWallOverride', {
             'floorId': floor.id,
@@ -1860,13 +2576,12 @@ class _HouseEditorState extends State<HouseEditor>
       }
       return;
     }
-    if (tool == 'editWall' || menuWall != null) {
+    if (tool == EditorTool.editWall || menuWall != null) {
       // A tap beside the selected wall just ends the selection.
       setState(() {
         clearWallSelection();
-        if (tool == 'editWall') {
-          tool = 'browse';
-          browse = true;
+        if (tool == EditorTool.editWall) {
+          tool = EditorTool.browse;
         }
         placementHint = null;
       });
@@ -1880,9 +2595,11 @@ class _HouseEditorState extends State<HouseEditor>
       setState(() {
         clearSelection();
         selectedRoomId = room.id;
-        panelCollapsed = false;
+        // Phones: one line, so the room stays in view (see [panel]).
+        panelCollapsed = phoneTools;
         if (highlights.isNotEmpty) flash(const []);
       });
+      revealRoom(room.id);
       return;
     }
     if (id == null)
@@ -1892,25 +2609,32 @@ class _HouseEditorState extends State<HouseEditor>
       });
     final stair = floor.stairs.where((s) => s.id == id).firstOrNull;
     if (stair != null) {
-      final choice = await showModalBottomSheet<String>(
+      final choice = await showMotionSheet<String>(
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 for (final e in {
-                  'straight': tr('直梯', 'Тік баспалдақ'),
-                  'L': tr('L 型楼梯', 'L тәрізді баспалдақ'),
-                  'U': tr('U 型楼梯', 'U тәрізді баспалдақ'),
-                  'turn': tr('切换转向', 'Бұрылысын ауыстыру'),
-                  'start': tr('切换起步边', 'Басталатын жағын ауыстыру'),
-                  'delete': tr('删除楼梯', 'Баспалдақты жою')
+                  'move': tr3('挪位置', 'Орнын ауыстыру', 'Передвинуть'),
+                  'size': tr3('改尺寸', 'Өлшемін өзгерту', 'Изменить размер'),
+                  'straight': tr3('直梯', 'Тік баспалдақ', 'Прямая лестница'),
+                  'L': tr3('L 型楼梯', 'L тәрізді баспалдақ', 'Г-образная лестница'),
+                  'U': tr3('U 型楼梯', 'U тәрізді баспалдақ', 'П-образная лестница'),
+                  'turn': tr3('切换转向', 'Бұрылысын ауыстыру', 'Сменить направление поворота'),
+                  'start': tr3('切换起步边', 'Басталатын жағын ауыстыру', 'Сменить сторону начала'),
+                  'delete': tr3('删除楼梯', 'Баспалдақты жою', 'Удалить лестницу')
                 }.entries)
                   ListTile(
+                      key: Key('stair-${e.key}'),
                       title: Text(e.value),
                       onTap: () => Navigator.pop(context, e.key))
               ])));
-      if (choice == null) return;
-      if (choice == 'delete')
-        action('DeleteStair', {'stairId': stair.id});
+      if (choice == null || !mounted) return;
+      if (choice == 'move')
+        startStairStamp(moving: stair);
+      else if (choice == 'size')
+        await resizeStair(stair);
+      else if (choice == 'delete')
+        action('RemoveStair', {'stairId': stair.id});
       else if (choice == 'turn')
         action('UpdateStair', {
           'stairId': stair.id,
@@ -1928,12 +2652,114 @@ class _HouseEditorState extends State<HouseEditor>
     }
   }
 
+  /// A stair over [region] of this floor, in the first shape that fits
+  /// there: straight, then L, then U. Where none fits nothing is placed
+  /// and the message says how much room a stair needs. On the top floor
+  /// the message offers to add the floor the stair would lead to.
+  void placeStair(AxisRectangle region) {
+    final floorId = floor.id;
+    if (floorIndex == history.present.floors.length - 1) {
+      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(
+          key: const Key('stair-needs-floor'),
+          content: Text(tr3('楼梯要通到上面一层，现在还没有。',
+              'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
+              'Лестница ведёт на этаж выше, а его пока нет.')),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
+          duration: const Duration(seconds: 8),
+          persist: false,
+          action: SnackBarAction(
+              label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
+                  'Добавить этаж и лестницу'),
+              onPressed: () {
+                final before = history.present;
+                action('AddFloor', {'floorId': floorId});
+                if (history.present == before || !mounted) return;
+                setState(() => derive());
+                placeStair(region);
+              })),
+          snackBarAnimationStyle: Motion.toastStyle);
+      return;
+    }
+    final rect = resolveRect(base.axes, region).rect;
+    if (rect != null) {
+      final cells = cellsOfRect(rect).toSet();
+      final taken = floor.stairs.any((s) {
+        final r = resolveRect(base.axes, s.region).rect;
+        return r != null && cellsOfRect(r).any(cells.contains);
+      });
+      if (taken) {
+        setState(() => tool = EditorTool.browse);
+        notify(tr3('这里已经有楼梯了。点一下楼梯可以换样式或删除。',
+            'Мұнда баспалдақ бар. Оны басып түрін өзгертуге не жоюға болады.',
+            'Здесь уже есть лестница. Нажмите на неё, чтобы сменить вид или удалить.'));
+        return;
+      }
+    }
+    String? refusal;
+    StairGeometry? tight;
+    for (final type in StairType.values) {
+      final args = {'floorId': floorId, 'type': type, 'region': region};
+      final result = executeCommand(
+          presentState,
+          DesignCommand('AddStair', args),
+          CommandContext(
+              newId: () => const Uuid().v4(),
+              now: () => DateTime.now().toUtc().toIso8601String()));
+      if (result is! Applied) {
+        refusal = result is Rejected
+            ? result.message
+            : (result as NeedsResolution).conflict.message;
+        break;
+      }
+      final next = composeDocument(history.present.meta, result.newState);
+      final known = {for (final s in floor.stairs) s.id};
+      final added = deriveHouse(next)
+          .floors[floorIndex]
+          .stairs
+          .where((s) => !known.contains(s.stairId))
+          .firstOrNull;
+      if (added != null && !added.fits) {
+        tight ??= added;
+        if (added.requiredA * added.requiredB <
+            tight.requiredA * tight.requiredB) tight = added;
+        continue;
+      }
+      setState(() {
+        if (history.commit(next)) changed();
+        tool = EditorTool.browse;
+        placementHint = null;
+      });
+      notify(
+          switch (type) {
+            StairType.straight => tr3('已放直梯 · 点楼梯可换样式',
+                'Тік баспалдақ қойылды · түрін өзгерту үшін оны басыңыз',
+                'Прямая лестница поставлена · нажмите на неё, чтобы сменить вид'),
+            StairType.L => tr3('直梯放不下，已换成 L 型 · 点楼梯可换样式',
+                'Тік баспалдақ сыймады, L тәрізді қойылды · түрін өзгерту үшін оны басыңыз',
+                'Прямая не поместилась, поставлена Г-образная · нажмите на неё, чтобы сменить вид'),
+            StairType.U => tr3('直梯放不下，已换成 U 型 · 点楼梯可换样式',
+                'Тік баспалдақ сыймады, U тәрізді қойылды · түрін өзгерту үшін оны басыңыз',
+                'Прямая не поместилась, поставлена П-образная · нажмите на неё, чтобы сменить вид'),
+          },
+          undo: undo);
+      return;
+    }
+    if (refusal != null) return notify(refusal);
+    final need = tight!;
+    notify(tr3(
+        '这里放不下楼梯，至少要 ${meters(need.requiredA)} × ${meters(need.requiredB)} 米。换一个大些的房间，或先把墙挪开。',
+        'Мұнда баспалдақ сыймайды, кемінде ${meters(need.requiredA)} × ${meters(need.requiredB)} м керек. Үлкенірек бөлмені таңдаңыз не қабырғаны жылжытыңыз.',
+        'Лестница здесь не поместится: нужно не меньше ${meters(need.requiredA)} × ${meters(need.requiredB)} м. Выберите комнату побольше или сдвиньте стену.'));
+  }
+
   /// Show the card of [opening]; it can also be dragged on the plan.
   void selectOpening(Opening opening) => setState(() {
         clearSelection();
         clearWallSelection();
         selectedOpeningId = opening.id;
-        panelCollapsed = false;
+        panelCollapsed = phoneTools;
       });
 
   Offset? drawingOrigin, drawingEnd;
@@ -1967,6 +2793,19 @@ class _HouseEditorState extends State<HouseEditor>
   String? wallGesture;
   Offset? gestureScreen;
   bool drawConnected = false;
+
+  /// Dashed alignment guide for the end being dragged (world mm).
+  (Offset, Offset)? alignGuide;
+
+  (Offset, Offset)? guideFor(WallEndSnap snap) {
+    final v = snap.aligned;
+    if (v == null) return null;
+    final w = base.axes.v.last.pos.toDouble(), d = base.axes.h.last.pos.toDouble();
+    // The end lies on an existing wall line across the drawing direction.
+    return snap.horizontal
+        ? (Offset(v, 0), Offset(v, d))
+        : (Offset(0, v), Offset(w, v));
+  }
 
   /// Wall whose nearby action menu is open, and the pressed point on it.
   WallSegment? menuWall;
@@ -2011,10 +2850,9 @@ class _HouseEditorState extends State<HouseEditor>
           ? Offset(c.carrier.pos.toDouble(), c.endPos.toDouble())
           : Offset(c.endPos.toDouble(), c.carrier.pos.toDouble());
       if (!keepTool) {
-        tool = 'editWall';
-        browse = false;
+        tool = EditorTool.editWall;
       }
-      placementHint = tr('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз');
+      placementHint = tr3('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз', 'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить');
     });
   }
 
@@ -2051,6 +2889,7 @@ class _HouseEditorState extends State<HouseEditor>
     }
     final world = painter.worldPoint(local, size);
     editDown = Offset(world.x, world.y);
+    alignGuide = null;
     editPreviewStart = null;
     editPreviewEnd = null;
     editCommand = null;
@@ -2095,7 +2934,9 @@ class _HouseEditorState extends State<HouseEditor>
           forceHorizontal: !vertical,
           ignore: own,
           skipAlong: {(vertical ? moving.dy : moving.dx).round()});
+      if (snap.connected && !drawConnected) HapticFeedback.selectionClick();
       drawConnected = snap.connected;
+      alignGuide = guideFor(snap);
       editPreviewStart = wallGrip == 'start' ? snap.end : editStart;
       editPreviewEnd = wallGrip == 'end' ? snap.end : editEnd;
       editCommand = 'UpdateDrawnWall';
@@ -2105,6 +2946,7 @@ class _HouseEditorState extends State<HouseEditor>
       final across = vertical ? delta.dx : delta.dy,
           along = vertical ? delta.dy : delta.dx;
       drawConnected = false;
+      alignGuide = null;
       if (across.abs() >= along.abs()) {
         // Sideways: walls that end on this one stretch along with it.
         var position = carrier + across, best = 14 * pixel;
@@ -2135,7 +2977,7 @@ class _HouseEditorState extends State<HouseEditor>
       }
     }
     schedulePreview(editCommand!, editArgs!,
-        ok: tr('松手完成，支持撤销', 'Жіберіңіз, болдырмауға болады'), failed: tr('无法移动这段墙', 'Бұл қабырғаны жылжыту мүмкін емес'));
+        ok: tr3('松手完成，支持撤销', 'Жіберіңіз, болдырмауға болады', 'Отпустите, действие можно отменить'), failed: tr3('无法移动这段墙', 'Бұл қабырғаны жылжыту мүмкін емес', 'Эту стену нельзя переместить'));
   }
 
   /// Full previews (validation plus the resulting rooms) can take tens of
@@ -2230,9 +3072,8 @@ class _HouseEditorState extends State<HouseEditor>
     }).firstOrNull;
     if (solid == null) {
       clearWallSelection();
-      if (tool == 'editWall') {
-        tool = 'browse';
-        browse = true;
+      if (tool == EditorTool.editWall) {
+        tool = EditorTool.browse;
       }
       return;
     }
@@ -2269,7 +3110,7 @@ class _HouseEditorState extends State<HouseEditor>
       if (history.present != before) refreshWallSelection(start, end);
     }
     if (error != null) notify(error);
-    placementHint = tr('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз');
+    placementHint = tr3('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз', 'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить');
     setState(() {});
   }
 
@@ -2287,12 +3128,21 @@ class _HouseEditorState extends State<HouseEditor>
 
   Future<void> preciseWallLength() async {
     if (editStart == null || editEnd == null) return;
-    final start = editStart!, end = editEnd!;
-    final value = await length(tr('墙长', 'Қабырға ұзындығы'), (end - start).distance.round());
-    if (value == null || !mounted) return;
-    // Keep the end that is joined to another wall; move the free one.
-    final keepEnd = selectedEndJoins(end) && !selectedEndJoins(start);
+    // Start at the left or bottom end, as the dialog names them.
+    final ordered = editStart!.dx + editStart!.dy <= editEnd!.dx + editEnd!.dy;
+    final start = ordered ? editStart! : editEnd!,
+        end = ordered ? editEnd! : editStart!;
     final vertical = start.dx == end.dx;
+    // Offer to keep the end that is joined to another wall and move the
+    // free one; the user can pick the other end.
+    final choice = await showDialog<WallResizeChoice>(
+        context: context,
+        builder: (_) => WallResizeDialog(
+            initial: (end - start).distance.round(),
+            vertical: vertical,
+            keepEnd: selectedEndJoins(end) && !selectedEndJoins(start)));
+    if (choice == null || !mounted) return;
+    final value = choice.length, keepEnd = choice.keepEnd;
     final direction = vertical ? const Offset(0, 1) : const Offset(1, 0);
     final from = keepEnd ? end - direction * value.toDouble() : start,
         to = keepEnd ? end : start + direction * value.toDouble();
@@ -2300,15 +3150,15 @@ class _HouseEditorState extends State<HouseEditor>
     action('UpdateDrawnWall', wallEditArguments(from, to));
     if (history.present != before) {
       setState(() => refreshWallSelection(from, to));
-      notify(tr('墙长已改为 ${(value / 1000).toStringAsFixed(2)} 米',
-          'Қабырға ұзындығы ${m2dp(value)} м болды'));
+      notify(tr3('墙长已改为 ${(value / 1000).toStringAsFixed(2)} 米',
+          'Қабырға ұзындығы ${m2dp(value)} м болды', 'Длина стены теперь ${m2dp(value)} м'));
     }
   }
 
   Future<void> preciseWallPosition() async {
     if (editStart == null || editEnd == null) return;
     final vertical = editStart!.dx == editEnd!.dx;
-    final value = await length(vertical ? tr('墙到左侧外墙的距离', 'Сол сыртқы қабырғаға дейінгі қашықтық') : tr('墙到下侧外墙的距离', 'Төменгі сыртқы қабырғаға дейінгі қашықтық'),
+    final value = await length(vertical ? tr3('墙到左侧外墙的距离', 'Сол сыртқы қабырғаға дейінгі қашықтық', 'Расстояние до левой наружной стены') : tr3('墙到下侧外墙的距离', 'Төменгі сыртқы қабырғаға дейінгі қашықтық', 'Расстояние до нижней наружной стены'),
         (vertical ? editStart!.dx : editStart!.dy).round());
     if (value == null || !mounted) return;
     final start = vertical
@@ -2332,15 +3182,15 @@ class _HouseEditorState extends State<HouseEditor>
     if (selectedDrawnAnchor == null) return;
     final choice = directThickness
         ? 'thickness'
-        : await showModalBottomSheet<String>(
+        : await showMotionSheet<String>(
             context: context,
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [
                   ListTile(
-                      title: Text(tr('调整墙厚', 'Қалыңдығын өзгерту')),
+                      title: Text(tr3('调整墙厚', 'Қалыңдығын өзгерту', 'Изменить толщину')),
                       onTap: () => Navigator.pop(context, 'thickness')),
                   ListTile(
-                      title: Text(tr('恢复默认墙厚', 'Әдепкі қалыңдықты қайтару')),
+                      title: Text(tr3('恢复默认墙厚', 'Әдепкі қалыңдықты қайтару', 'Вернуть толщину по умолчанию')),
                       onTap: () => Navigator.pop(context, 'default'))
                 ])));
     if (choice == null) return;
@@ -2385,16 +3235,16 @@ class _HouseEditorState extends State<HouseEditor>
       final yes = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-                  title: Text(tr('删除墙及其门窗？', 'Қабырға мен ондағы есік-терезені жою керек пе?')),
-                  content: Text(tr('这段墙上的 $hosted 个门窗也会删除，可通过撤销恢复。',
-                      'Қабырғадағы $hosted есік-терезе де жойылады, болдырмау арқылы қайтаруға болады.')),
+                  title: Text(tr3('删除墙及其门窗？', 'Қабырға мен ондағы есік-терезені жою керек пе?', 'Удалить стену вместе с окнами и дверями?')),
+                  content: Text(tr3('这段墙上的 $hosted 个门窗也会删除，可通过撤销恢复。',
+                      'Қабырғадағы $hosted есік-терезе де жойылады, болдырмау арқылы қайтаруға болады.', 'Окна и двери на этой стене ($hosted шт.) тоже будут удалены, вернуть их можно отменой.')),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: Text(tr('取消', 'Болдырмау'))),
+                        child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
                     FilledButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: Text(tr('删除', 'Жою')))
+                        child: Text(tr3('删除', 'Жою', 'Удалить')))
                   ]));
       if (yes != true) return;
     }
@@ -2405,17 +3255,16 @@ class _HouseEditorState extends State<HouseEditor>
     if (history.present != before) {
       setState(() {
         cancelDrag();
-        if (tool == 'editWall') {
-          tool = 'browse';
-          browse = true;
+        if (tool == EditorTool.editWall) {
+          tool = EditorTool.browse;
         }
         clearWallSelection();
         placementHint = null;
       });
       notify(
           hosted > 0
-              ? tr('已删除墙体和 $hosted 个门窗', 'Қабырға мен $hosted есік-терезе жойылды')
-              : tr('已删除墙体', 'Қабырға жойылды'),
+              ? tr3('已删除墙体和 $hosted 个门窗', 'Қабырға мен $hosted есік-терезе жойылды', 'Стена удалена вместе с окнами и дверями ($hosted шт.)')
+              : tr3('已删除墙体', 'Қабырға жойылды', 'Стена удалена'),
           undo: undo);
     }
   }
@@ -2440,7 +3289,7 @@ class _HouseEditorState extends State<HouseEditor>
   )? attachmentMemo;
 
   List<Offset> visibleWallAttachments(Size size) {
-    final seed = tool == 'drawWall' ? drawingOrigin : null;
+    final seed = tool == EditorTool.drawWall ? drawingOrigin : null;
     final memo = attachmentMemo;
     if (memo != null &&
         identical(memo.$1, base) &&
@@ -2459,7 +3308,7 @@ class _HouseEditorState extends State<HouseEditor>
     final result = <Offset>[];
     // The active start point and the selected wall's grips own their spots.
     final reserved = [
-      if (tool == 'drawWall' && drawingOrigin != null)
+      if (tool == EditorTool.drawWall && drawingOrigin != null)
         painter.point(drawingOrigin!.dx, drawingOrigin!.dy, size)
     ];
     bool onSelected(Offset p) {
@@ -2491,7 +3340,7 @@ class _HouseEditorState extends State<HouseEditor>
   Offset? attachmentAt(Offset local, Size size) {
     final painter = interactionPainter();
     final candidates = [
-      if (tool == 'drawWall' && drawingOrigin != null) drawingOrigin!,
+      if (tool == EditorTool.drawWall && drawingOrigin != null) drawingOrigin!,
       ...visibleWallAttachments(size)
     ];
     candidates.sort((a, b) => (painter.point(a.dx, a.dy, size) - local)
@@ -2528,11 +3377,11 @@ class _HouseEditorState extends State<HouseEditor>
     wallHoldTimer?.cancel();
     wallHoldScreen = screen;
     if (!(browse ||
-        tool == 'drawWall' ||
-        tool == 'editWall' ||
-        tool == 'selectWall')) return;
+        tool == EditorTool.drawWall ||
+        tool == EditorTool.editWall ||
+        tool == EditorTool.selectWall)) return;
     // Pressing a plus before dragging is common; it must not open a menu.
-    if ((tool == 'drawWall' || tool == 'selectWall') &&
+    if ((tool == EditorTool.drawWall || tool == EditorTool.selectWall) &&
         attachmentAt(local, size) != null) return;
     final wall = wallAtPoint(local, size);
     if (wall == null) return;
@@ -2555,7 +3404,7 @@ class _HouseEditorState extends State<HouseEditor>
   void showWallContext(WallSegment wall, Offset point) {
     final inner = wall.axis.kind != 'boundary';
     if (inner) {
-      selectWallForEdit(wall, point.dx, point.dy, keepTool: tool == 'drawWall');
+      selectWallForEdit(wall, point.dx, point.dy, keepTool: tool == EditorTool.drawWall);
     } else {
       clearWallSelection();
     }
@@ -2575,7 +3424,7 @@ class _HouseEditorState extends State<HouseEditor>
         clearWallSelection();
         startWallDrawing();
         drawingOrigin = point;
-        placementHint = tr('按住大 ＋ 拖出新墙', 'Үлкен ＋ белгісін ұстап, жаңа қабырға тартыңыз');
+        placementHint = tr3('按住大 ＋ 拖出新墙', 'Үлкен ＋ белгісін ұстап, жаңа қабырға тартыңыз', 'Удерживайте большой ＋ и протяните новую стену');
       });
       return;
     }
@@ -2626,6 +3475,209 @@ class _HouseEditorState extends State<HouseEditor>
         showWallContext(wall, attachmentOnWall(wall, local, size));
       }
     });
+  }
+
+  /// The figure of the dimension chain being typed over.
+  DimensionSpan? editingDimension;
+
+  /// A figure on the plan was tapped: type the size wanted and say which
+  /// wall gives way. The number asked for is the number drawn, wall face
+  /// to wall face, so there is nothing to convert.
+  Future<void> editDimension(DimensionSpan span) async {
+    final fp = history.present.footprint;
+    if (span.overall) {
+      setState(() => editingDimension = span);
+      final value = await length(
+          span.horizontal
+              ? tr3('房屋总宽', 'Үйдің жалпы ені', 'Общая ширина дома')
+              : tr3('房屋总深', 'Үйдің жалпы тереңдігі', 'Общая глубина дома'),
+          span.length.round());
+      if (mounted) setState(() => editingDimension = null);
+      if (value != null && mounted)
+        action('SetFootprintSize',
+            {span.horizontal ? 'width' : 'depth': value});
+      return;
+    }
+    final walls = wallsOf(base, const FoundationSpec()).where((w) =>
+        w.role != WallRole.temporary &&
+        w.horizontal != span.horizontal &&
+        switch (span.side) {
+          'top' => w.rect.top >= fp.depth - 600,
+          'bottom' => w.rect.bottom <= 600,
+          'left' => w.rect.left <= 600,
+          _ => w.rect.right >= fp.width - 600,
+        });
+    double lo(WallInfo w) => span.horizontal ? w.rect.left : w.rect.bottom;
+    double hi(WallInfo w) => span.horizontal ? w.rect.right : w.rect.top;
+    if (walls.any(
+        (w) => (lo(w) - span.a).abs() < 2 && (hi(w) - span.b).abs() < 2)) {
+      notify(tr3('这是墙的厚度。点一下墙可以改厚度。',
+          'Бұл қабырғаның қалыңдығы. Өзгерту үшін қабырғаны басыңыз.',
+          'Это толщина стены. Нажмите на стену, чтобы изменить её.'));
+      return;
+    }
+    bool inner(WallInfo w) => w.segment.axis.kind != 'boundary';
+    final low = walls
+            .where((w) => (hi(w) - span.a).abs() < 2 && inner(w))
+            .firstOrNull,
+        high = walls
+            .where((w) => (lo(w) - span.b).abs() < 2 && inner(w))
+            .firstOrNull;
+    setState(() => editingDimension = span);
+    final lowName = span.horizontal
+            ? tr3('动左边的墙', 'Сол қабырға жылжиды', 'Двигать левую стену')
+            : tr3('动下边的墙', 'Төменгі қабырға жылжиды', 'Двигать нижнюю стену'),
+        highName = span.horizontal
+            ? tr3('动右边的墙', 'Оң қабырға жылжиды', 'Двигать правую стену')
+            : tr3('动上边的墙', 'Жоғарғы қабырға жылжиды', 'Двигать верхнюю стену');
+    final field = TextEditingController(
+        text: (span.length / 1000).toStringAsFixed(2));
+    field.selection =
+        TextSelection(baseOffset: 0, extentOffset: field.text.length);
+    var moveHigh = high != null;
+    final choice = await showDialog<({int length, bool moveHigh})>(
+        context: context,
+        builder: (context) => StatefulBuilder(builder: (context, setDialog) {
+              void done() {
+                final v = parseNumber(field.text);
+                if (v == null || v <= 0) return;
+                Navigator.pop(
+                    context, (length: (v * 1000).round(), moveHigh: moveHigh));
+              }
+
+              return AlertDialog(
+                  title: Text(span.horizontal
+                      ? tr3('这一段的净宽（米）', 'Осы бөліктің таза ені (м)',
+                          'Ширина этого участка в свету (м)')
+                      : tr3('这一段的净深（米）', 'Осы бөліктің таза тереңдігі (м)',
+                          'Глубина этого участка в свету (м)')),
+                  content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextField(
+                            key: const Key('dim-field'),
+                            controller: field,
+                            autofocus: true,
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            onSubmitted: (_) => done()),
+                        const SizedBox(height: 12),
+                        if (low != null && high != null)
+                          Wrap(spacing: 8, children: [
+                            ChoiceChip(
+                                key: const Key('dim-low'),
+                                label: Text(lowName),
+                                selected: !moveHigh,
+                                onSelected: (_) =>
+                                    setDialog(() => moveHigh = false)),
+                            ChoiceChip(
+                                key: const Key('dim-high'),
+                                label: Text(highName),
+                                selected: moveHigh,
+                                onSelected: (_) =>
+                                    setDialog(() => moveHigh = true)),
+                          ])
+                        else
+                          Text(
+                              low == null && high == null
+                                  ? tr3('两边都是外墙，房屋会跟着变大或变小。',
+                                      'Екі жағы да сыртқы қабырға, үй өлшемі өзгереді.',
+                                      'С обеих сторон наружные стены: изменится размер дома.')
+                                  : (high != null ? highName : lowName),
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: Tokens.of(context).muted)),
+                      ]),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
+                    FilledButton(
+                        key: const Key('dim-ok'),
+                        onPressed: done,
+                        child: Text(tr3('好了', 'Дайын', 'Готово'))),
+                  ]);
+            }));
+    if (mounted) setState(() => editingDimension = null);
+    if (choice == null || !mounted) return;
+    final delta = choice.length - span.length.round();
+    if (delta == 0) return;
+    if (low == null && high == null) {
+      action('SetFootprintSize', {
+        span.horizontal ? 'width' : 'depth':
+            (span.horizontal ? fp.width : fp.depth) + delta
+      });
+      return;
+    }
+    final wall = (choice.moveHigh ? high : low)!.segment;
+    final along = (wall.start.pos + wall.end.pos) / 2;
+    final solid = floor.wallOverrides.whereType<SolidWall>().where((w) {
+      final c = resolveAnchor(base.axes, w.anchor).chain!;
+      return c.carrier.id == wall.axis.id &&
+          c.startPos <= along &&
+          c.endPos >= along;
+    }).firstOrNull;
+    action('MoveDrawnWall', {
+      'floorId': floor.id,
+      if (solid != null) 'wallId': solid.id,
+      if (solid == null) 'anchor': wall.ref.anchor,
+      'pos': wall.axis.pos + (choice.moveHigh ? delta : -delta),
+    });
+  }
+
+  /// The plan rectangle around the cells of the room with [roomId].
+  PlanRect? roomBox(String roomId) {
+    final cells = [
+      for (final e in base.owners.entries)
+        if (e.value == roomId) e.key
+    ];
+    if (cells.isEmpty) return null;
+    final v = base.axes.v, h = base.axes.h;
+    var box = PlanRect(v[cells.first.i].pos.toDouble(),
+        h[cells.first.j].pos.toDouble(), v[cells.first.i + 1].pos.toDouble(),
+        h[cells.first.j + 1].pos.toDouble());
+    for (final c in cells.skip(1))
+      box = PlanRect(
+          math.min(box.left, v[c.i].pos.toDouble()),
+          math.min(box.bottom, h[c.j].pos.toDouble()),
+          math.max(box.right, v[c.i + 1].pos.toDouble()),
+          math.max(box.top, h[c.j + 1].pos.toDouble()));
+    return box;
+  }
+
+  /// Height the folded selection card takes from the bottom of the plan.
+  static const foldedCardHeight = 132.0;
+
+  /// Slides the plan, without zooming, until [box] shows above the folded
+  /// selection card. A selection the card would cover is no selection.
+  void reveal(PlanRect box) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || canvasSize.isEmpty || !phoneTools) return;
+      final m = canvasTransform.value;
+      final r = MatrixUtils.transformRect(
+          m, interactionPainter().rectangle(box, canvasSize));
+      final view = Rect.fromLTRB(12, 12, canvasSize.width - 12,
+          canvasSize.height - foldedCardHeight);
+      if (view.height < 80) return;
+      double shift(double lo, double hi, double viewLo, double viewHi) {
+        if (hi - lo > viewHi - viewLo)
+          return (viewLo + viewHi) / 2 - (lo + hi) / 2;
+        if (lo < viewLo) return viewLo - lo;
+        if (hi > viewHi) return viewHi - hi;
+        return 0;
+      }
+
+      final dx = shift(r.left, r.right, view.left, view.right),
+          dy = shift(r.top, r.bottom, view.top, view.bottom);
+      if (dx == 0 && dy == 0) return;
+      canvasTransform.value = Matrix4.translationValues(dx, dy, 0)..multiply(m);
+    });
+  }
+
+  void revealRoom(String roomId) {
+    final box = roomBox(roomId);
+    if (box != null) reveal(box);
   }
 
   /// Move the canvas with one finger when a gesture started on nothing
@@ -2708,19 +3760,123 @@ class _HouseEditorState extends State<HouseEditor>
   /// Whether the active stroke started on a plus (rather than a free start).
   bool strokeFromAttachment = false;
 
+  /// The loose end of the wall just drawn and the way it was heading,
+  /// kept while that end is still where the next wall would start.
+  ({Offset at, Offset heading})? looseEnd;
+
+  /// Where the wall just drawn would meet the next wall if it ran on,
+  /// for the "接到对面" button; null once its end is no longer loose.
+  Offset? get reachAcrossPoint {
+    final loose = looseEnd, origin = drawingOrigin;
+    if (tool != EditorTool.drawWall ||
+        drawingStrokeActive ||
+        loose == null ||
+        origin == null ||
+        loose.at != origin) return null;
+    return wallAhead(base, loose.at, loose.heading);
+  }
+
+  /// Runs the wall just drawn on to the wall it was heading for.
+  void reachAcross() {
+    final to = reachAcrossPoint, from = drawingOrigin;
+    if (to == null || from == null) return;
+    final before = history.present;
+    action('AddDrawnWall', {
+      'floorId': floor.id,
+      'x0': from.dx.round(),
+      'y0': from.dy.round(),
+      'x1': to.dx.round(),
+      'y1': to.dy.round()
+    });
+    if (history.present == before) return;
+    setState(() {
+      looseEnd = null;
+      drawingOrigin = null;
+      placementHint = null;
+    });
+  }
+
+  /// The wall a stroke was pulled out of, while its foot may still slide.
+  WallSegment? slideHost;
+
+  /// Clear distances along [host] from a new wall at [p] to the walls on
+  /// either side of it: the figures the plan will show once it is built.
+  (double, double) clearAlong(WallSegment host, double p) {
+    final vertical = host.axis.dir == AxisDir.V;
+    final c = host.axis.pos.toDouble();
+    var lo = host.start.pos.toDouble(), hi = host.end.pos.toDouble();
+    for (final w in wallsOf(base, const FoundationSpec())) {
+      if (w.horizontal != vertical || w.role == WallRole.temporary) continue;
+      final r = w.rect;
+      final crosses = vertical
+          ? r.left <= c + 1 && r.right >= c - 1
+          : r.bottom <= c + 1 && r.top >= c - 1;
+      if (!crosses) continue;
+      final a = vertical ? r.bottom : r.left, b = vertical ? r.top : r.right;
+      if (b <= p && b > lo) lo = b;
+      if (a >= p && a < hi) hi = a;
+    }
+    final half = history.present.defaults.innerWallThickness / 2;
+    return (p - half - lo, hi - p - half);
+  }
+
+  String? slideNote;
+
+  void slideFoot(double x, double y) {
+    final host = slideHost;
+    if (host == null) return;
+    final vertical = host.axis.dir == AxisDir.V;
+    final lo = host.start.pos + 300.0, hi = host.end.pos - 300.0;
+    if (hi <= lo) return;
+    // Once the finger has left the wall the foot stays where it was put,
+    // so a hand that drifts while drawing does not drag the wall along.
+    if (((vertical ? x : y) - host.axis.pos).abs() > 500) {
+      slideHost = null;
+      return;
+    }
+    final along =
+        (((vertical ? y : x) / 100).round() * 100.0).clamp(lo, hi).toDouble();
+    final p = vertical
+        ? Offset(host.axis.pos.toDouble(), along)
+        : Offset(along, host.axis.pos.toDouble());
+    if (!canExtendWallFrom(base, derived.floors[floorIndex].openings, p))
+      return;
+    drawingOrigin = p;
+    final (a, b) = clearAlong(host, along);
+    slideNote = vertical
+        ? tr3('下边 ${m2dp(a)} 米 · 上边 ${m2dp(b)} 米',
+            'Төменде ${m2dp(a)} м · жоғарыда ${m2dp(b)} м',
+            'Снизу ${m2dp(a)} м · сверху ${m2dp(b)} м')
+        : tr3('左边 ${m2dp(a)} 米 · 右边 ${m2dp(b)} 米',
+            'Сол жақта ${m2dp(a)} м · оң жақта ${m2dp(b)} м',
+            'Слева ${m2dp(a)} м · справа ${m2dp(b)} м');
+  }
+
   void beginWallStroke(Offset local, Size size) {
     drawingStrokeActive = true;
     drawingBefore = drawingOrigin;
     final hit = attachmentAt(local, size);
     strokeFromAttachment = hit != null;
+    slideHost = null;
     if (hit != null) {
       drawingOrigin = hit;
+      // Pulled from the middle of a wall, the new wall's foot follows the
+      // finger along that wall until it is pulled into the room.
+      slideHost = base.wallSegments.where((w) {
+        final vertical = w.axis.dir == AxisDir.V;
+        final along = vertical ? hit.dy : hit.dx,
+            cross = vertical ? hit.dx : hit.dy;
+        return cross == w.axis.pos &&
+            along > w.start.pos &&
+            along < w.end.pos;
+      }).firstOrNull;
     } else if (placingWallStart) {
       drawingOrigin = wallPoint(local, size);
       placingWallStart = false;
     }
     drawingEnd = null;
     drawConnected = false;
+    alignGuide = null;
     spatialError = null;
     spatialDocument = null;
     spatialBase = null;
@@ -2742,19 +3898,30 @@ class _HouseEditorState extends State<HouseEditor>
     final painter = interactionPainter(),
         world = painter.worldPoint(local, size),
         pixel = 1 / (painter.scale(size) * canvasZoom);
+    slideNote = null;
+    slideFoot(world.x, world.y);
     final snap = snapWallEnd(base, drawingOrigin!, Offset(world.x, world.y),
         connectRadius: 22 * pixel, alignRadius: 14 * pixel);
+    if (snap.end != drawingEnd && snap.connected && !drawConnected)
+      HapticFeedback.selectionClick();
     drawingEnd = snap.end;
     drawConnected = snap.connected;
+    alignGuide = guideFor(snap);
     if ((drawingEnd! - drawingOrigin!).distance < 300) {
       resetPreview();
       spatialDocument = null;
       spatialBase = null;
       spatialError = null;
+      // Still on the wall: say where the new wall would stand.
+      if (slideNote != null)
+        placementHint = tr3('$slideNote · 往里拖出墙', '$slideNote · ішке тартыңыз',
+            '$slideNote · тяните внутрь');
       return;
     }
+    final ok = tr3('松手建墙，末端可以继续拖', 'Жіберсеңіз қабырға салынады, ұшынан жалғастыруға болады', 'Отпустите, чтобы построить стену; от её конца можно продолжить');
     schedulePreview('AddDrawnWall', drawingArguments,
-        ok: tr('松手建墙，末端可以继续拖', 'Жіберсеңіз қабырға салынады, ұшынан жалғастыруға болады'), failed: tr('此处无法建墙', 'Мұнда қабырға салу мүмкін емес'));
+        ok: slideNote == null ? ok : '$slideNote · ${tr3('松手建墙', 'жіберіңіз', 'отпустите')}',
+        failed: tr3('此处无法建墙', 'Мұнда қабырға салу мүмкін емес', 'Здесь нельзя построить стену'));
   }
 
   void finishWallStroke() {
@@ -2779,17 +3946,36 @@ class _HouseEditorState extends State<HouseEditor>
       // The guide has done its job once a wall exists.
       if (history.present != before) coachDismissed = true;
       // Continue from the new end only where another wall can still start.
-      if (history.present != before)
+      if (history.present != before) {
+        final from = Offset((args['x0'] as int).toDouble(),
+            (args['y0'] as int).toDouble());
         drawingOrigin =
             canExtendWallFrom(base, derived.floors[floorIndex].openings, end!)
                 ? end
                 : null;
+        final step = end - from;
+        looseEnd = drawingOrigin == null ||
+                endJoinsWall(base, end,
+                    horizontal: step.dx != 0,
+                    ignore: (w) =>
+                        (w.axis.dir == AxisDir.H) == (step.dx != 0) &&
+                        w.axis.pos == (step.dx != 0 ? end.dy : end.dx))
+            ? null
+            : (
+                at: end,
+                heading: step.dx != 0
+                    ? Offset(step.dx.sign, 0)
+                    : Offset(0, step.dy.sign)
+              );
+      }
     }
     if (error != null) notify(error);
-    placementHint = tapped
-        ? tr('按住大 ＋ 拖出新墙 · 也可点尺子输入长度', 'Үлкен ＋ белгісін ұстап тартыңыз · не сызғышты басып ұзындық енгізіңіз')
+    placementHint = reachAcrossPoint != null
+        ? tr3('墙停在了半路。可以接着拖，或点「接到对面」', 'Қабырға жарты жолда тоқтады. Жалғастырып тартыңыз не «Қарсы қабырғаға дейін» басыңыз', 'Стена остановилась на полпути. Тяните дальше или нажмите «До стены напротив»')
+        : tapped
+        ? tr3('按住大 ＋ 拖出新墙 · 也可点尺子输入长度', 'Үлкен ＋ белгісін ұстап тартыңыз · не сызғышты басып ұзындық енгізіңіз', 'Удерживайте большой ＋ и тяните · или нажмите на линейку и введите длину')
         : !accepted && error == null
-            ? tr('墙至少 0.30 米，请拖远一些', 'Қабырға кемінде 0,30 м, әріректе жіберіңіз')
+            ? tr3('墙至少 0.30 米，请拖远一些', 'Қабырға кемінде 0,30 м, әріректе жіберіңіз', 'Стена не короче 0,30 м, протяните дальше')
             : null;
     setState(() {});
   }
@@ -2820,9 +4006,8 @@ class _HouseEditorState extends State<HouseEditor>
 
   void startWallDrawing() {
     cancelDrag();
-    browse = false;
     view3d = false;
-    tool = 'drawWall';
+    tool = EditorTool.drawWall;
     drawingOrigin = null;
     placingWallStart = false;
     drawingEnd = null;
@@ -2833,13 +4018,13 @@ class _HouseEditorState extends State<HouseEditor>
   String meters(num value) => m2dp(value);
 
   String get dragOntoWallHint =>
-      tr('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады');
+      tr3('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады', 'Перетащите на стену — окно или дверь встанет на место');
 
   bool get floorHasInnerWalls =>
       base.wallSegments.any((w) => w.axis.kind != 'boundary');
 
   bool get showWallCoach =>
-      tool == 'drawWall' &&
+      tool == EditorTool.drawWall &&
       !coachDismissed &&
       !drawingStrokeActive &&
       drawingOrigin == null &&
@@ -2847,16 +4032,16 @@ class _HouseEditorState extends State<HouseEditor>
       !floorHasInnerWalls;
 
   bool get showStartCoach =>
-      tool == 'browse' &&
+      tool == EditorTool.browse &&
       !view3d &&
       !coachDismissed &&
       !floorHasInnerWalls &&
       floor.openings.isEmpty;
 
   String? get coachText => showWallCoach
-      ? tr('按住橙色 ＋ 往里拖，松手就建好一面墙', 'Сары ＋ белгісін ішке қарай тартыңыз, жіберсеңіз қабырға салынады')
+      ? tr3('按住橙色 ＋ 往里拖，松手就建好一面墙', 'Сары ＋ белгісін ішке қарай тартыңыз, жіберсеңіз қабырға салынады', 'Удерживайте оранжевый ＋ и тяните внутрь: отпустите, и стена построена')
       : showStartCoach
-          ? tr('先点「墙体」，再按住 ＋ 往里拖', 'Алдымен «Қабырға» батырмасын, сосын ＋ белгісін ішке тартыңыз')
+          ? tr3('先点「墙体」，再按住 ＋ 往里拖', 'Алдымен «Қабырға» батырмасын, сосын ＋ белгісін ішке тартыңыз', 'Сначала нажмите «Стена», затем зажмите ＋ и тяните внутрь')
           : null;
 
   /// Dashed arrow from one outer plus into the house for the first wall.
@@ -2881,14 +4066,14 @@ class _HouseEditorState extends State<HouseEditor>
 
   /// In-canvas label for the wall being drawn, resized or moved.
   String? get wallDraftLabel {
-    if (tool == 'drawWall' && drawingEnd != null && drawingOrigin != null)
+    if (tool == EditorTool.drawWall && drawingEnd != null && drawingOrigin != null)
       return '${meters((drawingEnd! - drawingOrigin!).distance)} $unitM';
     if (wallGrip == null || editPreviewStart == null || editPreviewEnd == null)
       return null;
     if (editCommand == 'MoveDrawnWall' ||
         (wallGrip == 'middle' && editStart != null)) {
-      return tr('移动 ${meters((editPreviewStart! - editStart!).distance)} 米',
-          'Жылжыту ${meters((editPreviewStart! - editStart!).distance)} м');
+      return tr3('移动 ${meters((editPreviewStart! - editStart!).distance)} 米',
+          'Жылжыту ${meters((editPreviewStart! - editStart!).distance)} м', 'Сдвиг на ${meters((editPreviewStart! - editStart!).distance)} м');
     }
     return '${meters((editPreviewEnd! - editPreviewStart!).distance)} $unitM';
   }
@@ -2899,24 +4084,24 @@ class _HouseEditorState extends State<HouseEditor>
         warn = Color(0xff8a5a00),
         bad = Color(0xffa14539),
         info = Color(0xff4a5548);
-    if (tool == 'drawWall' &&
+    if (tool == EditorTool.drawWall &&
         drawingStrokeActive &&
         drawingOrigin != null &&
         drawingEnd != null) {
       final length = (drawingEnd! - drawingOrigin!).distance;
       if (length < 300)
-        return (text: tr('继续拖动 · 墙至少 0.30 米', 'Тарта беріңіз · қабырға кемінде 0,30 м'), icon: Icons.straighten, color: info);
+        return (text: tr3('继续拖动 · 墙至少 0.30 米', 'Тарта беріңіз · қабырға кемінде 0,30 м', 'Тяните дальше · стена не короче 0,30 м'), icon: Icons.straighten, color: info);
       if (spatialError != null)
         return (text: spatialError!, icon: Icons.block, color: bad);
-      final direction = drawingEnd!.dy == drawingOrigin!.dy ? tr('横墙', 'Көлденең қабырға') : tr('竖墙', 'Тік қабырға');
+      final direction = drawingEnd!.dy == drawingOrigin!.dy ? tr3('横墙', 'Көлденең қабырға', 'Горизонтальная стена') : tr3('竖墙', 'Тік қабырға', 'Вертикальная стена');
       return drawConnected
           ? (
-              text: tr('$direction ${meters(length)} 米 · 已连到墙', '$direction ${meters(length)} м · қабырғаға жалғанды'),
+              text: tr3('$direction ${meters(length)} 米 · 已连到墙', '$direction ${meters(length)} м · қабырғаға жалғанды', '$direction ${meters(length)} м · соединена со стеной'),
               icon: Icons.link,
               color: good
             )
           : (
-              text: tr('$direction ${meters(length)} 米 · 末端没连墙', '$direction ${meters(length)} м · ұшы жалғанбаған'),
+              text: tr3('$direction ${meters(length)} 米 · 末端没连墙', '$direction ${meters(length)} м · ұшы жалғанбаған', '$direction ${meters(length)} м · конец не соединён'),
               icon: Icons.link_off,
               color: warn
             );
@@ -2927,13 +4112,13 @@ class _HouseEditorState extends State<HouseEditor>
       return dragValid && (width != null || depth != null)
           ? (
               text: width != null
-                  ? tr('房屋宽 ${meters(width)} 米 · 所有楼层一起改', 'Үй ені ${meters(width)} м · барлық қабат бірге өзгереді')
-                  : tr('房屋长 ${meters(depth!)} 米 · 所有楼层一起改', 'Үй ұзындығы ${meters(depth)} м · барлық қабат бірге өзгереді'),
+                  ? tr3('房屋宽 ${meters(width)} 米 · 所有楼层一起改', 'Үй ені ${meters(width)} м · барлық қабат бірге өзгереді', 'Ширина дома ${meters(width)} м · меняются все этажи')
+                  : tr3('房屋长 ${meters(depth!)} 米 · 所有楼层一起改', 'Үй ұзындығы ${meters(depth)} м · барлық қабат бірге өзгереді', 'Длина дома ${meters(depth)} м · меняются все этажи'),
               icon: Icons.open_in_full,
               color: good
             )
           : (
-              text: placementHint ?? tr('这个尺寸放不下已有的墙或房间', 'Бұл өлшемге бар қабырға не бөлме сыймайды'),
+              text: placementHint ?? tr3('这个尺寸放不下已有的墙或房间', 'Бұл өлшемге бар қабырға не бөлме сыймайды', 'В этот размер не помещаются существующие стены или комнаты'),
               icon: Icons.block,
               color: bad
             );
@@ -2942,12 +4127,12 @@ class _HouseEditorState extends State<HouseEditor>
       final name = openingName(draggingOpening!.opening);
       return dragValid
           ? (
-              text: tr('松手把$name放在这里', '$name осында қою үшін жіберіңіз'),
+              text: tr3('松手把$name放在这里', '$name осында қою үшін жіберіңіз', 'Отпустите, чтобы поставить здесь: $name'),
               icon: Icons.check_circle_outline,
               color: good
             )
           : (
-              text: placementHint ?? tr('这里放不下$name', '$name мұнда сыймайды'),
+              text: placementHint ?? tr3('这里放不下$name', '$name мұнда сыймайды', 'Здесь не помещается: $name'),
               icon: Icons.block,
               color: bad
             );
@@ -2955,13 +4140,13 @@ class _HouseEditorState extends State<HouseEditor>
     if (draggingNewOpening != null) {
       return openingDrop != null
           ? (
-              text: tr('已贴合墙面，松手放下${openingNames[draggingNewOpening]}',
-                  'Қабырғаға орнықты, ${openingNames[draggingNewOpening]} қою үшін жіберіңіз'),
+              text: tr3('已贴合墙面，松手放下${openingNames[draggingNewOpening]}',
+                  'Қабырғаға орнықты, ${openingNames[draggingNewOpening]} қою үшін жіберіңіз', 'Привязано к стене, отпустите, чтобы поставить: ${openingNames[draggingNewOpening]}'),
               icon: Icons.check_circle_outline,
               color: good
             )
           : (
-              text: placementHint ?? tr('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады'),
+              text: placementHint ?? tr3('拖到墙上，门窗会自动贴合', 'Қабырғаға апарыңыз, есік-терезе өзі орнығады', 'Перетащите на стену — окно или дверь встанет на место'),
               icon: Icons.touch_app_outlined,
               color: warn
             );
@@ -2971,7 +4156,7 @@ class _HouseEditorState extends State<HouseEditor>
         return (text: spatialError!, icon: Icons.block, color: bad);
       if (editCommand == 'MoveDrawnWall')
         return (
-          text: tr('${wallDraftLabel!} · 相连的墙会跟着伸缩', '${wallDraftLabel!} · жалғас қабырғалар бірге созылады'),
+          text: tr3('${wallDraftLabel!} · 相连的墙会跟着伸缩', '${wallDraftLabel!} · жалғас қабырғалар бірге созылады', '${wallDraftLabel!} · соединённые стены изменятся вместе'),
           icon: Icons.open_with,
           color: good
         );
@@ -2979,12 +4164,12 @@ class _HouseEditorState extends State<HouseEditor>
         return (text: wallDraftLabel!, icon: Icons.open_with, color: good);
       return drawConnected
           ? (
-              text: tr('墙长 ${wallDraftLabel!} · 已连到墙', 'Қабырға ${wallDraftLabel!} · қабырғаға жалғанды'),
+              text: tr3('墙长 ${wallDraftLabel!} · 已连到墙', 'Қабырға ${wallDraftLabel!} · қабырғаға жалғанды', 'Стена ${wallDraftLabel!} · соединена со стеной'),
               icon: Icons.link,
               color: good
             )
           : (
-              text: tr('墙长 ${wallDraftLabel!} · 这一端没连墙', 'Қабырға ${wallDraftLabel!} · бұл ұшы жалғанбаған'),
+              text: tr3('墙长 ${wallDraftLabel!} · 这一端没连墙', 'Қабырға ${wallDraftLabel!} · бұл ұшы жалғанбаған', 'Стена ${wallDraftLabel!} · этот конец не соединён'),
               icon: Icons.link_off,
               color: warn
             );
@@ -3124,44 +4309,44 @@ class _HouseEditorState extends State<HouseEditor>
               Row(children: [
                 Expanded(
                     child: Text(
-                        tr('${inner ? '内墙' : '外墙'} ${meters(length)} 米 · 厚 ${meters(wall.thickness)} 米',
-                            '${inner ? 'Ішкі' : 'Сыртқы'} қабырға ${meters(length)} м · қалыңдығы ${meters(wall.thickness)} м'),
+                        tr3('${inner ? '内墙' : '外墙'} ${meters(length)} 米 · 厚 ${meters(wall.thickness)} 米',
+                            '${inner ? 'Ішкі' : 'Сыртқы'} қабырға ${meters(length)} м · қалыңдығы ${meters(wall.thickness)} м', '${inner ? 'Перегородка' : 'Наружная стена'} ${meters(length)} м · толщина ${meters(wall.thickness)} м'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600))),
                 IconButton(
-                    tooltip: tr('关闭', 'Жабу'),
+                    tooltip: tr3('关闭', 'Жабу', 'Закрыть'),
                     visualDensity: VisualDensity.compact,
                     onPressed: () => setState(closeWallMenu),
                     icon: const Icon(Icons.close, size: 18))
               ]),
               Row(children: [
-                button('add', Icons.add_circle_outline, tr('接墙', 'Жалғау'),
-                    '从这里接墙'.trKey('Осы жерден жалғау'),
+                button('add', Icons.add_circle_outline, tr3('接墙', 'Жалғау', 'Пристроить'),
+                    '从这里接墙'.trKey('Осы жерден жалғау', 'Пристроить стену отсюда'),
                     enabled: !opening),
                 if (inner) ...[
-                  button('length', Icons.straighten, tr('长度', 'Ұзындық'),
-                      '调整长度'.trKey('Ұзындығын өзгерту')),
-                  button('move', Icons.open_with, tr('位置', 'Орны'),
-                      '移动墙体'.trKey('Қабырғаны жылжыту')),
-                  button('thickness', Icons.line_weight, tr('墙厚', 'Қалыңдық'),
-                      '修改墙厚'.trKey('Қалыңдығын өзгерту')),
-                  button('delete', Icons.delete_outline, tr('删除', 'Жою'),
-                      '删除墙体'.trKey('Қабырғаны жою'),
+                  button('length', Icons.straighten, tr3('长度', 'Ұзындық', 'Длина'),
+                      '调整长度'.trKey('Ұзындығын өзгерту', 'Изменить длину')),
+                  button('move', Icons.open_with, tr3('位置', 'Орны', 'Место'),
+                      '移动墙体'.trKey('Қабырғаны жылжыту', 'Переместить стену')),
+                  button('thickness', Icons.line_weight, tr3('墙厚', 'Қалыңдық', 'Толщина'),
+                      '修改墙厚'.trKey('Қалыңдығын өзгерту', 'Изменить толщину')),
+                  button('delete', Icons.delete_outline, tr3('删除', 'Жою', 'Удалить'),
+                      '删除墙体'.trKey('Қабырғаны жою', 'Удалить стену'),
                       danger: true),
                 ] else ...[
-                  button('footprint', Icons.aspect_ratio, tr('房屋尺寸', 'Үй өлшемі'),
-                      '调整房屋长宽'.trKey('Үй өлшемін өзгерту')),
-                  button('outerThickness', Icons.line_weight, tr('墙厚', 'Қалыңдық'),
-                      '外墙厚度'.trKey('Сыртқы қабырға қалыңдығы')),
+                  button('footprint', Icons.aspect_ratio, tr3('房屋尺寸', 'Үй өлшемі', 'Размеры дома'),
+                      '调整房屋长宽'.trKey('Үй өлшемін өзгерту', 'Изменить размеры дома')),
+                  button('outerThickness', Icons.line_weight, tr3('墙厚', 'Қалыңдық', 'Толщина'),
+                      '外墙厚度'.trKey('Сыртқы қабырға қалыңдығы', 'Толщина наружной стены')),
                 ]
               ]),
               if (opening)
                 Padding(
                     padding: EdgeInsets.only(bottom: 4),
                     child:
-                        Text(tr('这里有门窗，换个位置才能接墙', 'Мұнда есік-терезе бар, жалғау үшін басқа жерді таңдаңыз'), style: TextStyle(fontSize: 12))),
+                        Text(tr3('这里有门窗，换个位置才能接墙', 'Мұнда есік-терезе бар, жалғау үшін басқа жерді таңдаңыз', 'Здесь окно или дверь, выберите другое место для стены'), style: TextStyle(fontSize: 12))),
             ]))));
   }
 
@@ -3170,24 +4355,30 @@ class _HouseEditorState extends State<HouseEditor>
 
   String get interactionHint =>
       (placementHint == null ? null : coreMessage(placementHint!)) ??
-      (tool == 'drawWall'
-          ? tr('按住 ＋ 拖出新墙 · 点墙修改 · 拖空白处移动画布', '＋ белгісін ұстап қабырға тартыңыз · қабырғаны басып өзгертіңіз · бос жерді сүйреп жылжытыңыз')
-          : tool == 'selectWall'
-              ? tr('点墙修改 · 拖 ＋ 接墙 · 拖空白处移动画布', 'Қабырғаны басып өзгертіңіз · ＋ белгісінен жалғаңыз · бос жерді сүйреп жылжытыңыз')
-              : tool == 'editWall'
-                  ? tr('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз')
+      (tool == EditorTool.drawWall
+          ? tr3('按住 ＋ 拖出新墙 · 点墙修改 · 拖空白处移动画布', '＋ белгісін ұстап қабырға тартыңыз · қабырғаны басып өзгертіңіз · бос жерді сүйреп жылжытыңыз', 'Зажмите ＋ и вытяните стену · нажмите на стену, чтобы изменить · тяните пустое место, чтобы сдвинуть чертёж')
+          : tool == EditorTool.selectWall
+              ? tr3('点墙修改 · 拖 ＋ 接墙 · 拖空白处移动画布', 'Қабырғаны басып өзгертіңіз · ＋ белгісінен жалғаңыз · бос жерді сүйреп жылжытыңыз', 'Нажмите на стену, чтобы изменить · тяните ＋, чтобы пристроить стену · тяните пустое место, чтобы сдвинуть чертёж')
+              : tool == EditorTool.editWall
+                  ? tr3('拖两端改长度 · 拖墙身移动', 'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз', 'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить')
+                  : tool == EditorTool.stair
+                      ? tr3('在放楼梯的房间里点一下，或拖过几个格子', 'Баспалдақ тұратын бөлмені басыңыз не бірнеше ұяшықты сүйреңіз', 'Нажмите в комнате, где будет лестница, или проведите по нескольким клеткам')
+                  : stairStamping
+                      ? tr3('拖动楼梯到想要的位置，一般靠墙角放', 'Баспалдақты керек жерге сүйреңіз, әдетте бұрышқа қойылады', 'Перетащите лестницу на место, обычно её ставят в угол')
+                  : stamping
+                      ? tr3('拖动房间到想要的位置，靠近墙会自动贴上', 'Бөлмені керек жерге сүйреңіз, қабырғаға жақындаса өзі жабысады', 'Перетащите комнату на место: у стены она прилипнет сама')
                   : spatialTool
-                      ? (tool == 'split' ? tr('拉一条横线或竖线，松手分房', 'Көлденең не тік сызық тартып, жіберсеңіз бөлінеді') : tr('从一角拖到另一角，松手创建房间', 'Бір бұрыштан екіншісіне тартып жіберсеңіз, бөлме жасалады'))
-                      : tool == 'resize'
-                          ? tr('拖右边或上边的圆形手柄改长宽 · 所有楼层一起改', 'Оң не жоғарғы дөңгелек тұтқаны сүйреп өлшемін өзгертіңіз · барлық қабат бірге өзгереді')
-                          : tr('拖动画布 · 点选对象调整 · 双指缩放', 'Сызбаны сүйреп жылжытыңыз · нысанды басып өзгертіңіз · екі саусақпен үлкейтіңіз'));
+                      ? (tool == EditorTool.split ? tr3('拉一条横线或竖线，松手分房', 'Көлденең не тік сызық тартып, жіберсеңіз бөлінеді', 'Проведите горизонтальную или вертикальную линию и отпустите — комната разделится') : tr3('从一角拖到另一角，松手创建房间', 'Бір бұрыштан екіншісіне тартып жіберсеңіз, бөлме жасалады', 'Протяните от одного угла к другому и отпустите — комната будет создана'))
+                      : tool == EditorTool.resize
+                          ? tr3('拖右边或上边的圆形手柄改长宽 · 所有楼层一起改', 'Оң не жоғарғы дөңгелек тұтқаны сүйреп өлшемін өзгертіңіз · барлық қабат бірге өзгереді', 'Тяните круглую ручку справа или сверху, чтобы изменить размер · меняются все этажи')
+                          : tr3('拖动画布 · 点选对象调整 · 双指缩放', 'Сызбаны сүйреп жылжытыңыз · нысанды басып өзгертіңіз · екі саусақпен үлкейтіңіз', 'Тяните, чтобы сдвинуть чертёж · нажмите на объект, чтобы изменить · масштаб двумя пальцами'));
 
   MouseCursor canvasCursor = MouseCursor.defer;
 
   /// What the mouse pointer would do here, shown before pressing.
   MouseCursor hoverCursor(Offset local, Size size) {
     if (view3d) return MouseCursor.defer;
-    final wallTools = tool == 'drawWall' || tool == 'editWall';
+    final wallTools = tool == EditorTool.drawWall || tool == EditorTool.editWall;
     if (wallTools && editStart != null && editEnd != null) {
       final painter = interactionPainter();
       final a = painter.point(editStart!.dx, editStart!.dy, size),
@@ -3202,7 +4393,7 @@ class _HouseEditorState extends State<HouseEditor>
       if (distanceToSegment(local, a, b) * canvasZoom <= 18)
         return SystemMouseCursors.move;
     }
-    if (tool == 'resize') {
+    if (tool == EditorTool.resize) {
       final painter = interactionPainter();
       final width = base.axes.v.last.pos.toDouble(),
           depth = base.axes.h.last.pos.toDouble();
@@ -3213,24 +4404,24 @@ class _HouseEditorState extends State<HouseEditor>
               canvasZoom <=
           28) return SystemMouseCursors.resizeUpDown;
     }
-    if ((tool == 'drawWall' || tool == 'selectWall') &&
+    if ((tool == EditorTool.drawWall || tool == EditorTool.selectWall) &&
         attachmentAt(local, size) != null) return SystemMouseCursors.click;
     if (openingAt(local, size) != null) return SystemMouseCursors.grab;
-    if ((browse || wallTools || tool == 'selectWall') &&
+    if ((browse || wallTools || tool == EditorTool.selectWall) &&
         wallAtPoint(local, size, radius: 16) != null)
       return SystemMouseCursors.click;
-    return browse || wallTools || tool == 'selectWall'
+    return browse || wallTools || tool == EditorTool.selectWall
         ? SystemMouseCursors.grab
         : MouseCursor.defer;
   }
 
   /// Saved state at a glance: icon plus a word, red when saving failed.
   Widget saveIndicator() {
-    final failed = status == '保存失败',
+    final failed = status == _SaveStatus.failed,
         color = failed ? Theme.of(context).colorScheme.error : null;
     return Semantics(
         liveRegion: true,
-        label: status,
+        label: status.label,
         child: ExcludeSemantics(
             child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(
@@ -3247,12 +4438,12 @@ class _HouseEditorState extends State<HouseEditor>
           Flexible(
               child: Text(
                   saving
-                      ? tr('保存中', 'Сақталуда')
+                      ? tr3('保存中', 'Сақталуда', 'Сохранение')
                       : switch (status) {
-                          '已保存' => tr('已保存', 'Сақталды'),
-                          '未保存' => tr('未保存', 'Сақталмаған'),
-                          '保存失败' => tr('保存失败', 'Сақталмады'),
-                          _ => status
+                          _SaveStatus.saved => tr3('已保存', 'Сақталды', 'Сохранено'),
+                          _SaveStatus.indexPending => tr3('设计已保存，索引待恢复', 'Жоба сақталды, индекс қалпына келеді', 'Проект сохранён, индекс требует восстановления'),
+                          _SaveStatus.unsaved => tr3('未保存', 'Сақталмаған', 'Не сохранено'),
+                          _SaveStatus.failed => tr3('保存失败', 'Сақталмады', 'Ошибка сохранения'),
                         },
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -3268,13 +4459,11 @@ class _HouseEditorState extends State<HouseEditor>
         cancelDrag();
       } else if (menuWall != null || editStart != null) {
         clearWallSelection();
-        if (tool == 'editWall') {
-          tool = 'browse';
-          browse = true;
+        if (tool == EditorTool.editWall) {
+          tool = EditorTool.browse;
         }
-      } else if (tool != 'browse') {
-        tool = 'browse';
-        browse = true;
+      } else if (tool != EditorTool.browse) {
+        tool = EditorTool.browse;
         drawingOrigin = null;
         placingWallStart = false;
         placingUtility = null;
@@ -3334,13 +4523,7 @@ class _HouseEditorState extends State<HouseEditor>
                                       compactBar()
                                     else ...[
                                       editorHeader(wide),
-                                      Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 12),
-                                          child: TabStrip(
-                                              tabs: editorTabs,
-                                              current: tab,
-                                              onSelect: showTab)),
+                                      groupedTabs(),
                                     ],
                                     Expanded(child: tabBody(wide)),
                                   ])));
@@ -3348,7 +4531,9 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   /// The plan drawing with all editing gestures; sized by its sheet.
-  Widget planCanvas() => LayoutBuilder(builder: (context, constraints) {
+  Widget planCanvas() => ListenableBuilder(
+      listenable: canvasZoomChanged,
+      builder: (context, _) => LayoutBuilder(builder: (context, constraints) {
                               final size = Size(
                                   constraints.maxWidth, constraints.maxHeight);
                               canvasSize = size;
@@ -3365,9 +4550,9 @@ class _HouseEditorState extends State<HouseEditor>
                                   transformationController: canvasTransform,
                                   boundaryMargin: const EdgeInsets.all(200),
                                   panEnabled: ((browse ||
-                                              tool == 'measure' ||
-                                              tool == 'placeFurniture' ||
-                                              tool == 'placeUtility') &&
+                                              tool == EditorTool.measure ||
+                                              tool == EditorTool.placeFurniture ||
+                                              tool == EditorTool.placeUtility) &&
                                           draggingOpening == null &&
                                           furnitureGrip == null &&
                                           utilityDown == null) ||
@@ -3405,14 +4590,13 @@ class _HouseEditorState extends State<HouseEditor>
                                                   beginFurnitureGesture(
                                                       e.localPosition, size)) {
                                                 setState(() {});
-                                              } else if (tool == 'selectWall') {
+                                              } else if (tool == EditorTool.selectWall) {
                                                 if (attachmentAt(
                                                         e.localPosition,
                                                         size) !=
                                                     null)
                                                   setState(() {
-                                                    tool = 'drawWall';
-                                                    browse = false;
+                                                    tool = EditorTool.drawWall;
                                                     wallFromAdjust = true;
                                                     wallGesture = 'draw';
                                                     clearWallSelection();
@@ -3423,10 +4607,10 @@ class _HouseEditorState extends State<HouseEditor>
                                                   // 改墙 selects walls even where
                                                   // a door sits on them.
                                                   wallGesture = 'tap';
-                                              } else if (tool == 'drawWall') {
+                                              } else if (tool == EditorTool.drawWall) {
                                                 setState(() => beginWallTool(
                                                     e.localPosition, size));
-                                              } else if (tool == 'editWall') {
+                                              } else if (tool == EditorTool.editWall) {
                                                 setState(() {
                                                   beginWallEdit(
                                                       e.localPosition, size);
@@ -3446,7 +4630,29 @@ class _HouseEditorState extends State<HouseEditor>
                                                     closeWallMenu();
                                                 });
                                               } else if (spatialTool) {
-                                                spatialStart = null;
+                                                if (stamping) {
+                                                  // Held where it is touched;
+                                                  // by its middle when the
+                                                  // finger lands elsewhere.
+                                                  final w = interactionPainter()
+                                                      .worldPoint(
+                                                          e.localPosition,
+                                                          size);
+                                                  final r = spatialPreview;
+                                                  final inside = r != null &&
+                                                      w.x >= r.left &&
+                                                      w.x <= r.right &&
+                                                      w.y >= r.bottom &&
+                                                      w.y <= r.top;
+                                                  stampGrab = inside
+                                                      ? Offset(w.x - r.left,
+                                                          w.y - r.bottom)
+                                                      : Offset(
+                                                          roomStamp!.w / 2,
+                                                          roomStamp!.d / 2);
+                                                } else {
+                                                  spatialStart = null;
+                                                }
                                                 setState(() => updateSpatial(
                                                     e.localPosition, size));
                                               } else {
@@ -3467,21 +4673,22 @@ class _HouseEditorState extends State<HouseEditor>
                                             }
                                             if (!browse &&
                                                 !spatialTool &&
-                                                tool != 'editWall' &&
-                                                tool != 'selectWall' &&
-                                                tool != 'drawWall' &&
-                                                tool != 'placeOpening' &&
-                                                tool != 'resize' &&
-                                                tool != 'wall' &&
-                                                tool != 'opening' &&
-                                                tool != 'grid' &&
-                                                tool != 'measure' &&
-                                                tool != 'placeFurniture' &&
-                                                tool != 'placeUtility')
+                                                tool != EditorTool.editWall &&
+                                                tool != EditorTool.selectWall &&
+                                                tool != EditorTool.drawWall &&
+                                                tool != EditorTool.placeOpening &&
+                                                tool != EditorTool.resize &&
+                                                tool != EditorTool.wall &&
+                                                tool != EditorTool.opening &&
+                                                tool != EditorTool.grid &&
+                                                tool != EditorTool.measure &&
+                                                tool != EditorTool.placeFurniture &&
+                                                tool != EditorTool.placeUtility)
                                               setState(() => record(
                                                   e.localPosition, size));
                                           },
                                           onPointerMove: (e) {
+                                            trackLoupe(e);
                                             if (wallHoldScreen != null &&
                                                 (e.position - wallHoldScreen!)
                                                         .distance >
@@ -3536,23 +4743,24 @@ class _HouseEditorState extends State<HouseEditor>
                                                   e.localPosition, size));
                                             if (!browse &&
                                                 !spatialTool &&
-                                                tool != 'editWall' &&
-                                                tool != 'selectWall' &&
-                                                tool != 'drawWall' &&
-                                                tool != 'placeOpening' &&
-                                                tool != 'resize' &&
-                                                tool != 'wall' &&
-                                                tool != 'opening' &&
-                                                tool != 'grid' &&
-                                                tool != 'measure' &&
-                                                tool != 'placeFurniture' &&
-                                                tool != 'placeUtility' &&
+                                                tool != EditorTool.editWall &&
+                                                tool != EditorTool.selectWall &&
+                                                tool != EditorTool.drawWall &&
+                                                tool != EditorTool.placeOpening &&
+                                                tool != EditorTool.resize &&
+                                                tool != EditorTool.wall &&
+                                                tool != EditorTool.opening &&
+                                                tool != EditorTool.grid &&
+                                                tool != EditorTool.measure &&
+                                                tool != EditorTool.placeFurniture &&
+                                                tool != EditorTool.placeUtility &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1)
                                               setState(() => record(
                                                   e.localPosition, size));
                                           },
                                           onPointerCancel: (e) {
+                                            loupeAt = null;
                                             pointers.remove(e.pointer);
                                             setState(() {
                                               stroke.clear();
@@ -3564,6 +4772,8 @@ class _HouseEditorState extends State<HouseEditor>
                                             lastPoint = null;
                                           },
                                           onPointerUp: (e) {
+                                            if (loupeAt != null)
+                                              setState(() => loupeAt = null);
                                             wallHoldTimer?.cancel();
                                             final gesture = wallGesture;
                                             wallGesture = null;
@@ -3602,7 +4812,7 @@ class _HouseEditorState extends State<HouseEditor>
                                                         canvasZoom <
                                                     8;
                                             if (tapped &&
-                                                tool == 'placeFurniture') {
+                                                tool == EditorTool.placeFurniture) {
                                               placeFurnitureAt(
                                                   e.localPosition, size);
                                               pointers.remove(e.pointer);
@@ -3610,14 +4820,14 @@ class _HouseEditorState extends State<HouseEditor>
                                               return;
                                             }
                                             if (tapped &&
-                                                tool == 'placeUtility') {
+                                                tool == EditorTool.placeUtility) {
                                               placeUtilityAt(
                                                   e.localPosition, size);
                                               pointers.remove(e.pointer);
                                               downPoint = null;
                                               return;
                                             }
-                                            if (tapped && tool == 'measure') {
+                                            if (tapped && tool == EditorTool.measure) {
                                               addMeasurePoint(
                                                   e.localPosition, size);
                                               pointers.remove(e.pointer);
@@ -3646,7 +4856,7 @@ class _HouseEditorState extends State<HouseEditor>
                                               downPoint = null;
                                               return;
                                             }
-                                            if (tool == 'drawWall' &&
+                                            if (tool == EditorTool.drawWall &&
                                                 single &&
                                                 gesture == 'tap') {
                                               wallToolTap(
@@ -3655,7 +4865,7 @@ class _HouseEditorState extends State<HouseEditor>
                                               downPoint = null;
                                               return;
                                             }
-                                            if (tool == 'drawWall' &&
+                                            if (tool == EditorTool.drawWall &&
                                                 single &&
                                                 gesture == 'draw' &&
                                                 !wallFromAdjust &&
@@ -3671,7 +4881,7 @@ class _HouseEditorState extends State<HouseEditor>
                                               downPoint = null;
                                               return;
                                             }
-                                            if (tool == 'drawWall' &&
+                                            if (tool == EditorTool.drawWall &&
                                                 single &&
                                                 gesture == 'draw') {
                                               final tapFromAdjust =
@@ -3684,7 +4894,7 @@ class _HouseEditorState extends State<HouseEditor>
                                               if (tapFromAdjust) {
                                                 setState(() {
                                                   cancelDrag();
-                                                  tool = 'selectWall';
+                                                  tool = EditorTool.selectWall;
                                                 });
                                                 tapObject(
                                                     e.localPosition, size);
@@ -3695,7 +4905,7 @@ class _HouseEditorState extends State<HouseEditor>
                                               downPoint = null;
                                               return;
                                             }
-                                            if (tool == 'placeOpening' &&
+                                            if (tool == EditorTool.placeOpening &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1 &&
                                                 downPoint != null &&
@@ -3723,7 +4933,12 @@ class _HouseEditorState extends State<HouseEditor>
                                             if (spatialTool &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1) {
-                                              finishSpatial();
+                                              // A stamp stays until 放下.
+                                              if (stamping) {
+                                                setState(() {});
+                                              } else {
+                                                finishSpatial();
+                                              }
                                               pointers.remove(e.pointer);
                                               downPoint = null;
                                               return;
@@ -3746,10 +4961,9 @@ class _HouseEditorState extends State<HouseEditor>
                                                   notify(message);
                                               }
 
-                                              if (tool == 'wall')
+                                              if (tool == EditorTool.wall)
                                                 setState(() {
-                                                  tool = 'browse';
-                                                  browse = true;
+                                                  tool = EditorTool.browse;
                                                   selectedWall = null;
                                                   placementHint = null;
                                                 });
@@ -3759,10 +4973,10 @@ class _HouseEditorState extends State<HouseEditor>
                                               return;
                                             }
                                             if ((browse ||
-                                                    tool == 'editWall' ||
-                                                    tool == 'selectWall' ||
-                                                    tool == 'opening' ||
-                                                    tool == 'grid') &&
+                                                    tool == EditorTool.editWall ||
+                                                    tool == EditorTool.selectWall ||
+                                                    tool == EditorTool.opening ||
+                                                    tool == EditorTool.grid) &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1 &&
                                                 downPoint != null &&
@@ -3771,7 +4985,7 @@ class _HouseEditorState extends State<HouseEditor>
                                                     8) {
                                               tapObject(e.localPosition, size);
                                             }
-                                            if (tool == 'stair' &&
+                                            if (tool == EditorTool.stair &&
                                                 !cancelledStroke &&
                                                 stroke.isNotEmpty &&
                                                 pointers.length == 1) {
@@ -3787,18 +5001,14 @@ class _HouseEditorState extends State<HouseEditor>
                                                   j1 = math.max(
                                                           first.j, last.j) +
                                                       1;
-                                              action('AddStair', {
-                                                'floorId': floor.id,
-                                                'type': StairType.straight,
-                                                'region': AxisRectangle(
-                                                    x0: base.axes.v[i0].id,
-                                                    x1: base.axes.v[i1].id,
-                                                    y0: base.axes.h[j0].id,
-                                                    y1: base.axes.h[j1].id)
-                                              });
+                                              placeStair(AxisRectangle(
+                                                  x0: base.axes.v[i0].id,
+                                                  x1: base.axes.v[i1].id,
+                                                  y0: base.axes.h[j0].id,
+                                                  y1: base.axes.h[j1].id));
                                               stroke.clear();
                                             }
-                                            if (tool == 'room' &&
+                                            if (tool == EditorTool.room &&
                                                 !browse &&
                                                 !cancelledStroke &&
                                                 pointers.length == 1 &&
@@ -3847,13 +5057,16 @@ class _HouseEditorState extends State<HouseEditor>
                                                   setState(() {});
                                                   notify(message == null ||
                                                           message == dragOntoWallHint
-                                                      ? tr('没有放上墙：请把${openingNames[details.data]}拖到墙上再松手',
-                                                          '${openingNames[details.data]} қабырғаға қойылмады: оны қабырғаға апарып жіберіңіз')
+                                                      ? tr3('没有放上墙：请把${openingNames[details.data]}拖到墙上再松手',
+                                                          '${openingNames[details.data]} қабырғаға қойылмады: оны қабырғаға апарып жіберіңіз', 'Не на стене: ${openingNames[details.data]}. Перетащите на стену и отпустите')
                                                       : message);
                                                 }
                                               },
+                                              // Its own layer: panning the
+                                              // sheet moves the cached picture
+                                              // instead of redrawing the plan.
                                               builder: (context, candidates, rejected) =>
-                                                  CustomPaint(
+                                                  RepaintBoundary(child: CustomPaint(
                                                       key: canvasKey,
                                                       size: size,
                                                       painter: FloorPlanPainter(
@@ -3863,11 +5076,35 @@ class _HouseEditorState extends State<HouseEditor>
                                                                 in displayRooms)
                                                               r.id: displayRoomName(r)
                                                           },
-                                                          const {},
+                                                          {
+                                                            // A room with a use is tinted by it, lightly: the
+                                                            // sheet stays a drawing, and uses read at a glance.
+                                                            for (final r
+                                                                in displayRooms)
+                                                              if (r.type !=
+                                                                  RoomType
+                                                                      .custom)
+                                                                r.id: Color.lerp(
+                                                                    Tokens.of(
+                                                                            context)
+                                                                        .room,
+                                                                    roomColors[r
+                                                                        .type],
+                                                                    0.42)!
+                                                          },
                                                           viewportInsets:
                                                               canvasInsets,
                                                           openings:
                                                               displayOpenings,
+                                                          below: floorIndex > 0 && showBelow
+                                                              ? derived.floors[floorIndex - 1].base
+                                                              : null,
+                                                          belowOpenings: [
+                                                            if (floorIndex > 0)
+                                                              for (final s in derived.floors[floorIndex - 1].stairs)
+                                                                s.opening
+                                                          ],
+                                                          belowLabel: tr3('楼梯口', 'Баспалдақ ойығы', 'Проём лестницы'),
                                                           stairs: derived
                                                               .floors[
                                                                   floorIndex]
@@ -3877,12 +5114,13 @@ class _HouseEditorState extends State<HouseEditor>
                                                               .footprint
                                                               .northAngleDeg,
                                                           focus: focus,
-                                                          editableWall: (tool == 'editWall' || tool == 'drawWall') && editStart != null && editEnd != null ? PlanRect((editPreviewStart ?? editStart)!.dx, (editPreviewStart ?? editStart)!.dy, (editPreviewEnd ?? editEnd)!.dx, (editPreviewEnd ?? editEnd)!.dy) : null,
-                                                          wallSeed: tool == 'drawWall' ? drawingOrigin : null,
-                                                          wallAttachments: (tool == 'drawWall' || tool == 'selectWall') && drawingEnd == null && editPreviewStart == null ? visibleWallAttachments(size) : const [],
+                                                          editableWall: (tool == EditorTool.editWall || tool == EditorTool.drawWall) && editStart != null && editEnd != null ? PlanRect((editPreviewStart ?? editStart)!.dx, (editPreviewStart ?? editStart)!.dy, (editPreviewEnd ?? editEnd)!.dx, (editPreviewEnd ?? editEnd)!.dy) : null,
+                                                          wallSeed: tool == EditorTool.drawWall ? drawingOrigin : null,
+                                                          wallAttachments: (tool == EditorTool.drawWall || tool == EditorTool.selectWall) && drawingEnd == null && editPreviewStart == null ? visibleWallAttachments(size) : const [],
                                                           handleScale: canvasZoom,
+                                                          selectedDimension: editingDimension,
                                                           draftLabel: wallDraftLabel,
-                                                          draftEnd: tool == 'drawWall' && drawingStrokeActive && drawingEnd != null
+                                                          draftEnd: tool == EditorTool.drawWall && drawingStrokeActive && drawingEnd != null
                                                               ? drawingEnd
                                                               : wallGrip == 'start'
                                                                   ? editPreviewStart
@@ -3890,11 +5128,18 @@ class _HouseEditorState extends State<HouseEditor>
                                                                       ? editPreviewEnd
                                                                       : null,
                                                           draftConnected: drawConnected,
+                                                          guides: [
+                                                            if (alignGuide case final g?
+                                                                when (tool == EditorTool.drawWall && drawingStrokeActive && drawingEnd != null) ||
+                                                                    wallGrip == 'start' ||
+                                                                    wallGrip == 'end')
+                                                              g
+                                                          ],
                                                           coach: coachArrow(size),
-                                                          draft: tool == 'drawWall' && drawingEnd != null && drawingOrigin != null ? PlanRect(math.min(drawingOrigin!.dx, drawingEnd!.dx), math.min(drawingOrigin!.dy, drawingEnd!.dy), math.max(drawingOrigin!.dx, drawingEnd!.dx), math.max(drawingOrigin!.dy, drawingEnd!.dy)) : spatialPreview,
-                                                          showGridDimensions: tool == 'grid',
+                                                          draft: tool == EditorTool.drawWall && drawingEnd != null && drawingOrigin != null ? PlanRect(math.min(drawingOrigin!.dx, drawingEnd!.dx), math.min(drawingOrigin!.dy, drawingEnd!.dy), math.max(drawingOrigin!.dx, drawingEnd!.dx), math.max(drawingOrigin!.dy, drawingEnd!.dy)) : spatialPreview,
+                                                          showGridDimensions: tool == EditorTool.grid,
                                                           draftInvalid: spatialError != null,
-                                                          draftIsLine: tool == 'split' || tool == 'drawWall',
+                                                          draftIsLine: tool == EditorTool.split || tool == EditorTool.drawWall,
                                                           viewport: draggingAxis?.kind == 'boundary' && dragAttempted && dragCoordinatePainter != null
                                                               ? (
                                                                   scale: dragCoordinatePainter!
@@ -3905,8 +5150,8 @@ class _HouseEditorState extends State<HouseEditor>
                                                                           size)
                                                                 )
                                                               : null,
-                                                          resizeHandles: tool == 'resize',
-                                                          wallHandle: tool == 'wall' && selectedWall != null ? (selectedWall!.axis.dir == AxisDir.V ? PlanRect((dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble()) : PlanRect(selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()))) : null,
+                                                          resizeHandles: tool == EditorTool.resize,
+                                                          wallHandle: tool == EditorTool.wall && selectedWall != null ? (selectedWall!.axis.dir == AxisDir.V ? PlanRect((dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble()) : PlanRect(selectedWall!.start.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()), selectedWall!.end.pos.toDouble(), (dragValid && dragKind == 'MoveLocalWall' ? (dragArguments!['pos'] as num).toDouble() : selectedWall!.axis.pos.toDouble()))) : null,
                                                           tokens: Tokens.of(context),
                                                           bearingMin: history.present.extras.foundation.bearingMin,
                                                           furniture: [for (final f in history.present.extras.furniture) if (f.floorId == floor.id && f.id != furnitureDraft?.id) f],
@@ -3922,6 +5167,6 @@ class _HouseEditorState extends State<HouseEditor>
                                                           highlights: highlights,
                                                           pulse: pulse,
                                                           measure: measurePoints,
-                                                          preview: List.of(stroke)))))));
-                            });
+                                                          preview: List.of(stroke))))))));
+                            }));
 }

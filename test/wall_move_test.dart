@@ -35,9 +35,9 @@ void main() {
           UndoableDesignState s, int x0, int y0, int x1, int y1) =>
       ok(edit(s, 'AddDrawnWall', {'x0': x0, 'y0': y0, 'x1': x1, 'y1': y1}));
   ({int carrier, int lo, int hi}) span(SolidWall w, UndoableDesignState s) {
-    final c = resolveAnchor(
-            resolveFloorAxes(doc(s), s.floors.first.id)!, w.anchor)
-        .chain!;
+    final c =
+        resolveAnchor(resolveFloorAxes(doc(s), s.floors.first.id)!, w.anchor)
+            .chain!;
     return (carrier: c.carrier.pos, lo: c.startPos, hi: c.endPos);
   }
 
@@ -69,8 +69,8 @@ void main() {
     expect(before.floors.first.rooms.length, 4);
     final names = {for (final r in before.floors.first.rooms) r.id: r.name};
     final partition = wallAt(before, AxisDir.V, 6000);
-    final after = ok(edit(before, 'MoveDrawnWall',
-        {'wallId': partition.id, 'pos': 7000}));
+    final after = ok(
+        edit(before, 'MoveDrawnWall', {'wallId': partition.id, 'pos': 7000}));
     expect(span(wallAt(after, AxisDir.V, 7000), after),
         (carrier: 7000, lo: 0, hi: 10000));
     expect(span(wallAt(after, AxisDir.H, 5000), after),
@@ -80,8 +80,8 @@ void main() {
     expect({for (final r in after.floors.first.rooms) r.id: r.name}, names,
         reason: 'room identities survive one atomic move');
     expect(validateDesignState(after), isEmpty);
-    expect(loadHouse(utf8.encode(encodeHouse(doc(after)))).document,
-        doc(after));
+    expect(
+        loadHouse(utf8.encode(encodeHouse(doc(after)))).document, doc(after));
     // Moving back the other way shrinks the left wall and grows the right one.
     final back =
         ok(edit(after, 'MoveDrawnWall', {'wallId': partition.id, 'pos': 5000}));
@@ -125,8 +125,8 @@ void main() {
     s = add(s, 6000, 4000, 6000, 10000);
     s = ok(edit(s, 'MoveDrawnWall',
         {'wallId': wallAt(s, AxisDir.V, 6000).id, 'pos': 7000}));
-    expect(span(wallAt(s, AxisDir.H, 4000), s),
-        (carrier: 4000, lo: 0, hi: 7000));
+    expect(
+        span(wallAt(s, AxisDir.H, 4000), s), (carrier: 4000, lo: 0, hi: 7000));
     // Through wall: continue the horizontal line to the right edge first.
     var t = initial();
     t = add(t, 0, 4000, 6000, 4000);
@@ -166,8 +166,7 @@ void main() {
     final base = deriveFloorBase(v1, first.id);
     final wall = base.wallSegments.firstWhere((w) =>
         w.axis.kind != 'boundary' &&
-        !deriveOpenings(v1, base, first.id)
-            .any((o) => o.host?.ref == w.ref));
+        !deriveOpenings(v1, base, first.id).any((o) => o.host?.ref == w.ref));
     final names = {for (final r in first.rooms) r.id: r.name};
     final healthy = documentOpenings(v1)
         .where((o) => o.status == 'ok')

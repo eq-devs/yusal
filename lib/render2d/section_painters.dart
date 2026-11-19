@@ -83,6 +83,7 @@ abstract class SectionPainter extends CustomPainter {
       canvas.drawRect((offset & tp.size).inflate(1.5), Paint()..color = t.panel);
     tp.paint(canvas, offset);
     canvas.restore();
+    tp.dispose();
   }
 
   void fillMaterial(Canvas canvas, Rect r, LayerMaterial m) =>

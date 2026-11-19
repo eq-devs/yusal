@@ -10,6 +10,7 @@ import 'drawn_wall_commands.dart';
 import '../geometry/opening_constraints.dart';
 import 'extras_commands.dart';
 import 'outline_commands.dart';
+import 'mirror_commands.dart';
 
 class DesignCommand {
   DesignCommand(this.kind, Map<String, dynamic> arguments)
@@ -76,6 +77,8 @@ CommandResult executeCommand(
       'AddStair',
       'UpdateStair',
       'DeleteStair',
+      'PlaceStair',
+      'RemoveStair',
       'CutOutline',
       'RestoreOutline'
     ].contains(command.kind)) {
@@ -158,6 +161,13 @@ CommandResult executeCommand(
           ? apply(result.document!)
           : Rejected('SPATIAL_CONFLICT', result.error!);
     }
+    if (command.kind == 'MirrorPlan') {
+      final result =
+          mirrorPlan(doc, horizontal: args['direction'] != 'vertical');
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('SPATIAL_CONFLICT', result.error!);
+    }
     if (command.kind == 'EnableWallDrawing')
       return apply(
           enableWallDrawing(doc, args['floorId'] as String, context.newId));
@@ -194,6 +204,28 @@ CommandResult executeCommand(
       return result.accepted
           ? apply(result.document!)
           : Rejected('SPATIAL_CONFLICT', result.error!);
+    }
+    if (command.kind == 'PlaceStair') {
+      final result = placeStair(
+          doc,
+          args['floorId'] as String,
+          args['left'] as int,
+          args['bottom'] as int,
+          args['right'] as int,
+          args['top'] as int,
+          context.newId,
+          type: args['type'] as StairType?,
+          stairId: args['stairId'] as String?);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('SPATIAL_CONFLICT', result.error!);
+    }
+    if (command.kind == 'RemoveStair') {
+      final result =
+          removeStair(doc, args['stairId'] as String, context.newId);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('NOT_FOUND', result.error!);
     }
     if (command.kind == 'DeleteAxis') {
       final result = deleteAxis(doc, args['axisId'] as String, context.newId,

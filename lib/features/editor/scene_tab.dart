@@ -22,15 +22,39 @@ extension _SceneTab on _HouseEditorState {
               walkStart: walkStart,
               walkFloor: floorIndex,
               selected: scenePicked,
-              outsideLabel: tr('室外', 'Сыртта'),
-              inWallLabel: tr('墙内', 'Қабырға ішінде'),
+              outsideLabel: tr3('室外', 'Сыртта', 'Снаружи'),
+              inWallLabel: tr3('墙内', 'Қабырға ішінде', 'Внутри стены'),
               areaUnit: unitM2,
               onPick: walk
                   ? null
                   : (source) => update(() => scenePicked = source))),
       if (scenePicked != null && !walk)
         Positioned(left: 10, top: 10, right: 10, child: pickedChip()),
+      // Within thumb reach on the stage itself: frame the house again
+      // after turning or zooming away (CAD viewers' "zoom to fit").
+      if (!walk)
+        Positioned(
+            right: 8,
+            bottom: 8,
+            child: Material(
+                color: t.panel.withValues(alpha: 0.92),
+                shape: CircleBorder(side: BorderSide(color: t.line)),
+                child: IconButton(
+                    key: const ValueKey('scene-fit'),
+                    tooltip: tr3('适配画面', 'Экранға сыйғызу', 'Вписать в экран'),
+                    onPressed: refitScene,
+                    icon: const Icon(Icons.fit_screen_outlined, size: 22)))),
     ]));
+    if (phoneTools)
+      return Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: stage),
+                const SizedBox(height: 6),
+                ...(walk ? phoneWalkControls() : phoneOrbitControls()),
+              ]));
     final controls = walk ? walkControls() : orbitControls();
     if (compact)
       return Padding(
@@ -83,9 +107,9 @@ extension _SceneTab on _HouseEditorState {
             .firstOrNull;
         return item == null ? '' : item.label ?? furnitureName(item.kind);
       case WallSource():
-        return tr('墙体', 'Қабырға');
+        return tr3('墙体', 'Қабырға', 'Стена');
       case StairSource():
-        return tr('楼梯', 'Баспалдақ');
+        return tr3('楼梯', 'Баспалдақ', 'Лестница');
     }
   }
 
@@ -110,9 +134,9 @@ extension _SceneTab on _HouseEditorState {
               TextButton.icon(
                   onPressed: () => openInPlan(source),
                   icon: const Icon(Icons.edit_outlined, size: 16),
-                  label: Text(tr('在 2D 中编辑', '2D-де өзгерту'))),
+                  label: Text(tr3('在 2D 中编辑', '2D-де өзгерту', 'Изменить в 2D'))),
               IconButton(
-                  tooltip: tr('关闭', 'Жабу'),
+                  tooltip: tr3('关闭', 'Жабу', 'Закрыть'),
                   visualDensity: VisualDensity.compact,
                   onPressed: () => update(() => scenePicked = null),
                   icon: const Icon(Icons.close, size: 16)),
@@ -164,10 +188,87 @@ extension _SceneTab on _HouseEditorState {
     }
   }
 
-  List<Widget> orbitControls() {
+  void setScene(SceneSettings v) => update(() => sceneSettings = v);
+
+  /// Frame the current preset view again.
+  void refitScene() => update(() => sceneViewToken++);
+
+  List<Widget> sceneToggles() {
+    final s = sceneSettings;
+    final set = setScene;
+    return [
+            PillToggle(
+                label: tr3('屋顶', 'Шатыр', 'Крыша'),
+                selected: s.roof,
+                onChanged: (v) => set(s.copyWith(roof: v))),
+            PillToggle(
+                label: tr3('家具', 'Жиһаз', 'Мебель'),
+                selected: s.furniture,
+                onChanged: (v) => set(s.copyWith(furniture: v))),
+            PillToggle(
+                label: tr3('地基', 'Іргетас', 'Фундамент'),
+                selected: s.foundation,
+                onChanged: (v) => set(s.copyWith(foundation: v))),
+            if (history.present.extras.site != null)
+              PillToggle(
+                  label: tr3('院子', 'Аула', 'Двор'),
+                  selected: s.site,
+                  onChanged: (v) => set(s.copyWith(site: v))),
+            PillToggle(
+                label: tr3('剖切', 'Кесу', 'Разрез'),
+                selected: s.cut,
+                onChanged: (v) => set(s.copyWith(cut: v))),
+            ActionChip(
+                key: const ValueKey('scene-roof-style'),
+                avatar: RoofIcon(roofStyle, size: 16),
+                label: Text(roofStyleName(roofStyle)),
+                onPressed: chooseRoof),
+    ];
+  }
+
+  List<Widget> viewButtons() => [
+        for (final (key, zh, kk) in const [
+          ('iso', '鸟瞰', 'Жоғарыдан'),
+          ('front', '正面', 'Алдынан'),
+          ('back', '背面', 'Артынан'),
+          ('side', '侧面', 'Бүйірінен'),
+          ('top', '顶视', 'Үстінен'),
+        ])
+          Btn(
+              label: tr(zh, kk),
+              primary: sceneView == key,
+              onPressed: () => update(() {
+                    sceneView = key;
+                    sceneViewToken++;
+                  })),
+      ];
+
+  /// Cut height; shown only while the cut is on, so it never reads as a
+  /// setting that does something with the cut off.
+  Widget cutSlider(double width) {
     final t = Tokens.of(context);
     final s = sceneSettings;
-    void set(SceneSettings v) => update(() => sceneSettings = v);
+    final top = math.max(3.0, derived.height / 1000);
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Text(tr3('剖切高度', 'Кесу биіктігі', 'Высота разреза'),
+          style: TextStyle(fontSize: 13, color: t.muted)),
+      SizedBox(
+          width: width,
+          child: Slider(
+              key: const ValueKey('cut-height'),
+              min: 0.3,
+              max: top,
+              value: s.cutHeight.clamp(0.3, top),
+              onChanged: (v) => setScene(s.copyWith(cutHeight: v, cut: true)))),
+      Text('${dec(s.cutHeight.toStringAsFixed(2))} $unitM',
+          style: mono(size: 12)),
+    ]);
+  }
+
+  /// Sun time, north and floors shown: set once, rarely touched.
+  List<Widget> lightControls(void Function(SceneSettings) set) {
+    final t = Tokens.of(context);
+    final s = sceneSettings;
     final hour = s.hour;
     final hh = '${hour.floor().toString().padLeft(2, '0')}:${((hour % 1) * 60).round().toString().padLeft(2, '0')}';
     final north = (360 - history.present.footprint.northAngleDeg) % 360;
@@ -180,85 +281,8 @@ extension _SceneTab on _HouseEditorState {
               child,
             ]);
     return [
-      Wrap(
-          spacing: 8,
-          runSpacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            PillToggle(
-                label: tr('屋顶', 'Шатыр'),
-                selected: s.roof,
-                onChanged: (v) => set(s.copyWith(roof: v))),
-            PillToggle(
-                label: tr('家具', 'Жиһаз'),
-                selected: s.furniture,
-                onChanged: (v) => set(s.copyWith(furniture: v))),
-            PillToggle(
-                label: tr('地基', 'Іргетас'),
-                selected: s.foundation,
-                onChanged: (v) => set(s.copyWith(foundation: v))),
-            if (history.present.extras.site != null)
-              PillToggle(
-                  label: tr('院子', 'Аула'),
-                  selected: s.site,
-                  onChanged: (v) => set(s.copyWith(site: v))),
-            PillToggle(
-                label: tr('剖切', 'Кесу'),
-                selected: s.cut,
-                onChanged: (v) => set(s.copyWith(cut: v))),
             labelled(
-                tr('剖切高度', 'Кесу биіктігі'),
-                SizedBox(
-                    width: 150,
-                    child: Slider(
-                        min: 0.3,
-                        max: math.max(3.0, derived.height / 1000),
-                        value: s.cutHeight.clamp(
-                            0.3, math.max(3.0, derived.height / 1000)),
-                        onChanged: (v) =>
-                            set(s.copyWith(cutHeight: v, cut: true))))),
-            Text('${dec(s.cutHeight.toStringAsFixed(2))} $unitM',
-                style: mono(size: 12)),
-          ]),
-      const SizedBox(height: 6),
-      Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(tr('视角', 'Көрініс'),
-                style: TextStyle(fontSize: 13, color: t.muted)),
-            for (final (key, zh, kk) in const [
-              ('iso', '鸟瞰', 'Жоғарыдан'),
-              ('front', '正面(入口)', 'Алдынан (кіреберіс)'),
-              ('back', '背面', 'Артынан'),
-              ('side', '侧面', 'Бүйірінен'),
-              ('top', '顶视', 'Үстінен'),
-            ])
-              Btn(
-                  label: tr(zh, kk),
-                  primary: sceneView == key,
-                  onPressed: () => update(() {
-                        sceneView = key;
-                        sceneViewToken++;
-                      })),
-            IconButton(
-                tooltip: '恢复视角'.trKey('Көріністі қалпына келтіру'),
-                visualDensity: VisualDensity.compact,
-                onPressed: () => update(() {
-                      sceneView = 'iso';
-                      sceneViewToken++;
-                    }),
-                icon: const Icon(Icons.center_focus_strong, size: 20)),
-          ]),
-      const SizedBox(height: 6),
-      Wrap(
-          spacing: 12,
-          runSpacing: 6,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            labelled(
-                tr('日照时间', 'Күн уақыты'),
+                tr3('日照时间', 'Күн уақыты', 'Время суток'),
                 SizedBox(
                     width: 170,
                     child: Slider(
@@ -269,7 +293,7 @@ extension _SceneTab on _HouseEditorState {
                         onChanged: (v) => set(s.copyWith(hour: v))))),
             Text(hh, style: mono(size: 12)),
             labelled(
-                tr('图纸上方朝向', 'Сызбаның жоғарғы жағы'),
+                tr3('图纸上方朝向', 'Сызбаның жоғарғы жағы', 'Верх чертежа'),
                 DropdownButton<int>(
                     value: north,
                     underline: const SizedBox.shrink(),
@@ -288,7 +312,7 @@ extension _SceneTab on _HouseEditorState {
                     })),
             if (floors.length > 1)
               labelled(
-                  tr('显示到', 'Көрсету'),
+                  tr3('显示到', 'Көрсету', 'Показывать до'),
                   Seg<int>(
                       value: math.min(s.maxFloor, floors.length - 1),
                       items: [
@@ -296,12 +320,111 @@ extension _SceneTab on _HouseEditorState {
                           (i, displayFloorName(floors[i].name))
                       ],
                       onChanged: (v) => set(s.copyWith(maxFloor: v)))),
+    ];
+  }
+
+  /// Phones: the stage takes the screen; under it one row of views and
+  /// one row of switches (Hick: two short choices instead of a page of
+  /// controls). Sun, north and floors move to a sheet.
+  List<Widget> phoneOrbitControls() {
+    final s = sceneSettings;
+    return [
+      fadeRow(viewButtons()),
+      const SizedBox(height: 6),
+      // "更多" stays in place at the end, never scrolled out of reach.
+      Row(children: [
+        Expanded(child: fadeRow(sceneToggles())),
+        const SizedBox(width: 4),
+        IconButton.outlined(
+            key: const ValueKey('scene-more'),
+            tooltip: tr3('更多设置', 'Басқа баптаулар', 'Другие настройки'),
+            onPressed: sceneMoreSheet,
+            icon: const Icon(Icons.tune, size: 20)),
+        const VoiceSlot(),
+      ]),
+      if (s.cut) cutSlider(170),
+    ];
+  }
+
+  /// Phones walking: one row of places to go and the floor switch.
+  List<Widget> phoneWalkControls() {
+    final c = walkControls();
+    final go = c.first as Wrap;
+    return [
+      Row(children: [
+        Expanded(child: fadeRow(go.children.skip(1).toList())),
+        const VoiceSlot(),
+      ]),
+      if (history.present.floors.length > 1) c[1],
+    ];
+  }
+
+  void sceneMoreSheet() {
+    final t = Tokens.of(context);
+    showMotionSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (context) => StatefulBuilder(builder: (context, setSheet) {
+              void set(SceneSettings v) {
+                setScene(v);
+                setSheet(() {});
+              }
+
+              return SafeArea(
+                  child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                                spacing: 12,
+                                runSpacing: 8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: lightControls(set)),
+                            const SizedBox(height: 10),
+                            Text(
+                                tr3('单指拖动旋转 · 双指缩放/平移/扭转 · 剖切可看墙内门窗 · 点物体可回到 2D 编辑',
+                                    'Бір саусақпен айналдырыңыз · екі саусақпен үлкейтіңіз/жылжытыңыз · кесу арқылы есік-терезені көріңіз · нысанды басып 2D-де өзгертіңіз', 'Вращайте одним пальцем · масштабируйте и двигайте двумя · разрез показывает окна и двери внутри · нажмите на объект, чтобы изменить его в 2D'),
+                                style: TextStyle(fontSize: 12, color: t.muted)),
+                          ])));
+            }));
+  }
+
+  List<Widget> orbitControls() {
+    final t = Tokens.of(context);
+    final s = sceneSettings;
+    final set = setScene;
+    return [
+      Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ...sceneToggles(),
+            if (s.cut) cutSlider(150),
           ]),
+      const SizedBox(height: 6),
+      Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(tr3('视角', 'Көрініс', 'Вид'),
+                style: TextStyle(fontSize: 13, color: t.muted)),
+            ...viewButtons(),
+          ]),
+      const SizedBox(height: 6),
+      Wrap(
+          spacing: 12,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: lightControls(set)),
       Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(
-              tr('单指拖动旋转 · 双指缩放/平移 · 打开“地基”时地面变透明 · 剖切可看墙内门窗关系 · 点物体可回到 2D 编辑',
-                  'Бір саусақпен айналдырыңыз · екі саусақпен үлкейтіңіз/жылжытыңыз · «Іргетас» қосылғанда жер мөлдір болады · кесу арқылы есік-терезе орнын көруге болады · нысанды басып 2D-де өзгертіңіз'),
+              tr3('单指拖动旋转 · 双指缩放/平移 · 打开“地基”时地面变透明 · 剖切可看墙内门窗关系 · 点物体可回到 2D 编辑',
+                  'Бір саусақпен айналдырыңыз · екі саусақпен үлкейтіңіз/жылжытыңыз · «Іргетас» қосылғанда жер мөлдір болады · кесу арқылы есік-терезе орнын көруге болады · нысанды басып 2D-де өзгертіңіз', 'Вращайте одним пальцем · масштабируйте и сдвигайте двумя · при включённом «Фундаменте» земля становится прозрачной · разрез показывает расположение окон и дверей · нажмите на объект, чтобы изменить его в 2D'),
               style: TextStyle(fontSize: 12, color: t.muted))),
     ];
   }
@@ -327,10 +450,10 @@ extension _SceneTab on _HouseEditorState {
           runSpacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text(tr('去往', 'Бару:'),
+            Text(tr3('去往', 'Бару:', 'Перейти:'),
                 style: TextStyle(fontSize: 13, color: t.muted)),
             Btn(
-                label: tr('门外', 'Есік алды'),
+                label: tr3('门外', 'Есік алды', 'Перед входом'),
                 icon: Icons.door_front_door_outlined,
                 onPressed: () => update(() => walkStart = null)),
             for (final room in floor.rooms)
@@ -345,7 +468,7 @@ extension _SceneTab on _HouseEditorState {
                       go(spot.x, spot.y, spot.yaw);
                     }),
             Btn(
-                label: tr('后院', 'Аула'),
+                label: tr3('后院', 'Аула', 'Задний двор'),
                 icon: Icons.park_outlined,
                 // Behind the house, looking back at it.
                 onPressed: () => go(w / 2, d + 4000, math.pi)),
@@ -366,8 +489,8 @@ extension _SceneTab on _HouseEditorState {
       Padding(
           padding: const EdgeInsets.only(top: 6),
           child: Text(
-              tr('左下摇杆移动，拖动画面转头。电脑上可用 W A S D / 方向键。墙会挡住你，门洞可以穿过。',
-                  'Сол жақ төмендегі джойстикпен жүріңіз, экранды сүйреп бұрылыңыз. Компьютерде W A S D / бағыт пернелері. Қабырғадан өтпейсіз, есік ойығынан өтуге болады.'),
+              tr3('左下摇杆移动，拖动画面转头。电脑上可用 W A S D / 方向键。墙会挡住你，门洞可以穿过。',
+                  'Сол жақ төмендегі джойстикпен жүріңіз, экранды сүйреп бұрылыңыз. Компьютерде W A S D / бағыт пернелері. Қабырғадан өтпейсіз, есік ойығынан өтуге болады.', 'Двигайтесь джойстиком слева внизу, поворачивайтесь, проводя по экрану. На компьютере — W A S D / стрелки. Сквозь стены пройти нельзя, через дверной проём — можно.'),
               style: TextStyle(fontSize: 12, color: t.muted))),
     ];
   }

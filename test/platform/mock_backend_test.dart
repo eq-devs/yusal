@@ -1,0 +1,719 @@
+import 'dart:typed_data';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:yusal/core/commands/house_templates.dart';
+import 'package:yusal/platform/data/mock/mock_backend.dart';
+import 'package:yusal/platform/data/mock/mock_clock.dart';
+import 'package:yusal/platform/data/mock/mock_seed.dart';
+import 'package:yusal/platform/data/repositories.dart';
+import 'package:yusal/platform/domain/models.dart';
+import 'package:yusal/platform/domain/rules.dart';
+import 'package:yusal/platform/snapshot/design_snapshot.dart';
+
+MockBackend backend({bool seed = true}) => MockBackend(
+    clock: MockClock(DateTime.utc(2026, 11, 3, 9)),
+    latency: Duration.zero,
+    autoReviewDelay: Duration.zero,
+    seed: seed);
+
+DemandVersion contractDraft({String title = '车库砌墙', String text = ''}) =>
+    DemandVersion(
+        no: 0,
+        title: title,
+        trades: const ['mason'],
+        region: 'talgar',
+        locality: '塔尔加尔',
+        exactAddress: '私密地址 7 号',
+        budget: const Budget(mode: BudgetMode.askQuote),
+        createdAt: DateTime.utc(2026),
+        description: text,
+        contract: const ContractTerms(scopeKind: ScopeKind.custom, quantities: [
+          QtyItem(
+              name: '砌墙', quantity: 20, unit: 'm3', source: QtySource.manual)
+        ]));
+
+ApplicationVersion lumpQuote(int amount,
+        {MaterialMode materials = MaterialMode.labourOnly}) =>
+    ApplicationVersion(
+        no: 0,
+        demandVersionNo: 0,
+        createdAt: DateTime.utc(2026),
+        scopeText: '全部砌墙',
+        materials: materials,
+        pricing: PricingMode.lumpSum,
+        lumpSum: amount,
+        durationDays: 10);
+
+Agreement terms({int? amount = 900000, int? headcount}) => Agreement(
+    version: 0,
+    scope: '全部砌墙',
+    demandVersionNo: 0,
+    proposedBy: '',
+    confirmedBy: const {},
+    status: AgreementStatus.proposed,
+    createdAt: DateTime.utc(2026),
+    amount: amount,
+    headcount: headcount);
+
+Future<Demand> publishAsOwner(MockBackend b, {String text = ''}) async {
+  b.signInAs(SeedIds.owner);
+  final draft =
+      await b.saveDraft(DemandType.contract, contractDraft(text: text));
+  return b.publish(draft.id);
+}
+
+void main() {
+  test('confirming a builder fills the demand and tells the others',
+      () async {
+    final b = backend();
+    final d = await publishAsOwner(b);
+    b.signInAs(SeedIds.mason);
+    final won = await b.submit(
+        demandId: d.id,
+        profileId: 'prof_mason',
+        version: lumpQuote(800000),
+        requestId: 'r1');
+    b.signInAs(SeedIds.team);
+    final lost = await b.submit(
+        demandId: d.id,
+        profileId: 'prof_team',
+        version: lumpQuote(700000),
+        requestId: 'r2');
+    b.signInAs(SeedIds.owner);
+    final coop = await b.invite(won.id, terms());
+    b.signInAs(SeedIds.mason);
+    await b.confirm(coop.id);
+    expect(b.demands[d.id]!.status, DemandStatus.found);
+    expect(b.demands[d.id]!.outcome, OutcomeKind.platformConfirmed);
+    expect(b.applications[lost.id]!.status, ApplicationStatus.notSelected);
+    expect(
+        b.notices.values.where((n) =>
+            n.kind == NoticeKind.applicationNotSelected && n.refId == d.id),
+        hasLength(1));
+  });
+
+  test('milestones follow the contracted stages', () {
+    List<(String, int)> plan(ContractTerms? c) =>
+        [for (final m in milestonesForStages(c)) (m.key, m.percent)];
+    expect(plan(null), hasLength(4));
+    expect(
+        plan(const ContractTerms(
+            scopeKind: ScopeKind.stages, stages: ['found', 'walls'])),
+        [('foundation', 33), ('walls', 67)]);
+    expect(
+        plan(const ContractTerms(scopeKind: ScopeKind.stages, stages: ['roof'])),
+        [('roof', 100)]);
+  });
+
+  test('banned words in a negated clause are not rejected outright', () {
+    expect(onlyNegatedBanned('Залог за инструмент не даём'), isTrue);
+    expect(onlyNegatedBanned('我们不收押金，按节点付款'), isTrue);
+    expect(onlyNegatedBanned('Кепіл ақы жоқ'), isTrue);
+    expect(onlyNegatedBanned('Нужен залог 20000'), isFalse);
+    expect(onlyNegatedBanned('Без опыта не берём, залог 20000'), isFalse);
+    expect(onlyNegatedBanned('清水房 两层'), isFalse);
+  });
+
+  group('accounts', () {
+    test('signs in with the mock code and refuses a wrong one', () async {
+      final b = backend();
+      await b.requestCode('+7 701 555 1234');
+      await expectLater(
+          b.verify('+77015551234', '0000'), throwsA(isA<ApiFailure>()));
+      final a = await b.verify('+77015551234', MockBackend.verificationCode,
+          displayName: 'Test');
+      expect(b.currentAccount?.id, a.id);
+      expect(a.displayName, 'Test');
+    });
+
+    test('browsing works signed out, acting needs an account', () async {
+      final b = backend();
+      expect(await b.searchDemands(const DemandFilter()), isNotEmpty);
+      await expectLater(
+          b.myDemands(),
+          throwsA(predicate(
+              (e) => (e as ApiFailure).code == ApiCodes.notSignedIn)));
+    });
+
+    test('the chat phone can be changed, cleared and must look like one',
+        () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final a = await b.updatePhone('+7 (701) 555-00-11');
+      expect(a.phone, '+77015550011');
+      expect(b.currentAccount?.phone, '+77015550011');
+      await expectLater(
+          b.updatePhone('12345'),
+          throwsA(predicate(
+              (e) => (e as ApiFailure).code == ApiCodes.invalidInput)));
+      expect((await b.updatePhone('')).phone, '');
+    });
+
+    test('deleting an account takes its demands down', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      await b.deleteAccount();
+      expect(b.currentAccount, isNull);
+      expect(b.demands['dem_wall']!.status, DemandStatus.closed);
+      final list = await b.searchDemands(const DemandFilter());
+      expect(list.any((d) => d.ownerId == SeedIds.owner), isFalse);
+    });
+  });
+
+  group('demands', () {
+    test('draft → review → open; private fields stay off share pages',
+        () async {
+      final b = backend();
+      final d = await publishAsOwner(b);
+      expect(d.status, DemandStatus.open);
+      expect(d.expiresAt, isNotNull);
+      b.signInAs(SeedIds.mason);
+      expect((await b.demand(d.id))!.current.exactAddress, isEmpty);
+      b.signInAs(SeedIds.owner);
+      expect((await b.demand(d.id))!.current.exactAddress, isNotEmpty);
+      final view = await b.publicView(d.shareToken);
+      expect(view!.available, isTrue);
+      expect(view.title, '车库砌墙');
+      // The public projection has no address field at all; check revoking.
+      await b.setShareRevoked(d.id, true);
+      final revoked = await b.publicView(d.shareToken);
+      expect(revoked!.available, isFalse);
+      expect(revoked.title, isEmpty);
+    });
+
+    test('a deposit request is rejected by review with a reason', () async {
+      final b = backend();
+      final d = await publishAsOwner(b, text: '开工前请交押金');
+      expect(d.status, DemandStatus.rejected);
+      expect(d.rejectReason, contains('押金'));
+      expect(b.auditLog.last.action, 'reject');
+    });
+
+    test('a demand needs a valid budget but may ask for quotes', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final bad = DemandVersion(
+          no: 0,
+          title: 'x',
+          trades: const ['mason'],
+          region: 'talgar',
+          budget: const Budget(mode: BudgetMode.range, min: 500, max: 100),
+          createdAt: DateTime.utc(2026),
+          contract: const ContractTerms(scopeKind: ScopeKind.whole));
+      await expectLater(
+          b.saveDraft(DemandType.contract, bad), throwsA(isA<ApiFailure>()));
+    });
+
+    test('expiry stops new applications but keeps cooperations', () async {
+      final b = backend();
+      final d = await publishAsOwner(b);
+      b.signInAs(SeedIds.mason);
+      final app = await b.submit(
+          demandId: d.id,
+          profileId: 'prof_mason',
+          version: lumpQuote(800000),
+          requestId: 'r1');
+      b.signInAs(SeedIds.owner);
+      final coop = await b.invite(app.id, terms());
+      b.signInAs(SeedIds.mason);
+      await b.confirm(coop.id);
+      // A confirmed builder fills a contract demand; the owner reopens it.
+      expect(b.demands[d.id]!.status, DemandStatus.found);
+      b.signInAs(SeedIds.owner);
+      await b.resume(d.id);
+      b.advanceTime(const Duration(days: 31));
+      expect(b.demands[d.id]!.status, DemandStatus.expired);
+      expect(b.cooperations[coop.id]!.status, CooperationStatus.confirmed);
+      b.signInAs(SeedIds.team);
+      await expectLater(
+          b.submit(
+              demandId: d.id,
+              profileId: 'prof_team',
+              version: lumpQuote(700000),
+              requestId: 'r2'),
+          throwsA(predicate(
+              (e) => (e as ApiFailure).code == ApiCodes.notAccepting)));
+      b.signInAs(SeedIds.owner);
+      final renewed = await b.renew(d.id);
+      expect(renewed.status, DemandStatus.open);
+    });
+
+    test('sends the outcome follow-up on day 3 only once', () async {
+      final b = backend();
+      final d = await publishAsOwner(b);
+      b.advanceTime(const Duration(days: 3, hours: 1));
+      b.advanceTime(const Duration(hours: 1));
+      final followUps = b.notices.values.where(
+          (n) => n.kind == NoticeKind.outcomeFollowUp && n.refId == d.id);
+      expect(followUps, hasLength(1));
+    });
+
+    test('a revision marks live quotes for re-confirmation', () async {
+      final b = backend();
+      final d = await publishAsOwner(b);
+      b.signInAs(SeedIds.team);
+      final app = await b.submit(
+          demandId: d.id,
+          profileId: 'prof_team',
+          version: lumpQuote(900000),
+          requestId: 'r1');
+      b.signInAs(SeedIds.owner);
+      await b.revise(d.id, contractDraft(title: '车库砌墙（加高）'));
+      final after = b.applications[app.id]!;
+      expect(after.needsReconfirm, isTrue);
+      expect(after.current.demandVersionNo, 1);
+      expect(b.demands[d.id]!.versions, hasLength(2));
+      // A new quote version clears the flag and records the new base.
+      b.signInAs(SeedIds.team);
+      final requoted = await b.submit(
+          demandId: d.id,
+          profileId: 'prof_team',
+          version: lumpQuote(950000),
+          requestId: 'r2');
+      expect(requoted.needsReconfirm, isFalse);
+      expect(requoted.current.demandVersionNo, 2);
+      expect(requoted.versions, hasLength(2));
+    });
+  });
+
+  group('applications and cooperation', () {
+    test('a double tap creates one application', () async {
+      final b = backend();
+      b.signInAs(SeedIds.electrician);
+      final p = await b.saveProfile(ServiceProfile(
+          id: '',
+          ownerId: '',
+          kind: ProfileKind.individual,
+          name: 'Ерлан 2',
+          trades: const ['mason'],
+          regions: const ['kaskelen'],
+          availability: Availability.now,
+          availabilityConfirmedAt: DateTime.utc(2026)));
+      final v = ApplicationVersion(
+          no: 0, demandVersionNo: 0, createdAt: DateTime.utc(2026));
+      final a1 = await b.submit(
+          demandId: 'dem_hire', profileId: p.id, version: v, requestId: 'same');
+      final a2 = await b.submit(
+          demandId: 'dem_hire', profileId: p.id, version: v, requestId: 'same');
+      expect(a1.id, a2.id);
+      expect(b.applications.values.where((a) => a.profileId == p.id),
+          hasLength(1));
+    });
+
+    test('nobody can apply to their own demand', () async {
+      final b = backend();
+      b.signInAs(SeedIds.team);
+      await expectLater(
+          b.submit(
+              demandId: 'dem_rebar',
+              profileId: 'prof_team',
+              version: ApplicationVersion(
+                  no: 0, demandVersionNo: 0, createdAt: DateTime.utc(2026)),
+              requestId: 'x'),
+          throwsA(
+              predicate((e) => (e as ApiFailure).code == ApiCodes.ownDemand)));
+    });
+
+    test('cooperation needs both sides; one side cannot confirm twice',
+        () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final coop = await b.invite('app_mason_hire', terms(headcount: 1));
+      expect(coop.status, CooperationStatus.pending);
+      expect(b.applications['app_mason_hire']!.status,
+          ApplicationStatus.pendingConfirm);
+      await expectLater(b.confirm(coop.id), throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.mason);
+      final done = await b.confirm(coop.id);
+      expect(done.status, CooperationStatus.confirmed);
+      expect(b.applications['app_mason_hire']!.status,
+          ApplicationStatus.cooperating);
+      // Hiring one person keeps the demand open for the second.
+      expect(b.demands['dem_hire']!.status, DemandStatus.open);
+      expect(
+          hiredCount(
+              b.cooperations.values.where((c) => c.demandId == 'dem_hire')),
+          1);
+    });
+
+    test('a declined invitation returns the application', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final coop = await b.invite('app_team_wall', terms());
+      b.signInAs(SeedIds.team);
+      final declined = await b.decline(coop.id);
+      expect(declined.status, CooperationStatus.notFormed);
+      expect(
+          b.applications['app_team_wall']!.status, ApplicationStatus.submitted);
+      b.signInAs(SeedIds.owner);
+      final again = await b.invite('app_team_wall', terms(amount: 1000000));
+      expect(again.id, isNot(coop.id));
+    });
+
+    test('changes need the other side and keep history', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final coop = await b.invite('app_team_wall', terms());
+      b.signInAs(SeedIds.team);
+      await b.confirm(coop.id);
+      await b.proposeChange(coop.id, terms(amount: 1100000));
+      await expectLater(
+          b.answerChange(coop.id, true), throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.owner);
+      final c = await b.answerChange(coop.id, true);
+      expect(c.agreement.amount, 1100000);
+      expect(c.agreements.first.status, AgreementStatus.superseded);
+      expect(c.agreements, hasLength(2));
+    });
+
+    test('an unanswered end is unilateral and opens no reviews', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final coop = await b.invite('app_team_wall', terms());
+      b.signInAs(SeedIds.team);
+      await b.confirm(coop.id);
+      await b.requestEnd(coop.id, '完工');
+      b.advanceTime(const Duration(days: 8));
+      final c = b.cooperations[coop.id]!;
+      expect(c.status, CooperationStatus.ended);
+      expect(c.endKind, EndKind.unilateral);
+      expect(reviewsOpen(c, b.now), isFalse);
+    });
+
+    test('mutual end opens hidden reviews until both are in', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final coop = await b.invite('app_team_wall', terms());
+      b.signInAs(SeedIds.team);
+      await b.confirm(coop.id);
+      await b.requestEnd(coop.id, '');
+      b.signInAs(SeedIds.owner);
+      await b.confirmEnd(coop.id);
+      await b.submitReview(coop.id, {'payment': 5}, '好');
+      b.signInAs(SeedIds.team);
+      expect(await b.reviewsFor(coop.id), isEmpty);
+      await b.submitReview(coop.id, {'scope': 4}, '');
+      expect(await b.reviewsFor(coop.id), hasLength(2));
+      expect(
+          b.profiles['prof_team']!.works.any((w) => w.cooperationId == coop.id),
+          isTrue);
+    });
+
+    test('profile stats only count proven facts', () async {
+      final b = backend();
+      final s = await b.stats('prof_team');
+      expect(s.confirmedCooperations, 1);
+      expect(s.reviewCount, 1);
+      final none = await b.stats('prof_elec');
+      expect(none.reviewCount, 0);
+      expect(none.dimensionAverages, isEmpty);
+    });
+  });
+
+  group('chat', () {
+    test('blocking stops messages; offline sends fail and retry', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final conv = await b.openConversation(SeedIds.mason);
+      b.simulateOffline = true;
+      final failed = await b.send(conv.id, MessageKind.text, text: '你好');
+      expect(failed.state, SendState.failed);
+      b.simulateOffline = false;
+      final sent = await b.resend(failed.id);
+      expect(sent.state, SendState.sent);
+      await b.block(SeedIds.mason);
+      await expectLater(
+          b.send(conv.id, MessageKind.text, text: 'x'),
+          throwsA(
+              predicate((e) => (e as ApiFailure).code == ApiCodes.blocked)));
+    });
+
+    test('rate limit per minute', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final conv = await b.openConversation(SeedIds.electrician);
+      for (var i = 0; i < chatLimitPerMinute; i++) {
+        await b.send(conv.id, MessageKind.text, text: '$i');
+      }
+      await expectLater(
+          b.send(conv.id, MessageKind.text, text: 'more'),
+          throwsA(predicate(
+              (e) => (e as ApiFailure).code == ApiCodes.rateLimited)));
+    });
+
+    test('unread counts follow reading', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      expect(await b.unreadMessages(), greaterThan(0));
+      final conv = (await b.conversations()).first;
+      await b.markConversationRead(conv.id);
+      expect(await b.unreadMessages(), 0);
+    });
+  });
+
+  group('backups', () {
+    test('a cloud copy changed elsewhere is never overwritten', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      await b.upload(
+          projectId: 'p1', name: 'A', houseText: '{}', designUpdatedAt: 't1');
+      b.touchBackupFromOtherDevice('p1', '{"x":1}', 't9');
+      await expectLater(
+          b.upload(
+              projectId: 'p1',
+              name: 'A',
+              houseText: '{}',
+              designUpdatedAt: 't2',
+              expectedPreviousUpdatedAt: 't1'),
+          throwsA(
+              predicate((e) => (e as ApiFailure).code == ApiCodes.conflict)));
+      b.simulateOffline = true;
+      await expectLater(
+          b.upload(
+              projectId: 'p2',
+              name: 'B',
+              houseText: '{}',
+              designUpdatedAt: 't'),
+          throwsA(
+              predicate((e) => (e as ApiFailure).code == ApiCodes.network)));
+    });
+  });
+
+  group('moderation', () {
+    test('only moderators review; decisions are audited', () async {
+      final b = backend();
+      b.autoReviewDelay = null;
+      final d = await publishAsOwner(b);
+      expect(d.status, DemandStatus.pendingReview);
+      await expectLater(b.approve(d.id), throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.admin);
+      expect((await b.reviewQueue()).items, hasLength(1));
+      await b.approve(d.id);
+      expect(b.demands[d.id]!.status, DemandStatus.open);
+      await b.resolveReport('rep_seed', true, '工资信息虚假');
+      expect(b.demands['dem_rebar']!.status, DemandStatus.rejected);
+      final last = (await b.audit()).items.first;
+      expect(last.by, SeedIds.admin);
+      expect(last.target, 'demand');
+      expect(last.title, isNotEmpty);
+    });
+
+    test('roles: viewers read, only superadmins grant, nobody changes their own',
+        () async {
+      final b = backend();
+      b.signInAs(SeedIds.admin);
+      expect(b.currentAccount!.role, AdminRoles.superadmin);
+      await b.setRole(SeedIds.owner2, AdminRoles.viewer);
+      await expectLater(b.setRole(SeedIds.admin, null), throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.owner2);
+      expect((await b.todo()).total, greaterThanOrEqualTo(0));
+      await expectLater(b.approve('dem_rebar'), throwsA(isA<ApiFailure>()));
+      await expectLater(
+          b.setRole(SeedIds.owner, AdminRoles.viewer), throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.admin);
+      await b.setRole(SeedIds.owner2, null);
+      expect(b.accounts[SeedIds.owner2]!.role, isNull);
+    });
+
+    test('a reported house is hidden, the owner appeals and it comes back',
+        () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner2);
+      await b.report(ReportTarget.post, 'post_aigerim', 'code:fake');
+      b.signInAs(SeedIds.admin);
+      final open = await b.reports(status: ReportStatus.open);
+      final v = open.items.singleWhere((r) => r.report.targetId == 'post_aigerim');
+      expect(v.targetOwnerId, SeedIds.owner);
+      expect(v.targetTitle, isNotEmpty);
+      await b.resolveReport(v.report.id, true, 'code:fake');
+      expect(b.posts['post_aigerim']!.status, PostStatus.hidden);
+      expect(
+          b.notices.values.where((n) =>
+              n.accountId == SeedIds.owner && n.kind == NoticeKind.contentRemoved),
+          isNotEmpty);
+      expect(
+          b.notices.values.where((n) =>
+              n.accountId == SeedIds.owner2 && n.kind == NoticeKind.reportResolved),
+          isNotEmpty);
+
+      b.signInAs(SeedIds.owner);
+      final appeal = await b.fileAppeal('post', 'post_aigerim', '是我自己的房子');
+      b.signInAs(SeedIds.owner2);
+      await expectLater(
+          b.fileAppeal('post', 'post_aigerim', 'x'), throwsA(isA<ApiFailure>()));
+      b.signInAs(SeedIds.admin);
+      expect((await b.todo()).appeals.count, 1);
+      await b.resolveAppeal(appeal.id, true, '误判');
+      expect(b.posts['post_aigerim']!.status, PostStatus.published);
+      b.signInAs(SeedIds.owner);
+      expect((await b.myAppeals()).single.status, AppealStatus.accepted);
+    });
+
+    test('a reported comment is removed and the house recounts', () async {
+      final b = backend();
+      final c = b.commentsById.values.firstWhere((c) => c.parentId == null);
+      final before = b.posts[c.postId]!.commentCount;
+      b.signInAs(c.authorId == SeedIds.owner2 ? SeedIds.mason : SeedIds.owner2);
+      await b.report(ReportTarget.comment, c.id, 'code:abuse');
+      b.signInAs(SeedIds.admin);
+      final v = (await b.reports()).items.singleWhere((r) => r.report.targetId == c.id);
+      expect(v.postId, c.postId);
+      await b.resolveReport(v.report.id, true, 'code:abuse');
+      expect(b.commentsById.containsKey(c.id), isFalse);
+      expect(b.posts[c.postId]!.commentCount, lessThan(before));
+    });
+
+    test('an upheld profile report keeps it hidden from its owner', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      await b.report(ReportTarget.profile, 'prof_mason', 'code:fake');
+      b.signInAs(SeedIds.admin);
+      final v = (await b.reports()).items.singleWhere((r) => r.report.targetId == 'prof_mason');
+      await b.resolveReport(v.report.id, true, 'code:fake');
+      b.signInAs(SeedIds.mason);
+      final p = b.profiles['prof_mason']!;
+      final saved = await b.saveProfile(p.copyWith(status: ProfileStatus.active));
+      expect(saved.status, ProfileStatus.hidden);
+    });
+
+    test('restriction can be lifted; admins cannot be restricted', () async {
+      final b = backend();
+      b.signInAs(SeedIds.admin);
+      await b.setRestriction(SeedIds.mason, true, 'code:spam');
+      expect(b.accounts[SeedIds.mason]!.restricted, isTrue);
+      expect((await b.users(restricted: true)).items.map((u) => u.id), [SeedIds.mason]);
+      await b.setRestriction(SeedIds.mason, false, '已核实');
+      expect(b.accounts[SeedIds.mason]!.restricted, isFalse);
+      await b.setRole(SeedIds.owner2, AdminRoles.moderator);
+      await expectLater(
+          b.setRestriction(SeedIds.owner2, true, 'x'), throwsA(isA<ApiFailure>()));
+      final detail = await b.accountDetail(SeedIds.mason);
+      expect(detail.audit.map((e) => e.action), containsAll(['restrict', 'unrestrict']));
+    });
+
+    test('a restricted owner cannot show a paused listing again', () async {
+      final b = backend();
+      final d = await publishAsOwner(b);
+      if (b.demands[d.id]!.status != DemandStatus.open) {
+        b.signInAs(SeedIds.admin);
+        await b.approve(d.id);
+        b.signInAs(SeedIds.owner);
+      }
+      await b.pause(d.id);
+      b.signInAs(SeedIds.admin);
+      await b.setRestriction(SeedIds.owner, true, 'code:spam');
+      b.signInAs(SeedIds.owner);
+      for (final f in [b.resume, b.renew]) {
+        await expectLater(
+            f(d.id),
+            throwsA(predicate(
+                (e) => (e as ApiFailure).code == ApiCodes.restricted)));
+      }
+      expect(b.demands[d.id]!.status, DemandStatus.paused);
+    });
+
+    test('a restricted account cannot share its phone in chat', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      final c = await b.openConversation(SeedIds.mason);
+      b.signInAs(SeedIds.admin);
+      await b.setRestriction(SeedIds.owner, true, 'code:spam');
+      b.signInAs(SeedIds.owner);
+      await expectLater(
+          b.sharePhone(c.id),
+          throwsA(predicate(
+              (e) => (e as ApiFailure).code == ApiCodes.restricted)));
+    });
+
+    test('batch decisions report what changed meanwhile', () async {
+      final b = backend();
+      b.autoReviewDelay = null;
+      final a = await publishAsOwner(b);
+      final c = await publishAsOwner(b, text: '第二个');
+      b.signInAs(SeedIds.admin);
+      await b.approve(a.id);
+      final r = await b.decideMany([a.id, c.id], true);
+      expect(r.done, 1);
+      expect(r.failed, [a.id]);
+    });
+  });
+
+  group('trust', () {
+    test('verification by a moderator marks the profile verified', () async {
+      final b = backend();
+      b.signInAs(SeedIds.mason);
+      final v = await b.requestVerification(
+          'prof_mason', '+77010000000', [Uint8List.fromList([1, 2, 3])]);
+      expect((await b.myVerification('prof_mason'))!.id, v.id);
+      b.signInAs(SeedIds.admin);
+      final pending = await b.verifications(status: VerificationStatus.pending);
+      expect(pending.items.single.photos.single, startsWith('data:'));
+      await b.resolveVerification(v.id, true, '');
+      expect(b.profiles['prof_mason']!.verified, isTrue);
+      b.signInAs(SeedIds.mason);
+      final p = b.profiles['prof_mason']!;
+      expect((await b.saveProfile(p.copyWith(bio: '改了简介'))).verified, isTrue);
+    });
+
+    test('alerts notify matching workers when a demand opens', () async {
+      final b = backend();
+      b.signInAs(SeedIds.mason);
+      await b.saveDemandAlert(const DemandAlert(on: true, types: [DemandType.contract]));
+      b.signInAs(SeedIds.electrician);
+      await b.saveDemandAlert(const DemandAlert(on: true, types: [DemandType.hire]));
+      final d = await publishAsOwner(b);
+      expect(b.demands[d.id]!.status, DemandStatus.open);
+      bool told(String who) => b.notices.values.any((n) =>
+          n.accountId == who && n.kind == NoticeKind.newDemandMatch && n.refId == d.id);
+      expect(told(SeedIds.mason), isTrue);
+      expect(told(SeedIds.electrician), isFalse);
+    });
+
+    test('only community and alert pushes can be muted', () async {
+      final b = backend();
+      b.signInAs(SeedIds.owner);
+      await b.saveNotificationSettings(
+          const NotificationSettings(muted: [PushCategory.community]));
+      expect((await b.notificationSettings()).muted, [PushCategory.community]);
+      await expectLater(
+          b.saveNotificationSettings(const NotificationSettings(muted: ['deals'])),
+          throwsA(isA<ApiFailure>()));
+    });
+  });
+
+  group('rules', () {
+    test('quotes with different scopes are flagged', () {
+      final b = backend();
+      final issues = compareIssues([
+        b.applications['app_team_wall']!,
+        b.applications['app_mason_wall']!,
+      ]);
+      expect(issues, isEmpty);
+      final mixed = compareIssues([
+        b.applications['app_team_wall']!,
+        b.applications['app_team_found']!,
+      ]);
+      expect(mixed, contains(CompareIssue.materials));
+    });
+
+    test('per-quantity quotes add up', () {
+      final b = backend();
+      expect(b.applications['app_team_wall']!.current.total,
+          62.5 * 7000 + 21 * 6500);
+    });
+  });
+
+  group('design snapshot', () {
+    test('extracts quantities of the chosen stages from a template', () {
+      var n = 0;
+      final doc =
+          createTemplate('three', '2026-09-30T00:00:00Z', () => 'id${n++}');
+      final walls = extractDesign(doc, ['walls']);
+      expect(walls.lines, isNotEmpty);
+      expect(walls.lines.every((l) => l.stage == 'walls'), isTrue);
+      expect(walls.lines.any((l) => l.source == QtySource.design), isTrue);
+      final all = extractDesign(doc, const []);
+      expect(all.lines.length, greaterThan(walls.lines.length));
+      expect(all.width, doc.footprint.width);
+    });
+  });
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'settings.dart';
+import '../motion/motion.dart';
 
 /// Drafting-table palette: a cool grey desk, white sheets, dark wall cuts
 /// and one amber accent. Every screen and painter reads colours from here.
@@ -106,7 +107,12 @@ class Tokens extends ThemeExtension<Tokens> {
       other is Tokens && t >= 0.5 ? other : this;
 }
 
-const fontBody = 'NotoSans';
+/// UI text: Onest, a geometric sans with full Kazakh and Russian Cyrillic.
+const fontBody = 'Onest';
+
+/// Page titles and house names: Lora, a warm serif in the spirit of
+/// architecture and interior editorials; also covers Kazakh Cyrillic.
+const fontDisplay = 'Lora';
 const fontMono = 'PlexMono';
 const bodyFallback = [
   'PingFang SC',
@@ -159,7 +165,14 @@ ThemeData buildTheme(Tokens t) {
       scaffoldBackgroundColor: t.bg,
       canvasColor: t.panel,
       dividerColor: t.line,
-      extensions: [t]);
+      // No ripple: a press is one even tint over the whole control (see
+      // PressTint). The highlight stays clear so it is not drawn twice.
+      splashFactory: PressTint.splashFactory,
+      splashColor: t.ink.withValues(alpha: t.dark ? 0.10 : 0.06),
+      highlightColor: Colors.transparent,
+      extensions: [t],
+      // iOS-style horizontal slide everywhere, with swipe-back.
+      pageTransitionsTheme: motionPageTransitions);
   final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(8), side: BorderSide(color: t.line));
   return base.copyWith(
@@ -179,6 +192,9 @@ ThemeData buildTheme(Tokens t) {
               side: BorderSide(color: t.line))),
       dialogTheme: DialogThemeData(
           backgroundColor: t.panel,
+          // A dialog is a column of text, not a banner: without a cap a
+          // long sentence stretches it across a desktop window.
+          constraints: const BoxConstraints(minWidth: 280, maxWidth: 460),
           surfaceTintColor: Colors.transparent,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),

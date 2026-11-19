@@ -56,8 +56,9 @@ class Seg<T> extends StatelessWidget {
 }
 
 /// Sticky strip of page tabs; the current one sits on a sheet with an
-/// amber underline.
-class TabStrip extends StatelessWidget {
+/// amber underline. When the tabs do not fit, the edge they continue past
+/// fades out, and the chosen tab is brought into view.
+class TabStrip extends StatefulWidget {
   const TabStrip(
       {super.key,
       required this.tabs,
@@ -67,50 +68,127 @@ class TabStrip extends StatelessWidget {
   final String current;
   final ValueChanged<String> onSelect;
   @override
+  State<TabStrip> createState() => _TabStripState();
+}
+
+class _TabStripState extends State<TabStrip> {
+  final _scroll = ScrollController();
+  final _keys = <String, GlobalKey>{};
+  bool _before = false, _after = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_edges);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _edges());
+  }
+
+  @override
+  void didUpdateWidget(TabStrip old) {
+    super.didUpdateWidget(old);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (old.current != widget.current) {
+        final target = _keys[widget.current]?.currentContext;
+        if (target != null)
+          Scrollable.ensureVisible(target,
+              alignment: 0.5, duration: const Duration(milliseconds: 180));
+      }
+      _edges();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _edges() {
+    if (!mounted || !_scroll.hasClients) return;
+    final p = _scroll.position;
+    final before = p.extentBefore > 2, after = p.extentAfter > 2;
+    if (before != _before || after != _after)
+      setState(() {
+        _before = before;
+        _after = after;
+      });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final t = Tokens.of(context);
+    final tabs = widget.tabs, current = widget.current;
+    Widget fade(bool show, Alignment from, Alignment to) => IgnorePointer(
+        child: AnimatedOpacity(
+            opacity: show ? 1 : 0,
+            duration: const Duration(milliseconds: 150),
+            child: Container(
+                width: 28,
+                decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        begin: from,
+                        end: to,
+                        colors: [t.bg, t.bg.withValues(alpha: 0)])))));
     return Container(
         decoration: BoxDecoration(
             color: t.bg, border: Border(bottom: BorderSide(color: t.line))),
         padding: const EdgeInsets.symmetric(vertical: 6),
-        child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(children: [
-              for (final (key, label) in tabs)
-                Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Semantics(
-                        selected: key == current,
-                        button: true,
-                        child: Material(
-                            color: key == current ? t.panel : Colors.transparent,
-                            borderRadius: BorderRadius.circular(6),
-                            child: InkWell(
-                                key: ValueKey('tab-$key'),
-                                borderRadius: BorderRadius.circular(6),
-                                onTap: () => onSelect(key),
-                                child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 8),
-                                    decoration: key == current
-                                        ? BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(6),
-                                            border: Border(
-                                                bottom: BorderSide(
-                                                    color: t.accent,
-                                                    width: 2)))
-                                        : null,
-                                    child: Text(label,
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: key == current
-                                                ? t.ink
-                                                : t.muted,
-                                            fontWeight: key == current
-                                                ? FontWeight.w600
-                                                : FontWeight.w400)))))))
-            ])));
+        child: Stack(children: [
+          SingleChildScrollView(
+              controller: _scroll,
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                for (final (key, label) in tabs)
+                  Padding(
+                      key: _keys.putIfAbsent(key, GlobalKey.new),
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Semantics(
+                          selected: key == current,
+                          button: true,
+                          child: Material(
+                              color:
+                                  key == current ? t.panel : Colors.transparent,
+                              borderRadius: BorderRadius.circular(6),
+                              child: InkWell(
+                                  key: ValueKey('tab-$key'),
+                                  borderRadius: BorderRadius.circular(6),
+                                  onTap: () => widget.onSelect(key),
+                                  child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 8),
+                                      decoration: key == current
+                                          ? BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              border: Border(
+                                                  bottom: BorderSide(
+                                                      color: t.accent,
+                                                      width: 2)))
+                                          : null,
+                                      child: Text(label,
+                                          style: TextStyle(
+                                              fontSize: 14,
+                                              color: key == current
+                                                  ? t.ink
+                                                  : t.muted,
+                                              fontWeight: key == current
+                                                  ? FontWeight.w600
+                                                  : FontWeight.w400)))))))
+              ])),
+          Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: fade(
+                  _before, Alignment.centerLeft, Alignment.centerRight)),
+          Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child:
+                  fade(_after, Alignment.centerRight, Alignment.centerLeft)),
+        ]));
   }
 }
 
@@ -459,8 +537,7 @@ class PlainTable extends StatelessWidget {
     return LayoutBuilder(builder: (context, c) {
       // Text columns wrap at under half the width so two fit a phone.
       if (c.maxWidth.isFinite) wrap = (c.maxWidth * 0.42).clamp(110.0, 220.0);
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
+      return _SidewaysHint(
         child: ConstrainedBox(
         constraints: BoxConstraints(
             minWidth: c.maxWidth.isFinite ? c.maxWidth : 0),
@@ -543,6 +620,7 @@ class ShareBars extends StatelessWidget {
     for (final i in items) {
       final p = TextPainter(
           text: TextSpan(text: i.$3, style: valueStyle),
+          textScaler: MediaQuery.textScalerOf(context),
           textDirection: TextDirection.ltr)
         ..layout();
       reserve = math.max(reserve, p.width + 10);
@@ -580,9 +658,46 @@ class ShareBars extends StatelessWidget {
                                                 const BorderRadius.horizontal(
                                                     right: Radius.circular(4)))),
                                     const SizedBox(width: 6),
-                                    Text(text, style: valueStyle),
+                                    // Flexible: a value measured a fraction
+                                    // of a pixel wider than reserved (other
+                                    // glyphs, larger text) must not overflow
+                                    // the row.
+                                    Flexible(
+                                        child: Text(text,
+                                            maxLines: 1,
+                                            softWrap: false,
+                                            overflow: TextOverflow.visible,
+                                            style: valueStyle)),
                                   ]))),
                     ])))
         ]));
   }
+}
+
+/// A table wider than the page scrolls sideways; a bar under it says so
+/// while there is more to the side (nothing shows when it all fits).
+class _SidewaysHint extends StatefulWidget {
+  const _SidewaysHint({required this.child});
+  final Widget child;
+  @override
+  State<_SidewaysHint> createState() => _SidewaysHintState();
+}
+
+class _SidewaysHintState extends State<_SidewaysHint> {
+  final controller = ScrollController();
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scrollbar(
+      controller: controller,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+          controller: controller,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.only(bottom: 6),
+          child: widget.child));
 }

@@ -10,9 +10,9 @@ import 'package:yusal/render3d/scene_model.dart';
 
 void main() {
   var n = 0;
-  HouseDocument build() => createKazakhTemplate(
-      '2026-10-14T00:00:00Z', () => 'kz${n++}',
-      names: const {'b1': '卧室 1', 'b2': '卧室 2', 'cor': '走廊'});
+  HouseDocument build() =>
+      createKazakhTemplate('2026-10-14T00:00:00Z', () => 'kz${n++}',
+          names: const {'b1': '卧室 1', 'b2': '卧室 2', 'cor': '走廊'});
 
   test('the drafting-page house is a valid, editable version 3 design', () {
     final doc = build();
@@ -49,13 +49,14 @@ void main() {
     expect(takeoff.mainLength / 1000, inInclusiveRange(50, 58));
     expect(takeoff.concrete / 1e9, inInclusiveRange(17, 22));
     final issues = constructionChecks(doc, derived);
-    expect(issues.map((i) => i.code), containsAll(['C01', 'C02', 'C03', 'C05']));
+    expect(
+        issues.map((i) => i.code), containsAll(['C01', 'C02', 'C03', 'C05']));
     expect(issues.map((i) => i.code), contains('C07'),
         reason: 'bedroom 1 opens onto the living room');
-    expect(runChecks(doc, derived).where((r) => r.level == 'important'),
-        isEmpty);
-    final scene = buildScene(doc, derived,
-        const SceneOptions(foundation: true), (r) => r.name);
+    expect(
+        runChecks(doc, derived).where((r) => r.level == 'important'), isEmpty);
+    final scene = buildScene(
+        doc, derived, const SceneOptions(foundation: true), (r) => r.name);
     expect(scene.faces.length, greaterThan(500));
     expect(scene.lines, isNotEmpty);
     expect(scene.colliders, isNotEmpty);

@@ -16,8 +16,10 @@ void main() {
   String next() => 'ol${n++}';
   const stamp = '2026-10-19T00:00:00Z';
   HouseDocument run(HouseDocument doc, String kind, Map<String, dynamic> args) {
-    final result = executeCommand(extractDesignState(doc),
-        DesignCommand(kind, args), CommandContext(newId: next, now: () => stamp));
+    final result = executeCommand(
+        extractDesignState(doc),
+        DesignCommand(kind, args),
+        CommandContext(newId: next, now: () => stamp));
     expect(result, isA<Applied>(),
         reason: result is Rejected ? result.message : kind);
     return composeDocument(doc.meta, (result as Applied).newState);
@@ -39,8 +41,10 @@ void main() {
   }
 
   String? reject(HouseDocument doc, String kind, Map<String, dynamic> args) {
-    final result = executeCommand(extractDesignState(doc),
-        DesignCommand(kind, args), CommandContext(newId: next, now: () => stamp));
+    final result = executeCommand(
+        extractDesignState(doc),
+        DesignCommand(kind, args),
+        CommandContext(newId: next, now: () => stamp));
     return result is Rejected ? result.message : null;
   }
 
@@ -48,14 +52,16 @@ void main() {
     expect(validateHouse(doc), isEmpty);
     final loaded = loadHouse(utf8.encode(encodeHouse(doc)));
     expect(loaded.isSuccess, true,
-        reason: loaded.failure?.errors.map((e) => '${e.path} ${e.message}').join('; '));
+        reason: loaded.failure?.errors
+            .map((e) => '${e.path} ${e.message}')
+            .join('; '));
     expect(loaded.document, doc);
     return loaded.document!;
   }
 
   test('cutting a corner makes an L-shaped house with walls along the cut', () {
-    var doc = run(box(), 'CutOutline',
-        {'corner': 'tr', 'width': 4000, 'depth': 3000});
+    var doc = run(
+        box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000});
     expect(doc.schemaVersion, 4);
     roundTrip(doc);
     final base = deriveHouse(doc).floors.first.base;
@@ -93,7 +99,8 @@ void main() {
 
   test('quantities, heat, cost and 3D follow the outline', () {
     final full = box();
-    final cut = run(full, 'CutOutline', {'corner': 'bl', 'width': 3000, 'depth': 4000});
+    final cut =
+        run(full, 'CutOutline', {'corner': 'bl', 'width': 3000, 'depth': 4000});
     final df = deriveHouse(full), dc = deriveHouse(cut);
     expect(wallTakeoff(cut, dc).exteriorGross,
         closeTo(wallTakeoff(full, df).exteriorGross, 1));
@@ -103,25 +110,36 @@ void main() {
     // Ground slab pieces stay inside the L.
     for (final e in dc.scene3d.where((e) => e.kind == 'Slab')) {
       final xs = e.vertices.map((v) => v.x), ys = e.vertices.map((v) => v.y);
-      final cx = (xs.reduce((a, b) => a < b ? a : b) + xs.reduce((a, b) => a > b ? a : b)) / 2,
-          cy = (ys.reduce((a, b) => a < b ? a : b) + ys.reduce((a, b) => a > b ? a : b)) / 2;
+      final cx = (xs.reduce((a, b) => a < b ? a : b) +
+                  xs.reduce((a, b) => a > b ? a : b)) /
+              2,
+          cy = (ys.reduce((a, b) => a < b ? a : b) +
+                  ys.reduce((a, b) => a > b ? a : b)) /
+              2;
       expect(cx < 3000 && cy < 4000, false, reason: 'slab at $cx, $cy');
     }
     final flat = run(cut, 'SetRoof', {
       'roof': {'type': 'flat', 'parapetHeight': 900}
     });
-    final parapets = deriveHouse(flat).scene3d.where((e) => e.kind == 'Parapet');
+    final parapets =
+        deriveHouse(flat).scene3d.where((e) => e.kind == 'Parapet');
     expect(parapets, hasLength(6));
-    expect(() => buildScene(flat, deriveHouse(flat), const SceneOptions(),
-        (r) => r.name), returnsNormally);
-    expect(foundationTakeoff(cut, dc).mainLength, closeTo(36000 - 4 * 240, 2000));
+    expect(
+        () => buildScene(
+            flat, deriveHouse(flat), const SceneOptions(), (r) => r.name),
+        returnsNormally);
+    expect(
+        foundationTakeoff(cut, dc).mainLength, closeTo(36000 - 4 * 240, 2000));
   });
 
   test('windows can go on the new outside wall and face outdoors', () {
-    var doc = run(box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000});
+    var doc = run(
+        box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000});
     final base = deriveHouse(doc).floors.first.base;
-    final wall = base.wallSegments.firstWhere(
-        (s) => s.kind == 'exterior' && s.axis.dir == AxisDir.H && s.axis.kind != 'boundary');
+    final wall = base.wallSegments.firstWhere((s) =>
+        s.kind == 'exterior' &&
+        s.axis.dir == AxisDir.H &&
+        s.axis.kind != 'boundary');
     doc = run(doc, 'AddOpening', {
       'floorId': doc.floors.first.id,
       'kind': OpeningKind.window,
@@ -146,18 +164,26 @@ void main() {
       'tapT': 8500,
       'centerAtTap': true,
     });
-    expect(reject(doc, 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000}),
+    expect(
+        reject(
+            doc, 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000}),
         contains('门窗'));
     // The other corner is fine.
     run(doc, 'CutOutline', {'corner': 'bl', 'width': 4000, 'depth': 3000});
-    expect(reject(doc, 'CutOutline', {'corner': 'tr', 'width': 9000, 'depth': 3000}),
+    expect(
+        reject(
+            doc, 'CutOutline', {'corner': 'tr', 'width': 9000, 'depth': 3000}),
         isNotNull);
-    expect(reject(doc, 'CutOutline', {'corner': 'xx', 'width': 2000, 'depth': 2000}),
+    expect(
+        reject(
+            doc, 'CutOutline', {'corner': 'xx', 'width': 2000, 'depth': 2000}),
         isNotNull);
   });
 
-  test('rooms cannot be drawn in the cut-out and its edge cannot be deleted', () {
-    final doc = run(box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000});
+  test('rooms cannot be drawn in the cut-out and its edge cannot be deleted',
+      () {
+    final doc = run(
+        box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000});
     final floorId = doc.floors.first.id;
     expect(
         reject(doc, 'CarveRoom', {
@@ -174,7 +200,8 @@ void main() {
   });
 
   test('painting and splitting stay out of the cut-out', () {
-    var doc = run(box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000});
+    var doc = run(
+        box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000});
     final floorId = doc.floors.first.id;
     final base = deriveHouse(doc).floors.first.base;
     expect(
@@ -185,10 +212,8 @@ void main() {
         }),
         contains('缺角'));
     // Free the left part, then split that undivided space next to the cut.
-    doc = run(doc, 'EraseCells', {
-      'floorId': floorId,
-      'cells': base.roomGeometry.single.cells.toList()
-    });
+    doc = run(doc, 'EraseCells',
+        {'floorId': floorId, 'cells': base.roomGeometry.single.cells.toList()});
     expect(doc.floors.first.rooms, isEmpty);
     doc = run(doc, 'SplitSpace', {
       'floorId': floorId,
@@ -203,18 +228,25 @@ void main() {
       expect(r.cells.any(after.outside.contains), false);
   });
 
-  test('one floor only gives a terrace; restoring brings the rectangle back', () {
+  test('one floor only gives a terrace; restoring brings the rectangle back',
+      () {
     var doc = box(floors: 2);
     final upper = doc.floors.last.id;
-    doc = run(doc, 'CutOutline',
-        {'corner': 'br', 'width': 4000, 'depth': 3000, 'floorIds': [upper]});
+    doc = run(doc, 'CutOutline', {
+      'corner': 'br',
+      'width': 4000,
+      'depth': 3000,
+      'floorIds': [upper]
+    });
     final d = deriveHouse(doc);
     expect(d.floors.first.base.outside, isEmpty);
     expect(d.floors.last.base.outside, isNotEmpty);
     // The ground floor keeps its full roof slab under the terrace.
     expect(footprintArea(d.floors.first.base), 80e6);
     roundTrip(doc);
-    doc = run(doc, 'RestoreOutline', {'floorIds': [upper]});
+    doc = run(doc, 'RestoreOutline', {
+      'floorIds': [upper]
+    });
     expect(doc.floors.last.outside, isEmpty);
     expect(doc.schemaVersion, lessThan(4));
     expect(deriveHouse(doc).floors.last.base.unassignedCells, isNotEmpty);
@@ -222,7 +254,8 @@ void main() {
   });
 
   test('independent walls keep working beside a cut-out', () {
-    var doc = run(box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000});
+    var doc = run(
+        box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000});
     final floorId = doc.floors.first.id;
     doc = run(doc, 'AddDrawnWall',
         {'floorId': floorId, 'x0': 3000, 'y0': 0, 'x1': 3000, 'y1': 8000});
@@ -252,7 +285,8 @@ void main() {
     final doc = createKazakhTemplate(stamp, next);
     final result = executeCommand(
         extractDesignState(doc),
-        DesignCommand('CutOutline', {'corner': 'tl', 'width': 2000, 'depth': 2000}),
+        DesignCommand(
+            'CutOutline', {'corner': 'tl', 'width': 2000, 'depth': 2000}),
         CommandContext(newId: next, now: () => stamp));
     // Windows sit on that corner of the template: the cut is refused, the
     // design stays as it was.

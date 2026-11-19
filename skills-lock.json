@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "skills": {
+    "airbnb-ui-skills": {
+      "source": "ihlamury/design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/airbnb/SKILL.md",
+      "computedHash": "859ec22b1c16cf8f03ca4902bfc37a7cab33ba2d0136e8acd4a4653a0c07843d"
+    },
+    "apple-ui-skills": {
+      "source": "ihlamury/design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/apple/SKILL.md",
+      "computedHash": "cd8ebe89688d7fb36c838618d1a1847d645a721b231d2a82c746d4d22003b77c"
+    },
+    "linear-ui-skills": {
+      "source": "ihlamury/design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/linear/SKILL.md",
+      "computedHash": "90c9a6ba781cd83c22943718259ef0bd8704c9de0e0a3e42ed2914322bc88c05"
+    },
+    "mobbin-ui-skills": {
+      "source": "ihlamury/design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/mobbin/SKILL.md",
+      "computedHash": "33ab5591d7d9cbc5efe4cfb0022e36905b8ad4ce1b26107bf054cd71e469e790"
+    },
+    "notion-ui-skills": {
+      "source": "ihlamury/design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/notion/SKILL.md",
+      "computedHash": "c5fd708f48ca93c87235621da3f28b49058365e9a36db7ee22b58bfdb27088f4"
+    },
+    "stripe-ui-skills": {
+      "source": "ihlamury/design-skills",
+      "sourceType": "github",
+      "skillPath": "skills/stripe/SKILL.md",
+      "computedHash": "8e65e006f937b7b00aabb57958a68b553acfa65b1d6f8d645b78ae7d44aab3aa"
+    }
+  }
+}

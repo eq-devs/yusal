@@ -16,6 +16,10 @@ const socketsPerRoom = {
   RoomType.kitchen: 4,
   RoomType.dining: 3,
   RoomType.bathroom: 1,
+  RoomType.hall: 2,
+  RoomType.corridor: 1,
+  RoomType.storage: 1,
+  RoomType.boiler: 2,
   RoomType.custom: 2,
 };
 

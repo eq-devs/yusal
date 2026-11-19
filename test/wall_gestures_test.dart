@@ -6,6 +6,7 @@ import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/features/house_editor.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/voice/screen.dart';
 import 'storage_test.dart' show MemoryFiles;
 
 void main() {
@@ -82,6 +83,17 @@ void main() {
           )
     ];
   }
+
+  testWidgets('the tool in hand is one mode, told to the assistant, and Esc goes back to browsing',
+      (t) async {
+    await mount(t, initial());
+    expect(VoiceScreens.current?.summary, '');
+    await wallTool(t);
+    expect(VoiceScreens.current?.summary, 'tool: drawWall');
+    await t.sendKeyEvent(LogicalKeyboardKey.escape);
+    await t.pumpAndSettle();
+    expect(VoiceScreens.current?.summary, '');
+  });
 
   testWidgets('a wall dropped near another wall joins it and says so',
       (t) async {

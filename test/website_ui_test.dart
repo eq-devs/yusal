@@ -10,6 +10,7 @@ import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/render3d/scene_view.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
+import 'tabs.dart';
 
 void main() {
   var sequence = 0;
@@ -42,7 +43,8 @@ void main() {
     return (store: store, id: id);
   }
 
-  Future<HouseDocument> saved(WidgetTester t, ProjectStore store, String id) async {
+  Future<HouseDocument> saved(
+      WidgetTester t, ProjectStore store, String id) async {
     await t.pump(const Duration(milliseconds: 1600));
     await t.pumpAndSettle();
     return store.openProject(id);
@@ -67,7 +69,8 @@ void main() {
         'boil': '锅炉房'
       });
 
-  testWidgets('a tapped room shows its card; drawing area and note are edited there',
+  testWidgets(
+      'a tapped room shows its card; drawing area and note are edited there',
       (t) async {
     final s = await mount(t, plain());
     await t.tapAt(at(t, 3000, 5000));
@@ -93,7 +96,8 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('furniture is placed from the palette, dragged, turned and deleted',
+  testWidgets(
+      'furniture is placed from the palette, dragged, turned and deleted',
       (t) async {
     final s = await mount(t, plain());
     await t.tap(find.byTooltip('家具'));
@@ -109,11 +113,14 @@ void main() {
     // The selected piece follows a drag in browse mode.
     await t.tap(find.text('结束'));
     await t.pumpAndSettle();
-    final g = await t.startGesture(at(t, sofa.x + sofa.width / 2, sofa.y + sofa.depth / 2));
+    final g = await t
+        .startGesture(at(t, sofa.x + sofa.width / 2, sofa.y + sofa.depth / 2));
     await t.pump();
-    await g.moveTo(at(t, sofa.x + sofa.width / 2 + 1000, sofa.y + sofa.depth / 2));
+    await g
+        .moveTo(at(t, sofa.x + sofa.width / 2 + 1000, sofa.y + sofa.depth / 2));
     await t.pump();
-    await g.moveTo(at(t, sofa.x + sofa.width / 2 + 2000, sofa.y + sofa.depth / 2));
+    await g
+        .moveTo(at(t, sofa.x + sofa.width / 2 + 2000, sofa.y + sofa.depth / 2));
     await t.pump();
     await g.up();
     await t.pumpAndSettle();
@@ -123,14 +130,15 @@ void main() {
     await t.pumpAndSettle();
     doc = await saved(t, s.store, s.id);
     expect(doc.extras.furniture.single.width, sofa.depth);
-    await t.tap(find.text('删除'));
+    await t.tap(find.byKey(const ValueKey('selection-delete')));
     await t.pumpAndSettle();
     doc = await saved(t, s.store, s.id);
     expect(doc.extras.furniture, isEmpty);
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('the tape measure reads the distance between two taps', (t) async {
+  testWidgets('the tape measure reads the distance between two taps',
+      (t) async {
     await mount(t, plain());
     await t.tap(find.text('测距'));
     await t.pumpAndSettle();
@@ -159,7 +167,7 @@ void main() {
   testWidgets('an issue is located on the plan and user issues are kept',
       (t) async {
     final s = await mount(t, village());
-    await t.tap(find.byKey(const ValueKey('tab-iss')));
+    await openTab(t, 'iss');
     await t.pumpAndSettle();
     expect(find.text('隔墙下面没有基础'), findsOneWidget);
     await t.tap(find.text('添加问题'));
@@ -181,7 +189,7 @@ void main() {
   testWidgets('foundation parameters and the window schedule are editable',
       (t) async {
     final s = await mount(t, village());
-    await t.tap(find.byKey(const ValueKey('tab-det')));
+    await openTab(t, 'det');
     await t.pumpAndSettle();
     await t.tap(find.text('450').first);
     await t.pumpAndSettle();
@@ -190,7 +198,7 @@ void main() {
     await t.pumpAndSettle();
     var doc = await saved(t, s.store, s.id);
     expect(doc.extras.foundation.width, 500);
-    await t.tap(find.byKey(const ValueKey('tab-qty')));
+    await openTab(t, 'qty');
     await t.pumpAndSettle();
     await t.tap(find.text('1600 × 1400'));
     await t.pumpAndSettle();
@@ -211,7 +219,7 @@ void main() {
   testWidgets('the walk-through moves with W and walls stop the walker',
       (t) async {
     await mount(t, village());
-    await t.tap(find.byKey(const ValueKey('tab-walk')));
+    await openTab(t, 'walk');
     await t.pumpAndSettle();
     final state = t.state<SceneViewState>(find.byType(SceneView));
     final z0 = state.wz;

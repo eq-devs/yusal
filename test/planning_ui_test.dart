@@ -9,6 +9,7 @@ import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/render2d/site_plan_painter.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
+import 'tabs.dart';
 
 void main() {
   var sequence = 0;
@@ -51,7 +52,7 @@ void main() {
   }
 
   Future<void> page(WidgetTester t, String key) async {
-    await t.tap(find.byKey(ValueKey('tab-$key')));
+    await openTab(t, key);
     await t.pumpAndSettle();
   }
 
@@ -121,8 +122,10 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('确定'));
     await t.pumpAndSettle();
-    expect(find.byWidgetPredicate(
-        (w) => w is CustomPaint && w.painter is SitePlanPainter), findsOneWidget);
+    expect(
+        find.byWidgetPredicate(
+            (w) => w is CustomPaint && w.painter is SitePlanPainter),
+        findsOneWidget);
     await t.tap(find.text('添加设施'));
     await t.pumpAndSettle();
     await t.tap(find.text('牲畜棚'));

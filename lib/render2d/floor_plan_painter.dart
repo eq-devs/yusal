@@ -17,8 +17,53 @@ const roomColors = {
   RoomType.kitchen: Color(0xfff2d499),
   RoomType.bathroom: Color(0xffaacae0),
   RoomType.dining: Color(0xffdbc3c7),
+  RoomType.hall: Color(0xffd9d2bd),
+  RoomType.corridor: Color(0xffd6d6cc),
+  RoomType.storage: Color(0xffcfc4b4),
+  RoomType.boiler: Color(0xffe3b7a0),
   RoomType.custom: Color(0xffc9c6dc)
 };
+
+/// Text the plan has laid out recently. A plan is repainted on every edit
+/// and most of its labels (room names, areas, dimension figures) are the
+/// same from one frame to the next; shaping them again was most of the cost
+/// of a repaint. Keyed by everything that decides the layout, so a hit is
+/// exactly what a fresh layout would give.
+abstract final class _PlanText {
+  static const _capacity = 600;
+  static final _cache =
+      <(String, TextStyle, double?, int?, TextAlign), TextPainter>{};
+
+  static var _listening = false;
+
+  static void _clear() {
+    for (final p in _cache.values) p.dispose();
+    _cache.clear();
+  }
+
+  static TextPainter laidOut(
+      String value, TextStyle style, double? maxWidth, int? maxLines,
+      {TextAlign align = TextAlign.center}) {
+    if (!_listening) {
+      // A font that arrives later changes every measure taken before it.
+      _listening = true;
+      PaintingBinding.instance.systemFonts.addListener(_clear);
+    }
+    final key = (value, style, maxWidth, maxLines, align);
+    final hit = _cache[key];
+    if (hit != null) return hit;
+    // Zooming makes new sizes every frame: start over rather than track
+    // which of them is oldest.
+    if (_cache.length >= _capacity) _clear();
+    return _cache[key] = TextPainter(
+        text: TextSpan(text: value, style: style),
+        textDirection: TextDirection.ltr,
+        maxLines: maxLines,
+        ellipsis: maxWidth == null ? null : '…',
+        textAlign: align)
+      ..layout(maxWidth: maxWidth ?? double.infinity);
+  }
+}
 
 class FloorPlanPainter extends CustomPainter {
   FloorPlanPainter(this.base, this.labels, this.colors,
@@ -39,6 +84,7 @@ class FloorPlanPainter extends CustomPainter {
       this.draftLabel,
       this.draftConnected = false,
       this.draftEnd,
+      this.guides = const [],
       this.coach,
       this.viewport,
       this.viewportInsets = EdgeInsets.zero,
@@ -47,7 +93,11 @@ class FloorPlanPainter extends CustomPainter {
       this.bearingMin = 240,
       this.furniture = const [],
       this.selectedFurniture,
+      this.selectedDimension,
       this.selectedRoom,
+      this.below,
+      this.belowOpenings = const [],
+      this.belowLabel,
       this.showFurniture = true,
       this.showDimensions = true,
       this.foundation,
@@ -63,11 +113,16 @@ class FloorPlanPainter extends CustomPainter {
   final FloorBase base;
   final PlanRect? focus, draft, wallHandle, editableWall;
   final Offset? wallSeed, draftEnd;
+
+  /// Alignment guides (world mm), drawn as dashed lines: pairs of points.
+  final List<(Offset, Offset)> guides;
   final bool draftConnected;
 
   /// First-use guide: a dashed arrow from a wall attachment into the house.
   final (Offset, Offset)? coach;
   final List<Offset> wallAttachments;
+  /// The dimension figure being edited, drawn in the accent colour.
+  final DimensionSpan? selectedDimension;
   final double handleScale;
   final String? draftLabel;
   final bool draftIsLine, draftInvalid, resizeHandles, showGridDimensions;
@@ -109,17 +164,23 @@ class FloorPlanPainter extends CustomPainter {
   /// Room names, furniture names and the north arrow; off for thumbnails.
   final bool showLabels;
 
+  /// Room left around the plan when the caller gives no insets. The
+  /// overall dimension chains sit 42 px out with their figures beyond, so
+  /// with dimensions shown each side needs about 60 px or the outer
+  /// figures are cut off at the edge.
+  double get _fitMargin => viewportInsets != EdgeInsets.zero
+      ? 48
+      : showDimensions && !showGridDimensions
+          ? 128
+          : 96;
+
   double scale(Size size) =>
       viewport?.scale ??
       math
           .min(
-              (size.width -
-                      viewportInsets.horizontal -
-                      (viewportInsets == EdgeInsets.zero ? 96 : 48)) /
+              (size.width - viewportInsets.horizontal - _fitMargin) /
                   base.axes.v.last.pos,
-              (size.height -
-                      viewportInsets.vertical -
-                      (viewportInsets == EdgeInsets.zero ? 96 : 48)) /
+              (size.height - viewportInsets.vertical - _fitMargin) /
                   base.axes.h.last.pos)
           .clamp(0.001, 0.4);
   Offset origin(Size size) =>
@@ -148,6 +209,41 @@ class FloorPlanPainter extends CustomPainter {
   /// Screen pixels at the current zoom, for strokes and text that keep
   /// their on-screen size.
   double px(double value) => value / handleScale;
+
+  /// The floor underneath, drawn faintly so the walls of this one can be
+  /// put over the walls that carry them, and the holes its stairs come up
+  /// through, which must stay clear.
+  final FloorBase? below;
+  final List<PlanRect> belowOpenings;
+  final String? belowLabel;
+
+  void drawBelow(Canvas canvas, Size size) {
+    final t = tokens;
+    if (below != null) {
+      final ghost = Paint()..color = Tokens.mix(t.ink, 0.22, t.panel);
+      for (final w in wallsOf(below!, FoundationSpec(bearingMin: bearingMin))) {
+        if (w.role == WallRole.temporary) continue;
+        // Inner walls only: the outer ones lie under this floor's own.
+        if (w.segment.axis.kind == 'boundary') continue;
+        canvas.drawRect(rectangle(w.rect, size), ghost);
+      }
+    }
+    for (final hole in belowOpenings) {
+      final r = rectangle(hole, size);
+      canvas.drawRect(r, Paint()..color = t.panel);
+      final line = Paint()
+        ..color = t.accent
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = px(1.4);
+      dashedRect(canvas, r, line, dash: 6, gap: 4);
+      canvas.drawLine(r.topLeft, r.bottomRight, line..strokeWidth = px(0.8));
+      canvas.drawLine(r.topRight, r.bottomLeft, line);
+      // Low in the hole, clear of the name of the room around it.
+      if (belowLabel != null && r.width > 40)
+        label(canvas, belowLabel!,
+            Offset(r.center.dx, r.bottom - math.min(14, r.height / 4)));
+    }
+  }
 
   void dashedLine(Canvas canvas, Offset a, Offset b, Paint paint,
       {double dash = 5, double gap = 4}) {
@@ -186,13 +282,8 @@ class FloorPlanPainter extends CustomPainter {
             fontSize: px(font),
             height: 1.25,
             fontWeight: weight);
-    final t = TextPainter(
-        text: TextSpan(text: value, style: style),
-        textDirection: TextDirection.ltr,
-        maxLines: maxWidth == null ? null : maxLines ?? 3,
-        ellipsis: maxWidth == null ? null : '…',
-        textAlign: TextAlign.center)
-      ..layout(maxWidth: maxWidth ?? double.infinity);
+    final t = _PlanText.laidOut(value, style, maxWidth,
+        maxWidth == null ? null : maxLines ?? 3);
     canvas.save();
     canvas.translate(at.dx, at.dy);
     canvas.rotate(angle);
@@ -242,6 +333,7 @@ class FloorPlanPainter extends CustomPainter {
               (entry.key == null ? Tokens.mix(t.line, 0.35, t.panel) : t.room);
       canvas.drawPath(entry.value, paint);
     }
+    drawBelow(canvas, size);
     if (showGridDimensions)
       for (final entry in base.owners.entries) {
         final c = entry.key;
@@ -456,7 +548,7 @@ class FloorPlanPainter extends CustomPainter {
       final area = '${dec((room.clearArea / 1e6).toStringAsFixed(1))} $unitM2';
       final net = largest == null
           ? ''
-          : '${tr('净', 'таза')} ${m2dp(largest.right - largest.left)} × ${m2dp(largest.top - largest.bottom)} $unitM';
+          : '${tr3('净', 'таза', 'в свету')} ${m2dp(largest.right - largest.left)} × ${m2dp(largest.top - largest.bottom)} $unitM';
       // Long names shrink to one line before they would break mid-word.
       final room_ = math.max(px(24), available - px(8));
       final nameWidth = textWidth(name, px(14), FontWeight.w700);
@@ -483,11 +575,16 @@ class FloorPlanPainter extends CustomPainter {
       final anchor =
           labelSpot(room, largest, size, Size(boxWidth, lineGap * 2 * lines));
       var y = anchor.dy - lineGap * (lines - 1);
+      // One alphabetic word that still does not fit is cut with an ellipsis
+      // on one line ("Спаль…"); wrapping it would break it mid-word. Names
+      // of several words, and Chinese, may take two lines.
+      final oneWord =
+          !name.contains(' ') && !RegExp(r'[\u4e00-\u9fff]').hasMatch(name);
       label(canvas, name, Offset(anchor.dx, y),
           font: nameFont,
           weight: FontWeight.w700,
           maxWidth: room_,
-          maxLines: 2);
+          maxLines: oneWord ? 1 : 2);
       if (showArea) {
         y += lineGap * 2;
         label(canvas, area, Offset(anchor.dx, y),
@@ -624,7 +721,7 @@ class FloorPlanPainter extends CustomPainter {
           center.dy - vector.dy * px(7) - normal.dy * px(5))
       ..close();
     canvas.drawPath(arrow, Paint()..color = t.wall);
-    label(canvas, tr('北', 'С'), center + vector * px(20),
+    label(canvas, tr3('北', 'С', 'С'), center + vector * px(20),
         font: 11, weight: FontWeight.w700);
   }
 
@@ -695,6 +792,7 @@ class FloorPlanPainter extends CustomPainter {
             ..style = PaintingStyle.stroke
             ..strokeWidth = px(1.2));
       tp.paint(canvas, box.center - Offset(tp.width / 2, tp.height / 2));
+      tp.dispose();
     }
 
     if (coach != null) {
@@ -734,13 +832,25 @@ class FloorPlanPainter extends CustomPainter {
             canvas,
             draftLabel ??
                 (draftIsLine
-                    ? tr('松手分房', 'Жіберсеңіз бөлінеді')
+                    ? tr3('松手分房', 'Жіберсеңіз бөлінеді', 'Отпустите, чтобы разделить')
                     : '${dec(((draft!.right - draft!.left) / 1000).toStringAsFixed(1))} × '
                         '${dec(((draft!.top - draft!.bottom) / 1000).toStringAsFixed(1))} $unitM'),
             Offset(rect.center.dx, rect.top - 18),
             font: 13,
             color: tone);
       }
+    }
+    for (final (ga, gb) in guides) {
+      final a = point(ga.dx, ga.dy, size), b = point(gb.dx, gb.dy, size);
+      final length = (b - a).distance;
+      if (length < 1) continue;
+      final dir = (b - a) / length;
+      final pen = Paint()
+        ..color = t.accent.withValues(alpha: 0.85)
+        ..strokeWidth = px(1.5);
+      final dash = px(6), gap = px(5);
+      for (var d = 0.0; d < length; d += dash + gap)
+        canvas.drawLine(a + dir * d, a + dir * math.min(length, d + dash), pen);
     }
     if (draftEnd != null) {
       final end = point(draftEnd!.dx, draftEnd!.dy, size);
@@ -881,21 +991,20 @@ class FloorPlanPainter extends CustomPainter {
   }
 
   double textWidth(String text, double fontSize, FontWeight weight,
-      {bool monospace = false}) {
-    final tp = TextPainter(
-        text: TextSpan(
-            text: text,
-            style: monospace
-                ? mono(size: fontSize, weight: weight)
-                : TextStyle(
-                    fontFamily: fontBody,
-                    fontFamilyFallback: bodyFallback,
-                    fontSize: fontSize,
-                    fontWeight: weight)),
-        textDirection: TextDirection.ltr)
-      ..layout();
-    return tp.width;
-  }
+          {bool monospace = false}) =>
+      _PlanText.laidOut(
+              text,
+              monospace
+                  ? mono(size: fontSize, weight: weight)
+                  : TextStyle(
+                      fontFamily: fontBody,
+                      fontFamilyFallback: bodyFallback,
+                      fontSize: fontSize,
+                      fontWeight: weight),
+              null,
+              null,
+              align: TextAlign.start)
+          .width;
 
   /// Rugs big enough to carry their name along the lower edge (like the
   /// drafting page, above 12 m²).
@@ -961,18 +1070,17 @@ class FloorPlanPainter extends CustomPainter {
     return best;
   }
 
-  /// Chains of wall-face dimensions on four sides plus the overall sizes,
-  /// in millimetres, like a construction drawing.
-  void drawDimensions(Canvas canvas, Size size, List<WallInfo> walls,
-      double width, double depth) {
-    final t = tokens, pen = Paint()
-      ..color = t.dim
-      ..strokeWidth = math.max(0.6, px(0.9));
+  /// Every figure of the dimension chains with where it is drawn, so a
+  /// tap can find the figure under it. Same geometry as [drawDimensions].
+  List<DimensionSpan> dimensionSpans(Size size, {List<WallInfo>? walls}) {
+    final width = base.axes.v.last.pos.toDouble(),
+        depth = base.axes.h.last.pos.toDouble();
+    walls ??= wallsOf(base, FoundationSpec(bearingMin: bearingMin));
     const eps = 1.0;
     List<double> faces(bool vertical, bool Function(PlanRect) touches,
         double extent) {
       final out = <double>{0, extent};
-      for (final w in walls.where((w) =>
+      for (final w in walls!.where((w) =>
           w.role != WallRole.temporary &&
           (vertical ? !w.horizontal : w.horizontal) &&
           touches(w.rect))) {
@@ -985,9 +1093,9 @@ class FloorPlanPainter extends CustomPainter {
       return out.where((v) => v >= -eps && v <= extent + eps).toList()..sort();
     }
 
-    void chain(List<double> stops, bool horizontal, double offset, {
-      required bool before,
-    }) {
+    final spans = <DimensionSpan>[];
+    void chain(List<double> stops, bool horizontal, double offset, String side,
+        {required bool before, bool overall = false}) {
       // [offset] in screen pixels from the outer face.
       for (var i = 0; i < stops.length - 1; i++) {
         final a = stops[i], b = stops[i + 1];
@@ -1002,44 +1110,80 @@ class FloorPlanPainter extends CustomPainter {
             ? Offset(0, before ? -px(offset) : px(offset))
             : Offset(before ? -px(offset) : px(offset), 0);
         final q0 = p0 + shift, q1 = p1 + shift;
-        canvas.drawLine(q0, q1, pen);
-        final tick = px(4);
-        for (final q in [q0, q1]) {
-          canvas.drawLine(q + Offset(-tick, tick), q + Offset(tick, -tick), pen);
-          canvas.drawLine(
-              horizontal ? q + Offset(0, -tick * 1.4) : q + Offset(-tick * 1.4, 0),
-              horizontal ? q + Offset(0, tick * 1.4) : q + Offset(tick * 1.4, 0),
-              pen);
-        }
         final lengthPx = (q1 - q0).distance;
         final text = '${(b - a).round()}';
-        if (lengthPx < px(text.length * 6.0 + 4)) continue;
         final mid = (q0 + q1) / 2;
-        label(
-            canvas,
-            text,
-            horizontal
-                ? mid + Offset(0, -px(7))
-                : mid + Offset(-px(7), 0),
-            font: 10,
-            color: t.dim,
-            weight: FontWeight.w400,
-            monospace: true,
-            halo: t.panel.withValues(alpha: 0.85),
-            angle: horizontal ? 0 : -math.pi / 2);
+        spans.add(DimensionSpan(
+            a: a,
+            b: b,
+            horizontal: horizontal,
+            side: side,
+            overall: overall,
+            from: q0,
+            to: q1,
+            labelled: lengthPx >= px(text.length * 6.0 + 4),
+            label: horizontal ? mid + Offset(0, -px(7)) : mid + Offset(-px(7), 0)));
       }
     }
 
-    final top = faces(true, (r) => r.top >= depth - 600, width),
-        bottom = faces(true, (r) => r.bottom <= 600, width),
-        left = faces(false, (r) => r.left <= 600, depth),
-        right = faces(false, (r) => r.right >= width - 600, depth);
-    chain(top, true, 22, before: true);
-    chain([0, width], true, 42, before: true);
-    chain(bottom, true, 26, before: false);
-    chain(left, false, 22, before: true);
-    chain([0, depth], false, 42, before: true);
-    chain(right, false, 22, before: false);
+    chain(faces(true, (r) => r.top >= depth - 600, width), true, 22, 'top',
+        before: true);
+    chain([0, width], true, 42, 'top', before: true, overall: true);
+    chain(faces(true, (r) => r.bottom <= 600, width), true, 26, 'bottom',
+        before: false);
+    chain(faces(false, (r) => r.left <= 600, depth), false, 22, 'left',
+        before: true);
+    chain([0, depth], false, 42, 'left', before: true, overall: true);
+    chain(faces(false, (r) => r.right >= width - 600, depth), false, 22,
+        'right',
+        before: false);
+    return spans;
+  }
+
+  /// The labelled figure under [local], if any. [reach] is in the same
+  /// units as [px], so the target stays finger-sized at any zoom.
+  DimensionSpan? dimensionAt(Offset local, Size size, {double reach = 16}) {
+    for (final s in dimensionSpans(size)) {
+      if (!s.labelled) continue;
+      final half = math.max(px(22), (s.to - s.from).distance / 2 - px(4));
+      final box = s.horizontal
+          ? Rect.fromCenter(
+              center: s.label, width: half * 2, height: px(reach) * 2)
+          : Rect.fromCenter(
+              center: s.label, width: px(reach) * 2, height: half * 2);
+      if (box.contains(local)) return s;
+    }
+    return null;
+  }
+
+  /// Chains of wall-face dimensions on four sides plus the overall sizes,
+  /// in millimetres, like a construction drawing.
+  void drawDimensions(Canvas canvas, Size size, List<WallInfo> walls,
+      double width, double depth) {
+    final t = tokens, pen = Paint()
+      ..color = t.dim
+      ..strokeWidth = math.max(0.6, px(0.9));
+    for (final s in dimensionSpans(size, walls: walls)) {
+      final q0 = s.from, q1 = s.to;
+      canvas.drawLine(q0, q1, pen);
+      final tick = px(4);
+      for (final q in [q0, q1]) {
+        canvas.drawLine(q + Offset(-tick, tick), q + Offset(tick, -tick), pen);
+        canvas.drawLine(
+            s.horizontal ? q + Offset(0, -tick * 1.4) : q + Offset(-tick * 1.4, 0),
+            s.horizontal ? q + Offset(0, tick * 1.4) : q + Offset(tick * 1.4, 0),
+            pen);
+      }
+      if (!s.labelled) continue;
+      final picked = s.sameAs(selectedDimension);
+      label(canvas, '${(s.b - s.a).round()}', s.label,
+          font: 10,
+          color: picked ? t.accent : t.dim,
+          weight: picked ? FontWeight.w700 : FontWeight.w400,
+          monospace: true,
+          halo: t.panel.withValues(alpha: 0.85),
+          angle: s.horizontal ? 0 : -math.pi / 2);
+    }
   }
 
   void drawFurniture(Canvas canvas, Size size, FurnitureItem f,
@@ -1273,4 +1417,33 @@ class FloorPlanPainter extends CustomPainter {
     end: center + direction * half,
     middle: null
   );
+}
+
+/// One figure of a dimension chain: the clear distance from [a] to [b]
+/// along the plan's x ([horizontal]) or y, drawn on [side] of the house.
+class DimensionSpan {
+  const DimensionSpan(
+      {required this.a,
+      required this.b,
+      required this.horizontal,
+      required this.side,
+      required this.overall,
+      required this.from,
+      required this.to,
+      required this.label,
+      required this.labelled});
+  final double a, b;
+  final bool horizontal, overall, labelled;
+  final String side;
+
+  /// Ends of the dimension line and the centre of its figure, in the
+  /// painter's own coordinates.
+  final Offset from, to, label;
+  double get length => b - a;
+  bool sameAs(DimensionSpan? o) =>
+      o != null &&
+      o.side == side &&
+      o.overall == overall &&
+      (o.a - a).abs() < 1 &&
+      (o.b - b).abs() < 1;
 }

@@ -107,7 +107,25 @@ List<CheckResult> runChecks(HouseDocument doc, DerivedHouse derived) {
               touches(p, room.id)))
         add('R05', 'suggestion', floor.id, [room.id],
             '${room.name}没有窗，采光和通风会很差。可以在外墙上加一扇窗。');
+      if ((room.type == RoomType.kitchen || room.type == RoomType.living) &&
+          !g.openings.any((p) =>
+              p.status == 'ok' &&
+              p.host?.kind == 'exterior' &&
+              p.opening.kind != OpeningKind.door &&
+              touches(p, room.id)))
+        add('R12', 'suggestion', floor.id, [room.id],
+            '${room.name}没有窗，白天也要开灯，做饭的油烟也散不出去。可以在外墙上加一扇窗。');
     }
+    // A bathroom door should open to a hall, not to where food is.
+    for (final p in g.openings)
+      if (p.status == 'ok' && p.opening.kind != OpeningKind.window)
+        for (final bath
+            in floor.rooms.where((r) => r.type == RoomType.bathroom))
+          for (final other in floor.rooms.where((r) =>
+              r.type == RoomType.kitchen || r.type == RoomType.dining))
+            if (touches(p, bath.id) && touches(p, other.id))
+              add('R11', 'suggestion', floor.id, [p.opening.id],
+                  '${bath.name}的门直接开向${other.name}，气味和卫生都不好。可以把门改到走廊或门厅一侧。');
     for (final stair in g.stairs) {
       final geometry =
           g.base.stairGeometryBase.firstWhere((s) => s.id == stair.stairId);
@@ -131,6 +149,21 @@ List<CheckResult> runChecks(HouseDocument doc, DerivedHouse derived) {
                   _ => '门窗高度超过了本层净高。'
                 } +
                 '可以删除它，或移到其他墙上。');
+    // A door too narrow for a person with a bag, or for furniture.
+    for (final p in g.openings) {
+      if (p.status != 'ok' || p.opening.kind != OpeningKind.door) continue;
+      final entrance = p.opening.id == doc.mainEntranceOpeningId;
+      final bath = floor.rooms
+          .any((r) => r.type == RoomType.bathroom && touches(p, r.id));
+      final min = entrance
+          ? 900
+          : bath
+              ? 600
+              : 700;
+      if (p.opening.width < min)
+        add('R13', 'suggestion', floor.id, [p.opening.id],
+            '${entrance ? '入户门' : '这扇门'}宽 ${(p.opening.width / 1000).toStringAsFixed(2)} 米，偏窄，建议不小于 ${(min / 1000).toStringAsFixed(2)} 米。');
+    }
     if (g.base.unassignedCells.isNotEmpty)
       add('R09', 'suggestion', floor.id, [],
           '${floor.name}还有 ${(g.base.unassignedNominalArea / 1e6).toStringAsFixed(1)} ㎡ 没有划分成房间。');

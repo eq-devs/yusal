@@ -10,6 +10,7 @@ class MemoryFiles implements ProjectFileSystem {
   String? index;
   final previews = <String, List<int>>{};
   bool failWrites = false;
+  bool failIndex = false;
   int writeCount = 0;
   @override
   Future<List<String>> ids() async => documents.keys.toList();
@@ -38,8 +39,31 @@ class MemoryFiles implements ProjectFileSystem {
   Future<String?> readIndex() async => index;
   @override
   Future<void> writeIndex(String text) async {
+    if (failIndex) throw const StorageFailure('NO_SPACE', 'Index full');
     index = text;
   }
+}
+
+/// Index writes that share one temporary file, as on a phone: a second
+/// write while one is in flight fails.
+class SharedTempFiles extends MemoryFiles {
+  bool writing = false;
+  @override
+  Future<void> writeIndex(String text) async {
+    if (writing) throw const StorageFailure('IO_ERROR', 'index.json.tmp gone');
+    writing = true;
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    index = text;
+    writing = false;
+  }
+}
+
+class MemoryOwners implements ProjectOwners {
+  Map<String, String> map = {};
+  @override
+  Future<Map<String, String>> load() async => {...map};
+  @override
+  Future<void> save(Map<String, String> owners) async => map = {...owners};
 }
 
 void main() {
@@ -52,6 +76,25 @@ void main() {
       rows: 2,
       timestamp: '2026-09-30T00:00:00Z',
       newId: () => 'id${sequence++}');
+  test('each account lists only its own designs', () async {
+    String? me;
+    final store = ProjectStore(fileSystem: MemoryFiles(), owners: MemoryOwners())
+      ..currentOwner = () => me;
+    final guest = await store.createProject(doc);
+    me = 'aigerim';
+    final mine = await store.createProject(doc);
+    // The design made signed out joins the first account that signs in.
+    expect({for (final e in await store.listProjects()) e.id}, {guest, mine});
+    me = 'bolat';
+    expect(await store.listProjects(), isEmpty);
+    final his = await store.createProject(doc);
+    expect([for (final e in await store.listProjects()) e.id], [his]);
+    me = null;
+    expect(await store.listProjects(), isEmpty);
+    me = 'aigerim';
+    expect((await store.listProjects()).length, 2);
+  });
+
   test('project round trip, index and deletion', () async {
     final files = MemoryFiles(),
         store = ProjectStore(fileSystem: MemoryFiles());
@@ -92,6 +135,26 @@ void main() {
     await store.saveProject(id, doc);
     expect(
         (await store.listProjects()).single.document.meta.name, doc.meta.name);
+  });
+  test('index failure leaves saved documents readable with a warning',
+      () async {
+    final files = MemoryFiles()..failIndex = true;
+    final store = ProjectStore(fileSystem: files);
+    final id = await store.createProject(doc);
+    expect(store.indexWarning, isNotNull);
+    expect((await store.listProjects()).single.id, id);
+    await store.saveProject(id, doc);
+    expect((await store.openProject(id)).meta.name, doc.meta.name);
+    files.failIndex = false;
+    await store.rebuildIndex();
+    expect(store.indexWarning, isNull);
+  });
+  test('two lists loading at once do not warn about the index', () async {
+    final files = SharedTempFiles();
+    final store = ProjectStore(fileSystem: files);
+    await store.createProject(doc);
+    await Future.wait([store.listProjects(), store.listProjects()]);
+    expect(store.indexWarning, isNull);
   });
   test('known oversized imports are rejected without reading their stream',
       () async {

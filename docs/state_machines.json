@@ -1,0 +1,295 @@
+{
+  "machines": [
+    {
+      "name": "demand",
+      "initial": "draft",
+      "statuses": [
+        "draft",
+        "pendingReview",
+        "open",
+        "paused",
+        "found",
+        "expired",
+        "closed",
+        "rejected"
+      ],
+      "events": [
+        {
+          "name": "publish",
+          "from": [
+            "draft",
+            "rejected"
+          ],
+          "to": "pendingReview"
+        },
+        {
+          "name": "recheck",
+          "from": [
+            "pendingReview",
+            "open",
+            "paused",
+            "found",
+            "expired",
+            "rejected"
+          ],
+          "to": "pendingReview"
+        },
+        {
+          "name": "approve",
+          "from": [
+            "pendingReview"
+          ],
+          "to": "open"
+        },
+        {
+          "name": "reject",
+          "from": [
+            "pendingReview",
+            "open",
+            "paused"
+          ],
+          "to": "rejected"
+        },
+        {
+          "name": "pause",
+          "from": [
+            "open"
+          ],
+          "to": "paused"
+        },
+        {
+          "name": "resume",
+          "from": [
+            "paused",
+            "found",
+            "expired"
+          ],
+          "to": "open"
+        },
+        {
+          "name": "renew",
+          "from": [
+            "open",
+            "expired"
+          ],
+          "to": "open"
+        },
+        {
+          "name": "markFound",
+          "from": [
+            "open",
+            "paused",
+            "expired"
+          ],
+          "to": "found"
+        },
+        {
+          "name": "expire",
+          "from": [
+            "open",
+            "paused"
+          ],
+          "to": "expired"
+        },
+        {
+          "name": "close",
+          "from": [
+            "draft",
+            "pendingReview",
+            "open",
+            "paused",
+            "found",
+            "expired",
+            "rejected"
+          ],
+          "to": "closed"
+        }
+      ]
+    },
+    {
+      "name": "application",
+      "initial": "submitted",
+      "statuses": [
+        "submitted",
+        "withdrawn",
+        "notSelected",
+        "pendingConfirm",
+        "cooperating"
+      ],
+      "events": [
+        {
+          "name": "resubmit",
+          "from": [
+            "submitted",
+            "withdrawn",
+            "notSelected"
+          ],
+          "to": "submitted"
+        },
+        {
+          "name": "withdraw",
+          "from": [
+            "submitted",
+            "notSelected",
+            "pendingConfirm"
+          ],
+          "to": "withdrawn"
+        },
+        {
+          "name": "notSelect",
+          "from": [
+            "submitted"
+          ],
+          "to": "notSelected"
+        },
+        {
+          "name": "invite",
+          "from": [
+            "submitted"
+          ],
+          "to": "pendingConfirm"
+        },
+        {
+          "name": "uninvite",
+          "from": [
+            "pendingConfirm"
+          ],
+          "to": "submitted"
+        },
+        {
+          "name": "cooperate",
+          "from": [
+            "pendingConfirm"
+          ],
+          "to": "cooperating"
+        }
+      ]
+    },
+    {
+      "name": "cooperation",
+      "initial": "pending",
+      "statuses": [
+        "pending",
+        "confirmed",
+        "ended",
+        "notFormed"
+      ],
+      "events": [
+        {
+          "name": "confirm",
+          "from": [
+            "pending"
+          ],
+          "to": "confirmed"
+        },
+        {
+          "name": "notForm",
+          "from": [
+            "pending"
+          ],
+          "to": "notFormed"
+        },
+        {
+          "name": "end",
+          "from": [
+            "confirmed"
+          ],
+          "to": "ended"
+        }
+      ]
+    },
+    {
+      "name": "agreement",
+      "initial": "proposed",
+      "statuses": [
+        "proposed",
+        "active",
+        "superseded",
+        "rejected"
+      ],
+      "events": [
+        {
+          "name": "accept",
+          "from": [
+            "proposed"
+          ],
+          "to": "active"
+        },
+        {
+          "name": "reject",
+          "from": [
+            "proposed"
+          ],
+          "to": "rejected"
+        },
+        {
+          "name": "supersede",
+          "from": [
+            "active"
+          ],
+          "to": "superseded"
+        }
+      ]
+    },
+    {
+      "name": "milestone",
+      "initial": "planned",
+      "statuses": [
+        "planned",
+        "requested",
+        "accepted",
+        "disputed"
+      ],
+      "events": [
+        {
+          "name": "request",
+          "from": [
+            "planned",
+            "requested",
+            "disputed"
+          ],
+          "to": "requested"
+        },
+        {
+          "name": "accept",
+          "from": [
+            "requested"
+          ],
+          "to": "accepted"
+        },
+        {
+          "name": "dispute",
+          "from": [
+            "requested"
+          ],
+          "to": "disputed"
+        }
+      ]
+    },
+    {
+      "name": "report",
+      "initial": "open",
+      "statuses": [
+        "open",
+        "upheld",
+        "dismissed"
+      ],
+      "events": [
+        {
+          "name": "uphold",
+          "from": [
+            "open"
+          ],
+          "to": "upheld"
+        },
+        {
+          "name": "dismiss",
+          "from": [
+            "open"
+          ],
+          "to": "dismissed"
+        }
+      ]
+    }
+  ]
+}

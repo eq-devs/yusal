@@ -6,12 +6,12 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/ui/widgets.dart';
-import 'package:yusal/platform/ui/shell.dart';
-import 'package:yusal/platform/data/http/http_backend.dart';
-import 'package:yusal/platform/ui/demand/demand_detail_page.dart';
-import 'package:yusal/platform/ui/demand/publish_page.dart';
-import 'package:yusal/platform/ui/profile/profile_edit_page.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/shell/shell.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/features/demand/publish_page.dart';
+import 'package:yusal/features/profile/profile_edit_page.dart';
 
 const api = String.fromEnvironment('YUSAL_API');
 const devLogin = bool.fromEnvironment('YUSAL_DEV_LOGIN');

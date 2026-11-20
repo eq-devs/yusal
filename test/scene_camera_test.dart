@@ -138,6 +138,7 @@ void main() {
       s.yaw = yaw;
       s.pitch = pitch;
       for (var i = 0; i < 40; i++) s.zoomAt(const Offset(400, 300), s.distance * 0.7);
+      // ignore: invalid_use_of_protected_member
       s.setState(() {});
       await t.pump();
       expect(inside(s.camera.eye), isFalse);

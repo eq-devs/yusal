@@ -5,10 +5,10 @@ import 'package:integration_test/integration_test.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/main.dart';
-import 'package:yusal/platform/ui/widgets.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/ui/demand/from_design_page.dart';
-import 'package:yusal/platform/ui/home/publish_post_page.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/data/mock/mock_backend.dart';
+import 'package:yusal/features/demand/from_design_page.dart';
+import 'package:yusal/features/home/publish_post_page.dart';
 import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 

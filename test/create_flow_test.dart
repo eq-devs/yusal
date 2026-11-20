@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:yusal/core/house_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/app/settings.dart';
-import 'package:yusal/features/house_editor.dart';
+import 'package:yusal/features/editor/house_editor.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
 

@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/data/repositories.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/domain/rules.dart';
+import 'package:yusal/data/mock/mock_seed.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/rules.dart';
 
 import 'mock_backend_test.dart' show backend, publishAsOwner;
 

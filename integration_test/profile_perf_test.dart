@@ -15,12 +15,12 @@ import 'package:integration_test/integration_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/main.dart' show HouseApp;
-import 'package:yusal/platform/ui/widgets.dart' show Avatar;
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/ui/profile/profile_page.dart';
-import 'package:yusal/platform/ui/scope.dart';
-import 'package:yusal/platform/ui/shell.dart';
+import 'package:yusal/shared/ui/widgets.dart' show Avatar, debugFrostedGlass;
+import 'package:yusal/data/mock/mock_backend.dart';
+import 'package:yusal/data/mock/mock_seed.dart';
+import 'package:yusal/features/profile/profile_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/features/shell/shell.dart';
 import 'package:yusal/storage/project_store.dart';
 
 import '../test/storage_test.dart' show MemoryFiles;
@@ -34,6 +34,11 @@ void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('profile scroll frame cost', (t) async {
+    // --dart-define=YUSAL_FROST=on|off forces the glass blur for an A/B run;
+    // unset follows the platform.
+    const frost = String.fromEnvironment('YUSAL_FROST');
+    if (frost.isNotEmpty) debugFrostedGlass = frost == 'on';
+    addTearDown(() => debugFrostedGlass = null);
     // A phone-sized page wherever this runs, so a desktop window does not
     // switch the shell to its side rail.
     if (t.view.physicalSize.width / t.view.devicePixelRatio > 500) {
@@ -128,6 +133,8 @@ void main() {
     }
 
     await rest();
+    // The first screen people see: the house feed under the tab bar.
+    await scrollScenario('app explore scroll');
     await t.tap(find.byType(ShellBarTab).last);
     await rest();
     report['app me tab: frame still scheduled at rest'] =

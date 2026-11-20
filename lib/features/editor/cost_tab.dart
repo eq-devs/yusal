@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// The budget page: quantities from the model times unit prices, labour
 /// and contingency, stage by stage. Every price, share and own line can be

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'settings.dart';
-import '../motion/motion.dart';
+import '../shared/motion/motion.dart';
 
 /// Drafting-table palette: a cool grey desk, white sheets, dark wall cuts
 /// and one amber accent. Every screen and painter reads colours from here.

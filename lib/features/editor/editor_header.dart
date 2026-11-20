@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// Page header after the drafting-table layout: the design's name and size,
 /// a monospace summary, and the switches (language, theme, floor, history).

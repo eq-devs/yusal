@@ -4,7 +4,7 @@ import 'package:yusal/app/settings.dart';
 import 'package:yusal/core/commands/kz_template.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/core/house_core.dart';
-import 'package:yusal/features/house_editor.dart';
+import 'package:yusal/features/editor/house_editor.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/render2d/site_plan_painter.dart';
 import 'package:yusal/storage/project_store.dart';

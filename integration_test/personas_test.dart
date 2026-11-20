@@ -8,7 +8,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/main.dart';
-import 'package:yusal/platform/data/http/http_backend.dart';
+import 'package:yusal/data/http/http_backend.dart';
 import 'package:yusal/storage/project_store.dart';
 
 import 'e2e_support.dart';

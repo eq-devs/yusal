@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/main.dart' as app;
-import 'package:yusal/platform/ui/projects/projects_page.dart';
+import 'package:yusal/features/projects/projects_page.dart';
 import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';

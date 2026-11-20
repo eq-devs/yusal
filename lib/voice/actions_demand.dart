@@ -1,5 +1,5 @@
-import '../platform/domain/models.dart';
-import '../platform/domain/rules.dart';
+import '../domain/models.dart';
+import '../domain/rules.dart';
 import 'action.dart';
 import 'screen.dart';
 

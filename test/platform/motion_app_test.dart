@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/motion/motion.dart';
-import 'package:yusal/platform/ui/home/post_page.dart';
+import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/features/home/post_page.dart';
 import '../widget_test.dart' show launch;
 
 void main() {

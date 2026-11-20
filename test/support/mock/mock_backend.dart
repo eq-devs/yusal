@@ -3,18 +3,18 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:math' show max;
 import 'package:flutter/foundation.dart' show ChangeNotifier, Listenable;
-import '../../domain/models.dart';
-import '../../domain/rules.dart';
-import '../repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/rules.dart';
+import 'package:yusal/data/repositories.dart';
 import 'mock_clock.dart';
 import 'mock_seed.dart';
 
-/// In-memory stand-in for the platform backend. It enforces the same
+/// In-memory stand-in for the platform backend, for tests only. It enforces the same
 /// permissions and state rules a real server must: the client can never
 /// mark itself hired, confirm for the other side, or skip review.
 ///
 /// Data lives only in memory and is re-seeded on every launch.
-class MockBackend implements PlatformRepositories {
+class MockBackend implements PlatformRepositories, ClockSource {
   MockBackend(
       {MockClock? clock,
       this.latency = const Duration(milliseconds: 120),
@@ -80,6 +80,7 @@ class MockBackend implements PlatformRepositories {
   int _seq = 0;
 
   String newId(String prefix) => '${prefix}_${++_seq}';
+  @override
   DateTime get now => clock.now();
 
   void notify() {

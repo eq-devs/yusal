@@ -3,7 +3,6 @@
 // "Admin E2E") was made an admin with `go run ./cmd/setadmin <id>`:
 //   flutter test integration_test/moderation_flow_test.dart -d <device> \
 //     --dart-define=YUSAL_API=http://localhost:8080 \
-//     --dart-define=YUSAL_DEV_LOGIN=true \
 //     --dart-define=E2E_SHOTS=$PWD/test-screens
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

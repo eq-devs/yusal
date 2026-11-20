@@ -16,8 +16,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/main.dart' show HouseApp;
 import 'package:yusal/shared/ui/widgets.dart' show Avatar, debugFrostedGlass;
-import 'package:yusal/data/mock/mock_backend.dart';
-import 'package:yusal/data/mock/mock_seed.dart';
+import '../test/support/mock/mock_backend.dart';
+import '../test/support/mock/mock_seed.dart';
 import 'package:yusal/features/profile/profile_page.dart';
 import 'package:yusal/shared/ui/scope.dart';
 import 'package:yusal/features/shell/shell.dart';
@@ -120,7 +120,7 @@ void main() {
     await mount(const PlatformShell(initialTab: ShellTab.me), SeedIds.mason);
     await scrollScenario('me tab scroll');
 
-    // The whole app as it ships: voice orb, demo notice, theme, routes.
+    // The whole app as it ships: voice orb, theme, routes.
     final b = MockBackend(latency: Duration.zero)..signInAs(SeedIds.mason);
     await t.pumpWidget(ProviderScope(
         key: UniqueKey(),

@@ -2,7 +2,6 @@
 // accounts: a worker and a house owner. Run like backend_flow_test.dart:
 //   flutter test integration_test/market_flow_test.dart -d <device> \
 //     --dart-define=YUSAL_API=http://localhost:8080 \
-//     --dart-define=YUSAL_DEV_LOGIN=true \
 //     --dart-define=E2E_SHOTS=$PWD/test-screens
 import 'dart:typed_data';
 import 'dart:ui' as ui;

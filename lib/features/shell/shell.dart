@@ -10,7 +10,6 @@ import '../chat/inbox_page.dart';
 import '../explore/explore_page.dart';
 import '../me/me_page.dart';
 import '../projects/projects_page.dart';
-import '../../shared/ui/components.dart';
 import '../../shared/ui/theme.dart';
 import '../../shared/ui/widgets.dart' show Frost, glassAlpha;
 import '../../shared/ui/scope.dart';
@@ -198,23 +197,14 @@ class _PlatformShellState extends State<PlatformShell>
                   // glass; the scaffold reports its height as padding.
                   extendBody: !wide,
                   body: Column(children: [
-                    if (context.isDemo)
-                      ColoredBox(
-                          color: t.surface,
-                          child: const SafeArea(
-                              bottom: false, child: DemoNotice())),
                     Expanded(
-                        // The demo notice already sits below the status
-                        // bar; neither the pages nor the side rail may
-                        // leave room for it a second time. This reads the
-                        // shell's MediaQuery, from above the scaffold, so
+                        // This reads the shell's MediaQuery, from above the scaffold, so
                         // the keyboard inset the scaffold already took off
                         // has to go again: otherwise each page's own
                         // scaffold shrinks for the keyboard a second time
                         // and the page is cut off under its search field.
                         child: MediaQuery(
                             data: MediaQuery.of(context)
-                                .removePadding(removeTop: context.isDemo)
                                 .removeViewInsets(removeBottom: true),
                             child: wide
                                 ? Row(children: [

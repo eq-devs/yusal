@@ -29,8 +29,7 @@ for p in "${platforms[@]}"; do
   args=(patch "$p"
     --release-version="$release_version"
     --track="$track"
-    --rollout="$rollout"
-    --dart-define-from-file="$DEFINES")
+    --rollout="$rollout")
   info "shorebird ${args[*]}"
   shorebird "${args[@]}"
 done

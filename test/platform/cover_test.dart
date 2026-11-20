@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/data/mock/mock_backend.dart';
+import '../support/mock/mock_backend.dart';
 import 'package:yusal/domain/models.dart';
 import 'package:yusal/shared/ui/plan_viewer.dart';
 import 'package:yusal/shared/ui/scope.dart';

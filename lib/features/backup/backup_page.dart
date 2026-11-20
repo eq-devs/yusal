@@ -72,12 +72,9 @@ class _BackupPageState extends State<BackupPage> {
   @override
   Widget build(BuildContext context) {
     AppScope.watch(context);
-    final t = YTokens.of(context);
     final store = context.projectStore;
     return PageScaffold(
-        title: context.isDemo
-            ? tr3('模拟备份与恢复', 'Демо көшірме', 'Демо-копии')
-            : tr3('备份与恢复', 'Сақтық көшірме', 'Резервные копии'),
+        title: tr3('备份与恢复', 'Сақтық көшірме', 'Резервные копии'),
         body: OnChange(
             builder: (context) => context.repos.currentAccount == null
                 ? EmptyState(
@@ -106,13 +103,6 @@ class _BackupPageState extends State<BackupPage> {
                     builder: (context, rows) => Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              if (context.isDemo)
-                                Hint(
-                                    tr3(
-                                        '模拟备份只存在当前运行内存，重启后消失。请导出设计文件保留副本。',
-                                        'Демо көшірме тек жадта, қайта іске қосқанда өшеді. Жоба файлын экспорттаңыз.',
-                                        'Демо-копии хранятся в памяти и исчезнут при перезапуске. Экспортируйте файл проекта.'),
-                                    warn: true),
                               Hint(tr3(
                                   '本地保存和自动保存照常工作，不登录也能离线编辑。备份是手动的，不是实时同步；两边都改过时会让你选择，不会静默覆盖。',
                                   'Жергілікті сақтау әрдайым жұмыс істейді. Көшірме қолмен жасалады.',
@@ -131,27 +121,6 @@ class _BackupPageState extends State<BackupPage> {
                                         onRestored: refresh.call,
                                         highlighted:
                                             row.entry?.id == highlight)),
-                              if (context.mock != null &&
-                                  rows.any((r) =>
-                                      r.cloud != null && r.entry != null)) ...[
-                                const SizedBox(height: 12),
-                                Text('Dev', style: TextStyle(color: t.muted)),
-                                TextButton(
-                                    onPressed: () {
-                                      final row = rows.firstWhere((r) =>
-                                          r.cloud != null && r.entry != null);
-                                      context.mock!.touchBackupFromOtherDevice(
-                                          row.entry!.id,
-                                          row.cloud!.houseText,
-                                          DateTime.now()
-                                              .toUtc()
-                                              .toIso8601String());
-                                    },
-                                    child: Text(tr3(
-                                        '模拟另一台设备修改了云端备份',
-                                        'Басқа құрылғыдан өзгерту',
-                                        'Имитировать изменение с другого устройства'))),
-                              ],
                             ]))));
   }
 }

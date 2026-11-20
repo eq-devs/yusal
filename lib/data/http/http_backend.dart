@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show ChangeNotifier, Listenable;
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,23 +11,41 @@ import 'package:uuid/uuid.dart';
 import '../../voice/session.dart';
 import '../../voice/speech.dart';
 import '../../domain/models.dart';
-import '../mock/mock_backend.dart';
 import '../repositories.dart';
 import 'codec.dart';
 
 /// Talks to the real Go backend (`eq-devs/yusal-api`) for every repository:
 /// accounts, snapshots, posts, backups, profiles, demands, quotes,
-/// cooperations, reviews, chat, notifications and moderation. It extends
-/// [MockBackend] only for the shared plumbing (the change notifier and the
-/// account cache screens read synchronously); no data is served from it.
-class HttpBackend extends MockBackend
-    implements VoiceBackend, SpeechBackend {
+/// cooperations, reviews, chat, notifications and moderation. Nothing is
+/// served from memory: the only local state is the signed-in account and a
+/// cache of accounts screens read synchronously.
+class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   HttpBackend(this.baseUrl,
-      {http.Client? client,
-      bool seed = false,
-      this.timeout = const Duration(seconds: 45)})
-      : _http = client ?? http.Client(),
-        super(latency: Duration.zero, seed: seed);
+      {http.Client? client, this.timeout = const Duration(seconds: 45)})
+      : _http = client ?? http.Client();
+
+  final _changes = ChangeNotifier();
+  @override
+  Listenable get changes => _changes;
+
+  /// Accounts seen so far, by id, for screens that look a name up
+  /// synchronously.
+  final accounts = <String, Account>{};
+
+  /// The signed-in account's id.
+  String? currentId;
+
+  @override
+  Account? get currentAccount {
+    final a = currentId == null ? null : accounts[currentId];
+    return a == null || a.deleted ? null : a;
+  }
+
+  /// Tells every listening screen that something changed.
+  void notify() {
+    // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+    _changes.notifyListeners();
+  }
 
   /// e.g. `https://api.example.com`, no trailing slash.
   final String baseUrl;

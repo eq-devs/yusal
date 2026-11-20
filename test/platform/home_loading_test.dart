@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/main.dart';
-import 'package:yusal/data/mock/mock_backend.dart';
-import 'package:yusal/data/mock/mock_seed.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_seed.dart';
 import 'package:yusal/domain/models.dart';
 import 'package:yusal/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
@@ -80,12 +80,11 @@ void main() {
     expect(find.text('给父母盖的一层砖房'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
-  testWidgets('mock account does not claim real phone verification', (t) async {
+  testWidgets('the Me tab does not claim real phone verification', (t) async {
     final backend = CountingBackend()..signInAs(SeedIds.owner);
     await mount(t, backend, width: 768);
     await t.tap(find.text('我的').last);
     await t.pumpAndSettle();
-    expect(find.textContaining('演示账号'), findsOneWidget);
     expect(find.textContaining('手机号已验证'), findsNothing);
     expect(find.text('审核后台'), findsNothing);
   });

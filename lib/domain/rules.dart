@@ -1,6 +1,6 @@
 import 'models.dart';
 
-/// Business rules shared by the mock backend and the interface. A real
+/// Business rules shared by the in-memory test backend and the interface. A real
 /// backend enforces the same rules on the server. Pure Dart.
 
 const demandLifetime = Duration(days: 30);

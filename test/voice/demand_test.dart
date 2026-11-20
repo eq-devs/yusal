@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/app/settings.dart';
-import 'package:yusal/data/mock/mock_seed.dart';
+import '../support/mock/mock_seed.dart';
 import 'package:yusal/domain/models.dart';
 import 'package:yusal/domain/rules.dart';
 import 'package:yusal/features/demand/demand_detail_page.dart';
@@ -38,7 +38,6 @@ void main() {
     await t.pumpWidget(PlatformScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        isDemo: true,
         child: MaterialApp(
             builder: (_, child) => AppScope(child: child!),
             home: DemandDetailPage(demandId: id))));

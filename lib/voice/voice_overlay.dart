@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 
 import '../app/settings.dart';
 import '../data/repositories.dart';
+import '../services/voice/offline_speech.dart';
 import 'action.dart';
 import 'actions.dart';
 import 'executor.dart';
@@ -273,7 +274,7 @@ class _VoiceBarState extends State<VoiceBar>
     // The microphone is already in use for the last sentence.
     if (mic != _Mic.off) return;
     final speech = widget.speech!;
-    final ok = await speech.audio.startRecording();
+    final ok = await speech.start();
     if (!mounted) return;
     setState(() {
       typing = false;
@@ -970,6 +971,10 @@ class _VoiceHostState extends State<VoiceHost> {
         loggedIn: () => repos.currentAccount != null,
         sessionId: const Uuid().v4());
     VoiceSession.current = s;
+    // Reads whether the offline model is installed; nothing is downloaded.
+    OfflineSpeech.instance?.start().catchError((Object e) {
+      if (kDebugMode) debugPrint('offline speech: $e');
+    });
     // In the navigator's overlay, not a route: pages stay "current" for
     // voice while the bar is open, and its text field has an overlay.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -980,7 +985,10 @@ class _VoiceHostState extends State<VoiceHost> {
               child: VoiceBar(
                   session: s,
                   speech: audio != null && speaker is SpeechBackend
-                      ? Speech(speaker, audio)
+                      ? Speech(
+                          LocalFirstSpeech(
+                              server: speaker, offline: OfflineSpeech.instance),
+                          audio)
                       : null)));
       overlay.insert(entry!);
     });

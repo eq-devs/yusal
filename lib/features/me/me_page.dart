@@ -15,7 +15,6 @@ import '../../shared/ui/scope.dart';
 import '../../shared/ui/theme.dart';
 import '../../shared/ui/widgets.dart';
 import 'admin_page.dart';
-import 'dev_tools_page.dart';
 import 'feedback_page.dart';
 import 'trust_pages.dart';
 
@@ -84,13 +83,10 @@ class MePage extends StatelessWidget {
                                     title: tr3(
                                         '设计备份与恢复',
                                         'Сақтық көшірме',
-                                        context.isDemo
-                                            ? 'Демо-копии'
-                                            : 'Резервные копии'),
+                                        'Резервные копии'),
                                     onTap: () => pushPage<void>(
                                         context, (_) => const BackupPage())),
-                                if (!context.isDemo)
-                                  SettingsRow(
+                                SettingsRow(
                                       key: const Key('me-phone'),
                                       icon: Icons.phone_outlined,
                                       title: tr3('手机号', 'Телефон нөмірі',
@@ -159,19 +155,6 @@ class MePage extends StatelessWidget {
                                           'Обратная связь'),
                                       onTap: () => pushPage<void>(context,
                                           (_) => const FeedbackPage())),
-                                  if (context.mock != null)
-                                    SettingsRow(
-                                        icon: Icons.science_outlined,
-                                        title: tr3(
-                                            '开发者工具（模拟数据）',
-                                            'Әзірлеуші құралдары',
-                                            'Инструменты разработчика'),
-                                        subtitle: tr3(
-                                            '切换测试账号、快进时间、模拟断网',
-                                            'Сынақ аккаунты, уақыт',
-                                            'Тестовые аккаунты, время, сеть'),
-                                        onTap: () => pushPage<void>(context,
-                                            (_) => const DevToolsPage())),
                                 ]),
                             if (account != null)
                               SettingsGroup(
@@ -275,12 +258,9 @@ class _AccountHeader extends StatelessWidget {
         Text(account.displayName,
             maxLines: 1, overflow: TextOverflow.ellipsis, style: YText.title),
         Text(
-            context.isDemo
-                ? '${maskPhone(account.phone)} · ${tr3('演示账号', 'Демо аккаунт', 'Демо-аккаунт')}'
-                : account.phone.isEmpty
-                    ? tr3('未填写手机号', 'Телефон көрсетілмеген',
-                        'Телефон не указан')
-                    : maskPhone(account.phone),
+            account.phone.isEmpty
+                ? tr3('未填写手机号', 'Телефон көрсетілмеген', 'Телефон не указан')
+                : maskPhone(account.phone),
             style: YText.label.copyWith(color: t.muted)),
       ])),
       IconButton(

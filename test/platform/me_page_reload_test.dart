@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/app/settings.dart';
-import 'package:yusal/data/mock/mock_backend.dart';
-import 'package:yusal/data/mock/mock_seed.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_seed.dart';
 import 'package:yusal/domain/models.dart';
 import 'package:yusal/features/me/me_page.dart';
 import 'package:yusal/shared/ui/scope.dart';
@@ -57,7 +57,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final api = NoPreviewApi();
     final b = HttpBackend('https://api.test',
-        client: MockClient(api.handle), seed: false);
+        client: MockClient(api.handle));
     await t.runAsync(() => b.signInWithProvider('google', 'id-token'));
     await t.pumpWidget(PlatformScope(
         repos: b,
@@ -93,8 +93,7 @@ void main() {
           // A real network takes a while; the fake answers at once.
           await Future<void>.delayed(const Duration(milliseconds: 200));
           return api.handle(r);
-        }),
-        seed: false);
+        }));
     await t.runAsync(() => b.signInWithProvider('google', 'id-token'));
     await t.pumpWidget(PlatformScope(
         repos: b,

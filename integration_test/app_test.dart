@@ -4,13 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/main.dart' as app;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yusal/app/house_app.dart';
+import 'package:yusal/app/settings.dart';
 import 'package:yusal/features/projects/projects_page.dart';
 import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/core/house_core.dart';
 import 'package:yusal/core/geometry/derived_house.dart';
+
+import '../test/support/mock/mock_backend.dart';
 
 // Runs on a phone or simulator: flutter test integration_test -d <device>.
 // Without one, on Linux: flutter create --platforms=linux . (not committed),
@@ -20,11 +24,14 @@ import 'package:yusal/core/geometry/derived_house.dart';
 
 /// Start the app in Chinese so the finders below match, on the design home
 /// (the app opens on 发现). The previous test leaves its design open, and
-/// the app would reopen it: forget it first.
+/// the app would reopen it: forget it first. The design editor is local, so
+/// the platform runs on the in-memory test backend and needs no server.
 Future<void> startApp(WidgetTester tester) async {
   (await SharedPreferences.getInstance()).setString('house-lang', 'zh');
   await LastOpenProject.write(null);
-  app.main();
+  await AppSettings.instance.load();
+  runApp(ProviderScope(
+      child: HouseApp(repos: MockBackend(latency: Duration.zero))));
   await tester.pumpAndSettle();
   await tester.tap(find.text('我的房子').last);
 }

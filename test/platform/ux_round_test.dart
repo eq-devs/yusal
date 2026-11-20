@@ -4,9 +4,9 @@ import 'package:yusal/features/shell/shell.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/house_editor.dart';
-import 'package:yusal/data/mock/mock_backend.dart';
-import 'package:yusal/data/mock/mock_clock.dart';
-import 'package:yusal/data/mock/mock_seed.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_clock.dart';
+import '../support/mock/mock_seed.dart';
 import 'package:yusal/domain/models.dart';
 import 'package:yusal/shared/ui/cards.dart';
 import 'package:yusal/features/chat/inbox_page.dart';
@@ -122,20 +122,6 @@ void main() {
         find.descendant(
             of: find.byType(InboxPage), matching: find.byType(TabBar)),
         findsOneWidget);
-  });
-
-  testWidgets('the demo notice is one line and explains itself on tap',
-      (t) async {
-    await launch(t, size: phone);
-    final notice = find.byKey(const Key('demo-notice'));
-    expect(notice, findsOneWidget);
-    expect(t.getSize(notice).height, lessThan(40));
-    await t.tap(notice);
-    await t.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget);
-    await t.tap(find.text('知道了'));
-    await t.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsNothing);
   });
 
   for (final lang in AppLang.values) {

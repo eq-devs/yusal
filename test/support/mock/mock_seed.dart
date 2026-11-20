@@ -1,8 +1,8 @@
-import '../../app/settings.dart';
-import '../../core/commands/house_templates.dart';
-import '../../domain/models.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/core/commands/house_templates.dart';
+import 'package:yusal/domain/models.dart';
 import 'mock_backend.dart';
-import '../../domain/design_snapshot.dart';
+import 'package:yusal/domain/design_snapshot.dart';
 
 /// Ids of the seeded demo accounts; developer tools sign in as them.
 abstract final class SeedIds {

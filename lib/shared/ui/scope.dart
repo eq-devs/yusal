@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../app/settings.dart';
 import '../../storage/project_store.dart';
-import '../../data/http/http_backend.dart';
-import '../../data/mock/mock_backend.dart';
 import '../../data/repositories.dart';
 import 'l10n.dart';
 import 'components.dart';
@@ -12,19 +10,17 @@ import 'theme.dart';
 import 'widgets.dart';
 import '../motion/motion.dart';
 
-/// Gives every platform page the repositories (mock today) and the local
+/// Gives every platform page the repositories and the local
 /// design store.
 class PlatformScope extends InheritedWidget {
   const PlatformScope(
       {super.key,
       required this.repos,
       required this.store,
-      this.isDemo = false,
       this.loginPage,
       required super.child});
   final PlatformRepositories repos;
   final ProjectStore store;
-  final bool isDemo;
 
   /// The sign-in page [requireLogin] opens; the auth feature's page in the
   /// app. Null (tests that never sign in) means sign-in is not offered.
@@ -38,22 +34,18 @@ class PlatformScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(PlatformScope old) =>
-      repos != old.repos || store != old.store || isDemo != old.isDemo;
+      repos != old.repos || store != old.store;
 }
 
 extension PlatformContext on BuildContext {
   PlatformRepositories get repos => PlatformScope.of(this).repos;
   ProjectStore get projectStore => PlatformScope.of(this).store;
-  bool get isDemo => PlatformScope.of(this).isDemo;
 
-  /// The mock backend, for developer tools only. Null against the real
-  /// backend, even though [HttpBackend] still serves some parts in memory.
-  MockBackend? get mock {
-    final r = repos;
-    return r is MockBackend && r is! HttpBackend ? r : null;
-  }
-
-  DateTime get now => mock?.now ?? DateTime.now();
+  /// The current time; a test backend with its own clock sets it.
+  DateTime get now => switch (repos) {
+        ClockSource clock => clock.now,
+        _ => DateTime.now(),
+      };
 }
 
 /// Route that keeps the platform look.

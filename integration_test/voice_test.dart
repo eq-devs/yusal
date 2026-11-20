@@ -22,7 +22,7 @@ import 'package:yusal/app/settings.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/house_editor.dart';
 import 'package:yusal/main.dart';
-import 'package:yusal/data/mock/mock_backend.dart';
+import '../test/support/mock/mock_backend.dart';
 import 'package:yusal/domain/models.dart';
 import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';

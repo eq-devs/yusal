@@ -9,7 +9,7 @@ import '../domain/models.dart';
 export '../domain/admin_models.dart';
 
 /// Repository interfaces of the platform. The interface only talks to these;
-/// today they are served by `MockBackend`, later by a real backend. Every
+/// the app they are served by `HttpBackend` (yusal-api). Every
 /// method is asynchronous and fails with [ApiFailure]. Permissions, state
 /// changes and two-sided confirmations are decided behind these interfaces,
 /// never by the client.
@@ -40,6 +40,12 @@ abstract final class ApiCodes {
   static const network = 'NETWORK';
   static const restricted = 'RESTRICTED';
   static const conflict = 'CONFLICT';
+}
+
+/// A backend with its own clock (the in-memory test fake). Screens read the
+/// time through it so tests can move time forward.
+abstract interface class ClockSource {
+  DateTime get now;
 }
 
 /// Fires whenever any data behind the repositories changes.

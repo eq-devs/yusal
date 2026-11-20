@@ -14,11 +14,10 @@ import '../profile/profile_page.dart';
 import '../../shared/ui/scope.dart';
 import '../../shared/ui/theme.dart';
 import '../../shared/ui/widgets.dart';
-import '../../services/voice/read_aloud.dart';
-import '../../voice/voice_overlay.dart' show voiceBuiltIn;
+import '../../voice/voice_overlay.dart' show voiceBuiltIn, voicePlatform;
 import 'admin_page.dart';
 import 'feedback_page.dart';
-import 'kazakh_voice_page.dart';
+import 'voice_settings_page.dart';
 import 'trust_pages.dart';
 
 /// Fourth tab: who I am, what I published, my professional profile,
@@ -151,27 +150,14 @@ class MePage extends StatelessWidget {
                                             selected: app.theme);
                                         if (v != null) app.setTheme(v);
                                       }),
-                                  if (voiceBuiltIn)
-                                    if (ReadAloud.instance
-                                        case final reader?)
-                                      ValueListenableBuilder<VoiceModelStatus>(
-                                          valueListenable: reader.status,
-                                          builder: (context, s, _) =>
-                                              SettingsRow(
-                                                  key: const Key(
-                                                      'me-kazakh-voice'),
-                                                  icon: Icons
-                                                      .record_voice_over_outlined,
-                                                  title: tr3(
-                                                      '哈萨克语朗读',
-                                                      'Қазақша дауыс',
-                                                      'Казахский голос'),
-                                                  value:
-                                                      kazakhVoiceValue(s),
-                                                  onTap: () => pushPage<void>(
-                                                      context,
-                                                      (_) => KazakhVoicePage(
-                                                          reader: reader)))),
+                                  if (voiceBuiltIn && voicePlatform)
+                                    SettingsRow(
+                                        key: const Key('me-voice'),
+                                        icon: Icons.record_voice_over_outlined,
+                                        title: tr3('语音', 'Дауыс', 'Голос'),
+                                        onTap: () => pushPage<void>(
+                                            context,
+                                            (_) => const VoiceSettingsPage())),
                                   SettingsRow(
                                       key: const Key('me-feedback'),
                                       icon: Icons.chat_bubble_outline,

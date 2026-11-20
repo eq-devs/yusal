@@ -19,7 +19,8 @@ import 'codec.dart';
 /// cooperations, reviews, chat, notifications and moderation. Nothing is
 /// served from memory: the only local state is the signed-in account and a
 /// cache of accounts screens read synchronously.
-class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
+class HttpBackend
+    implements PlatformRepositories, VoiceBackend, SpeechBackend, SpeechSynth {
   HttpBackend(this.baseUrl,
       {http.Client? client, this.timeout = const Duration(seconds: 45)})
       : _http = client ?? http.Client();
@@ -423,11 +424,11 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
           as Map<String, dynamic>)['text'] as String? ??
       '';
 
-  /// [text] read aloud by the speech service, as WAV. The app shows
-  /// replies as text; the live tests use this to make Kazakh recordings.
-  Future<Uint8List> synthesize(String text) async {
-    final res =
-        await _send('POST', '/client/voice/tts', body: {'text': text});
+  /// [text] read aloud by the speech service, as WAV.
+  @override
+  Future<Uint8List> synthesize(String text, {double speed = 1.0}) async {
+    final res = await _send('POST', '/client/voice/tts',
+        body: {'text': text, if (speed != 1.0) 'speed': speed});
     if (res.statusCode != 200) _decode(res);
     return res.bodyBytes;
   }

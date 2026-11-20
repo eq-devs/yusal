@@ -11,6 +11,7 @@ import 'features/chat/inbox_page.dart' show openRef;
 import 'services/firebase_setup.dart';
 import 'services/push/push_setup.dart';
 import 'services/update/code_push.dart';
+import 'services/voice/voice_settings.dart';
 
 export 'app/house_app.dart';
 
@@ -29,6 +30,7 @@ Future<void> main() async {
   // the slowest of them, not for their sum.
   await Future.wait([
     AppSettings.instance.load(),
+    VoiceSettings.instance.load(),
     // Analytics and crash reports on iOS / Android; no-op on the web.
     FirebaseSetup.init(),
     _restore(api),

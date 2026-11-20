@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/app/settings.dart';
-import 'package:yusal/data/mock/mock_backend.dart';
+import '../support/mock/mock_backend.dart';
 import 'package:yusal/shared/ui/cards.dart';
 import 'package:yusal/shared/ui/l10n.dart';
 import 'package:yusal/shared/ui/scope.dart';

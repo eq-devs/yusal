@@ -161,14 +161,6 @@ class _PostPageState extends State<PostPage> {
           }
 
           Future<void> share() async {
-            if (context.isDemo) {
-              toast(
-                  context,
-                  tr3(
-                      '演示分享：新发布作品仅当前会话可见，链接不能跨设备打开。',
-                      'Демо: жаңа жарияланымдар басқа құрылғыда ашылмайды.',
-                      'Демо: новые публикации не открываются на других устройствах.'));
-            }
             final link = houseLink(p.id);
             final c = await pickOne<String>(
                 context, tr3('分享这栋房子', 'Үймен бөлісу', 'Поделиться домом'), [
@@ -184,15 +176,10 @@ class _PostPageState extends State<PostPage> {
               if (context.mounted)
                 toast(
                     context,
-                    context.isDemo
-                        ? tr3(
-                            '已复制演示链接；新作品仅本次会话可见',
-                            'Демо сілтеме көшірілді; жаңа жоба тек осы сеанста',
-                            'Демо-ссылка скопирована; новые проекты доступны только в этом сеансе')
-                        : tr3(
-                            '已复制，任何人打开都能看',
-                            'Көшірілді, кез келген адам аша алады',
-                            'Скопировано, откроется у любого'));
+                    tr3(
+                        '已复制，任何人打开都能看',
+                        'Көшірілді, кез келген адам аша алады',
+                        'Скопировано, откроется у любого'));
             } else {
               try {
                 await SharePlus.instance

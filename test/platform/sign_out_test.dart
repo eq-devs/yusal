@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/data/mock/mock_seed.dart';
+import '../support/mock/mock_seed.dart';
 
 import 'explore_test.dart' show launch;
 

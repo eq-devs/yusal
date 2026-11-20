@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../data/http/http_backend.dart';
-import '../data/mock/mock_backend.dart';
 import '../data/repositories.dart';
 import '../services/firebase_setup.dart';
 import '../features/auth/login_page.dart';
@@ -30,11 +29,10 @@ const _locales = [Locale('kk'), Locale('ru'), Locale('zh')];
 /// The root widget: repositories, the local design store, theme, language
 /// and routes. Startup work lives in `main.dart`; this only builds.
 class HouseApp extends StatefulWidget {
-  const HouseApp({super.key, this.repos, this.store});
+  const HouseApp({super.key, required this.repos, this.store});
 
-  /// Platform backend: [HttpBackend] when built with YUSAL_API, else the
-  /// in-memory mock.
-  final PlatformRepositories? repos;
+  /// Platform backend: [HttpBackend] in the app, a fake in tests.
+  final PlatformRepositories repos;
   final ProjectStore? store;
 
   @override
@@ -42,12 +40,11 @@ class HouseApp extends StatefulWidget {
 }
 
 class _HouseAppState extends State<HouseApp> {
-  late final PlatformRepositories repos = widget.repos ?? MockBackend();
+  late final PlatformRepositories repos = widget.repos;
   late final ProjectStore store = (widget.store ??
       ProjectStore(
           previewRenderer: renderProjectPreview, owners: PrefsProjectOwners()))
     ..currentOwner ??= () => repos.currentAccount?.id;
-  late final bool isDemo = repos is MockBackend && repos is! HttpBackend;
 
   // Themes are rebuilt only when the theme choice changes, not on every
   // settings change (a language switch keeps the same ThemeData objects).
@@ -70,7 +67,6 @@ class _HouseAppState extends State<HouseApp> {
         return PlatformScope(
             repos: repos,
             store: store,
-            isDemo: isDemo,
             loginPage: (_) => const LoginPage(),
             child: MaterialApp(
                 navigatorKey: appNavigator,

@@ -76,7 +76,7 @@ Feature-first layout (one folder per feature, shared code below it):
 - `lib/main.dart`: startup only (settings, Firebase and session restore side by side, then `runApp`); the root widget is `lib/app/house_app.dart`.
 - `lib/features/<name>/`: one folder per feature: `shell` (tab bar), `explore`, `home` (house posts), `houses`, `projects`, `chat`, `me`, `profile`, `auth`, `demand`, `apply`, `coop`, `discover`, `backup`, and `editor` (the design tool; `house_editor.dart` and its parts).
 - `lib/shared/ui/`: the platform look and building blocks every feature uses (`theme.dart`, `widgets.dart`, `components.dart`, `cards.dart`, `plan_viewer.dart`, `scope.dart`, …); `lib/shared/motion/`: motion tokens and transitions.
-- `lib/domain/`: platform models and rules; `lib/data/`: repositories, `http/` (real backend) and `mock/` (demo backend).
+- `lib/domain/`: platform models and rules; `lib/data/`: repositories, `http/` (the real backend, yusal-api). The in-memory backend the tests use lives in `test/support/mock/`.
 - `lib/services/`: Firebase, push, Shorebird updates.
 - `lib/core/`: pure Dart documents, codec, validation, axes, canonicalization, commands, history, geometry and checks.
 - `lib/render2d/`, `lib/render3d/`: render derived geometry.
@@ -153,18 +153,11 @@ See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conforman
 
 ## 连接真实后端（yusal-api）
 
-不带参数运行时用内存里的演示后端。连接 Go 后端：
+应用总是连真实后端（eqserver，`https://eqserver.tail920a63.ts.net`，写在 `lib/main.dart`）。直接 `flutter run`，不需要任何配置文件或参数；测试登录和语音按钮一直打开。
 
-```bash
-flutter run \
-  --dart-define=YUSAL_API=https://<后端地址> \
-  --dart-define=GOOGLE_SERVER_CLIENT_ID=<Web 客户端 ID> \
-  --dart-define=GOOGLE_IOS_CLIENT_ID=<iOS 客户端 ID>
-```
+装到手机上测试用 `scripts/install_dev.sh`：打包并装到所有连着电脑的 Android 手机和 iPhone 上。
 
-装到手机上测试用 `scripts/install_dev.sh`：它按 `config/dart_defines.dev.json` 打包（测试登录和语音控制都打开），并装到所有连着电脑的 Android 手机和 iPhone 上。应用上线前，装到手机上的都应该是这个测试包；`config/dart_defines.release.json` 是正式包用的，没有测试登录和语音。
-
-`HttpBackend`（`lib/data/http/http_backend.dart`）把登录和账号、设计快照、发布的房子（点赞、点评）、云备份交给后端；名片、需求、报价、合作、聊天、通知、审核暂时仍在内存里运行，用的是真实账号 ID，等后端有了对应模块再切过去。
+`HttpBackend`（`lib/data/http/http_backend.dart`）把所有数据交给后端：账号、设计快照、发布的房子、云备份、名片、需求、报价、合作、聊天、通知和审核。已经没有离线演示模式。
 
 登录只有 Google 和 Apple，第一次接入需要：
 

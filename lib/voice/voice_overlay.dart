@@ -16,9 +16,8 @@ import 'screen.dart';
 import 'session.dart';
 import 'speech.dart';
 
-/// Voice control is built into every build; `--dart-define=YUSAL_VOICE=false`
-/// leaves it out.
-const voiceBuiltIn = bool.fromEnvironment('YUSAL_VOICE', defaultValue: true);
+/// Voice control is built into every build.
+const voiceBuiltIn = true;
 
 /// Voice control is for phones and tablets only.
 bool get voicePlatform =>

@@ -45,7 +45,7 @@ void main() {
     AppSettings.instance.lang = AppLang.kk;
     api = FakeApi();
     backend = HttpBackend('https://api.test',
-        client: MockClient(api.handle), seed: false);
+        client: MockClient(api.handle));
   });
 
   Future<void> signIn() => backend.signInWithProvider('google', 'id-token');

@@ -8,11 +8,13 @@ import 'package:uuid/uuid.dart';
 
 import '../app/settings.dart';
 import '../data/repositories.dart';
+import '../services/voice/offline_speech.dart';
 import '../services/voice/read_aloud.dart';
 import 'action.dart';
 import 'actions.dart';
 import 'executor.dart';
 import 'read_aloud_button.dart';
+import 'reply_reader.dart';
 import 'actions_design.dart';
 import 'screen.dart';
 import 'session.dart';
@@ -101,7 +103,7 @@ class VoiceBar extends StatefulWidget {
   final VoiceSession session;
 
   /// Reads replies aloud; null leaves the speaker button out.
-  final ReadAloud? reader;
+  final ReplyReader? reader;
 
   /// Null leaves the bar typed-only.
   final Speech? speech;
@@ -280,7 +282,7 @@ class _VoiceBarState extends State<VoiceBar>
     // The microphone must not hear the reply being read.
     if (widget.reader?.speaking.value ?? false) await widget.reader!.stop();
     final speech = widget.speech!;
-    final ok = await speech.audio.startRecording();
+    final ok = await speech.start();
     if (!mounted) return;
     setState(() {
       typing = false;
@@ -435,7 +437,8 @@ class _VoiceBarState extends State<VoiceBar>
                         // Gone with the reply: closing the bubble or a new
                         // sentence stops the voice.
                         if (widget.reader case final reader?
-                            when !s.busy &&
+                            when reader.available &&
+                                !s.busy &&
                                 !failed &&
                                 ReadAloud.canRead(s.reply))
                           ReadAloudButton(reader: reader, text: s.reply),
@@ -966,6 +969,7 @@ class VoiceHost extends StatefulWidget {
 class _VoiceHostState extends State<VoiceHost> {
   VoiceSession? session;
   OverlayEntry? entry;
+  ReplyReader? reader;
 
   @override
   void initState() {
@@ -984,6 +988,19 @@ class _VoiceHostState extends State<VoiceHost> {
         loggedIn: () => repos.currentAccount != null,
         sessionId: const Uuid().v4());
     VoiceSession.current = s;
+    final reader = this.reader = ReplyReader(
+        device: ReadAloud.instance,
+        server: speaker is SpeechSynth ? speaker : null);
+    // Reads which on-device models are installed; nothing is downloaded.
+    for (final VoiceModel? m in [
+      ReadAloud.instance,
+      OfflineSpeech.standard,
+      OfflineSpeech.accurate
+    ]) {
+      m?.start().catchError((Object e) {
+        if (kDebugMode) debugPrint('voice model: $e');
+      });
+    }
     // In the navigator's overlay, not a route: pages stay "current" for
     // voice while the bar is open, and its text field has an overlay.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -994,9 +1011,9 @@ class _VoiceHostState extends State<VoiceHost> {
               child: VoiceBar(
                   session: s,
                   speech: audio != null && speaker is SpeechBackend
-                      ? Speech(speaker, audio)
+                      ? Speech(ChosenSpeech(server: speaker), audio)
                       : null,
-                  reader: ReadAloud.instance)));
+                  reader: reader)));
       overlay.insert(entry!);
     });
   }
@@ -1006,6 +1023,7 @@ class _VoiceHostState extends State<VoiceHost> {
     entry?.remove();
     if (VoiceSession.current == session) VoiceSession.current = null;
     session?.dispose();
+    reader?.dispose();
     widget.audio?.dispose();
     super.dispose();
   }

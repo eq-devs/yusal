@@ -82,10 +82,47 @@ class FrostedAppBar extends StatelessWidget implements PreferredSizeWidget {
         // expand the frost lays out at height 0 and the bar is see-through.
         flexibleSpace: SizedBox.expand(
             child: ClipRect(
-                child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                    child: ColoredBox(color: t.bg.withValues(alpha: 0.88))))));
+                child: Frost(
+                    sigma: 14,
+                    child: ColoredBox(
+                        color: t.bg.withValues(
+                            alpha: glassAlpha(context, 0.88)))))));
   }
+}
+
+/// Forces [frostedGlass] on or off; null follows the platform. For tests
+/// and A/B frame timing.
+bool? debugFrostedGlass;
+
+/// Whether frosted surfaces (page header, tab bar) blur what scrolls under
+/// them. A backdrop blur re-reads and blurs the screen behind it on every
+/// frame: on the iOS simulator it took scrolling raster time from ~1.1 to
+/// ~2.5 ms (2026-11-20, `integration_test/profile_perf_test.dart`), and
+/// Android GPUs pay far more for it. Under a tint that is already ~85%
+/// opaque it shows little, so Android gets a near-solid tint instead.
+bool frostedGlass(BuildContext context) =>
+    debugFrostedGlass ??
+    switch (Theme.of(context).platform) {
+      TargetPlatform.iOS || TargetPlatform.macOS => true,
+      _ => false,
+    };
+
+/// Tint of a frosted surface: [overBlur] see-through over a blur, almost
+/// solid without one, so sharp content never ghosts through it.
+double glassAlpha(BuildContext context, double overBlur) =>
+    frostedGlass(context) ? overBlur : 0.96;
+
+/// Blurs what lies behind [child] where [frostedGlass] allows; elsewhere
+/// just paints [child]. Clip it to the surface's shape.
+class Frost extends StatelessWidget {
+  const Frost({super.key, required this.sigma, required this.child});
+  final double sigma;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => frostedGlass(context)
+      ? BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma), child: child)
+      : child;
 }
 
 /// Sticky bottom bar for a page's main action. The page fades out under it

@@ -1,5 +1,5 @@
 import '../../voice/voice_overlay.dart' show VoiceSlot;
-import 'dart:ui' show ImageFilter, lerpDouble;
+import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +12,7 @@ import '../me/me_page.dart';
 import '../projects/projects_page.dart';
 import '../../shared/ui/components.dart';
 import '../../shared/ui/theme.dart';
+import '../../shared/ui/widgets.dart' show Frost, glassAlpha;
 import '../../shared/ui/scope.dart';
 import '../../shared/motion/motion.dart';
 import '../../voice/actions_nav.dart';
@@ -376,13 +377,14 @@ class _GlassPill extends StatelessWidget {
             ]),
         child: ClipRRect(
             borderRadius: BorderRadius.circular(YRadius.pill),
-            child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Frost(
+                sigma: 18,
                 child: Container(
                     width: width,
                     height: height,
                     decoration: BoxDecoration(
-                        color: t.elevated.withValues(alpha: t.dark ? 0.82 : 0.86),
+                        color: t.elevated.withValues(
+                            alpha: glassAlpha(context, t.dark ? 0.82 : 0.86)),
                         borderRadius: BorderRadius.circular(YRadius.pill),
                         border: Border.all(color: t.line.withValues(alpha: 0.6))),
                     child: child))));

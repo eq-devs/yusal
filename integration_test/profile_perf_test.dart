@@ -15,12 +15,12 @@ import 'package:integration_test/integration_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/main.dart' show HouseApp;
-import 'package:yusal/platform/ui/widgets.dart' show Avatar;
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/ui/profile/profile_page.dart';
-import 'package:yusal/platform/ui/scope.dart';
-import 'package:yusal/platform/ui/shell.dart';
+import 'package:yusal/shared/ui/widgets.dart' show Avatar;
+import 'package:yusal/data/mock/mock_backend.dart';
+import 'package:yusal/data/mock/mock_seed.dart';
+import 'package:yusal/features/profile/profile_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/features/shell/shell.dart';
 import 'package:yusal/storage/project_store.dart';
 
 import '../test/storage_test.dart' show MemoryFiles;

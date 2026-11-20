@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-import '../platform/domain/models.dart';
-import '../platform/ui/chat/inbox_page.dart';
+import '../domain/models.dart';
+import '../features/chat/inbox_page.dart';
 import 'action.dart';
 import 'screen.dart';
 

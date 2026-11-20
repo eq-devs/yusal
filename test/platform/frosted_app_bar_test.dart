@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/ui/theme.dart';
-import 'package:yusal/platform/ui/widgets.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 
 void main() {
   testWidgets('the frosted app bar covers the whole bar', (t) async {

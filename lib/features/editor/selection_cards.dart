@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// Cards for the current selection, after the room card of the drafting
 /// page: name, the other language, a grid of figures, a note — every value

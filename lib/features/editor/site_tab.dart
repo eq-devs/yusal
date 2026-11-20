@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// The plot: where the house stands, the fence and gate, outbuildings,
 /// the garden and the well, with the usual distances checked. Tap to

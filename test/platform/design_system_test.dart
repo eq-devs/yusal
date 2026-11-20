@@ -5,16 +5,28 @@ import 'package:flutter_test/flutter_test.dart';
 /// Keeps platform pages on the design system: sizes, radii and colours are
 /// named in `theme.dart`, not written as numbers in a page.
 void main() {
-  final pages = Directory('lib/platform/ui')
-      .listSync(recursive: true)
+  // The platform look: the shared UI and every feature except the design
+  // tool, which keeps its own drafting look.
+  final pages = [
+    Directory('lib/shared/ui'),
+    ...Directory('lib/features')
+        .listSync()
+        .whereType<Directory>()
+        .where((d) => !d.path.endsWith('/editor')),
+  ]
+      .expand((d) => d.listSync(recursive: true))
       .whereType<File>()
       .where((f) => f.path.endsWith('.dart'))
       .toList();
 
+  test('finds the platform pages', () {
+    expect(pages.length, greaterThan(40));
+  });
+
   Map<String, List<String>> offenders(RegExp pattern, {Set<String> allow = const {}}) {
     final out = <String, List<String>>{};
     for (final f in pages) {
-      final name = f.path.split('lib/platform/ui/').last;
+      final name = f.path.split('/').last;
       if (allow.contains(name)) continue;
       final hits = [
         for (final (i, line) in f.readAsLinesSync().indexed)

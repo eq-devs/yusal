@@ -5,11 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:yusal/app/settings.dart';
-import 'package:yusal/platform/data/http/http_backend.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/ui/me/feedback_page.dart';
-import 'package:yusal/platform/ui/scope.dart';
-import 'package:yusal/platform/ui/widgets.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/data/mock/mock_backend.dart';
+import 'package:yusal/features/me/feedback_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 import 'package:yusal/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 

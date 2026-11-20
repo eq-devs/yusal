@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// 3D exterior and walk-through pages: the stage on a sheet, with the
 /// drafting page's controls (layers, cut, views, sun, north) under it.

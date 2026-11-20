@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../app/settings.dart';
-import '../platform/data/repositories.dart';
+import '../data/repositories.dart';
 import 'action.dart';
 import 'actions_design.dart';
 import 'executor.dart';

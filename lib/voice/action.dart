@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart' show BuildContext;
 
 import '../app/settings.dart';
-import '../platform/data/repositories.dart';
+import '../data/repositories.dart';
 
 /// One piece of wording in the app's three languages.
 class L3 {

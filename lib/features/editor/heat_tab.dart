@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// Insulation and heating: the heat the house loses on the coldest day,
 /// where it goes, how big a boiler it needs and the fuel for a winter.

@@ -22,7 +22,7 @@ import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/core/document/house_document.dart';
 import 'package:yusal/core/geometry/derived_house.dart';
 import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/platform/snapshot/design_snapshot.dart';
+import 'package:yusal/domain/design_snapshot.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/render2d/planning_names.dart';
 

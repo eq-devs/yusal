@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// Roof styles a design can have: flat, gable (two slopes) or hip (four).
 const roofStyles = ['flat', 'gable', 'hip'];

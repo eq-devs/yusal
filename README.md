@@ -68,13 +68,22 @@ The unit/widget suite includes 10,000 seeded canonicalization cases, byte-for-by
 - `lib/core/commands/kz_template.dart`: the 10 × 13 m village house as an editable template.
 - `lib/core/document/extras_planning.dart`, `lib/core/analysis/{cost_estimate,heat_loss,utility_plan,site_analysis,build_schedule}.dart`: planning data (file schema v4, only written when used) and its pure-Dart calculations.
 - `lib/core/commands/outline_commands.dart`: corner cuts for non-rectangular houses.
-- `lib/features/drawing_export.dart`: the PDF/PNG drawing set.
+- `lib/features/editor/drawing_export.dart`: the PDF/PNG drawing set.
 - `lib/render3d/scene_model.dart`, `scene_view.dart`: software 3D with sun, night, cut, foundation and the walk-through.
 
+Feature-first layout (one folder per feature, shared code below it):
+
+- `lib/main.dart`: startup only (settings, Firebase and session restore side by side, then `runApp`); the root widget is `lib/app/house_app.dart`.
+- `lib/features/<name>/`: one folder per feature: `shell` (tab bar), `explore`, `home` (house posts), `houses`, `projects`, `chat`, `me`, `profile`, `auth`, `demand`, `apply`, `coop`, `discover`, `backup`, and `editor` (the design tool; `house_editor.dart` and its parts).
+- `lib/shared/ui/`: the platform look and building blocks every feature uses (`theme.dart`, `widgets.dart`, `components.dart`, `cards.dart`, `plan_viewer.dart`, `scope.dart`, …); `lib/shared/motion/`: motion tokens and transitions.
+- `lib/domain/`: platform models and rules; `lib/data/`: repositories, `http/` (real backend) and `mock/` (demo backend).
+- `lib/services/`: Firebase, push, Shorebird updates.
 - `lib/core/`: pure Dart documents, codec, validation, axes, canonicalization, commands, history, geometry and checks.
-- `lib/features/`: project home and interactive editor.
 - `lib/render2d/`, `lib/render3d/`: render derived geometry.
 - `lib/storage/`: platform filesystem boundary, index and project persistence.
+- `lib/voice/`: the voice assistant.
+
+Features build on the lower layers, never the other way round: nothing under `shared/`, `domain/`, `data/`, `services/`, `core/`, `storage/` or `render*/` imports a feature (`test/architecture_test.dart` checks this). Only the app root and `lib/voice/` wire features together; what a lower layer needs from a feature is passed in (the login page through `PlatformScope.loginPage`, the push target opener through `PushSetup.opener`).
 - `android/`, `ios/`: native bounded file-import handlers and document registration.
 
 ## Acceptance status
@@ -155,7 +164,7 @@ flutter run \
 
 装到手机上测试用 `scripts/install_dev.sh`：它按 `config/dart_defines.dev.json` 打包（测试登录和语音控制都打开），并装到所有连着电脑的 Android 手机和 iPhone 上。应用上线前，装到手机上的都应该是这个测试包；`config/dart_defines.release.json` 是正式包用的，没有测试登录和语音。
 
-`HttpBackend`（`lib/platform/data/http/http_backend.dart`）把登录和账号、设计快照、发布的房子（点赞、点评）、云备份交给后端；名片、需求、报价、合作、聊天、通知、审核暂时仍在内存里运行，用的是真实账号 ID，等后端有了对应模块再切过去。
+`HttpBackend`（`lib/data/http/http_backend.dart`）把登录和账号、设计快照、发布的房子（点赞、点评）、云备份交给后端；名片、需求、报价、合作、聊天、通知、审核暂时仍在内存里运行，用的是真实账号 ID，等后端有了对应模块再切过去。
 
 登录只有 Google 和 Apple，第一次接入需要：
 

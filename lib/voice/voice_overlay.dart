@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../app/settings.dart';
-import '../platform/data/repositories.dart';
+import '../data/repositories.dart';
 import 'action.dart';
 import 'actions.dart';
 import 'executor.dart';

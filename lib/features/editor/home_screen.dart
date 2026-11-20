@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// What a page that draws its own list of designs needs from [HouseHome]:
 /// the designs and everything that can be done with them. [HouseHome]
@@ -965,7 +965,12 @@ class _HouseHomeState extends State<HouseHome>
                       clipBehavior: Clip.antiAlias,
                       child: entry.preview == null
                           ? Icon(Icons.other_houses_outlined, color: t.muted)
-                          : Image.memory(Uint8List.fromList(entry.preview!),
+                          // Same bytes every build: decoded once, then
+                          // cached, and only at the tile's size.
+                          : Image.memory(imageBytes(entry.preview!),
+                              cacheWidth: (64 *
+                                      MediaQuery.devicePixelRatioOf(context))
+                                  .round(),
                               fit: BoxFit.contain)),
                   const SizedBox(width: 12),
                   Expanded(

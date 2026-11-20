@@ -93,6 +93,7 @@ void main() {
       'features/home/pages/post.dart': 2,
       'features/coop/widgets/site_tab.dart': 2,
       'features/me/page.dart': 2,
+      'features/me/pages/voice_settings.dart': 5,
       'features/trust/page.dart': 5,
       'features/profile/page.dart': 1,
       'features/profile/widgets/profile_card.dart': 1,

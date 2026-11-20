@@ -40,6 +40,7 @@ import 'package:yusal/service/firebase_setup.dart';
 import 'package:yusal/service/push/push_setup.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/service/update/code_push.dart';
+import 'package:yusal/service/voice/voice_settings.dart';
 
 /// App startup, each part run once however often it is asked for.
 ///
@@ -51,6 +52,7 @@ import 'package:yusal/service/update/code_push.dart';
 abstract final class Boot {
   static final Future<void> ready = Future.wait([
     _step('settings', loadSettings),
+    _step('voice settings', VoiceSettings.instance.load),
     _step('session', ApiClient.app.loadSession),
     // Analytics and crash reports on iOS / Android; no-op on the web.
     _step('firebase', FirebaseSetup.init),

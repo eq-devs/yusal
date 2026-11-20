@@ -14,12 +14,11 @@ import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
-import 'package:yusal/service/voice/read_aloud.dart';
 import 'package:yusal/features/voice/widgets/voice_overlay.dart'
-    show voiceBuiltIn;
+    show voiceBuiltIn, voicePlatform;
 import 'package:yusal/features/auth/pages/sign_in_methods.dart';
 import 'package:yusal/features/me/pages/feedback.dart';
-import 'package:yusal/features/me/pages/kazakh_voice.dart';
+import 'package:yusal/features/me/pages/voice_settings.dart';
 import 'package:yusal/features/trust/page.dart';
 import 'package:yusal/features/me/state/me.dart';
 import 'package:yusal/features/profile/state/profile.dart';
@@ -161,26 +160,17 @@ class MePage extends ConsumerWidget {
                                                 selected: app.theme);
                                             if (v != null) choose.setTheme(v);
                                           }),
-                                      if (voiceBuiltIn)
-                                        if (ReadAloud.instance
-                                            case final reader?)
-                                          ValueListenableBuilder<VoiceModelStatus>(
-                                              valueListenable: reader.status,
-                                              builder: (context, s, _) => SettingsRow(
-                                                  key: const Key(
-                                                      'me-kazakh-voice'),
-                                                  icon: Icons
-                                                      .record_voice_over_outlined,
-                                                  title: tr3(
-                                                      '哈萨克语朗读',
-                                                      'Қазақша дауыс',
-                                                      'Казахский голос',
-                                                      'Kazakh voice', ky: 'Казакча үн', uz: 'Qozoqcha ovoz'),
-                                                  value: kazakhVoiceValue(s),
-                                                  onTap: () => pushPage<void>(
-                                                      context,
-                                                      (_) => KazakhVoicePage(
-                                                          reader: reader)))),
+                                      if (voiceBuiltIn && voicePlatform)
+                                        SettingsRow(
+                                            key: const Key('me-voice'),
+                                            icon: Icons
+                                                .record_voice_over_outlined,
+                                            title: tr3('语音', 'Дауыс', 'Голос',
+                                                'Voice', ky: 'Үн', uz: 'Ovoz'),
+                                            onTap: () => pushPage<void>(
+                                                context,
+                                                (_) =>
+                                                    const VoiceSettingsPage())),
                                       SettingsRow(
                                           key: const Key('me-feedback'),
                                           icon: YIcons.chat,

@@ -2,8 +2,7 @@
 //
 // Needs the API running with DEV_LOGIN=true, then on a simulator:
 //   flutter test integration_test/backend_flow_test.dart -d <device> \
-//     --dart-define=YUSAL_API=http://localhost:8080 \
-//     --dart-define=YUSAL_DEV_LOGIN=true
+//     --dart-define=YUSAL_API=http://localhost:8080
 // (Android emulator: YUSAL_API=http://10.0.2.2:8080.)
 //
 // Screenshots of key screens go to E2E_SHOTS, else the app's temp folder

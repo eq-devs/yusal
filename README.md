@@ -153,16 +153,9 @@ See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conforman
 
 ## 连接真实后端（yusal-api）
 
-应用总是连真实后端。不带参数的 `flutter run` 连 eqserver（`https://eqserver.tail920a63.ts.net`），测试登录和语音按钮默认都打开。换别的后端：
+应用总是连真实后端（eqserver，`https://eqserver.tail920a63.ts.net`，写在 `lib/main.dart`）。直接 `flutter run`，不需要任何配置文件或参数；测试登录和语音按钮一直打开。
 
-```bash
-flutter run \
-  --dart-define=YUSAL_API=https://<后端地址> \
-  --dart-define=GOOGLE_SERVER_CLIENT_ID=<Web 客户端 ID> \
-  --dart-define=GOOGLE_IOS_CLIENT_ID=<iOS 客户端 ID>
-```
-
-装到手机上测试用 `scripts/install_dev.sh`：它按 `config/dart_defines.dev.json` 打包（测试登录和语音控制都打开），并装到所有连着电脑的 Android 手机和 iPhone 上。应用上线前，装到手机上的都应该是这个测试包；`config/dart_defines.release.json` 是正式包用的，没有测试登录和语音。
+装到手机上测试用 `scripts/install_dev.sh`：打包并装到所有连着电脑的 Android 手机和 iPhone 上。
 
 `HttpBackend`（`lib/data/http/http_backend.dart`）把所有数据交给后端：账号、设计快照、发布的房子、云备份、名片、需求、报价、合作、聊天、通知和审核。已经没有离线演示模式。
 

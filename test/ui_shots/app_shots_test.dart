@@ -1,6 +1,6 @@
 // The app's main pages with the voice orb over them, for visual review
 // (not run in CI).
-// SHOTS_OUT=/path flutter test --dart-define=YUSAL_VOICE=true test/ui_shots/app_shots_test.dart
+// SHOTS_OUT=/path flutter test test/ui_shots/app_shots_test.dart
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';

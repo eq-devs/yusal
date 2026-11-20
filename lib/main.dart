@@ -14,10 +14,8 @@ import 'services/update/code_push.dart';
 
 export 'app/house_app.dart';
 
-/// Backend address. A plain `flutter run` talks to eqserver (yusal-api);
-/// point elsewhere with `--dart-define=YUSAL_API=https://api.example.com`.
-const apiBaseUrl = String.fromEnvironment('YUSAL_API',
-    defaultValue: 'https://eqserver.tail920a63.ts.net');
+/// The backend (yusal-api on eqserver).
+const apiBaseUrl = 'https://eqserver.tail920a63.ts.net';
 
 /// Longest the first frame waits for a saved session. A slow or sleeping
 /// server must not hold the splash screen: the session keeps restoring in

@@ -38,13 +38,6 @@ class _LoginPageState extends State<LoginPage> {
     if (account != null && mounted) Navigator.pop(context, true);
   }
 
-  /// Development sign-in by name and the one-tap test accounts. On by
-  /// default while the app is in development; build with
-  /// `--dart-define=YUSAL_DEV_LOGIN=false` to hide them. The backend must run
-  /// with DEV_LOGIN=true.
-  static const _devLogin =
-      bool.fromEnvironment('YUSAL_DEV_LOGIN', defaultValue: true);
-
   /// One-tap test accounts, by role. Each is a real account on the backend
   /// with real history, filled by yusal-api `tool/seed/seed.py` (the keys
   /// must match its PEOPLE). "Test Admin" is the superadmin the backend makes
@@ -130,34 +123,34 @@ class _LoginPageState extends State<LoginPage> {
       if (!SocialSignIn.appleAvailable && !SocialSignIn.googleAvailable)
         Hint(tr3('请在手机 App 中登录。', 'Телефондағы қолданбада кіріңіз.',
             'Войдите в мобильном приложении.')),
-      if (_devLogin) ...[
-        const SectionTitle('开发登录 · Dev', top: 28),
-        TextField(
-            key: const Key('dev-login-name'),
-            controller: name,
-            decoration: const InputDecoration(labelText: 'Name')),
+      // Test sign-in: by name, and one tap per role. The backend must run
+      // with DEV_LOGIN=true.
+      const SectionTitle('开发登录 · Dev', top: 28),
+      TextField(
+          key: const Key('dev-login-name'),
+          controller: name,
+          decoration: const InputDecoration(labelText: 'Name')),
+      const SizedBox(height: 12),
+      BusyButton(
+          key: const Key('dev-login'),
+          label: 'Dev sign in',
+          outlined: true,
+          onPressed: () => devSignIn(api)),
+      const SizedBox(height: 16),
+      Text('测试账号 · Test accounts', style: TextStyle(color: t.muted)),
+      for (final (group, personas) in testPersonaGroups) ...[
         const SizedBox(height: 12),
-        BusyButton(
-            key: const Key('dev-login'),
-            label: 'Dev sign in',
-            outlined: true,
-            onPressed: () => devSignIn(api)),
-        const SizedBox(height: 16),
-        Text('测试账号 · Test accounts', style: TextStyle(color: t.muted)),
-        for (final (group, personas) in testPersonaGroups) ...[
-          const SizedBox(height: 12),
-          Text(group,
-              style: TextStyle(color: t.muted, fontSize: YFont.caption)),
-          const SizedBox(height: 6),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final (id, label, icon) in personas)
-              ActionChip(
-                  key: Key('test-login-$id'),
-                  avatar: Icon(icon, size: 18),
-                  label: Text(label),
-                  onPressed: () => devSignIn(api, id)),
-          ]),
-        ],
+        Text(group,
+            style: TextStyle(color: t.muted, fontSize: YFont.caption)),
+        const SizedBox(height: 6),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final (id, label, icon) in personas)
+            ActionChip(
+                key: Key('test-login-$id'),
+                avatar: Icon(icon, size: 18),
+                label: Text(label),
+                onPressed: () => devSignIn(api, id)),
+        ]),
       ],
     ]);
   }

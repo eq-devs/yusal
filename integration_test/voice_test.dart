@@ -4,8 +4,7 @@
 // service are scripted here, so no server is needed.
 //
 //   xcrun simctl privacy <simulator-id> grant microphone com.yusal.client
-//   flutter test integration_test/voice_test.dart -d <simulator-id> \
-//       --dart-define=YUSAL_VOICE=true
+//   flutter test integration_test/voice_test.dart -d <simulator-id>
 //
 // `flutter test` removes the app when a run ends, and that drops the grant:
 // grant before every run (granting while the app runs stops the app).
@@ -124,8 +123,6 @@ void main() {
 
   testWidgets('the bar over the real app changes tabs by a typed request',
       (t) async {
-    expect(voiceBuiltIn, isTrue,
-        reason: 'run with --dart-define=YUSAL_VOICE=true');
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
     AppSettings.instance.lang = AppLang.zh;
@@ -164,8 +161,6 @@ void main() {
 
   testWidgets('a spoken request is recorded, sent as heard and answered in text',
       (t) async {
-    expect(voiceBuiltIn, isTrue,
-        reason: 'run with --dart-define=YUSAL_VOICE=true');
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
     AppSettings.instance.lang = AppLang.kk;

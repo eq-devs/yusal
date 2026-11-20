@@ -254,10 +254,11 @@ ThemeData buildPlatformTheme(YTokens t) {
       scaffoldBackgroundColor: t.bg,
       canvasColor: t.bg,
       dividerColor: t.line,
-      // No ripple: a press is one even tint over the whole control (see
-      // PressTint). The highlight stays clear so it is not drawn twice.
+      // No Material ripple: a press is a warm bloom from the finger that
+      // settles into one even tint (see PressTint). The highlight stays
+      // clear so it is not drawn twice.
       splashFactory: PressTint.splashFactory,
-      splashColor: t.ink.withValues(alpha: t.dark ? 0.10 : 0.06),
+      splashColor: t.accent.withValues(alpha: t.dark ? 0.20 : 0.14),
       highlightColor: Colors.transparent,
       iconTheme: IconThemeData(color: t.ink),
       // The design tool's palette stays available to shared widgets.

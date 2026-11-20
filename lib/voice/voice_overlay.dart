@@ -8,9 +8,11 @@ import 'package:uuid/uuid.dart';
 
 import '../app/settings.dart';
 import '../data/repositories.dart';
+import '../services/voice/read_aloud.dart';
 import 'action.dart';
 import 'actions.dart';
 import 'executor.dart';
+import 'read_aloud_button.dart';
 import 'actions_design.dart';
 import 'screen.dart';
 import 'session.dart';
@@ -94,8 +96,12 @@ const _suggestionOrder = [
 /// Tapping the orb starts listening and tapping it again sends; without
 /// speech, or on a long press, it opens a text field instead.
 class VoiceBar extends StatefulWidget {
-  const VoiceBar({super.key, required this.session, this.speech});
+  const VoiceBar(
+      {super.key, required this.session, this.speech, this.reader});
   final VoiceSession session;
+
+  /// Reads replies aloud; null leaves the speaker button out.
+  final ReadAloud? reader;
 
   /// Null leaves the bar typed-only.
   final Speech? speech;
@@ -271,6 +277,8 @@ class _VoiceBarState extends State<VoiceBar>
   Future<void> startListening() async {
     // The microphone is already in use for the last sentence.
     if (mic != _Mic.off) return;
+    // The microphone must not hear the reply being read.
+    if (widget.reader?.speaking.value ?? false) await widget.reader!.stop();
     final speech = widget.speech!;
     final ok = await speech.audio.startRecording();
     if (!mounted) return;
@@ -424,6 +432,13 @@ class _VoiceBarState extends State<VoiceBar>
                                     expanded ? null : TextOverflow.ellipsis,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                     color: failed ? colors.error : null))),
+                        // Gone with the reply: closing the bubble or a new
+                        // sentence stops the voice.
+                        if (widget.reader case final reader?
+                            when !s.busy &&
+                                !failed &&
+                                ReadAloud.canRead(s.reply))
+                          ReadAloudButton(reader: reader, text: s.reply),
                         if (canUndo)
                           TextButton(
                               key: const Key('voice-undo'),
@@ -980,7 +995,8 @@ class _VoiceHostState extends State<VoiceHost> {
                   session: s,
                   speech: audio != null && speaker is SpeechBackend
                       ? Speech(speaker, audio)
-                      : null)));
+                      : null,
+                  reader: ReadAloud.instance)));
       overlay.insert(entry!);
     });
   }

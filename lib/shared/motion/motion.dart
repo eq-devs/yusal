@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart' show kTouchSlop;
 import 'package:flutter/cupertino.dart' show CupertinoPageTransition, CupertinoRouteTransitionMixin;
@@ -309,12 +311,16 @@ class _PressableState extends State<Pressable> {
               Transform.scale(scale: scale, child: child)));
 }
 
-/// The app's press feedback in place of Material's ripple: the whole
-/// control takes one even tint, nothing spreads out from the finger. The
-/// tint comes up in [Motion.press], holds while the finger rests, and
-/// fades in [Motion.fast] once it lifts. A quick tap still reaches the
-/// full tint before fading, so it never reads as missed; a press that
-/// turns into a scroll just fades from wherever it got to.
+/// The app's press feedback in place of Material's ripple: a warm bloom,
+/// like a drop of ink taken up by paper. It starts soft-edged under the
+/// finger and soaks outward in [Motion.enter] along [Motion.settle] until
+/// the whole control holds one even tint; there is no hard ring and
+/// nothing bounces. The tint comes up in [Motion.press], holds while the
+/// finger rests, and fades in [Motion.fast] once it lifts. A quick tap
+/// still reaches the full tint before fading, so it never reads as
+/// missed; a press that turns into a scroll just fades from wherever it
+/// got to. With reduce motion on nothing spreads: the control takes the
+/// even tint at once.
 ///
 /// Set once as `ThemeData.splashFactory` (with a transparent
 /// `highlightColor`, so the tint is not drawn twice); every [InkWell],
@@ -326,6 +332,7 @@ class PressTint extends InteractiveInkFeature {
     required super.referenceBox,
     required super.color,
     required TextDirection textDirection,
+    Offset? position,
     bool containedInkWell = true,
     RectCallback? rectCallback,
     BorderRadius? borderRadius,
@@ -333,6 +340,7 @@ class PressTint extends InteractiveInkFeature {
     double? radius,
     super.onRemoved,
   })  : _textDirection = textDirection,
+        _origin = position,
         _contained = containedInkWell,
         _rect = rectCallback,
         _borderRadius = borderRadius ?? BorderRadius.zero,
@@ -345,17 +353,30 @@ class PressTint extends InteractiveInkFeature {
       ..addListener(controller.markNeedsPaint)
       ..addStatusListener(_onStatus)
       ..forward();
+    final still = WidgetsBinding
+        .instance.platformDispatcher.accessibilityFeatures.disableAnimations;
+    _spread = AnimationController(
+        vsync: controller.vsync, duration: Motion.enter, value: still ? 1 : 0)
+      ..addListener(controller.markNeedsPaint)
+      ..forward();
     controller.addInkFeature(this);
   }
 
   static const InteractiveInkFeatureFactory splashFactory = _PressTintFactory();
 
+  /// Where the bloom starts, as a share of the distance it has to cover.
+  static const _start = 0.18;
+
+  /// The bloom's soft edge, as a share of its radius.
+  static const _feather = 0.45;
+
   final TextDirection _textDirection;
+  final Offset? _origin;
   final bool _contained;
   final RectCallback? _rect;
   final BorderRadius _borderRadius;
   final double _radius;
-  late final AnimationController _t;
+  late final AnimationController _t, _spread;
   bool _released = false;
 
   void _onStatus(AnimationStatus s) {
@@ -382,31 +403,62 @@ class PressTint extends InteractiveInkFeature {
   @override
   void dispose() {
     _t.dispose();
+    _spread.dispose();
     super.dispose();
   }
+
+  /// A soft-edged disc of the tint: solid to `1 - _feather` of [radius],
+  /// clear at its rim.
+  Paint _bloom(Offset centre, double radius, Color tint) => Paint()
+    ..shader = ui.Gradient.radial(centre, radius,
+        [tint, tint, tint.withValues(alpha: 0)], const [0, 1 - _feather, 1]);
 
   @override
   void paintFeature(Canvas canvas, Matrix4 transform) {
     final v = Curves.easeOut.transform(_t.value);
     if (v == 0) return;
-    final paint = Paint()..color = color.withValues(alpha: color.a * v);
+    final tint = color.withValues(alpha: color.a * v);
+    final spread = Motion.settle.transform(_spread.value);
+    final grown = _start + (1 - _start) * spread;
     canvas.save();
     canvas.transform(transform.storage);
     if (_contained) {
       final rect = _rect?.call() ?? Offset.zero & referenceBox.size;
       final border = customBorder;
       if (border != null) {
-        canvas.drawPath(
-            border.getOuterPath(rect, textDirection: _textDirection), paint);
+        canvas.clipPath(
+            border.getOuterPath(rect, textDirection: _textDirection));
       } else if (_borderRadius != BorderRadius.zero) {
-        canvas.drawRRect(_borderRadius.toRRect(rect), paint);
+        canvas.clipRRect(_borderRadius.toRRect(rect));
       } else {
-        canvas.drawRect(rect, paint);
+        canvas.clipRect(rect);
+      }
+      if (spread >= 1) {
+        canvas.drawRect(rect, Paint()..color = tint);
+      } else {
+        final origin = _origin ?? rect.center;
+        // Far enough that the solid part of the disc reaches the
+        // farthest corner: the end state is the even tint.
+        final reach = math.max(
+                math.max((rect.topLeft - origin).distance,
+                    (rect.topRight - origin).distance),
+                math.max((rect.bottomLeft - origin).distance,
+                    (rect.bottomRight - origin).distance)) /
+            (1 - _feather);
+        canvas.drawRect(rect, _bloom(origin, reach * grown, tint));
       }
     } else {
-      // An unbounded response (a bare icon): a still disc behind it,
-      // centred on the control, not on the finger.
-      canvas.drawCircle(referenceBox.size.center(Offset.zero), _radius, paint);
+      // An unbounded response (a bare icon): a disc behind it, centred
+      // on the control, not on the finger, firming up from its middle.
+      final centre = referenceBox.size.center(Offset.zero);
+      if (spread >= 1) {
+        canvas.drawCircle(centre, _radius, Paint()..color = tint);
+      } else {
+        canvas.clipPath(Path()
+          ..addOval(Rect.fromCircle(center: centre, radius: _radius)));
+        canvas.drawCircle(centre, _radius,
+            _bloom(centre, _radius / (1 - _feather) * grown, tint));
+      }
     }
     canvas.restore();
   }
@@ -437,6 +489,7 @@ class _PressTintFactory extends InteractiveInkFeatureFactory {
           containedInkWell: containedInkWell,
           rectCallback: rectCallback,
           borderRadius: borderRadius,
+          position: position,
           customBorder: customBorder,
           radius: radius,
           onRemoved: onRemoved);

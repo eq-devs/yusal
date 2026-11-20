@@ -23,9 +23,10 @@ import 'package:motor/motor.dart' as motor;
 ///    flights; only a short fade or a direct switch.
 /// 7. Haptics confirm a choice (select, save, switch tab, open a sheet,
 ///    press a main button); they never decorate a scroll.
-/// 8. No ripples. A pressed control takes one even tint ([PressTint]):
-///    up in [press], down in [fast]. A pressed card shrinks to
-///    [pressScale] instead. Nothing spreads out from the finger.
+/// 8. No Material ripples. A pressed control takes a warm tint
+///    ([PressTint]) that blooms soft-edged from the finger and settles
+///    into one even tint: up in [press], spread in [enter], down in
+///    [fast]. A pressed card shrinks to [pressScale] instead.
 abstract final class Motion {
   /// A finger going down on a card; a quick tap's visible press.
   static const press = Duration(milliseconds: 100);

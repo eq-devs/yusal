@@ -14,12 +14,12 @@ import '../profile/profile_page.dart';
 import '../../shared/ui/scope.dart';
 import '../../shared/ui/theme.dart';
 import '../../shared/ui/widgets.dart';
-import '../../services/voice/offline_speech.dart';
+import '../../services/voice/read_aloud.dart';
 import '../../voice/voice_overlay.dart' show voiceBuiltIn;
 import 'admin_page.dart';
 import 'dev_tools_page.dart';
 import 'feedback_page.dart';
-import 'offline_voice_page.dart';
+import 'kazakh_voice_page.dart';
 import 'trust_pages.dart';
 
 /// Fourth tab: who I am, what I published, my professional profile,
@@ -156,26 +156,26 @@ class MePage extends StatelessWidget {
                                         if (v != null) app.setTheme(v);
                                       }),
                                   if (voiceBuiltIn)
-                                    if (OfflineSpeech.instance
-                                        case final offline?)
-                                      ValueListenableBuilder<OfflineStatus>(
-                                          valueListenable: offline.status,
+                                    if (ReadAloud.instance
+                                        case final reader?)
+                                      ValueListenableBuilder<VoiceModelStatus>(
+                                          valueListenable: reader.status,
                                           builder: (context, s, _) =>
                                               SettingsRow(
                                                   key: const Key(
-                                                      'me-offline-voice'),
+                                                      'me-kazakh-voice'),
                                                   icon: Icons
                                                       .record_voice_over_outlined,
                                                   title: tr3(
-                                                      '离线语音识别',
-                                                      'Офлайн дауыс тану',
-                                                      'Офлайн-распознавание'),
+                                                      '哈萨克语朗读',
+                                                      'Қазақша дауыс',
+                                                      'Казахский голос'),
                                                   value:
-                                                      offlineVoiceValue(s),
+                                                      kazakhVoiceValue(s),
                                                   onTap: () => pushPage<void>(
                                                       context,
-                                                      (_) => OfflineVoicePage(
-                                                          speech: offline)))),
+                                                      (_) => KazakhVoicePage(
+                                                          reader: reader)))),
                                   SettingsRow(
                                       key: const Key('me-feedback'),
                                       icon: Icons.chat_bubble_outline,

@@ -1,9 +1,4 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
-
-import '../data/repositories.dart';
-import '../services/voice/offline_speech.dart';
+import 'dart:typed_data';
 
 /// What speech needs from the server. yusal-api proxies the speech service
 /// (Kazakh only), so its key never ships in the app. Replies are shown as
@@ -37,52 +32,9 @@ class Speech {
   /// The speech service cuts a sentence at 25 s.
   static const maxSentence = Duration(seconds: 25);
 
-  /// Starts recording, and loads the on-device model meanwhile.
-  Future<bool> start() {
-    final b = backend;
-    if (b is LocalFirstSpeech) unawaited(b.warmUp());
-    return audio.startRecording();
-  }
-
   Future<String> heard() async {
     final wav = await audio.stopRecording();
     if (wav == null || wav.isEmpty) return '';
     return backend.transcribe(wav);
-  }
-}
-
-/// Transcribes on the phone once the user has downloaded the offline
-/// Kazakh model (qazvoice), and on the [server] until then, or when the
-/// phone fails at it.
-class LocalFirstSpeech implements SpeechBackend {
-  const LocalFirstSpeech({this.server, this.offline});
-  final SpeechBackend? server;
-  final OfflineSpeech? offline;
-
-  /// Whether the next sentence is transcribed on the phone.
-  bool get onDevice => offline?.ready ?? false;
-
-  Future<void> warmUp() async {
-    try {
-      if (onDevice) await offline!.warmUp();
-    } catch (e) {
-      if (kDebugMode) debugPrint('offline speech warm-up: $e');
-    }
-  }
-
-  @override
-  Future<String> transcribe(Uint8List wav) async {
-    final local = offline, remote = server;
-    if (local != null && local.ready) {
-      try {
-        return await local.transcribe(wav);
-      } catch (e) {
-        if (remote == null) rethrow;
-        if (kDebugMode)
-          debugPrint('offline speech failed, using the server: $e');
-      }
-    }
-    if (remote == null) throw const ApiFailure('VOICE_UNAVAILABLE');
-    return remote.transcribe(wav);
   }
 }

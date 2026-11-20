@@ -8,10 +8,11 @@ import 'package:uuid/uuid.dart';
 
 import '../app/settings.dart';
 import '../data/repositories.dart';
-import '../services/voice/offline_speech.dart';
+import '../services/voice/read_aloud.dart';
 import 'action.dart';
 import 'actions.dart';
 import 'executor.dart';
+import 'read_aloud_button.dart';
 import 'actions_design.dart';
 import 'screen.dart';
 import 'session.dart';
@@ -96,8 +97,12 @@ const _suggestionOrder = [
 /// Tapping the orb starts listening and tapping it again sends; without
 /// speech, or on a long press, it opens a text field instead.
 class VoiceBar extends StatefulWidget {
-  const VoiceBar({super.key, required this.session, this.speech});
+  const VoiceBar(
+      {super.key, required this.session, this.speech, this.reader});
   final VoiceSession session;
+
+  /// Reads replies aloud; null leaves the speaker button out.
+  final ReadAloud? reader;
 
   /// Null leaves the bar typed-only.
   final Speech? speech;
@@ -273,8 +278,10 @@ class _VoiceBarState extends State<VoiceBar>
   Future<void> startListening() async {
     // The microphone is already in use for the last sentence.
     if (mic != _Mic.off) return;
+    // The microphone must not hear the reply being read.
+    if (widget.reader?.speaking.value ?? false) await widget.reader!.stop();
     final speech = widget.speech!;
-    final ok = await speech.start();
+    final ok = await speech.audio.startRecording();
     if (!mounted) return;
     setState(() {
       typing = false;
@@ -426,6 +433,13 @@ class _VoiceBarState extends State<VoiceBar>
                                     expanded ? null : TextOverflow.ellipsis,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                     color: failed ? colors.error : null))),
+                        // Gone with the reply: closing the bubble or a new
+                        // sentence stops the voice.
+                        if (widget.reader case final reader?
+                            when !s.busy &&
+                                !failed &&
+                                ReadAloud.canRead(s.reply))
+                          ReadAloudButton(reader: reader, text: s.reply),
                         if (canUndo)
                           TextButton(
                               key: const Key('voice-undo'),
@@ -971,10 +985,6 @@ class _VoiceHostState extends State<VoiceHost> {
         loggedIn: () => repos.currentAccount != null,
         sessionId: const Uuid().v4());
     VoiceSession.current = s;
-    // Reads whether the offline model is installed; nothing is downloaded.
-    OfflineSpeech.instance?.start().catchError((Object e) {
-      if (kDebugMode) debugPrint('offline speech: $e');
-    });
     // In the navigator's overlay, not a route: pages stay "current" for
     // voice while the bar is open, and its text field has an overlay.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -985,11 +995,9 @@ class _VoiceHostState extends State<VoiceHost> {
               child: VoiceBar(
                   session: s,
                   speech: audio != null && speaker is SpeechBackend
-                      ? Speech(
-                          LocalFirstSpeech(
-                              server: speaker, offline: OfflineSpeech.instance),
-                          audio)
-                      : null)));
+                      ? Speech(speaker, audio)
+                      : null,
+                  reader: ReadAloud.instance)));
       overlay.insert(entry!);
     });
   }

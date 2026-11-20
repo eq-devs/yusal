@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// The building schedule: stages in order with dates, a checklist for each,
 /// money spent against the stage's budget from the estimate, and progress.

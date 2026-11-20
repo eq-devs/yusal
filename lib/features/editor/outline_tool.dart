@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// Non-rectangular houses: cut a corner off the footprint (an L shape,
 /// several cuts for T or U shapes), on every floor or just this one, and

@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// Schemes side by side, after the drafting page's layout comparison: save
 /// a variant of this design, pick any other design, compare the figures.

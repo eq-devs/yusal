@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_clock.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_clock.dart';
 import 'package:yusal/voice/action.dart';
 import 'package:yusal/voice/actions.dart';
 import 'package:yusal/voice/registry.dart';

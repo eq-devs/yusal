@@ -6,7 +6,7 @@ import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/core/geometry/derived_house.dart';
 import 'package:yusal/core/geometry/floor_base.dart';
 import 'package:yusal/core/geometry/opening_constraints.dart';
-import 'package:yusal/features/wall_attachment_points.dart';
+import 'package:yusal/features/editor/wall_attachment_points.dart';
 
 /// Random sequences of the wall and door edits the editor issues. Every
 /// accepted step must leave a valid document that survives a file round trip,

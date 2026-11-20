@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// Electrical, water and heating points on the plan: a palette to place
 /// them one by one, an automatic first layout per floor, and dragging or

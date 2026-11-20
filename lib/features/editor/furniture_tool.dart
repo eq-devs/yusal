@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// Furniture: pick from a grouped palette, tap the plan to place, then drag
 /// the selected piece, its corner grip (size) or its turn grip (90°).

@@ -3,8 +3,7 @@
 // scripted, so it costs model tokens and needs all of them running.
 //
 //   flutter test integration_test/voice_live_test.dart -d <device> \
-//       --dart-define=YUSAL_API=http://localhost:8080 \
-//       --dart-define=YUSAL_DEV_LOGIN=true --dart-define=YUSAL_VOICE=true
+//       --dart-define=YUSAL_API=http://localhost:8080
 //
 // The backend needs DEV_LOGIN=true, AI_GATEWAY_URL/KEY and QAZSTT_URL/KEY.
 // Add --dart-define=E2E_NO_LLM=true or E2E_NO_SPEECH=true to leave out the
@@ -18,13 +17,12 @@ import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/features/house_editor.dart';
+import 'package:yusal/features/editor/house_editor.dart';
 import 'package:yusal/main.dart';
-import 'package:yusal/platform/data/http/http_backend.dart';
+import 'package:yusal/data/http/http_backend.dart';
 import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'package:yusal/voice/screen.dart';
-import 'package:yusal/voice/voice_overlay.dart';
 
 import 'e2e_support.dart';
 
@@ -87,8 +85,6 @@ void main() {
 
   testWidgets('requests in three languages move around the real app',
       (t) async {
-    expect(voiceBuiltIn, isTrue,
-        reason: 'run with --dart-define=YUSAL_VOICE=true');
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
     AppSettings.instance.lang = AppLang.zh;

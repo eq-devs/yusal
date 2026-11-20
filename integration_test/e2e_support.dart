@@ -6,15 +6,16 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/ui/widgets.dart';
-import 'package:yusal/platform/ui/shell.dart';
-import 'package:yusal/platform/data/http/http_backend.dart';
-import 'package:yusal/platform/ui/demand/demand_detail_page.dart';
-import 'package:yusal/platform/ui/demand/publish_page.dart';
-import 'package:yusal/platform/ui/profile/profile_edit_page.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/shell/shell.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/features/demand/publish_page.dart';
+import 'package:yusal/features/profile/profile_edit_page.dart';
 
-const api = String.fromEnvironment('YUSAL_API');
-const devLogin = bool.fromEnvironment('YUSAL_DEV_LOGIN');
+/// The backend under test: eqserver unless `--dart-define=YUSAL_API=...`.
+const api = String.fromEnvironment('YUSAL_API',
+    defaultValue: 'https://eqserver.tail920a63.ts.net');
 
 /// Where screenshots go. On an iOS simulator this can be a folder on the
 /// Mac, e.g. `--dart-define=E2E_SHOTS=$PWD/test-screens`.
@@ -29,8 +30,6 @@ Directory shotsFolder() => Directory(
 
 void requireBackend() {
   expect(api, isNotEmpty, reason: 'run with --dart-define=YUSAL_API=...');
-  expect(devLogin, isTrue,
-      reason: 'run with --dart-define=YUSAL_DEV_LOGIN=true');
 }
 
 /// Saves what is on screen as `<name>.png`.

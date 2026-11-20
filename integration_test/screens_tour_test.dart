@@ -4,11 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/features/house_editor.dart';
+import 'package:yusal/features/editor/house_editor.dart';
 import 'package:yusal/main.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/ui/shell.dart';
+import '../test/support/mock/mock_backend.dart';
+import '../test/support/mock/mock_seed.dart';
+import 'package:yusal/features/shell/shell.dart';
 import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 

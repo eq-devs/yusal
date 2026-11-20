@@ -1,132 +1,49 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'app/house_app.dart';
 import 'app/settings.dart';
-import 'app/tokens.dart';
-import 'platform/data/http/http_backend.dart';
-import 'platform/data/mock/mock_backend.dart';
-import 'platform/data/repositories.dart';
-import 'platform/firebase_setup.dart';
-import 'platform/push/push_setup.dart';
-import 'platform/ui/home/post_page.dart';
-import 'platform/ui/links.dart';
-import 'platform/ui/scope.dart';
-import 'platform/ui/shell.dart';
-import 'platform/update/code_push.dart';
-import 'render2d/project_preview.dart';
-import 'storage/project_store.dart';
-import 'voice/audio_device.dart';
-import 'voice/speech.dart';
-import 'voice/voice_overlay.dart';
+import 'data/http/http_backend.dart';
+import 'features/chat/inbox_page.dart' show openRef;
+import 'services/firebase_setup.dart';
+import 'services/push/push_setup.dart';
+import 'services/update/code_push.dart';
 
-/// The backend every build talks to: eqserver, unless
-/// `--dart-define=YUSAL_API=<address>` names another one (a local API, for
-/// example). `--dart-define=YUSAL_API=demo` runs the in-memory demo backend
-/// instead, which has no sign-in and no voice.
-const _apiDefine = String.fromEnvironment('YUSAL_API',
-    defaultValue: 'https://eqserver.tail920a63.ts.net');
-const apiBaseUrl = _apiDefine == 'demo' ? '' : _apiDefine;
+export 'app/house_app.dart';
 
-/// The app's navigator, for opening what a tapped push points to.
-final appNavigator = GlobalKey<NavigatorState>();
+/// The backend (yusal-api on eqserver).
+const apiBaseUrl = 'https://eqserver.tail920a63.ts.net';
 
-/// The microphone for voice control, on phones and tablets.
-final AudioDevice? voiceAudio =
-    voiceBuiltIn && voicePlatform ? PluginAudio() : null;
+/// Longest the first frame waits for a saved session. A slow or sleeping
+/// server must not hold the splash screen: the session keeps restoring in
+/// the background and the shell follows when it arrives.
+const _restoreBudget = Duration(seconds: 3);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppSettings.instance.load();
-  // Analytics and crash reports on iOS / Android; no-op on the web.
-  await FirebaseSetup.init();
-  PlatformRepositories? repos;
-  if (apiBaseUrl.isNotEmpty) {
-    final api = HttpBackend(apiBaseUrl);
-    // Don't hold the first frame on a slow or sleeping server: the session
-    // keeps restoring in the background and shows up when it is back.
-    await api.restore().timeout(const Duration(seconds: 6), onTimeout: () {});
-    repos = api;
-    // Push only with the real backend; the demo registers no token.
-    unawaited(PushSetup(api, appNavigator).start());
-  }
-  runApp(ProviderScope(child: HouseApp(repos: repos)));
+  final api = HttpBackend(apiBaseUrl);
+  // Independent startup steps run side by side: the first frame waits for
+  // the slowest of them, not for their sum.
+  await Future.wait([
+    AppSettings.instance.load(),
+    // Analytics and crash reports on iOS / Android; no-op on the web.
+    FirebaseSetup.init(),
+    _restore(api),
+  ]);
+  runApp(ProviderScope(child: HouseApp(repos: api)));
+  unawaited(PushSetup(api, appNavigator, opener: openRef).start());
   // Over-the-air patches (Shorebird); a no-op outside `shorebird release`.
   CodePush().start();
 }
 
-class HouseApp extends StatefulWidget {
-  const HouseApp({super.key, this.repos, this.store});
-
-  /// Platform backend: [HttpBackend] for eqserver (or YUSAL_API), else
-  /// the in-memory mock.
-  final PlatformRepositories? repos;
-  final ProjectStore? store;
-
-  @override
-  State<HouseApp> createState() => _HouseAppState();
-}
-
-class _HouseAppState extends State<HouseApp> {
-  late final PlatformRepositories repos = widget.repos ?? MockBackend();
-  late final ProjectStore store = (widget.store ??
-      ProjectStore(
-          previewRenderer: renderProjectPreview, owners: PrefsProjectOwners()))
-    ..currentOwner ??= () => repos.currentAccount?.id;
-
-  @override
-  Widget build(BuildContext context) => ListenableBuilder(
-      listenable: AppSettings.instance,
-      builder: (context, _) {
-        final settings = AppSettings.instance;
-        return PlatformScope(
-            repos: repos,
-            store: store,
-            isDemo: repos is MockBackend && repos is! HttpBackend,
-            child: MaterialApp(
-                showPerformanceOverlay: true,
-                navigatorKey: appNavigator,
-                navigatorObservers: FirebaseSetup.observers,
-                title: 'Yusal',
-                debugShowCheckedModeBanner: false,
-                // System texts (back, close, copy / paste, pickers) and
-                // what screen readers announce follow the app language.
-                locale: Locale(settings.lang.name),
-                supportedLocales: const [
-                  Locale('kk'),
-                  Locale('ru'),
-                  Locale('zh')
-                ],
-                localizationsDelegates: GlobalMaterialLocalizations.delegates,
-                theme: buildTheme(settings.theme == ThemeChoice.night
-                    ? Tokens.night
-                    : Tokens.light),
-                darkTheme: buildTheme(settings.theme == ThemeChoice.day
-                    ? Tokens.light
-                    : Tokens.night),
-                themeMode: switch (settings.theme) {
-                  ThemeChoice.auto => ThemeMode.system,
-                  ThemeChoice.day => ThemeMode.light,
-                  ThemeChoice.night => ThemeMode.dark
-                },
-                builder: (context, child) => AppScope(
-                    child: VoiceHost(
-                        navigator: appNavigator,
-                        repos: repos,
-                        audio: voiceAudio,
-                        child: child!)),
-                // `/h/<id>` is a shared house: open it directly, signed in
-                // or not. Everything else is the app shell.
-                onGenerateRoute: _route,
-                // One route for the opening address, not one per path
-                // segment, so a shared house has nothing underneath it.
-                onGenerateInitialRoutes: (name) =>
-                    [_route(RouteSettings(name: name))]));
-      });
-
-  static Route<dynamic> _route(RouteSettings settings) {
-    final id = houseIdFromRoute(settings.name);
-    return platformRoute(
-        (_) => id == null ? const PlatformShell() : PostPage(postId: id));
+/// Never lets a failed restore keep the app from starting.
+Future<void> _restore(HttpBackend api) async {
+  try {
+    await api.restore().timeout(_restoreBudget);
+  } catch (e) {
+    if (kDebugMode) debugPrint('session restore: $e');
   }
 }

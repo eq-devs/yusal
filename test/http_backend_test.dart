@@ -5,9 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/platform/data/http/http_backend.dart';
-import 'package:yusal/platform/data/repositories.dart';
-import 'package:yusal/platform/domain/models.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
 
 /// A tiny stand-in for yusal-api: just enough routes to check the client's
 /// requests, response mapping, token handling and error codes.
@@ -146,7 +146,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     api = FakeApi();
     backend = HttpBackend('https://api.test',
-        client: MockClient(api.handle), seed: false);
+        client: MockClient(api.handle));
   });
 
   test('Google sign-in stores the session and restores it later', () async {
@@ -157,7 +157,7 @@ void main() {
     expect(jsonDecode(api.requests.first.body), {'id_token': 'id-token'});
 
     final next = HttpBackend('https://api.test',
-        client: MockClient(api.handle), seed: false);
+        client: MockClient(api.handle));
     await next.restore();
     expect(next.currentAccount?.id, 'u1');
   });
@@ -185,7 +185,6 @@ void main() {
       () async {
     final silent = HttpBackend('https://api.test',
         client: MockClient((_) => Completer<http.Response>().future),
-        seed: false,
         timeout: const Duration(milliseconds: 50));
     await expectLater(
         silent.feed(const FeedFilter()),
@@ -198,13 +197,13 @@ void main() {
     await backend.signInWithProvider('google', 'id-token');
     api.refreshStatus = 502;
     final offline = HttpBackend('https://api.test',
-        client: MockClient(api.handle), seed: false);
+        client: MockClient(api.handle));
     await offline.restore();
     expect(offline.currentAccount, isNull);
 
     api.refreshStatus = null;
     final later = HttpBackend('https://api.test',
-        client: MockClient(api.handle), seed: false);
+        client: MockClient(api.handle));
     await later.restore();
     expect(later.currentAccount?.id, 'u1');
   });
@@ -214,7 +213,7 @@ void main() {
     await backend.signInWithProvider('google', 'id-token');
     api.refreshStatus = 502;
     final offline = HttpBackend('https://api.test',
-        client: MockClient(api.handle), seed: false)
+        client: MockClient(api.handle))
       ..retryDelays = const [Duration(milliseconds: 20)];
     await offline.restore();
     expect(offline.currentAccount, isNull);
@@ -227,11 +226,11 @@ void main() {
     await backend.signInWithProvider('google', 'id-token');
     api.refreshStatus = 401;
     final next = HttpBackend('https://api.test',
-        client: MockClient(api.handle), seed: false);
+        client: MockClient(api.handle));
     await next.restore();
     api.refreshStatus = null;
     final later = HttpBackend('https://api.test',
-        client: MockClient(api.handle), seed: false);
+        client: MockClient(api.handle));
     await later.restore();
     expect(later.currentAccount, isNull);
   });
@@ -347,8 +346,7 @@ void main() {
                 'Connection closed before full header was received');
           }
           return api.handle(r);
-        }),
-        seed: false);
+        }));
     final feed = await flaky.feed(const FeedFilter());
     expect(feed.single.id, 'p1');
   });
@@ -362,8 +360,7 @@ void main() {
             throw http.ClientException('Connection reset by peer');
           }
           return api.handle(r);
-        }),
-        seed: false);
+        }));
     await flaky.signInWithProvider('google', 'id-token');
     await expectLater(
         flaky.send('c1', MessageKind.text, text: 'hi'),

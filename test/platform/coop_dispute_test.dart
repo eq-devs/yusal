@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/ui/widgets.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 import 'package:yusal/app/settings.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/ui/coop/coop_page.dart';
-import 'package:yusal/platform/ui/scope.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/features/coop/coop_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
 import 'package:yusal/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 import 'mock_backend_test.dart' show backend, terms;
@@ -25,7 +25,6 @@ void main() {
     await t.pumpWidget(PlatformScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        isDemo: true,
         child: MaterialApp(
             builder: (_, child) => AppScope(child: child!),
             home: CooperationPage(cooperationId: coop.id))));

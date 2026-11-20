@@ -3,7 +3,6 @@
 // "Admin E2E") was made an admin with `go run ./cmd/setadmin <id>`:
 //   flutter test integration_test/moderation_flow_test.dart -d <device> \
 //     --dart-define=YUSAL_API=http://localhost:8080 \
-//     --dart-define=YUSAL_DEV_LOGIN=true \
 //     --dart-define=E2E_SHOTS=$PWD/test-screens
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,12 +11,12 @@ import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/main.dart';
-import 'package:yusal/platform/data/http/http_backend.dart';
-import 'package:yusal/platform/data/repositories.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/ui/chat/chat_page.dart';
-import 'package:yusal/platform/ui/me/admin_page.dart';
-import 'package:yusal/platform/ui/widgets.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/chat/chat_page.dart';
+import 'package:yusal/features/me/admin_page.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 import 'package:yusal/storage/last_open.dart';
 import 'package:yusal/storage/project_store.dart';
 

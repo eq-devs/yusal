@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// Construction details, schedules and the issue list: pages computed from
 /// the model where every parameter, label and note can be edited.

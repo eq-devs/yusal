@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/app/tokens.dart';
 import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/features/house_editor.dart';
+import 'package:yusal/features/editor/house_editor.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'package:yusal/voice/session.dart';

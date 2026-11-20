@@ -3,7 +3,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/core/commands/house_templates.dart';
-import 'package:yusal/platform/ui/l10n.dart';
+import 'package:yusal/shared/ui/l10n.dart';
 
 void main() {
   tearDown(() => AppSettings.instance.lang = AppLang.zh);

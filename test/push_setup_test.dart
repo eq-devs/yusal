@@ -6,9 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/app/settings.dart';
-import 'package:yusal/platform/data/http/http_backend.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/push/push_setup.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/services/push/push_setup.dart';
 
 import 'http_backend_test.dart' show FakeApi;
 
@@ -45,7 +45,7 @@ void main() {
     AppSettings.instance.lang = AppLang.kk;
     api = FakeApi();
     backend = HttpBackend('https://api.test',
-        client: MockClient(api.handle), seed: false);
+        client: MockClient(api.handle));
   });
 
   Future<void> signIn() => backend.signInWithProvider('google', 'id-token');

@@ -1,4 +1,4 @@
-part of '../house_editor.dart';
+part of 'house_editor.dart';
 
 /// The 2D plan page: the drawing on a sheet with zoom buttons and a legend,
 /// the tool row and layer chips under it, and the card for the selection.

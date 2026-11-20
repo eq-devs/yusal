@@ -1,6 +1,6 @@
 // The app's main pages with the voice orb over them, for visual review
 // (not run in CI).
-// SHOTS_OUT=/path flutter test --dart-define=YUSAL_VOICE=true test/ui_shots/app_shots_test.dart
+// SHOTS_OUT=/path flutter test test/ui_shots/app_shots_test.dart
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -9,10 +9,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/main.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_clock.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/ui/shell.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_clock.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/features/shell/shell.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'package:yusal/voice/session.dart';
 

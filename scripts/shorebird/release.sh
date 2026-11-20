@@ -14,12 +14,12 @@ target="${1:-}"
 platforms=("$target"); [ "$target" = all ] && platforms=(android ios)
 
 version="$(pubspec_version)"
-info "版本 $version，dart-define: $DEFINES"
+info "版本 $version"
 mkdir -p "$OUT_DIR"
 
 for p in "${platforms[@]}"; do
   check_platform "$p"
-  args=(release "$p" --dart-define-from-file="$DEFINES" --no-patch-signing)
+  args=(release "$p" --no-patch-signing)
   [ -n "${FLUTTER_VERSION:-}" ] && args+=(--flutter-version="$FLUTTER_VERSION")
   if [ "$p" = android ]; then
     check_android_signing

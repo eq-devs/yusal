@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/app/settings.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/ui/cards.dart';
-import 'package:yusal/platform/ui/l10n.dart';
-import 'package:yusal/platform/ui/scope.dart';
+import '../support/mock/mock_backend.dart';
+import 'package:yusal/shared/ui/cards.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
 import 'package:yusal/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 

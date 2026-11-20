@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/core/house_core.dart';
 import 'package:yusal/core/commands/design_commands.dart';
 import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/features/house_editor.dart';
+import 'package:yusal/features/editor/house_editor.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;

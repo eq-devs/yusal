@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/ui/links.dart';
+import 'package:yusal/shared/ui/links.dart';
 
 void main() {
   test('house links round-trip through the web route', () {

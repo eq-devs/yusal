@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/ui/shell.dart';
+import 'package:yusal/features/shell/shell.dart';
 import 'package:yusal/app/settings.dart';
 import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/features/house_editor.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_clock.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/ui/cards.dart';
-import 'package:yusal/platform/ui/chat/inbox_page.dart';
-import 'package:yusal/platform/ui/components.dart';
-import 'package:yusal/platform/ui/demand/from_design_page.dart';
-import 'package:yusal/platform/ui/design/plan_viewer.dart';
-import 'package:yusal/platform/ui/home/publish_post_page.dart';
-import 'package:yusal/platform/ui/houses/workspace_page.dart';
-import 'package:yusal/platform/ui/theme.dart';
-import 'package:yusal/platform/ui/widgets.dart';
-import 'package:yusal/platform/ui/scope.dart';
+import 'package:yusal/features/editor/house_editor.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_clock.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/cards.dart';
+import 'package:yusal/features/chat/inbox_page.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/features/demand/from_design_page.dart';
+import 'package:yusal/shared/ui/plan_viewer.dart';
+import 'package:yusal/features/home/publish_post_page.dart';
+import 'package:yusal/features/houses/workspace_page.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/shared/ui/scope.dart';
 import 'package:yusal/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 import 'explore_test.dart' show launch;
@@ -122,20 +122,6 @@ void main() {
         find.descendant(
             of: find.byType(InboxPage), matching: find.byType(TabBar)),
         findsOneWidget);
-  });
-
-  testWidgets('the demo notice is one line and explains itself on tap',
-      (t) async {
-    await launch(t, size: phone);
-    final notice = find.byKey(const Key('demo-notice'));
-    expect(notice, findsOneWidget);
-    expect(t.getSize(notice).height, lessThan(40));
-    await t.tap(notice);
-    await t.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget);
-    await t.tap(find.text('知道了'));
-    await t.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsNothing);
   });
 
   for (final lang in AppLang.values) {

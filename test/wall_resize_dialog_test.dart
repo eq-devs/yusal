@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/features/wall_length_dialog.dart';
+import 'package:yusal/features/editor/wall_length_dialog.dart';
 
 void main() {
   testWidgets('a new wall length takes a sum and the end that stays',

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/ui/demand/publish_page.dart';
-import 'package:yusal/platform/ui/scope.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/demand/publish_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'package:yusal/voice/action.dart';
 import 'package:yusal/voice/actions.dart';
@@ -117,7 +117,6 @@ void main() {
     await t.pumpWidget(PlatformScope(
         repos: repos,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        isDemo: true,
         child: const MaterialApp(home: PublishPage())));
     await t.pumpAndSettle();
     expect(VoiceScreens.current!.screenId, 'demand.publish');

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/app/settings.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/ui/me/me_page.dart';
-import 'package:yusal/platform/ui/scope.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/me/me_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/platform/data/http/http_backend.dart';
+import 'package:yusal/data/http/http_backend.dart';
 import '../storage_test.dart' show MemoryFiles;
 import '../http_backend_test.dart' show FakeApi;
 
@@ -57,7 +57,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final api = NoPreviewApi();
     final b = HttpBackend('https://api.test',
-        client: MockClient(api.handle), seed: false);
+        client: MockClient(api.handle));
     await t.runAsync(() => b.signInWithProvider('google', 'id-token'));
     await t.pumpWidget(PlatformScope(
         repos: b,
@@ -93,8 +93,7 @@ void main() {
           // A real network takes a while; the fake answers at once.
           await Future<void>.delayed(const Duration(milliseconds: 200));
           return api.handle(r);
-        }),
-        seed: false);
+        }));
     await t.runAsync(() => b.signInWithProvider('google', 'id-token'));
     await t.pumpWidget(PlatformScope(
         repos: b,

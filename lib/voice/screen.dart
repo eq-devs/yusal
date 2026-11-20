@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../platform/data/repositories.dart';
+import '../data/repositories.dart';
 import 'action.dart';
 import 'form.dart';
 

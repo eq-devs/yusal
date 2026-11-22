@@ -5,14 +5,20 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 /// Native Google / Apple sign-in. Each returns the provider's ID token for
 /// the backend to verify, or null when the user cancelled.
 ///
-/// Client IDs come from `--dart-define`:
+/// The client IDs are the yusal-web Firebase project's; `--dart-define` can
+/// override them:
 ///   GOOGLE_SERVER_CLIENT_ID  the Web client ID; the backend accepts tokens
 ///                            issued to it (Android needs it to get a token)
-///   GOOGLE_IOS_CLIENT_ID     the iOS client ID (iOS also needs its reversed
-///                            form as a URL scheme in Info.plist)
+///   GOOGLE_IOS_CLIENT_ID     the iOS client ID (its reversed form is a URL
+///                            scheme in Info.plist)
 abstract final class SocialSignIn {
-  static const _serverClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
-  static const _iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
+  static const _serverClientId = String.fromEnvironment(
+      'GOOGLE_SERVER_CLIENT_ID',
+      defaultValue:
+          '814743623983-61a2issopmf50eilqmjc34qf9l8n4hbk.apps.googleusercontent.com');
+  static const _iosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID',
+      defaultValue:
+          '814743623983-plqg7f66ms92n2pcv1h9t3jju7r3e52u.apps.googleusercontent.com');
 
   static bool get googleAvailable =>
       !kIsWeb &&

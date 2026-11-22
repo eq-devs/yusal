@@ -9,8 +9,8 @@ import '../../shared/ui/theme.dart';
 import '../../shared/ui/widgets.dart';
 import 'social_sign_in.dart';
 
-/// Sign-in: Google / Apple, plus the one-tap test accounts while the app is
-/// in development. Pops `true` once signed in so the caller continues the
+/// Sign-in: Google / Apple or email and password, plus the one-tap test
+/// accounts while the app is in development. Pops `true` once signed in so the caller continues the
 /// action that needed an account (publish, apply, contact, back up).
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,6 +20,38 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final name = TextEditingController();
+  final email = TextEditingController();
+  final password = TextEditingController();
+  final emailName = TextEditingController();
+
+  /// Email form: false signs in, true creates the account.
+  bool registering = false;
+  bool showPassword = false;
+
+  static final _emailShape = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+  /// Email and password, checked here first so the common slips get a
+  /// plain message instead of a round trip.
+  Future<void> emailSignIn(HttpBackend api) async {
+    final e = email.text.trim();
+    if (!_emailShape.hasMatch(e)) {
+      toast(context,
+          tr3('请输入正确的邮箱', 'Поштаны дұрыс енгізіңіз', 'Введите верную почту'));
+      return;
+    }
+    if (password.text.isEmpty || (registering && password.text.length < 8)) {
+      toast(
+          context,
+          tr3('密码至少 8 位', 'Құпиясөз кемінде 8 таңба',
+              'Пароль не короче 8 символов'));
+      return;
+    }
+    final account = await attempt(
+        context,
+        () => api.signInWithEmail(e, password.text,
+            register: registering, name: emailName.text));
+    if (account != null && mounted) Navigator.pop(context, true);
+  }
 
   /// Google / Apple through the native SDK, then the backend.
   Future<void> social(HttpBackend api, String provider) async {
@@ -123,6 +155,7 @@ class _LoginPageState extends State<LoginPage> {
       if (!SocialSignIn.appleAvailable && !SocialSignIn.googleAvailable)
         Hint(tr3('请在手机 App 中登录。', 'Телефондағы қолданбада кіріңіз.',
             'Войдите в мобильном приложении.')),
+      ..._emailForm(context, api),
       // Test sign-in: by name, and one tap per role. The backend must run
       // with DEV_LOGIN=true.
       const SectionTitle('开发登录 · Dev', top: 28),
@@ -140,8 +173,7 @@ class _LoginPageState extends State<LoginPage> {
       Text('测试账号 · Test accounts', style: TextStyle(color: t.muted)),
       for (final (group, personas) in testPersonaGroups) ...[
         const SizedBox(height: 12),
-        Text(group,
-            style: TextStyle(color: t.muted, fontSize: YFont.caption)),
+        Text(group, style: TextStyle(color: t.muted, fontSize: YFont.caption)),
         const SizedBox(height: 6),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final (id, label, icon) in personas)
@@ -153,6 +185,91 @@ class _LoginPageState extends State<LoginPage> {
         ]),
       ],
     ]);
+  }
+
+  List<Widget> _emailForm(BuildContext context, HttpBackend api) {
+    final t = YTokens.of(context);
+    return [
+      const SizedBox(height: 24),
+      Row(children: [
+        const Expanded(child: Divider()),
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(tr3('或用邮箱', 'немесе поштамен', 'или по почте'),
+                style: TextStyle(color: t.muted, fontSize: YFont.caption))),
+        const Expanded(child: Divider()),
+      ]),
+      const SizedBox(height: 16),
+      AutofillGroup(
+          child: Column(children: [
+        if (registering) ...[
+          TextField(
+              key: const Key('email-name'),
+              controller: emailName,
+              textInputAction: TextInputAction.next,
+              textCapitalization: TextCapitalization.words,
+              autofillHints: const [AutofillHints.name],
+              inputFormatters: [LengthLimitingTextInputFormatter(40)],
+              decoration: InputDecoration(
+                  labelText: tr3('称呼（选填）', 'Атыңыз (міндетті емес)',
+                      'Имя (необязательно)'))),
+          const SizedBox(height: 12),
+        ],
+        TextField(
+            key: const Key('email-address'),
+            controller: email,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autocorrect: false,
+            enableSuggestions: false,
+            autofillHints: const [AutofillHints.email],
+            decoration:
+                InputDecoration(labelText: tr3('邮箱', 'Пошта', 'Почта'))),
+        const SizedBox(height: 12),
+        TextField(
+            key: const Key('email-password'),
+            controller: password,
+            obscureText: !showPassword,
+            autocorrect: false,
+            enableSuggestions: false,
+            textInputAction: TextInputAction.done,
+            autofillHints: [
+              registering ? AutofillHints.newPassword : AutofillHints.password
+            ],
+            inputFormatters: [LengthLimitingTextInputFormatter(72)],
+            onSubmitted: (_) => emailSignIn(api),
+            decoration: InputDecoration(
+                labelText: registering
+                    ? tr3('密码（至少 8 位）', 'Құпиясөз (кемінде 8 таңба)',
+                        'Пароль (от 8 символов)')
+                    : tr3('密码', 'Құпиясөз', 'Пароль'),
+                suffixIcon: IconButton(
+                    tooltip: showPassword
+                        ? tr3('隐藏密码', 'Жасыру', 'Скрыть пароль')
+                        : tr3('显示密码', 'Көрсету', 'Показать пароль'),
+                    icon: Icon(showPassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
+                    onPressed: () =>
+                        setState(() => showPassword = !showPassword)))),
+      ])),
+      const SizedBox(height: 16),
+      BusyButton(
+          key: const Key('email-submit'),
+          label: registering
+              ? tr3('注册', 'Тіркелу', 'Зарегистрироваться')
+              : tr3('登录', 'Кіру', 'Войти'),
+          outlined: true,
+          onPressed: () => emailSignIn(api)),
+      TextButton(
+          key: const Key('email-toggle'),
+          onPressed: () => setState(() => registering = !registering),
+          child: Text(registering
+              ? tr3(
+                  '已有账号？去登录', 'Аккаунт бар ма? Кіру', 'Уже есть аккаунт? Войти')
+              : tr3('没有账号？用邮箱注册', 'Аккаунт жоқ па? Тіркелу',
+                  'Нет аккаунта? Зарегистрироваться'))),
+    ];
   }
 
   // The voice orb would cover the test accounts at the bottom.
@@ -168,6 +285,9 @@ class _LoginPageState extends State<LoginPage> {
     WidgetsBinding.instance
         .addPostFrameCallback((_) => VoiceBar.hidden.value--);
     name.dispose();
+    email.dispose();
+    password.dispose();
+    emailName.dispose();
     super.dispose();
   }
 

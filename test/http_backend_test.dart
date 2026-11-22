@@ -99,6 +99,18 @@ class FakeApi {
     switch ((r.method, path)) {
       case ('POST', '/auth/oauth/google'):
         return ok({...tokens(), 'user': user, 'is_new': true});
+      case ('POST', '/auth/register'):
+        final body = jsonDecode(r.body) as Map<String, dynamic>;
+        if (body['email'] == 'taken@example.com') {
+          return fail(409, 'EMAIL_TAKEN');
+        }
+        return ok({...tokens(), 'user': user, 'is_new': true});
+      case ('POST', '/auth/login'):
+        final body = jsonDecode(r.body) as Map<String, dynamic>;
+        if (body['password'] != 'correct-horse') {
+          return fail(401, 'INVALID_CREDENTIALS');
+        }
+        return ok({...tokens(), 'user': user, 'is_new': false});
       case ('POST', '/auth/refresh'):
         if (refreshStatus case final status?) {
           return http.Response('Bad Gateway', status);
@@ -160,6 +172,44 @@ void main() {
         client: MockClient(api.handle));
     await next.restore();
     expect(next.currentAccount?.id, 'u1');
+  });
+
+  test('email sign-up and sign-in store the session', () async {
+    final a = await backend.signInWithEmail(
+        ' ana@example.com ', 'correct-horse',
+        register: true, name: ' Ана ');
+    expect(a.id, 'u1');
+    expect(jsonDecode(api.requests.first.body), {
+      'email': 'ana@example.com',
+      'password': 'correct-horse',
+      'name': 'Ана'
+    });
+    expect(api.requests.first.headers.containsKey('Authorization'), isFalse);
+
+    final next = HttpBackend('https://api.test',
+        client: MockClient(api.handle));
+    await next.restore();
+    expect(next.currentAccount?.id, 'u1');
+
+    api.requests.clear();
+    await backend.signInWithEmail('ana@example.com', 'correct-horse');
+    expect(api.requests.first.url.path, '/auth/login');
+    expect(jsonDecode(api.requests.first.body),
+        {'email': 'ana@example.com', 'password': 'correct-horse'});
+  });
+
+  test('a wrong password or a taken email fail with their own codes',
+      () async {
+    await expectLater(
+        backend.signInWithEmail('ana@example.com', 'nope'),
+        throwsA(isA<ApiFailure>()
+            .having((e) => e.code, 'code', ApiCodes.badCredentials)));
+    await expectLater(
+        backend.signInWithEmail('taken@example.com', 'correct-horse',
+            register: true),
+        throwsA(isA<ApiFailure>()
+            .having((e) => e.code, 'code', ApiCodes.emailTaken)));
+    expect(backend.currentAccount, isNull);
   });
 
   test('an expired access token is refreshed once and the call retried',

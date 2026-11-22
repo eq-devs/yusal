@@ -15,7 +15,7 @@ class Account {
       this.email = '',
       this.deleted = false,
       this.restricted = false,
-      this.adminRole});
+      this.role});
   final String id, phone, displayName;
 
   /// The account's email; '' when it has none (or it is someone else's
@@ -25,10 +25,7 @@ class Account {
   final bool deleted, restricted;
 
   /// Back-office role (superadmin, moderator, operator, viewer), or null.
-  final String? adminRole;
-
-  /// The back-office role, or null.
-  String? get role => adminRole;
+  final String? role;
 
   /// Whether the role grants [perm] (see [AdminPerms]).
   bool can(String perm) =>
@@ -50,7 +47,7 @@ class Account {
           email: email,
           deleted: deleted ?? this.deleted,
           restricted: restricted ?? this.restricted,
-          adminRole: adminRole);
+          role: role);
 
   Account withRole(String? role) => Account(
       id: id,
@@ -60,7 +57,7 @@ class Account {
       email: email,
       deleted: deleted,
       restricted: restricted,
-      adminRole: role);
+      role: role);
 }
 
 /// Back-office roles, held on the account like the backend.
@@ -218,11 +215,9 @@ class ServiceProfile {
 /// Facts the platform can prove about a profile; nothing invented.
 class ProfileStats {
   const ProfileStats(
-      {required this.phoneVerified,
-      required this.confirmedCooperations,
+      {required this.confirmedCooperations,
       required this.reviewCount,
       required this.dimensionAverages});
-  final bool phoneVerified;
   final int confirmedCooperations, reviewCount;
 
   /// Average per review dimension, only when there are reviews.

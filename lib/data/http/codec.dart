@@ -56,7 +56,7 @@ Account accountFrom(Map<String, dynamic> u) => Account(
     email: u['email'] as String? ?? '',
     deleted: u['deleted'] == true,
     restricted: u['restricted'] == true,
-    adminRole: (u['admin_role'] as String?)?.nullIfEmpty,
+    role: (u['admin_role'] as String?)?.nullIfEmpty,
     createdAt: _tt(u['created_at']));
 
 extension on String {
@@ -131,7 +131,6 @@ Map<String, dynamic> profileJson(ServiceProfile p) => _drop({
     });
 
 ProfileStats statsFrom(Map<String, dynamic> j) => ProfileStats(
-        phoneVerified: j['phone_verified'] == true,
         confirmedCooperations: _i(j['confirmed_cooperations']) ?? 0,
         reviewCount: _i(j['review_count']) ?? 0,
         dimensionAverages: {
@@ -688,7 +687,7 @@ AccountDetail accountDetailFrom(
           createdAt: _tt(a['created_at']),
           deleted: a['status'] == 'deleted',
           restricted: a['restricted'] == true,
-          adminRole: (a['admin_role'] as String?)?.nullIfEmpty),
+          role: (a['admin_role'] as String?)?.nullIfEmpty),
       email: a['email'] as String? ?? '',
       lastLogin: _t(a['last_login_at']),
       profiles: [for (final p in _maps(j['profiles'])) profileFrom(p)],

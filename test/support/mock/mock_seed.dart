@@ -34,7 +34,7 @@ void seedMockData(MockBackend b) {
           phone: phone,
           displayName: name,
           createdAt: ago(60),
-          adminRole: admin ? AdminRoles.superadmin : null);
+          role: admin ? AdminRoles.superadmin : null);
   account(SeedIds.owner, '+77010000001', 'Айгерім');
   account(SeedIds.owner2, '+77010000002', 'Динара');
   account(SeedIds.mason, '+77010000003', 'Болат');

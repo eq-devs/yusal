@@ -699,14 +699,35 @@ AccountDetail accountDetailFrom(
           (
             id: p['id'] as String,
             title: p['title'] as String? ?? '',
-            hidden: p['status'] == 'hidden'
+            hidden: p['status'] == 'hidden',
+            featured: p['featured'] == true
           )
       ],
       reportsAbout: [for (final r in _maps(j['reports_about'])) reportFrom(r)],
       reportsFiled: _i(j['reports_filed']) ?? 0,
       appeals: [for (final x in _maps(j['appeals'])) appealFrom(x)],
-      audit: [for (final e in _maps(j['audit'])) auditFrom(e)]);
+      audit: [for (final e in _maps(j['audit'])) auditFrom(e)],
+      banned: a['status'] == 'blocked',
+      methods: [for (final m in (a['methods'] as List? ?? const [])) '$m']);
 }
+
+FeedbackItem feedbackFrom(Map<String, dynamic> j) => FeedbackItem(
+    id: j['id'] as String,
+    text: j['text'] as String? ?? '',
+    accountId: (j['account_id'] as String?)?.nullIfEmpty,
+    context: {
+      for (final e in ((j['context'] as Map?) ?? const {}).entries)
+        if ('${e.value}'.isNotEmpty) '${e.key}': '${e.value}'
+    },
+    createdAt: _tt(j['created_at']),
+    handledAt: _t(j['handled_at']));
+
+TrendDay trendFrom(Map<String, dynamic> j) => TrendDay(
+    j['date'] as String? ?? '',
+    _i(j['users']) ?? 0,
+    _i(j['posts']) ?? 0,
+    _i(j['demands']) ?? 0,
+    _i(j['quotes']) ?? 0);
 
 PostBuild postBuildFrom(Map<String, dynamic> j) => PostBuild(
         builders: [

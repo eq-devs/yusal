@@ -690,6 +690,7 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
         ratingSum: j['rating_sum'] as int? ?? 0,
         ratingCount: j['rating_count'] as int? ?? 0,
         reuseCount: j['reuse_count'] as int? ?? 0,
+        featured: j['featured'] == true,
         showBuild: j['show_build'] as bool? ?? false,
         focus: [for (final f in j['focus'] as List? ?? const []) f as String],
         preview: _previews[id]);
@@ -1683,6 +1684,66 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
     final j = await _call('GET', '/admin/accounts/$accountId')
         as Map<String, dynamic>;
     return accountDetailFrom(j, _coopPlain);
+  }
+
+  // ── back office, HTTP only ──
+
+  Future<void> setBanned(String accountId, bool banned, String note) =>
+      _write('POST', '/admin/accounts/$accountId/ban',
+          body: {'banned': banned, 'note': note});
+
+  Future<void> deleteAccountFor(String accountId, String note) =>
+      _write('POST', '/admin/accounts/$accountId/delete', body: {'note': note});
+
+  /// [target] is demand, profile, post, comment or message.
+  Future<void> takeDown(String target, String id, String note) =>
+      _write('POST', '/admin/content/$target/$id/takedown',
+          body: {'note': note});
+
+  Future<void> setFeatured(String postId, bool featured) =>
+      _write('POST', '/admin/posts/$postId/featured',
+          body: {'featured': featured});
+
+  Future<Paged<FeedbackItem>> feedbackInbox(
+          {bool open = false, int page = 1, int pageSize = 20}) =>
+      _paged('/admin/feedback', feedbackFrom,
+          page: page, pageSize: pageSize, query: {if (open) 'open': 'true'});
+
+  Future<void> markFeedbackHandled(String id) =>
+      _write('POST', '/admin/feedback/$id/handled');
+
+  /// Pushes [texts] (by zh / kk / ru) to every device, or only those in
+  /// [lang]; returns how many devices it went to.
+  Future<int> broadcast(String title, Map<String, String> texts,
+      {String? lang}) async {
+    final r = await _write('POST', '/admin/broadcast',
+        body: {'title': title, 'texts': texts, if (lang != null) 'lang': lang});
+    return ((r as Map?)?['sent'] as num?)?.toInt() ?? 0;
+  }
+
+  /// The built-in banned words and the ones the back office added.
+  Future<({List<String> builtin, List<String> words})> bannedWords(
+      [List<String>? save]) async {
+    final r = (save == null
+            ? await _call('GET', '/admin/banned-words')
+            : await _write('PUT', '/admin/banned-words', body: {'words': save}))
+        as Map<String, dynamic>;
+    List<String> list(Object? v) =>
+        [for (final w in (v as List? ?? const [])) '$w'];
+    return (builtin: list(r['builtin']), words: list(r['words']));
+  }
+
+  Future<List<TrendDay>> trends() async => [
+        for (final d
+            in ((await _call('GET', '/admin/trends')) as List? ?? const []))
+          trendFrom(d as Map<String, dynamic>)
+      ];
+
+  /// A CSV of every account (`users`) or demand (`demands`).
+  Future<List<int>> export(String what) async {
+    final res = await _send('GET', '/admin/export/$what');
+    if (res.statusCode != 200) _decode(res);
+    return res.bodyBytes;
   }
 
   @override

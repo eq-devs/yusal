@@ -1176,6 +1176,7 @@ class HousePost {
       this.ratingCount = 0,
       this.reuseCount = 0,
       this.showBuild = false,
+      this.featured = false,
       this.focus = const [],
       this.preview});
   final String id, ownerId, projectId, snapshotId, title, story, region;
@@ -1204,6 +1205,9 @@ class HousePost {
   /// The owner shows who is building this house and what has been
   /// inspected and paid out so far.
   final bool showBuild;
+
+  /// Put first in the feed by the back office.
+  final bool featured;
   final List<int>? preview;
 
   double? get rating => ratingCount == 0 ? null : ratingSum / ratingCount;
@@ -1246,6 +1250,7 @@ class HousePost {
           ratingCount: ratingCount ?? this.ratingCount,
           reuseCount: reuseCount ?? this.reuseCount,
           showBuild: showBuild ?? this.showBuild,
+          featured: featured,
           focus: focus ?? this.focus,
           preview: preview);
 }

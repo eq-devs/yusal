@@ -212,18 +212,49 @@ class AccountDetail {
       this.reportsAbout = const [],
       this.reportsFiled = 0,
       this.appeals = const [],
-      this.audit = const []});
+      this.audit = const [],
+      this.banned = false,
+      this.methods = const []});
   final Account account;
   final String email;
+
+  /// Banned: cannot sign in or use the app.
+  final bool banned;
+
+  /// How the account signs in: email, google, apple, dev.
+  final List<String> methods;
   final DateTime? lastLogin;
   final List<ServiceProfile> profiles;
   final List<Demand> demands;
   final int applications, reportsFiled;
   final List<Cooperation> cooperations;
-  final List<({String id, String title, bool hidden})> posts;
+  final List<({String id, String title, bool hidden, bool featured})> posts;
   final List<Report> reportsAbout;
   final List<Appeal> appeals;
   final List<AuditEntry> audit;
+}
+
+/// One message from the in-app feedback form.
+class FeedbackItem {
+  const FeedbackItem(
+      {required this.id,
+      required this.text,
+      required this.createdAt,
+      this.accountId,
+      this.context = const {},
+      this.handledAt});
+  final String id, text;
+  final String? accountId;
+  final Map<String, String> context;
+  final DateTime createdAt;
+  final DateTime? handledAt;
+}
+
+/// New records on one day, for the trends chart.
+class TrendDay {
+  const TrendDay(this.date, this.users, this.posts, this.demands, this.quotes);
+  final String date;
+  final int users, posts, demands, quotes;
 }
 
 /// Result of a batch decision.

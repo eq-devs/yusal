@@ -21,6 +21,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
   flutter_secure_storage: ^11.2.0
   google_sign_in: ^7.2.0
+  hive_ce_flutter: ^2.6.0
   http: ^1.5.0
   indexd_stack_dev: ^0.4.0
   motor: ^1.1.0

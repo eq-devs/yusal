@@ -64,7 +64,12 @@ class FakeApi {
     'created_at': '2026-11-05T10:00:00Z',
     'agreements': [],
     'milestones': [
-      {'key': 'walls', 'percent': 40, 'status': 'requested', 'photos': ['/media/m1']}
+      {
+        'key': 'walls',
+        'percent': 40,
+        'status': 'requested',
+        'photos': ['/media/m1']
+      }
     ],
     'work_logs': [],
     'updates': [],
@@ -99,6 +104,22 @@ class FakeApi {
     switch ((r.method, path)) {
       case ('POST', '/auth/oauth/google'):
         return ok({...tokens(), 'user': user, 'is_new': true});
+      case ('GET', '/client/auth/methods'):
+        return ok([
+          {'provider': 'email', 'email': 'ana@example.com'},
+          {'provider': 'google', 'email': 'ana@example.com'},
+        ]);
+      case ('DELETE', '/client/auth/methods/email'):
+        return ok([
+          {'provider': 'google', 'email': 'ana@example.com'},
+        ]);
+      case ('DELETE', '/client/auth/methods/google'):
+        return fail(409, 'LAST_METHOD');
+      case ('POST', '/client/auth/methods/apple'):
+        return ok([
+          {'provider': 'google'},
+          {'provider': 'apple'},
+        ]);
       case ('POST', '/auth/register'):
         final body = jsonDecode(r.body) as Map<String, dynamic>;
         if (body['email'] == 'taken@example.com') {
@@ -133,7 +154,12 @@ class FakeApi {
         final body = jsonDecode(r.body) as Map<String, dynamic>;
         return ok({...user, ...body});
       case ('GET', '/client/posts'):
-        return ok({'items': [postJson], 'total': 1, 'page': 1, 'page_size': 100});
+        return ok({
+          'items': [postJson],
+          'total': 1,
+          'page': 1,
+          'page_size': 100
+        });
       case ('GET', '/client/accounts/u9'):
         return ok({...user, 'id': 'u9', 'display_name': '邻居'});
       case ('GET', '/client/posts/p1/preview'):
@@ -157,8 +183,7 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     api = FakeApi();
-    backend = HttpBackend('https://api.test',
-        client: MockClient(api.handle));
+    backend = HttpBackend('https://api.test', client: MockClient(api.handle));
   });
 
   test('Google sign-in stores the session and restores it later', () async {
@@ -168,8 +193,8 @@ void main() {
     expect(backend.currentAccount?.id, 'u1');
     expect(jsonDecode(api.requests.first.body), {'id_token': 'id-token'});
 
-    final next = HttpBackend('https://api.test',
-        client: MockClient(api.handle));
+    final next =
+        HttpBackend('https://api.test', client: MockClient(api.handle));
     await next.restore();
     expect(next.currentAccount?.id, 'u1');
   });
@@ -186,8 +211,8 @@ void main() {
     });
     expect(api.requests.first.headers.containsKey('Authorization'), isFalse);
 
-    final next = HttpBackend('https://api.test',
-        client: MockClient(api.handle));
+    final next =
+        HttpBackend('https://api.test', client: MockClient(api.handle));
     await next.restore();
     expect(next.currentAccount?.id, 'u1');
 
@@ -198,8 +223,7 @@ void main() {
         {'email': 'ana@example.com', 'password': 'correct-horse'});
   });
 
-  test('a wrong password or a taken email fail with their own codes',
-      () async {
+  test('a wrong password or a taken email fail with their own codes', () async {
     await expectLater(
         backend.signInWithEmail('ana@example.com', 'nope'),
         throwsA(isA<ApiFailure>()
@@ -218,11 +242,11 @@ void main() {
     api.expireNextAccess = true;
     final mine = await backend.myPosts();
     expect(mine.single.id, 'p1');
-    expect(api.requests.where((r) => r.url.path == '/auth/refresh'), hasLength(1));
+    expect(
+        api.requests.where((r) => r.url.path == '/auth/refresh'), hasLength(1));
   });
 
-  test('requests that hit an expired token together refresh it once',
-      () async {
+  test('requests that hit an expired token together refresh it once', () async {
     await backend.signInWithProvider('google', 'id-token');
     api.expireNextAccess = true;
     final both = await Future.wait([backend.myPosts(), backend.myPosts()]);
@@ -238,49 +262,85 @@ void main() {
         timeout: const Duration(milliseconds: 50));
     await expectLater(
         silent.feed(const FeedFilter()),
+        throwsA(
+            isA<ApiFailure>().having((e) => e.code, 'code', ApiCodes.network)));
+  });
+
+  test('sign-in methods: list, link, unlink, and the last one stays', () async {
+    await backend.signInWithProvider('google', 'id-token');
+    final ms = await backend.signInMethods();
+    expect(ms.map((m) => '${m.provider}:${m.email}'),
+        ['email:ana@example.com', 'google:ana@example.com']);
+    expect((await backend.unlinkSignIn('email')).map((m) => m.provider),
+        ['google']);
+    await expectLater(
+        backend.unlinkSignIn('google'),
         throwsA(isA<ApiFailure>()
-            .having((e) => e.code, 'code', ApiCodes.network)));
+            .having((e) => e.code, 'code', ApiCodes.lastMethod)));
+    api.requests.clear();
+    expect(
+        (await backend.linkSignIn('apple', 'apple-token'))
+            .map((m) => m.provider),
+        ['google', 'apple']);
+    expect(jsonDecode(api.requests.single.body), {'id_token': 'apple-token'});
   });
 
-  test('a server that is down at startup does not sign the user out',
+  test('a cold start shows the saved account before any request', () async {
+    await backend.signInWithProvider('google', 'id-token');
+    api.requests.clear();
+    final next =
+        HttpBackend('https://api.test', client: MockClient(api.handle));
+    await next.loadSession();
+    expect(next.currentAccount?.id, 'u1');
+    expect(next.currentAccount?.displayName, 'Ана');
+    expect(api.requests, isEmpty);
+  });
+
+  test('a server that is down at startup keeps the user signed in', () async {
+    await backend.signInWithProvider('google', 'id-token');
+    api.refreshStatus = 502;
+    final offline =
+        HttpBackend('https://api.test', client: MockClient(api.handle));
+    await offline.restore();
+    expect(offline.currentAccount?.id, 'u1');
+  });
+
+  test('a session that could not sync catches up once the server is back',
       () async {
     await backend.signInWithProvider('google', 'id-token');
     api.refreshStatus = 502;
-    final offline = HttpBackend('https://api.test',
-        client: MockClient(api.handle));
+    final offline =
+        HttpBackend('https://api.test', client: MockClient(api.handle))
+          ..retryDelays = const [Duration(milliseconds: 20)];
     await offline.restore();
-    expect(offline.currentAccount, isNull);
-
-    api.refreshStatus = null;
-    final later = HttpBackend('https://api.test',
-        client: MockClient(api.handle));
-    await later.restore();
-    expect(later.currentAccount?.id, 'u1');
-  });
-
-  test('a session that could not restore comes back once the server does',
-      () async {
-    await backend.signInWithProvider('google', 'id-token');
-    api.refreshStatus = 502;
-    final offline = HttpBackend('https://api.test',
-        client: MockClient(api.handle))
-      ..retryDelays = const [Duration(milliseconds: 20)];
-    await offline.restore();
-    expect(offline.currentAccount, isNull);
+    api.requests.clear();
     api.refreshStatus = null;
     await Future<void>.delayed(const Duration(milliseconds: 200));
+    expect(api.requests.map((r) => r.url.path),
+        containsAll(['/auth/refresh', '/client/auth/me']));
     expect(offline.currentAccount?.id, 'u1');
+  });
+
+  test('signing out forgets the saved account too', () async {
+    await backend.signInWithProvider('google', 'id-token');
+    await backend.signOut();
+    final next =
+        HttpBackend('https://api.test', client: MockClient(api.handle));
+    await next.loadSession();
+    expect(next.currentAccount, isNull);
   });
 
   test('a rejected refresh token signs the user out', () async {
     await backend.signInWithProvider('google', 'id-token');
     api.refreshStatus = 401;
-    final next = HttpBackend('https://api.test',
-        client: MockClient(api.handle));
+    final next =
+        HttpBackend('https://api.test', client: MockClient(api.handle));
     await next.restore();
+    // Shown from the saved account at first, then signed out by the sync.
+    expect(next.currentAccount, isNull);
     api.refreshStatus = null;
-    final later = HttpBackend('https://api.test',
-        client: MockClient(api.handle));
+    final later =
+        HttpBackend('https://api.test', client: MockClient(api.handle));
     await later.restore();
     expect(later.currentAccount, isNull);
   });
@@ -296,8 +356,8 @@ void main() {
     expect(p.preview, isNull);
     expect(await backend.postPreview(p.id), [1, 2, 3]);
     expect(backend.postPreview(p.id), [1, 2, 3]);
-    expect(api.requests.where((r) => r.url.path.endsWith('/preview')).length,
-        1);
+    expect(
+        api.requests.where((r) => r.url.path.endsWith('/preview')).length, 1);
     final q = api.requests.first.url.queryParameters;
     expect(q['region'], 'almaty');
     expect(q['sort'], 'topRated');
@@ -306,8 +366,8 @@ void main() {
 
   test('rows naming the same person ask for the account once', () async {
     await backend.signInWithProvider('google', 'id-token');
-    final names = await Future.wait(
-        [for (var i = 0; i < 5; i++) backend.account('u9')]);
+    final names =
+        await Future.wait([for (var i = 0; i < 5; i++) backend.account('u9')]);
     expect(names.map((a) => a!.displayName).toSet(), {'邻居'});
     expect((await backend.account('u9'))!.displayName, '邻居');
     expect(
@@ -350,7 +410,8 @@ void main() {
     expect(api.requests.where((r) => r.url.path == '/client/devices'), isEmpty);
     await backend.signInWithProvider('google', 'id-token');
     await Future<void>.delayed(Duration.zero);
-    final reg = api.requests.singleWhere((r) => r.url.path == '/client/devices');
+    final reg =
+        api.requests.singleWhere((r) => r.url.path == '/client/devices');
     expect(reg.method, 'POST');
     expect(jsonDecode(reg.body),
         {'token': 'fcm-1', 'platform': 'ios', 'language': 'ru'});
@@ -389,40 +450,39 @@ void main() {
 
   test('a read that loses its connection is tried again', () async {
     var drops = 2;
-    final flaky = HttpBackend('https://api.test',
-        client: MockClient((r) async {
-          if (r.url.path == '/client/posts' && drops-- > 0) {
-            throw http.ClientException(
-                'Connection closed before full header was received');
-          }
-          return api.handle(r);
-        }));
+    final flaky = HttpBackend('https://api.test', client: MockClient((r) async {
+      if (r.url.path == '/client/posts' && drops-- > 0) {
+        throw http.ClientException(
+            'Connection closed before full header was received');
+      }
+      return api.handle(r);
+    }));
     final feed = await flaky.feed(const FeedFilter());
     expect(feed.single.id, 'p1');
   });
 
   test('a write that loses its connection is not sent twice', () async {
     var sent = 0;
-    final flaky = HttpBackend('https://api.test',
-        client: MockClient((r) async {
-          if (r.method == 'POST' && r.url.path.endsWith('/messages')) {
-            sent++;
-            throw http.ClientException('Connection reset by peer');
-          }
-          return api.handle(r);
-        }));
+    final flaky = HttpBackend('https://api.test', client: MockClient((r) async {
+      if (r.method == 'POST' && r.url.path.endsWith('/messages')) {
+        sent++;
+        throw http.ClientException('Connection reset by peer');
+      }
+      return api.handle(r);
+    }));
     await flaky.signInWithProvider('google', 'id-token');
     await expectLater(
         flaky.send('c1', MessageKind.text, text: 'hi'),
-        throwsA(isA<ApiFailure>()
-            .having((e) => e.code, 'code', ApiCodes.network)));
+        throwsA(
+            isA<ApiFailure>().having((e) => e.code, 'code', ApiCodes.network)));
     expect(sent, 1);
   });
 
   test('the same read asked for at once goes out once', () async {
     await backend.signInWithProvider('google', 'id-token');
     final before = api.requests.length;
-    await Future.wait([backend.myPosts(), backend.myPosts(), backend.myPosts()]);
+    await Future.wait(
+        [backend.myPosts(), backend.myPosts(), backend.myPosts()]);
     expect(
         api.requests
             .skip(before)

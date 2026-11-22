@@ -42,6 +42,10 @@ abstract final class ApiCodes {
   static const conflict = 'CONFLICT';
   static const emailTaken = 'EMAIL_TAKEN';
   static const badCredentials = 'INVALID_CREDENTIALS';
+  static const providerTaken = 'PROVIDER_TAKEN';
+  static const providerLinked = 'PROVIDER_LINKED';
+  static const lastMethod = 'LAST_METHOD';
+  static const noEmail = 'NO_EMAIL';
 }
 
 /// A backend with its own clock (the in-memory test fake). Screens read the

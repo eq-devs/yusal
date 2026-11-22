@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show ChangeNotifier, Listenable;
 import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
@@ -13,16 +12,29 @@ import '../../voice/speech.dart';
 import '../../domain/models.dart';
 import '../repositories.dart';
 import 'codec.dart';
+import 'session_store.dart';
 
 /// Talks to the real Go backend (`eq-devs/yusal-api`) for every repository:
 /// accounts, snapshots, posts, backups, profiles, demands, quotes,
 /// cooperations, reviews, chat, notifications and moderation. Nothing is
 /// served from memory: the only local state is the signed-in account and a
 /// cache of accounts screens read synchronously.
+/// One way an account signs in: `google`, `apple`, `email` or `dev`, with
+/// the address it uses ('' when unknown).
+class SignInMethod {
+  const SignInMethod(this.provider, this.email);
+  final String provider, email;
+}
+
 class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   HttpBackend(this.baseUrl,
-      {http.Client? client, this.timeout = const Duration(seconds: 45)})
+      {http.Client? client,
+      this.timeout = const Duration(seconds: 45),
+      this.session = const SessionStore()})
       : _http = client ?? http.Client();
+
+  /// Where the tokens and the signed-in account live between launches.
+  final SessionStore session;
 
   final _changes = ChangeNotifier();
   @override
@@ -50,8 +62,6 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   /// e.g. `https://api.example.com`, no trailing slash.
   final String baseUrl;
   final http.Client _http;
-
-  static const _refreshKey = 'yusal_api.refresh_token';
 
   /// How long one request may take before it fails as a network error, so a
   /// server that stops answering mid-request never leaves a spinner forever.
@@ -125,8 +135,7 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
           bytes: bytes);
     }
     final key = '$uri|$token';
-    return _inflight[key] ??=
-        _sendRead(uri, token).whenComplete(() {
+    return _inflight[key] ??= _sendRead(uri, token).whenComplete(() {
       _inflight.remove(key);
     });
   }
@@ -161,8 +170,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   static bool _retryable(int status) =>
       status == 502 || status == 503 || status == 504;
 
-  Future<http.Response> _sendOnce(String method, Uri uri, String? token,
-      Object? body, Duration limit,
+  Future<http.Response> _sendOnce(
+      String method, Uri uri, String? token, Object? body, Duration limit,
       {List<int>? bytes}) async {
     final req = http.Request(method, uri);
     req.headers['Accept'] = 'application/json';
@@ -194,8 +203,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
       throw ApiFailure(ApiCodes.network, 'HTTP ${res.statusCode}');
     }
     if (env['success'] == true) return env['data'];
-    throw ApiFailure(_mapCode(env['code'] as String? ?? ''),
-        env['msg'] as String? ?? '');
+    throw ApiFailure(
+        _mapCode(env['code'] as String? ?? ''), env['msg'] as String? ?? '');
   }
 
   /// Server codes are the app's [ApiCodes] where they exist.
@@ -230,42 +239,7 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
     _refresh = data['refresh_token'] as String?;
   }
 
-  /// The refresh token lives in the platform keystore (Keychain, Android
-  /// Keystore, encrypted on the web). Where that is missing (tests, an old
-  /// desktop) it falls back to plain preferences; a token found there from
-  /// an older build moves to the keystore on the next save.
-  static const _vault = FlutterSecureStorage();
-
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    try {
-      if (_refresh == null) {
-        await _vault.delete(key: _refreshKey);
-      } else {
-        await _vault.write(key: _refreshKey, value: _refresh!);
-      }
-      await prefs.remove(_refreshKey);
-      return;
-    } catch (_) {
-      // No keystore here: keep it in preferences.
-    }
-    if (_refresh == null) {
-      await prefs.remove(_refreshKey);
-    } else {
-      await prefs.setString(_refreshKey, _refresh!);
-    }
-  }
-
-  Future<String?> _savedRefresh() async {
-    String? token;
-    try {
-      token = await _vault.read(key: _refreshKey);
-    } catch (_) {
-      // No keystore: preferences only.
-    }
-    final prefs = await SharedPreferences.getInstance();
-    return token ?? prefs.getString(_refreshKey);
-  }
+  Future<void> _save() => session.saveTokens(_access, _refresh);
 
   /// A random id for this install, sent as `X-Device-Id` so the dashboard
   /// counts active devices, guests included. Not tied to the account.
@@ -287,20 +261,47 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
     _refresh = null;
     currentId = null;
     _likedSeen.clear();
-    await _save();
+    await session.clear();
     notify();
   }
 
   // ─────────────────────────────── auth ───────────────────────────────
 
-  /// Signs back in with the refresh token saved on this device, if any.
-  /// Call once at startup. A revoked session leaves the user signed out; when
-  /// the server cannot be reached the saved session is kept and tried again
-  /// a few times in the background ([retryDelays]), so the user is signed
-  /// back in once the server answers without restarting the app.
-  Future<void> restore() => _restore(0);
+  /// Reads the saved session from disk only: the tokens and the account as
+  /// the server last sent it. Signed in from here on, offline included, so
+  /// the first frame already shows who is signed in. Cheap; call it before
+  /// the first frame, then [syncSession] in the background.
+  Future<void> loadSession() async {
+    await _loadDeviceId();
+    if (currentId != null) return;
+    final saved = await session.read();
+    if (saved == null) return;
+    _refresh = saved.refresh;
+    _access = saved.access;
+    final account = saved.account;
+    if (account == null) return;
+    try {
+      final a = accountFrom(account);
+      accounts[a.id] = a;
+      currentId = a.id;
+    } catch (_) {
+      // Unreadable: [syncSession] fetches it again.
+    }
+  }
 
-  /// Waits between background restore attempts while the server is down.
+  /// Brings the saved session up to date with the server: refreshes the
+  /// tokens and the account. A revoked session signs the user out; while
+  /// the server cannot be reached the saved session stays and this tries
+  /// again a few times in the background ([retryDelays]).
+  Future<void> syncSession() => _sync(0);
+
+  /// [loadSession], then [syncSession].
+  Future<void> restore() async {
+    await loadSession();
+    await syncSession();
+  }
+
+  /// Waits between background sync attempts while the server is down.
   List<Duration> retryDelays = const [
     Duration(seconds: 5),
     Duration(seconds: 15),
@@ -309,20 +310,17 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
     Duration(minutes: 2),
   ];
 
-  Future<void> _restore(int attempt) async {
-    if (currentId != null) return;
-    await _loadDeviceId();
-    _refresh = await _savedRefresh();
+  Future<void> _sync(int attempt) async {
     if (_refresh == null) return;
     try {
       if (!await _refreshTokens()) return;
       _setMe(await _call('GET', '/client/auth/me') as Map<String, dynamic>);
       notify();
-      // A late restore may come after the push setup handed over its token.
+      // A late sync may come after the push setup handed over its token.
       unawaited(_registerDevice());
     } on ApiFailure catch (e) {
       if (e.code == ApiCodes.network && attempt < retryDelays.length) {
-        Timer(retryDelays[attempt], () => unawaited(_restore(attempt + 1)));
+        Timer(retryDelays[attempt], () => unawaited(_sync(attempt + 1)));
       }
     }
   }
@@ -347,15 +345,15 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   /// local part).
   Future<Account> signInWithEmail(String email, String password,
       {bool register = false, String? name}) async {
-    final data = await _call(
-        'POST', register ? '/auth/register' : '/auth/login',
-        body: {
-          'email': email.trim(),
-          'password': password,
-          if (register && name != null && name.trim().isNotEmpty)
-            'name': name.trim(),
-        },
-        auth: false) as Map<String, dynamic>;
+    final data =
+        await _call('POST', register ? '/auth/register' : '/auth/login',
+            body: {
+              'email': email.trim(),
+              'password': password,
+              if (register && name != null && name.trim().isNotEmpty)
+                'name': name.trim(),
+            },
+            auth: false) as Map<String, dynamic>;
     _takeTokens(data);
     await _save();
     final account = _setMe(data['user'] as Map<String, dynamic>);
@@ -364,12 +362,36 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
     return account;
   }
 
+  /// How the signed-in account signs in.
+  Future<List<SignInMethod>> signInMethods() async =>
+      _methods(await _call('GET', '/client/auth/methods'));
+
+  /// Adds a Google or Apple identity ([idToken] from the native SDK).
+  Future<List<SignInMethod>> linkSignIn(String provider, String idToken) async =>
+      _methods(await _call('POST', '/client/auth/methods/$provider',
+          body: {'id_token': idToken}));
+
+  /// Removes one way to sign in; `email` drops the password.
+  Future<List<SignInMethod>> unlinkSignIn(String provider) async =>
+      _methods(await _call('DELETE', '/client/auth/methods/$provider'));
+
+  /// Turns email sign-in on, or changes its password.
+  Future<List<SignInMethod>> setPassword(String password) async =>
+      _methods(await _call('PUT', '/client/auth/password',
+          body: {'password': password}));
+
+  static List<SignInMethod> _methods(Object? data) => [
+        for (final m in (data as List? ?? const []).cast<Map<String, dynamic>>())
+          SignInMethod(m['provider'] as String, m['email'] as String? ?? ''),
+      ];
+
   /// Registers the signed-in account with the in-memory part so mock-served
   /// features work under the real id.
   Account _setMe(Map<String, dynamic> u) {
     final a = _account(u);
     accounts[a.id] = a;
     currentId = a.id;
+    unawaited(session.saveAccount(u));
     return a;
   }
 
@@ -447,8 +469,7 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   /// [text] read aloud by the speech service, as WAV. The app shows
   /// replies as text; the live tests use this to make Kazakh recordings.
   Future<Uint8List> synthesize(String text) async {
-    final res =
-        await _send('POST', '/client/voice/tts', body: {'text': text});
+    final res = await _send('POST', '/client/voice/tts', body: {'text': text});
     if (res.statusCode != 200) _decode(res);
     return res.bodyBytes;
   }
@@ -477,16 +498,18 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
 
   @override
   Future<Account> updateName(String name) async {
-    final a = _setMe(await _call('PATCH', '/client/auth/me',
-        body: {'display_name': name}) as Map<String, dynamic>);
+    final a = _setMe(
+        await _call('PATCH', '/client/auth/me', body: {'display_name': name})
+            as Map<String, dynamic>);
     notify();
     return a;
   }
 
   @override
   Future<Account> updatePhone(String phone) async {
-    final a = _setMe(await _call('PATCH', '/client/auth/me',
-        body: {'phone': phone}) as Map<String, dynamic>);
+    final a = _setMe(
+        await _call('PATCH', '/client/auth/me', body: {'phone': phone})
+            as Map<String, dynamic>);
     notify();
     return a;
   }
@@ -506,8 +529,7 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
     if (at != null && DateTime.now().difference(at) < _accountFresh) {
       return accounts[id];
     }
-    return _accountLoads[id] ??=
-        _loadAccount(id).whenComplete(() {
+    return _accountLoads[id] ??= _loadAccount(id).whenComplete(() {
       _accountLoads.remove(id);
     });
   }
@@ -663,9 +685,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
         estimatedCost: j['estimated_cost'] as int?,
         tags: [for (final t in j['tags'] as List? ?? const []) t as String],
         openForBuilders: j['open_for_builders'] as bool? ?? false,
-        status: j['status'] == 'hidden'
-            ? PostStatus.hidden
-            : PostStatus.published,
+        status:
+            j['status'] == 'hidden' ? PostStatus.hidden : PostStatus.published,
         likeCount: j['like_count'] as int? ?? 0,
         commentCount: j['comment_count'] as int? ?? 0,
         ratingSum: j['rating_sum'] as int? ?? 0,
@@ -696,8 +717,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
     return _loadPreview(postId).then((_) => _previews[postId]);
   }
 
-  Future<void> _loadPreview(String postId) => _previewLoads[postId] ??=
-      _fetchPreview(postId).whenComplete(() {
+  Future<void> _loadPreview(String postId) =>
+      _previewLoads[postId] ??= _fetchPreview(postId).whenComplete(() {
         _previewLoads.remove(postId);
       });
 
@@ -788,16 +809,16 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
 
   @override
   Future<String?> reusePost(String postId) async {
-    final data =
-        await _call('POST', '/client/posts/$postId/reuse') as Map<String, dynamic>;
+    final data = await _call('POST', '/client/posts/$postId/reuse')
+        as Map<String, dynamic>;
     notify();
     return data['plan_json'] as String?;
   }
 
   @override
   Future<bool> toggleLike(String postId) async {
-    final data =
-        await _call('POST', '/client/posts/$postId/like') as Map<String, dynamic>;
+    final data = await _call('POST', '/client/posts/$postId/like')
+        as Map<String, dynamic>;
     _likedSeen.remove(postId);
     notify();
     return data['liked'] as bool;
@@ -807,7 +828,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   Future<bool> liked(String postId) async {
     if (currentId == null) return false;
     if (_likedSeen.remove(postId) case final seen?) return seen;
-    final j = await _call('GET', '/client/posts/$postId') as Map<String, dynamic>;
+    final j =
+        await _call('GET', '/client/posts/$postId') as Map<String, dynamic>;
     return j['liked'] == true;
   }
 
@@ -835,8 +857,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   Future<List<PostComment>> comments(String postId) async {
     try {
       final list = [
-        for (final c in await _call('GET', '/client/posts/$postId/comments')
-            as List)
+        for (final c
+            in await _call('GET', '/client/posts/$postId/comments') as List)
           _comment(c as Map<String, dynamic>)
       ];
       // Screens show author names through account(id); load them once.
@@ -854,13 +876,13 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   @override
   Future<PostComment> comment(String postId, String text,
       {int? rating, String? topic, String? parentId}) async {
-    final c = _comment(await _call('POST', '/client/posts/$postId/comments',
-        body: {
-          'text': text,
-          if (rating != null) 'rating': rating,
-          if (topic != null) 'topic': topic,
-          if (parentId != null) 'parent_id': parentId,
-        }) as Map<String, dynamic>);
+    final c =
+        _comment(await _call('POST', '/client/posts/$postId/comments', body: {
+      'text': text,
+      if (rating != null) 'rating': rating,
+      if (topic != null) 'topic': topic,
+      if (parentId != null) 'parent_id': parentId,
+    }) as Map<String, dynamic>);
     notify();
     return c;
   }
@@ -873,7 +895,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
 
   @override
   Future<PostComment> markHelpful(String commentId, bool helpful) async {
-    final c = _comment(await _call('POST', '/client/comments/$commentId/helpful',
+    final c = _comment(await _call(
+        'POST', '/client/comments/$commentId/helpful',
         body: {'helpful': helpful}) as Map<String, dynamic>);
     notify();
     return c;
@@ -893,7 +916,10 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
 
   Future<List<Map<String, dynamic>>> _list(String path,
           {Map<String, String>? query}) async =>
-      [for (final j in await _call('GET', path, query: query) as List) j as Map<String, dynamic>];
+      [
+        for (final j in await _call('GET', path, query: query) as List)
+          j as Map<String, dynamic>
+      ];
 
   /// A write: calls, then tells listening screens to reload.
   Future<dynamic> _write(String method, String path, {Object? body}) async {
@@ -986,8 +1012,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
       _write('POST', '/client/profiles/$profileId/confirm-availability'));
 
   @override
-  Future<ProfileStats> stats(String profileId) async => statsFrom(
-      await _call('GET', '/client/profiles/$profileId/stats')
+  Future<ProfileStats> stats(String profileId) async =>
+      statsFrom(await _call('GET', '/client/profiles/$profileId/stats')
           as Map<String, dynamic>);
 
   @override
@@ -1053,9 +1079,9 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
       _demand(_write('POST', '/client/demands/$demandId/publish'));
 
   @override
-  Future<Demand> revise(String demandId, DemandVersion next) => _demand(_write(
-      'POST', '/client/demands/$demandId/revise',
-      body: {'version': versionJson(next)}));
+  Future<Demand> revise(String demandId, DemandVersion next) =>
+      _demand(_write('POST', '/client/demands/$demandId/revise',
+          body: {'version': versionJson(next)}));
 
   @override
   Future<Demand> pause(String demandId) =>
@@ -1070,14 +1096,14 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
       _demand(_write('POST', '/client/demands/$demandId/renew'));
 
   @override
-  Future<Demand> markFound(String demandId, OutcomeKind outcome) => _demand(
-      _write('POST', '/client/demands/$demandId/found',
+  Future<Demand> markFound(String demandId, OutcomeKind outcome) =>
+      _demand(_write('POST', '/client/demands/$demandId/found',
           body: {'outcome': outcome.name}));
 
   @override
-  Future<Demand> close(String demandId, String reason) => _demand(_write(
-      'POST', '/client/demands/$demandId/close',
-      body: {'reason': reason}));
+  Future<Demand> close(String demandId, String reason) =>
+      _demand(_write('POST', '/client/demands/$demandId/close',
+          body: {'reason': reason}));
 
   @override
   Future<Demand> recordOutcome(String demandId, OutcomeKind outcome) =>
@@ -1085,8 +1111,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
           body: {'outcome': outcome.name}));
 
   @override
-  Future<Demand> setShareRevoked(String demandId, bool revoked) => _demand(
-      _write('POST', '/client/demands/$demandId/share',
+  Future<Demand> setShareRevoked(String demandId, bool revoked) =>
+      _demand(_write('POST', '/client/demands/$demandId/share',
           body: {'revoked': revoked}));
 
   @override
@@ -1106,7 +1132,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
 
   @override
   Future<Map<String, ({int total, int unread})>> myQuoteCounts() async {
-    final m = await _call('GET', '/client/me/quote-counts') as Map<String, dynamic>;
+    final m =
+        await _call('GET', '/client/me/quote-counts') as Map<String, dynamic>;
     return {
       for (final e in m.entries)
         e.key: (
@@ -1165,8 +1192,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   String _c(String id) => '/client/cooperations/$id';
 
   @override
-  Future<Cooperation> invite(String applicationId, Agreement terms) => _coop(
-      _write('POST', '/client/applications/$applicationId/invite',
+  Future<Cooperation> invite(String applicationId, Agreement terms) =>
+      _coop(_write('POST', '/client/applications/$applicationId/invite',
           body: agreementJson(terms)));
 
   @override
@@ -1213,8 +1240,9 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
 
   @override
   Future<Cooperation> setMilestones(String id, List<Milestone> plan) =>
-      _coop(_write('PUT', '${_c(id)}/milestones',
-          body: {'milestones': [for (final m in plan) milestoneJson(m)]}));
+      _coop(_write('PUT', '${_c(id)}/milestones', body: {
+        'milestones': [for (final m in plan) milestoneJson(m)]
+      }));
 
   @override
   Future<Cooperation> answerMilestone(String id, int index, bool accept,
@@ -1300,11 +1328,11 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   @override
   Future<Conversation> openConversation(String otherAccountId,
       {String? demandId}) async {
-    final c = conversationFrom(await _write('POST', '/client/conversations',
-        body: {
-          'account_id': otherAccountId,
-          if (demandId != null) 'demand_id': demandId,
-        }) as Map<String, dynamic>);
+    final c =
+        conversationFrom(await _write('POST', '/client/conversations', body: {
+      'account_id': otherAccountId,
+      if (demandId != null) 'demand_id': demandId,
+    }) as Map<String, dynamic>);
     await _names(c.participants);
     return c;
   }
@@ -1328,8 +1356,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
           }) as Map<String, dynamic>);
 
   @override
-  Future<ChatMessage> resend(String messageId) async => messageFrom(
-      await _write('POST', '/client/messages/$messageId/resend')
+  Future<ChatMessage> resend(String messageId) async =>
+      messageFrom(await _write('POST', '/client/messages/$messageId/resend')
           as Map<String, dynamic>);
 
   @override
@@ -1350,7 +1378,10 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   @override
   Future<Set<String>> blocked() async {
     if (currentId == null) return {};
-    return {for (final id in await _call('GET', '/client/blocks') as List) id as String};
+    return {
+      for (final id in await _call('GET', '/client/blocks') as List)
+        id as String
+    };
   }
 
   @override
@@ -1361,7 +1392,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   @override
   Future<int> unreadMessages() async {
     if (currentId == null) return 0;
-    final j = await _call('GET', '/client/messages/unread-count') as Map<String, dynamic>;
+    final j = await _call('GET', '/client/messages/unread-count')
+        as Map<String, dynamic>;
     return (j['count'] as num).toInt();
   }
 
@@ -1370,7 +1402,9 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   @override
   Future<List<AppNotification>> notifications() async {
     if (currentId == null) throw const ApiFailure(ApiCodes.notSignedIn);
-    return [for (final j in await _list('/client/notifications')) noticeFrom(j)];
+    return [
+      for (final j in await _list('/client/notifications')) noticeFrom(j)
+    ];
   }
 
   @override
@@ -1394,8 +1428,10 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   // ─────────────────────── posts ↔ demands ───────────────────────
 
   @override
-  Future<List<Demand>> demandsForPost(String postId) async =>
-      [for (final j in await _list('/client/posts/$postId/demands')) demandFrom(j)];
+  Future<List<Demand>> demandsForPost(String postId) async => [
+        for (final j in await _list('/client/posts/$postId/demands'))
+          demandFrom(j)
+      ];
 
   @override
   Future<PostBuild?> postBuild(String postId) async {
@@ -1430,13 +1466,15 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   // ───────────────────────────── moderation ─────────────────────────────
 
   @override
-  Future<void> report(ReportTarget target, String targetId, String reason) async {
+  Future<void> report(
+      ReportTarget target, String targetId, String reason) async {
     await _write('POST', '/client/reports',
         body: {'target': target.name, 'target_id': targetId, 'reason': reason});
   }
 
   @override
-  Future<Appeal> fileAppeal(String target, String targetId, String text) async =>
+  Future<Appeal> fileAppeal(
+          String target, String targetId, String text) async =>
       appealFrom(await _write('POST', '/client/appeals',
               body: {'target': target, 'target_id': targetId, 'text': text})
           as Map<String, dynamic>);
@@ -1451,8 +1489,12 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   Future<Verification> requestVerification(
           String profileId, String phone, List<Uint8List> photos,
           {String note = ''}) async =>
-      verificationFrom(await _write('POST', '/client/profiles/$profileId/verification',
-          body: {'phone': phone, 'note': note, 'photos': photosJson(photos)}) as Map<String, dynamic>);
+      verificationFrom(await _write(
+          'POST', '/client/profiles/$profileId/verification', body: {
+        'phone': phone,
+        'note': note,
+        'photos': photosJson(photos)
+      }) as Map<String, dynamic>);
 
   @override
   Future<Verification?> myVerification(String profileId) async {
@@ -1461,8 +1503,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   }
 
   @override
-  Future<DemandAlert> demandAlert() async =>
-      alertFrom(await _call('GET', '/client/demand-alert') as Map<String, dynamic>);
+  Future<DemandAlert> demandAlert() async => alertFrom(
+      await _call('GET', '/client/demand-alert') as Map<String, dynamic>);
 
   @override
   Future<DemandAlert> saveDemandAlert(DemandAlert alert) async => alertFrom(
@@ -1470,11 +1512,13 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
           as Map<String, dynamic>);
 
   @override
-  Future<NotificationSettings> notificationSettings() async => settingsFrom(
-      await _call('GET', '/client/notification-settings') as Map<String, dynamic>);
+  Future<NotificationSettings> notificationSettings() async =>
+      settingsFrom(await _call('GET', '/client/notification-settings')
+          as Map<String, dynamic>);
 
   @override
-  Future<NotificationSettings> saveNotificationSettings(NotificationSettings s) async =>
+  Future<NotificationSettings> saveNotificationSettings(
+          NotificationSettings s) async =>
       settingsFrom(await _write('PUT', '/client/notification-settings', body: {
         'muted': s.muted,
         'quiet_start': s.quietStart,
@@ -1483,10 +1527,13 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
 
   // ───────────────────────────── back office ─────────────────────────────
 
-  Cooperation _coopPlain(Map<String, dynamic> j) => cooperationFrom(j, media: _media);
+  Cooperation _coopPlain(Map<String, dynamic> j) =>
+      cooperationFrom(j, media: _media);
 
   Future<Paged<T>> _paged<T>(String path, T Function(Map<String, dynamic>) item,
-          {int page = 1, int pageSize = 20, Map<String, String> query = const {}}) async =>
+          {int page = 1,
+          int pageSize = 20,
+          Map<String, String> query = const {}}) async =>
       pagedFrom(
           await _call('GET', path, query: {
             ...query,
@@ -1496,12 +1543,12 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
           item);
 
   @override
-  Future<AdminTodo> todo() async =>
-      todoFrom(await _call('GET', '/admin/todo') as Map<String, dynamic>, _coopPlain);
+  Future<AdminTodo> todo() async => todoFrom(
+      await _call('GET', '/admin/todo') as Map<String, dynamic>, _coopPlain);
 
   @override
-  Future<AdminDashboard> dashboard() async =>
-      dashboardFrom(await _call('GET', '/admin/dashboard') as Map<String, dynamic>);
+  Future<AdminDashboard> dashboard() async => dashboardFrom(
+      await _call('GET', '/admin/dashboard') as Map<String, dynamic>);
 
   @override
   Future<Paged<Demand>> reviewQueue({int page = 1, int pageSize = 20}) =>
@@ -1509,11 +1556,17 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
 
   @override
   Future<Paged<Demand>> adminDemands(
-          {DemandStatus? status, String query = '', int page = 1, int pageSize = 20}) =>
-      _paged('/admin/demands', demandFrom, page: page, pageSize: pageSize, query: {
-        if (status != null) 'status': status.name,
-        if (query.trim().isNotEmpty) 'q': query.trim(),
-      });
+          {DemandStatus? status,
+          String query = '',
+          int page = 1,
+          int pageSize = 20}) =>
+      _paged('/admin/demands', demandFrom,
+          page: page,
+          pageSize: pageSize,
+          query: {
+            if (status != null) 'status': status.name,
+            if (query.trim().isNotEmpty) 'q': query.trim(),
+          });
 
   @override
   Future<void> approve(String demandId) async {
@@ -1522,15 +1575,18 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
 
   @override
   Future<void> reject(String demandId, String reason) async {
-    await _write('POST', '/admin/demands/$demandId/reject', body: {'reason': reason});
+    await _write('POST', '/admin/demands/$demandId/reject',
+        body: {'reason': reason});
   }
 
   @override
   Future<BatchResult> decideMany(List<String> ids, bool approve,
       {String reason = ''}) async {
     final j = await _write('POST', '/admin/demands/batch',
-        body: {'ids': ids, 'approve': approve, 'reason': reason}) as Map<String, dynamic>;
-    return BatchResult(_int(j['done']), [for (final f in j['failed'] as List? ?? const []) f as String]);
+            body: {'ids': ids, 'approve': approve, 'reason': reason})
+        as Map<String, dynamic>;
+    return BatchResult(_int(j['done']),
+        [for (final f in j['failed'] as List? ?? const []) f as String]);
   }
 
   static int _int(Object? v) => (v as num?)?.toInt() ?? 0;
@@ -1539,7 +1595,9 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   Future<Paged<ReportView>> reports(
           {ReportStatus? status, int page = 1, int pageSize = 20}) =>
       _paged('/admin/reports', reportViewFrom,
-          page: page, pageSize: pageSize, query: {if (status != null) 'status': status.name});
+          page: page,
+          pageSize: pageSize,
+          query: {if (status != null) 'status': status.name});
 
   @override
   Future<void> resolveReport(String reportId, bool upheld, String note) async {
@@ -1551,18 +1609,23 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   Future<Paged<Appeal>> appeals(
           {AppealStatus? status, int page = 1, int pageSize = 20}) =>
       _paged('/admin/appeals', appealFrom,
-          page: page, pageSize: pageSize, query: {if (status != null) 'status': status.name});
+          page: page,
+          pageSize: pageSize,
+          query: {if (status != null) 'status': status.name});
 
   @override
   Future<void> resolveAppeal(String id, bool accept, String note) async {
-    await _write('POST', '/admin/appeals/$id/resolve', body: {'accept': accept, 'note': note});
+    await _write('POST', '/admin/appeals/$id/resolve',
+        body: {'accept': accept, 'note': note});
   }
 
   @override
   Future<Paged<Verification>> verifications(
           {VerificationStatus? status, int page = 1, int pageSize = 20}) =>
       _paged('/admin/verifications', verificationFrom,
-          page: page, pageSize: pageSize, query: {if (status != null) 'status': status.name});
+          page: page,
+          pageSize: pageSize,
+          query: {if (status != null) 'status': status.name});
 
   @override
   Future<void> resolveVerification(String id, bool approve, String note) async {
@@ -1571,7 +1634,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
   }
 
   @override
-  Future<void> setRestriction(String accountId, bool restricted, String note) async {
+  Future<void> setRestriction(
+      String accountId, bool restricted, String note) async {
     await _write('POST', '/admin/accounts/$accountId/restriction',
         body: {'restricted': restricted, 'note': note});
   }
@@ -1597,11 +1661,14 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
           bool admins = false,
           int page = 1,
           int pageSize = 20}) =>
-      _paged('/admin/users', userRowFrom, page: page, pageSize: pageSize, query: {
-        if (query.trim().isNotEmpty) 'q': query.trim(),
-        if (restricted) 'restricted': 'true',
-        if (admins) 'admins': 'true',
-      });
+      _paged('/admin/users', userRowFrom,
+          page: page,
+          pageSize: pageSize,
+          query: {
+            if (query.trim().isNotEmpty) 'q': query.trim(),
+            if (restricted) 'restricted': 'true',
+            if (admins) 'admins': 'true',
+          });
 
   @override
   Future<List<AdminUserRow>> team() async =>
@@ -1609,22 +1676,26 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
 
   @override
   Future<void> setRole(String accountId, String? role) async {
-    await _write('PUT', '/admin/users/$accountId/role', body: {'role': role ?? ''});
+    await _write('PUT', '/admin/users/$accountId/role',
+        body: {'role': role ?? ''});
   }
 
   @override
   Future<AccountDetail> accountDetail(String accountId) async {
-    final j = await _call('GET', '/admin/accounts/$accountId') as Map<String, dynamic>;
+    final j = await _call('GET', '/admin/accounts/$accountId')
+        as Map<String, dynamic>;
     return accountDetailFrom(j, _coopPlain);
   }
 
   @override
-  Future<PushPolicy> pushPolicy() async =>
-      policyFrom(await _call('GET', '/admin/push-policy') as Map<String, dynamic>);
+  Future<PushPolicy> pushPolicy() async => policyFrom(
+      await _call('GET', '/admin/push-policy') as Map<String, dynamic>);
 
   @override
-  Future<PushPolicy> savePushPolicy(PushPolicy p) async => policyFrom(await _write(
-      'PUT', '/admin/push-policy',
-      body: {'quiet_start': p.quietStart, 'quiet_end': p.quietEnd, 'daily_cap': p.dailyCap})
-      as Map<String, dynamic>);
+  Future<PushPolicy> savePushPolicy(PushPolicy p) async =>
+      policyFrom(await _write('PUT', '/admin/push-policy', body: {
+        'quiet_start': p.quietStart,
+        'quiet_end': p.quietEnd,
+        'daily_cap': p.dailyCap
+      }) as Map<String, dynamic>);
 }

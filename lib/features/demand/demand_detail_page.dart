@@ -223,8 +223,6 @@ class _DemandDetailState extends State<_DemandDetail>
                   const TextStyle(fontWeight: FontWeight.w700, fontSize: YFont.body)),
           Text(
               [
-                if (data.owner?.phoneVerified == true)
-                  tr3('手机号已验证', 'Телефон расталған', 'Телефон подтверждён'),
                 if (d.publisherRole == PublisherRole.contractor)
                   tr3('施工方发布，非房屋所有人', 'Мердігер жариялаған',
                       'Размещено подрядчиком'),

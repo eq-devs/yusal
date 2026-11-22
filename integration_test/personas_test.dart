@@ -65,7 +65,7 @@ void main() {
     }
 
     await chip('Test Admin', 'Test Admin');
-    expect(repos.currentAccount!.isAdmin, isTrue);
+    expect(repos.currentAccount!.role, isNotNull);
     await shot(t, 't02-admin-entry');
 
     await chip('seed:moderator', 'Әлия · модератор');

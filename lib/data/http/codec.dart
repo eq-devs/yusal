@@ -10,7 +10,8 @@ import '../repositories.dart';
 DateTime? _t(Object? v) => v == null ? null : DateTime.parse(v as String);
 DateTime _tt(Object? v) => DateTime.parse(v as String);
 String? ts(DateTime? t) => t?.toUtc().toIso8601String();
-List<String> _strs(Object? v) => [for (final s in v as List? ?? const []) s as String];
+List<String> _strs(Object? v) =>
+    [for (final s in v as List? ?? const []) s as String];
 List<Map<String, dynamic>> _maps(Object? v) =>
     [for (final m in v as List? ?? const []) m as Map<String, dynamic>];
 int? _i(Object? v) => (v as num?)?.toInt();
@@ -23,7 +24,8 @@ T _enum<T extends Enum>(List<T> values, Object? v, T fallback) {
 
 /// Photos arrive as `/media/<id>` paths (bytes looked up in [media], which
 /// the backend fills before mapping) or, from older records, as base64.
-List<List<int>> _photos(Object? v, [Map<String, List<int>> media = const {}]) => [
+List<List<int>> _photos(Object? v, [Map<String, List<int>> media = const {}]) =>
+    [
       for (final p in (v as List? ?? const []).cast<String>())
         if (!p.startsWith('/media/'))
           base64Decode(p)
@@ -37,21 +39,23 @@ Iterable<String> cooperationMedia(Map<String, dynamic> j) => [
         for (final p in (m['photos'] as List? ?? const []).cast<String>())
           if (p.startsWith('/media/')) p
     ];
-List<String> photosJson(List<List<int>> p) => [for (final b in p) base64Encode(b)];
+List<String> photosJson(List<List<int>> p) =>
+    [for (final b in p) base64Encode(b)];
 
 Map<String, dynamic> _drop(Map<String, dynamic> m) =>
     m..removeWhere((_, v) => v == null);
 
 // ── accounts ──
 
+/// An account from the server: the signed-in user's own view (with email)
+/// or the public view of someone else (with `deleted`).
 Account accountFrom(Map<String, dynamic> u) => Account(
     id: u['id'] as String,
     phone: u['phone'] as String? ?? '',
-    phoneVerified: false,
     displayName: u['display_name'] as String? ?? '',
-    deleted: u['deleted'] == true || u['status'] == 'deleted',
-    restricted: u['restricted'] == true || u['status'] == 'blocked',
-    isAdmin: u['is_admin'] == true,
+    email: u['email'] as String? ?? '',
+    deleted: u['deleted'] == true,
+    restricted: u['restricted'] == true,
     adminRole: (u['admin_role'] as String?)?.nullIfEmpty,
     createdAt: _tt(u['created_at']));
 
@@ -127,13 +131,13 @@ Map<String, dynamic> profileJson(ServiceProfile p) => _drop({
     });
 
 ProfileStats statsFrom(Map<String, dynamic> j) => ProfileStats(
-    phoneVerified: j['phone_verified'] == true,
-    confirmedCooperations: _i(j['confirmed_cooperations']) ?? 0,
-    reviewCount: _i(j['review_count']) ?? 0,
-    dimensionAverages: {
-      for (final e in (j['dimension_averages'] as Map? ?? const {}).entries)
-        e.key as String: (e.value as num).toDouble()
-    });
+        phoneVerified: j['phone_verified'] == true,
+        confirmedCooperations: _i(j['confirmed_cooperations']) ?? 0,
+        reviewCount: _i(j['review_count']) ?? 0,
+        dimensionAverages: {
+          for (final e in (j['dimension_averages'] as Map? ?? const {}).entries)
+            e.key as String: (e.value as num).toDouble()
+        });
 
 // ── demands ──
 
@@ -143,7 +147,8 @@ Budget _budget(Map<String, dynamic> j) => Budget(
     max: _i(j['max']),
     amount: _i(j['amount']),
     basis: j['basis'] as String? ?? 'total',
-    materials: _enum(MaterialMode.values, j['materials'], MaterialMode.undecided));
+    materials:
+        _enum(MaterialMode.values, j['materials'], MaterialMode.undecided));
 
 Map<String, dynamic> _budgetJson(Budget b) => _drop({
       'mode': b.mode.name,
@@ -167,7 +172,8 @@ Map<String, dynamic> qtyJson(QtyItem q) => _drop({
       'unit': q.unit,
       'source': q.source.name,
       'stage': q.stage,
-    })..putIfAbsent('quantity', () => null);
+    })
+      ..putIfAbsent('quantity', () => null);
 
 HireTerms? _hire(Object? v) {
   if (v == null) return null;
@@ -279,7 +285,8 @@ Demand demandFrom(Map<String, dynamic> j) => Demand(
     shareToken: j['share_token'] as String? ?? '',
     publishedAt: _t(j['published_at']),
     expiresAt: _t(j['expires_at']),
-    publisherRole: _enum(PublisherRole.values, j['publisher_role'], PublisherRole.owner),
+    publisherRole:
+        _enum(PublisherRole.values, j['publisher_role'], PublisherRole.owner),
     closeReason: j['close_reason'] as String?,
     rejectReason: j['reject_reason'] as String?,
     outcome: j['outcome'] == null
@@ -385,7 +392,8 @@ Agreement _agreement(Map<String, dynamic> j) => Agreement(
     demandVersionNo: _i(j['demand_version_no']) ?? 1,
     proposedBy: j['proposed_by'] as String? ?? '',
     confirmedBy: _strs(j['confirmed_by']).toSet(),
-    status: _enum(AgreementStatus.values, j['status'], AgreementStatus.proposed),
+    status:
+        _enum(AgreementStatus.values, j['status'], AgreementStatus.proposed),
     createdAt: _tt(j['created_at']),
     headcount: _i(j['headcount']),
     amount: _i(j['amount']),
@@ -414,15 +422,16 @@ Map<String, dynamic> agreementJson(Agreement a) => _drop({
 
 Milestone _milestone(Map<String, dynamic> j, Map<String, List<int>> media) =>
     Milestone(
-    key: j['key'] as String? ?? '',
-    percent: _i(j['percent']) ?? 0,
-    criteria: j['criteria'] as String? ?? '',
-    due: _t(j['due']),
-    status: _enum(MilestoneStatus.values, j['status'], MilestoneStatus.planned),
-    photos: _photos(j['photos'], media),
-    note: j['note'] as String? ?? '',
-    requestedAt: _t(j['requested_at']),
-    answeredAt: _t(j['answered_at']));
+        key: j['key'] as String? ?? '',
+        percent: _i(j['percent']) ?? 0,
+        criteria: j['criteria'] as String? ?? '',
+        due: _t(j['due']),
+        status:
+            _enum(MilestoneStatus.values, j['status'], MilestoneStatus.planned),
+        photos: _photos(j['photos'], media),
+        note: j['note'] as String? ?? '',
+        requestedAt: _t(j['requested_at']),
+        answeredAt: _t(j['answered_at']));
 
 Map<String, dynamic> milestoneJson(Milestone m) => _drop({
       'key': m.key,
@@ -584,19 +593,20 @@ Verification verificationFrom(Map<String, dynamic> j) => Verification(
     phone: j['phone'] as String? ?? '',
     photos: _strs(j['photos']),
     note: j['note'] as String? ?? '',
-    status: _enum(VerificationStatus.values, j['status'], VerificationStatus.pending),
+    status: _enum(
+        VerificationStatus.values, j['status'], VerificationStatus.pending),
     createdAt: _tt(j['created_at']),
     resolution: j['resolution'] as String? ?? '');
 
 DemandAlert alertFrom(Map<String, dynamic> j) => DemandAlert(
-    on: j['on'] == true,
-    regions: _strs(j['regions']),
-    trades: _strs(j['trades']),
-    types: [
-      for (final t in _strs(j['types']))
-        for (final e in DemandType.values)
-          if (e.name == t) e
-    ]);
+        on: j['on'] == true,
+        regions: _strs(j['regions']),
+        trades: _strs(j['trades']),
+        types: [
+          for (final t in _strs(j['types']))
+            for (final e in DemandType.values)
+              if (e.name == t) e
+        ]);
 
 Map<String, dynamic> alertJson(DemandAlert a) => {
       'on': a.on,
@@ -605,10 +615,11 @@ Map<String, dynamic> alertJson(DemandAlert a) => {
       'types': [for (final t in a.types) t.name],
     };
 
-NotificationSettings settingsFrom(Map<String, dynamic> j) => NotificationSettings(
-    muted: _strs(j['muted']),
-    quietStart: j['quiet_start'] as String? ?? '',
-    quietEnd: j['quiet_end'] as String? ?? '');
+NotificationSettings settingsFrom(Map<String, dynamic> j) =>
+    NotificationSettings(
+        muted: _strs(j['muted']),
+        quietStart: j['quiet_start'] as String? ?? '',
+        quietEnd: j['quiet_end'] as String? ?? '');
 
 PushPolicy policyFrom(Map<String, dynamic> j) => PushPolicy(
     quietStart: j['quiet_start'] as String? ?? '',
@@ -617,7 +628,8 @@ PushPolicy policyFrom(Map<String, dynamic> j) => PushPolicy(
 
 TodoList<T> _todo<T>(Object? v, T Function(Map<String, dynamic>) item) {
   final j = v as Map<String, dynamic>? ?? const {};
-  return TodoList(_i(j['count']) ?? 0, [for (final m in _maps(j['items'])) item(m)]);
+  return TodoList(
+      _i(j['count']) ?? 0, [for (final m in _maps(j['items'])) item(m)]);
 }
 
 AdminTodo todoFrom(Map<String, dynamic> j,
@@ -665,8 +677,8 @@ AdminUserRow userRowFrom(Map<String, dynamic> j) => AdminUserRow(
     role: (j['admin_role'] as String?)?.nullIfEmpty,
     createdAt: _t(j['created_at']) ?? DateTime.fromMillisecondsSinceEpoch(0));
 
-AccountDetail accountDetailFrom(Map<String, dynamic> j,
-    Cooperation Function(Map<String, dynamic>) coop) {
+AccountDetail accountDetailFrom(
+    Map<String, dynamic> j, Cooperation Function(Map<String, dynamic>) coop) {
   final a = j['account'] as Map<String, dynamic>;
   return AccountDetail(
       account: Account(
@@ -674,7 +686,6 @@ AccountDetail accountDetailFrom(Map<String, dynamic> j,
           phone: a['phone'] as String? ?? '',
           displayName: a['name'] as String? ?? '',
           createdAt: _tt(a['created_at']),
-          phoneVerified: false,
           deleted: a['status'] == 'deleted',
           restricted: a['restricted'] == true,
           adminRole: (a['admin_role'] as String?)?.nullIfEmpty),
@@ -699,14 +710,14 @@ AccountDetail accountDetailFrom(Map<String, dynamic> j,
 }
 
 PostBuild postBuildFrom(Map<String, dynamic> j) => PostBuild(
-    builders: [
-      for (final b in _maps(j['builders']))
-        (
-          profile: profileFrom(b['profile'] as Map<String, dynamic>),
-          scope: b['scope'] as String? ?? '',
-          ended: b['ended'] == true
-        )
-    ],
-    agreedAmount: _i(j['agreed_amount']) ?? 0,
-    acceptedAmount: _i(j['accepted_amount']) ?? 0,
-    finished: j['finished'] == true);
+        builders: [
+          for (final b in _maps(j['builders']))
+            (
+              profile: profileFrom(b['profile'] as Map<String, dynamic>),
+              scope: b['scope'] as String? ?? '',
+              ended: b['ended'] == true
+            )
+        ],
+        agreedAmount: _i(j['agreed_amount']) ?? 0,
+        acceptedAmount: _i(j['accepted_amount']) ?? 0,
+        finished: j['finished'] == true);

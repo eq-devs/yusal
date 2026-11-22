@@ -41,7 +41,7 @@ Future<String?> failure(WidgetTester t, Future<Object?> Function() f) =>
 
 Future<void> openAdmin(WidgetTester t, HttpBackend repos) async {
   await signIn(t, repos, adminName);
-  expect(repos.currentAccount!.isAdmin, isTrue,
+  expect(repos.currentAccount!.role, isNotNull,
       reason: 'make "$adminName" an admin with go run ./cmd/setadmin <id>');
   await home(t);
   await tab(t, '我的');

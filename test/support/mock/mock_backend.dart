@@ -425,7 +425,7 @@ class MockBackend implements PlatformRepositories, ClockSource {
             avg[d] = scores.reduce((a, b) => a + b) / scores.length;
         }
         return ProfileStats(
-            phoneVerified: accounts[p.ownerId]?.phoneVerified ?? false,
+            phoneVerified: false,
             confirmedCooperations: coops.length,
             reviewCount: visible.length,
             dimensionAverages: avg);

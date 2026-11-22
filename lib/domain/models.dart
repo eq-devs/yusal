@@ -12,20 +12,23 @@ class Account {
       required this.phone,
       required this.displayName,
       required this.createdAt,
-      this.phoneVerified = true,
+      this.email = '',
       this.deleted = false,
       this.restricted = false,
-      this.isAdmin = false,
       this.adminRole});
   final String id, phone, displayName;
+
+  /// The account's email; '' when it has none (or it is someone else's
+  /// account, whose email is not shared).
+  final String email;
   final DateTime createdAt;
-  final bool phoneVerified, deleted, restricted, isAdmin;
+  final bool deleted, restricted;
 
   /// Back-office role (superadmin, moderator, operator, viewer), or null.
   final String? adminRole;
 
-  /// The role, with the pre-roles admin flag read as superadmin.
-  String? get role => adminRole ?? (isAdmin ? AdminRoles.superadmin : null);
+  /// The back-office role, or null.
+  String? get role => adminRole;
 
   /// Whether the role grants [perm] (see [AdminPerms]).
   bool can(String perm) =>
@@ -35,16 +38,18 @@ class Account {
   String get publicName => deleted ? '—' : displayName;
 
   Account copyWith(
-          {String? displayName, String? phone, bool? deleted, bool? restricted}) =>
+          {String? displayName,
+          String? phone,
+          bool? deleted,
+          bool? restricted}) =>
       Account(
           id: id,
           phone: phone ?? this.phone,
           displayName: displayName ?? this.displayName,
           createdAt: createdAt,
-          phoneVerified: phoneVerified,
+          email: email,
           deleted: deleted ?? this.deleted,
           restricted: restricted ?? this.restricted,
-          isAdmin: isAdmin,
           adminRole: adminRole);
 
   Account withRole(String? role) => Account(
@@ -52,10 +57,9 @@ class Account {
       phone: phone,
       displayName: displayName,
       createdAt: createdAt,
-      phoneVerified: phoneVerified,
+      email: email,
       deleted: deleted,
       restricted: restricted,
-      isAdmin: role != null,
       adminRole: role);
 }
 
@@ -816,12 +820,12 @@ class Cooperation {
   final List<WorkLog> workLogs;
 
   /// None unless confirmed: an ended one keeps its last request.
-  EndPhase get endPhase => status != CooperationStatus.confirmed ||
-          endRequest == null
-      ? EndPhase.none
-      : endRequest!.dispute == null
-          ? EndPhase.asked
-          : EndPhase.disputed;
+  EndPhase get endPhase =>
+      status != CooperationStatus.confirmed || endRequest == null
+          ? EndPhase.none
+          : endRequest!.dispute == null
+              ? EndPhase.asked
+              : EndPhase.disputed;
 
   /// The other side asked to end and waits for [me] to confirm or object.
   bool endAskedOf(String? me) =>
@@ -1296,7 +1300,8 @@ class PostComment {
   /// The house's author found this useful; it is shown first.
   final bool helpful;
 
-  PostComment copyWith({bool? helpful, int? rating, bool clearRating = false}) =>
+  PostComment copyWith(
+          {bool? helpful, int? rating, bool clearRating = false}) =>
       PostComment(
           id: id,
           postId: postId,

@@ -137,7 +137,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     return PageScaffold(
         title: widget.profile == null
             ? tr3('创建接活名片', 'Профиль жасау', 'Создать профиль')

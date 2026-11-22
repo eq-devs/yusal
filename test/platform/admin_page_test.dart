@@ -11,8 +11,8 @@ import '../storage_test.dart' show MemoryFiles;
 
 Future<MockBackend> pumpAdmin(WidgetTester t, String account,
     {AppLang lang = AppLang.zh}) async {
-  AppSettings.instance.lang = lang;
-  addTearDown(() => AppSettings.instance.lang = AppLang.zh);
+  appLang = lang;
+  addTearDown(() => appLang = AppLang.zh);
   t.view.physicalSize = const Size(1200, 2400);
   t.view.devicePixelRatio = 2;
   addTearDown(t.view.reset);
@@ -21,9 +21,7 @@ Future<MockBackend> pumpAdmin(WidgetTester t, String account,
   await t.pumpWidget(TestScope(
       repos: b,
       store: ProjectStore(fileSystem: MemoryFiles()),
-      child: MaterialApp(
-          builder: (_, child) => AppScope(child: child!),
-          home: const AdminPage())));
+      child: const MaterialApp(home: AdminPage())));
   await t.pumpAndSettle();
   return b;
 }
@@ -91,9 +89,8 @@ void main() {
       await t.pumpWidget(TestScope(
           repos: b,
           store: ProjectStore(fileSystem: MemoryFiles()),
-          child: MaterialApp(
-              builder: (_, child) => AppScope(child: child!),
-              home: const AccountDetailPage(accountId: SeedIds.mason))));
+          child: const MaterialApp(
+              home: AccountDetailPage(accountId: SeedIds.mason))));
       await t.pumpAndSettle();
       scan();
       expect(found, isEmpty);

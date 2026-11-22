@@ -27,7 +27,7 @@ class CooperationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     return Live<CoopData>(
         provider: coopDataProvider(cooperationId),
         loading: const SkeletonPage(avatar: true),

@@ -21,12 +21,11 @@ Future<Map<String, String>> _details() async => {
     };
 
 Future<void> _open(WidgetTester t, MockBackend b) async {
-  AppSettings.instance.lang = AppLang.zh;
+  appLang = AppLang.zh;
   await t.pumpWidget(TestScope(
       repos: b,
       store: ProjectStore(fileSystem: MemoryFiles()),
       child: MaterialApp(
-          builder: (_, child) => AppScope(child: child!),
           home: Builder(
               builder: (context) => Scaffold(
                   body: TextButton(

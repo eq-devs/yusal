@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/page.dart';
 import 'package:yusal/service/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
@@ -13,12 +13,11 @@ void main() {
     addTearDown(t.view.resetPhysicalSize);
     addTearDown(t.view.resetDevicePixelRatio);
     final store = ProjectStore(fileSystem: MemoryFiles());
-    await t.pumpWidget(MaterialApp(
-        builder: (context, child) => AppScope(child: child!),
-        home: HouseHome(store: store)));
+    await t.pumpWidget(
+        ProviderScope(child: MaterialApp(home: HouseHome(store: store))));
     await t.pumpAndSettle();
     addTearDown(() async {
-      await t.pumpWidget(const SizedBox.shrink());
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
     return store;

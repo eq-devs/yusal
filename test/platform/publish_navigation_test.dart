@@ -29,7 +29,7 @@ void main() {
   testWidgets(
       'back during publication cannot leave a submitted form underneath detail',
       (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 1600);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -49,7 +49,6 @@ void main() {
         repos: backend,
         store: store,
         child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
             home: Builder(
                 builder: (context) => Scaffold(
                     body: TextButton(
@@ -83,7 +82,7 @@ void main() {
 
   testWidgets('publishing defaults to asking for feedback with chosen topics',
       (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -103,9 +102,8 @@ void main() {
     await t.pumpWidget(TestScope(
         repos: backend,
         store: store,
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: PublishPostPage(entry: ProjectEntry(id, doc)))));
+        child:
+            MaterialApp(home: PublishPostPage(entry: ProjectEntry(id, doc)))));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('focus-layout')));
     await t.tap(find.byKey(const Key('focus-cost')));

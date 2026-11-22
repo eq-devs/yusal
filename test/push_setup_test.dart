@@ -3,6 +3,7 @@ import 'support/test_scope.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -52,7 +53,7 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    AppSettings.instance.lang = AppLang.kk;
+    appLang = AppLang.kk;
     api = FakeApi();
     backend = TestHttp('https://api.test', client: MockClient(api.handle));
   });
@@ -119,7 +120,8 @@ void main() {
   testWidgets('tapping a push, or launching from one, opens its target',
       (t) async {
     final nav = GlobalKey<NavigatorState>();
-    await t.pumpWidget(MaterialApp(navigatorKey: nav, home: const SizedBox()));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(navigatorKey: nav, home: const SizedBox())));
     final opened = <(RefType, String)>[];
     // Routing works whether or not pushes are allowed; no token here keeps
     // the network out of the widget test (registration is tested above).

@@ -31,16 +31,14 @@ void main() {
       executor.run(id, args, ctx(), source: Source.voice);
 
   Future<void> open(WidgetTester t, String id) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
     await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: DemandDetailPage(demandId: id))));
+        child: MaterialApp(home: DemandDetailPage(demandId: id))));
     await t.pumpAndSettle();
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
@@ -31,13 +32,13 @@ void main() {
     addTearDown(t.view.resetDevicePixelRatio);
     final store = ProjectStore(fileSystem: MemoryFiles());
     final id = await store.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        builder: (context, child) => AppScope(child: child!),
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await t.pumpAndSettle();
     addTearDown(() async {
-      AppSettings.instance.lang = AppLang.zh;
-      await t.pumpWidget(const SizedBox.shrink());
+      appLang = AppLang.zh;
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
     return (store: store, id: id);

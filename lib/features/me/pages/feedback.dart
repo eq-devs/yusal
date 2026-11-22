@@ -15,7 +15,7 @@ import 'package:yusal/features/shared/ui/widgets.dart';
 /// their version or phone model. Each value is shown before sending.
 Future<Map<String, String>> loadFeedbackContext() async {
   final out = <String, String>{
-    'language': AppSettings.instance.lang.name,
+    'language': appLang.name,
     'platform': kIsWeb ? 'web' : defaultTargetPlatform.name,
   };
   try {
@@ -101,7 +101,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     final empty = text.text.trim().isEmpty;
     return PageScaffold(

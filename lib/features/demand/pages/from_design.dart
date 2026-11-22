@@ -78,7 +78,7 @@ class _FromDesignPageState extends State<FromDesignPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     final e = extract;
     final all = stages.length == snapshotStages.length;

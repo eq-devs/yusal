@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/ui/unsaved_changes_guard.dart';
 
 void main() {
   testWidgets('submitting a draft blocks the leave dialog', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     var busy = true;
-    await t.pumpWidget(MaterialApp(
-        home: Builder(
-            builder: (context) => TextButton(
-                onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                        builder: (_) => UnsavedChangesGuard(
-                            hasChanges: () => true,
-                            isBusy: () => busy,
-                            child: Scaffold(
-                                appBar: AppBar(), body: const Text('draft'))))),
-                child: const Text('open')))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Builder(
+                builder: (context) => TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                            builder: (_) => UnsavedChangesGuard(
+                                hasChanges: () => true,
+                                isBusy: () => busy,
+                                child: Scaffold(
+                                    appBar: AppBar(),
+                                    body: const Text('draft'))))),
+                    child: const Text('open'))))));
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
     await t.pageBack();
@@ -31,20 +34,21 @@ void main() {
   });
   testWidgets('cancel leave preserves the draft and discard returns',
       (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final input = TextEditingController(text: '施工需求');
     addTearDown(input.dispose);
-    await t.pumpWidget(MaterialApp(
-        home: Builder(
-            builder: (context) => TextButton(
-                onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                        builder: (_) => UnsavedChangesGuard(
-                            hasChanges: () => input.text.isNotEmpty,
-                            child: Scaffold(
-                                appBar: AppBar(),
-                                body: TextField(controller: input))))),
-                child: const Text('open')))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Builder(
+                builder: (context) => TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                            builder: (_) => UnsavedChangesGuard(
+                                hasChanges: () => input.text.isNotEmpty,
+                                child: Scaffold(
+                                    appBar: AppBar(),
+                                    body: TextField(controller: input))))),
+                    child: const Text('open'))))));
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
     await t.pageBack();
@@ -60,25 +64,26 @@ void main() {
   });
   testWidgets('a form that becomes dirty while typing asks before leaving',
       (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final title = TextEditingController();
     final story = TextEditingController();
     addTearDown(title.dispose);
     addTearDown(story.dispose);
-    await t.pumpWidget(MaterialApp(
-        home: Builder(
-            builder: (context) => TextButton(
-                onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                        builder: (_) => UnsavedChangesGuard(
-                            hasChanges: () => title.text.isNotEmpty,
-                            // A new merged listenable on every build, as the
-                            // publish pages pass it.
-                            changes: Listenable.merge([title, story]),
-                            child: Scaffold(
-                                appBar: AppBar(),
-                                body: TextField(controller: title))))),
-                child: const Text('open')))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Builder(
+                builder: (context) => TextButton(
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                            builder: (_) => UnsavedChangesGuard(
+                                hasChanges: () => title.text.isNotEmpty,
+                                // A new merged listenable on every build, as the
+                                // publish pages pass it.
+                                changes: Listenable.merge([title, story]),
+                                child: Scaffold(
+                                    appBar: AppBar(),
+                                    body: TextField(controller: title))))),
+                    child: const Text('open'))))));
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
     await t.enterText(find.byType(TextField), '草稿');

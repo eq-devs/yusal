@@ -31,7 +31,7 @@ class DemandDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     return Live<DemandDetailData>(
         provider: demandDetailProvider(demandId),
         loading: const SkeletonPage(),

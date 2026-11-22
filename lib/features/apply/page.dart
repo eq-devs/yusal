@@ -243,7 +243,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     final e = widget.existing;
     final locked = e != null &&

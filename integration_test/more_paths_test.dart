@@ -50,7 +50,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('yusal_api.refresh_token');
     await prefs.setString('house-lang', 'zh');
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
 

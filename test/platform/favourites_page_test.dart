@@ -11,15 +11,13 @@ import '../storage_test.dart' show MemoryFiles;
 
 void main() {
   testWidgets('a house I hearted shows up under 我的 › 收藏', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final b = MockBackend(latency: Duration.zero)..signInAs(SeedIds.roofTeam);
     await b.toggleLike('post_aigerim');
     await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: const FavouritesPage())));
+        child: const MaterialApp(home: FavouritesPage())));
     await t.pumpAndSettle();
     expect(find.text('房子'), findsOneWidget);
     expect(find.byKey(const Key('fav-house-post_aigerim')), findsOneWidget);
@@ -27,7 +25,7 @@ void main() {
   });
 
   testWidgets('houses, workers and demands all show in one place', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final b = MockBackend(latency: Duration.zero)..signInAs(SeedIds.owner2);
     if (!(await b.liked('post_aigerim'))) await b.toggleLike('post_aigerim');
     for (final id in ['prof_mason', 'dem_wall']) {
@@ -36,9 +34,7 @@ void main() {
     await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: const FavouritesPage())));
+        child: const MaterialApp(home: FavouritesPage())));
     await t.pumpAndSettle();
     expect(find.byKey(const Key('fav-house-post_aigerim')), findsOneWidget);
     await t.scrollUntilVisible(
@@ -50,7 +46,7 @@ void main() {
   });
 
   testWidgets('the heart on a worker profile saves it', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final b = MockBackend(latency: Duration.zero)..signInAs(SeedIds.owner2);
     if ((await b.favourites()).contains('prof_mason')) {
       await b.toggleFavourite('prof_mason');
@@ -58,9 +54,7 @@ void main() {
     await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: const ProfilePage(profileId: 'prof_mason'))));
+        child: const MaterialApp(home: ProfilePage(profileId: 'prof_mason'))));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('profile-favourite')));
     await t.pumpAndSettle();
@@ -70,7 +64,7 @@ void main() {
 
   testWidgets('with nothing saved, the page says where to save from',
       (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final b = MockBackend(latency: Duration.zero)..signInAs(SeedIds.roofTeam);
     for (final id in await b.likedPosts()) {
       await b.toggleLike(id);
@@ -81,9 +75,7 @@ void main() {
     await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: const FavouritesPage())));
+        child: const MaterialApp(home: FavouritesPage())));
     await t.pumpAndSettle();
     expect(find.text('还没有收藏'), findsOneWidget);
   });

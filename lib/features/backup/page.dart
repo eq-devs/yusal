@@ -38,7 +38,7 @@ class BackupPage extends StatelessWidget {
     // A restore writes to this device only, which the backend does not
     // report: the list is read again by hand.
     final refresh = LiveRefresh();
-    AppScope.watch(context);
+    watchLang(context);
     return PageScaffold(
         title: tr3('备份与恢复', 'Сақтық көшірме', 'Резервные копии'),
         body: OnChange(

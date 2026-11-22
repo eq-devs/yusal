@@ -114,7 +114,7 @@ Map<String, Object?> voiceContext({List<String> actions = const []}) {
   final screen = VoiceScreens.current;
   return {
     'screen': screen?.screenId,
-    'lang': AppSettings.instance.lang.name,
+    'lang': appLang.name,
     'actions': actions,
     if (screen != null && screen.summary.isNotEmpty) 'summary': screen.summary,
     if (screen != null && screen.scene.isNotEmpty) 'scene': screen.scene,

@@ -73,7 +73,7 @@ class InboxPage extends StatelessWidget {
   const InboxPage({super.key});
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final title = Text(tr3('消息', 'Хабарлар', 'Сообщения'));
     return OnChange(builder: (context) {
       if (context.session.currentAccount == null) {

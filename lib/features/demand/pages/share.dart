@@ -22,7 +22,7 @@ class SharePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     final link = '$shareBase${demand.shareToken}';
     final mine = context.session.currentAccount?.id == demand.ownerId;

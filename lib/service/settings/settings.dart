@@ -1,5 +1,6 @@
 import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/localization/messages_ru.dart';
 
@@ -8,84 +9,96 @@ enum AppLang { zh, kk, ru }
 
 enum ThemeChoice { auto, day, night }
 
-/// Interface language and colour theme, shared by every screen and kept
-/// across launches. Screens call [AppScope.watch] so they rebuild on change.
-class AppSettings extends ChangeNotifier {
-  AppSettings._();
-  static final instance = AppSettings._();
+/// Interface language and colour theme, kept across launches.
+@immutable
+class Settings {
+  const Settings({this.lang = AppLang.zh, this.theme = ThemeChoice.auto});
+  final AppLang lang;
+  final ThemeChoice theme;
 
-  /// Chinese until [load] runs, so tests and previews keep their wording.
-  AppLang lang = AppLang.zh;
-  ThemeChoice theme = ThemeChoice.auto;
+  @override
+  bool operator ==(Object other) =>
+      other is Settings && other.lang == lang && other.theme == theme;
 
-  Future<void> load() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedLang = prefs.getString('house-lang');
-      final savedTheme = prefs.getString('house-theme');
-      lang = AppLang.values.where((l) => l.name == savedLang).firstOrNull ??
-          switch (PlatformDispatcher.instance.locale.languageCode) {
-            'zh' => AppLang.zh,
-            'ru' => AppLang.ru,
-            _ => AppLang.kk,
-          };
-      theme =
-          ThemeChoice.values.where((t) => t.name == savedTheme).firstOrNull ??
-              ThemeChoice.auto;
-    } catch (_) {
-      /* Storage unavailable: keep the defaults. */
-    }
-    notifyListeners();
+  @override
+  int get hashCode => Object.hash(lang, theme);
+}
+
+/// The language [tr] and [tr3] answer in: plain functions called from
+/// everywhere (pages, painters, voice), so it is a plain variable that
+/// [settingsProvider] keeps equal to its own. Chinese until [loadSettings].
+AppLang appLang = AppLang.zh;
+
+/// The theme choice the app starts with; [loadSettings] reads the saved one.
+ThemeChoice appTheme = ThemeChoice.auto;
+
+/// Reads the saved choices, before the first frame.
+Future<void> loadSettings() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final savedLang = prefs.getString('house-lang');
+    final savedTheme = prefs.getString('house-theme');
+    appLang = AppLang.values.where((l) => l.name == savedLang).firstOrNull ??
+        switch (PlatformDispatcher.instance.locale.languageCode) {
+          'zh' => AppLang.zh,
+          'ru' => AppLang.ru,
+          _ => AppLang.kk,
+        };
+    appTheme =
+        ThemeChoice.values.where((t) => t.name == savedTheme).firstOrNull ??
+            ThemeChoice.auto;
+  } catch (_) {
+    /* Storage unavailable: keep the defaults. */
   }
+}
+
+final settingsProvider =
+    NotifierProvider<SettingsNotifier, Settings>(SettingsNotifier.new);
+
+class SettingsNotifier extends Notifier<Settings> {
+  @override
+  Settings build() => Settings(lang: appLang, theme: appTheme);
 
   void setLang(AppLang value) {
-    if (value == lang) return;
-    lang = value;
-    notifyListeners();
-    SharedPreferences.getInstance()
-        .then((p) => p.setString('house-lang', value.name))
-        .catchError((_) => false);
+    if (value == state.lang) return;
+    appLang = value;
+    state = Settings(lang: value, theme: state.theme);
+    _save('house-lang', value.name);
   }
 
   void setTheme(ThemeChoice value) {
-    if (value == theme) return;
-    theme = value;
-    notifyListeners();
-    SharedPreferences.getInstance()
-        .then((p) => p.setString('house-theme', value.name))
-        .catchError((_) => false);
+    if (value == state.theme) return;
+    appTheme = value;
+    state = Settings(lang: state.lang, theme: value);
+    _save('house-theme', value.name);
   }
+
+  static void _save(String key, String value) => SharedPreferences.getInstance()
+      .then((p) => p.setString(key, value))
+      .catchError((_) => false);
 }
 
-/// Makes widgets that read the settings rebuild when they change.
-class AppScope extends InheritedNotifier<AppSettings> {
-  AppScope({super.key, required super.child})
-      : super(notifier: AppSettings.instance);
-
-  /// The settings, registering [context] for rebuilds when a scope exists.
-  static AppSettings watch(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<AppScope>()?.notifier ??
-      AppSettings.instance;
-}
+/// Rebuilds [context] when the language changes: the app's locale follows
+/// it, so this is the same signal Flutter's own texts use.
+void watchLang(BuildContext context) => Localizations.localeOf(context);
 
 /// Cyrillic interface: Kazakh, or Russian falling back to Kazakh where only
 /// Chinese and Kazakh text exist.
-bool get isKk => AppSettings.instance.lang != AppLang.zh;
+bool get isKk => appLang != AppLang.zh;
 
-bool get isRu => AppSettings.instance.lang == AppLang.ru;
+bool get isRu => appLang == AppLang.ru;
 
 /// A Chinese / Kazakh pair from a table (names of furniture, stages,
 /// checklists). In Russian the Kazakh text is looked up in [ruText];
 /// strings written at a call use [tr3] instead.
-String tr(String zh, String kk) => switch (AppSettings.instance.lang) {
+String tr(String zh, String kk) => switch (appLang) {
       AppLang.zh => zh,
       AppLang.kk => kk,
       AppLang.ru => ruText(kk),
     };
 
 /// Platform strings come in all three languages.
-String tr3(String zh, String kk, String ru) =>
-    switch (AppSettings.instance.lang) {
+String tr3(String zh, String kk, String ru) => switch (appLang) {
       AppLang.zh => zh,
       AppLang.kk => kk,
       AppLang.ru => ru,

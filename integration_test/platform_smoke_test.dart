@@ -28,7 +28,7 @@ void main() {
         timestamp: DateTime.now().toUtc().toIso8601String(),
         newId: () => 'smoke_${sequence++}'));
     try {
-      AppSettings.instance.lang = AppLang.zh;
+      appLang = AppLang.zh;
       expect((await store.openProject(id)).meta.name, 'Yusal smoke test');
       await t.pumpWidget(
           testApp(MockBackend(latency: Duration.zero), store: store));

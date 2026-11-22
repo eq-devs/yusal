@@ -105,7 +105,7 @@ void main() {
   testWidgets('the owner sees a to-do strip and opens a house workspace',
       (t) async {
     SharedPreferences.setMockInitialValues({});
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1200, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);

@@ -71,7 +71,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     return Scaffold(
         body: SafeArea(
             top: !widget.embedded,

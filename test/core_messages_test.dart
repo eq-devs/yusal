@@ -31,11 +31,11 @@ void main() {
     '还没有宅基地',
     '自带的施工阶段不能删除，可以标记为完成',
   ];
-  tearDown(() => AppSettings.instance.lang = AppLang.zh);
+  tearDown(() => appLang = AppLang.zh);
 
   for (final lang in [AppLang.kk, AppLang.ru]) {
     test('core messages read in ${lang.name}', () {
-      AppSettings.instance.lang = lang;
+      appLang = lang;
       for (final m in shown) {
         expect(coreMessage(m), isNot(contains(chinese)), reason: m);
       }
@@ -43,7 +43,7 @@ void main() {
   }
 
   test('a refused floor height names the limit in Russian', () {
-    AppSettings.instance.lang = AppLang.ru;
+    appLang = AppLang.ru;
     expect(coreMessage('操作无法完成：层高不得低于 2400 毫米'),
         'Действие не выполнено: Высота этажа не может быть меньше 2400 мм');
   });

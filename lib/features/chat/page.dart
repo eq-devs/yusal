@@ -194,7 +194,7 @@ class _ChatPageState extends State<ChatPage>
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     return Live<ChatData>(
         provider: chatProvider(widget.conversationId),

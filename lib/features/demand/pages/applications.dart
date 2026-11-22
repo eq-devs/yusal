@@ -31,7 +31,7 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     return Live<ApplicationsData>(
         provider: applicationsProvider(widget.demandId),
         loading: const SkeletonPage(avatar: true),

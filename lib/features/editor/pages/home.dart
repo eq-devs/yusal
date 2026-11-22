@@ -30,7 +30,7 @@ abstract interface class DesignList {
   Widget examplePreview(BuildContext context);
 }
 
-class HouseHome extends StatefulWidget {
+class HouseHome extends ConsumerStatefulWidget {
   const HouseHome(
       {super.key,
       this.store,
@@ -58,7 +58,7 @@ class HouseHome extends StatefulWidget {
   /// Fires when another screen asks to start a new design (template picker).
   final Listenable? createRequest;
   @override
-  State<HouseHome> createState() => _HouseHomeState();
+  ConsumerState<HouseHome> createState() => _HouseHomeState();
 }
 
 /// Templates: key → (Chinese, Kazakh, size in metres).
@@ -98,7 +98,7 @@ Map<String, String> kazakhTemplateNames() => isRu
             'boil': '锅炉房',
           };
 
-class _HouseHomeState extends State<HouseHome>
+class _HouseHomeState extends ConsumerState<HouseHome>
     implements DesignList, HouseLibrary {
   late final store =
       widget.store ?? ProjectStore(previewRenderer: renderProjectPreview);
@@ -856,7 +856,8 @@ class _HouseHomeState extends State<HouseHome>
 
   @override
   Widget build(BuildContext context) {
-    final app = AppScope.watch(context);
+    final app = ref.watch(settingsProvider);
+    final choose = ref.read(settingsProvider.notifier);
     if (widget.builder != null) return widget.builder!(context, this);
     final t = Tokens.of(context);
     final width = MediaQuery.sizeOf(context).width;
@@ -898,7 +899,7 @@ class _HouseHomeState extends State<HouseHome>
                     (AppLang.ru, 'Русский'),
                     (AppLang.zh, '中文')
                   ],
-                  onChanged: app.setLang),
+                  onChanged: choose.setLang),
             if (!embedded)
               Seg<ThemeChoice>(
                   value: app.theme,
@@ -907,7 +908,7 @@ class _HouseHomeState extends State<HouseHome>
                     (ThemeChoice.day, tr3('☀ 日间', '☀ Күндіз', '☀ День')),
                     (ThemeChoice.night, tr3('☾ 夜间', '☾ Түн', '☾ Ночь')),
                   ],
-                  onChanged: app.setTheme),
+                  onChanged: choose.setTheme),
             Btn(
                 label: tr3('导入', 'Импорт', 'Импорт'),
                 icon: Icons.file_open_outlined,

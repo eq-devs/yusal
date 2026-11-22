@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../support/mock/backend.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/page.dart';
@@ -47,10 +48,11 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-14T00:00:00Z',
         newId: () => 'id${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
 
     final editor = VoiceScreens.current!;
@@ -100,7 +102,7 @@ void main() {
     expect(shown('floor').keys, ['f1']);
     expect((await say('editor.undo')).code, ActionCodes.notAvailable);
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 
@@ -119,10 +121,11 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-14T00:00:00Z',
         newId: () => 'id${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
     final host = VoiceScreens.current! as DesignHost;
     expect(shown('opening'), isEmpty);
@@ -207,12 +210,13 @@ void main() {
     await t.pump();
     expect(host.document.extras.furniture, isEmpty);
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 
   testWidgets('design actions are not offered outside the editor', (t) async {
-    await t.pumpWidget(const MaterialApp(home: SizedBox()));
+    await t
+        .pumpWidget(const ProviderScope(child: MaterialApp(home: SizedBox())));
     expect(VoiceScreens.current, isNull);
     expect((await say('design.add_floor')).code, ActionCodes.notAvailable);
     expect(
@@ -236,10 +240,11 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-17T00:00:00Z',
         newId: () => 'st${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
     final host = VoiceScreens.current! as DesignHost;
 
@@ -287,7 +292,7 @@ void main() {
     expect((await say('editor.undo')).ok, isTrue);
     await t.pump();
     expect(host.document.floors.first.stairs, hasLength(1));
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 }

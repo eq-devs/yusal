@@ -11,7 +11,7 @@ import 'mock_backend_test.dart' show backend, terms;
 
 void main() {
   testWidgets('the owner adds a milestone and saves a plan of 100%', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -21,7 +21,6 @@ void main() {
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
         child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
             home: Builder(
                 builder: (context) => Scaffold(
                     body: TextButton(

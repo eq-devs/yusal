@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../support/mock/backend.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/widgets/editor_kit.dart';
 import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
 import 'package:yusal/features/editor/page.dart';
@@ -27,18 +27,18 @@ void main() {
         {if (introSeen) 'voice-intro-seen': true});
     final navigator = GlobalKey<NavigatorState>();
     final mock = VoiceMock(ScriptedBackend([...script]), signedIn: signedIn);
-    await t.pumpWidget(MaterialApp(
-        navigatorKey: navigator,
-        builder: (context, child) => AppScope(
-            child: VoiceHost(
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            navigatorKey: navigator,
+            builder: (context, child) => VoiceHost(
                 navigator: navigator,
                 repos: voiceRepos(mock),
                 voice: mock,
-                child: child!)),
-        home: home));
+                child: child!),
+            home: home)));
     await t.pumpAndSettle();
     addTearDown(() async {
-      await t.pumpWidget(const SizedBox.shrink());
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
     return navigator;

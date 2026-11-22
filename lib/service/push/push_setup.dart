@@ -154,7 +154,7 @@ class PushSetup {
       await api.request('POST', '/client/devices', body: {
         'token': t,
         'platform': platform,
-        'language': AppSettings.instance.lang.name,
+        'language': appLang.name,
       });
     } on ApiFailure {
       _registeredFor = null;

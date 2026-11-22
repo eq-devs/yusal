@@ -34,14 +34,12 @@ class CountingBackend extends MockBackend {
 
 void main() {
   testWidgets('the me page loads my posts once, not in a loop', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final b = CountingBackend()..signInAs(SeedIds.owner);
     await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: const MePage())));
+        child: const MaterialApp(home: MePage())));
     await t.pumpAndSettle();
     final settled = b.myPostsCalls;
     for (var i = 0; i < 20; i++) {
@@ -52,7 +50,7 @@ void main() {
   });
 
   testWidgets('signed in against the API, my posts load once', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     SharedPreferences.setMockInitialValues({});
     final api = NoPreviewApi();
     final b = TestHttp('https://api.test', client: MockClient(api.handle));
@@ -60,9 +58,7 @@ void main() {
     await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: const MePage())));
+        child: const MaterialApp(home: MePage())));
     int calls() =>
         api.requests.where((r) => r.url.path == '/client/me/posts').length;
     for (var i = 0; i < 10; i++) {
@@ -82,7 +78,7 @@ void main() {
 
   testWidgets('scrolled down on a phone, my posts do not reload in a loop',
       (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     SharedPreferences.setMockInitialValues({});
     t.view.physicalSize = const Size(402, 874);
     t.view.devicePixelRatio = 1;
@@ -97,9 +93,7 @@ void main() {
     await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: const MePage())));
+        child: const MaterialApp(home: MePage())));
     Future<void> wait(int rounds) async {
       for (var i = 0; i < rounds; i++) {
         await t.runAsync(

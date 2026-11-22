@@ -237,7 +237,7 @@ final _specs = <(_Spec, int, int)>[
 
 void main() {
   test('seed houses', () async {
-    AppSettings.instance.lang = AppLang.ru;
+    appLang = AppLang.ru;
     // Real glyphs on the thumbnail (tests otherwise draw boxes).
     final fonts = FontLoader(fontBody);
     for (final w in [400, 500, 600, 700]) {

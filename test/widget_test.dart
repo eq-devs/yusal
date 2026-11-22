@@ -22,7 +22,7 @@ Future<MockBackend> launch(WidgetTester t,
   SharedPreferences.setMockInitialValues({});
   t.binding.platformDispatcher.defaultRouteNameTestValue = route;
   addTearDown(t.binding.platformDispatcher.clearDefaultRouteNameTestValue);
-  AppSettings.instance.lang = AppLang.zh;
+  appLang = AppLang.zh;
   t.view.physicalSize = const Size(1200, 2400);
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
@@ -108,6 +108,6 @@ void main() {
     await t.tap(find.text('Русский'));
     await t.pumpAndSettle();
     expect(find.text('Настройки'), findsOneWidget);
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
   });
 }

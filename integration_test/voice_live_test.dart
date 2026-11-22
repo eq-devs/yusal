@@ -85,7 +85,7 @@ void main() {
       (t) async {
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final repos = await signedIn(t);
     try {
       await t.pumpWidget(testApp(repos, store: ProjectStore()));
@@ -115,7 +115,7 @@ void main() {
       (t) async {
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
-    AppSettings.instance.lang = AppLang.kk;
+    appLang = AppLang.kk;
     final repos = await signedIn(t);
     try {
       // The speech service says the command and hears it back: the same
@@ -134,7 +134,7 @@ void main() {
       await t.pumpWidget(const SizedBox.shrink());
       await t.pumpAndSettle();
       await LastOpenProject.write(previous);
-      AppSettings.instance.lang = AppLang.zh;
+      appLang = AppLang.zh;
     }
   }, skip: noLlm || noSpeech);
 
@@ -152,7 +152,7 @@ void main() {
         timestamp: DateTime.now().toUtc().toIso8601String(),
         newId: () => 'live_${sequence++}');
     final id = await store.createProject(doc);
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final repos = await signedIn(t);
     Map<String, String> shown(String kind) => {
           for (final e in VoiceScreens.current!.entities)

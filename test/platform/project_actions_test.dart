@@ -13,7 +13,7 @@ import '../storage_test.dart' show MemoryFiles;
 void main() {
   testWidgets('project can recruit without publishing a house post', (t) async {
     SharedPreferences.setMockInitialValues({});
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1200, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);

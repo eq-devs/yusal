@@ -67,7 +67,7 @@ void main() {
     t.view.viewPadding = const FakeViewPadding(top: 40, bottom: 24);
     addTearDown(t.view.reset);
     SharedPreferences.setMockInitialValues({'voice-intro-seen': true});
-    AppSettings.instance.lang = AppLang.kk;
+    appLang = AppLang.kk;
     final reader = FakeReader();
     ReadAloud.instance = reader;
     final repos = KazakhVoice()..signInAs(SeedIds.owner);

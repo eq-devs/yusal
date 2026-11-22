@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qazvoice/qazvoice.dart';
 import 'package:yusal/service/settings/settings.dart';
@@ -91,9 +92,10 @@ void main() {
 
   group('ReadAloudButton', () {
     Future<void> pump(WidgetTester t, ReadAloud r, [String text = 'Дайын']) {
-      AppSettings.instance.lang = AppLang.kk;
-      return t.pumpWidget(MaterialApp(
-          home: Scaffold(body: ReadAloudButton(reader: r, text: text))));
+      appLang = AppLang.kk;
+      return t.pumpWidget(ProviderScope(
+          child: MaterialApp(
+              home: Scaffold(body: ReadAloudButton(reader: r, text: text)))));
     }
 
     testWidgets('reads at once when the voice is installed, tap again stops',
@@ -188,11 +190,10 @@ void main() {
 
   group('KazakhVoicePage', () {
     testWidgets('downloads with its size, then can delete', (t) async {
-      AppSettings.instance.lang = AppLang.kk;
+      appLang = AppLang.kk;
       final r = FakeReader();
-      await t.pumpWidget(MaterialApp(
-          builder: (_, child) => AppScope(child: child!),
-          home: KazakhVoicePage(reader: r)));
+      await t.pumpWidget(
+          ProviderScope(child: MaterialApp(home: KazakhVoicePage(reader: r))));
       await t.pumpAndSettle();
       expect(find.textContaining('119 MB'), findsWidgets);
       expect(find.textContaining('CC-BY-4.0'), findsOneWidget);

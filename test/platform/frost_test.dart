@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 
@@ -6,12 +7,13 @@ import 'package:yusal/features/shared/ui/widgets.dart';
 void main() {
   Future<double> pump(WidgetTester t, TargetPlatform platform) async {
     late double alpha;
-    await t.pumpWidget(MaterialApp(
-        theme: ThemeData(platform: platform),
-        home: Builder(builder: (context) {
-          alpha = glassAlpha(context, 0.88);
-          return const Frost(sigma: 14, child: SizedBox(height: 40));
-        })));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: ThemeData(platform: platform),
+            home: Builder(builder: (context) {
+              alpha = glassAlpha(context, 0.88);
+              return const Frost(sigma: 14, child: SizedBox(height: 40));
+            }))));
     return alpha;
   }
 

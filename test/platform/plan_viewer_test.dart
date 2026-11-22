@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
@@ -25,11 +26,12 @@ void main() {
   });
   testWidgets('public attachment opens read only with zoom controls',
       (t) async {
-    AppSettings.instance.lang = AppLang.zh;
-    await t.pumpWidget(MaterialApp(
-        home: Scaffold(
-            body:
-                SingleChildScrollView(child: PlanAttachment(snapshot: snap)))));
+    appLang = AppLang.zh;
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(
+                body: SingleChildScrollView(
+                    child: PlanAttachment(snapshot: snap))))));
     await t.tap(find.text('打开图纸'));
     await t.pumpAndSettle();
     expect(find.byType(InteractiveViewer), findsOneWidget);
@@ -45,9 +47,11 @@ void main() {
     expect(t.takeException(), isNull);
   });
   testWidgets('private attachment cannot be opened', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
-    await t.pumpWidget(MaterialApp(
-        home: Scaffold(body: PlanAttachment(snapshot: snap, hidden: true))));
+    appLang = AppLang.zh;
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home:
+                Scaffold(body: PlanAttachment(snapshot: snap, hidden: true)))));
     expect(find.text('打开图纸'), findsNothing);
     expect(find.text('图纸未公开，可联系发布者'), findsOneWidget);
   });

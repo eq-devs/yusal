@@ -28,8 +28,8 @@ Future<(MockBackend, ProjectStore)> launch(WidgetTester t,
   SharedPreferences.setMockInitialValues({});
   t.binding.platformDispatcher.defaultRouteNameTestValue = route;
   addTearDown(t.binding.platformDispatcher.clearDefaultRouteNameTestValue);
-  AppSettings.instance.lang = lang;
-  addTearDown(() => AppSettings.instance.lang = AppLang.zh);
+  appLang = lang;
+  addTearDown(() => appLang = AppLang.zh);
   t.view.physicalSize = size;
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);

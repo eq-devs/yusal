@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
 import 'package:yusal/features/editor/page.dart';
@@ -15,10 +16,11 @@ void main() {
       var n = 0;
       final doc =
           createTemplate('three', '2026-11-15T00:00:00Z', () => 'id${n++}');
-      await t.pumpWidget(MaterialApp(
-          home: HouseEditor(
-              entry: ProjectEntry('project', doc),
-              store: ProjectStore(fileSystem: MemoryFiles()))));
+      await t.pumpWidget(ProviderScope(
+          child: MaterialApp(
+              home: HouseEditor(
+                  entry: ProjectEntry('project', doc),
+                  store: ProjectStore(fileSystem: MemoryFiles())))));
       await t.pumpAndSettle();
       final chip = find.byKey(const Key('plan-cost'));
       expect(chip, findsOneWidget);
@@ -34,7 +36,7 @@ void main() {
       await t.pumpAndSettle();
       expect(chip, findsNothing);
       expect(t.takeException(), isNull);
-      await t.pumpWidget(const SizedBox.shrink());
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
   }

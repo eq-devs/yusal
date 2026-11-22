@@ -10,6 +10,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
@@ -28,8 +29,9 @@ void main() {
     final doc = createKazakhTemplate('2026-10-14T00:00:00Z', () => 'p${n++}');
     final store = ProjectStore(fileSystem: MemoryFiles());
     final id = await store.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await t.pumpAndSettle();
 
     final frames = <FrameTiming>[];
@@ -158,7 +160,7 @@ void main() {
 
     SchedulerBinding.instance.removeTimingsCallback(collect);
     binding.reportData = report;
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pump(const Duration(milliseconds: 400));
   });
 }

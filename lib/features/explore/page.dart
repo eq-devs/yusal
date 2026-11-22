@@ -90,7 +90,7 @@ class _ExplorePageState extends State<ExplorePage> {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _decide();
     });

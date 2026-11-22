@@ -33,7 +33,7 @@ bool get voicePlatform =>
 /// Asks before an outbound action runs. Never confirms by itself.
 Future<bool> confirmAction(
     BuildContext context, AppAction action, Args args) async {
-  final lang = AppSettings.instance.lang;
+  final lang = appLang;
   final yes = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -339,7 +339,7 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
   List<String> suggestions() {
     final ctx = VoiceScreens.context(s.repos, loggedIn: s.loggedIn());
     final offered = {for (final a in s.executor.registry.offered(ctx)) a.id: a};
-    final lang = AppSettings.instance.lang;
+    final lang = appLang;
     return [
       for (final id in _suggestionOrder)
         if (offered[id] != null) offered[id]!.examples.of(lang)
@@ -379,7 +379,7 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
     }
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final lang = AppSettings.instance.lang;
+    final lang = appLang;
     final quiet =
         theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant);
     final failed = s.phase == VoicePhase.failed;

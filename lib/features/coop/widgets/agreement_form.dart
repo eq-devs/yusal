@@ -143,7 +143,7 @@ class _AgreementFormState extends State<AgreementForm> {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     return PageScaffold(
         title: widget.current == null
             ? tr3('合作约定', 'Келісім', 'Соглашение')

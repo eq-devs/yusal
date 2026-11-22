@@ -2,6 +2,7 @@ import 'dart:async';
 
 import '../support/mock/backend.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/page.dart';
@@ -112,16 +113,17 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-14T00:00:00Z',
         newId: () => 'id${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
     return VoiceScreens.current! as DesignHost;
   }
 
   Future<void> close(WidgetTester t) async {
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   }
 

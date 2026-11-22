@@ -30,8 +30,8 @@ void main() {
     final store = ProjectStore();
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
-    AppSettings.instance.lang = AppLang.values.byName(_lang);
-    AppSettings.instance.theme = _night ? ThemeChoice.night : ThemeChoice.day;
+    appLang = AppLang.values.byName(_lang);
+    appTheme = _night ? ThemeChoice.night : ThemeChoice.day;
     var n = 0;
     final id = await store.createProject(createKazakhTemplate(
         DateTime.now().toUtc().toIso8601String(), () => 'tour_${n++}',
@@ -80,8 +80,8 @@ void main() {
       await t.pumpWidget(const SizedBox.shrink());
       await store.deleteProject(id);
       await LastOpenProject.write(previous);
-      AppSettings.instance.lang = AppLang.zh;
-      AppSettings.instance.theme = ThemeChoice.auto;
+      appLang = AppLang.zh;
+      appTheme = ThemeChoice.auto;
     }
   });
 }

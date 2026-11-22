@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/service/settings/settings.dart';
@@ -66,8 +67,8 @@ void main() {
     addTearDown(t.view.reset);
     SharedPreferences.setMockInitialValues(
         {if (introSeen) 'voice-intro-seen': true});
-    AppSettings.instance.lang = lang;
-    addTearDown(() => AppSettings.instance.lang = AppLang.zh);
+    appLang = lang;
+    addTearDown(() => appLang = AppLang.zh);
 
     var shot = 0;
     Future<void> snap(String name) async {
@@ -91,21 +92,21 @@ void main() {
     final doc = createKazakhTemplate('2026-11-17T00:00:00Z', () => 'id${n++}');
     final id = await store.createProject(doc);
     final direct = size.width > size.height;
-    await t.pumpWidget(RepaintBoundary(
-        key: shotKey,
-        child: MaterialApp(
-            navigatorKey: navigator,
-            debugShowCheckedModeBanner: false,
-            theme: buildTheme(Tokens.light),
-            builder: (context, child) => AppScope(
-                child: VoiceHost(
+    await t.pumpWidget(ProviderScope(
+        child: RepaintBoundary(
+            key: shotKey,
+            child: MaterialApp(
+                navigatorKey: navigator,
+                debugShowCheckedModeBanner: false,
+                theme: buildTheme(Tokens.light),
+                builder: (context, child) => VoiceHost(
                     navigator: navigator,
                     repos: voiceRepos(VoiceMock(backend)),
                     voice: backend,
-                    child: child!)),
-            home: direct
-                ? HouseEditor(entry: ProjectEntry(id, doc), store: store)
-                : HouseHome(store: store))));
+                    child: child!),
+                home: direct
+                    ? HouseEditor(entry: ProjectEntry(id, doc), store: store)
+                    : HouseHome(store: store)))));
     await t.pumpAndSettle();
     await snap('home');
 

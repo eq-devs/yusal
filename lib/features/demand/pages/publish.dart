@@ -415,7 +415,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     const last = 4;
     final pages = [

@@ -128,7 +128,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     final e = extract;
     final preview = widget.entry.preview;

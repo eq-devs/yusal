@@ -13,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/ui/widgets.dart'
     show Avatar, debugFrostedGlass;
 import '../test/support/mock/mock_backend.dart';
@@ -94,8 +93,7 @@ void main() {
           key: UniqueKey(),
           repos: b,
           store: ProjectStore(fileSystem: MemoryFiles()),
-          child: MaterialApp(
-              builder: (_, child) => AppScope(child: child!), home: home)));
+          child: MaterialApp(home: home)));
       // Entrances play out; fixed pumps, since some pages never settle.
       for (var i = 0; i < 90; i++) {
         await t.pump(const Duration(milliseconds: 16));

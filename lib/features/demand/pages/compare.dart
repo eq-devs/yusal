@@ -20,7 +20,7 @@ class ComparePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     final issues = compareIssues(quotes);
     String nameOf(Application a) => profiles[a.profileId]?.name ?? '—';

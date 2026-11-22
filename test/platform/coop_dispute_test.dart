@@ -12,7 +12,7 @@ import 'mock_backend_test.dart' show backend, terms;
 void main() {
   testWidgets('disputing an end asks for the reason without a busy spinner',
       (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -25,9 +25,7 @@ void main() {
     await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: CooperationPage(cooperationId: coop.id))));
+        child: MaterialApp(home: CooperationPage(cooperationId: coop.id))));
     await t.pumpAndSettle();
     await t.tap(find.text('提出异议'));
     // Settles: nothing spins while the person types the reason.

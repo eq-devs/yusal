@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/constant/tokens.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
 
@@ -426,19 +425,14 @@ ThemeData buildPlatformTheme(YTokens t) {
       tabBarTheme: TabBarThemeData(labelColor: t.ink, unselectedLabelColor: t.muted, indicatorColor: t.ink, dividerColor: t.line, labelStyle: const TextStyle(fontFamily: fontBody, fontWeight: FontWeight.w700, fontSize: YFont.label), unselectedLabelStyle: const TextStyle(fontFamily: fontBody, fontWeight: FontWeight.w500, fontSize: YFont.label)));
 }
 
-/// Applies the platform theme below it, following the day / night choice.
+/// Applies the platform theme below it, light or dark as the app is.
 class PlatformTheme extends StatelessWidget {
   const PlatformTheme({super.key, required this.child});
   final Widget child;
   @override
   Widget build(BuildContext context) {
-    final choice = AppScope.watch(context).theme;
-    final dark = switch (choice) {
-      ThemeChoice.day => false,
-      ThemeChoice.night => true,
-      ThemeChoice.auto =>
-        MediaQuery.platformBrightnessOf(context) == Brightness.dark,
-    };
+    // MaterialApp has already resolved day / night / system.
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Theme(
         data: buildPlatformTheme(dark ? YTokens.night : YTokens.light),
         child: child);

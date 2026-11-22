@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/localization/messages_ru.dart';
@@ -52,7 +53,7 @@ List<String> foreign(Set<String> texts) => [
     ];
 
 void main() {
-  tearDown(() => AppSettings.instance.lang = AppLang.zh);
+  tearDown(() => appLang = AppLang.zh);
 
   test('no two-language string is left at a call in the app', () {
     // Strings written at a call carry all three languages (tr3); tr() is
@@ -86,7 +87,7 @@ void main() {
         'in Russian every page of the design tool is Russian at ${size.width}',
         (t) async {
       SharedPreferences.setMockInitialValues({});
-      AppSettings.instance.lang = AppLang.ru;
+      appLang = AppLang.ru;
       t.view.physicalSize = size;
       t.view.devicePixelRatio = 1;
       addTearDown(t.view.reset);
@@ -97,9 +98,9 @@ void main() {
           name: 'Казахский сельский дом', names: kazakhTemplateNames());
       final store = ProjectStore(fileSystem: MemoryFiles());
       final pid = await store.createProject(doc);
-      await t.pumpWidget(MaterialApp(
-          builder: (context, child) => AppScope(child: child!),
-          home: HouseEditor(entry: ProjectEntry(pid, doc), store: store)));
+      await t.pumpWidget(ProviderScope(
+          child: MaterialApp(
+              home: HouseEditor(entry: ProjectEntry(pid, doc), store: store))));
       await t.pumpAndSettle();
 
       final found = <String, List<String>>{};

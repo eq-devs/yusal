@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/constant/theme.dart';
@@ -30,46 +31,47 @@ void main() {
       t.view.devicePixelRatio = 1;
       addTearDown(t.view.reset);
       final key = GlobalKey();
-      await t.pumpWidget(RepaintBoundary(
-          key: key,
-          child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: buildPlatformTheme(tokens),
-              home: Scaffold(
-                  body: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(children: [
-                        SettingsGroup(children: [
-                          SettingsRow(
-                              key: const Key('row'),
-                              icon: Icons.language,
-                              title: 'Тіл',
-                              value: 'Қазақша',
-                              onTap: () {}),
-                          SettingsRow(
-                              icon: Icons.brightness_6_outlined,
-                              title: 'Көрініс',
-                              onTap: () {}),
-                        ]),
-                        const SizedBox(height: 16),
-                        Row(children: [
-                          Expanded(
-                              child: OutlinedButton(
-                                  key: const Key('outlined'),
+      await t.pumpWidget(ProviderScope(
+          child: RepaintBoundary(
+              key: key,
+              child: MaterialApp(
+                  debugShowCheckedModeBanner: false,
+                  theme: buildPlatformTheme(tokens),
+                  home: Scaffold(
+                      body: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(children: [
+                            SettingsGroup(children: [
+                              SettingsRow(
+                                  key: const Key('row'),
+                                  icon: Icons.language,
+                                  title: 'Тіл',
+                                  value: 'Қазақша',
+                                  onTap: () {}),
+                              SettingsRow(
+                                  icon: Icons.brightness_6_outlined,
+                                  title: 'Көрініс',
+                                  onTap: () {}),
+                            ]),
+                            const SizedBox(height: 16),
+                            Row(children: [
+                              Expanded(
+                                  child: OutlinedButton(
+                                      key: const Key('outlined'),
+                                      onPressed: () {},
+                                      child: const Text('Болдырмау'))),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                  child: FilledButton(
+                                      key: const Key('filled'),
+                                      onPressed: () {},
+                                      child: const Text('Сақтау'))),
+                              IconButton(
+                                  key: const Key('icon'),
                                   onPressed: () {},
-                                  child: const Text('Болдырмау'))),
-                          const SizedBox(width: 12),
-                          Expanded(
-                              child: FilledButton(
-                                  key: const Key('filled'),
-                                  onPressed: () {},
-                                  child: const Text('Сақтау'))),
-                          IconButton(
-                              key: const Key('icon'),
-                              onPressed: () {},
-                              icon: const Icon(Icons.favorite_border)),
-                        ]),
-                      ]))))));
+                                  icon: const Icon(Icons.favorite_border)),
+                            ]),
+                          ])))))));
       await t.pumpAndSettle();
       final name = tokens.dark ? 'night' : 'light';
       Future<void> snap(String label) async {

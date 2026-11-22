@@ -11,7 +11,7 @@ import '../storage_test.dart' show MemoryFiles;
 /// Lists of trades and regions are joined with 、 only in Chinese; a
 /// Russian or Kazakh screen showed "Каменщик、Бетонщик".
 void main() {
-  tearDown(() => AppSettings.instance.lang = AppLang.zh);
+  tearDown(() => appLang = AppLang.zh);
 
   for (final (lang, sep) in [
     (AppLang.ru, ', '),
@@ -20,14 +20,13 @@ void main() {
   ]) {
     testWidgets('a worker card lists trades with "$sep" in ${lang.name}',
         (t) async {
-      AppSettings.instance.lang = lang;
+      appLang = lang;
       final b = MockBackend(latency: Duration.zero);
       final profile = b.profiles.values.firstWhere((p) => p.trades.length > 1);
       await t.pumpWidget(TestScope(
           repos: b,
           store: ProjectStore(fileSystem: MemoryFiles()),
           child: MaterialApp(
-              builder: (_, child) => AppScope(child: child!),
               home: Scaffold(
                   body: ProfileCard(profile: profile, onTap: () {})))));
       await t.pumpAndSettle();

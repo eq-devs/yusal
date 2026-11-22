@@ -19,7 +19,7 @@ void main() {
   testWidgets(
       'voice is offered what each side can do with the cooperation now, '
       'and only that', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -42,9 +42,7 @@ void main() {
       await t.pumpWidget(TestScope(
           repos: b,
           store: ProjectStore(fileSystem: MemoryFiles()),
-          child: MaterialApp(
-              builder: (_, child) => AppScope(child: child!),
-              home: CooperationPage(cooperationId: coop.id))));
+          child: MaterialApp(home: CooperationPage(cooperationId: coop.id))));
       await t.pumpAndSettle();
     }
 
@@ -74,7 +72,7 @@ void main() {
   });
 
   testWidgets('voice asks for and answers inspections in order', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -99,9 +97,7 @@ void main() {
       await t.pumpWidget(TestScope(
           repos: b,
           store: ProjectStore(fileSystem: MemoryFiles()),
-          child: MaterialApp(
-              builder: (_, child) => AppScope(child: child!),
-              home: CooperationPage(cooperationId: coop.id))));
+          child: MaterialApp(home: CooperationPage(cooperationId: coop.id))));
       await t.pumpAndSettle();
     }
 

@@ -135,7 +135,7 @@ class _PlatformShellState extends State<PlatformShell>
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final drafting = Theme.of(context);
     final destinations = [
       (

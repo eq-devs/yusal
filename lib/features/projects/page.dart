@@ -43,7 +43,7 @@ class ProjectsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final title = Text(tr3('我的房子', 'Үйлерім', 'Мои дома'), style: display());
     // The design list owns storage, import, templates and export; this
     // page only draws it.

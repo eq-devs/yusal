@@ -27,16 +27,16 @@ Future<void> mount(WidgetTester t, CountingBackend backend,
     double scale = 1,
     ThemeChoice theme = ThemeChoice.day}) async {
   SharedPreferences.setMockInitialValues({});
-  AppSettings.instance.lang = lang;
-  AppSettings.instance.theme = theme;
+  appLang = lang;
+  appTheme = theme;
   t.view.physicalSize = Size(width, 1000);
   t.view.devicePixelRatio = 1;
   t.platformDispatcher.textScaleFactorTestValue = scale;
   addTearDown(() {
     t.view.reset();
     t.platformDispatcher.clearTextScaleFactorTestValue();
-    AppSettings.instance.lang = AppLang.zh;
-    AppSettings.instance.theme = ThemeChoice.auto;
+    appLang = AppLang.zh;
+    appTheme = ThemeChoice.auto;
   });
   await t.pumpWidget(
       testApp(backend, store: ProjectStore(fileSystem: MemoryFiles())));

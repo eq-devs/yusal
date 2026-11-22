@@ -124,7 +124,7 @@ void main() {
       (t) async {
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final repos = VoiceMock([
       act('t1', [
         ('nav.tab', {'tab': 'me'})
@@ -163,7 +163,7 @@ void main() {
       (t) async {
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
-    AppSettings.instance.lang = AppLang.kk;
+    appLang = AppLang.kk;
     final repos = VoiceMock([const VoiceTurn(reply: 'Жарайды.')],
         hears: 'менің бетімді аш');
     try {
@@ -198,7 +198,7 @@ void main() {
       await t.pumpWidget(const SizedBox.shrink());
       await t.pumpAndSettle();
       await LastOpenProject.write(previous);
-      AppSettings.instance.lang = AppLang.zh;
+      appLang = AppLang.zh;
     }
   }, skip: !onPhone);
 
@@ -241,7 +241,7 @@ void main() {
         timestamp: DateTime.now().toUtc().toIso8601String(),
         newId: () => 'voice_${sequence++}');
     final id = await store.createProject(doc);
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final repos = VoiceMock([
       act('t1', [
         ('design.add_floor', {}),

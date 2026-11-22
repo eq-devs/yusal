@@ -43,7 +43,7 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     return Live<MyHouse?>(
         provider: myHouseProvider(widget.houseKey),
         loading: const SkeletonPage(),

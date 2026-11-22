@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yusal/app.dart' show HouseApp;
 import 'package:yusal/features/shell/page.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
@@ -48,8 +50,8 @@ Future<void> addDesign(WidgetTester t, ProjectStore store) async {
 
 void main() {
   tearDown(() {
-    AppSettings.instance.lang = AppLang.zh;
-    AppSettings.instance.theme = ThemeChoice.auto;
+    appLang = AppLang.zh;
+    appTheme = ThemeChoice.auto;
   });
 
   group('contrast', () {
@@ -129,7 +131,9 @@ void main() {
   for (final lang in AppLang.values) {
     testWidgets('system texts follow the app language ($lang)', (t) async {
       await launch(t, route: '/h/post_aigerim', size: phone);
-      AppSettings.instance.setLang(lang);
+      ProviderScope.containerOf(t.element(find.byType(HouseApp)))
+          .read(settingsProvider.notifier)
+          .setLang(lang);
       await t.pumpAndSettle();
       final l =
           MaterialLocalizations.of(t.element(find.byType(Scaffold).first));
@@ -183,7 +187,7 @@ void main() {
     });
 
     testWidgets('the list and the new-design dialog are in Russian', (t) async {
-      AppSettings.instance.lang = AppLang.ru;
+      appLang = AppLang.ru;
       final (_, store) = await launch(t, size: phone, lang: AppLang.ru);
       await addDesign(t, store);
       await t.tap(find.byType(ShellBarTab).at(1));
@@ -307,9 +311,9 @@ void main() {
         newId: () => 'ed_${id++}');
     final store = ProjectStore(fileSystem: MemoryFiles());
     final pid = await store.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        builder: (context, child) => AppScope(child: child!),
-        home: HouseEditor(entry: ProjectEntry(pid, doc), store: store)));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(pid, doc), store: store))));
     await t.pumpAndSettle();
     // The two switches no longer sit in the header's scrolling row.
     expect(find.text('Қазақша'), findsNothing);
@@ -323,22 +327,22 @@ void main() {
     }
     await t.tap(find.text('Русский'));
     await t.pumpAndSettle();
-    expect(AppSettings.instance.lang, AppLang.ru);
+    expect(appLang, AppLang.ru);
     expect(t.takeException(), isNull);
     await t.pumpWidget(const SizedBox.shrink());
     await t.pumpAndSettle();
   });
 
   test('demo content is written in the language the app starts in', () async {
-    AppSettings.instance.lang = AppLang.ru;
+    appLang = AppLang.ru;
     final ru = _backend();
     expect((await ru.post('post_aigerim'))!.title,
         'Одноэтажный кирпичный дом для родителей');
-    AppSettings.instance.lang = AppLang.kk;
+    appLang = AppLang.kk;
     final kk = _backend();
     expect((await kk.post('post_aigerim'))!.title,
         'Ата-анама арналған бір қабатты кірпіш үй');
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final zh = _backend();
     expect((await zh.post('post_aigerim'))!.title, '给父母盖的一层砖房');
     // No Chinese is left in any Russian title, story or name.

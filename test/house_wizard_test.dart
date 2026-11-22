@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'support/mock/backend.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
@@ -19,8 +20,8 @@ void main() {
         HouseWish(width: 10.5, depth: 8, floors: 2, bedrooms: 4, bathrooms: 2);
     expect(wish.sentence(),
         '帮我设计一栋 10.5×8 米的 2 层房子：4 间卧室、2 个卫生间、客厅和厨房，还要门厅。每个房间都要有门，卧室、客厅和厨房要有窗。');
-    AppSettings.instance.lang = AppLang.ru;
-    addTearDown(() => AppSettings.instance.lang = AppLang.zh);
+    appLang = AppLang.ru;
+    addTearDown(() => appLang = AppLang.zh);
     expect(wish.sentence(), startsWith('Спроектируй дом 10,5×8 метров'));
   });
 
@@ -32,17 +33,18 @@ void main() {
     addTearDown(t.view.resetDevicePixelRatio);
     final navigator = GlobalKey<NavigatorState>();
     final backend = ScriptedBackend([const VoiceTurn(reply: '画好了。')]);
-    await t.pumpWidget(MaterialApp(
-        navigatorKey: navigator,
-        builder: (context, child) => VoiceHost(
-            navigator: navigator,
-            repos: voiceRepos(VoiceMock(backend)),
-            voice: backend,
-            child: AppScope(child: child!)),
-        home: HouseHome(store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            navigatorKey: navigator,
+            builder: (context, child) => VoiceHost(
+                navigator: navigator,
+                repos: voiceRepos(VoiceMock(backend)),
+                voice: backend,
+                child: child!),
+            home: HouseHome(store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
     addTearDown(() async {
-      await t.pumpWidget(const SizedBox.shrink());
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
 
@@ -82,12 +84,11 @@ void main() {
     addTearDown(t.view.resetPhysicalSize);
     addTearDown(t.view.resetDevicePixelRatio);
     final store = ProjectStore(fileSystem: MemoryFiles());
-    await t.pumpWidget(MaterialApp(
-        builder: (context, child) => AppScope(child: child!),
-        home: HouseHome(store: store)));
+    await t.pumpWidget(
+        ProviderScope(child: MaterialApp(home: HouseHome(store: store))));
     await t.pumpAndSettle();
     addTearDown(() async {
-      await t.pumpWidget(const SizedBox.shrink());
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
     await t.tap(find.text('也可以从示例开始'));

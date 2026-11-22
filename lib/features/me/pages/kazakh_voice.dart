@@ -42,7 +42,7 @@ class _KazakhVoicePageState extends State<KazakhVoicePage> {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     return PageScaffold(
         title: tr3('哈萨克语朗读', 'Қазақша дауыс', 'Казахский голос'),

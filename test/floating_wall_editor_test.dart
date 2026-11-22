@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
@@ -35,16 +36,17 @@ void main() {
     // Use the same filesystem for preview isolation and persisted verification.
     final actual = ProjectStore(fileSystem: files);
     final id = await actual.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(scale),
-                disableAnimations: reduce),
-            child: child!),
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: actual)));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(scale),
+                    disableAnimations: reduce),
+                child: child!),
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: actual))));
     await t.pumpAndSettle();
     addTearDown(() async {
-      await t.pumpWidget(const SizedBox.shrink());
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
     return (store: actual, id: id, files: files);

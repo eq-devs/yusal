@@ -33,7 +33,7 @@ import 'package:yusal/service/update/code_push.dart';
 ///   code push), started once [ready] is done and never awaited by a screen.
 abstract final class Boot {
   static final Future<void> ready = Future.wait([
-    _step('settings', AppSettings.instance.load),
+    _step('settings', loadSettings),
     _step('session', ApiClient.app.loadSession),
     // Analytics and crash reports on iOS / Android; no-op on the web.
     _step('firebase', FirebaseSetup.init),
@@ -98,46 +98,42 @@ class HouseApp extends ConsumerWidget {
   const HouseApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ListenableBuilder(
-      listenable: AppSettings.instance,
-      builder: (context, _) {
-        final settings = AppSettings.instance;
-        final (light, dark) = _themesFor(settings.theme);
-        return MaterialApp(
-            navigatorKey: appNavigator,
-            navigatorObservers: FirebaseSetup.observers,
-            title: 'Yusal',
-            debugShowCheckedModeBanner: false,
-            // System texts (back, close, copy / paste, pickers) and what
-            // screen readers announce follow the app language.
-            locale: Locale(settings.lang.name),
-            supportedLocales: _locales,
-            localizationsDelegates: GlobalMaterialLocalizations.delegates,
-            theme: light,
-            darkTheme: dark,
-            themeMode: switch (settings.theme) {
-              ThemeChoice.auto => ThemeMode.system,
-              ThemeChoice.day => ThemeMode.light,
-              ThemeChoice.night => ThemeMode.dark
-            },
-            builder: (context, child) => AppScope(
-                child: VoiceHost(
-                    navigator: appNavigator,
-                    repos: VoiceRepositories(
-                        session: ref.read(sessionProvider),
-                        demands: ref.read(demandRepositoryProvider),
-                        cooperations: ref.read(cooperationRepositoryProvider)),
-                    voice: ref.read(voiceRepositoryProvider),
-                    audio: voiceAudio,
-                    child: child!)),
-            // `/h/<id>` is a shared house: open it directly, signed in or
-            // not. Everything else is the app shell.
-            onGenerateRoute: _route,
-            // One route for the opening address, not one per path segment,
-            // so a shared house has nothing underneath it.
-            onGenerateInitialRoutes: (name) =>
-                [_route(RouteSettings(name: name))]);
-      });
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    final (light, dark) = _themesFor(settings.theme);
+    return MaterialApp(
+        navigatorKey: appNavigator,
+        navigatorObservers: FirebaseSetup.observers,
+        title: 'Yusal',
+        debugShowCheckedModeBanner: false,
+        // System texts (back, close, copy / paste, pickers) and what
+        // screen readers announce follow the app language.
+        locale: Locale(settings.lang.name),
+        supportedLocales: _locales,
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        theme: light,
+        darkTheme: dark,
+        themeMode: switch (settings.theme) {
+          ThemeChoice.auto => ThemeMode.system,
+          ThemeChoice.day => ThemeMode.light,
+          ThemeChoice.night => ThemeMode.dark
+        },
+        builder: (context, child) => VoiceHost(
+            navigator: appNavigator,
+            repos: VoiceRepositories(
+                session: ref.read(sessionProvider),
+                demands: ref.read(demandRepositoryProvider),
+                cooperations: ref.read(cooperationRepositoryProvider)),
+            voice: ref.read(voiceRepositoryProvider),
+            audio: voiceAudio,
+            child: child!),
+        // `/h/<id>` is a shared house: open it directly, signed in or
+        // not. Everything else is the app shell.
+        onGenerateRoute: _route,
+        // One route for the opening address, not one per path segment,
+        // so a shared house has nothing underneath it.
+        onGenerateInitialRoutes: (name) => [_route(RouteSettings(name: name))]);
+  }
 
   static Route<dynamic> _route(RouteSettings settings) {
     final id = houseIdFromRoute(settings.name);

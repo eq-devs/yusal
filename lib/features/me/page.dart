@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/coop/repository/cooperation_repository.dart';
 import 'package:yusal/features/auth/repository/auth_repository.dart';
 import 'package:yusal/features/chat/repository/chat_repository.dart';
@@ -32,7 +33,7 @@ import 'package:yusal/features/auth/widgets/edit_phone.dart';
 
 /// Fourth tab: who I am, what I published, my professional profile,
 /// settings and the account itself, each as its own group.
-class MePage extends StatelessWidget {
+class MePage extends ConsumerWidget {
   const MePage({super.key});
 
   static const _langs = [
@@ -42,8 +43,9 @@ class MePage extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
-    final app = AppScope.watch(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final app = ref.watch(settingsProvider);
+    final choose = ref.read(settingsProvider.notifier);
     final t = YTokens.of(context);
     final themes = [
       (ThemeChoice.auto, tr3('跟随系统', 'Жүйе бойынша', 'Как в системе')),
@@ -142,7 +144,7 @@ class MePage extends StatelessWidget {
                                                 tr3('语言', 'Тіл', 'Язык'),
                                                 _langs,
                                                 selected: app.lang);
-                                            if (v != null) app.setLang(v);
+                                            if (v != null) choose.setLang(v);
                                           }),
                                       SettingsRow(
                                           key: const Key('me-theme'),
@@ -159,7 +161,7 @@ class MePage extends StatelessWidget {
                                                 tr3('外观', 'Көрініс', 'Тема'),
                                                 themes,
                                                 selected: app.theme);
-                                            if (v != null) app.setTheme(v);
+                                            if (v != null) choose.setTheme(v);
                                           }),
                                       if (voiceBuiltIn)
                                         if (ReadAloud.instance
@@ -469,7 +471,7 @@ class MyApplicationsPage extends StatelessWidget {
   const MyApplicationsPage({super.key});
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     return PageScaffold(
         title: tr3('我的报名与报价', 'Өтінімдерім', 'Мои отклики'),
@@ -541,7 +543,7 @@ class FavouritesPage extends StatelessWidget {
   const FavouritesPage({super.key});
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     return PageScaffold(
         title: tr3('收藏', 'Таңдаулы', 'Избранное'),
         body: Live<(List<HousePost>, List<ServiceProfile>, List<Demand>)>(
@@ -608,7 +610,7 @@ class PrivacyPage extends StatelessWidget {
   const PrivacyPage({super.key});
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     return PageScaffold(
         title: tr3('隐私与拉黑', 'Құпиялық', 'Приватность'),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

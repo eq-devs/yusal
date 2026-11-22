@@ -28,7 +28,7 @@ import '../test/support/mock/mock_backend.dart';
 Future<void> startApp(WidgetTester tester) async {
   (await SharedPreferences.getInstance()).setString('house-lang', 'zh');
   await LastOpenProject.write(null);
-  await AppSettings.instance.load();
+  await loadSettings();
   runApp(testApp(MockBackend(latency: Duration.zero)));
   await tester.pumpAndSettle();
   await tester.tap(find.text('我的房子').last);

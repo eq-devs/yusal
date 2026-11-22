@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
@@ -56,11 +57,12 @@ void main() {
     }
     final store = ProjectStore(fileSystem: MemoryFiles());
     final id = await store.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await t.pumpAndSettle();
     addTearDown(() async {
-      await t.pumpWidget(const SizedBox.shrink());
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
     return (store, id);

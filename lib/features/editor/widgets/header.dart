@@ -5,7 +5,8 @@ part of '../page.dart';
 extension _EditorHeader on _HouseEditorState {
   Widget editorHeader(bool wide) {
     final t = Tokens.of(context);
-    final app = AppScope.watch(context);
+    final app = ref.watch(settingsProvider);
+    final choose = ref.read(settingsProvider.notifier);
     final doc = history.present;
     final w = doc.footprint.width;
     final d = doc.footprint.depth;
@@ -55,7 +56,7 @@ extension _EditorHeader on _HouseEditorState {
           (AppLang.ru, 'Русский'),
           (AppLang.zh, '中文')
         ],
-        onChanged: app.setLang);
+        onChanged: choose.setLang);
     final theme = Seg<ThemeChoice>(
         value: app.theme,
         items: [
@@ -63,7 +64,7 @@ extension _EditorHeader on _HouseEditorState {
           (ThemeChoice.day, tr3('☀ 日间', '☀ Күндіз', '☀ День')),
           (ThemeChoice.night, tr3('☾ 夜间', '☾ Түн', '☾ Ночь')),
         ],
-        onChanged: app.setTheme);
+        onChanged: choose.setTheme);
     final floors = Seg<int>(
         label: tr3('楼层', 'Қабат', 'Этаж'),
         value: floorIndex,
@@ -128,7 +129,7 @@ extension _EditorHeader on _HouseEditorState {
           }
           if (value == 'lang') chooseLanguage();
           if (value == 'theme') {
-            app.setTheme(ThemeChoice
+            choose.setTheme(ThemeChoice
                 .values[(app.theme.index + 1) % ThemeChoice.values.length]);
           }
         },
@@ -332,7 +333,8 @@ extension _EditorHeader on _HouseEditorState {
   /// One bar for short screens: back, name, page tabs, history, menu.
   Widget compactBar() {
     final t = Tokens.of(context);
-    final app = AppScope.watch(context);
+    final app = ref.watch(settingsProvider);
+    final choose = ref.read(settingsProvider.notifier);
     return Container(
         decoration:
             BoxDecoration(border: Border(bottom: BorderSide(color: t.line))),
@@ -383,7 +385,7 @@ extension _EditorHeader on _HouseEditorState {
                 // All three languages; the old toggle skipped Russian.
                 if (value == 'lang') chooseLanguage();
                 if (value == 'theme') {
-                  app.setTheme(ThemeChoice.values[
+                  choose.setTheme(ThemeChoice.values[
                       (app.theme.index + 1) % ThemeChoice.values.length]);
                 }
               },
@@ -432,7 +434,8 @@ extension _EditorHeader on _HouseEditorState {
   }
 
   Future<void> chooseLanguage() async {
-    final app = AppSettings.instance;
+    final app = ref.read(settingsProvider);
+    final choose = ref.read(settingsProvider.notifier);
     final lang = await showMotionSheet<AppLang>(
         context: context,
         builder: (context) => SafeArea(
@@ -448,7 +451,7 @@ extension _EditorHeader on _HouseEditorState {
                         value == app.lang ? const Icon(Icons.check) : null,
                     onTap: () => Navigator.pop(context, value)),
             ])));
-    if (lang != null) app.setLang(lang);
+    if (lang != null) choose.setLang(lang);
   }
 
   void selectFloor(int value) => update(() {

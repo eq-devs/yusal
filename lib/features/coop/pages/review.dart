@@ -30,7 +30,7 @@ class _ReviewPageState extends State<ReviewPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     return PageScaffold(
         title: tr3('评价', 'Пікір', 'Отзыв'),

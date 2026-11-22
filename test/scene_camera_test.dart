@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
@@ -12,16 +13,17 @@ void main() {
   final derived = deriveHouse(doc);
 
   Future<SceneViewState> mount(WidgetTester t) async {
-    await t.pumpWidget(MaterialApp(
-        home: SizedBox(
-            width: 800,
-            height: 600,
-            child: SceneView(
-                doc: doc,
-                derived: derived,
-                roomName: (r) => r.name,
-                settings: const SceneSettings(),
-                walk: false))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: SizedBox(
+                width: 800,
+                height: 600,
+                child: SceneView(
+                    doc: doc,
+                    derived: derived,
+                    roomName: (r) => r.name,
+                    settings: const SceneSettings(),
+                    walk: false)))));
     return t.state<SceneViewState>(find.byType(SceneView));
   }
 

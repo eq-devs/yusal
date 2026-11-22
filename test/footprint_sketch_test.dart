@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/widgets/footprint_sketch.dart';
 
@@ -11,7 +12,8 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(const MaterialApp(home: FootprintSketch()));
+      await tester.pumpWidget(
+          const ProviderScope(child: MaterialApp(home: FootprintSketch())));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await tester.ensureVisible(find.byType(TextField).first);
@@ -24,7 +26,8 @@ void main() {
     });
   }
   testWidgets('outline drawing preserves the initial corner', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: FootprintSketch()));
+    await tester.pumpWidget(
+        const ProviderScope(child: MaterialApp(home: FootprintSketch())));
     await tester.pumpAndSettle();
     final canvas = find.byKey(const ValueKey('footprint-sketch-canvas'));
     final size = tester.getSize(canvas);

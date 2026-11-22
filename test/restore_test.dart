@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
@@ -25,7 +26,8 @@ void main() {
     await store.createProject(house('另一个'));
     final id = await store.createProject(house('正在改的房子'));
     SharedPreferences.setMockInitialValues({'editing-project': id});
-    await t.pumpWidget(MaterialApp(home: HouseHome(store: store)));
+    await t.pumpWidget(
+        ProviderScope(child: MaterialApp(home: HouseHome(store: store))));
     await t.pumpAndSettle();
     expect(find.byType(HouseEditor), findsOneWidget);
     expect(find.text('正在改的房子'), findsOneWidget);
@@ -41,7 +43,8 @@ void main() {
       (t) async {
     final store = ProjectStore(fileSystem: MemoryFiles());
     SharedPreferences.setMockInitialValues({'editing-project': 'gone'});
-    await t.pumpWidget(MaterialApp(home: HouseHome(store: store)));
+    await t.pumpWidget(
+        ProviderScope(child: MaterialApp(home: HouseHome(store: store))));
     await t.pumpAndSettle();
     expect(find.byType(HouseEditor), findsNothing);
     expect(await LastOpenProject.read(), isNull);

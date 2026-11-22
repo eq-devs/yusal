@@ -51,7 +51,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
-    AppScope.watch(context);
+    watchLang(context);
     final filters = SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),

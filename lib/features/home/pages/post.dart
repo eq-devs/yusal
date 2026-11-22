@@ -96,7 +96,7 @@ class _PostPageState extends ConsumerState<PostPage> {
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = YTokens.of(context);
     final postId = widget.postId;
     final preview = widget.preview;

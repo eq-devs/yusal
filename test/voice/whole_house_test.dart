@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../support/mock/backend.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
@@ -75,10 +76,11 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-14T00:00:00Z',
         newId: () => 'id${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
   }
 
@@ -109,7 +111,7 @@ void main() {
     expect(bad.say['errors'], isNotEmpty);
     expect(shown('room'), hasLength(1));
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 
@@ -143,7 +145,7 @@ void main() {
             .code,
         ActionCodes.badArgs);
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -81,7 +82,7 @@ part 'tools/drag.dart';
 part 'tools/stair.dart';
 part 'tools/picking.dart';
 
-class HouseEditor extends StatefulWidget {
+class HouseEditor extends ConsumerStatefulWidget {
   const HouseEditor(
       {super.key,
       required this.entry,
@@ -97,7 +98,7 @@ class HouseEditor extends StatefulWidget {
   final ProjectEntry entry;
   final ProjectStore store;
   @override
-  State<HouseEditor> createState() => _HouseEditorState();
+  ConsumerState<HouseEditor> createState() => _HouseEditorState();
 }
 
 /// What a press on the plan does. One at a time; [EditorTool.browse] is
@@ -169,7 +170,7 @@ enum _SaveStatus {
   final String label;
 }
 
-class _HouseEditorState extends State<HouseEditor>
+class _HouseEditorState extends ConsumerState<HouseEditor>
     with WidgetsBindingObserver, TickerProviderStateMixin, VoiceScreen
     implements DesignHost {
   @override
@@ -2656,7 +2657,7 @@ class _HouseEditorState extends State<HouseEditor>
 
   @override
   Widget build(BuildContext context) {
-    AppScope.watch(context);
+    watchLang(context);
     final t = Tokens.of(context);
     return PopScope(
         canPop: !dirty,

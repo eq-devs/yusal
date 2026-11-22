@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
@@ -24,9 +25,10 @@ void main() {
           timestamp: '2026-09-30T00:00:00Z',
           newId: () => 'id${sequence++}');
       final store = ProjectStore(fileSystem: MemoryFiles());
-      await tester.pumpWidget(MaterialApp(
-          home:
-              HouseEditor(entry: ProjectEntry('project', doc), store: store)));
+      await tester.pumpWidget(ProviderScope(
+          child: MaterialApp(
+              home: HouseEditor(
+                  entry: ProjectEntry('project', doc), store: store))));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.text('我的房屋'), findsOneWidget);
@@ -41,7 +43,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('没有划分成房间'), findsOneWidget);
       expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await tester.pumpAndSettle();
     });
   }
@@ -60,8 +62,9 @@ void main() {
     final files = MemoryFiles();
     final store = ProjectStore(fileSystem: files);
     final id = await store.createProject(doc);
-    await tester.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('更多工具'));
     await tester.pumpAndSettle();
@@ -86,7 +89,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
     expect((await store.openProject(id)).floors.first.rooms, isEmpty);
-    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await tester.pumpAndSettle();
   });
   testWidgets('axis drag previews are unsaved and commit as one undo step',
@@ -103,8 +106,9 @@ void main() {
     final files = MemoryFiles();
     final store = ProjectStore(fileSystem: files);
     final id = await store.createProject(doc);
-    await tester.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('更多工具'));
     await tester.pumpAndSettle();
@@ -129,7 +133,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
     expect((await store.openProject(id)).axes.global.single.pos, 6000);
-    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await tester.pumpAndSettle();
   });
 
@@ -147,8 +151,9 @@ void main() {
     final files = MemoryFiles();
     final store = ProjectStore(fileSystem: files);
     final id = await store.createProject(doc);
-    await tester.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('更多工具'));
     await tester.pumpAndSettle();
@@ -172,7 +177,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(files.writeCount, 1);
     expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await tester.pumpAndSettle();
   });
   testWidgets(
@@ -190,8 +195,9 @@ void main() {
     final files = MemoryFiles();
     final store = ProjectStore(fileSystem: files);
     final id = await store.createProject(doc);
-    await tester.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('拖动划房'));
     await tester.pumpAndSettle();
@@ -218,7 +224,7 @@ void main() {
     final restored = await store.openProject(id);
     expect(restored.floors.first.rooms, isEmpty);
     expect(restored.axes.floor, isEmpty);
-    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await tester.pumpAndSettle();
   });
 
@@ -236,8 +242,9 @@ void main() {
         newId: () => 'door${sequence++}');
     final store = ProjectStore(fileSystem: MemoryFiles());
     final id = await store.createProject(doc);
-    await tester.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await tester.pumpAndSettle();
     final canvas = find.byWidgetPredicate(
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
@@ -257,7 +264,7 @@ void main() {
     await tester.pumpAndSettle();
     expect((await store.openProject(id)).floors.first.openings.length, 1);
     expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await tester.pumpAndSettle();
   });
   testWidgets('line drag partitions space and undo removes both rooms',
@@ -273,8 +280,9 @@ void main() {
         newId: () => 'line${sequence++}');
     final store = ProjectStore(fileSystem: MemoryFiles());
     final id = await store.createProject(doc);
-    await tester.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('拉线分房'));
     await tester.pumpAndSettle();
@@ -295,7 +303,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
     expect((await store.openProject(id)).floors.first.rooms, isEmpty);
-    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await tester.pumpAndSettle();
   });
 
@@ -313,8 +321,9 @@ void main() {
     final files = MemoryFiles();
     final store = ProjectStore(fileSystem: files);
     final id = await store.createProject(doc);
-    await tester.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('房屋长宽'));
     await tester.pumpAndSettle();
@@ -339,7 +348,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pumpAndSettle();
     expect((await store.openProject(id)).footprint.width, 12000);
-    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await tester.pumpAndSettle();
   });
 }

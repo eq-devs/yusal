@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yusal/service/api/api_client.dart';
-import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/coop/model/coop_json.dart';
+import 'package:yusal/features/admin/model/admin_json.dart';
+import 'package:yusal/features/demand/model/demand_json.dart';
+import 'package:yusal/features/me/model/me_json.dart';
 import 'package:yusal/features/shared/model/admin_models.dart';
 import 'package:yusal/features/shared/model/models.dart';
 
@@ -74,7 +77,7 @@ final class HttpAdminRepository implements AdminRepository {
   @override
   Future<AdminTodo> todo() async => todoFrom(
       await api.request('GET', '/admin/todo') as Map<String, dynamic>,
-      api.plainCooperation);
+      cooperationFrom);
 
   @override
   Future<AdminDashboard> dashboard() async => dashboardFrom(
@@ -214,7 +217,7 @@ final class HttpAdminRepository implements AdminRepository {
   Future<AccountDetail> accountDetail(String accountId) async {
     final j = await api.request('GET', '/admin/accounts/$accountId')
         as Map<String, dynamic>;
-    return accountDetailFrom(j, api.plainCooperation);
+    return accountDetailFrom(j, cooperationFrom);
   }
 
   // ── back office, HTTP only ──
@@ -223,9 +226,8 @@ final class HttpAdminRepository implements AdminRepository {
       api.write('POST', '/admin/accounts/$accountId/ban',
           body: {'banned': banned, 'note': note});
 
-  Future<void> deleteAccountFor(String accountId, String note) =>
-      api.write('POST', '/admin/accounts/$accountId/delete',
-          body: {'note': note});
+  Future<void> deleteAccountFor(String accountId, String note) => api
+      .write('POST', '/admin/accounts/$accountId/delete', body: {'note': note});
 
   /// [target] is demand, profile, post, comment or message.
   Future<void> takeDown(String target, String id, String note) =>

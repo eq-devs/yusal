@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yusal/service/api/api_client.dart';
 import 'package:yusal/service/api/api_failure.dart';
-import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/backup/model/backup_json.dart';
 import 'package:yusal/features/shared/model/models.dart';
 
 /// Frozen design extracts (snapshots) and cloud backups of designs.

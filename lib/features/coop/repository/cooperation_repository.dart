@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yusal/service/api/api_client.dart';
-import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/coop/model/coop_json.dart';
+import 'package:yusal/utils/json.dart';
 import 'package:yusal/features/shared/model/models.dart';
 
 /// Cooperations (an agreed job) and the reviews that close them.
@@ -72,6 +74,26 @@ final reviewRepositoryProvider = Provider<ReviewRepository>(
 final class HttpCooperationRepository implements CooperationRepository {
   HttpCooperationRepository(this.api);
   final ApiClient api;
+
+  /// Photo bytes by `/media/` path; photos never change, so fetched once.
+  final _media = <String, List<int>>{};
+
+  Future<Cooperation> _withMedia(Map<String, dynamic> j) async {
+    await Future.wait([
+      for (final path in cooperationMedia(j).toSet())
+        if (!_media.containsKey(path)) _loadMedia(path)
+    ]);
+    return cooperationFrom(j, media: _media);
+  }
+
+  Future<void> _loadMedia(String path) async {
+    try {
+      final res = await api.sendRaw('GET', path, auth: false);
+      if (res.statusCode == 200) _media[path] = res.bodyBytes;
+    } on ApiFailure {
+      // Shown without that photo; retried on the next load.
+    }
+  }
 
   @override
   Future<Cooperation> invite(String applicationId, Agreement terms) =>
@@ -151,8 +173,7 @@ final class HttpCooperationRepository implements CooperationRepository {
     if (api.currentId == null) return null;
     final j = await api.maybe(_c(id));
     if (j == null) return null;
-    final c = await api.cooperationWithMedia(j);
-    await api.loadNames([c.ownerId, c.providerId]);
+    final c = await _withMedia(j);
     return c;
   }
 
@@ -160,9 +181,8 @@ final class HttpCooperationRepository implements CooperationRepository {
   Future<List<Cooperation>> myCooperations() async {
     final list = await Future.wait([
       for (final j in await api.getList('/client/me/cooperations'))
-        api.cooperationWithMedia(j)
+        _withMedia(j)
     ]);
-    await api.loadNames(list.expand((c) => [c.ownerId, c.providerId]));
     return list;
   }
 
@@ -171,11 +191,11 @@ final class HttpCooperationRepository implements CooperationRepository {
       Future.wait([
         for (final j
             in await api.getList('/client/demands/$demandId/cooperations'))
-          api.cooperationWithMedia(j)
+          _withMedia(j)
       ]);
 
   Future<Cooperation> _cooperation(Future<dynamic> f) async =>
-      api.cooperationWithMedia(await f as Map<String, dynamic>);
+      _withMedia(await f as Map<String, dynamic>);
 }
 
 /// [ReviewRepository] over yusal-api.
@@ -198,11 +218,9 @@ final class HttpReviewRepository implements ReviewRepository {
   @override
   Future<List<Review>> reviewsAbout(String accountId) async {
     final list = [
-      for (final j
-          in await api.getList('/client/accounts/$accountId/reviews'))
+      for (final j in await api.getList('/client/accounts/$accountId/reviews'))
         reviewFrom(j)
     ];
-    await api.loadNames(list.map((r) => r.authorId));
     return list;
   }
 }

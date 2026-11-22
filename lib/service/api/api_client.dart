@@ -6,15 +6,14 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yusal/service/api/api_failure.dart';
-import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/auth/model/auth_json.dart';
 import 'package:yusal/service/api/session_store.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The connection to the Go backend (`eq-devs/yusal-api`): requests and
-/// their retries, the tokens, the signed-in account, this device's push
-/// token, and a cache of accounts screens read synchronously. Nothing else
-/// is served from memory.
+/// The connection to the Go backend (`eq-devs/yusal-api`), like janapost's
+/// `dio`: requests and their retries, the tokens, and the signed-in
+/// account. Each feature's repository keeps its own paths and caches.
 ///
 /// Each feature's `Http…Repository` takes this client and calls [request]
 /// and [write] on it, so they all share one session.
@@ -58,18 +57,14 @@ class ApiClient implements Session {
   @override
   Listenable get changes => _changes;
 
-  /// Accounts seen so far, by id, for screens that look a name up
-  /// synchronously.
-  final accounts = <String, Account>{};
+  /// The signed-in account, as the server last sent it.
+  Account? _me;
 
   /// The signed-in account's id.
-  String? currentId;
+  String? get currentId => _me?.id;
 
   @override
-  Account? get currentAccount {
-    final a = currentId == null ? null : accounts[currentId];
-    return a == null || a.deleted ? null : a;
-  }
+  Account? get currentAccount => _me == null || _me!.deleted ? null : _me;
 
   /// Tells every listening screen that something changed.
   void notify() {
@@ -90,13 +85,6 @@ class ApiClient implements Session {
 
   String? accessToken;
   String? _refresh;
-
-  /// Public account views, kept for [_accountFresh] so the many rows that
-  /// name the same person (cards, comments, chats) ask the server once, not
-  /// once each and again after every change.
-  final _accountAt = <String, DateTime>{};
-  final _accountLoads = <String, Future<Account?>>{};
-  static const _accountFresh = Duration(minutes: 1);
 
   // ───────────────────────────── transport ─────────────────────────────
 
@@ -276,7 +264,7 @@ class ApiClient implements Session {
     }
     accessToken = null;
     _refresh = null;
-    currentId = null;
+    _me = null;
     await session.clear();
     notify();
   }
@@ -292,11 +280,7 @@ class ApiClient implements Session {
     if (saved == null) return;
     _refresh = saved.refresh;
     accessToken = saved.access;
-    if (saved.account case final account?) {
-      final a = accountFrom(account);
-      accounts[a.id] = a;
-      currentId = a.id;
-    }
+    if (saved.account case final account?) _me = accountFrom(account);
   }
 
   /// Brings the saved session up to date with the server: refreshes the
@@ -326,8 +310,6 @@ class ApiClient implements Session {
       if (!await _refreshTokens()) return;
       setMe(await request('GET', '/client/auth/me') as Map<String, dynamic>);
       notify();
-      // A late sync may come after the push setup handed over its token.
-      unawaited(registerDevice());
     } on ApiFailure catch (e) {
       if (e.code == ApiCodes.network && attempt < retryDelays.length) {
         Timer(retryDelays[attempt], () => unawaited(_sync(attempt + 1)));
@@ -335,70 +317,12 @@ class ApiClient implements Session {
     }
   }
 
-  /// Registers the signed-in account with the in-memory part so mock-served
-  /// features work under the real id.
+  /// The signed-in account as the server just sent it; saved for the next
+  /// launch.
   Account setMe(Map<String, dynamic> u) {
-    final a = accountFrom(u);
-    accounts[a.id] = a;
-    currentId = a.id;
+    final a = _me = accountFrom(u);
     unawaited(session.saveAccount(u));
     return a;
-  }
-
-  String? pushToken;
-  String? _pushPlatform;
-  String? _pushLanguage;
-
-  /// The device's FCM token, from the push setup; registered now if signed
-  /// in, else at the next sign-in. [language] is zh / kk / ru.
-  Future<void> setPushToken(String token,
-      {required String platform, required String language}) async {
-    pushToken = token;
-    _pushPlatform = platform;
-    _pushLanguage = language;
-    await registerDevice();
-  }
-
-  Future<void> registerDevice() async {
-    final token = pushToken;
-    if (token == null || currentId == null) return;
-    try {
-      await request('POST', '/client/devices', body: {
-        'token': token,
-        'platform': _pushPlatform,
-        'language': _pushLanguage,
-      });
-    } on ApiFailure {
-      // Retried at the next sign-in or token refresh.
-    }
-  }
-
-  Future<Account?> account(String id) async {
-    if (accounts[id] case final a? when id == currentId) return a;
-    final at = _accountAt[id];
-    if (at != null && DateTime.now().difference(at) < _accountFresh) {
-      return accounts[id];
-    }
-    return _accountLoads[id] ??= _loadAccount(id).whenComplete(() {
-      _accountLoads.remove(id);
-    });
-  }
-
-  Future<Account?> _loadAccount(String id) async {
-    try {
-      final a = accountFrom(
-          await request('GET', '/client/accounts/$id') as Map<String, dynamic>);
-      // Keep it for mock-served screens that look accounts up by id.
-      accounts[id] = a;
-      _accountAt[id] = DateTime.now();
-      return a;
-    } on ApiFailure catch (e) {
-      if (e.code == ApiCodes.notFound) {
-        _accountAt[id] = DateTime.now();
-        return accounts[id];
-      }
-      rethrow;
-    }
   }
 
   /// GET that answers null for NOT_FOUND.
@@ -424,34 +348,4 @@ class ApiClient implements Session {
     notify();
     return data;
   }
-
-  /// Loads accounts the screens will name, once each.
-  Future<void> loadNames(Iterable<String> ids) => Future.wait([
-        for (final id in ids.toSet())
-          if (id.isNotEmpty && !accounts.containsKey(id))
-            account(id).then((_) {}, onError: (Object _) {})
-      ]);
-
-  /// Photo bytes by `/media/` path; photos never change, so fetched once.
-  final _media = <String, List<int>>{};
-
-  Future<Cooperation> cooperationWithMedia(Map<String, dynamic> j) async {
-    await Future.wait([
-      for (final path in cooperationMedia(j).toSet())
-        if (!_media.containsKey(path)) _loadMedia(path)
-    ]);
-    return cooperationFrom(j, media: _media);
-  }
-
-  Future<void> _loadMedia(String path) async {
-    try {
-      final res = await sendRaw('GET', path, auth: false);
-      if (res.statusCode == 200) _media[path] = res.bodyBytes;
-    } on ApiFailure {
-      // Shown without that photo; retried on the next load.
-    }
-  }
-
-  Cooperation plainCooperation(Map<String, dynamic> j) =>
-      cooperationFrom(j, media: _media);
 }

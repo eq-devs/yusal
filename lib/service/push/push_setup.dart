@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/service/api/api_client.dart';
+import 'package:yusal/service/api/api_failure.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/service/firebase_setup.dart';
 
@@ -110,6 +111,7 @@ class PushSetup {
 
   Future<void> _askAndRegister() async {
     if (!await messaging.requestPermission()) return;
+    api.changes.addListener(_sessionChanged);
     _subs.add(messaging.tokenRefreshes.listen(_register));
     final t = await messaging.token();
     if (t != null) await _register(t);
@@ -129,8 +131,37 @@ class PushSetup {
     return done.future;
   }
 
-  Future<void> _register(String token) => api.setPushToken(token,
-      platform: platform, language: AppSettings.instance.lang.name);
+  /// This device's FCM token, once the system gave one.
+  static String? token;
+
+  /// The account the token was last registered for.
+  String? _registeredFor;
+
+  Future<void> _register(String t) async {
+    token = t;
+    _registeredFor = null;
+    await _registerDevice();
+  }
+
+  /// Registers [token] for the signed-in account; again after every
+  /// sign-in as someone else. A failure is retried at the next change.
+  Future<void> _registerDevice() async {
+    final t = token;
+    final me = api.currentAccount?.id;
+    if (t == null || me == null || me == _registeredFor) return;
+    _registeredFor = me;
+    try {
+      await api.request('POST', '/client/devices', body: {
+        'token': t,
+        'platform': platform,
+        'language': AppSettings.instance.lang.name,
+      });
+    } on ApiFailure {
+      _registeredFor = null;
+    }
+  }
+
+  void _sessionChanged() => unawaited(_registerDevice());
 
   void open(Map<String, dynamic> data) {
     final target = pushTarget(data);
@@ -140,6 +171,7 @@ class PushSetup {
   }
 
   void dispose() {
+    api.changes.removeListener(_sessionChanged);
     for (final s in _subs) {
       s.cancel();
     }

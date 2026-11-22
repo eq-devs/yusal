@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:yusal/service/push/push_setup.dart';
 import 'support/test_scope.dart';
 import 'dart:convert';
 
@@ -398,17 +399,10 @@ void main() {
     expect(jsonDecode(patch.body), {'phone': '+77015550011'});
   });
 
-  test('the push token registers at sign-in and is dropped at sign-out',
-      () async {
-    await backend.api.setPushToken('fcm-1', platform: 'ios', language: 'ru');
-    expect(api.requests.where((r) => r.url.path == '/client/devices'), isEmpty);
+  test('the push token is dropped at sign-out', () async {
+    PushSetup.token = 'fcm-1';
+    addTearDown(() => PushSetup.token = null);
     await backend.auth.signInWithProvider('google', 'id-token');
-    await Future<void>.delayed(Duration.zero);
-    final reg =
-        api.requests.singleWhere((r) => r.url.path == '/client/devices');
-    expect(reg.method, 'POST');
-    expect(jsonDecode(reg.body),
-        {'token': 'fcm-1', 'platform': 'ios', 'language': 'ru'});
     await backend.auth.signOut();
     final drop = api.requests.last;
     expect((drop.method, drop.url.path), ('DELETE', '/client/devices'));

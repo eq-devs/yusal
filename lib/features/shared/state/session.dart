@@ -7,7 +7,8 @@ export 'package:yusal/service/api/api_client.dart'
     show ChangeSource, ClockSource, Session;
 
 /// Who is signed in, and when anything changed.
-final sessionProvider = Provider<Session>((ref) => ref.watch(apiClientProvider));
+final sessionProvider =
+    Provider<Session>((ref) => ref.watch(apiClientProvider));
 
 /// The sign-in page [requireLogin] opens. Null (tests that never sign in)
 /// means sign-in is not offered.

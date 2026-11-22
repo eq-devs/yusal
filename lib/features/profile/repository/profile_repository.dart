@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yusal/service/api/api_client.dart';
 import 'package:yusal/service/api/api_failure.dart';
-import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/profile/model/profile_json.dart';
 import 'package:yusal/features/shared/model/models.dart';
 
 /// Workers' and teams' service profiles, and favourites.
@@ -46,7 +46,6 @@ final class HttpProfileRepository implements ProfileRepository {
     final j = await api.maybe('/client/profiles/$id');
     if (j == null) return null;
     final p = profileFrom(j);
-    await api.loadNames([p.ownerId]);
     return p;
   }
 
@@ -69,7 +68,6 @@ final class HttpProfileRepository implements ProfileRepository {
       }))
         profileFrom(j)
     ];
-    await api.loadNames(list.map((p) => p.ownerId));
     return list;
   }
 

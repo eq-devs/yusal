@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yusal/service/api/api_client.dart';
-import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/backup/model/backup_json.dart';
+import 'package:yusal/features/demand/model/demand_json.dart';
 import 'package:yusal/features/shared/model/models.dart';
 
 /// Demands: what owners publish to find builders.
@@ -57,7 +58,6 @@ final class HttpDemandRepository implements DemandRepository {
       }))
         demandFrom(j)
     ];
-    await api.loadNames(list.map((d) => d.ownerId));
     return list;
   }
 
@@ -66,7 +66,6 @@ final class HttpDemandRepository implements DemandRepository {
     final j = await api.maybe('/client/demands/$id');
     if (j == null) return null;
     final d = demandFrom(j);
-    await api.loadNames([d.ownerId]);
     return d;
   }
 

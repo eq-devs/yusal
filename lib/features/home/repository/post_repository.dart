@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yusal/service/api/api_client.dart';
 import 'package:yusal/service/api/api_failure.dart';
-import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/demand/model/demand_json.dart';
+import 'package:yusal/features/home/model/home_json.dart';
 import 'package:yusal/features/shared/model/models.dart';
 
 /// Published houses: the feed, likes, critiques and reuse.
@@ -173,9 +174,8 @@ final class HttpPostRepository implements PostRepository {
   }
 
   @override
-  Future<List<HousePost>> postsBy(String accountId) async =>
-      _posts(await api.request('GET', '/client/accounts/$accountId/posts')
-          as List);
+  Future<List<HousePost>> postsBy(String accountId) async => _posts(
+      await api.request('GET', '/client/accounts/$accountId/posts') as List);
 
   @override
   Future<HousePost> publishPost(HousePost d) async {
@@ -273,11 +273,6 @@ final class HttpPostRepository implements PostRepository {
             'GET', '/client/posts/$postId/comments') as List)
           _comment(c as Map<String, dynamic>)
       ];
-      // Screens show author names through api.account(id); load them once.
-      await Future.wait([
-        for (final id in {for (final c in list) c.authorId})
-          if (!api.accounts.containsKey(id)) api.account(id)
-      ]);
       return list;
     } on ApiFailure catch (e) {
       if (e.code == ApiCodes.notFound) return const [];
@@ -325,7 +320,6 @@ final class HttpPostRepository implements PostRepository {
     final j = await api.request('GET', '/client/posts/$postId/build');
     if (j == null) return null;
     final b = postBuildFrom(j as Map<String, dynamic>);
-    await api.loadNames(b.builders.map((x) => x.profile.ownerId));
     return b;
   }
 

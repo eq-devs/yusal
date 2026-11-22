@@ -47,8 +47,8 @@ abstract final class Boot {
     // never covers a blank window.
     await WidgetsBinding.instance.endOfFrame;
     unawaited(_step('session sync', ApiClient.app.syncSession));
-    unawaited(_step('push',
-        PushSetup(ApiClient.app, appNavigator, opener: openRef).start));
+    unawaited(_step(
+        'push', PushSetup(ApiClient.app, appNavigator, opener: openRef).start));
     // Over-the-air patches (Shorebird); a no-op outside `shorebird release`.
     unawaited(_step('code push', () async => CodePush().start()));
   }

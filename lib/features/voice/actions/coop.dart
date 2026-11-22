@@ -71,8 +71,8 @@ final coopActions = [
       const L3('请求结束合作', 'Аяқтауды сұрау', 'Попросить завершить'),
       const L3('活干完了，请求结束', 'Жұмыс бітті, аяқтауды сұра',
           'Работа сделана, попроси завершить'),
-      (repos, id, args) =>
-          repos.cooperations.requestEnd(id, args.has('note') ? args.text('note') : ''),
+      (repos, id, args) => repos.cooperations
+          .requestEnd(id, args.has('note') ? args.text('note') : ''),
       params: const {'note': Param.text(optional: true)}),
   _coopAction(
       CoopMove.confirmEnd,
@@ -93,7 +93,8 @@ final coopActions = [
       'coop.answer_change',
       const L3('答复约定变更', 'Өзгеріске жауап беру', 'Ответить на изменение'),
       const L3('接受新的约定', 'Жаңа келісімді қабылда', 'Прими новые условия'),
-      (repos, id, args) => repos.cooperations.answerChange(id, args.flag('accept')),
+      (repos, id, args) =>
+          repos.cooperations.answerChange(id, args.flag('accept')),
       params: const {'accept': Param.flag()}),
   _milestoneAction(
       MilestoneEvent.request,
@@ -116,8 +117,8 @@ final coopActions = [
       const L3('验收有问题', 'Кезеңге ескерту', 'Замечания по этапу'),
       const L3('墙不直，这个节点不通过', 'Қабырға қисық, қабылдамаймын',
           'Стена кривая, не принимаю'),
-      (repos, id, i, args) =>
-          repos.cooperations.answerMilestone(id, i, false, note: args.text('note')),
+      (repos, id, i, args) => repos.cooperations
+          .answerMilestone(id, i, false, note: args.text('note')),
       params: const {'note': Param.text()}),
 ];
 

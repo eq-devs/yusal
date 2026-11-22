@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yusal/service/api/api_client.dart';
 import 'package:yusal/service/api/api_failure.dart';
-import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/chat/model/chat_json.dart';
 import 'package:yusal/features/shared/model/models.dart';
 
 /// Conversations, messages and in-app notices.
@@ -54,7 +54,6 @@ final class HttpChatRepository implements ChatRepository {
       for (final j in await api.getList('/client/conversations'))
         conversationFrom(j)
     ];
-    await api.loadNames(list.expand((c) => c.participants));
     return list;
   }
 
@@ -66,7 +65,6 @@ final class HttpChatRepository implements ChatRepository {
       'account_id': otherAccountId,
       if (demandId != null) 'demand_id': demandId,
     }) as Map<String, dynamic>);
-    await api.loadNames(c.participants);
     return c;
   }
 

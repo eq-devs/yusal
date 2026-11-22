@@ -114,7 +114,9 @@ class Entity {
 /// The repositories the assistant's actions reach.
 class VoiceRepositories {
   const VoiceRepositories(
-      {required this.session, required this.demands, required this.cooperations});
+      {required this.session,
+      required this.demands,
+      required this.cooperations});
   final Session session;
   final DemandRepository demands;
   final CooperationRepository cooperations;

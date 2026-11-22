@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yusal/service/api/api_client.dart';
-import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/apply/model/apply_json.dart';
 import 'package:yusal/features/shared/model/models.dart';
 
 /// Builders' quotes on demands.
@@ -57,7 +57,6 @@ final class HttpApplicationRepository implements ApplicationRepository {
           in await api.getList('/client/demands/$demandId/applications'))
         applicationFrom(j)
     ];
-    await api.loadNames(list.map((a) => a.applicantId));
     return list;
   }
 

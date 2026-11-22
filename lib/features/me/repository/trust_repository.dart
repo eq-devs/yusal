@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:typed_data';
 
 import 'package:yusal/service/api/api_client.dart';
-import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/me/model/me_json.dart';
+import 'package:yusal/utils/json.dart';
 import 'package:yusal/features/shared/model/admin_models.dart';
 import 'package:yusal/features/shared/model/models.dart';
 

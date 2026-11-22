@@ -1,4 +1,5 @@
-import 'package:yusal/features/editor/engine/core/serialization/house_codec.dart' show LoadError;
+import 'package:yusal/features/editor/engine/core/serialization/house_codec.dart'
+    show LoadError;
 
 List<LoadError> validateSchemaV1(Object? value) {
   final errors = <LoadError>[];

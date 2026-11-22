@@ -11,7 +11,8 @@ import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/houses.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 
-export 'package:yusal/features/editor/engine/core/commands/house_spec.dart' show roomWall;
+export 'package:yusal/features/editor/engine/core/commands/house_spec.dart'
+    show roomWall;
 
 /// Implemented by the design editor so design actions can reach it.
 abstract interface class DesignHost {

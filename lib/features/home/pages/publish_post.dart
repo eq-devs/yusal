@@ -5,7 +5,8 @@ import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/shared/model/design_snapshot.dart';
-import 'package:yusal/features/editor/engine/render2d/planning_names.dart' show costLineName;
+import 'package:yusal/features/editor/engine/render2d/planning_names.dart'
+    show costLineName;
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';

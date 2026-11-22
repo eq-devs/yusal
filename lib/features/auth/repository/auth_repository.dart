@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yusal/service/api/api_client.dart';
+import 'package:yusal/features/auth/model/auth_json.dart';
+import 'package:yusal/service/push/push_setup.dart';
 import 'package:yusal/service/api/api_failure.dart';
 import 'package:yusal/features/shared/model/models.dart';
 
@@ -43,8 +45,38 @@ final class HttpAuthRepository implements AuthRepository {
   @override
   Account? get currentAccount => api.currentAccount;
 
+  /// Public account views, kept for [_fresh] so the many rows that name the
+  /// same person (cards, comments, chats) ask the server once, not once
+  /// each and again after every change.
+  final _accounts = <String, Account?>{};
+  final _accountAt = <String, DateTime>{};
+  final _accountLoads = <String, Future<Account?>>{};
+  static const _fresh = Duration(minutes: 1);
+
   @override
-  Future<Account?> account(String id) => api.account(id);
+  Future<Account?> account(String id) async {
+    if (id == api.currentId) return api.currentAccount;
+    final at = _accountAt[id];
+    if (at != null && DateTime.now().difference(at) < _fresh) {
+      return _accounts[id];
+    }
+    return _accountLoads[id] ??= _loadAccount(id).whenComplete(() {
+      _accountLoads.remove(id);
+    });
+  }
+
+  Future<Account?> _loadAccount(String id) async {
+    try {
+      final a = accountFrom(await api.request('GET', '/client/accounts/$id')
+          as Map<String, dynamic>);
+      _accountAt[id] = DateTime.now();
+      return _accounts[id] = a;
+    } on ApiFailure catch (e) {
+      if (e.code != ApiCodes.notFound) rethrow;
+      _accountAt[id] = DateTime.now();
+      return _accounts[id];
+    }
+  }
 
   /// Google / Apple sign-in: [idToken] comes from the native SDK. [name] is
   /// a fallback display name (Apple shares it only on the first sign-in).
@@ -57,7 +89,6 @@ final class HttpAuthRepository implements AuthRepository {
     await api.saveTokens();
     final account = api.setMe(data['user'] as Map<String, dynamic>);
     api.notify();
-    unawaited(api.registerDevice());
     return account;
   }
 
@@ -79,7 +110,6 @@ final class HttpAuthRepository implements AuthRepository {
     await api.saveTokens();
     final account = api.setMe(data['user'] as Map<String, dynamic>);
     api.notify();
-    unawaited(api.registerDevice());
     return account;
   }
 
@@ -119,7 +149,7 @@ final class HttpAuthRepository implements AuthRepository {
 
   @override
   Future<void> signOut() async {
-    final token = api.pushToken;
+    final token = PushSetup.token;
     if (token != null && api.accessToken != null) {
       try {
         await api.request('DELETE', '/client/devices', body: {'token': token});
@@ -150,8 +180,6 @@ final class HttpAuthRepository implements AuthRepository {
   @override
   Future<void> deleteAccount() async {
     await api.request('DELETE', '/client/auth/account');
-    final me = api.currentId;
-    if (me != null) api.accounts.remove(me);
     await api.forget();
   }
 }

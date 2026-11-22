@@ -278,14 +278,10 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
     if (saved == null) return;
     _refresh = saved.refresh;
     _access = saved.access;
-    final account = saved.account;
-    if (account == null) return;
-    try {
+    if (saved.account case final account?) {
       final a = accountFrom(account);
       accounts[a.id] = a;
       currentId = a.id;
-    } catch (_) {
-      // Unreadable: [syncSession] fetches it again.
     }
   }
 
@@ -367,7 +363,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
       _methods(await _call('GET', '/client/auth/methods'));
 
   /// Adds a Google or Apple identity ([idToken] from the native SDK).
-  Future<List<SignInMethod>> linkSignIn(String provider, String idToken) async =>
+  Future<List<SignInMethod>> linkSignIn(
+          String provider, String idToken) async =>
       _methods(await _call('POST', '/client/auth/methods/$provider',
           body: {'id_token': idToken}));
 
@@ -381,7 +378,8 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
           body: {'password': password}));
 
   static List<SignInMethod> _methods(Object? data) => [
-        for (final m in (data as List? ?? const []).cast<Map<String, dynamic>>())
+        for (final m
+            in (data as List? ?? const []).cast<Map<String, dynamic>>())
           SignInMethod(m['provider'] as String, m['email'] as String? ?? ''),
       ];
 

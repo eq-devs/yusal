@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/theme/theme.dart';
 import 'package:yusal/shared/ui/widgets.dart';
 
 void main() {

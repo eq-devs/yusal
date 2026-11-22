@@ -6,6 +6,7 @@
 //
 // Reports the median and 90th-percentile UI-thread (build + layout + paint)
 // and raster time per frame for each scenario.
+import '../test/support/test_scope.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -13,21 +14,22 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/main.dart' show HouseApp;
 import 'package:yusal/shared/ui/widgets.dart' show Avatar, debugFrostedGlass;
 import '../test/support/mock/mock_backend.dart';
 import '../test/support/mock/mock_seed.dart';
-import 'package:yusal/features/profile/profile_page.dart';
+import 'package:yusal/features/profile/page.dart';
 import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/features/shell/shell.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/services/storage/project_store.dart';
 
 import '../test/storage_test.dart' show MemoryFiles;
 
 void appNavigatorPush(WidgetTester t, Widget page) {
-  t.state<NavigatorState>(find.byType(Navigator).first).push(
-      platformRoute<void>((_) => page));
+  t
+      .state<NavigatorState>(find.byType(Navigator).first)
+      .push(platformRoute<void>((_) => page));
 }
 
 void main() {
@@ -89,7 +91,7 @@ void main() {
 
     Future<void> mount(Widget home, String account) async {
       final b = MockBackend(latency: Duration.zero)..signInAs(account);
-      await t.pumpWidget(PlatformScope(
+      await t.pumpWidget(TestScope(
           key: UniqueKey(),
           repos: b,
           store: ProjectStore(fileSystem: MemoryFiles()),

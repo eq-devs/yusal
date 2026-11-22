@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/main.dart';
 import 'package:yusal/shared/ui/widgets.dart';
 import '../test/support/mock/mock_backend.dart';
-import 'package:yusal/features/demand/from_design_page.dart';
-import 'package:yusal/features/home/publish_post_page.dart';
-import 'package:yusal/storage/last_open.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/demand/pages/from_design.dart';
+import 'package:yusal/features/home/pages/publish_post.dart';
+import 'package:yusal/services/storage/last_open.dart';
+import 'package:yusal/services/storage/project_store.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -57,8 +57,7 @@ void main() {
           .ancestor(
               of: find.text('Yusal smoke test'), matching: find.byType(YCard))
           .first;
-      final builders =
-          find.descendant(of: card, matching: find.text('找施工方'));
+      final builders = find.descendant(of: card, matching: find.text('找施工方'));
       await t.ensureVisible(builders);
       await t.tap(builders);
       await t.pumpAndSettle();

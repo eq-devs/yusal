@@ -2,9 +2,9 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/theme/theme.dart';
 import 'package:yusal/shared/ui/widgets.dart';
 
 /// Most photos one site entry or inspection request can carry.

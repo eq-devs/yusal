@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/domain/rules.dart';
+import 'package:yusal/services/api/api_failure.dart';
+import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/shared/model/rules.dart';
 
 import 'mock_backend_test.dart' show backend, publishAsOwner;
 

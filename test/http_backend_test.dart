@@ -5,9 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/data/http/http_backend.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/domain/models.dart';
+import 'package:yusal/app/http_backend.dart';
+import 'package:yusal/services/api/api_failure.dart';
+import 'package:yusal/shared/model/models.dart';
 
 /// A tiny stand-in for yusal-api: just enough routes to check the client's
 /// requests, response mapping, token handling and error codes.

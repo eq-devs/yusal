@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/app/ui.dart';
+import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/features/editor/widgets/editor_kit.dart';
 import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/features/editor/house_editor.dart';
+import 'package:yusal/features/editor/page.dart';
 import 'package:yusal/shared/motion/motion.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/session.dart';
-import 'package:yusal/voice/voice_overlay.dart';
+import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/features/voice/state/session.dart';
+import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 import 'overlay_test.dart' show VoiceMock, VoicePage;

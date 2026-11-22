@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/theme/theme.dart';
 
 import 'editor_shots_test.dart' show loadFont;
 

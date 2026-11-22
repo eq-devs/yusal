@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/core/analysis/build_schedule.dart';
 import 'package:yusal/core/document/house_document.dart';
 

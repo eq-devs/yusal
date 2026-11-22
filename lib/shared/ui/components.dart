@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/shared/motion/motion.dart';
 import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/theme/theme.dart';
 import 'package:yusal/shared/brand/yicon.dart';
 
 /// Parts of the design system that several pages share. Sizes, radii and

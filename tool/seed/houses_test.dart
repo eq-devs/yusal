@@ -12,9 +12,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:yusal/app/tokens.dart';
+import 'package:yusal/shared/theme/tokens.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/core/axis/axis_resolver.dart';
 import 'package:yusal/core/commands/command_contract.dart';
 import 'package:yusal/core/commands/kz_template.dart';
@@ -22,7 +22,7 @@ import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/core/document/house_document.dart';
 import 'package:yusal/core/geometry/derived_house.dart';
 import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/domain/design_snapshot.dart';
+import 'package:yusal/shared/model/design_snapshot.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
 import 'package:yusal/render2d/planning_names.dart';
 

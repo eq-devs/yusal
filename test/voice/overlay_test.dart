@@ -2,15 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/model/models.dart';
 import '../support/mock/mock_backend.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/registry.dart';
-import 'package:yusal/voice/screen.dart';
-import 'package:yusal/voice/session.dart';
-import 'package:yusal/voice/speech.dart';
-import 'package:yusal/voice/voice_overlay.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/registry.dart';
+import 'package:yusal/features/voice/state/screen.dart';
+import 'package:yusal/features/voice/state/session.dart';
+import 'package:yusal/features/voice/repository/speech.dart';
+import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 
 import 'session_test.dart' show ScriptedBackend, act;
 
@@ -316,11 +316,11 @@ void main() {
     expect(find.byKey(const Key('voice-button')), findsOneWidget);
 
     // What the sign-in page does while it is open.
-    VoiceBar.hidden.value++;
+    VoiceSlot.hidden.value++;
     await t.pump();
     expect(find.byKey(const Key('voice-button')), findsNothing);
 
-    VoiceBar.hidden.value--;
+    VoiceSlot.hidden.value--;
     await t.pump();
     expect(find.byKey(const Key('voice-button')), findsOneWidget);
   });

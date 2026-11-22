@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/data/http/http_backend.dart';
-import 'package:yusal/data/repositories.dart';
+import 'package:yusal/app/http_backend.dart';
+import 'package:yusal/services/api/api_failure.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));

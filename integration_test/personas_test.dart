@@ -6,10 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/main.dart';
-import 'package:yusal/data/http/http_backend.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/app/http_backend.dart';
+import 'package:yusal/services/storage/project_store.dart';
 
 import 'e2e_support.dart';
 
@@ -37,8 +37,8 @@ void main() {
       if (repos.currentAccount != null) await signOut(t, repos);
       await home(t);
       await tab(t, '我的');
-      await tapIt(t,
-          find.widgetWithText(FilledButton, '登录或注册').hitTestable().first);
+      await tapIt(
+          t, find.widgetWithText(FilledButton, '登录或注册').hitTestable().first);
       final chip = find.byKey(Key('test-login-$key'));
       await waitFor(t, chip);
       await scrollTo(t, chip);

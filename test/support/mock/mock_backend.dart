@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:math' show max;
 import 'package:flutter/foundation.dart' show ChangeNotifier, Listenable;
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/domain/rules.dart';
-import 'package:yusal/data/repositories.dart';
+import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/shared/model/rules.dart';
+import 'package:yusal/app/backend.dart';
+import 'package:yusal/services/api/api_failure.dart';
+import 'package:yusal/shared/state/session.dart';
+import 'package:yusal/shared/model/admin_models.dart';
 import 'mock_clock.dart';
 import 'mock_seed.dart';
 
@@ -14,7 +17,7 @@ import 'mock_seed.dart';
 /// mark itself hired, confirm for the other side, or skip review.
 ///
 /// Data lives only in memory and is re-seeded on every launch.
-class MockBackend implements PlatformRepositories, ClockSource {
+class MockBackend implements Backend, ClockSource {
   MockBackend(
       {MockClock? clock,
       this.latency = const Duration(milliseconds: 120),
@@ -455,8 +458,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
 
   bool _demandVisible(Demand d) {
     if (d.ownerId == currentId) return true;
-    if (currentId != null && accounts[currentId]!.can(AdminPerms.read))
+    if (currentId != null && accounts[currentId]!.can(AdminPerms.read)) {
       return true;
+    }
     if (currentId != null &&
         applications.values
             .any((a) => a.demandId == d.id && a.applicantId == currentId)) {
@@ -2359,8 +2363,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
     switch (kind) {
       case ReportTarget.demand:
         final d = demands[id];
-        if (d != null)
+        if (d != null) {
           return (owner: d.ownerId, title: d.current.title, postId: null);
+        }
       case ReportTarget.profile:
         final p = profiles[id];
         if (p != null) return (owner: p.ownerId, title: p.name, postId: null);
@@ -2456,8 +2461,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final me = _me;
         _requireActive();
         final p = profiles[profileId];
-        if (p == null || p.ownerId != me)
+        if (p == null || p.ownerId != me) {
           throw const ApiFailure(ApiCodes.notFound);
+        }
         if (phone.trim().length < 6 || photos.isEmpty || photos.length > 6) {
           throw const ApiFailure(ApiCodes.invalidInput);
         }
@@ -2820,8 +2826,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
               _restrict(me, r.targetId, true, note.trim());
             case ReportTarget.post:
               final p = posts[r.targetId];
-              if (p != null)
+              if (p != null) {
                 posts[p.id] = p.copyWith(status: PostStatus.hidden);
+              }
             case ReportTarget.comment:
               final c = commentsById[r.targetId];
               if (c != null) _removeComment(c);
@@ -2939,12 +2946,14 @@ class MockBackend implements PlatformRepositories, ClockSource {
             case 'profile':
               final p = profiles[a.targetId];
               modHidden.remove(a.targetId);
-              if (p != null)
+              if (p != null) {
                 profiles[p.id] = p.copyWith(status: ProfileStatus.active);
+              }
             case 'post':
               final p = posts[a.targetId];
-              if (p != null)
+              if (p != null) {
                 posts[p.id] = p.copyWith(status: PostStatus.published);
+              }
             case 'demand':
               final d = demands[a.targetId];
               if (d != null && d.status == DemandStatus.rejected) {
@@ -3102,8 +3111,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         }
         final a = accounts[accountId];
         if (a == null || a.deleted) throw const ApiFailure(ApiCodes.notFound);
-        if (role != null && a.restricted)
+        if (role != null && a.restricted) {
           throw const ApiFailure(ApiCodes.invalidState);
+        }
         accounts[a.id] = a.withRole(role);
         _record(me, role == null ? 'role_revoke' : 'role_grant:$role',
             'account', a.id, a.displayName, '');

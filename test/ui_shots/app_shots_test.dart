@@ -12,9 +12,9 @@ import 'package:yusal/main.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/features/shell/shell.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/session.dart';
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/features/voice/state/session.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 import 'editor_shots_test.dart' show loadFont;

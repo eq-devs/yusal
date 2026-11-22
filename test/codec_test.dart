@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/data/http/codec.dart';
-import 'package:yusal/domain/models.dart';
+import 'package:yusal/services/api/codec.dart';
+import 'package:yusal/shared/model/models.dart';
 
 /// The JSON the app sends must decode back to the same model (the server
 /// echoes these field names).

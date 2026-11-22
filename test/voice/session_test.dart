@@ -3,16 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/features/editor/house_editor.dart';
+import 'package:yusal/features/editor/page.dart';
 import '../support/mock/mock_backend.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/actions_design.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/screen.dart';
-import 'package:yusal/voice/session.dart';
+import 'package:yusal/services/api/api_failure.dart';
+import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/actions/design.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/screen.dart';
+import 'package:yusal/features/voice/state/session.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 

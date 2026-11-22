@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/core/commands/house_templates.dart';
 import 'package:yusal/core/serialization/house_codec.dart';
-import 'package:yusal/domain/design_snapshot.dart';
-import 'package:yusal/shared/ui/plan_viewer.dart';
+import 'package:yusal/shared/model/design_snapshot.dart';
+import 'package:yusal/features/home/widgets/plan_viewer.dart';
 import 'package:yusal/render3d/scene_view.dart';
 
 void main() {

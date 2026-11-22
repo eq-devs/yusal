@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/app/tokens.dart';
+import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/shared/theme/tokens.dart';
 import 'package:yusal/core/analysis/house_analysis.dart';
 import 'package:yusal/core/document/house_document.dart';
 import 'package:yusal/core/geometry/floor_base.dart';

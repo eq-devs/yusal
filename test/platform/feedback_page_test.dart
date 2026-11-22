@@ -1,16 +1,16 @@
 import 'dart:convert';
 
+import '../support/test_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/app/http_backend.dart';
 import '../support/mock/mock_backend.dart';
-import 'package:yusal/features/me/feedback_page.dart';
-import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/features/me/pages/feedback.dart';
 import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/services/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 Future<Map<String, String>> _details() async => {
@@ -23,7 +23,7 @@ Future<Map<String, String>> _details() async => {
 
 Future<void> _open(WidgetTester t, MockBackend b) async {
   AppSettings.instance.lang = AppLang.zh;
-  await t.pumpWidget(PlatformScope(
+  await t.pumpWidget(TestScope(
       repos: b,
       store: ProjectStore(fileSystem: MemoryFiles()),
       child: MaterialApp(

@@ -14,9 +14,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:yusal/core/commands/kz_template.dart';
 import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/features/editor/house_editor.dart';
+import 'package:yusal/features/editor/page.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/services/storage/project_store.dart';
 
 import '../test/storage_test.dart' show MemoryFiles;
 
@@ -85,8 +85,10 @@ void main() {
     });
 
     {
-      final a = await t.startGesture(centre + const Offset(-63, 71), pointer: 11);
-      final b = await t.startGesture(centre + const Offset(37, 71), pointer: 12);
+      final a =
+          await t.startGesture(centre + const Offset(-63, 71), pointer: 11);
+      final b =
+          await t.startGesture(centre + const Offset(37, 71), pointer: 12);
       await t.pump();
       await b.moveBy(const Offset(30, 0));
       await t.pump();
@@ -114,7 +116,8 @@ void main() {
       // The plan painter alone, recorded off screen: which layer costs what.
       final g = deriveHouse(doc).floors.first, floor = doc.floors.first;
       final size = t.getSize(canvas);
-      double paint({bool labels = true, bool dims = true, bool furniture = true}) {
+      double paint(
+          {bool labels = true, bool dims = true, bool furniture = true}) {
         FloorPlanPainter make() => FloorPlanPainter(
             g.base, {for (final r in floor.rooms) r.id: r.name}, const {},
             openings: g.openings,

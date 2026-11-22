@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/core/house_core.dart';
-import 'package:yusal/features/editor/house_editor.dart';
-import 'package:yusal/features/editor/house_wizard.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/session.dart';
-import 'package:yusal/voice/voice_overlay.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/editor/model/house_wish.dart';
+import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/features/voice/state/session.dart';
+import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 
 import 'storage_test.dart' show MemoryFiles;
 import 'voice/overlay_test.dart' show VoiceMock;

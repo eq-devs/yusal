@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/main.dart';
 import 'support/mock/mock_backend.dart';
 import 'support/mock/mock_clock.dart';
 import 'support/mock/mock_seed.dart';
-import 'package:yusal/features/demand/demand_detail_page.dart';
-import 'package:yusal/features/home/post_page.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/demand/page.dart';
+import 'package:yusal/features/home/pages/post.dart';
+import 'package:yusal/services/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
 import 'package:yusal/shared/brand/yicon.dart';
 

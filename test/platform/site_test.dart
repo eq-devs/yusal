@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/main.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/features/houses/my_houses_data.dart';
-import 'package:yusal/features/houses/workspace_page.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/services/api/api_failure.dart';
+import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/houses/page.dart';
+import 'package:yusal/services/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 import 'mock_backend_test.dart' show backend, terms;
 

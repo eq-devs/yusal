@@ -1,51 +1,21 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/shared/ui/l10n.dart';
-import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/shared/ui/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yusal/services/api/api_failure.dart';
+import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/shared/l10n/l10n.dart';
 import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/shared/state/session.dart';
+import 'package:yusal/shared/theme/theme.dart';
+import 'package:yusal/shared/ui/components.dart';
 
-/// Gives every platform page the repositories and the local
-/// design store.
-class PlatformScope extends InheritedWidget {
-  const PlatformScope(
-      {super.key,
-      required this.repos,
-      required this.store,
-      this.loginPage,
-      required super.child});
-  final PlatformRepositories repos;
-  final ProjectStore store;
+export 'package:yusal/shared/state/session.dart' show ProviderContext;
 
-  /// The sign-in page [requireLogin] opens; the auth feature's page in the
-  /// app. Null (tests that never sign in) means sign-in is not offered.
-  final WidgetBuilder? loginPage;
-
-  static PlatformScope of(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<PlatformScope>();
-    assert(scope != null, 'PlatformScope missing');
-    return scope!;
-  }
-
-  @override
-  bool updateShouldNotify(PlatformScope old) =>
-      repos != old.repos || store != old.store;
-}
-
-extension PlatformContext on BuildContext {
-  PlatformRepositories get repos => PlatformScope.of(this).repos;
-  ProjectStore get projectStore => PlatformScope.of(this).store;
-
-  /// The current time; a test backend with its own clock sets it.
-  DateTime get now => switch (repos) {
-        ClockSource clock => clock.now,
-        _ => DateTime.now(),
-      };
+extension ProjectStoreContext on BuildContext {
+  /// The local design store.
+  ProjectStore get projectStore => read(projectStoreProvider);
 }
 
 /// Route that keeps the platform look.
@@ -61,56 +31,62 @@ class LiveRefresh {
   Future<void> call() => _run?.call() ?? Future<void>.value();
 }
 
-/// Loads data and reloads it whenever the backend reports a change.
-class Live<T> extends StatefulWidget {
+/// What a [Live] shows: a feature's `state/` provider, usually a
+/// `FutureProvider.autoDispose.family` over its repository.
+typedef LiveSource<T> = ProviderBase<AsyncValue<T>>;
+
+/// Shows a provider's data and reloads it whenever the backend reports a
+/// change: once the burst of changes settles, and only while the page is
+/// on top (a covered page reloads when it is uncovered). Signing in as
+/// someone else drops what is on screen at once.
+class Live<T> extends ConsumerStatefulWidget {
   const Live(
       {super.key,
-      required this.load,
+      required this.provider,
       required this.builder,
       this.error,
-      this.reloadKey,
       this.refreshError,
       this.loading,
       this.refresh,
       this.fadeIn = false});
 
-  /// Calling it reloads this list; the future completes with the load.
-  final LiveRefresh? refresh;
-  final Future<T> Function(PlatformRepositories repos) load;
+  final LiveSource<T> provider;
   final Widget Function(BuildContext context, T data) builder;
   final Widget Function(BuildContext context, Object error)? error;
   final Widget? loading;
 
+  /// Calling it reloads this list; the future completes with the load.
+  final LiveRefresh? refresh;
+
   /// Cross-fade from [loading] to the content. Box layouts only.
   final bool fadeIn;
 
-  /// Stable identity of the query. Null preserves legacy rebuild loading.
-  final Object? reloadKey;
-
-  /// Must return the same layout protocol (box or sliver) as [builder].
+  /// Shown when a reload fails while data is on screen. Must return the
+  /// same layout protocol (box or sliver) as [builder]. Null keeps the data
+  /// and stays quiet: a dropped connection never wipes a page being read.
   final Widget Function(BuildContext, T, Object, VoidCallback)? refreshError;
+
   @override
-  State<Live<T>> createState() => _LiveState<T>();
+  ConsumerState<Live<T>> createState() => _LiveState<T>();
 }
 
-class _LiveState<T> extends State<Live<T>> {
-  PlatformRepositories? _repos;
-  T? _data;
-  Object? _error;
-  bool _loaded = false;
-  int _generation = 0;
+class _LiveState<T> extends ConsumerState<Live<T>> {
+  Session? _session;
   String? _accountId;
 
-  /// A load is running; a change seen meanwhile sets [_again] so one more
-  /// load follows it, instead of a second one racing it.
-  Future<void>? _running;
-  bool _again = false;
+  /// Signed in as someone else: show nothing until their own data is in.
+  bool _blank = false;
+
+  /// The last data shown, kept when the provider changes (a new query):
+  /// the old answer stays on screen while the new one loads, and if the new
+  /// one fails. Dropped when the account changes.
+  T? _last;
+  bool _hasLast = false;
 
   /// A coalesced reload is waiting for the burst of changes to settle.
   Timer? _queued;
 
-  /// A change came while this page was covered by another route; it
-  /// reloads once it is on top again instead of while hidden.
+  /// A change came while this page was covered by another route.
   bool _stale = false;
   bool _visible = true;
 
@@ -133,16 +109,12 @@ class _LiveState<T> extends State<Live<T>> {
         TickerMode.valuesOf(context).enabled;
     final shown = visible && !_visible;
     _visible = visible;
-    final repos = context.repos;
-    if (!identical(repos, _repos)) {
-      _repos?.changes.removeListener(_changed);
-      _repos = repos;
-      _data = null;
-      _loaded = false;
-      _error = null;
-      _accountId = repos.currentAccount?.id;
-      repos.changes.addListener(_changed);
-      _reload();
+    final session = ref.read(sessionProvider);
+    if (!identical(session, _session)) {
+      _session?.changes.removeListener(_changed);
+      _session = session;
+      _accountId = session.currentAccount?.id;
+      session.changes.addListener(_changed);
     } else if (shown && _stale) {
       _changed();
     }
@@ -152,20 +124,12 @@ class _LiveState<T> extends State<Live<T>> {
   void didUpdateWidget(covariant Live<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     widget.refresh?._run = _userReload;
-    if (widget.reloadKey != null && widget.reloadKey != oldWidget.reloadKey) {
-      // A different query: load it now and drop the old one's answer.
-      _reload();
-    } else if (widget.reloadKey == null) {
-      // Legacy callers rebuild with fresh closures; pick them up, but share
-      // the load with any change that caused the rebuild.
-      _changed();
-    }
   }
 
   @override
   void dispose() {
     _queued?.cancel();
-    _repos?.changes.removeListener(_changed);
+    _session?.changes.removeListener(_changed);
     if (widget.refresh?._run == _userReload) widget.refresh?._run = null;
     super.dispose();
   }
@@ -173,10 +137,18 @@ class _LiveState<T> extends State<Live<T>> {
   /// The backend changed: reload soon, once, and only if anyone sees it.
   void _changed() {
     if (!mounted) return;
-    final accountId = _repos!.currentAccount?.id;
+    final accountId = _session!.currentAccount?.id;
     if (accountId != _accountId) {
       // Signed in as someone else: never show the last person's data.
-      _reload();
+      _accountId = accountId;
+      _queued?.cancel();
+      _queued = null;
+      setState(() {
+        _blank = true;
+        _hasLast = false;
+        _last = null;
+      });
+      ref.invalidate(widget.provider);
       return;
     }
     if (!_visible) {
@@ -184,107 +156,83 @@ class _LiveState<T> extends State<Live<T>> {
       return;
     }
     _stale = false;
-    if (_running != null) {
-      _again = true;
-      return;
-    }
     _queued ??= Timer(_settle, () {
       _queued = null;
-      if (mounted) _reload();
+      if (mounted) ref.invalidate(widget.provider);
     });
   }
 
-  /// Pull-to-refresh: a failure is said out loud, since the user asked.
+  void _reload() => ref.invalidate(widget.provider);
+
+  /// Pull-to-refresh: waits for the load, and says a failure out loud,
+  /// since the user asked.
   Future<void> _userReload() async {
-    final error = await _reload();
-    if (error != null && _data != null && mounted) {
+    if (!mounted) return;
+    final done = Completer<Object?>();
+    final sub = ref.listenManual<AsyncValue<T>>(widget.provider, (_, next) {
+      if (next.isLoading || done.isCompleted) return;
+      done.complete(next.hasError ? next.error : null);
+    });
+    ref.invalidate(widget.provider);
+    final error = await done.future;
+    sub.close();
+    if (error != null && mounted && ref.read(widget.provider).hasValue) {
       toast(context, failureText(error));
     }
   }
 
-  /// Loads now, superseding any load in flight. Completes with the error,
-  /// if the load failed.
-  Future<Object?> _reload() async {
-    if (!mounted) return null;
-    _queued?.cancel();
-    _queued = null;
-    _stale = false;
-    _again = false;
-    final accountId = _repos!.currentAccount?.id;
-    if (accountId != _accountId) {
-      _accountId = accountId;
-      setState(() {
-        _data = null;
-        _error = null;
-        _loaded = false;
-      });
-    }
-    final generation = ++_generation;
-    final done = Completer<void>();
-    _running = done.future;
-    Object? failure;
-    try {
-      final data = await widget.load(_repos!);
-      if (!mounted || generation != _generation) return null;
-      setState(() {
-        _data = data;
-        _error = null;
-        _loaded = true;
-      });
-    } catch (e) {
-      if (!mounted || generation != _generation) return null;
-      failure = e;
-      setState(() {
-        // A failed refresh keeps what is on screen: a dropped connection
-        // must not wipe a page the user is reading. Only a first load, or a
-        // caller that draws its own banner, shows the error.
-        if (_data == null || widget.refreshError != null) _error = e;
-        _loaded = true;
-      });
-    } finally {
-      if (generation == _generation) {
-        _running = null;
-        done.complete();
-        if (_again && mounted) {
-          _again = false;
-          _changed();
-        }
-      }
-    }
-    return failure;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final child = _build(context);
+    var value = ref.watch(widget.provider);
+    if (_blank && !value.isLoading) _blank = false;
+    if (!_blank) {
+      if (value.hasValue) {
+        _last = value.value;
+        _hasLast = true;
+      } else if (_hasLast) {
+        // A new query with nothing yet: keep the last answer meanwhile.
+        final last = AsyncData<T>(_last as T);
+        value = value.hasError
+            ? AsyncError<T>(value.error!, value.stackTrace!)
+                .copyWithPrevious(last)
+            : last;
+      }
+    }
+    final loaded = !_blank && (value.hasValue || value.hasError);
+    final child = _build(context, value, loaded);
     if (!widget.fadeIn) return child;
     return FadeSwitcher(
         child: KeyedSubtree(
-            key: ValueKey(_loaded ? 'loaded' : 'loading'), child: child));
+            key: ValueKey(loaded ? 'loaded' : 'loading'), child: child));
   }
 
-  Widget _build(BuildContext context) {
-    if (!_loaded) {
+  Widget _build(BuildContext context, AsyncValue<T> value, bool loaded) {
+    if (!loaded || (value.isLoading && !value.hasValue && !value.hasError)) {
       return widget.loading ??
           const SkeletonList(padding: EdgeInsets.all(YSpace.xl));
     }
-    if (_error != null) {
-      if (_data != null && widget.refreshError != null) {
-        return widget.refreshError!(context, _data as T, _error!, _reload);
+    if (value.hasError) {
+      final error = value.error!;
+      if (value.hasValue) {
+        final refreshError = widget.refreshError;
+        if (refreshError == null) {
+          return widget.builder(context, value.requireValue);
+        }
+        return refreshError(context, value.requireValue, error, _reload);
       }
-      return widget.error?.call(context, _error!) ??
+      return widget.error?.call(context, error) ??
           Center(
               child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Text(failureText(_error!), textAlign: TextAlign.center),
+                    Text(failureText(error), textAlign: TextAlign.center),
                     const SizedBox(height: 12),
                     OutlinedButton(
                         onPressed: _reload,
                         child: Text(tr3('重试', 'Қайталау', 'Повторить'))),
                   ])));
     }
-    return widget.builder(context, _data as T);
+    return widget.builder(context, value.requireValue);
   }
 }
 
@@ -295,7 +243,7 @@ class OnChange extends StatelessWidget {
   final WidgetBuilder builder;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-      listenable: context.repos.changes, builder: (c, _) => builder(c));
+      listenable: context.session.changes, builder: (c, _) => builder(c));
 }
 
 void toast(BuildContext context, String text) {
@@ -328,22 +276,9 @@ Future<T?> attempt<T>(BuildContext context, Future<T> Function() call,
 /// Opens the login page when signed out; true once signed in, so the
 /// caller can carry on with what the user was doing.
 Future<bool> requireLogin(BuildContext context) async {
-  if (context.repos.currentAccount != null) return true;
-  final page = PlatformScope.of(context).loginPage;
+  if (context.session.currentAccount != null) return true;
+  final page = context.read(loginPageProvider);
   if (page == null) return false;
   final ok = await Navigator.of(context).push<bool>(platformRoute(page));
   return ok == true;
-}
-
-/// Asks for the phone number that chats share on request; true once saved.
-Future<bool> editPhone(BuildContext context) async {
-  final me = context.repos.currentAccount;
-  if (me == null) return false;
-  final phone = await askText(
-      context, tr3('手机号', 'Телефон нөмірі', 'Номер телефона'),
-      hint: '+7 700 000 00 00', initial: me.phone, required: false, lines: 1);
-  if (phone == null || !context.mounted) return false;
-  final saved = await attempt(context, () => context.repos.updatePhone(phone),
-      success: tr3('已保存', 'Сақталды', 'Сохранено'));
-  return saved != null;
 }

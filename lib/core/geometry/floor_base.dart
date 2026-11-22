@@ -127,10 +127,11 @@ class DerivedCache<K extends Object, V> {
     for (var i = _entries.length - 1; i >= 0; i--) {
       final e = _entries[i];
       if (identical(e.$1, doc) && e.$2 == key) {
-        if (i != _entries.length - 1)
+        if (i != _entries.length - 1) {
           _entries
             ..removeAt(i)
             ..add(e);
+        }
         return e.$3;
       }
     }

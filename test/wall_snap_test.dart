@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/core/house_core.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/features/editor/wall_attachment_points.dart';
-import 'package:yusal/features/editor/wall_snap.dart';
+import 'package:yusal/features/editor/util/wall_attachment_points.dart';
+import 'package:yusal/features/editor/util/wall_snap.dart';
 import 'package:yusal/render2d/floor_plan_painter.dart';
 
 void main() {

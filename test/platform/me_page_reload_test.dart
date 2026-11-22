@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/features/me/me_page.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/me/page.dart';
+import 'package:yusal/services/storage/project_store.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/app/http_backend.dart';
 import '../storage_test.dart' show MemoryFiles;
 import '../http_backend_test.dart' show FakeApi;
 
@@ -37,7 +37,7 @@ void main() {
   testWidgets('the me page loads my posts once, not in a loop', (t) async {
     AppSettings.instance.lang = AppLang.zh;
     final b = CountingBackend()..signInAs(SeedIds.owner);
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
         child: MaterialApp(
@@ -58,7 +58,7 @@ void main() {
     final api = NoPreviewApi();
     final b = HttpBackend('https://api.test', client: MockClient(api.handle));
     await t.runAsync(() => b.signInWithProvider('google', 'id-token'));
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
         child: MaterialApp(
@@ -95,7 +95,7 @@ void main() {
       return api.handle(r);
     }));
     await t.runAsync(() => b.signInWithProvider('google', 'id-token'));
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
         child: MaterialApp(

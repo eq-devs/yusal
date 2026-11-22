@@ -1,29 +1,30 @@
 import 'dart:async';
+import '../support/test_scope.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_seed.dart';
 import 'package:yusal/shared/ui/components.dart';
 import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/services/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 void main() {
-  testWidgets('stable reload key avoids requests on parent rebuild', (t) async {
+  testWidgets('a stable provider avoids requests on parent rebuild', (t) async {
     final backend = MockBackend(latency: Duration.zero);
     final store = ProjectStore(fileSystem: MemoryFiles());
     var calls = 0;
+    final load = FutureProvider.autoDispose.family<String, String>((_, key) {
+      calls++;
+      return key;
+    });
     Widget page(String key) => MaterialApp(
-        home: PlatformScope(
+        home: TestScope(
             repos: backend,
             store: store,
             child: Live<String>(
-                reloadKey: key,
-                load: (_) async {
-                  calls++;
-                  return key;
-                },
-                builder: (_, data) => Text(data))));
+                provider: load(key), builder: (_, data) => Text(data))));
     await t.pumpWidget(page('first'));
     await t.pumpAndSettle();
     await t.pumpWidget(page('first'));
@@ -39,17 +40,16 @@ void main() {
     final backend = MockBackend(latency: Duration.zero);
     final store = ProjectStore(fileSystem: MemoryFiles());
     final answer = Completer<String>();
+    final load = FutureProvider.autoDispose<String>((_) => answer.future);
     Widget page({bool reduceMotion = false}) => MaterialApp(
         home: MediaQuery(
             data: MediaQueryData(disableAnimations: reduceMotion),
-            child: PlatformScope(
+            child: TestScope(
                 repos: backend,
                 store: store,
                 child: Scaffold(
                     body: Live<String>(
-                        reloadKey: 'q',
-                        load: (_) => answer.future,
-                        builder: (_, data) => Text(data))))));
+                        provider: load, builder: (_, data) => Text(data))))));
     await t.pumpWidget(page());
     expect(find.byType(SkeletonList), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -69,14 +69,14 @@ void main() {
     final store = ProjectStore(fileSystem: MemoryFiles());
     final first = Completer<String>();
     final second = Completer<String>();
+    final load = FutureProvider.autoDispose.family<String, int>(
+        (_, key) => key == 1 ? first.future : second.future);
     Widget page(int key) => MaterialApp(
-        home: PlatformScope(
+        home: TestScope(
             repos: backend,
             store: store,
             child: Live<String>(
-                reloadKey: key,
-                load: (_) => key == 1 ? first.future : second.future,
-                builder: (_, data) => Text(data))));
+                provider: load(key), builder: (_, data) => Text(data))));
     await t.pumpWidget(page(1));
     await t.pumpWidget(page(2));
     second.complete('new');
@@ -93,19 +93,16 @@ void main() {
       ..signInAs(SeedIds.owner);
     final next = Completer<String>();
     var calls = 0;
+    final load = FutureProvider.autoDispose<String>((_) {
+      calls++;
+      return calls == 1 ? Future.value('private owner') : next.future;
+    });
     await t.pumpWidget(MaterialApp(
-        home: PlatformScope(
+        home: TestScope(
             repos: backend,
             store: ProjectStore(fileSystem: MemoryFiles()),
             child: Live<String>(
-                reloadKey: 'private',
-                load: (_) {
-                  calls++;
-                  return calls == 1
-                      ? Future.value('private owner')
-                      : next.future;
-                },
-                builder: (_, data) => Text(data)))));
+                provider: load, builder: (_, data) => Text(data)))));
     await t.pumpAndSettle();
     expect(find.text('private owner'), findsOneWidget);
     backend.signInAs(SeedIds.mason);

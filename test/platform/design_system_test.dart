@@ -6,13 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 /// named in `theme.dart`, not written as numbers in a page.
 void main() {
   // The platform look: the shared UI and every feature except the design
-  // tool, which keeps its own drafting look.
+  // tool (its own drafting look), the voice orb and the dev lab.
   final pages = [
     Directory('lib/shared/ui'),
-    ...Directory('lib/features')
-        .listSync()
-        .whereType<Directory>()
-        .where((d) => !d.path.endsWith('/editor')),
+    ...Directory('lib/features').listSync().whereType<Directory>().where(
+        (d) => !const ['/editor', '/voice', '/dev'].any(d.path.endsWith)),
   ]
       .expand((d) => d.listSync(recursive: true))
       .whereType<File>()

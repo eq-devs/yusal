@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/theme/theme.dart';
 import 'package:yusal/shared/brand/brand.dart';
 import 'package:yusal/shared/brand/path_ops.dart';
 

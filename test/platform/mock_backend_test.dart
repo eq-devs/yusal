@@ -4,10 +4,11 @@ import 'package:yusal/core/commands/house_templates.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/domain/rules.dart';
-import 'package:yusal/domain/design_snapshot.dart';
+import 'package:yusal/services/api/api_failure.dart';
+import 'package:yusal/shared/model/admin_models.dart';
+import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/shared/model/rules.dart';
+import 'package:yusal/shared/model/design_snapshot.dart';
 
 MockBackend backend({bool seed = true}) => MockBackend(
     clock: MockClock(DateTime.utc(2026, 11, 3, 9)),

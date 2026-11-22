@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import '../support/test_scope.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/features/houses/my_houses_data.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/services/api/api_failure.dart';
+import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/services/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 MockBackend backend() => MockBackend(

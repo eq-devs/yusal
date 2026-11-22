@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/shared/theme/theme.dart';
 
 /// Where a house stands on the one line every role sees:
 /// design → finding people → building → done.

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/features/coop/milestone_editor.dart';
+import 'package:yusal/features/coop/pages/milestone_editor.dart';
 import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/services/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 import 'mock_backend_test.dart' show backend, terms;
 
@@ -16,7 +17,7 @@ void main() {
     addTearDown(t.view.reset);
     final b = backend()..signInAs(SeedIds.owner);
     final coop = await b.invite('app_team_wall', terms());
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
         child: MaterialApp(

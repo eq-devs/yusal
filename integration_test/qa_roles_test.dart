@@ -7,18 +7,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/main.dart';
-import 'package:yusal/data/http/http_backend.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/features/apply/apply_page.dart';
-import 'package:yusal/features/coop/agreement_form.dart';
-import 'package:yusal/features/coop/coop_page.dart';
-import 'package:yusal/features/demand/applications_page.dart';
-import 'package:yusal/features/demand/demand_detail_page.dart';
-import 'package:yusal/storage/last_open.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/app/http_backend.dart';
+import 'package:yusal/services/api/api_failure.dart';
+import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/apply/page.dart';
+import 'package:yusal/features/coop/widgets/agreement_form.dart';
+import 'package:yusal/features/coop/page.dart';
+import 'package:yusal/features/demand/pages/applications.dart';
+import 'package:yusal/features/demand/page.dart';
+import 'package:yusal/services/storage/last_open.dart';
+import 'package:yusal/services/storage/project_store.dart';
 
 import 'e2e_support.dart';
 
@@ -180,8 +180,8 @@ void main() {
           workerApp?.status == ApplicationStatus.submitted);
       await shot(t, 'd03-worker-quoted');
       final pause = await attempt(t, () => repos.pause(demandId!));
-      row('D-worker-3', "API: worker pauses owner's demand", 'FORBIDDEN',
-          pause, pause.startsWith('FORBIDDEN'));
+      row('D-worker-3', "API: worker pauses owner's demand", 'FORBIDDEN', pause,
+          pause.startsWith('FORBIDDEN'));
 
       // ── Contractor (team profile via the form's defaults) quotes too ──
       await signIn(t, repos, contractor);

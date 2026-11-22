@@ -2,11 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qazvoice/qazvoice.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/features/me/kazakh_voice_page.dart';
+import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/features/me/pages/kazakh_voice.dart';
 import 'package:yusal/services/voice/read_aloud.dart';
 import 'package:yusal/services/voice/read_aloud_qazvoice.dart';
-import 'package:yusal/voice/read_aloud_button.dart';
+import 'package:yusal/features/voice/widgets/read_aloud_button.dart';
 
 class FakeReader extends ReadAloud {
   FakeReader({bool installed = false})

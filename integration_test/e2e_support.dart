@@ -7,11 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/features/shell/shell.dart';
-import 'package:yusal/data/http/http_backend.dart';
-import 'package:yusal/features/demand/demand_detail_page.dart';
-import 'package:yusal/features/demand/publish_page.dart';
-import 'package:yusal/features/profile/profile_edit_page.dart';
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/app/http_backend.dart';
+import 'package:yusal/features/demand/page.dart';
+import 'package:yusal/features/demand/pages/publish.dart';
+import 'package:yusal/features/profile/pages/edit.dart';
 
 /// The backend under test: eqserver unless `--dart-define=YUSAL_API=...`.
 const api = String.fromEnvironment('YUSAL_API',
@@ -100,8 +100,8 @@ Future<void> scrollTo(WidgetTester t, Finder f, {double delta = 300}) async {
 }
 
 Future<void> tab(WidgetTester t, String label) async {
-  await t.tap(find.descendant(
-      of: find.byType(ShellBar), matching: find.text(label)));
+  await t.tap(
+      find.descendant(of: find.byType(ShellBar), matching: find.text(label)));
   await idle(t);
 }
 

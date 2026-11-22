@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/features/shell/shell.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/features/editor/house_editor.dart';
+import 'package:yusal/features/editor/page.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/shared/ui/cards.dart';
-import 'package:yusal/features/chat/inbox_page.dart';
+import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/demand/widgets/demand_card.dart';
+import 'package:yusal/features/chat/pages/inbox.dart';
 import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/features/demand/from_design_page.dart';
-import 'package:yusal/shared/ui/plan_viewer.dart';
-import 'package:yusal/features/home/publish_post_page.dart';
-import 'package:yusal/features/houses/workspace_page.dart';
-import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/features/demand/pages/from_design.dart';
+import 'package:yusal/features/home/widgets/plan_viewer.dart';
+import 'package:yusal/features/home/pages/publish_post.dart';
+import 'package:yusal/features/houses/page.dart';
+import 'package:yusal/shared/theme/theme.dart';
 import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/services/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 import 'explore_test.dart' show launch;
 
@@ -361,5 +361,5 @@ MockBackend _backend() => MockBackend(
     latency: Duration.zero,
     autoReviewDelay: Duration.zero);
 
-Widget _scope(MockBackend b, Widget child) => PlatformScope(
+Widget _scope(MockBackend b, Widget child) => TestScope(
     repos: b, store: ProjectStore(fileSystem: MemoryFiles()), child: child);

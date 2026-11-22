@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/features/shell/shell.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/main.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/model/models.dart';
 import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/features/demand/publish_page.dart';
-import 'package:yusal/features/discover/discover_page.dart';
-import 'package:yusal/features/home/home_page.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/demand/pages/publish.dart';
+import 'package:yusal/features/discover/page.dart';
+import 'package:yusal/features/home/page.dart';
+import 'package:yusal/services/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 MockBackend backend() => MockBackend(

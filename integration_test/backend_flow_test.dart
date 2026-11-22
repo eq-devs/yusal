@@ -13,14 +13,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import 'package:yusal/core/commands/room_commands.dart';
 import 'package:yusal/main.dart';
-import 'package:yusal/data/http/http_backend.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/features/home/post_page.dart';
-import 'package:yusal/storage/last_open.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/app/http_backend.dart';
+import 'package:yusal/services/api/api_failure.dart';
+import 'package:yusal/features/home/pages/post.dart';
+import 'package:yusal/services/storage/last_open.dart';
+import 'package:yusal/services/storage/project_store.dart';
 
 import 'e2e_support.dart';
 

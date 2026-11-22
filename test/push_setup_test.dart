@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/data/http/http_backend.dart';
-import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/app/http_backend.dart';
+import 'package:yusal/shared/model/models.dart';
 import 'package:yusal/services/push/push_setup.dart';
 
 import 'http_backend_test.dart' show FakeApi;

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/messages.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/l10n/messages.dart';
+import 'package:yusal/shared/settings/settings.dart';
 
 /// Messages the design core sends back to the editor (rejected edits and
 /// layout checks) must read in Kazakh and Russian too, not fall back to the

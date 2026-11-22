@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/features/me/me_page.dart';
-import 'package:yusal/features/profile/profile_page.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/me/page.dart';
+import 'package:yusal/features/profile/page.dart';
+import 'package:yusal/services/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 void main() {
@@ -14,7 +14,7 @@ void main() {
     AppSettings.instance.lang = AppLang.zh;
     final b = MockBackend(latency: Duration.zero)..signInAs(SeedIds.roofTeam);
     await b.toggleLike('post_aigerim');
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
         child: MaterialApp(
@@ -33,7 +33,7 @@ void main() {
     for (final id in ['prof_mason', 'dem_wall']) {
       if (!(await b.favourites()).contains(id)) await b.toggleFavourite(id);
     }
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
         child: MaterialApp(
@@ -55,7 +55,7 @@ void main() {
     if ((await b.favourites()).contains('prof_mason')) {
       await b.toggleFavourite('prof_mason');
     }
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
         child: MaterialApp(
@@ -78,7 +78,7 @@ void main() {
     for (final id in await b.favourites()) {
       await b.toggleFavourite(id);
     }
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
         child: MaterialApp(

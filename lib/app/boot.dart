@@ -2,15 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:yusal/data/http/http_backend.dart';
-import 'package:yusal/features/chat/inbox_page.dart' show openRef;
+import 'package:yusal/app/http_backend.dart';
+import 'package:yusal/features/chat/pages/inbox.dart' show openRef;
 import 'package:yusal/services/firebase_setup.dart';
 import 'package:yusal/services/push/push_setup.dart';
 import 'package:yusal/services/update/code_push.dart';
-import 'package:yusal/app/house_app.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/app/app.dart';
+import 'package:yusal/shared/settings/settings.dart';
 
 /// The backend (yusal-api on eqserver).
 const apiBaseUrl = 'https://eqserver.tail920a63.ts.net';
@@ -69,6 +68,6 @@ class BootGate extends StatelessWidget {
   Widget build(BuildContext context) => FutureBuilder<void>(
       future: Boot.ready,
       builder: (context, snap) => snap.connectionState == ConnectionState.done
-          ? ProviderScope(child: HouseApp(repos: Boot.api))
+          ? HouseApp(repos: Boot.api)
           : const SizedBox.shrink());
 }

@@ -2,12 +2,12 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:yusal/voice/voice_overlay.dart' show VoiceSlot;
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/voice_slot.dart';
+import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/shared/theme/theme.dart';
 import 'package:yusal/shared/motion/motion.dart';
 
-export '../../app/image_bytes.dart';
+export 'package:yusal/shared/util/image_bytes.dart';
 
 /// Shared building blocks of the platform pages.
 

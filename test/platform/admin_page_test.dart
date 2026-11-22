@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/features/me/admin_page.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/admin/page.dart';
+import 'package:yusal/services/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 Future<MockBackend> pumpAdmin(WidgetTester t, String account,
@@ -18,7 +18,7 @@ Future<MockBackend> pumpAdmin(WidgetTester t, String account,
   addTearDown(t.view.reset);
   final b = MockBackend(latency: Duration.zero, autoReviewDelay: null)
     ..signInAs(account);
-  await t.pumpWidget(PlatformScope(
+  await t.pumpWidget(TestScope(
       repos: b,
       store: ProjectStore(fileSystem: MemoryFiles()),
       child: MaterialApp(
@@ -88,7 +88,7 @@ void main() {
         await t.pumpAndSettle();
         scan();
       }
-      await t.pumpWidget(PlatformScope(
+      await t.pumpWidget(TestScope(
           repos: b,
           store: ProjectStore(fileSystem: MemoryFiles()),
           child: MaterialApp(

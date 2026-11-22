@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/features/editor/footprint_sketch.dart';
+import 'package:yusal/features/editor/widgets/footprint_sketch.dart';
 
 void main() {
   for (final size in [const Size(320, 568), const Size(844, 390)]) {

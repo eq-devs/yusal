@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/settings/settings.dart';
 
 /// Keeps a publication form mounted when the user chooses to continue editing.
 class UnsavedChangesGuard extends StatefulWidget {

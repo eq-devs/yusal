@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../ui/theme.dart';
+import 'brand.dart';
 import 'path_ops.dart';
 
 part 'yicon_data.dart';
@@ -38,7 +39,7 @@ class YusalIcon extends StatelessWidget {
   }
 }
 
-enum _R { ink, accent, knock }
+enum _R { ink, accent, stone, knock }
 
 class _Stroke {
   const _Stroke(this.width, this.cap, this.join);
@@ -80,6 +81,8 @@ class _YIconPainter extends CustomPainter {
           paint.color = ink;
         case _R.accent:
           paint.color = accent;
+        case _R.stone:
+          paint.color = YusalBrand.stone;
         case _R.knock:
           paint.blendMode = BlendMode.clear;
       }

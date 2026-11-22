@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:yusal/core/document/house_document.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 
 /// Stable, model-based extension points. Occupied corners and opening holes
 /// are excluded; screen-density filtering is applied separately by the editor.

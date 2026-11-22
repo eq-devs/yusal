@@ -5,9 +5,9 @@ import 'package:yusal/features/coop/repository/cooperation_repository.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
 import 'package:yusal/features/home/repository/post_repository.dart';
 import 'package:yusal/features/houses/model/my_house.dart';
-import 'package:yusal/services/storage/project_store.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/state/session.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/state/session.dart';
 
 /// My houses: the houses tab's list and each house's workspace.
 final myHousesProvider = FutureProvider.autoDispose<List<MyHouse>>(_myHouses);

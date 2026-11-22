@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/model/rules.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
 import 'package:yusal/features/demand/page.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/actions.dart';
 import 'package:yusal/features/voice/actions/demand.dart';
@@ -22,7 +22,7 @@ void main() {
   final executor =
       ActionExecutor(appActions, confirm: (_, __) async => approve);
 
-  ActionContext ctx() => VoiceScreens.context(b, loggedIn: true);
+  ActionContext ctx() => VoiceScreens.context(voiceRepos(b), loggedIn: true);
   Set<String> offered() => {
         for (final a in appActions.offered(ctx()))
           if (a.id.startsWith('demand.')) a.id

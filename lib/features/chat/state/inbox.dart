@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/auth/repository/auth_repository.dart';
 import 'package:yusal/features/chat/repository/chat_repository.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/state/session.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/state/session.dart';
 
 /// Unread chats and notices together, asked for at the same time.
 final unreadProvider = FutureProvider.autoDispose<int>((ref) async {

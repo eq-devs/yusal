@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/features/profile/repository/profile_repository.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/discover/page.dart';
 import 'package:yusal/features/home/page.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/explore/widgets/create_sheet.dart';
-import 'package:yusal/shared/motion/motion.dart';
-import 'package:yusal/shared/brand/brand.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
+import 'package:yusal/features/shared/brand/brand.dart';
 
 /// Segments of Discover, in order.
 abstract final class ExploreSegment {

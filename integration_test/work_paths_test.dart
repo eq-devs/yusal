@@ -2,16 +2,14 @@
 // (DEV_LOGIN=true, MANUAL_REVIEW off): a hire demand end to end, an invite
 // declined and one revoked, an agreement change, a disputed end, a phone
 // number shared in chat, and blocking. Run like backend_flow_test.dart.
+import '../test/support/test_scope.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/main.dart';
-import 'package:yusal/app/http_backend.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/apply/page.dart';
 import 'package:yusal/features/chat/page.dart';
 import 'package:yusal/features/coop/widgets/agreement_form.dart';
@@ -19,8 +17,8 @@ import 'package:yusal/features/coop/page.dart';
 import 'package:yusal/features/demand/pages/applications.dart';
 import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/features/home/pages/post.dart';
-import 'package:yusal/services/storage/last_open.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import 'e2e_support.dart';
 
@@ -96,23 +94,21 @@ void main() {
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
 
-    final repos = HttpBackend(api);
-    await repos.restore();
+    final repos = TestHttp(api);
+    await repos.api.restore();
     try {
       await t.pumpWidget(RepaintBoundary(
-          key: shotKey,
-          child: ProviderScope(
-              child: HouseApp(repos: repos, store: ProjectStore()))));
+          key: shotKey, child: testApp(repos, store: ProjectStore())));
       await idle(t, 1000);
 
       // ── Hire demand: owner publishes, worker signs up (报名) ──
       await signIn(t, repos, worker);
-      final workerId = repos.currentAccount!.id;
+      final workerId = repos.api.currentAccount!.id;
       await createProfile(t, worker);
       await signIn(t, repos, owner);
-      final ownerId = repos.currentAccount!.id;
+      final ownerId = repos.api.currentAccount!.id;
       await publishDemand(t, title, hire: true, headcount: 2);
-      final demand = (await io(t, repos.myDemands))
+      final demand = (await io(t, repos.demands.myDemands))
           .singleWhere((d) => d.current.title == title);
       expect(demand.type, DemandType.hire);
       expect(demand.status, DemandStatus.open);
@@ -129,46 +125,53 @@ void main() {
       await shot(t, 'w02-signup-form');
       await tapIt(t, find.text('发送报名'));
       await idle(t, 1000);
-      final application = (await io(t, repos.myApplications))
+      final application = (await io(t, repos.applications.myApplications))
           .singleWhere((a) => a.demandId == demand.id);
       expect(application.current.acceptsOffer, isTrue);
 
       // ── Invite 1: the worker declines ──
       await signIn(t, repos, owner);
       await invite(t, demand.id);
-      var coops = await io(t, () => repos.cooperationsFor(demand.id));
+      var coops =
+          await io(t, () => repos.cooperations.cooperationsFor(demand.id));
       expect(coops.single.status, CooperationStatus.pending);
       await signIn(t, repos, worker);
       await openCoop(t, coops.single.id);
       await tapIt(t, find.text('拒绝'));
       await idle(t, 1000);
-      var declined = await io(t, () => repos.cooperation(coops.single.id));
+      var declined =
+          await io(t, () => repos.cooperations.cooperation(coops.single.id));
       expect(declined!.status, CooperationStatus.notFormed);
-      expect((await io(t, () => repos.application(application.id)))!.status,
+      expect(
+          (await io(t, () => repos.applications.application(application.id)))!
+              .status,
           ApplicationStatus.submitted);
 
       // ── Invite 2: the owner revokes it ──
       await signIn(t, repos, owner);
       await invite(t, demand.id);
-      coops = await io(t, () => repos.cooperationsFor(demand.id));
+      coops = await io(t, () => repos.cooperations.cooperationsFor(demand.id));
       final second =
           coops.singleWhere((c) => c.status == CooperationStatus.pending);
       await openCoop(t, second.id);
       await tapIt(t, find.text('撤回邀请'));
       await idle(t, 1000);
-      expect((await io(t, () => repos.cooperation(second.id)))!.status,
+      expect(
+          (await io(t, () => repos.cooperations.cooperation(second.id)))!
+              .status,
           CooperationStatus.notFormed);
 
       // ── Invite 3: the worker confirms ──
       await invite(t, demand.id);
-      coops = await io(t, () => repos.cooperationsFor(demand.id));
+      coops = await io(t, () => repos.cooperations.cooperationsFor(demand.id));
       final coopId =
           coops.singleWhere((c) => c.status == CooperationStatus.pending).id;
       await signIn(t, repos, worker);
       await openCoop(t, coopId);
       await tapIt(t, find.text('确认合作'));
       await idle(t, 1000);
-      expect((await io(t, () => repos.cooperation(coopId)))!.status,
+      expect(
+          (await io(t, () => repos.cooperations.cooperation(coopId)))!.status,
           CooperationStatus.confirmed);
       await shot(t, 'w03-hire-confirmed');
 
@@ -186,7 +189,7 @@ void main() {
       await openCoop(t, coopId);
       await scrollTap(t, find.text('接受变更'));
       await idle(t, 1000);
-      var coop = (await io(t, () => repos.cooperation(coopId)))!;
+      var coop = (await io(t, () => repos.cooperations.cooperation(coopId)))!;
       expect(coop.agreement.version, 2);
       expect(coop.agreement.amount, 18000);
       expect(coop.agreement.status, AgreementStatus.active);
@@ -199,7 +202,7 @@ void main() {
       await openCoop(t, coopId);
       await scrollTap(t, find.text('提出异议'));
       await answerDialog(t, '还差收尾 $run');
-      coop = (await io(t, () => repos.cooperation(coopId)))!;
+      coop = (await io(t, () => repos.cooperations.cooperation(coopId)))!;
       expect(coop.status, CooperationStatus.confirmed);
       expect(coop.endRequest?.dispute, contains('还差收尾'));
       await scrollTo(t, find.textContaining('还差收尾'));
@@ -210,8 +213,8 @@ void main() {
       await tab(t, '我的');
       await scrollTap(t, find.text('手机号'));
       await answerDialog(t, '+7 701 234 5678');
-      expect(repos.currentAccount!.phone, isNotEmpty);
-      final conv = await io(t, () => repos.openConversation(workerId));
+      expect(repos.api.currentAccount!.phone, isNotEmpty);
+      final conv = await io(t, () => repos.chat.openConversation(workerId));
       await home(t);
       await open(t, ChatPage(conversationId: conv.id));
       await waitFor(t, find.byTooltip('更多'));
@@ -220,14 +223,14 @@ void main() {
       await tapIt(t, find.text('向对方展示我的电话'));
       await tapIt(t, find.text('确定').last);
       await idle(t, 1000);
-      final msgs = await io(t, () => repos.messages(conv.id));
+      final msgs = await io(t, () => repos.chat.messages(conv.id));
       expect(msgs.any((m) => m.kind == MessageKind.phoneShared), isTrue);
       await shot(t, 'w06-phone-shared');
 
       // ── A post by the owner with a critique by the worker ──
       final snap = await io(
           t,
-          () => repos.saveSnapshot(DesignSnapshot(
+          () => repos.snapshots.saveSnapshot(DesignSnapshot(
               id: '',
               ownerId: ownerId,
               projectId: 'e2e-$run',
@@ -239,7 +242,7 @@ void main() {
               summary: '10 × 12 m')));
       final post = await io(
           t,
-          () => repos.publishPost(HousePost(
+          () => repos.posts.publishPost(HousePost(
               id: '',
               ownerId: '',
               projectId: 'e2e-$run',
@@ -253,10 +256,13 @@ void main() {
               rooms: 3,
               openForBuilders: false)));
       await signIn(t, repos, worker);
-      final critique = await io(t, () => repos.comment(post.id, '屋顶太平了 $run'));
+      final critique =
+          await io(t, () => repos.posts.comment(post.id, '屋顶太平了 $run'));
       await signIn(t, repos, owner);
       await io(
-          t, () => repos.comment(post.id, '谢谢建议 $run', parentId: critique.id));
+          t,
+          () =>
+              repos.posts.comment(post.id, '谢谢建议 $run', parentId: critique.id));
 
       // ── Worker blocks the owner in chat ──
       await signIn(t, repos, worker);
@@ -264,11 +270,11 @@ void main() {
       await open(t, ChatPage(conversationId: conv.id));
       await waitFor(t, find.byTooltip('更多'));
       await chatMenu(t, '拉黑');
-      expect(await io(t, repos.blocked), contains(ownerId));
+      expect(await io(t, repos.chat.blocked), contains(ownerId));
       await shot(t, 'w07-blocked');
 
       // The blocker no longer sees the blocked account's comments.
-      final seen = await io(t, () => repos.comments(post.id));
+      final seen = await io(t, () => repos.posts.comments(post.id));
       expect(seen.map((c) => c.text), contains('屋顶太平了 $run'));
       expect(seen.map((c) => c.text), isNot(contains('谢谢建议 $run')));
       await home(t);
@@ -281,7 +287,7 @@ void main() {
       await signIn(t, repos, owner);
       expect(
           await failure(
-              t, () => repos.send(conv.id, MessageKind.text, text: '在吗')),
+              t, () => repos.chat.send(conv.id, MessageKind.text, text: '在吗')),
           ApiCodes.blocked);
       await signIn(t, repos, worker);
 
@@ -292,8 +298,9 @@ void main() {
       await waitFor(t, find.text('你已拉黑对方，无法发送消息。'));
       await chatMenu(t, '取消拉黑');
       await waitFor(t, find.byTooltip('更多'));
-      expect(await io(t, repos.blocked), isNot(contains(ownerId)));
-      expect((await io(t, () => repos.comments(post.id))).map((c) => c.text),
+      expect(await io(t, repos.chat.blocked), isNot(contains(ownerId)));
+      expect(
+          (await io(t, () => repos.posts.comments(post.id))).map((c) => c.text),
           contains('谢谢建议 $run'));
       await sendChat(t, '解除了 $run');
       await signIn(t, repos, owner);

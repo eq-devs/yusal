@@ -3,12 +3,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:math' show max;
 import 'package:flutter/foundation.dart' show ChangeNotifier, Listenable;
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/model/rules.dart';
-import 'package:yusal/app/backend.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/shared/state/session.dart';
-import 'package:yusal/shared/model/admin_models.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
+import 'backend.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/state/session.dart';
+import 'package:yusal/features/shared/model/admin_models.dart';
 import 'mock_clock.dart';
 import 'mock_seed.dart';
 

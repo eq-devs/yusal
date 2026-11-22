@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/geometry/opening_constraints.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/geometry/opening_constraints.dart';
 import 'package:yusal/features/editor/util/wall_attachment_points.dart';
 
 /// Random sequences of the wall and door edits the editor issues. Every

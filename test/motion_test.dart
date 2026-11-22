@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
 
 Widget _app(Widget child, {bool reduced = false}) => MaterialApp(
     home: Builder(

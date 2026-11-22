@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import '../support/mock/backend.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import 'package:yusal/features/voice/model/action.dart';
@@ -57,10 +58,10 @@ void main() {
   });
 
   final ctx = ActionContext(
-      repos: MockBackend(
+      repos: voiceRepos(MockBackend(
           clock: MockClock(DateTime.utc(2026, 11, 3, 9)),
           latency: Duration.zero,
-          seed: false),
+          seed: false)),
       loggedIn: false,
       entities: const [
         Entity('room', 'room-uuid-1', alias: 'r1', title: '客厅'),

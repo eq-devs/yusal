@@ -2,20 +2,20 @@ import 'dart:async';
 import 'package:yusal/features/home/state/feed.dart';
 import 'package:yusal/features/home/repository/post_repository.dart';
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/chat/pages/inbox.dart';
 import 'package:yusal/features/discover/page.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/components.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/home/widgets/house_card.dart';
 import 'package:yusal/features/home/pages/post.dart';
 import 'package:yusal/features/home/util/reuse.dart';
-import 'package:yusal/shared/brand/yicon.dart';
-import 'package:yusal/shared/brand/brand.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
+import 'package:yusal/features/shared/brand/brand.dart';
 
 /// First tab: houses people designed, newest first. Look, like, rate,
 /// comment; owners recruit from their house, professionals offer to build.

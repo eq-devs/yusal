@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart' show BuildContext;
 
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/coop/repository/cooperation_repository.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
-import 'package:yusal/shared/state/session.dart';
+import 'package:yusal/features/shared/state/session.dart';
 
 /// One piece of wording in the app's three languages.
 class L3 {
@@ -111,10 +111,14 @@ class Entity {
   final String title;
 }
 
-/// The repositories the assistant's actions reach: the session, demands
-/// and cooperations. The app's backend is one.
-abstract interface class VoiceRepositories
-    implements Session, DemandRepository, CooperationRepository {}
+/// The repositories the assistant's actions reach.
+class VoiceRepositories {
+  const VoiceRepositories(
+      {required this.session, required this.demands, required this.cooperations});
+  final Session session;
+  final DemandRepository demands;
+  final CooperationRepository cooperations;
+}
 
 /// What an action may read: the backend and what is on screen.
 class ActionContext {

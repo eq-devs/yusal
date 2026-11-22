@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/auth/repository/auth_repository.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/ui/components.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/auth/repository/social_sign_in.dart';
 
 /// The ways the signed-in account can sign in: link Google or Apple, set an

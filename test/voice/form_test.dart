@@ -3,9 +3,9 @@ import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/demand/pages/publish.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/actions.dart';
 import 'package:yusal/features/voice/state/executor.dart';
@@ -51,7 +51,8 @@ void main() {
       ActionExecutor(appActions, confirm: (_, __) async => approve);
 
   Future<ActionResult> say(String id, [Map<String, Object?> args = const {}]) =>
-      executor.run(id, args, VoiceScreens.context(repos, loggedIn: true),
+      executor.run(
+          id, args, VoiceScreens.context(voiceRepos(repos), loggedIn: true),
           source: Source.voice);
 
   testWidgets('one sentence fills several fields and sends nothing', (t) async {

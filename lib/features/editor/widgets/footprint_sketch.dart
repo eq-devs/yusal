@@ -1,7 +1,7 @@
-import 'package:yusal/core/number_input.dart';
+import 'package:yusal/features/editor/engine/core/number_input.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 
 typedef FootprintDimensions = ({int width, int depth});
 

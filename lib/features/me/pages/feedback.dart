@@ -4,12 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:uuid/uuid.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 
 /// What the app attaches to feedback about itself, so nobody has to type
 /// their version or phone model. Each value is shown before sending.

@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:yusal/services/api/api_client.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/api/api_client.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/model/models.dart';
 
 /// Signing in and the signed-in account.
 
@@ -32,24 +32,32 @@ abstract interface class AuthRepository {
   Future<Account?> account(String id);
 }
 
-/// Overridden in `lib/app` with the one backend (the fake in tests).
-final authRepositoryProvider = Provider<AuthRepository>((ref) =>
-    throw UnimplementedError('authRepositoryProvider is not overridden'));
+final authRepositoryProvider = Provider<AuthRepository>(
+    (ref) => HttpAuthRepository(ref.watch(apiClientProvider)));
 
 /// [AuthRepository] over yusal-api.
-mixin HttpAuthRepository on ApiClient implements AuthRepository {
+final class HttpAuthRepository implements AuthRepository {
+  HttpAuthRepository(this.api);
+  final ApiClient api;
+
+  @override
+  Account? get currentAccount => api.currentAccount;
+
+  @override
+  Future<Account?> account(String id) => api.account(id);
+
   /// Google / Apple sign-in: [idToken] comes from the native SDK. [name] is
   /// a fallback display name (Apple shares it only on the first sign-in).
   Future<Account> signInWithProvider(String provider, String idToken,
       {String? name}) async {
-    final data = await request('POST', '/auth/oauth/$provider',
+    final data = await api.request('POST', '/auth/oauth/$provider',
         body: {'id_token': idToken, if (name != null) 'name': name},
         auth: false) as Map<String, dynamic>;
-    takeTokens(data);
-    await saveTokens();
-    final account = setMe(data['user'] as Map<String, dynamic>);
-    notify();
-    unawaited(registerDevice());
+    api.takeTokens(data);
+    await api.saveTokens();
+    final account = api.setMe(data['user'] as Map<String, dynamic>);
+    api.notify();
+    unawaited(api.registerDevice());
     return account;
   }
 
@@ -59,7 +67,7 @@ mixin HttpAuthRepository on ApiClient implements AuthRepository {
   Future<Account> signInWithEmail(String email, String password,
       {bool register = false, String? name}) async {
     final data =
-        await request('POST', register ? '/auth/register' : '/auth/login',
+        await api.request('POST', register ? '/auth/register' : '/auth/login',
             body: {
               'email': email.trim(),
               'password': password,
@@ -67,31 +75,31 @@ mixin HttpAuthRepository on ApiClient implements AuthRepository {
                 'name': name.trim(),
             },
             auth: false) as Map<String, dynamic>;
-    takeTokens(data);
-    await saveTokens();
-    final account = setMe(data['user'] as Map<String, dynamic>);
-    notify();
-    unawaited(registerDevice());
+    api.takeTokens(data);
+    await api.saveTokens();
+    final account = api.setMe(data['user'] as Map<String, dynamic>);
+    api.notify();
+    unawaited(api.registerDevice());
     return account;
   }
 
   /// How the signed-in account signs in.
   Future<List<SignInMethod>> signInMethods() async =>
-      _methods(await request('GET', '/client/auth/methods'));
+      _methods(await api.request('GET', '/client/auth/methods'));
 
   /// Adds a Google or Apple identity ([idToken] from the native SDK).
   Future<List<SignInMethod>> linkSignIn(
           String provider, String idToken) async =>
-      _methods(await request('POST', '/client/auth/methods/$provider',
+      _methods(await api.request('POST', '/client/auth/methods/$provider',
           body: {'id_token': idToken}));
 
   /// Removes one way to sign in; `email` drops the password.
   Future<List<SignInMethod>> unlinkSignIn(String provider) async =>
-      _methods(await request('DELETE', '/client/auth/methods/$provider'));
+      _methods(await api.request('DELETE', '/client/auth/methods/$provider'));
 
   /// Turns email sign-in on, or changes its password.
   Future<List<SignInMethod>> setPassword(String password) async =>
-      _methods(await request('PUT', '/client/auth/password',
+      _methods(await api.request('PUT', '/client/auth/password',
           body: {'password': password}));
 
   static List<SignInMethod> _methods(Object? data) => [
@@ -111,40 +119,39 @@ mixin HttpAuthRepository on ApiClient implements AuthRepository {
 
   @override
   Future<void> signOut() async {
-    final token = pushToken;
-    if (token != null && accessToken != null) {
+    final token = api.pushToken;
+    if (token != null && api.accessToken != null) {
       try {
-        await request('DELETE', '/client/devices', body: {'token': token});
+        await api.request('DELETE', '/client/devices', body: {'token': token});
       } on ApiFailure {
         // Offline: the server drops the token once FCM calls it dead.
       }
     }
-    await forget();
+    await api.forget();
   }
 
   @override
   Future<Account> updateName(String name) async {
-    final a = setMe(
-        await request('PATCH', '/client/auth/me', body: {'display_name': name})
-            as Map<String, dynamic>);
-    notify();
+    final a = api.setMe(await api.request('PATCH', '/client/auth/me',
+        body: {'display_name': name}) as Map<String, dynamic>);
+    api.notify();
     return a;
   }
 
   @override
   Future<Account> updatePhone(String phone) async {
-    final a = setMe(
-        await request('PATCH', '/client/auth/me', body: {'phone': phone})
+    final a = api.setMe(
+        await api.request('PATCH', '/client/auth/me', body: {'phone': phone})
             as Map<String, dynamic>);
-    notify();
+    api.notify();
     return a;
   }
 
   @override
   Future<void> deleteAccount() async {
-    await request('DELETE', '/client/auth/account');
-    final me = currentId;
-    if (me != null) accounts.remove(me);
-    await forget();
+    await api.request('DELETE', '/client/auth/account');
+    final me = api.currentId;
+    if (me != null) api.accounts.remove(me);
+    await api.forget();
   }
 }

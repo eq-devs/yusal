@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/document/house_extras.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/geometry/furniture_snap.dart';
+import 'package:yusal/features/editor/engine/core/document/house_extras.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/geometry/furniture_snap.dart';
 
 FurnitureItem bed(int x, int y) => FurnitureItem(
     id: 'f',

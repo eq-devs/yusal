@@ -3,13 +3,13 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/house_templates.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/render3d/scene_cleanup.dart';
-import 'package:yusal/render3d/scene_model.dart';
-import 'package:yusal/render3d/scene_view.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_cleanup.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_view.dart';
 
 /// The six faces of a box, wound outward, as the scene builder makes them.
 List<Face3> boxFaces(Vec3 a, Vec3 b, {Color color = const Color(0xffcccccc)}) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../support/mock/backend.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/main.dart';
 import '../support/mock/mock_seed.dart';
@@ -28,7 +29,7 @@ void main() {
             id,
             args,
             ActionContext(
-                repos: repos,
+                repos: voiceRepos(repos),
                 loggedIn: true,
                 entities: entities,
                 page: VoiceScreens.current?.context),

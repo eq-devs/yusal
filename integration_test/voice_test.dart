@@ -10,21 +10,20 @@
 // grant before every run (granting while the app runs stops the app).
 // Without it iOS asks on screen and the two tests that record fail with
 // "the microphone must be allowed".
+import '../test/support/test_scope.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/core/commands/room_commands.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/page.dart';
-import 'package:yusal/main.dart';
 import '../test/support/mock/mock_backend.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/services/storage/last_open.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/repository/audio_device.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 import 'package:yusal/features/voice/state/session.dart';
@@ -133,7 +132,7 @@ void main() {
       const VoiceTurn(reply: '已打开“我的”。'),
     ]);
     try {
-      await t.pumpWidget(ProviderScope(child: HouseApp(repos: repos)));
+      await t.pumpWidget(testApp(repos));
       await t.pumpAndSettle();
       final start = VoiceScreens.current!.screenId;
       expect(start, startsWith('shell.'));
@@ -168,7 +167,7 @@ void main() {
     final repos = VoiceMock([const VoiceTurn(reply: 'Жарайды.')],
         hears: 'менің бетімді аш');
     try {
-      await t.pumpWidget(ProviderScope(child: HouseApp(repos: repos)));
+      await t.pumpWidget(testApp(repos));
       await t.pumpAndSettle();
       // Tap the orb to listen, tap it again when done.
       await t.tap(find.byKey(const Key('voice-button')));
@@ -266,8 +265,11 @@ void main() {
     try {
       await t.pumpWidget(MaterialApp(
           navigatorKey: navigator,
-          builder: (context, child) =>
-              VoiceHost(navigator: navigator, repos: repos, child: child!),
+          builder: (context, child) => VoiceHost(
+              navigator: navigator,
+              repos: voiceRepos(repos),
+              voice: repos,
+              child: child!),
           home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
       await t.pumpAndSettle();
       expect(VoiceScreens.current!.screenId, 'editor.plan');

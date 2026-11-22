@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/admin/page.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 Future<MockBackend> pumpAdmin(WidgetTester t, String account,

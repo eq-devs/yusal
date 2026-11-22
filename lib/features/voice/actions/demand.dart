@@ -1,5 +1,5 @@
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/model/rules.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 
@@ -61,25 +61,25 @@ final demandActions = [
       'demand.publish',
       const L3('提交审核', 'Тексеруге жіберу', 'Отправить на проверку'),
       const L3('提交审核', 'Тексеруге жібер', 'Отправь на проверку'),
-      (ctx, d, _) => ctx.repos.publish(d.id)),
+      (ctx, d, _) => ctx.repos.demands.publish(d.id)),
   _demandAction(
       DemandEvent.pause,
       'demand.pause',
       const L3('暂停招募', 'Іздеуді тоқтату', 'Приостановить набор'),
       const L3('先暂停招人', 'Іздеуді уақытша тоқтат', 'Приостанови набор'),
-      (ctx, d, _) => ctx.repos.pause(d.id)),
+      (ctx, d, _) => ctx.repos.demands.pause(d.id)),
   _demandAction(
       DemandEvent.resume,
       'demand.resume',
       const L3('继续招募', 'Іздеуді жалғастыру', 'Возобновить набор'),
       const L3('继续招人', 'Іздеуді жалғастыр', 'Возобнови набор'),
-      (ctx, d, _) => ctx.repos.resume(d.id)),
+      (ctx, d, _) => ctx.repos.demands.resume(d.id)),
   _demandAction(
       DemandEvent.renew,
       'demand.renew',
       const L3('续期 30 天', '30 күнге ұзарту', 'Продлить на 30 дней'),
       const L3('再延长一个月', 'Тағы бір айға ұзарт', 'Продли ещё на месяц'),
-      (ctx, d, _) => ctx.repos.renew(d.id)),
+      (ctx, d, _) => ctx.repos.demands.renew(d.id)),
   AppAction(
     id: 'demand.mark_found',
     title: const L3('标记已找到人', 'Адам табылды деп белгілеу',
@@ -98,7 +98,7 @@ final demandActions = [
         return const ActionResult.fail(nobodyHired);
       }
       final id = host.ownDemand!.id;
-      await ctx.repos.markFound(id, outcome);
+      await ctx.repos.demands.markFound(id, outcome);
       return ActionResult.ok(changed: [id]);
     },
   ),
@@ -108,6 +108,6 @@ final demandActions = [
       const L3('关闭需求', 'Тапсырысты жабу', 'Закрыть заявку'),
       const L3('关掉这个需求，不需要了', 'Бұл тапсырысты жап, керек емес',
           'Закрой заявку, уже не нужно'),
-      (ctx, d, args) => ctx.repos.close(d.id, args.text('reason')),
+      (ctx, d, args) => ctx.repos.demands.close(d.id, args.text('reason')),
       params: const {'reason': Param.text()}),
 ];

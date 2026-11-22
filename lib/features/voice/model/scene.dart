@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
-import 'package:yusal/core/analysis/house_analysis.dart';
-import 'package:yusal/core/axis/axis_resolver.dart';
-import 'package:yusal/core/checks/check_engine.dart';
-import 'package:yusal/core/document/house_document.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
+import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
+import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
+import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 
 /// The open design as a few lines of text for the language model: the
 /// house, then the floor being edited with one line per room (where it

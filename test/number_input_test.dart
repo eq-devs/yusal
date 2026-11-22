@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/number_input.dart';
+import 'package:yusal/features/editor/engine/core/number_input.dart';
 
 void main() {
   test('reads decimals with a comma or a dot', () {

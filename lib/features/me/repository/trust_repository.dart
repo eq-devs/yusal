@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:typed_data';
 
-import 'package:yusal/services/api/api_client.dart';
-import 'package:yusal/services/api/codec.dart';
-import 'package:yusal/shared/model/admin_models.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/api/api_client.dart';
+import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/shared/model/admin_models.dart';
+import 'package:yusal/features/shared/model/models.dart';
 
 /// Reports and appeals, verification, alerts, push settings and feedback.
 
@@ -42,42 +42,47 @@ abstract interface class FeedbackRepository {
       Map<String, String>? context});
 }
 
-/// Overridden in `lib/app` with the one backend (the fake in tests).
-final moderationRepositoryProvider = Provider<ModerationRepository>((ref) =>
-    throw UnimplementedError('moderationRepositoryProvider is not overridden'));
-final trustRepositoryProvider = Provider<TrustRepository>((ref) =>
-    throw UnimplementedError('trustRepositoryProvider is not overridden'));
-final feedbackRepositoryProvider = Provider<FeedbackRepository>((ref) =>
-    throw UnimplementedError('feedbackRepositoryProvider is not overridden'));
+final moderationRepositoryProvider = Provider<ModerationRepository>(
+    (ref) => HttpModerationRepository(ref.watch(apiClientProvider)));
+final trustRepositoryProvider = Provider<TrustRepository>(
+    (ref) => HttpTrustRepository(ref.watch(apiClientProvider)));
+final feedbackRepositoryProvider = Provider<FeedbackRepository>(
+    (ref) => HttpFeedbackRepository(ref.watch(apiClientProvider)));
 
 /// [ModerationRepository] over yusal-api.
-mixin HttpModerationRepository on ApiClient implements ModerationRepository {
+final class HttpModerationRepository implements ModerationRepository {
+  HttpModerationRepository(this.api);
+  final ApiClient api;
+
   @override
   Future<void> report(
       ReportTarget target, String targetId, String reason) async {
-    await write('POST', '/client/reports',
+    await api.write('POST', '/client/reports',
         body: {'target': target.name, 'target_id': targetId, 'reason': reason});
   }
 
   @override
   Future<Appeal> fileAppeal(
           String target, String targetId, String text) async =>
-      appealFrom(await write('POST', '/client/appeals',
+      appealFrom(await api.write('POST', '/client/appeals',
               body: {'target': target, 'target_id': targetId, 'text': text})
           as Map<String, dynamic>);
 
   @override
   Future<List<Appeal>> myAppeals() async =>
-      [for (final j in await getList('/client/appeals')) appealFrom(j)];
+      [for (final j in await api.getList('/client/appeals')) appealFrom(j)];
 }
 
 /// [TrustRepository] over yusal-api.
-mixin HttpTrustRepository on ApiClient implements TrustRepository {
+final class HttpTrustRepository implements TrustRepository {
+  HttpTrustRepository(this.api);
+  final ApiClient api;
+
   @override
   Future<Verification> requestVerification(
           String profileId, String phone, List<Uint8List> photos,
           {String note = ''}) async =>
-      verificationFrom(await write(
+      verificationFrom(await api.write(
           'POST', '/client/profiles/$profileId/verification', body: {
         'phone': phone,
         'note': note,
@@ -86,28 +91,30 @@ mixin HttpTrustRepository on ApiClient implements TrustRepository {
 
   @override
   Future<Verification?> myVerification(String profileId) async {
-    final j = await request('GET', '/client/profiles/$profileId/verification');
+    final j =
+        await api.request('GET', '/client/profiles/$profileId/verification');
     return j == null ? null : verificationFrom(j as Map<String, dynamic>);
   }
 
   @override
   Future<DemandAlert> demandAlert() async => alertFrom(
-      await request('GET', '/client/demand-alert') as Map<String, dynamic>);
+      await api.request('GET', '/client/demand-alert') as Map<String, dynamic>);
 
   @override
   Future<DemandAlert> saveDemandAlert(DemandAlert alert) async => alertFrom(
-      await write('PUT', '/client/demand-alert', body: alertJson(alert))
+      await api.write('PUT', '/client/demand-alert', body: alertJson(alert))
           as Map<String, dynamic>);
 
   @override
   Future<NotificationSettings> notificationSettings() async =>
-      settingsFrom(await request('GET', '/client/notification-settings')
+      settingsFrom(await api.request('GET', '/client/notification-settings')
           as Map<String, dynamic>);
 
   @override
   Future<NotificationSettings> saveNotificationSettings(
           NotificationSettings s) async =>
-      settingsFrom(await write('PUT', '/client/notification-settings', body: {
+      settingsFrom(
+          await api.write('PUT', '/client/notification-settings', body: {
         'muted': s.muted,
         'quiet_start': s.quietStart,
         'quiet_end': s.quietEnd,
@@ -115,13 +122,16 @@ mixin HttpTrustRepository on ApiClient implements TrustRepository {
 }
 
 /// [FeedbackRepository] over yusal-api.
-mixin HttpFeedbackRepository on ApiClient implements FeedbackRepository {
+final class HttpFeedbackRepository implements FeedbackRepository {
+  HttpFeedbackRepository(this.api);
+  final ApiClient api;
+
   @override
   Future<void> sendFeedback(
       {required String requestId,
       required String text,
       Map<String, String>? context}) async {
-    await request('POST', '/client/feedback', body: {
+    await api.request('POST', '/client/feedback', body: {
       'request_id': requestId,
       'text': text,
       if (context != null) 'context': context,

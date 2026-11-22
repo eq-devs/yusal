@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/me/page.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/http_backend.dart';
 import '../storage_test.dart' show MemoryFiles;
 import '../http_backend_test.dart' show FakeApi;
 
@@ -56,8 +55,8 @@ void main() {
     AppSettings.instance.lang = AppLang.zh;
     SharedPreferences.setMockInitialValues({});
     final api = NoPreviewApi();
-    final b = HttpBackend('https://api.test', client: MockClient(api.handle));
-    await t.runAsync(() => b.signInWithProvider('google', 'id-token'));
+    final b = TestHttp('https://api.test', client: MockClient(api.handle));
+    await t.runAsync(() => b.auth.signInWithProvider('google', 'id-token'));
     await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
@@ -89,12 +88,12 @@ void main() {
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
     final api = NoPreviewApi();
-    final b = HttpBackend('https://api.test', client: MockClient((r) async {
+    final b = TestHttp('https://api.test', client: MockClient((r) async {
       // A real network takes a while; the fake answers at once.
       await Future<void>.delayed(const Duration(milliseconds: 200));
       return api.handle(r);
     }));
-    await t.runAsync(() => b.signInWithProvider('google', 'id-token'));
+    await t.runAsync(() => b.auth.signInWithProvider('google', 'id-token'));
     await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),

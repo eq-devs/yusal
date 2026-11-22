@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:yusal/features/home/state/post.dart';
 import 'package:yusal/features/home/repository/post_repository.dart';
 import 'package:flutter/services.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/home/widgets/plan_viewer.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
 
 /// A house in the feed: the plan as a big picture, then the facts a
 /// visitor scans first (where, how big, what it costs) and who made it.

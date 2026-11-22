@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
+import '../support/mock/backend.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import '../support/mock/mock_backend.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/state/executor.dart';
@@ -99,7 +100,8 @@ void main() {
           navigatorKey: navigator,
           builder: (context, child) => VoiceHost(
               navigator: navigator,
-              repos: repos,
+              repos: voiceRepos(repos),
+              voice: repos,
               enabled: enabled,
               audio: audio,
               child: child!),
@@ -261,7 +263,8 @@ void main() {
         navigatorKey: navigator,
         builder: (context, child) => VoiceHost(
             navigator: navigator,
-            repos: MockBackend(latency: Duration.zero, seed: false),
+            repos: voiceRepos(MockBackend(latency: Duration.zero, seed: false)),
+            voice: ScriptedBackend(const []),
             child: child!),
         home: const Scaffold()));
     await t.pump();
@@ -345,7 +348,7 @@ void main() {
         confirm: (a, args) =>
             confirmAction(navigator.currentContext!, a, args));
     final ctx = ActionContext(
-        repos: MockBackend(latency: Duration.zero, seed: false),
+        repos: voiceRepos(MockBackend(latency: Duration.zero, seed: false)),
         loggedIn: true);
 
     for (final (button, code, count) in [

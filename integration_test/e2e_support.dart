@@ -1,14 +1,14 @@
 // Helpers for the integration tests that drive the app against a running
 // yusal-api (see backend_flow_test.dart for how to run them).
+import '../test/support/test_scope.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/shell/page.dart';
-import 'package:yusal/app/http_backend.dart';
 import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/features/demand/pages/publish.dart';
 import 'package:yusal/features/profile/pages/edit.dart';
@@ -121,8 +121,8 @@ Future<void> open(WidgetTester t, Widget page) async {
   await idle(t);
 }
 
-Future<void> signIn(WidgetTester t, HttpBackend repos, String name) async {
-  if (repos.currentAccount != null) await signOut(t, repos);
+Future<void> signIn(WidgetTester t, TestHttp repos, String name) async {
+  if (repos.api.currentAccount != null) await signOut(t, repos);
   await home(t);
   await tab(t, '我的');
   // After a sign-out two pages in the tree carry this button; the one on
@@ -133,20 +133,20 @@ Future<void> signIn(WidgetTester t, HttpBackend repos, String name) async {
   await t.enterText(find.byKey(const Key('dev-login-name')), name);
   await tapIt(t, find.byKey(const Key('dev-login')));
   await waitFor(t, find.byTooltip('改称呼'));
-  expect(repos.currentAccount?.displayName, name);
+  expect(repos.api.currentAccount?.displayName, name);
 }
 
-Future<void> signOut(WidgetTester t, HttpBackend repos) async {
+Future<void> signOut(WidgetTester t, TestHttp repos) async {
   await home(t);
   await tab(t, '我的');
   await scrollTap(t, find.byKey(const Key('me-sign-out')));
   // The app asks before signing out.
   await waitFor(t, find.text('退出登录？'));
   await tapIt(t, find.text('退出').last);
-  for (var i = 0; i < 20 && repos.currentAccount != null; i++) {
+  for (var i = 0; i < 20 && repos.api.currentAccount != null; i++) {
     await idle(t, 250);
   }
-  expect(repos.currentAccount, isNull);
+  expect(repos.api.currentAccount, isNull);
 }
 
 /// Types into the text field of the open dialog and presses 确定.

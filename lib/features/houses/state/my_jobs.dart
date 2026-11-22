@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/apply/repository/application_repository.dart';
 import 'package:yusal/features/coop/repository/cooperation_repository.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/state/session.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/state/session.dart';
 
 /// What "我接的活" shows: my quotes, the cooperations where I am the pro,
 /// and the titles of the demands they belong to.

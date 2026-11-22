@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/voice/model/action.dart';
-import 'package:yusal/services/api/api_failure.dart';
+import 'package:yusal/service/api/api_failure.dart';
 import 'package:yusal/features/voice/actions/design.dart';
 import 'package:yusal/features/voice/state/executor.dart';
 import 'package:yusal/features/voice/model/form.dart';

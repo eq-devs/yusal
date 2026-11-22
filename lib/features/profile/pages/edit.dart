@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/features/profile/repository/profile_repository.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/shared/brand/yicon.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Create or edit an individual or team service profile. Only the name,
 /// trades, regions, kind and availability are required.

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../support/mock/backend.dart';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -74,10 +75,11 @@ void main() {
     List<String> offered(ActionContext ctx) =>
         [for (final a in registry.offered(ctx)) a.id];
 
-    expect(offered(ActionContext(repos: repos, loggedIn: false)), ['a.always']);
+    expect(offered(ActionContext(repos: voiceRepos(repos), loggedIn: false)),
+        ['a.always']);
     expect(
         offered(ActionContext(
-            repos: repos,
+            repos: voiceRepos(repos),
             loggedIn: true,
             entities: const [Entity('room', 'id', alias: 'r1')])),
         ['a.always', 'a.logged_in', 'a.room']);

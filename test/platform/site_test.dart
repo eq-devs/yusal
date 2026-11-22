@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import '../support/test_scope.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/main.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/houses/page.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 import 'mock_backend_test.dart' show backend, terms;
 
@@ -115,9 +113,8 @@ void main() {
     final c = await t.runAsync(() => liveContract(b));
     await t.runAsync(() => b.logWork(c!.id, 3));
     b.signInAs(SeedIds.owner);
-    await t.pumpWidget(ProviderScope(
-        child: HouseApp(
-            repos: b, store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t
+        .pumpWidget(testApp(b, store: ProjectStore(fileSystem: MemoryFiles())));
     await t.pumpAndSettle();
     await t.tap(find.text('我的房子').last);
     await t.pumpAndSettle();

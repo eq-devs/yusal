@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/features/discover/state/discover.dart';
 import 'package:yusal/features/profile/repository/profile_repository.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/demand/widgets/demand_card.dart';
 import 'package:yusal/features/profile/widgets/profile_card.dart';
 import 'package:yusal/features/chat/pages/inbox.dart';
 import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/features/demand/pages/publish.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
+import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/profile/page.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/shared/brand/brand.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/components.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/brand.dart';
 
 /// First tab: "find work / find people" with search and filters.
 class DiscoverPage extends StatefulWidget {

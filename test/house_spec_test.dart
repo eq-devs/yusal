@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/checks/check_engine.dart';
-import 'package:yusal/core/commands/house_spec.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_spec.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 
 /// A one-storey 12 × 10 m house as a language model would describe it.
 final Map<String, Object?> spec = {

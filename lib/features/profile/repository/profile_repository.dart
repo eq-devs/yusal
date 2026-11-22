@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:yusal/services/api/api_client.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/services/api/codec.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/api/api_client.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/shared/model/models.dart';
 
 /// Workers' and teams' service profiles, and favourites.
 
@@ -25,39 +25,42 @@ abstract interface class ProfileRepository {
   Future<void> toggleFavourite(String id);
 }
 
-/// Overridden in `lib/app` with the one backend (the fake in tests).
-final profileRepositoryProvider = Provider<ProfileRepository>((ref) =>
-    throw UnimplementedError('profileRepositoryProvider is not overridden'));
+final profileRepositoryProvider = Provider<ProfileRepository>(
+    (ref) => HttpProfileRepository(ref.watch(apiClientProvider)));
 
 /// [ProfileRepository] over yusal-api.
-mixin HttpProfileRepository on ApiClient implements ProfileRepository {
+final class HttpProfileRepository implements ProfileRepository {
+  HttpProfileRepository(this.api);
+  final ApiClient api;
+
   @override
   Future<List<ServiceProfile>> myProfiles() async {
-    if (currentId == null) throw const ApiFailure(ApiCodes.notSignedIn);
+    if (api.currentId == null) throw const ApiFailure(ApiCodes.notSignedIn);
     return [
-      for (final j in await getList('/client/me/profiles')) profileFrom(j)
+      for (final j in await api.getList('/client/me/profiles')) profileFrom(j)
     ];
   }
 
   @override
   Future<ServiceProfile?> profile(String id) async {
-    final j = await maybe('/client/profiles/$id');
+    final j = await api.maybe('/client/profiles/$id');
     if (j == null) return null;
     final p = profileFrom(j);
-    await loadNames([p.ownerId]);
+    await api.loadNames([p.ownerId]);
     return p;
   }
 
   @override
   Future<List<ServiceProfile>> profilesOf(String accountId) async => [
-        for (final j in await getList('/client/accounts/$accountId/profiles'))
+        for (final j
+            in await api.getList('/client/api.accounts/$accountId/profiles'))
           profileFrom(j)
       ];
 
   @override
   Future<List<ServiceProfile>> searchProfiles(ProfileFilter f) async {
     final list = [
-      for (final j in await getList('/client/profiles', query: {
+      for (final j in await api.getList('/client/profiles', query: {
         if (f.kind != null) 'kind': f.kind!.name,
         if (f.trade != null) 'trade': f.trade!,
         if (f.region != null) 'region': f.region!,
@@ -66,35 +69,36 @@ mixin HttpProfileRepository on ApiClient implements ProfileRepository {
       }))
         profileFrom(j)
     ];
-    await loadNames(list.map((p) => p.ownerId));
+    await api.loadNames(list.map((p) => p.ownerId));
     return list;
   }
 
   @override
   Future<ServiceProfile> saveProfile(ServiceProfile p) =>
-      _profile(write('POST', '/client/profiles', body: profileJson(p)));
+      _profile(api.write('POST', '/client/profiles', body: profileJson(p)));
 
   @override
   Future<ServiceProfile> confirmAvailability(String profileId) => _profile(
-      write('POST', '/client/profiles/$profileId/confirm-availability'));
+      api.write('POST', '/client/profiles/$profileId/confirm-availability'));
 
   @override
   Future<ProfileStats> stats(String profileId) async =>
-      statsFrom(await request('GET', '/client/profiles/$profileId/stats')
+      statsFrom(await api.request('GET', '/client/profiles/$profileId/stats')
           as Map<String, dynamic>);
 
   @override
   Future<Set<String>> favourites() async {
-    if (currentId == null) return {};
+    if (api.currentId == null) return {};
     return {
-      for (final id in await request('GET', '/client/me/favourites') as List)
+      for (final id
+          in await api.request('GET', '/client/me/favourites') as List)
         id as String
     };
   }
 
   @override
   Future<void> toggleFavourite(String id) async {
-    await write('POST', '/client/favourites/$id/toggle');
+    await api.write('POST', '/client/favourites/$id/toggle');
   }
 
   Future<ServiceProfile> _profile(Future<dynamic> f) async =>

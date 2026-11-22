@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/features/shell/page.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/main.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'support/mock/mock_backend.dart';
 import 'support/mock/mock_clock.dart';
 import 'support/mock/mock_seed.dart';
 import 'package:yusal/features/home/pages/post.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
 
 /// Phone-width layouts in all three languages: an overflow fails the test.
@@ -28,9 +27,8 @@ void main() {
           clock: MockClock(DateTime.utc(2026, 11, 3, 9)),
           latency: Duration.zero,
           autoReviewDelay: Duration.zero);
-      await t.pumpWidget(ProviderScope(
-          child: HouseApp(
-              repos: repos, store: ProjectStore(fileSystem: MemoryFiles()))));
+      await t.pumpWidget(
+          testApp(repos, store: ProjectStore(fileSystem: MemoryFiles())));
       await t.pumpAndSettle();
       expect(find.byType(PostPage), findsOneWidget);
       await t.drag(find.byType(CustomScrollView), const Offset(0, -600));
@@ -51,9 +49,8 @@ void main() {
           latency: Duration.zero,
           autoReviewDelay: Duration.zero)
         ..signInAs(SeedIds.owner);
-      await t.pumpWidget(ProviderScope(
-          child: HouseApp(
-              repos: repos, store: ProjectStore(fileSystem: MemoryFiles()))));
+      await t.pumpWidget(
+          testApp(repos, store: ProjectStore(fileSystem: MemoryFiles())));
       await t.pumpAndSettle();
       await t.drag(find.byType(CustomScrollView).first, const Offset(0, -900));
       await t.pumpAndSettle();

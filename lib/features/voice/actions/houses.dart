@@ -1,4 +1,4 @@
-import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/voice/model/action.dart';
 
 /// Implemented by the "My houses" list so voice can start and open

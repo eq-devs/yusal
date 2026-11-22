@@ -1,19 +1,18 @@
 // The app's main pages with the voice orb over them, for visual review
 // (not run in CI).
 // SHOTS_OUT=/path flutter test test/ui_shots/app_shots_test.dart
+import '../support/test_scope.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/main.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
 import 'package:yusal/features/shell/page.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/state/session.dart';
 
 import '../storage_test.dart' show MemoryFiles;
@@ -73,10 +72,7 @@ void main() {
     final key = GlobalKey();
     await t.pumpWidget(RepaintBoundary(
         key: key,
-        child: ProviderScope(
-            child: HouseApp(
-                repos: repos,
-                store: ProjectStore(fileSystem: MemoryFiles())))));
+        child: testApp(repos, store: ProjectStore(fileSystem: MemoryFiles()))));
     await t.pumpAndSettle();
     var shot = 0;
     Future<void> snap(String name) async {

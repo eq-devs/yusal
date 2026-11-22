@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/render3d/scene_model.dart';
-import 'package:yusal/render3d/scene_view.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_view.dart';
 
 void main() {
   var n = 0;

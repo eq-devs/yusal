@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/theme/tokens.dart';
+import 'package:yusal/constant/tokens.dart';
 
 /// Small building blocks shared by every screen, after the drafting-table
 /// page: segmented switches, a tab strip, sheets (cards), value grids, pills.

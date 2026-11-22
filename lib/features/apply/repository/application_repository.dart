@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:yusal/services/api/api_client.dart';
-import 'package:yusal/services/api/codec.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/api/api_client.dart';
+import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/shared/model/models.dart';
 
 /// Builders' quotes on demands.
 
@@ -29,17 +29,18 @@ abstract interface class ApplicationRepository {
   Future<Application> markNotSelected(String applicationId);
 }
 
-/// Overridden in `lib/app` with the one backend (the fake in tests).
-final applicationRepositoryProvider = Provider<ApplicationRepository>((ref) =>
-    throw UnimplementedError(
-        'applicationRepositoryProvider is not overridden'));
+final applicationRepositoryProvider = Provider<ApplicationRepository>(
+    (ref) => HttpApplicationRepository(ref.watch(apiClientProvider)));
 
 /// [ApplicationRepository] over yusal-api.
-mixin HttpApplicationRepository on ApiClient implements ApplicationRepository {
+final class HttpApplicationRepository implements ApplicationRepository {
+  HttpApplicationRepository(this.api);
+  final ApiClient api;
+
   @override
   Future<Map<String, ({int total, int unread})>> myQuoteCounts() async {
-    final m =
-        await request('GET', '/client/me/quote-counts') as Map<String, dynamic>;
+    final m = await api.request('GET', '/client/me/quote-counts')
+        as Map<String, dynamic>;
     return {
       for (final e in m.entries)
         e.key: (
@@ -52,23 +53,24 @@ mixin HttpApplicationRepository on ApiClient implements ApplicationRepository {
   @override
   Future<List<Application>> applicationsFor(String demandId) async {
     final list = [
-      for (final j in await getList('/client/demands/$demandId/applications'))
+      for (final j
+          in await api.getList('/client/demands/$demandId/applications'))
         applicationFrom(j)
     ];
-    await loadNames(list.map((a) => a.applicantId));
+    await api.loadNames(list.map((a) => a.applicantId));
     return list;
   }
 
   @override
   Future<List<Application>> myApplications() async => [
-        for (final j in await getList('/client/me/applications'))
+        for (final j in await api.getList('/client/me/applications'))
           applicationFrom(j)
       ];
 
   @override
   Future<Application?> application(String id) async {
-    if (currentId == null) return null;
-    final j = await maybe('/client/applications/$id');
+    if (api.currentId == null) return null;
+    final j = await api.maybe('/client/applications/$id');
     return j == null ? null : applicationFrom(j);
   }
 
@@ -78,7 +80,7 @@ mixin HttpApplicationRepository on ApiClient implements ApplicationRepository {
           required String profileId,
           required ApplicationVersion version,
           required String requestId}) =>
-      _application(write('POST', '/client/applications', body: {
+      _application(api.write('POST', '/client/applications', body: {
         'demand_id': demandId,
         'profile_id': profileId,
         'version': appVersionJson(version),
@@ -87,11 +89,11 @@ mixin HttpApplicationRepository on ApiClient implements ApplicationRepository {
 
   @override
   Future<Application> withdraw(String applicationId) => _application(
-      write('POST', '/client/applications/$applicationId/withdraw'));
+      api.write('POST', '/client/applications/$applicationId/withdraw'));
 
   @override
   Future<Application> markNotSelected(String applicationId) => _application(
-      write('POST', '/client/applications/$applicationId/not-selected'));
+      api.write('POST', '/client/applications/$applicationId/not-selected'));
 
   Future<Application> _application(Future<dynamic> f) async =>
       applicationFrom(await f as Map<String, dynamic>);

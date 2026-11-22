@@ -12,11 +12,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/page.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import '../test/storage_test.dart' show MemoryFiles;
 

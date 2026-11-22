@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../test/support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/core/commands/kz_template.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
 import 'package:yusal/features/editor/page.dart';
-import 'package:yusal/main.dart';
 import '../test/support/mock/mock_backend.dart';
 import '../test/support/mock/mock_seed.dart';
 import 'package:yusal/features/shell/page.dart';
-import 'package:yusal/services/storage/last_open.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 /// A slow walk through the main screens on a real device or simulator, so
 /// they can be looked at (or captured with `xcrun simctl io booted
@@ -50,8 +49,7 @@ void main() {
     try {
       final backend = MockBackend(latency: Duration.zero)
         ..signInAs(SeedIds.owner);
-      await t.pumpWidget(
-          ProviderScope(child: HouseApp(repos: backend, store: store)));
+      await t.pumpWidget(testApp(backend, store: store));
       await hold('discover');
       await t.tap(find.byType(ShellBarTab).at(1));
       await hold('houses');

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/demand/pages/publish.dart';
 import 'package:yusal/features/profile/pages/edit.dart';
-import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/features/shell/page.dart';
-import 'package:yusal/shared/theme/theme.dart';
+import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/explore/page.dart';
-import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
 
 /// "＋": the four ways in. Draw from scratch, start from someone's plan,
 /// find people without a drawing, or join as a pro.

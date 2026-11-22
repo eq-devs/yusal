@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../test/support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/main.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 import '../test/support/mock/mock_backend.dart';
 import 'package:yusal/features/demand/pages/from_design.dart';
 import 'package:yusal/features/home/pages/publish_post.dart';
-import 'package:yusal/services/storage/last_open.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -31,9 +30,8 @@ void main() {
     try {
       AppSettings.instance.lang = AppLang.zh;
       expect((await store.openProject(id)).meta.name, 'Yusal smoke test');
-      await t.pumpWidget(ProviderScope(
-          child: HouseApp(
-              repos: MockBackend(latency: Duration.zero), store: store)));
+      await t.pumpWidget(
+          testApp(MockBackend(latency: Duration.zero), store: store));
       await t.pumpAndSettle();
       expect(find.textContaining('演示模式'), findsOneWidget);
       await t.tap(find.text('我的房子').last);

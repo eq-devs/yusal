@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/features/shell/page.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/main.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/features/demand/pages/publish.dart';
 import 'package:yusal/features/discover/page.dart';
 import 'package:yusal/features/home/page.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 MockBackend backend() => MockBackend(
@@ -37,8 +36,7 @@ Future<(MockBackend, ProjectStore)> launch(WidgetTester t,
   final repos = backend();
   if (as != null) repos.signInAs(as);
   final store = ProjectStore(fileSystem: MemoryFiles());
-  await t
-      .pumpWidget(ProviderScope(child: HouseApp(repos: repos, store: store)));
+  await t.pumpWidget(testApp(repos, store: store));
   await t.pumpAndSettle();
   return (repos, store);
 }

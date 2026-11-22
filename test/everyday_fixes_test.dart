@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/l10n/messages.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/localization/messages.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/editor/page.dart';
 import 'package:yusal/features/editor/util/wall_snap.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/render2d/furniture_names.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/render2d/furniture_names.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import 'storage_test.dart' show MemoryFiles;
 

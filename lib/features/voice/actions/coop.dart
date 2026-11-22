@@ -1,6 +1,6 @@
 import 'package:yusal/features/voice/model/action.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/model/rules.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 
 /// Implemented by the cooperation page, so voice can answer and end a
@@ -19,7 +19,7 @@ Cooperation? _coop() {
 /// exactly when the page shows its button.
 bool Function(ActionContext) _allows(CoopMove move) => (ctx) {
       final c = _coop();
-      final me = ctx.repos.currentAccount?.id;
+      final me = ctx.repos.session.currentAccount?.id;
       return c != null && me != null && coopMoves(c, me).contains(move);
     };
 
@@ -52,19 +52,19 @@ final coopActions = [
       'coop.confirm',
       const L3('确认合作', 'Келісімді растау', 'Подтвердить сотрудничество'),
       const L3('同意，确认合作', 'Келісемін, раста', 'Согласен, подтверди'),
-      (repos, id, _) => repos.confirm(id)),
+      (repos, id, _) => repos.cooperations.confirm(id)),
   _coopAction(
       CoopMove.decline,
       'coop.decline',
       const L3('拒绝邀请', 'Шақырудан бас тарту', 'Отказаться от приглашения'),
       const L3('这个活我不接了', 'Бұл жұмысты алмаймын', 'Я не возьму эту работу'),
-      (repos, id, _) => repos.decline(id)),
+      (repos, id, _) => repos.cooperations.decline(id)),
   _coopAction(
       CoopMove.revoke,
       'coop.revoke',
       const L3('撤回邀请', 'Шақыруды қайтару', 'Отозвать приглашение'),
       const L3('把邀请撤回来', 'Шақыруды қайтар', 'Отзови приглашение'),
-      (repos, id, _) => repos.revoke(id)),
+      (repos, id, _) => repos.cooperations.revoke(id)),
   _coopAction(
       CoopMove.requestEnd,
       'coop.request_end',
@@ -72,28 +72,28 @@ final coopActions = [
       const L3('活干完了，请求结束', 'Жұмыс бітті, аяқтауды сұра',
           'Работа сделана, попроси завершить'),
       (repos, id, args) =>
-          repos.requestEnd(id, args.has('note') ? args.text('note') : ''),
+          repos.cooperations.requestEnd(id, args.has('note') ? args.text('note') : ''),
       params: const {'note': Param.text(optional: true)}),
   _coopAction(
       CoopMove.confirmEnd,
       'coop.confirm_end',
       const L3('确认结束合作', 'Аяқтауды растау', 'Подтвердить завершение'),
       const L3('同意结束', 'Аяқтауға келісемін', 'Согласен завершить'),
-      (repos, id, _) => repos.confirmEnd(id)),
+      (repos, id, _) => repos.cooperations.confirmEnd(id)),
   _coopAction(
       CoopMove.disputeEnd,
       'coop.dispute_end',
       const L3('对结束提出异议', 'Аяқтауға қарсылық', 'Оспорить завершение'),
       const L3('还没干完，不同意结束', 'Әлі бітпеді, келіспеймін',
           'Ещё не закончено, не согласен'),
-      (repos, id, args) => repos.disputeEnd(id, args.text('note')),
+      (repos, id, args) => repos.cooperations.disputeEnd(id, args.text('note')),
       params: const {'note': Param.text()}),
   _coopAction(
       CoopMove.answerChange,
       'coop.answer_change',
       const L3('答复约定变更', 'Өзгеріске жауап беру', 'Ответить на изменение'),
       const L3('接受新的约定', 'Жаңа келісімді қабылда', 'Прими новые условия'),
-      (repos, id, args) => repos.answerChange(id, args.flag('accept')),
+      (repos, id, args) => repos.cooperations.answerChange(id, args.flag('accept')),
       params: const {'accept': Param.flag()}),
   _milestoneAction(
       MilestoneEvent.request,
@@ -101,7 +101,7 @@ final coopActions = [
       const L3('申请节点验收', 'Кезеңді қабылдауды сұрау', 'Попросить принять этап'),
       const L3('地基做完了，请房主来验收', 'Іргетас бітті, қабылдауды сұра',
           'Фундамент готов, попроси принять'),
-      (repos, id, i, args) => repos.requestMilestone(id, i,
+      (repos, id, i, args) => repos.cooperations.requestMilestone(id, i,
           note: args.has('note') ? args.text('note') : ''),
       params: const {'note': Param.text(optional: true)}),
   _milestoneAction(
@@ -109,7 +109,7 @@ final coopActions = [
       'coop.accept_milestone',
       const L3('验收通过', 'Кезеңді қабылдау', 'Принять этап'),
       const L3('看过了，验收通过', 'Көрдім, қабылдаймын', 'Посмотрел, принимаю'),
-      (repos, id, i, _) => repos.answerMilestone(id, i, true)),
+      (repos, id, i, _) => repos.cooperations.answerMilestone(id, i, true)),
   _milestoneAction(
       MilestoneEvent.dispute,
       'coop.dispute_milestone',
@@ -117,7 +117,7 @@ final coopActions = [
       const L3('墙不直，这个节点不通过', 'Қабырға қисық, қабылдамаймын',
           'Стена кривая, не принимаю'),
       (repos, id, i, args) =>
-          repos.answerMilestone(id, i, false, note: args.text('note')),
+          repos.cooperations.answerMilestone(id, i, false, note: args.text('note')),
       params: const {'note': Param.text()}),
 ];
 
@@ -139,7 +139,7 @@ AppAction _milestoneAction(
       params: params,
       when: (ctx) {
         final c = _coop();
-        final me = ctx.repos.currentAccount?.id;
+        final me = ctx.repos.session.currentAccount?.id;
         final i = c == null ? null : currentMilestone(c);
         return i != null && milestoneMoves(c!, me, i).contains(event);
       },

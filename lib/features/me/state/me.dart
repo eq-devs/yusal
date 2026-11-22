@@ -5,7 +5,7 @@ import 'package:yusal/features/chat/repository/chat_repository.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
 import 'package:yusal/features/home/repository/post_repository.dart';
 import 'package:yusal/features/profile/repository/profile_repository.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/shared/model/models.dart';
 
 /// Houses I published.
 final myPostsProvider = FutureProvider.autoDispose<List<HousePost>>(

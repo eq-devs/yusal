@@ -1,14 +1,14 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/house_templates.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/shared/model/admin_models.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/model/rules.dart';
-import 'package:yusal/shared/model/design_snapshot.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/model/admin_models.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
+import 'package:yusal/features/shared/model/design_snapshot.dart';
 
 MockBackend backend({bool seed = true}) => MockBackend(
     clock: MockClock(DateTime.utc(2026, 11, 3, 9)),

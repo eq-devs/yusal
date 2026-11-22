@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/model/rules.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 
 /// Side-by-side view of quotes on one demand. No "cheapest" ranking; it
 /// warns when scopes, units, pricing or versions differ.

@@ -1,14 +1,23 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:yusal/services/api/api_client.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:yusal/service/api/api_client.dart';
 import 'package:yusal/features/voice/repository/speech.dart';
 import 'package:yusal/features/voice/state/session.dart';
 
 /// The assistant and speech, which yusal-api forwards to the AI gateway.
 
+/// The assistant; the app's also turns speech into text.
+final voiceRepositoryProvider = Provider<VoiceBackend>(
+    (ref) => HttpVoiceRepository(ref.watch(apiClientProvider)));
+
 /// [VoiceBackend] over yusal-api.
-mixin HttpVoiceRepository on ApiClient implements VoiceBackend, SpeechBackend {
+final class HttpVoiceRepository implements VoiceBackend, SpeechBackend {
+  HttpVoiceRepository(this.api);
+  final ApiClient api;
+
   // Voice: yusal-api forwards both to the AI gateway.
 
   @override
@@ -17,7 +26,7 @@ mixin HttpVoiceRepository on ApiClient implements VoiceBackend, SpeechBackend {
           required String text,
           required bool spoken,
           required Map<String, Object?> context}) async =>
-      VoiceTurn.fromJson(await request('POST', '/client/voice',
+      VoiceTurn.fromJson(await api.request('POST', '/client/voice',
           body: {
             'session_id': sessionId,
             'text': text,
@@ -34,7 +43,7 @@ mixin HttpVoiceRepository on ApiClient implements VoiceBackend, SpeechBackend {
           {required String turnId,
           required List<Map<String, Object?>> results,
           required Map<String, Object?> context}) async =>
-      VoiceTurn.fromJson(await request('POST', '/client/voice/results',
+      VoiceTurn.fromJson(await api.request('POST', '/client/voice/results',
           body: {
             'turn_id': turnId,
             'results': results,
@@ -46,7 +55,7 @@ mixin HttpVoiceRepository on ApiClient implements VoiceBackend, SpeechBackend {
 
   @override
   Future<String> transcribe(Uint8List wav) async =>
-      (await request('POST', '/client/voice/transcribe', bytes: wav)
+      (await api.request('POST', '/client/voice/transcribe', bytes: wav)
           as Map<String, dynamic>)['text'] as String? ??
       '';
 
@@ -54,7 +63,7 @@ mixin HttpVoiceRepository on ApiClient implements VoiceBackend, SpeechBackend {
   /// replies as text; the live tests use this to make Kazakh recordings.
   Future<Uint8List> synthesize(String text) async {
     final res =
-        await sendRaw('POST', '/client/voice/tts', body: {'text': text});
+        await api.sendRaw('POST', '/client/voice/tts', body: {'text': text});
     if (res.statusCode != 200) ApiClient.decode(res);
     return res.bodyBytes;
   }

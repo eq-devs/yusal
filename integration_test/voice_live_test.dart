@@ -8,20 +8,18 @@
 // The backend needs DEV_LOGIN=true, AI_GATEWAY_URL/KEY and QAZSTT_URL/KEY.
 // Add --dart-define=E2E_NO_LLM=true or E2E_NO_SPEECH=true to leave out the
 // half that is not set up.
+import '../test/support/test_scope.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/core/commands/room_commands.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/page.dart';
-import 'package:yusal/main.dart';
-import 'package:yusal/app/http_backend.dart';
-import 'package:yusal/services/storage/last_open.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 
 import 'e2e_support.dart';
@@ -35,12 +33,12 @@ void main() {
   Future<T> io<T>(WidgetTester t, Future<T> Function() f) async =>
       (await t.runAsync(f)) as T;
 
-  Future<HttpBackend> signedIn(WidgetTester t) async {
+  Future<TestHttp> signedIn(WidgetTester t) async {
     requireBackend();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('yusal_api.refresh_token');
-    final repos = HttpBackend(api, timeout: const Duration(seconds: 90));
-    await io(t, () => repos.signInWithProvider('dev', 'Voice Tester'));
+    final repos = TestHttp(api, timeout: const Duration(seconds: 90));
+    await io(t, () => repos.auth.signInWithProvider('dev', 'Voice Tester'));
     return repos;
   }
 
@@ -75,10 +73,10 @@ void main() {
       (t) async {
     final repos = await signedIn(t);
     const sentence = 'Сәлем, бір қабат қос';
-    final wav = await io<Uint8List>(t, () => repos.synthesize(sentence));
+    final wav = await io<Uint8List>(t, () => repos.voice.synthesize(sentence));
     expect(String.fromCharCodes(wav.take(4)), 'RIFF');
     expect(wav.length, greaterThan(8000));
-    final heard = await io(t, () => repos.transcribe(wav));
+    final heard = await io(t, () => repos.voice.transcribe(wav));
     debugPrint('E2E heard: "$heard"');
     expect(heard.toLowerCase(), contains('қабат'));
   }, skip: noSpeech);
@@ -90,8 +88,7 @@ void main() {
     AppSettings.instance.lang = AppLang.zh;
     final repos = await signedIn(t);
     try {
-      await t.pumpWidget(
-          ProviderScope(child: HouseApp(repos: repos, store: ProjectStore())));
+      await t.pumpWidget(testApp(repos, store: ProjectStore()));
       await idle(t, 1000);
       expect(screen(), startsWith('shell.'));
 
@@ -124,13 +121,12 @@ void main() {
       // The speech service says the command and hears it back: the same
       // text a user's recording would give.
       final wav =
-          await io<Uint8List>(t, () => repos.synthesize('Хабарларды аш'));
-      final heard = await io(t, () => repos.transcribe(wav));
+          await io<Uint8List>(t, () => repos.voice.synthesize('Хабарларды аш'));
+      final heard = await io(t, () => repos.voice.transcribe(wav));
       debugPrint('E2E heard: "$heard"');
       expect(heard.trim(), isNotEmpty);
 
-      await t.pumpWidget(
-          ProviderScope(child: HouseApp(repos: repos, store: ProjectStore())));
+      await t.pumpWidget(testApp(repos, store: ProjectStore()));
       await idle(t, 1000);
       await say(t, heard);
       expect(screen(), 'shell.messages');
@@ -163,8 +159,7 @@ void main() {
             if (e.kind == kind) e.alias: e.title
         };
     try {
-      await t.pumpWidget(
-          ProviderScope(child: HouseApp(repos: repos, store: store)));
+      await t.pumpWidget(testApp(repos, store: store));
       await idle(t, 1000);
       await open(t, HouseEditor(entry: ProjectEntry(id, doc), store: store));
       expect(screen(), 'editor.plan');

@@ -3,7 +3,7 @@ import 'package:yusal/features/auth/repository/auth_repository.dart';
 import 'package:yusal/features/coop/repository/cooperation_repository.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
 import 'package:yusal/features/profile/repository/profile_repository.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/shared/model/models.dart';
 
 /// What the cooperation page shows: the cooperation (null when it is gone
 /// or not the caller's), its demand, both sides, the profile and reviews.

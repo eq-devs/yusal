@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../support/mock/backend.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/editor/page.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/actions.dart';
 import 'package:yusal/features/voice/actions/design.dart';
@@ -51,7 +52,8 @@ void main() {
       seed: false);
 
   Future<ActionResult> say(String id, [Map<String, Object?> args = const {}]) =>
-      executor.run(id, args, VoiceScreens.context(repos, loggedIn: true),
+      executor.run(
+          id, args, VoiceScreens.context(voiceRepos(repos), loggedIn: true),
           source: Source.voice);
 
   Map<String, String> shown(String kind) => {
@@ -149,7 +151,8 @@ void main() {
     final library = HouseLibrary.instance = FakeLibrary();
     addTearDown(() => HouseLibrary.instance = null);
     Future<ActionResult> run(String id, Map<String, Object?> args) =>
-        executor.run(id, args, ActionContext(repos: repos, loggedIn: true),
+        executor.run(
+            id, args, ActionContext(repos: voiceRepos(repos), loggedIn: true),
             source: Source.voice);
 
     expect((await run('houses.open', {'name': 'менің үйім'})).ok, isTrue);

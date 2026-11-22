@@ -3,15 +3,15 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/ui/voice_slot.dart';
-export 'package:yusal/shared/ui/voice_slot.dart';
+import 'package:yusal/features/shared/ui/voice_slot.dart';
+export 'package:yusal/features/shared/ui/voice_slot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/voice/model/action.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/services/voice/read_aloud.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/service/voice/read_aloud.dart';
 import 'package:yusal/features/voice/actions/actions.dart';
 import 'package:yusal/features/voice/state/executor.dart';
 import 'package:yusal/features/voice/widgets/read_aloud_button.dart';
@@ -19,7 +19,7 @@ import 'package:yusal/features/voice/actions/design.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 import 'package:yusal/features/voice/state/session.dart';
 import 'package:yusal/features/voice/repository/speech.dart';
-import 'package:yusal/shared/brand/yicon.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Voice control is built into every build.
 const voiceBuiltIn = true;
@@ -161,7 +161,7 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
     s.addListener(_changed);
     VoiceSlot.hidden.addListener(_hiddenChanged);
     // Signing in and out shows and hides the orb.
-    s.repos.changes.addListener(_hiddenChanged);
+    s.repos.session.changes.addListener(_hiddenChanged);
     // The suggestions show only while the field is empty.
     input.addListener(() => setState(() {}));
     here = VoiceScreens.current?.showsAssistant ?? false;
@@ -200,7 +200,7 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
   void dispose() {
     s.removeListener(_changed);
     VoiceSlot.hidden.removeListener(_hiddenChanged);
-    s.repos.changes.removeListener(_hiddenChanged);
+    s.repos.session.changes.removeListener(_hiddenChanged);
     limit?.cancel();
     levels?.cancel();
     glow.dispose();
@@ -881,11 +881,15 @@ class VoiceHost extends StatefulWidget {
       {super.key,
       required this.navigator,
       required this.repos,
+      required this.voice,
       required this.child,
       this.audio,
       this.enabled = voiceBuiltIn});
   final GlobalKey<NavigatorState> navigator;
   final VoiceRepositories repos;
+
+  /// The assistant behind the bar; it may also turn speech into text.
+  final VoiceBackend voice;
   final Widget child;
 
   /// The microphone; without it, or with a backend that does
@@ -905,17 +909,16 @@ class _VoiceHostState extends State<VoiceHost> {
   void initState() {
     super.initState();
     final repos = widget.repos;
-    final Object backend = repos;
-    final Object speaker = repos;
+    final backend = widget.voice;
     final audio = widget.audio;
-    if (!widget.enabled || !voicePlatform || backend is! VoiceBackend) return;
+    if (!widget.enabled || !voicePlatform) return;
     final s = session = VoiceSession(
         backend: backend,
         executor: ActionExecutor(appActions,
             confirm: (action, args) =>
                 confirmAction(widget.navigator.currentContext!, action, args)),
         repos: repos,
-        loggedIn: () => repos.currentAccount != null,
+        loggedIn: () => repos.session.currentAccount != null,
         sessionId: const Uuid().v4());
     VoiceSession.current = s;
     VoiceSlot.wanted = s.loggedIn;
@@ -928,9 +931,11 @@ class _VoiceHostState extends State<VoiceHost> {
           builder: (context) => Positioned.fill(
               child: VoiceBar(
                   session: s,
-                  speech: audio != null && speaker is SpeechBackend
-                      ? Speech(speaker, audio)
-                      : null,
+                  speech: switch (backend) {
+                    final SpeechBackend speaker when audio != null =>
+                      Speech(speaker, audio),
+                    _ => null,
+                  },
                   reader: ReadAloud.instance)));
       overlay.insert(entry!);
     });

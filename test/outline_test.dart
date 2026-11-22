@@ -1,15 +1,15 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/analysis/cost_estimate.dart';
-import 'package:yusal/core/analysis/heat_loss.dart';
-import 'package:yusal/core/analysis/house_analysis.dart';
-import 'package:yusal/core/checks/check_engine.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/render3d/scene_model.dart';
+import 'package:yusal/features/editor/engine/core/analysis/cost_estimate.dart';
+import 'package:yusal/features/editor/engine/core/analysis/heat_loss.dart';
+import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
+import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
 
 void main() {
   var n = 0;

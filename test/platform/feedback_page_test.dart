@@ -5,12 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/app/http_backend.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_backend.dart';
 import 'package:yusal/features/me/pages/feedback.dart';
-import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 Future<Map<String, String>> _details() async => {
@@ -90,12 +89,12 @@ void main() {
 
   test('the API gets the text, context and request id', () async {
     Map<String, dynamic>? body;
-    final b = HttpBackend('https://api.test', client: MockClient((r) async {
+    final b = TestHttp('https://api.test', client: MockClient((r) async {
       expect(r.url.path, '/client/feedback');
       body = jsonDecode(r.body) as Map<String, dynamic>;
       return http.Response('{"success":true,"data":{"id":"f1"}}', 200);
     }));
-    await b.sendFeedback(
+    await b.feedback.sendFeedback(
         requestId: 'r1', text: 'hi', context: {'device': 'iPhone16,2'});
     expect(body, {
       'request_id': 'r1',

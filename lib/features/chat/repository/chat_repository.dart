@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:yusal/services/api/api_client.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/services/api/codec.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/api/api_client.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/service/api/codec.dart';
+import 'package:yusal/features/shared/model/models.dart';
 
 /// Conversations, messages and in-app notices.
 
@@ -36,50 +36,51 @@ abstract interface class NotificationRepository {
   Future<void> markAllRead();
 }
 
-/// Overridden in `lib/app` with the one backend (the fake in tests).
-final chatRepositoryProvider = Provider<ChatRepository>((ref) =>
-    throw UnimplementedError('chatRepositoryProvider is not overridden'));
-final notificationRepositoryProvider = Provider<NotificationRepository>((ref) =>
-    throw UnimplementedError(
-        'notificationRepositoryProvider is not overridden'));
+final chatRepositoryProvider = Provider<ChatRepository>(
+    (ref) => HttpChatRepository(ref.watch(apiClientProvider)));
+final notificationRepositoryProvider = Provider<NotificationRepository>(
+    (ref) => HttpNotificationRepository(ref.watch(apiClientProvider)));
 
 /// [ChatRepository] over yusal-api.
-mixin HttpChatRepository on ApiClient implements ChatRepository {
+final class HttpChatRepository implements ChatRepository {
+  HttpChatRepository(this.api);
+  final ApiClient api;
+
   @override
   Future<List<Conversation>> conversations() async {
     // Polled by the shell; signed out there is nothing to ask the server.
-    if (currentId == null) throw const ApiFailure(ApiCodes.notSignedIn);
+    if (api.currentId == null) throw const ApiFailure(ApiCodes.notSignedIn);
     final list = [
-      for (final j in await getList('/client/conversations'))
+      for (final j in await api.getList('/client/conversations'))
         conversationFrom(j)
     ];
-    await loadNames(list.expand((c) => c.participants));
+    await api.loadNames(list.expand((c) => c.participants));
     return list;
   }
 
   @override
   Future<Conversation> openConversation(String otherAccountId,
       {String? demandId}) async {
-    final c =
-        conversationFrom(await write('POST', '/client/conversations', body: {
+    final c = conversationFrom(
+        await api.write('POST', '/client/conversations', body: {
       'account_id': otherAccountId,
       if (demandId != null) 'demand_id': demandId,
     }) as Map<String, dynamic>);
-    await loadNames(c.participants);
+    await api.loadNames(c.participants);
     return c;
   }
 
   @override
   Future<List<ChatMessage>> messages(String conversationId) async => [
-        for (final j
-            in await getList('/client/conversations/$conversationId/messages'))
+        for (final j in await api
+            .getList('/client/conversations/$conversationId/messages'))
           messageFrom(j)
       ];
 
   @override
   Future<ChatMessage> send(String conversationId, MessageKind kind,
           {String text = '', String? refId}) async =>
-      messageFrom(await write(
+      messageFrom(await api.write(
           'POST', '/client/conversations/$conversationId/messages',
           body: {
             'kind': kind.name,
@@ -89,73 +90,76 @@ mixin HttpChatRepository on ApiClient implements ChatRepository {
 
   @override
   Future<ChatMessage> resend(String messageId) async =>
-      messageFrom(await write('POST', '/client/messages/$messageId/resend')
+      messageFrom(await api.write('POST', '/client/messages/$messageId/resend')
           as Map<String, dynamic>);
 
   @override
   Future<void> markConversationRead(String conversationId) async {
-    await write('POST', '/client/conversations/$conversationId/read');
+    await api.write('POST', '/client/conversations/$conversationId/read');
   }
 
   @override
   Future<void> block(String accountId) async {
-    await write('POST', '/client/blocks', body: {'account_id': accountId});
+    await api.write('POST', '/client/blocks', body: {'account_id': accountId});
   }
 
   @override
   Future<void> unblock(String accountId) async {
-    await write('DELETE', '/client/blocks/$accountId');
+    await api.write('DELETE', '/client/blocks/$accountId');
   }
 
   @override
   Future<Set<String>> blocked() async {
-    if (currentId == null) return {};
+    if (api.currentId == null) return {};
     return {
-      for (final id in await request('GET', '/client/blocks') as List)
+      for (final id in await api.request('GET', '/client/blocks') as List)
         id as String
     };
   }
 
   @override
-  Future<ChatMessage> sharePhone(String conversationId) async => messageFrom(
-      await write('POST', '/client/conversations/$conversationId/share-phone')
+  Future<ChatMessage> sharePhone(String conversationId) async =>
+      messageFrom(await api.write(
+              'POST', '/client/conversations/$conversationId/share-phone')
           as Map<String, dynamic>);
 
   @override
   Future<int> unreadMessages() async {
-    if (currentId == null) return 0;
-    final j = await request('GET', '/client/messages/unread-count')
+    if (api.currentId == null) return 0;
+    final j = await api.request('GET', '/client/messages/unread-count')
         as Map<String, dynamic>;
     return (j['count'] as num).toInt();
   }
 }
 
 /// [NotificationRepository] over yusal-api.
-mixin HttpNotificationRepository on ApiClient
-    implements NotificationRepository {
+final class HttpNotificationRepository implements NotificationRepository {
+  HttpNotificationRepository(this.api);
+  final ApiClient api;
+
   @override
   Future<List<AppNotification>> notifications() async {
-    if (currentId == null) throw const ApiFailure(ApiCodes.notSignedIn);
+    if (api.currentId == null) throw const ApiFailure(ApiCodes.notSignedIn);
     return [
-      for (final j in await getList('/client/notifications')) noticeFrom(j)
+      for (final j in await api.getList('/client/notifications')) noticeFrom(j)
     ];
   }
 
   @override
   Future<int> unreadNotifications() async {
-    if (currentId == null) return 0;
-    final j = await request('GET', '/client/notifications/unread-count')
+    if (api.currentId == null) return 0;
+    final j = await api.request('GET', '/client/notifications/unread-count')
         as Map<String, dynamic>;
     return (j['count'] as num).toInt();
   }
 
   @override
   Future<void> markRead(String id) async {
-    await write('POST', '/client/notifications/$id/read');
+    await api.write('POST', '/client/notifications/$id/read');
   }
 
   @override
   Future<void> markAllRead() async {
-    await write('POST', '/client/notifications/read-all');
+    await api.write('POST', '/client/notifications/read-all');
   }
 }

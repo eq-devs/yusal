@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_seed.dart';
 import 'package:yusal/features/coop/pages/milestone_editor.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 import 'mock_backend_test.dart' show backend, terms;
 

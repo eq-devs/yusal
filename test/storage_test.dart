@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/services/storage/project_store.dart';
-import 'package:yusal/services/storage/house_import.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/service/storage/house_import.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 
 class MemoryFiles implements ProjectFileSystem {
   final documents = <String, String>{};

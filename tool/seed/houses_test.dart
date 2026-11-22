@@ -12,19 +12,19 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:yusal/shared/theme/tokens.dart';
+import 'package:yusal/constant/tokens.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/core/axis/axis_resolver.dart';
-import 'package:yusal/core/commands/command_contract.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/document/house_document.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/shared/model/design_snapshot.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/render2d/planning_names.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
+import 'package:yusal/features/editor/engine/core/commands/command_contract.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/shared/model/design_snapshot.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/render2d/planning_names.dart';
 
 const _out = String.fromEnvironment('SEED_OUT', defaultValue: 'houses.json');
 

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/admin/repository/admin_repository.dart';
-import 'package:yusal/shared/model/admin_models.dart';
+import 'package:yusal/features/shared/model/admin_models.dart';
 
 /// The first screen: what waits for a moderator, and the numbers.
 final adminWorkbenchProvider =

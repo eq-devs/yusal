@@ -62,26 +62,22 @@ The unit/widget suite includes 10,000 seeded canonicalization cases, byte-for-by
 
 ## Structure
 
-- `lib/shared/settings/`, `lib/shared/theme/`, `lib/shared/l10n/`: language and theme settings, colour tokens, the three languages' texts.
-- `lib/core/document/house_extras.dart`, `lib/core/commands/extras_commands.dart`: furniture, notes, construction specs and issues (file schema v3, only written when used).
-- `lib/core/analysis/`, `lib/core/checks/construction_checks.dart`: wall roles, foundation and masonry take-offs, construction remarks.
-- `lib/core/commands/kz_template.dart`: the 10 × 13 m village house as an editable template.
-- `lib/core/document/extras_planning.dart`, `lib/core/analysis/{cost_estimate,heat_loss,utility_plan,site_analysis,build_schedule}.dart`: planning data (file schema v4, only written when used) and its pure-Dart calculations.
-- `lib/core/commands/outline_commands.dart`: corner cuts for non-rectangular houses.
+- `lib/service/settings/`, `lib/constant/`, `lib/localization/`: language and theme settings, colour tokens, the three languages' texts.
+- `lib/features/editor/engine/core/document/house_extras.dart`, `lib/features/editor/engine/core/commands/extras_commands.dart`: furniture, notes, construction specs and issues (file schema v3, only written when used).
+- `lib/features/editor/engine/core/analysis/`, `lib/features/editor/engine/core/checks/construction_checks.dart`: wall roles, foundation and masonry take-offs, construction remarks.
+- `lib/features/editor/engine/core/commands/kz_template.dart`: the 10 × 13 m village house as an editable template.
+- `lib/features/editor/engine/core/document/extras_planning.dart`, `lib/features/editor/engine/core/analysis/{cost_estimate,heat_loss,utility_plan,site_analysis,build_schedule}.dart`: planning data (file schema v4, only written when used) and its pure-Dart calculations.
+- `lib/features/editor/engine/core/commands/outline_commands.dart`: corner cuts for non-rectangular houses.
 - `lib/features/editor/util/drawing_export.dart`: the PDF/PNG drawing set.
-- `lib/render3d/scene_model.dart`, `scene_view.dart`: software 3D with sun, night, cut, foundation and the walk-through.
+- `lib/features/editor/engine/render3d/scene_model.dart`, `scene_view.dart`: software 3D with sun, night, cut, foundation and the walk-through.
 
-Feature-first layout (one folder per feature, shared code below it):
+Layout, the same as janapost (see `docs/architecture.md`):
 
-- `lib/main.dart`: startup only; `lib/app/`: the composition root (`boot.dart`, `app.dart` with `HouseApp`, `backend.dart`, `http_backend.dart`).
-- `lib/features/<name>/`: one folder per feature, laid out like janapost: `page.dart` (the entry page), `pages/`, `widgets/`, `state/` (Riverpod providers), `repository/` (the interface, its `Http…Repository` mixin and provider), `model/`, `util/`. Features: `shell`, `explore`, `home`, `houses`, `projects`, `chat`, `me`, `admin`, `profile`, `auth`, `demand`, `apply`, `coop`, `discover`, `backup`, `voice`, `dev` and `editor` (the design tool: `page.dart` and its `tabs/`, `tools/`, `widgets/` parts).
-- `lib/shared/`: what every feature builds on: `ui/` (page scaffold, components, `Live`), `theme/`, `l10n/`, `motion/`, `brand/`, `settings/`, `model/` (platform models and rules), `state/` (the session provider).
-- `lib/services/`: `api/` (the yusal-api client, codec, session store), `storage/` (local designs), Firebase, push, Shorebird updates, read-aloud.
-- `lib/core/`: pure Dart documents, codec, validation, axes, canonicalization, commands, history, geometry and checks.
-- `lib/render2d/`, `lib/render3d/`: render derived geometry.
+- `lib/main.dart`: startup only; `lib/app.dart`: Boot, BootGate and `HouseApp` (theme, language, routes).
+- `lib/constant/`: theme and colour tokens; `lib/localization/`: the zh / kk / ru texts; `lib/utils/`: small helpers.
+- `lib/service/`: `api/` (the yusal-api client: requests, tokens, session), `storage/` (local designs), settings, Firebase, push, Shorebird updates, read-aloud.
+- `lib/features/<name>/`: `page.dart`, `pages/`, `widgets/`, `state/` (Riverpod providers), `repository/` (interface, `Http…Repository` class, provider), `model/`, `util/`. `features/shared/` holds the UI kit, motion, brand, platform models and the session provider. `features/editor/` is the design tool; its house engine is `features/editor/engine/{core,render2d,render3d}`.
 - `android/`, `ios/`: native bounded file-import handlers and document registration.
-
-Dependencies only point down: nothing under `shared/`, `services/`, `core/` or `render*/` imports a feature or `app/`, and features never import `app/` (`test/architecture_test.dart` checks this). See `docs/architecture.md`.
 
 ## Acceptance status
 
@@ -150,11 +146,11 @@ See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conforman
 
 ## 连接真实后端（yusal-api）
 
-应用总是连真实后端（eqserver，`https://eqserver.tail920a63.ts.net`，写在 `lib/app/boot.dart`）。直接 `flutter run`，不需要任何配置文件或参数；测试登录和语音按钮一直打开。
+应用总是连真实后端（eqserver，`https://eqserver.tail920a63.ts.net`，写在 `lib/service/api/api_client.dart`）。直接 `flutter run`，不需要任何配置文件或参数；测试登录和语音按钮一直打开。
 
 装到手机上测试用 `scripts/install_dev.sh`：打包并装到所有连着电脑的 Android 手机和 iPhone 上。
 
-`HttpBackend`（`lib/app/http_backend.dart`，由 `lib/services/api/api_client.dart` 和各 feature 的 `repository/` 组成）把所有数据交给后端：账号、设计快照、发布的房子、云备份、名片、需求、报价、合作、聊天、通知和审核。已经没有离线演示模式。
+各 feature 的 `Http…Repository`（`lib/features/*/repository/`，共用 `lib/service/api/api_client.dart`）把所有数据交给后端：账号、设计快照、发布的房子、云备份、名片、需求、报价、合作、聊天、通知和审核。已经没有离线演示模式。
 
 登录只有 Google 和 Apple，第一次接入需要：
 

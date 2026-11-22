@@ -1,7 +1,7 @@
 import 'dart:ui' show Color, Offset;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/render3d/bsp.dart';
-import 'package:yusal/render3d/scene_model.dart';
+import 'package:yusal/features/editor/engine/render3d/bsp.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
 
 Face3 quad(List<Vec3> p, {List<Offset>? uv}) =>
     Face3(p, const Color(0xffffffff), doubleSided: true, uv: uv);

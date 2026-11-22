@@ -1,17 +1,17 @@
 import 'package:uuid/uuid.dart';
 
-import 'package:yusal/core/analysis/house_analysis.dart';
-import 'package:yusal/core/checks/check_engine.dart';
-import 'package:yusal/core/commands/extras_commands.dart';
-import 'package:yusal/core/commands/house_spec.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
+import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
+import 'package:yusal/features/editor/engine/core/commands/extras_commands.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_spec.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/houses.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 
-export 'package:yusal/core/commands/house_spec.dart' show roomWall;
+export 'package:yusal/features/editor/engine/core/commands/house_spec.dart' show roomWall;
 
 /// Implemented by the design editor so design actions can reach it.
 abstract interface class DesignHost {

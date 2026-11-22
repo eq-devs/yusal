@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/core/commands/house_wish.dart';
-import 'package:yusal/core/document/house_document.dart';
-import 'package:yusal/core/number_input.dart';
-import 'package:yusal/render2d/furniture_names.dart';
-import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_wish.dart';
+import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/number_input.dart';
+import 'package:yusal/features/editor/engine/render2d/furniture_names.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
 
 /// What the questions collect before a house is asked for.
 class HouseWish {

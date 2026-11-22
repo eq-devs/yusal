@@ -1,14 +1,14 @@
 import 'dart:async';
+import 'support/test_scope.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/app/http_backend.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/services/push/push_setup.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/service/push/push_setup.dart';
 
 import 'http_backend_test.dart' show FakeApi;
 
@@ -48,16 +48,17 @@ class FakeMessaging implements PushMessaging {
 
 void main() {
   late FakeApi api;
-  late HttpBackend backend;
+  late TestHttp backend;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     AppSettings.instance.lang = AppLang.kk;
     api = FakeApi();
-    backend = HttpBackend('https://api.test', client: MockClient(api.handle));
+    backend = TestHttp('https://api.test', client: MockClient(api.handle));
   });
 
-  Future<void> signIn() => backend.signInWithProvider('google', 'id-token');
+  Future<void> signIn() =>
+      backend.auth.signInWithProvider('google', 'id-token');
 
   List<Map<String, dynamic>> registrations() => [
         for (final r in api.requests)
@@ -80,7 +81,7 @@ void main() {
     await signIn();
     final m = FakeMessaging();
     addTearDown(m.close);
-    await PushSetup(backend, GlobalKey<NavigatorState>(), messaging: m).start();
+    await PushSetup(backend.api, GlobalKey<NavigatorState>(), messaging: m).start();
     expect(registrations(), [
       {'token': 'tok-1', 'platform': PushSetup.platform, 'language': 'kk'}
     ]);
@@ -93,7 +94,7 @@ void main() {
     final m = FakeMessaging();
     addTearDown(m.close);
     unawaited(
-        PushSetup(backend, GlobalKey<NavigatorState>(), messaging: m).start());
+        PushSetup(backend.api, GlobalKey<NavigatorState>(), messaging: m).start());
     await pumpEventQueue();
     expect(m.asked, 0, reason: 'nobody is signed in yet');
     expect(registrations(), isEmpty);
@@ -105,10 +106,10 @@ void main() {
 
   test('without Firebase config or permission nothing is registered', () async {
     await signIn();
-    await PushSetup(backend, GlobalKey<NavigatorState>(),
+    await PushSetup(backend.api, GlobalKey<NavigatorState>(),
             messaging: FakeMessaging(available: false))
         .start();
-    await PushSetup(backend, GlobalKey<NavigatorState>(),
+    await PushSetup(backend.api, GlobalKey<NavigatorState>(),
             messaging: FakeMessaging(allowed: false))
         .start();
     expect(registrations(), isEmpty);
@@ -124,7 +125,7 @@ void main() {
     final m = FakeMessaging(allowed: false)
       ..launch = {'ref_type': 'cooperation', 'ref_id': 'k1'};
     addTearDown(m.close);
-    final setup = PushSetup(backend, nav,
+    final setup = PushSetup(backend.api, nav,
         messaging: m, opener: (_, type, id) async => opened.add((type, id)));
     await setup.start();
     await t.pump();

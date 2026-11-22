@@ -2,22 +2,22 @@ import 'dart:async';
 
 import 'package:yusal/features/chat/repository/chat_repository.dart';
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/chat/state/inbox.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/coop/page.dart';
 import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/features/home/pages/post.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/components.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/chat/page.dart';
-import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
 import 'package:yusal/features/me/pages/trust.dart';
 import 'package:yusal/features/profile/page.dart';
-import 'package:yusal/shared/brand/yicon.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Envelope button with the unread count of chats and notices together.
 class InboxButton extends StatelessWidget {

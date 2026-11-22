@@ -1,6 +1,7 @@
 // Screens of the create-house flow with the voice orb over them, for
 // visual review (not run in CI).
 // SHOTS_OUT=/path flutter test test/ui_shots/editor_shots_test.dart
+import '../support/mock/backend.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -8,12 +9,12 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/theme/tokens.dart';
-import 'package:yusal/core/commands/kz_template.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/constant/tokens.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
 import 'package:yusal/features/editor/page.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/state/session.dart';
 import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 
@@ -101,7 +102,8 @@ void main() {
             builder: (context, child) => AppScope(
                 child: VoiceHost(
                     navigator: navigator,
-                    repos: VoiceMock(backend),
+                    repos: voiceRepos(VoiceMock(backend)),
+                    voice: backend,
                     child: child!)),
             home: direct
                 ? HouseEditor(entry: ProjectEntry(id, doc), store: store)

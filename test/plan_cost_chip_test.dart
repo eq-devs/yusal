@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/house_templates.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
 import 'package:yusal/features/editor/page.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import 'storage_test.dart' show MemoryFiles;
 

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_backend.dart';
 import 'package:yusal/features/profile/widgets/profile_card.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 /// Lists of trades and regions are joined with 、 only in Chinese; a

@@ -1,6 +1,6 @@
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/ui/house_progress.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/ui/house_progress.dart';
 
 /// One of my houses as the platform sees it: a local design (if any) plus
 /// every demand, quote and cooperation hanging off it. A demand published

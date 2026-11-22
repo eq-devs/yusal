@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/ui/unsaved_changes_guard.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/ui/unsaved_changes_guard.dart';
 
 void main() {
   testWidgets('submitting a draft blocks the leave dialog', (t) async {

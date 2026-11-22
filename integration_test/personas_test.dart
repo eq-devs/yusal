@@ -1,15 +1,13 @@
 // The one-tap test accounts on the dev sign-in, against a yusal-api run
 // with DEV_LOGIN=true and DEV_ADMIN=true, filled by yusal-api
 // tool/seed/seed.py. Run like backend_flow_test.dart.
+import '../test/support/test_scope.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/main.dart';
-import 'package:yusal/app/http_backend.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import 'e2e_support.dart';
 
@@ -25,16 +23,14 @@ void main() {
     await prefs.remove('yusal_api.refresh_token');
     await prefs.setString('house-lang', 'zh');
     AppSettings.instance.lang = AppLang.zh;
-    final repos = HttpBackend(api);
-    await repos.restore();
+    final repos = TestHttp(api);
+    await repos.api.restore();
     await t.pumpWidget(RepaintBoundary(
-        key: shotKey,
-        child: ProviderScope(
-            child: HouseApp(repos: repos, store: ProjectStore()))));
+        key: shotKey, child: testApp(repos, store: ProjectStore())));
     await idle(t, 1000);
 
     Future<void> chip(String key, String name) async {
-      if (repos.currentAccount != null) await signOut(t, repos);
+      if (repos.api.currentAccount != null) await signOut(t, repos);
       await home(t);
       await tab(t, '我的');
       await tapIt(
@@ -44,15 +40,15 @@ void main() {
       await scrollTo(t, chip);
       await tapIt(t, chip);
       await waitFor(t, find.byTooltip('改称呼'));
-      expect(repos.currentAccount?.displayName, name);
+      expect(repos.api.currentAccount?.displayName, name);
     }
 
     await chip('Test Owner', 'Test Owner');
     await shot(t, 't01-login-chips-owner');
-    expect(await io(t, repos.myProfiles), isEmpty);
+    expect(await io(t, repos.profiles.myProfiles), isEmpty);
 
     await chip('seed:aigerim', 'Айгерім Сейтқали');
-    expect(await io(t, repos.myProfiles), isEmpty);
+    expect(await io(t, repos.profiles.myProfiles), isEmpty);
 
     for (final (key, name) in [
       ('seed:bolat', 'Болат Жұмабеков'),
@@ -60,19 +56,19 @@ void main() {
       ('seed:gulnar', 'Гүлнар Омарова'),
     ]) {
       await chip(key, name);
-      expect(await io(t, repos.myProfiles), isNotEmpty,
+      expect(await io(t, repos.profiles.myProfiles), isNotEmpty,
           reason: '$name has a service profile');
     }
 
     await chip('Test Admin', 'Test Admin');
-    expect(repos.currentAccount!.role, isNotNull);
+    expect(repos.api.currentAccount!.role, isNotNull);
     await shot(t, 't02-admin-entry');
 
     await chip('seed:moderator', 'Әлия · модератор');
-    expect(repos.currentAccount!.role, 'moderator');
+    expect(repos.api.currentAccount!.role, 'moderator');
 
     await chip('seed:spam', 'Стройбаза Опт');
-    expect(repos.currentAccount!.restricted, isTrue);
+    expect(repos.api.currentAccount!.restricted, isTrue);
     await signOut(t, repos);
     expect(t.takeException(), isNull);
   });

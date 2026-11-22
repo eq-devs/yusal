@@ -3,8 +3,8 @@ import 'package:yusal/features/auth/repository/auth_repository.dart';
 import 'package:yusal/features/backup/repository/backup_repository.dart';
 import 'package:yusal/features/home/repository/post_repository.dart';
 import 'package:yusal/features/profile/repository/profile_repository.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/state/session.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/state/session.dart';
 
 /// Everything the house page shows: the post (null when it is gone), whether
 /// the caller liked it, the demands recruiting for it, critiques, the

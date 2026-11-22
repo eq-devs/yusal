@@ -1,18 +1,18 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/core/document/house_document.dart';
-import 'package:yusal/core/serialization/house_codec.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/serialization/house_codec.dart';
 import 'package:yusal/features/backup/repository/backup_repository.dart';
 import 'package:yusal/features/backup/state/backup.dart';
 
 export 'package:yusal/features/backup/state/backup.dart' show BackupMarks;
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 
 /// Compares the local design with its cloud copy.
 BackupState backupState(

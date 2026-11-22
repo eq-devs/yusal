@@ -5,10 +5,10 @@ import 'package:yusal/features/apply/repository/application_repository.dart';
 import 'package:yusal/features/auth/repository/auth_repository.dart';
 import 'package:yusal/features/chat/repository/chat_repository.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/state/session.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/state/session.dart';
 
 /// One conversation as its page shows it.
 class ChatData {

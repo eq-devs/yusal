@@ -3,18 +3,18 @@ import 'package:yusal/features/apply/repository/application_repository.dart';
 import 'package:yusal/features/apply/state/apply.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/demand/page.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
+import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/profile/pages/edit.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/model/form.dart';
 import 'package:yusal/features/voice/state/screen.dart';
-import 'package:yusal/shared/brand/yicon.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Sign-up (hire) or quote (contract) editor. Sending again creates a new
 /// version of the same application; history is kept.

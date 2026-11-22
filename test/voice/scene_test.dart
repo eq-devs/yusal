@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/voice/model/scene.dart';
 
 void main() {

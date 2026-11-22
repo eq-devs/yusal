@@ -4,21 +4,19 @@
 //   flutter test integration_test/moderation_flow_test.dart -d <device> \
 //     --dart-define=YUSAL_API=http://localhost:8080 \
 //     --dart-define=E2E_SHOTS=$PWD/test-screens
+import '../test/support/test_scope.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/main.dart';
-import 'package:yusal/app/http_backend.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/chat/page.dart';
 import 'package:yusal/features/admin/page.dart';
-import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/services/storage/last_open.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import 'e2e_support.dart';
 
@@ -39,9 +37,9 @@ Future<String?> failure(WidgetTester t, Future<Object?> Function() f) =>
       }
     });
 
-Future<void> openAdmin(WidgetTester t, HttpBackend repos) async {
+Future<void> openAdmin(WidgetTester t, TestHttp repos) async {
   await signIn(t, repos, adminName);
-  expect(repos.currentAccount!.role, isNotNull,
+  expect(repos.api.currentAccount!.role, isNotNull,
       reason: 'make "$adminName" an admin with go run ./cmd/setadmin <id>');
   await home(t);
   await tab(t, '我的');
@@ -78,21 +76,19 @@ void main() {
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
 
-    final repos = HttpBackend(api);
-    await repos.restore();
+    final repos = TestHttp(api);
+    await repos.api.restore();
     try {
       await t.pumpWidget(RepaintBoundary(
-          key: shotKey,
-          child: ProviderScope(
-              child: HouseApp(repos: repos, store: ProjectStore()))));
+          key: shotKey, child: testApp(repos, store: ProjectStore())));
       await idle(t, 1000);
 
       // ── Owner publishes two demands; both wait for review ──
       await signIn(t, repos, owner);
-      final ownerId = repos.currentAccount!.id;
+      final ownerId = repos.api.currentAccount!.id;
       await publishDemand(t, good);
       await publishDemand(t, bad);
-      var mine = await io(t, repos.myDemands);
+      var mine = await io(t, repos.demands.myDemands);
       final goodId = mine.singleWhere((d) => d.current.title == good).id;
       final badId = mine.singleWhere((d) => d.current.title == bad).id;
       expect(mine.map((d) => d.status).toSet(), {DemandStatus.pendingReview});
@@ -113,18 +109,18 @@ void main() {
       await idle(t, 1000);
       expect(find.text(good), findsNothing);
       expect(find.text(bad), findsNothing);
-      final audit = (await io(t, repos.audit)).items;
+      final audit = (await io(t, repos.admin.audit)).items;
       expect(audit.where((a) => a.targetId == goodId || a.targetId == badId),
           hasLength(2));
 
       // ── The owner sees the outcome and gets both notices ──
       await signIn(t, repos, owner);
-      mine = await io(t, repos.myDemands);
+      mine = await io(t, repos.demands.myDemands);
       expect(mine.singleWhere((d) => d.id == goodId).status, DemandStatus.open);
       final rejected = mine.singleWhere((d) => d.id == badId);
       expect(rejected.status, DemandStatus.rejected);
       expect(rejected.rejectReason, contains('不要收押金'));
-      final notes = await io(t, repos.notifications);
+      final notes = await io(t, repos.notifications.notifications);
       expect(notes.where((n) => n.refId == goodId), isNotEmpty);
       expect(notes.where((n) => n.refId == badId), isNotEmpty);
       await home(t);
@@ -135,14 +131,16 @@ void main() {
 
       // ── A worker messages Rita; Rita reports the account from chat ──
       await signIn(t, repos, worker);
-      final workerId = repos.currentAccount!.id;
+      final workerId = repos.api.currentAccount!.id;
       await createProfile(t, worker);
       await signIn(t, repos, rita);
-      final ritaId = repos.currentAccount!.id;
+      final ritaId = repos.api.currentAccount!.id;
       await signIn(t, repos, worker);
-      final conv = await io(t, () => repos.openConversation(ritaId));
-      await io(t,
-          () => repos.send(conv.id, MessageKind.text, text: '加我微信，先交押金 $run'));
+      final conv = await io(t, () => repos.chat.openConversation(ritaId));
+      await io(
+          t,
+          () => repos.chat
+              .send(conv.id, MessageKind.text, text: '加我微信，先交押金 $run'));
       await signIn(t, repos, rita);
       await home(t);
       await open(t, ChatPage(conversationId: conv.id));
@@ -166,23 +164,23 @@ void main() {
       await tapIt(t, find.text('自己填写…'));
       await answerDialog(t, '收押金，限制账号 $run');
       await idle(t, 1000);
-      final reports = (await io(t, repos.reports)).items;
+      final reports = (await io(t, repos.admin.reports)).items;
       final report = reports.singleWhere((r) => r.report.targetId == workerId);
       expect(report.report.status, ReportStatus.upheld);
 
       // ── Restricted: cannot publish, apply or message ──
       await signIn(t, repos, worker);
-      expect(repos.currentAccount!.restricted, isTrue);
+      expect(repos.api.currentAccount!.restricted, isTrue);
       expect(
           await failure(
-              t, () => repos.send(conv.id, MessageKind.text, text: 'hi')),
+              t, () => repos.chat.send(conv.id, MessageKind.text, text: 'hi')),
           ApiCodes.restricted);
-      final openDemand = await io(t, () => repos.demand(goodId));
-      final profile = (await io(t, repos.myProfiles)).single;
+      final openDemand = await io(t, () => repos.demands.demand(goodId));
+      final profile = (await io(t, repos.profiles.myProfiles)).single;
       expect(
           await failure(
               t,
-              () => repos.submit(
+              () => repos.applications.submit(
                   demandId: goodId,
                   profileId: profile.id,
                   requestId: 'restricted-$run',
@@ -196,9 +194,9 @@ void main() {
       expect(
           await failure(
               t,
-              () => repos
+              () => repos.demands
                   .saveDraft(DemandType.contract, openDemand!.current)
-                  .then((d) => repos.publish(d.id))),
+                  .then((d) => repos.demands.publish(d.id))),
           ApiCodes.restricted);
       // The UI says so too.
       await home(t);

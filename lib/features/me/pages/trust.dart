@@ -3,15 +3,15 @@ import 'dart:typed_data';
 import 'package:yusal/features/me/repository/trust_repository.dart';
 import 'package:yusal/features/me/state/trust.dart';
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/model/admin_models.dart';
-import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/photos.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/admin_models.dart';
+import 'package:yusal/features/shared/ui/components.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/photos.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 
 // User-facing trust and safety: reporting, appeals, worker verification,
 // new-demand alerts and push settings.

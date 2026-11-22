@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
-import 'package:yusal/core/document/house_document.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 
 /// Result of snapping the free end of a wall that is being drawn or resized.
 /// [connected] is true when the end lands on another physical wall, so the

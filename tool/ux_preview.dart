@@ -1,9 +1,9 @@
 // Developer preview entry point; the production app starts at lib/main.dart.
 import 'package:flutter/material.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/page.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

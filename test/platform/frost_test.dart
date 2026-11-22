@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 
 /// Frosted surfaces blur only where the GPU affords it (see [frostedGlass]).
 void main() {

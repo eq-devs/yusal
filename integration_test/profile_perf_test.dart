@@ -13,16 +13,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/main.dart' show HouseApp;
-import 'package:yusal/shared/ui/widgets.dart' show Avatar, debugFrostedGlass;
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/ui/widgets.dart'
+    show Avatar, debugFrostedGlass;
 import '../test/support/mock/mock_backend.dart';
 import '../test/support/mock/mock_seed.dart';
 import 'package:yusal/features/profile/page.dart';
-import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/features/shell/page.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import '../test/storage_test.dart' show MemoryFiles;
 
@@ -128,10 +127,8 @@ void main() {
 
     // The whole app as it ships: voice orb, theme, routes.
     final b = MockBackend(latency: Duration.zero)..signInAs(SeedIds.mason);
-    await t.pumpWidget(ProviderScope(
-        key: UniqueKey(),
-        child: HouseApp(
-            repos: b, store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(testApp(b,
+        store: ProjectStore(fileSystem: MemoryFiles()), key: UniqueKey()));
     Future<void> rest() async {
       for (var i = 0; i < 90; i++) {
         await t.pump(const Duration(milliseconds: 16));
@@ -147,10 +144,8 @@ void main() {
         t.binding.hasScheduledFrame;
     await scrollScenario('app me tab scroll');
     await t.pumpWidget(const SizedBox());
-    await t.pumpWidget(ProviderScope(
-        key: UniqueKey(),
-        child: HouseApp(
-            repos: b, store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(testApp(b,
+        store: ProjectStore(fileSystem: MemoryFiles()), key: UniqueKey()));
     await rest();
     appNavigatorPush(t, const ProfilePage(profileId: 'prof_mason'));
     await rest();

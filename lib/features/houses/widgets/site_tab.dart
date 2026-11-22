@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/features/coop/repository/cooperation_repository.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/model/rules.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/houses/model/my_house.dart';
-import 'package:yusal/shared/ui/photos.dart';
-import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/features/shared/ui/photos.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
 
 /// The building-site tab of a house: each confirmed cooperation with its
 /// inspection points and daily work log.

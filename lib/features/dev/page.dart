@@ -8,11 +8,11 @@ import 'dart:math' as math;
 import 'dart:io' show exit;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:yusal/core/commands/house_templates.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/document/house_document.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/render3d/scene_view.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_view.dart';
 
 void main() => runApp(
     const MaterialApp(debugShowCheckedModeBanner: false, home: SceneLab()));

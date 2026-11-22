@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/theme/tokens.dart';
-import 'package:yusal/services/storage/project_store.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/constant/tokens.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/page.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/backup/page.dart';
 import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/features/home/pages/post.dart';
 import 'package:yusal/features/home/pages/publish_post.dart';
 import 'package:yusal/features/demand/pages/from_design.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/shared/ui/house_progress.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/components.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/ui/house_progress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/houses/model/my_house.dart';
 import 'package:yusal/features/houses/state/my_houses.dart';
 import 'package:yusal/features/projects/state/projects.dart';
 import 'package:yusal/features/houses/widgets/my_jobs.dart';
 import 'package:yusal/features/houses/page.dart';
-import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
 
 /// Second tab, "我的房子": where each of my houses stands. One title, then
 /// what needs me (to-dos and houses with platform activity), then my

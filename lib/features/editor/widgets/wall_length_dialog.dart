@@ -1,6 +1,6 @@
-import 'package:yusal/core/number_input.dart';
+import 'package:yusal/features/editor/engine/core/number_input.dart';
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 
 typedef WallLengthChoice = ({int length, String direction});
 

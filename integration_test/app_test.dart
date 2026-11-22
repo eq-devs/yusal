@@ -1,18 +1,17 @@
 import 'dart:io' show Platform;
+import '../test/support/test_scope.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yusal/app/app.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/projects/page.dart';
-import 'package:yusal/services/storage/last_open.dart';
-import 'package:yusal/services/storage/project_store.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 
 import '../test/support/mock/mock_backend.dart';
 
@@ -30,8 +29,7 @@ Future<void> startApp(WidgetTester tester) async {
   (await SharedPreferences.getInstance()).setString('house-lang', 'zh');
   await LastOpenProject.write(null);
   await AppSettings.instance.load();
-  runApp(ProviderScope(
-      child: HouseApp(repos: MockBackend(latency: Duration.zero))));
+  runApp(testApp(MockBackend(latency: Duration.zero)));
   await tester.pumpAndSettle();
   await tester.tap(find.text('我的房子').last);
 }

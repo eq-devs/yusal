@@ -4,19 +4,19 @@ import 'dart:ui' show lerpDouble;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:motor/motor.dart' as motor;
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/backup/page.dart';
 import 'package:yusal/features/chat/pages/inbox.dart';
 import 'package:yusal/features/explore/page.dart';
 import 'package:yusal/features/me/page.dart';
 import 'package:yusal/features/projects/page.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart' show Frost, glassAlpha;
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart' show Frost, glassAlpha;
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
 import 'package:yusal/features/voice/actions/nav.dart';
 import 'package:yusal/features/voice/state/screen.dart';
-import 'package:yusal/shared/brand/yicon.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Tabs of the app shell, in order.
 abstract final class ShellTab {

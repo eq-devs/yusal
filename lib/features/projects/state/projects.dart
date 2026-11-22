@@ -2,9 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/coop/repository/cooperation_repository.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
 import 'package:yusal/features/profile/repository/profile_repository.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/state/session.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/state/session.dart';
 
 /// Whether the signed-in account has a pro profile (and so a "my work" tab).
 final isProProvider = FutureProvider.autoDispose<bool>((ref) async =>

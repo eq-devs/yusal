@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/demand/widgets/demand_card.dart';
 import 'package:yusal/features/coop/page.dart';
 import 'package:yusal/features/demand/pages/applications.dart';
 import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/features/demand/pages/publish.dart';
 import 'package:yusal/features/home/pages/post.dart';
-import 'package:yusal/shared/ui/house_progress.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/ui/house_progress.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/components.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/houses/model/my_house.dart';
 import 'package:yusal/features/houses/state/my_houses.dart';
 import 'package:yusal/features/houses/widgets/site_tab.dart';
-import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
 
 /// One house's workspace: where it stands, and every demand, quote and
 /// cooperation for it in one place. Tabs: find people, quotes, cooperation,

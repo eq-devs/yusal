@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/me/repository/trust_repository.dart';
-import 'package:yusal/shared/model/admin_models.dart';
+import 'package:yusal/features/shared/model/admin_models.dart';
 
 /// Appeals I filed.
 final myAppealsProvider = FutureProvider.autoDispose<List<Appeal>>(

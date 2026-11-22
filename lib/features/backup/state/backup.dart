@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/features/backup/repository/backup_repository.dart';
-import 'package:yusal/services/storage/project_store.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/shared/model/models.dart';
 
 /// What this device last synced per design, so a cloud copy changed on
 /// another device is recognised instead of overwritten.

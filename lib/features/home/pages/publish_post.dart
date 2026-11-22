@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/features/home/repository/post_repository.dart';
 import 'package:yusal/features/backup/repository/backup_repository.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/services/storage/project_store.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/model/design_snapshot.dart';
-import 'package:yusal/render2d/planning_names.dart' show costLineName;
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/shared/ui/unsaved_changes_guard.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/design_snapshot.dart';
+import 'package:yusal/features/editor/engine/render2d/planning_names.dart' show costLineName;
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/ui/unsaved_changes_guard.dart';
 import 'package:yusal/features/home/pages/post.dart';
 
 /// Shares a local design to the feed: a title, a few words, the region,

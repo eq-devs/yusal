@@ -1,12 +1,13 @@
 import 'dart:async';
 
+import '../support/mock/backend.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/page.dart';
 import '../support/mock/mock_backend.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/actions.dart';
 import 'package:yusal/features/voice/actions/design.dart';
@@ -93,7 +94,7 @@ void main() {
   VoiceSession session(ScriptedBackend backend) => VoiceSession(
       backend: backend,
       executor: ActionExecutor(appActions, confirm: (_, __) async => true),
-      repos: repos,
+      repos: voiceRepos(repos),
       loggedIn: () => true,
       sessionId: 's1');
 
@@ -333,7 +334,7 @@ void main() {
     final s = VoiceSession(
         backend: backend,
         executor: ActionExecutor(appActions, confirm: (_, __) async => true),
-        repos: repos,
+        repos: voiceRepos(repos),
         loggedIn: () => true,
         sessionId: 's1');
     final first = s.say('加一层楼', spoken: true);

@@ -4,22 +4,22 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/theme/tokens.dart';
-import 'package:yusal/core/analysis/build_schedule.dart';
-import 'package:yusal/core/analysis/cost_estimate.dart';
-import 'package:yusal/core/analysis/heat_loss.dart';
-import 'package:yusal/core/analysis/house_analysis.dart';
-import 'package:yusal/core/analysis/site_analysis.dart';
-import 'package:yusal/core/analysis/utility_plan.dart';
-import 'package:yusal/core/document/house_document.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/render2d/planning_names.dart';
-import 'package:yusal/render2d/section_painters.dart';
-import 'package:yusal/render2d/site_plan_painter.dart';
-import 'package:yusal/render3d/scene_model.dart';
-import 'package:yusal/render3d/scene_view.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/constant/tokens.dart';
+import 'package:yusal/features/editor/engine/core/analysis/build_schedule.dart';
+import 'package:yusal/features/editor/engine/core/analysis/cost_estimate.dart';
+import 'package:yusal/features/editor/engine/core/analysis/heat_loss.dart';
+import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
+import 'package:yusal/features/editor/engine/core/analysis/site_analysis.dart';
+import 'package:yusal/features/editor/engine/core/analysis/utility_plan.dart';
+import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/render2d/planning_names.dart';
+import 'package:yusal/features/editor/engine/render2d/section_painters.dart';
+import 'package:yusal/features/editor/engine/render2d/site_plan_painter.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_view.dart';
 
 /// A drawing set to print or send to builders: A4 landscape sheets drawn
 /// with the app's own painters (plans, sections, 3D, site) and tables,

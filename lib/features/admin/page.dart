@@ -5,19 +5,19 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/admin/state/admin.dart';
-import 'package:yusal/shared/model/admin_models.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/features/shared/model/admin_models.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/features/home/pages/post.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
+import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/profile/page.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 
 part 'pages/console.dart';
 
@@ -1170,7 +1170,7 @@ class _Photo extends StatelessWidget {
           fit: BoxFit.cover);
     } else {
       final base = switch (context.read(adminRepositoryProvider)) {
-        final HttpAdminRepository api => api.baseUrl,
+        final HttpAdminRepository admin => admin.api.baseUrl,
         _ => '',
       };
       img = Image.network('$base$src', fit: BoxFit.cover);

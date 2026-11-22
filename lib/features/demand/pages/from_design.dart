@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/features/demand/state/demand.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/render2d/planning_names.dart';
-import 'package:yusal/services/storage/project_store.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/model/design_snapshot.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/render2d/planning_names.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/design_snapshot.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/features/demand/pages/publish.dart';
 

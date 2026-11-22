@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../support/mock/backend.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/page.dart';
 import '../support/mock/mock_backend.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/actions.dart';
 import 'package:yusal/features/voice/actions/design.dart';
@@ -43,7 +44,7 @@ void main() {
     Future<ActionResult> say(String id,
         [Map<String, Object?> args = const {}]) async {
       final result = await executor.run(
-          id, args, VoiceScreens.context(repos, loggedIn: true),
+          id, args, VoiceScreens.context(voiceRepos(repos), loggedIn: true),
           source: Source.voice);
       await t.pump();
       return result;

@@ -1,18 +1,18 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/home/state/plan_cover.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/serialization/house_codec.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/render2d/furniture_names.dart';
-import 'package:yusal/render3d/scene_view.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/serialization/house_codec.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/render2d/furniture_names.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_view.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 
 HouseDocument? _document(DesignSnapshot? snapshot) {
   final text = snapshot?.planJson;

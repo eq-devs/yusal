@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/checks/check_engine.dart';
-import 'package:yusal/core/commands/house_spec.dart';
-import 'package:yusal/core/commands/house_wish.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_spec.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_wish.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 
 void main() {
   var n = 0;

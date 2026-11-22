@@ -3,13 +3,13 @@ import 'package:yusal/features/demand/state/demand.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/home/widgets/plan_viewer.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/demand/page.dart';
 
 /// Base address of public share pages (to be served by the web host).

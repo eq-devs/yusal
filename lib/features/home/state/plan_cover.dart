@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/backup/repository/backup_repository.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/shared/model/models.dart';
 
 /// The design behind a plan cover, keyed by (snapshot id, post id, demand
 /// id). Null when it cannot be read: the cover then shows its paper.

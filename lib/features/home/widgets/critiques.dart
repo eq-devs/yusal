@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/features/home/state/post.dart';
 import 'package:yusal/features/home/repository/post_repository.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/services/api/api_failure.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/me/pages/trust.dart';
 import 'package:yusal/features/profile/page.dart';
-import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/shared/theme/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/shared/brand/yicon.dart';
+import 'package:yusal/features/shared/ui/components.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// "What the author wants to hear about": the focus topics of a shared
 /// house, shown under its title.

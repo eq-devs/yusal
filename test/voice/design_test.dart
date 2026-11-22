@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import '../support/mock/backend.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/page.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/model/action.dart';
-import 'package:yusal/core/analysis/house_analysis.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/voice/actions/actions.dart';
 import 'package:yusal/features/voice/actions/design.dart';
 import 'package:yusal/features/voice/state/executor.dart';
@@ -23,7 +24,8 @@ void main() {
       seed: false);
 
   Future<ActionResult> say(String id, [Map<String, Object?> args = const {}]) =>
-      executor.run(id, args, VoiceScreens.context(repos, loggedIn: true),
+      executor.run(
+          id, args, VoiceScreens.context(voiceRepos(repos), loggedIn: true),
           source: Source.voice);
 
   Map<String, String> shown(String kind) => {
@@ -215,7 +217,7 @@ void main() {
     expect((await say('design.add_floor')).code, ActionCodes.notAvailable);
     expect(
         appActions
-            .offered(VoiceScreens.context(repos, loggedIn: true))
+            .offered(VoiceScreens.context(voiceRepos(repos), loggedIn: true))
             .map((a) => a.id),
         isNot(contains('design.add_floor')));
   });

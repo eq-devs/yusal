@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/home/repository/post_repository.dart';
-import 'package:yusal/shared/model/models.dart';
+import 'package:yusal/features/shared/model/models.dart';
 
 /// The feed's filter as a key: (region, sort, query, open for builders,
 /// asking feedback, retry). The retry count makes "try again" a new load.

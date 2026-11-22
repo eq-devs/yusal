@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
-import 'package:yusal/services/update/code_push.dart';
+import 'package:yusal/service/update/code_push.dart';
 
 class _FakeUpdater implements ShorebirdUpdater {
   _FakeUpdater({this.available = true, this.status = UpdateStatus.outdated});

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/main.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import '../support/mock/mock_backend.dart';
 import 'package:yusal/features/demand/pages/from_design.dart';
 import 'package:yusal/features/home/pages/publish_post.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 void main() {
@@ -29,8 +28,7 @@ void main() {
         timestamp: '2026-11-04T00:00:00Z',
         newId: () => 'test_${id++}'));
     final backend = MockBackend(latency: Duration.zero);
-    await t.pumpWidget(
-        ProviderScope(child: HouseApp(repos: backend, store: store)));
+    await t.pumpWidget(testApp(backend, store: store));
     await t.pumpAndSettle();
     await t.tap(find.text('我的房子').last);
     await t.pumpAndSettle();

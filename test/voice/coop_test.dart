@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/shared/model/models.dart';
-import 'package:yusal/shared/model/rules.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
 import 'package:yusal/features/coop/page.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/actions.dart';
 import 'package:yusal/features/voice/state/executor.dart';
@@ -28,13 +28,14 @@ void main() {
     final coop = await b.invite('app_team_wall', terms());
 
     Set<String> offered() => {
-          for (final a
-              in appActions.offered(VoiceScreens.context(b, loggedIn: true)))
+          for (final a in appActions
+              .offered(VoiceScreens.context(voiceRepos(b), loggedIn: true)))
             if (a.id.startsWith('coop.') && !a.id.endsWith('_milestone')) a.id
         };
     Future<ActionResult> say(String id,
             [Map<String, Object?> args = const {}]) =>
-        executor.run(id, args, VoiceScreens.context(b, loggedIn: true),
+        executor.run(
+            id, args, VoiceScreens.context(voiceRepos(b), loggedIn: true),
             source: Source.voice);
     Future<void> open(String who) async {
       b.signInAs(who);
@@ -84,13 +85,14 @@ void main() {
     await b.confirm(coop.id);
 
     Set<String> offered() => {
-          for (final a
-              in appActions.offered(VoiceScreens.context(b, loggedIn: true)))
+          for (final a in appActions
+              .offered(VoiceScreens.context(voiceRepos(b), loggedIn: true)))
             if (a.id.endsWith('_milestone')) a.id
         };
     Future<ActionResult> say(String id,
             [Map<String, Object?> args = const {}]) =>
-        executor.run(id, args, VoiceScreens.context(b, loggedIn: true),
+        executor.run(
+            id, args, VoiceScreens.context(voiceRepos(b), loggedIn: true),
             source: Source.voice);
     Future<void> open(String who) async {
       b.signInAs(who);

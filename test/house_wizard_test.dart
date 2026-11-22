@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'support/mock/backend.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/editor/page.dart';
 import 'package:yusal/features/editor/model/house_wish.dart';
-import 'package:yusal/services/storage/project_store.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/state/session.dart';
 import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 
@@ -35,7 +36,8 @@ void main() {
         navigatorKey: navigator,
         builder: (context, child) => VoiceHost(
             navigator: navigator,
-            repos: VoiceMock(backend),
+            repos: voiceRepos(VoiceMock(backend)),
+            voice: backend,
             child: AppScope(child: child!)),
         home: HouseHome(store: ProjectStore(fileSystem: MemoryFiles()))));
     await t.pumpAndSettle();

@@ -1,9 +1,9 @@
 // How lists, places, floors, units and dates read in each language: the
 // Chinese forms must not leak into Kazakh and Russian.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/settings/settings.dart';
-import 'package:yusal/core/commands/house_templates.dart';
-import 'package:yusal/shared/l10n/l10n.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
+import 'package:yusal/localization/l10n.dart';
 
 void main() {
   tearDown(() => AppSettings.instance.lang = AppLang.zh);

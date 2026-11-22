@@ -1064,5 +1064,6 @@ Future<Uint8List> buildPlanPng(DrawingInput input, int floorIndex) async {
 }
 
 /// Names of the sheets in the set, for tests and the export dialog.
+@visibleForTesting
 List<String> drawingSheetTitles(DrawingInput input) =>
     [for (final s in _sheets(input)) s.title];

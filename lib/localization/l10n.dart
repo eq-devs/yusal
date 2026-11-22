@@ -321,19 +321,6 @@ String noticeText(AppNotification n) {
   };
 }
 
-/// Preset reasons a moderator picks; stored as `code:<name>` and shown in
-/// the reader's language. Anything else is the moderator's own words.
-const reasonCodes = [
-  'contact',
-  'fake',
-  'illegal',
-  'incomplete',
-  'duplicate',
-  'abuse',
-  'spam',
-  'ok'
-];
-
 String reasonCodeText(String code) => switch (code) {
       'contact' => tr3('正文包含联系方式，请通过平台沟通', 'Мәтінде байланыс деректері бар',
           'В тексте есть контакты, общайтесь через приложение'),

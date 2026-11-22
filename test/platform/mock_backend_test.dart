@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import '../support/mock/mock_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
 import '../support/mock/mock_backend.dart';

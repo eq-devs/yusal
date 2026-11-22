@@ -301,11 +301,7 @@ class Mat {
   static const paving = Color(0xffB9B6AE);
   static const fence = Color(0xff7B6A55);
   static const rugs = [Color(0xff8E1C1C), Color(0xff6E1630), Color(0xff1F3B5A)];
-  static const rugBorders = [
-    Color(0xff1D2A48),
-    Color(0xff2C1A12),
-    Color(0xff7A1B1B)
-  ];
+
   static const wallRugs = [
     Color(0xff2B0E16),
     Color(0xff14233A),

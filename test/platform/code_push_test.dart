@@ -43,7 +43,6 @@ void main() {
     await push.check();
     expect(u.checks, 1);
     expect(u.updates, 1);
-    expect(await push.currentPatch(), 3);
   });
 
   test('up to date: no download', () async {
@@ -58,10 +57,9 @@ void main() {
     expect(u.updates, 1);
   });
 
-  test('unavailable updater: start and currentPatch are no-ops', () async {
+  test('unavailable updater: start is a no-op', () async {
     final u = _FakeUpdater(available: false);
     CodePush(u).start();
     expect(u.checks, 0);
-    expect(await CodePush(u).currentPatch(), isNull);
   });
 }

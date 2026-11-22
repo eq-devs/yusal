@@ -22,17 +22,6 @@ class CodePush with WidgetsBindingObserver {
   /// Don't ask the server again on every quick app switch.
   static const _minInterval = Duration(minutes: 15);
 
-  /// Patch the app is running now; null on the release itself or when the
-  /// updater is unavailable.
-  Future<int?> currentPatch() async {
-    if (!_updater.isAvailable) return null;
-    try {
-      return (await _updater.readCurrentPatch())?.number;
-    } catch (_) {
-      return null;
-    }
-  }
-
   void start() {
     if (!_updater.isAvailable) return;
     WidgetsBinding.instance.addObserver(this);

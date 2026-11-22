@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:meta/meta.dart';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,6 +62,7 @@ final class HttpVoiceRepository implements VoiceBackend, SpeechBackend {
 
   /// [text] read aloud by the speech service, as WAV. The app shows
   /// replies as text; the live tests use this to make Kazakh recordings.
+  @visibleForTesting
   Future<Uint8List> synthesize(String text) async {
     final res =
         await api.sendRaw('POST', '/client/voice/tts', body: {'text': text});

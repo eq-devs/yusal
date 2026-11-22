@@ -232,10 +232,6 @@ TextStyle display(
         height: height,
         letterSpacing: -0.02 * size);
 
-/// The wordmark.
-TextStyle wordmark(Color color) =>
-    display(size: 26, weight: FontWeight.w700, color: color);
-
 ThemeData buildPlatformTheme(YTokens t) {
   final scheme = ColorScheme(
       brightness: t.dark ? Brightness.dark : Brightness.light,

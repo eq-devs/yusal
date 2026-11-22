@@ -4,10 +4,7 @@ import 'package:yusal/features/shared/model/models.dart';
 /// backend enforces the same rules on the server. Pure Dart.
 
 const demandLifetime = Duration(days: 30);
-const unilateralEndAfter = Duration(days: 7);
 const reviewWindow = Duration(days: 14);
-const followUpAfter = Duration(days: 3);
-const chatLimitPerMinute = 20;
 
 /// Words that send a demand back with a reason: workers must never be asked
 /// for a hiring deposit.
@@ -278,34 +275,11 @@ const reportMachine = StateMachine<ReportStatus, ReportEvent>('report',
           ReportEvent.dismiss, [ReportStatus.open], ReportStatus.dismissed),
     ]);
 
-/// All of the above, in the order of `docs/state_machines.json`.
-const List<StateMachine> marketMachines = [
-  demandMachine,
-  applicationMachine,
-  cooperationMachine,
-  agreementMachine,
-  milestoneMachine,
-  reportMachine,
-];
-
 /// New sign-ups and quotes are accepted only while recruiting and before
 /// the expiry. Existing cooperations are never affected.
 bool acceptsApplications(Demand d, DateTime now) =>
     d.status == DemandStatus.open &&
     (d.expiresAt == null || d.expiresAt!.isAfter(now));
-
-/// The expiry for a demand published at [now]: 30 days, or the quote
-/// deadline when that comes first.
-DateTime expiryFor(DemandVersion v, DateTime now) {
-  final standard = now.add(demandLifetime);
-  final deadline = v.contract?.quoteDeadline;
-  if (deadline != null &&
-      deadline.isBefore(standard) &&
-      deadline.isAfter(now)) {
-    return deadline;
-  }
-  return standard;
-}
 
 /// Statuses in which the application is still "live" for the publisher.
 const liveApplicationStatuses = {
@@ -321,61 +295,6 @@ String? bannedWordIn(String text) {
     if (lower.contains(w)) return w;
   }
   return null;
-}
-
-const _negationWords = {'не', 'без', 'нет', 'ни', 'жоқ', 'емес'};
-const _negationChars = ['不', '无', '免', '没'];
-
-/// Whether every clause holding a banned word also holds a negation
-/// ("залог не берём", "不收押金"). Such text goes to a moderator instead of
-/// being rejected, because "залог не возвращается" negates too.
-bool onlyNegatedBanned(String text) {
-  var found = false;
-  for (final clause in text.toLowerCase().split(RegExp(r'[.!?;,\n。！？；，、]'))) {
-    if (bannedWordIn(clause) == null) continue;
-    found = true;
-    final negated = _negationChars.any(clause.contains) ||
-        clause
-            .split(RegExp(r'[^\p{L}]+', unicode: true))
-            .any(_negationWords.contains);
-    if (!negated) return false;
-  }
-  return found;
-}
-
-/// Inspection point closing each demand stage.
-const _stageMilestone = {
-  'found': 'foundation',
-  'walls': 'walls',
-  'roof': 'roof',
-  'openings': 'finish',
-  'mep': 'finish',
-  'finish': 'finish',
-  'site': 'finish',
-};
-
-/// The four default points, or for a contract over some stages only the
-/// points of those stages, their shares rescaled to 100. Either side can
-/// replan before confirming.
-List<Milestone> milestonesForStages(ContractTerms? c) {
-  var plan = defaultMilestones;
-  if (c != null && c.scopeKind == ScopeKind.stages) {
-    final keep = {for (final s in c.stages) _stageMilestone[s]};
-    final some = [
-      for (final m in defaultMilestones)
-        if (keep.contains(m.key)) m
-    ];
-    if (some.isNotEmpty) plan = some;
-  }
-  final total = plan.fold<int>(0, (n, m) => n + m.percent);
-  final out = <Milestone>[];
-  var left = 100;
-  for (final m in plan) {
-    final p = m == plan.last ? left : m.percent * 100 ~/ total;
-    left -= p;
-    out.add(Milestone(key: m.key, percent: p));
-  }
-  return out;
 }
 
 /// Why two or more quotes cannot be compared directly.
@@ -424,17 +343,6 @@ Set<CompareIssue> compareIssues(Iterable<Application> quotes) {
 }
 
 String _norm(String s) => s.trim().toLowerCase();
-
-/// Reviews of a cooperation become public once both sides submitted, or the
-/// review window after the end has passed.
-bool reviewsVisible(Cooperation c, List<Review> reviews, DateTime now) {
-  final authors = reviews.map((r) => r.authorId).toSet();
-  if (authors.contains(c.ownerId) && authors.contains(c.providerId)) {
-    return true;
-  }
-  final ended = c.endedAt;
-  return ended != null && now.isAfter(ended.add(reviewWindow));
-}
 
 /// Only a mutually ended cooperation opens reviews; a unilateral report or a
 /// dispute is never shown as a verified review.

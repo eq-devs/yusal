@@ -81,7 +81,8 @@ void main() {
     await signIn();
     final m = FakeMessaging();
     addTearDown(m.close);
-    await PushSetup(backend.api, GlobalKey<NavigatorState>(), messaging: m).start();
+    await PushSetup(backend.api, GlobalKey<NavigatorState>(), messaging: m)
+        .start();
     expect(registrations(), [
       {'token': 'tok-1', 'platform': PushSetup.platform, 'language': 'kk'}
     ]);
@@ -93,8 +94,8 @@ void main() {
   test('permission is asked after sign-in, not at first launch', () async {
     final m = FakeMessaging();
     addTearDown(m.close);
-    unawaited(
-        PushSetup(backend.api, GlobalKey<NavigatorState>(), messaging: m).start());
+    unawaited(PushSetup(backend.api, GlobalKey<NavigatorState>(), messaging: m)
+        .start());
     await pumpEventQueue();
     expect(m.asked, 0, reason: 'nobody is signed in yet');
     expect(registrations(), isEmpty);

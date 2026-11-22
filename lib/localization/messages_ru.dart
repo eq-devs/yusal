@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 /// Russian for the Kazakh texts that live in tables rather than at a call:
 /// names of furniture, materials and stages, checklists, and the messages
 /// the design core returns. Keyed by the Kazakh text, so the tables keep
@@ -374,4 +376,5 @@ const _ruByKk = <String, String>{
 String ruText(String kk) => _ruByKk[kk] ?? kk;
 
 /// Whether [kk] has a Russian text (used by tests to find gaps).
+@visibleForTesting
 bool hasRuText(String kk) => _ruByKk.containsKey(kk);

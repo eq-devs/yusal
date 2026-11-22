@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
 
 /// Drafting-table palette from the Yusal logo book: a warm stone desk,
@@ -259,11 +258,3 @@ ThemeData buildTheme(Tokens t) {
               color: t.ink, borderRadius: BorderRadius.circular(6)),
           textStyle: TextStyle(color: t.panel, fontSize: 12)));
 }
-
-/// The effective palette for the current choice and platform brightness.
-Tokens tokensFor(ThemeChoice choice, Brightness platform) => switch (choice) {
-      ThemeChoice.day => Tokens.light,
-      ThemeChoice.night => Tokens.night,
-      ThemeChoice.auto =>
-        platform == Brightness.dark ? Tokens.night : Tokens.light
-    };

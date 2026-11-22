@@ -1,7 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/features/coop/model/coop_json.dart';import 'package:yusal/features/demand/model/demand_json.dart';import 'package:yusal/features/profile/model/profile_json.dart';import 'package:yusal/utils/json.dart';
+import 'package:yusal/features/coop/model/coop_json.dart';
+import 'package:yusal/features/demand/model/demand_json.dart';
+import 'package:yusal/features/profile/model/profile_json.dart';
+import 'package:yusal/utils/json.dart';
 import 'package:yusal/features/shared/model/models.dart';
 
 /// The JSON the app sends must decode back to the same model (the server

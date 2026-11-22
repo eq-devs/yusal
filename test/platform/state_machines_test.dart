@@ -9,6 +9,17 @@ import 'package:yusal/features/shared/model/rules.dart';
 
 import 'mock_backend_test.dart' show backend, publishAsOwner;
 
+/// The app's machines, in the order of `docs/state_machines.json`.
+/// All of the above, in the order of `docs/state_machines.json`.
+const List<StateMachine> marketMachines = [
+  demandMachine,
+  applicationMachine,
+  cooperationMachine,
+  agreementMachine,
+  milestoneMachine,
+  reportMachine,
+];
+
 void main() {
   test('the machines are the ones in docs/state_machines.json', () {
     // yusal-api checks its copy of the file against market/lifecycle.go,

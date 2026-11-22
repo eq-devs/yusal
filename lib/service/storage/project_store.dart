@@ -107,7 +107,6 @@ class ProjectStore {
     return result.document!;
   }
 
-  Future<List<ProjectEntry>> rebuildIndex() => listProjects();
   Future<List<ProjectEntry>> listProjects() async {
     final list = <ProjectEntry>[];
     corruptProjects.clear();

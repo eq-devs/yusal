@@ -147,7 +147,7 @@ void main() {
     await store.saveProject(id, doc);
     expect((await store.openProject(id)).meta.name, doc.meta.name);
     files.failIndex = false;
-    await store.rebuildIndex();
+    await store.listProjects();
     expect(store.indexWarning, isNull);
   });
   test('two lists loading at once do not warn about the index', () async {

@@ -1,4 +1,5 @@
 import 'package:yusal/service/settings/settings.dart';
+import 'mock_rules.dart';
 import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'mock_backend.dart';

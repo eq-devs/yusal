@@ -1103,6 +1103,7 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   }
 
   /// Stand at a plan point (mm) facing [yaw].
+  @visibleForTesting
   void standAt(double x, double y, double yawValue, int floorIndex) =>
       setState(() {
         floor = floorIndex;

@@ -1,4 +1,5 @@
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:meta/meta.dart';
 import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
 import 'package:yusal/features/editor/engine/core/validation/document_validator.dart';
 import 'package:yusal/features/editor/engine/core/commands/design_commands.dart';
@@ -59,6 +60,7 @@ HouseDocument _document(UndoableDesignState state) => composeDocument(
         createdAt: '1970-01-01T00:00:00Z',
         updatedAt: '1970-01-01T00:00:00Z'),
     state);
+@visibleForTesting
 List<ValidationError> validateDesignState(UndoableDesignState state) =>
     validateHouse(_document(state));
 

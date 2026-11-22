@@ -34,9 +34,6 @@ class Account {
   bool can(String perm) =>
       !deleted && (AdminRoles.perms[role] ?? const []).contains(perm);
 
-  /// What others see once the account is deleted.
-  String get publicName => deleted ? '—' : displayName;
-
   Account copyWith(
           {String? displayName,
           String? phone,
@@ -51,16 +48,6 @@ class Account {
           deleted: deleted ?? this.deleted,
           restricted: restricted ?? this.restricted,
           role: role);
-
-  Account withRole(String? role) => Account(
-      id: id,
-      phone: phone,
-      displayName: displayName,
-      createdAt: createdAt,
-      email: email,
-      deleted: deleted,
-      restricted: restricted,
-      role: role);
 }
 
 /// Back-office roles, held on the account like the backend.
@@ -758,20 +745,6 @@ class Milestone {
   final MilestoneStatus status;
   int get photoCount => photos.length;
 
-  /// Same point with a new plan (name, share, criteria, date).
-  Milestone replan(
-          {String? key, int? percent, String? criteria, DateTime? due}) =>
-      Milestone(
-          key: key ?? this.key,
-          percent: percent ?? this.percent,
-          criteria: criteria ?? this.criteria,
-          due: due ?? this.due,
-          status: status,
-          photos: photos,
-          note: note,
-          requestedAt: requestedAt,
-          answeredAt: answeredAt);
-
   Milestone copyWith(
           {MilestoneStatus? status,
           List<List<int>>? photos,
@@ -887,8 +860,6 @@ class Cooperation {
       ? agreements.where((a) => a.status == AgreementStatus.proposed).lastOrNull
       : null;
 
-  bool involves(String accountId) =>
-      ownerId == accountId || providerId == accountId;
   String otherSide(String accountId) =>
       accountId == ownerId ? providerId : ownerId;
 
@@ -921,17 +892,6 @@ class Cooperation {
 }
 
 // ──────────────────────────────── reviews ────────────────────────────────
-
-/// Review dimensions: on-time payment, clear scope, communication, work.
-const reviewDimensions = [
-  'payment',
-  'scope',
-  'communication',
-  'work',
-  'quality',
-  'time',
-  'site'
-];
 
 /// What an owner rates a pro on, and what a pro rates an owner on.
 const proReviewDimensions = ['quality', 'time', 'communication', 'site'];
@@ -1172,19 +1132,6 @@ class Report {
   final String? handledBy;
   final DateTime? handledAt;
   final String resolution;
-
-  Report handle(ReportStatus status, String by, DateTime at, String note) =>
-      Report(
-          id: id,
-          reporterId: reporterId,
-          target: target,
-          targetId: targetId,
-          reason: reason,
-          createdAt: createdAt,
-          status: status,
-          handledBy: by,
-          handledAt: at,
-          resolution: note);
 }
 
 /// Every moderation decision keeps who, when and why.

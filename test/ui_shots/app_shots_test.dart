@@ -45,9 +45,7 @@ void main() {
     await loadFont('Inter', [
       for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Inter-$w.otf'
     ]);
-    await loadFont('InterDisplay', [
-      for (final w in [600, 700]) 'assets/fonts/InterDisplay-$w.otf'
-    ]);
+    await loadFont('InterDisplay', ['assets/fonts/InterDisplay-600.otf']);
     await loadFont('JetBrainsMono', [
       'assets/fonts/JetBrainsMono-Regular.ttf',
       'assets/fonts/JetBrainsMono-SemiBold.ttf'

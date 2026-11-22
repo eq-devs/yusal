@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../app/settings.dart';
 import '../../data/http/http_backend.dart';
 import '../../data/repositories.dart';
@@ -14,6 +16,8 @@ import '../profile/profile_page.dart';
 import '../../shared/ui/scope.dart';
 import '../../shared/ui/theme.dart';
 import '../../shared/ui/widgets.dart';
+
+part 'admin_console.dart';
 
 // The back office, in the moderator's language: a to-do first screen,
 // review, accounts and the rest. Text users read (reasons) can be preset
@@ -1246,6 +1250,57 @@ class AccountDetailPage extends StatelessWidget {
                 'Ограничен: только просмотр, без публикаций, откликов и сообщений'));
   }
 
+  Future<void> _ban(BuildContext context, Account a, bool banned) async {
+    final api = _http(context);
+    if (api == null) return;
+    final note = banned
+        ? await askText(context, tr3('解封：说明', 'Бұғаттан шығару: түсініктеме',
+            'Разблокировка: пояснение'))
+        : await _pickReason(
+            context, tr3('封禁原因', 'Бұғаттау себебі', 'Причина блокировки'),
+            codes: const ['fake', 'abuse', 'spam', 'illegal']);
+    if (note == null || !context.mounted) return;
+    await attempt(context, () => api.setBanned(a.id, !banned, note),
+        success: banned
+            ? tr3('已解封', 'Бұғаттан шығарылды', 'Разблокирован')
+            : tr3('已封禁：不能登录和使用', 'Бұғатталды: кіре алмайды',
+                'Заблокирован: войти нельзя'));
+  }
+
+  Future<void> _delete(BuildContext context, Account a) async {
+    final api = _http(context);
+    if (api == null) return;
+    final note = await askText(
+        context, tr3('注销原因', 'Жою себебі', 'Причина удаления'),
+        hint: tr3('名片和需求会下架，云端备份删除，不能恢复。',
+            'Профильдер мен тапсырыстар алынады, қалпына келмейді.',
+            'Профили и заявки снимаются, восстановить нельзя.'));
+    if (note == null || !context.mounted) return;
+    if (!await confirmDialog(context,
+            tr3('注销这个账号？', 'Аккаунтты жою керек пе?', 'Удалить аккаунт?'),
+            ok: tr3('注销', 'Жою', 'Удалить'), danger: true) ||
+        !context.mounted) return;
+    await attempt(context, () => api.deleteAccountFor(a.id, note),
+        success: tr3('已注销', 'Жойылды', 'Удалён'));
+  }
+
+  Future<void> _takeDown(BuildContext context, String target, String id) async {
+    final api = _http(context);
+    if (api == null) return;
+    final note = await _pickReason(
+        context, tr3('下架原因', 'Алып тастау себебі', 'Причина снятия'));
+    if (note == null || !context.mounted) return;
+    await attempt(context, () => api.takeDown(target, id, note),
+        success: tr3('已下架', 'Алынды', 'Снято'));
+  }
+
+  static String _methodName(String m) => switch (m) {
+        'email' => tr3('邮箱', 'Пошта', 'Почта'),
+        'google' => 'Google',
+        'apple' => 'Apple',
+        _ => tr3('测试登录', 'Тест', 'Тест'),
+      };
+
   Future<void> _role(BuildContext context, Account a) async {
     final v = await pickOne<String>(
         context, tr3('后台角色', 'Әкімшіліктегі рөл', 'Роль в админке'), [
@@ -1282,6 +1337,8 @@ class AccountDetailPage extends StatelessWidget {
                           if (d.email.isNotEmpty) d.email,
                           if (a.phone.isNotEmpty) a.phone,
                           _registered(a.createdAt),
+                          if (d.methods.isNotEmpty)
+                            d.methods.map(_methodName).join('/'),
                           if (d.lastLogin != null)
                             tr3(
                                 '最近登录 ${_date(d.lastLogin!)}',
@@ -1295,6 +1352,8 @@ class AccountDetailPage extends StatelessWidget {
                 Wrap(spacing: 6, children: [
                   if (a.role != null) StatusPill(roleName(a.role)),
                   if (a.restricted) StatusPill(_restrictedPill, color: t.crit),
+                  if (d.banned)
+                    StatusPill(tr3('已封禁', 'Бұғатталған', 'Заблокирован'), color: t.crit),
                   if (a.deleted) StatusPill(tr3('已注销', 'Жойылған', 'Удалён')),
                 ]),
                 if (!self && !a.deleted) ...[
@@ -1310,6 +1369,17 @@ class AccountDetailPage extends StatelessWidget {
                       OutlinedButton(
                           onPressed: () => _role(context, a),
                           child: Text(tr3('设置后台角色', 'Рөл тағайындау', 'Назначить роль'))),
+                    if (_may(context, AdminPerms.moderate) && a.role == null)
+                      OutlinedButton(
+                          onPressed: () => _ban(context, a, d.banned),
+                          child: Text(d.banned
+                              ? tr3('解封', 'Бұғаттан шығару', 'Разблокировать')
+                              : tr3('封禁', 'Бұғаттау', 'Заблокировать'))),
+                    if (_may(context, AdminPerms.team) && a.role == null)
+                      OutlinedButton(
+                          onPressed: () => _delete(context, a),
+                          child: Text(tr3('注销账号', 'Аккаунтты жою', 'Удалить аккаунт'),
+                              style: TextStyle(color: t.crit))),
                   ]),
                 ],
                 const SizedBox(height: YSpace.lg),
@@ -1332,7 +1402,13 @@ class AccountDetailPage extends StatelessWidget {
                           if (p.verified) tr3('已核验', 'расталған', 'проверен'),
                         ].join(' · ')),
                         onTap: () =>
-                            pushPage<void>(context, (_) => ProfilePage(profileId: p.id))),
+                            pushPage<void>(context, (_) => ProfilePage(profileId: p.id)),
+                        trailing: _may(context, AdminPerms.moderate) &&
+                                p.status != ProfileStatus.hidden
+                            ? TextButton(
+                                onPressed: () => _takeDown(context, 'profile', p.id),
+                                child: Text(tr3('下架', 'Алу', 'Снять')))
+                            : null),
                 ],
                 if (d.posts.isNotEmpty) ...[
                   SectionTitle(tr3('房子', 'Үйлер', 'Дома')),
@@ -1340,9 +1416,24 @@ class AccountDetailPage extends StatelessWidget {
                     ListTile(
                         contentPadding: EdgeInsets.zero,
                         title: Text(p.title),
-                        subtitle: Text(p.hidden
-                            ? tr3('已隐藏', 'Жасырылған', 'Скрыт')
-                            : tr3('公开', 'Жария', 'Опубликован')),
+                        subtitle: Text([
+                          p.hidden
+                              ? tr3('已隐藏', 'Жасырылған', 'Скрыт')
+                              : tr3('公开', 'Жария', 'Опубликован'),
+                          if (p.featured) tr3('精选', 'Таңдаулы', 'В подборке'),
+                          if (_may(context, AdminPerms.operate) && !p.hidden)
+                            tr3('长按设精选', 'Ұзақ басып таңдау', 'Удерживайте для подборки'),
+                        ].join(' · ')),
+                        onLongPress: _may(context, AdminPerms.operate) &&
+                                !p.hidden &&
+                                _http(context) != null
+                            ? () => attempt(
+                                context, () => _http(context)!.setFeatured(p.id, !p.featured),
+                                success: p.featured
+                                    ? tr3('已取消精选', 'Таңдаулыдан алынды', 'Убрано из подборки')
+                                    : tr3('已设为精选，排在首页最前', 'Басты бетте бірінші тұрады',
+                                        'В подборке: первым на главной'))
+                            : null,
                         onTap: () => pushPage<void>(context, (_) => PostPage(postId: p.id)),
                         trailing: _may(context, AdminPerms.moderate)
                             ? TextButton(
@@ -1365,11 +1456,20 @@ class AccountDetailPage extends StatelessWidget {
                 ],
                 if (d.demands.isNotEmpty) ...[
                   SectionTitle(tr3('需求', 'Тапсырыстар', 'Заявки')),
-                  for (final x in d.demands)
+                  for (final x in d.demands) ...[
                     _DemandCard(
                         demand: x,
                         onTap: () =>
                             pushPage<void>(context, (_) => DemandDetailPage(demandId: x.id))),
+                    if (_may(context, AdminPerms.moderate) &&
+                        const [DemandStatus.pendingReview, DemandStatus.open, DemandStatus.paused]
+                            .contains(x.status))
+                      Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                              onPressed: () => _takeDown(context, 'demand', x.id),
+                              child: Text(tr3('下架这个需求', 'Тапсырысты алу', 'Снять заявку')))),
+                  ],
                 ],
                 if (d.cooperations.isNotEmpty) ...[
                   SectionTitle(tr3('合作 ${d.cooperations.length}',
@@ -1440,6 +1540,42 @@ class _MoreTab extends StatelessWidget {
                   subtitle: tr3('每一个决定：谁、何时、为什么', 'Әр шешім: кім, қашан, не үшін',
                       'Каждое решение: кто, когда и почему'),
                   onTap: () => pushPage<void>(context, (_) => const AuditPage())),
+            ]),
+            SettingsGroup(title: tr3('用户与数据', 'Қолданушылар мен деректер', 'Пользователи и данные'), children: [
+              SettingsRow(
+                  key: const Key('admin-feedback'),
+                  icon: Icons.mark_email_unread_outlined,
+                  title: tr3('用户反馈', 'Пікірлер', 'Обратная связь'),
+                  onTap: () => pushPage<void>(context, (_) => const FeedbackInboxPage())),
+              SettingsRow(
+                  key: const Key('admin-trends'),
+                  icon: Icons.insights_outlined,
+                  title: tr3('近 30 天趋势', 'Соңғы 30 күн', 'Динамика за 30 дней'),
+                  onTap: () => pushPage<void>(context, (_) => const TrendsPage())),
+              if (_may(context, AdminPerms.team)) ...[
+                SettingsRow(
+                    icon: Icons.file_download_outlined,
+                    title: tr3('导出用户表', 'Қолданушыларды экспорттау', 'Экспорт пользователей'),
+                    onTap: () => _export(context, 'users')),
+                SettingsRow(
+                    icon: Icons.file_download_outlined,
+                    title: tr3('导出需求表', 'Тапсырыстарды экспорттау', 'Экспорт заявок'),
+                    onTap: () => _export(context, 'demands')),
+              ],
+            ]),
+            SettingsGroup(title: tr3('运营', 'Операциялар', 'Операции'), children: [
+              if (_may(context, AdminPerms.operate))
+                SettingsRow(
+                    key: const Key('admin-broadcast'),
+                    icon: Icons.campaign_outlined,
+                    title: tr3('群发通知', 'Жаппай хабарландыру', 'Рассылка'),
+                    subtitle: tr3('推送到所有用户的手机', 'Барлық телефонға', 'На все телефоны'),
+                    onTap: () => pushPage<void>(context, (_) => const BroadcastPage())),
+              SettingsRow(
+                  key: const Key('admin-banned-words'),
+                  icon: Icons.block_outlined,
+                  title: tr3('违禁词', 'Тыйым сөздер', 'Запрещённые слова'),
+                  onTap: () => pushPage<void>(context, (_) => const BannedWordsPage())),
             ]),
             SettingsGroup(title: tr3('推送', 'Хабарландырулар', 'Уведомления'), children: [
               SettingsRow(

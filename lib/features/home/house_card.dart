@@ -80,7 +80,13 @@ class HouseCard extends StatelessWidget {
                                           : Icons.favorite_border,
                                       size: 20,
                                       color: liked ? t.accent : t.ink))))))),
-            if (p.openForBuilders)
+            if (p.featured)
+              Positioned(
+                  left: 10,
+                  top: 10,
+                  child: StatusPill(tr3('精选', 'Таңдаулы', 'Выбор редакции'),
+                      color: t.accent, filled: true))
+            else if (p.openForBuilders)
               Positioned(
                   left: 10,
                   top: 10,

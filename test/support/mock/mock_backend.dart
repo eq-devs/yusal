@@ -2945,7 +2945,11 @@ class MockBackend implements PlatformRepositories, ClockSource {
                 .toList(),
             posts: [
               for (final p in posts.values.where((p) => p.ownerId == accountId))
-                (id: p.id, title: p.title, hidden: p.status == PostStatus.hidden)
+                (
+                    id: p.id,
+                    title: p.title,
+                    hidden: p.status == PostStatus.hidden,
+                    featured: false)
             ],
             reportsAbout: _sorted(
                 reportsById.values.where((r) => mine.contains(r.targetId)),

@@ -40,6 +40,8 @@ abstract final class ApiCodes {
   static const network = 'NETWORK';
   static const restricted = 'RESTRICTED';
   static const conflict = 'CONFLICT';
+  static const emailTaken = 'EMAIL_TAKEN';
+  static const badCredentials = 'INVALID_CREDENTIALS';
 }
 
 /// A backend with its own clock (the in-memory test fake). Screens read the

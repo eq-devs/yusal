@@ -203,7 +203,6 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
         'UNAUTHORIZED' || 'INVALID_TOKEN' => ApiCodes.notSignedIn,
         'ACCOUNT_DISABLED' => ApiCodes.restricted,
         'VALIDATION_ERROR' || 'UNSUPPORTED_PROVIDER' => ApiCodes.invalidInput,
-        'EMAIL_TAKEN' => ApiCodes.conflict,
         'INTERNAL_ERROR' || '' => ApiCodes.network,
         _ => code,
       };
@@ -334,6 +333,28 @@ class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {
       {String? name}) async {
     final data = await _call('POST', '/auth/oauth/$provider',
         body: {'id_token': idToken, if (name != null) 'name': name},
+        auth: false) as Map<String, dynamic>;
+    _takeTokens(data);
+    await _save();
+    final account = _setMe(data['user'] as Map<String, dynamic>);
+    notify();
+    unawaited(_registerDevice());
+    return account;
+  }
+
+  /// Email sign-in; [register] creates the account first. [name] is the
+  /// display name of a new account (the server falls back to the email's
+  /// local part).
+  Future<Account> signInWithEmail(String email, String password,
+      {bool register = false, String? name}) async {
+    final data = await _call(
+        'POST', register ? '/auth/register' : '/auth/login',
+        body: {
+          'email': email.trim(),
+          'password': password,
+          if (register && name != null && name.trim().isNotEmpty)
+            'name': name.trim(),
+        },
         auth: false) as Map<String, dynamic>;
     _takeTokens(data);
     await _save();

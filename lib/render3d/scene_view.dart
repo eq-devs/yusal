@@ -799,7 +799,7 @@ class ScenePainter extends CustomPainter {
         TextSpan(
             text: title,
             style: const TextStyle(
-                fontFamily: 'Onest',
+                fontFamily: 'Inter',
                 fontFamilyFallback: ['PingFang SC', 'Noto Sans SC'],
                 color: Colors.white,
                 fontSize: 12,
@@ -807,7 +807,7 @@ class ScenePainter extends CustomPainter {
         TextSpan(
             text: '\n$sub',
             style: const TextStyle(
-                fontFamily: 'PlexMono',
+                fontFamily: 'JetBrainsMono',
                 color: Color(0xffF2B867),
                 fontSize: 11)),
       ]),
@@ -1284,7 +1284,7 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
                         child: Text(
                             '$whereAmI · x ${wx.toStringAsFixed(1)}  y ${(model.depth - wz).toStringAsFixed(1)}',
                             style: const TextStyle(
-                                fontFamily: 'PlexMono',
+                                fontFamily: 'JetBrainsMono',
                                 fontSize: 12,
                                 color: Color(0xff1C2326)))))),
             Positioned(left: 18, bottom: 18, child: joystick()),

@@ -205,7 +205,7 @@ class _SceneLabState extends State<SceneLab> {
                 child: Text(stats,
                     style: const TextStyle(
                         color: Colors.white,
-                        fontFamily: 'PlexMono',
+                        fontFamily: 'JetBrainsMono',
                         fontSize: 12)))),
       ])),
       Padding(

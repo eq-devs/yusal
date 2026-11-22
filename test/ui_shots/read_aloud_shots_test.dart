@@ -49,11 +49,11 @@ class KazakhVoice extends MockBackend implements VoiceBackend {
 void main() {
   final out = Platform.environment['SHOTS_OUT'];
   setUpAll(() async {
-    await loadFont('Onest', [
-      for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Onest-$w.ttf'
+    await loadFont('Inter', [
+      for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Inter-$w.otf'
     ]);
-    await loadFont('Lora',
-        [for (final w in [500, 600, 700]) 'assets/fonts/Lora-$w.ttf']);
+    await loadFont('InterDisplay',
+        [for (final w in [600, 700]) 'assets/fonts/InterDisplay-$w.otf']);
     final flutter = Platform.environment['FLUTTER_ROOT']!;
     await loadFont('MaterialIcons', [
       '$flutter/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf'

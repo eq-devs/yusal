@@ -3,6 +3,7 @@ import '../../app/settings.dart';
 import '../motion/motion.dart';
 import 'scope.dart';
 import 'theme.dart';
+import '../brand/yicon.dart';
 
 /// Parts of the design system that several pages share. Sizes, radii and
 /// colours come from `theme.dart`; nothing here has its own palette.
@@ -27,7 +28,7 @@ class SearchField extends StatelessWidget {
             shape: StadiumBorder(side: BorderSide(color: t.line)),
             child: Row(children: [
               const SizedBox(width: YSpace.lg),
-              Icon(Icons.search, color: t.muted, size: 22),
+              YusalIcon(YIcon.search, color: t.muted, size: 22),
               const SizedBox(width: YSpace.sm),
               Expanded(
                   child: TextField(

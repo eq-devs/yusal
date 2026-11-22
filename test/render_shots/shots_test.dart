@@ -25,8 +25,8 @@ void main() {
   final out = Platform.environment['SHOTS_OUT'] ?? 'build/shots';
   setUpAll(() async {
     await loadFont(
-        'Onest', ['assets/fonts/Onest-400.ttf', 'assets/fonts/Onest-700.ttf']);
-    await loadFont('PlexMono', ['assets/fonts/IBMPlexMono-Regular.ttf']);
+        'Inter', ['assets/fonts/Inter-400.otf', 'assets/fonts/Inter-700.otf']);
+    await loadFont('JetBrainsMono', ['assets/fonts/JetBrainsMono-Regular.ttf']);
   });
   var n = 0;
   String id() => 'id${n++}';

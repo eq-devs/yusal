@@ -9,6 +9,7 @@ import '../../shared/ui/components.dart';
 import '../../shared/ui/scope.dart';
 import '../../shared/ui/theme.dart';
 import '../../shared/ui/widgets.dart';
+import '../../shared/brand/yicon.dart';
 
 /// "What the author wants to hear about": the focus topics of a shared
 /// house, shown under its title.
@@ -25,7 +26,7 @@ class FeedbackAsk extends StatelessWidget {
             color: t.surface, borderRadius: BorderRadius.circular(yRadius)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Icon(Icons.forum_outlined, size: 18, color: t.accent),
+            YusalIcon(YIcon.chat, size: 18, color: t.accent),
             const SizedBox(width: 6),
             Text(tr3('作者在求点评', 'Автор пікір сұрайды', 'Автор просит отзывы'),
                 style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -494,7 +495,7 @@ class _CritiqueTile extends StatelessWidget {
                           key: Key('critique-report-${c.id}'),
                           visualDensity: VisualDensity.compact,
                           tooltip: tr3('举报', 'Шағым', 'Пожаловаться'),
-                          icon: Icon(Icons.flag_outlined, size: 16, color: t.faint),
+                          icon: YusalIcon(YIcon.report, size: 16, color: t.faint),
                           onPressed: () =>
                               reportContent(context, ReportTarget.comment, c.id)),
                   ]);

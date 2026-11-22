@@ -6,6 +6,7 @@ import '../../shared/ui/scope.dart';
 import '../../shared/ui/theme.dart';
 import 'create_sheet.dart';
 import '../../shared/motion/motion.dart';
+import '../../shared/brand/brand.dart';
 
 /// Segments of Discover, in order.
 abstract final class ExploreSegment {
@@ -86,7 +87,6 @@ class _ExplorePageState extends State<ExplorePage> {
   @override
   Widget build(BuildContext context) {
     AppScope.watch(context);
-    final t = YTokens.of(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _decide();
     });
@@ -108,7 +108,9 @@ class _ExplorePageState extends State<ExplorePage> {
                             Row(children: [
                               Expanded(
                                   child:
-                                      Text('Yusal', style: wordmark(t.accent))),
+                                      const Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: YusalLogo(height: 26))),
                               IconButton(
                                   key: const Key('explore-create'),
                                   tooltip: tr3('发布', 'Жариялау', 'Создать'),

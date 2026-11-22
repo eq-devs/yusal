@@ -5,6 +5,7 @@ import '../../shared/ui/l10n.dart';
 import '../../shared/ui/scope.dart';
 import '../../shared/ui/theme.dart';
 import '../../shared/ui/widgets.dart';
+import '../../shared/brand/yicon.dart';
 
 /// Create or edit an individual or team service profile. Only the name,
 /// trades, regions, kind and availability are required.
@@ -208,7 +209,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           if (availability == Availability.fromDate)
             ListTile(
                 title: Text(fmtDay(availableFrom)),
-                trailing: const Icon(Icons.event),
+                trailing: const YusalIcon(YIcon.calendar),
                 onTap: () async {
                   final v = await showDatePicker(
                       context: context,

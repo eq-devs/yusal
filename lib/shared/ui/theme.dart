@@ -6,9 +6,9 @@ import '../motion/motion.dart';
 
 /// Platform look, after the ANT Community app's design system (one accent
 /// used sparingly, selection in ink, flat hairline cards, one shadow tier
-/// for things that float, pill buttons, frosted bars) but in the colours of
-/// a house being built: warm paper, walnut wood and clay. Only the system
-/// is borrowed; ANT's navy and orange stay ANT's.
+/// for things that float, pill buttons, frosted bars) in the colours of the
+/// Yusal logo book: ink #1E1C19, cream #F7F3EE, stone #C2B8AB and one
+/// orange #D86A2B. Text on orange is ink, which keeps it above 4.5 : 1.
 @immutable
 class YTokens extends ThemeExtension<YTokens> {
   const YTokens({
@@ -56,42 +56,42 @@ class YTokens extends ThemeExtension<YTokens> {
   final bool dark;
 
   static const light = YTokens(
-      bg: Color(0xffFFFCF8),
-      surface: Color(0xffF6F0E8),
+      bg: Color(0xffFBF9F5),
+      surface: Color(0xffF3EEE7),
       card: Color(0xffFFFFFF),
-      ink: Color(0xff2B2118),
-      muted: Color(0xff7A6A5B),
-      faint: Color(0xffB9AB9C),
-      line: Color(0xffECE3D8),
-      accent: Color(0xffA3673B),
-      accentInk: Color(0xffFFFFFF),
-      accentSoft: Color(0xffF7EBDF),
+      ink: Color(0xff1E1C19),
+      muted: Color(0xff6F665D),
+      faint: Color(0xffB5ACA0),
+      line: Color(0xffE4DDD2),
+      accent: Color(0xffD86A2B),
+      accentInk: Color(0xff1E1C19),
+      accentSoft: Color(0xffFBE9DD),
       ok: Color(0xff4F7A3A),
       warn: Color(0xffB8641B),
       crit: Color(0xffB23A2E),
       info: Color(0xff4C6E8A),
-      shadow: Color(0x143B2A1A),
+      shadow: Color(0x141E1C19),
       elevated: Color(0xffFFFFFF),
-      scrim: Color(0x5C1A120B),
+      scrim: Color(0x5C1E1C19),
       dark: false);
 
   static const night = YTokens(
-      bg: Color(0xff15110E),
-      surface: Color(0xff201A15),
-      card: Color(0xff1C1612),
-      ink: Color(0xffF3EBE2),
-      muted: Color(0xffB4A697),
-      faint: Color(0xff6F6256),
-      line: Color(0xff2F2721),
-      accent: Color(0xffD28B5A),
-      accentInk: Color(0xff1A120B),
-      accentSoft: Color(0xff3A2A1F),
+      bg: Color(0xff1E1C19),
+      surface: Color(0xff28251F),
+      card: Color(0xff24211D),
+      ink: Color(0xffF7F3EE),
+      muted: Color(0xffC2B8AB),
+      faint: Color(0xff7A7168),
+      line: Color(0xff34302A),
+      accent: Color(0xffD86A2B),
+      accentInk: Color(0xff1E1C19),
+      accentSoft: Color(0xff3D2618),
       ok: Color(0xff8CBF6A),
       warn: Color(0xffE8A25C),
       crit: Color(0xffE87C6E),
       info: Color(0xff8FB3CF),
       shadow: Color(0x4D000000),
-      elevated: Color(0xff2A221C),
+      elevated: Color(0xff2E2A25),
       scrim: Color(0xB3000000),
       dark: true);
 
@@ -165,7 +165,7 @@ abstract final class YFont {
   static const button = 15.0;
   static const body = 16.0, heading = 18.0, section = 20.0, title = 22.0;
 
-  /// Smallest size of the serif display face (page titles go up to 28).
+  /// Smallest size of the display face (page titles go up to 28).
   static const display = 24.0;
 }
 
@@ -201,8 +201,8 @@ Color onFill(Color fill) {
   return withWhite >= withDark ? Colors.white : dark;
 }
 
-/// Big titles and house names: the serif display face, with the UI sans
-/// and system CJK fonts as fallback for Chinese.
+/// Big titles and house names: Inter Display, tracked in by 2 % as in the
+/// logo book, with the UI sans and system CJK fonts as fallback for Chinese.
 TextStyle display(
         {double size = 24,
         FontWeight weight = FontWeight.w600,
@@ -215,7 +215,7 @@ TextStyle display(
         fontWeight: weight,
         color: color,
         height: height,
-        letterSpacing: -0.2);
+        letterSpacing: -0.02 * size);
 
 /// The wordmark.
 TextStyle wordmark(Color color) =>

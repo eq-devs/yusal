@@ -38,14 +38,14 @@ void main() {
   final sizeEnv = (Platform.environment['SHOTS_SIZE'] ?? '390x844').split('x');
   final size = Size(double.parse(sizeEnv[0]), double.parse(sizeEnv[1]));
   setUpAll(() async {
-    await loadFont('Onest', [
-      for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Onest-$w.ttf'
+    await loadFont('Inter', [
+      for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Inter-$w.otf'
     ]);
-    await loadFont('Lora',
-        [for (final w in [500, 600, 700]) 'assets/fonts/Lora-$w.ttf']);
-    await loadFont('PlexMono', [
-      'assets/fonts/IBMPlexMono-Regular.ttf',
-      'assets/fonts/IBMPlexMono-SemiBold.ttf'
+    await loadFont('InterDisplay',
+        [for (final w in [600, 700]) 'assets/fonts/InterDisplay-$w.otf']);
+    await loadFont('JetBrainsMono', [
+      'assets/fonts/JetBrainsMono-Regular.ttf',
+      'assets/fonts/JetBrainsMono-SemiBold.ttf'
     ]);
     final flutter = Platform.environment['FLUTTER_ROOT']!;
     await loadFont('MaterialIcons', [

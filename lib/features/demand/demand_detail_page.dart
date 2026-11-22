@@ -20,6 +20,7 @@ import '../../shared/motion/motion.dart';
 import '../../voice/actions_demand.dart';
 import '../../voice/screen.dart';
 import '../me/trust_pages.dart';
+import '../../shared/brand/yicon.dart';
 
 class _DetailData {
   _DetailData(this.demand, this.owner, this.snapshot, this.myApps, this.coops,
@@ -333,7 +334,7 @@ class _DemandDetailState extends State<_DemandDetail>
         appBar: AppBar(actions: [
           IconButton(
               tooltip: tr3('分享', 'Бөлісу', 'Поделиться'),
-              icon: const Icon(Icons.ios_share),
+              icon: const YusalIcon(YIcon.share),
               onPressed: () =>
                   pushPage<void>(context, (_) => SharePage(demand: d))),
           if (!mine)

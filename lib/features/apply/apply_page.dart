@@ -12,6 +12,7 @@ import '../../shared/ui/widgets.dart';
 import '../../voice/action.dart';
 import '../../voice/form.dart';
 import '../../voice/screen.dart';
+import '../../shared/brand/yicon.dart';
 
 /// Sign-up (hire) or quote (contract) editor. Sending again creates a new
 /// version of the same application; history is kept.
@@ -333,7 +334,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                           title:
                               Text(tr3('可到岗日期', 'Келу күні', 'Могу выйти с')),
                           subtitle: Text(fmtDay(availableFrom)),
-                          trailing: const Icon(Icons.event),
+                          trailing: const YusalIcon(YIcon.calendar),
                           onTap: () async {
                             final v = await showDatePicker(
                                 context: context,
@@ -478,7 +479,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                               Text(tr3('报价有效期', 'Жарамдылық', 'Действует до')),
                           subtitle: Text(
                               validUntil == null ? '—' : fmtDay(validUntil)),
-                          trailing: const Icon(Icons.event),
+                          trailing: const YusalIcon(YIcon.calendar),
                           onTap: () async {
                             final v = await showDatePicker(
                                 context: context,

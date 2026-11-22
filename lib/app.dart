@@ -44,6 +44,7 @@ abstract final class Boot {
     // After the first frame is on screen, so a permission prompt (push)
     // never covers a blank window.
     await WidgetsBinding.instance.endOfFrame;
+    WidgetsBinding.instance.addObserver(_AccountOnResume());
     await Future.wait([
       _step('session sync', ApiClient.app.syncSession),
       _step('push',
@@ -60,6 +61,26 @@ abstract final class Boot {
     } catch (e, st) {
       if (kDebugMode) debugPrint('boot $name: $e\n$st');
     }
+  }
+}
+
+/// Reads the account again when the app comes back to the foreground, so a
+/// role granted or revoked meanwhile shows without a restart.
+class _AccountOnResume with WidgetsBindingObserver {
+  DateTime _last = DateTime.now();
+
+  /// Don't ask again on every quick app switch.
+  static const _minInterval = Duration(minutes: 1);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final now = DateTime.now();
+    if (state != AppLifecycleState.resumed ||
+        now.difference(_last) < _minInterval) {
+      return;
+    }
+    _last = now;
+    ApiClient.app.refreshAccount();
   }
 }
 

@@ -92,13 +92,62 @@ class ApiClient implements Session {
     final res = await sendRaw(method, path,
         body: body, bytes: bytes, query: query, auth: auth, limit: limit);
     if (res.statusCode == 401 && auth && _refresh != null) {
-      if (await (_refreshing ??=
-          _refreshTokens().whenComplete(() => _refreshing = null))) {
-        return ApiClient.decode(await sendRaw(method, path,
+      if (await _refreshShared()) {
+        return _decodeSeeingRole(await sendRaw(method, path,
             body: body, bytes: bytes, query: query, auth: auth, limit: limit));
       }
     }
+    return auth ? _decodeSeeingRole(res) : ApiClient.decode(res);
+  }
+
+  /// A refresh token is spent once exchanged (the server ends the session
+  /// if it sees one again), so every caller shares the refresh in flight.
+  Future<bool> _refreshShared() => _refreshing ??=
+      _refreshTokens().whenComplete(() => _refreshing = null);
+
+  /// A 403 FORBIDDEN means the role the app knows is out of date (granted
+  /// or revoked since it was read): read the account again so the screens
+  /// match what the server allows.
+  dynamic _decodeSeeingRole(http.Response res) {
+    if (res.statusCode == 403) {
+      try {
+        return ApiClient.decode(res);
+      } on ApiFailure catch (e) {
+        if (e.code == ApiCodes.forbidden) refreshAccount();
+        rethrow;
+      }
+    }
     return ApiClient.decode(res);
+  }
+
+  Future<void>? _readingAccount;
+
+  /// Reads the signed-in account (its role among it) from the server again
+  /// and tells the screens. Never throws; one read at a time.
+  Future<void> refreshAccount() {
+    if (_refresh == null) return Future.value();
+    return _readingAccount ??= () async {
+      try {
+        setMe(await request('GET', '/client/auth/me') as Map<String, dynamic>);
+        notify();
+      } on ApiFailure {
+        // Offline or signed out meanwhile: the next read tries again.
+      }
+    }()
+        .whenComplete(() => _readingAccount = null);
+  }
+
+  /// Ends this session on the server, so a copied refresh token stops
+  /// working too. Best effort: offline, the token still expires.
+  Future<void> logout() async {
+    final token = _refresh;
+    if (token == null) return;
+    try {
+      await sendRaw('POST', '/auth/logout',
+          body: {'refresh_token': token}, auth: false);
+    } on ApiFailure {
+      // Offline.
+    }
   }
 
   /// GETs in flight by URL and token, so screens that ask for the same
@@ -302,7 +351,7 @@ class ApiClient implements Session {
   Future<void> _sync(int attempt) async {
     if (_refresh == null) return;
     try {
-      if (!await _refreshTokens()) return;
+      if (!await _refreshShared()) return;
       setMe(await request('GET', '/client/auth/me') as Map<String, dynamic>);
       notify();
     } on ApiFailure catch (e) {

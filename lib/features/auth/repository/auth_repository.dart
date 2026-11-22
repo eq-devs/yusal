@@ -157,6 +157,7 @@ final class HttpAuthRepository implements AuthRepository {
         // Offline: the server drops the token once FCM calls it dead.
       }
     }
+    await api.logout();
     await api.forget();
   }
 

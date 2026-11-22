@@ -144,6 +144,8 @@ class FakeApi {
         return ok(tokens());
       case ('GET', '/client/auth/me'):
         return ok(user);
+      case ('GET', '/admin/me'):
+        return fail(403, 'FORBIDDEN');
       case ('POST', '/client/devices'):
       case ('DELETE', '/client/devices'):
         return ok('ok');
@@ -319,6 +321,18 @@ void main() {
     expect(offline.api.currentAccount?.id, 'u1');
   });
 
+  test('a 403 FORBIDDEN reads the account again, so a revoked role shows',
+      () async {
+    await backend.auth.signInWithProvider('google', 'id-token');
+    api.requests.clear();
+    await expectLater(backend.api.request('GET', '/admin/me'),
+        throwsA(isA<ApiFailure>()
+            .having((e) => e.code, 'code', ApiCodes.forbidden)));
+    await Future<void>.delayed(Duration.zero);
+    expect(api.requests.map((r) => r.url.path),
+        ['/admin/me', '/client/auth/me']);
+  });
+
   test('signing out forgets the saved account too', () async {
     await backend.auth.signInWithProvider('google', 'id-token');
     await backend.auth.signOut();
@@ -399,13 +413,16 @@ void main() {
     expect(jsonDecode(patch.body), {'phone': '+77015550011'});
   });
 
-  test('the push token is dropped at sign-out', () async {
+  test('sign-out drops the push token, then ends the session on the server',
+      () async {
     PushSetup.token = 'fcm-1';
     addTearDown(() => PushSetup.token = null);
     await backend.auth.signInWithProvider('google', 'id-token');
     await backend.auth.signOut();
-    final drop = api.requests.last;
+    final [drop, logout] =
+        api.requests.sublist(api.requests.length - 2).toList();
     expect((drop.method, drop.url.path), ('DELETE', '/client/devices'));
+    expect((logout.method, logout.url.path), ('POST', '/auth/logout'));
     expect(backend.api.currentAccount, isNull);
   });
 

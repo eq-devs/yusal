@@ -105,7 +105,7 @@ class PushSetup {
     if (api.currentAccount != null) {
       await _askAndRegister();
     } else {
-      unawaited(_signedIn().then((_) => _askAndRegister()));
+      _signedIn().then((_) => _askAndRegister());
     }
   }
 
@@ -161,7 +161,7 @@ class PushSetup {
     }
   }
 
-  void _sessionChanged() => unawaited(_registerDevice());
+  void _sessionChanged() => _registerDevice();
 
   void open(Map<String, dynamic> data) {
     final target = pushTarget(data);

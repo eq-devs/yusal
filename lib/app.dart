@@ -29,8 +29,8 @@ import 'package:yusal/service/update/code_push.dart';
 /// * [ready]: what the first frame needs, read from the device only (the
 ///   settings, the saved session with the signed-in account, Firebase). No
 ///   network, so a cold start is the same online and offline.
-/// * [background]: everything that talks to a server (session sync, push,
-///   code push), started once [ready] is done and never awaited by a screen.
+/// * [start]: everything that talks to a server (session sync, push, code
+///   push), side by side once [ready] is done; no screen waits for it.
 abstract final class Boot {
   static final Future<void> ready = Future.wait([
     _step('settings', loadSettings),
@@ -39,18 +39,18 @@ abstract final class Boot {
     _step('firebase', FirebaseSetup.init),
   ]);
 
-  static final Future<void> background = _background();
-
-  static Future<void> _background() async {
+  static Future<void> start() async {
     await ready;
     // After the first frame is on screen, so a permission prompt (push)
     // never covers a blank window.
     await WidgetsBinding.instance.endOfFrame;
-    unawaited(_step('session sync', ApiClient.app.syncSession));
-    unawaited(_step(
-        'push', PushSetup(ApiClient.app, appNavigator, opener: openRef).start));
-    // Over-the-air patches (Shorebird); a no-op outside `shorebird release`.
-    unawaited(_step('code push', () async => CodePush().start()));
+    await Future.wait([
+      _step('session sync', ApiClient.app.syncSession),
+      _step('push',
+          PushSetup(ApiClient.app, appNavigator, opener: openRef).start),
+      // Over-the-air patches (Shorebird); a no-op outside `shorebird release`.
+      _step('code push', () async => CodePush().start()),
+    ]);
   }
 
   /// One failed step never keeps the app from starting.

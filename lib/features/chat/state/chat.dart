@@ -95,9 +95,9 @@ final chatProvider =
   if (c.unread > 0 && !memo.readSent) {
     // Once per batch of unread: the reload this causes sees it read.
     memo.readSent = true;
-    unawaited(chat.markConversationRead(c.id).catchError((Object _) {
+    chat.markConversationRead(c.id).catchError((Object _) {
       memo.readSent = false;
-    }));
+    });
   }
   return ChatData(c, other, msgs, Map.of(memo.cards), blocked);
 });

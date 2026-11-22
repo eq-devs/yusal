@@ -263,14 +263,14 @@ class _HouseHomeState extends ConsumerState<HouseHome>
     await _closeEditor();
     final entry = projects.where((p) => p.id == id).firstOrNull;
     // Not awaited: it completes when the editor closes.
-    if (entry != null && mounted) unawaited(open(entry));
+    if (entry != null && mounted) open(entry);
   }
 
   @override
   Future<void> addDesign(HouseDocument doc) async {
     await _closeEditor();
     final id = await store.createProject(doc);
-    if (mounted) unawaited(open(ProjectEntry(id, doc)));
+    if (mounted) open(ProjectEntry(id, doc));
   }
 
   @override

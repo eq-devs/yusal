@@ -152,7 +152,7 @@ class _VoiceDownloadDialogState extends State<_VoiceDownloadDialog> {
 
   void download() {
     // The status follows the download; a failure shows there too.
-    unawaited(reader.download().catchError((Object _) {}));
+    reader.download().catchError((Object _) {});
   }
 
   @override

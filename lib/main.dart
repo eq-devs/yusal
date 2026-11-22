@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
 import 'package:yusal/app.dart';
 
@@ -12,5 +10,5 @@ void main() {
   final binding = WidgetsFlutterBinding.ensureInitialized()..deferFirstFrame();
   runApp(const BootGate());
   Boot.ready.whenComplete(binding.allowFirstFrame);
-  unawaited(Boot.background);
+  Boot.start();
 }

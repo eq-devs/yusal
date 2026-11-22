@@ -25,12 +25,12 @@ class CodePush with WidgetsBindingObserver {
   void start() {
     if (!_updater.isAvailable) return;
     WidgetsBinding.instance.addObserver(this);
-    unawaited(check());
+    check();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) unawaited(check());
+    if (state == AppLifecycleState.resumed) check();
   }
 
   /// Downloads a newer patch if there is one. Never throws: a failed check

@@ -308,7 +308,7 @@ class ApiClient implements Session {
       notify();
     } on ApiFailure catch (e) {
       if (e.code == ApiCodes.network && attempt < retryDelays.length) {
-        Timer(retryDelays[attempt], () => unawaited(_sync(attempt + 1)));
+        Timer(retryDelays[attempt], () => _sync(attempt + 1));
       }
     }
   }
@@ -317,7 +317,7 @@ class ApiClient implements Session {
   /// launch.
   Account setMe(Map<String, dynamic> u) {
     final a = _me = accountFrom(u);
-    unawaited(session.saveAccount(u));
+    session.saveAccount(u);
     return a;
   }
 

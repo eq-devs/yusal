@@ -240,10 +240,10 @@ class _Notices extends StatelessWidget {
                             // Open at once; the read mark follows in the
                             // background instead of holding the tap.
                             if (!n.read) {
-                              unawaited(context
+                              context
                                   .read(notificationRepositoryProvider)
                                   .markRead(n.id)
-                                  .catchError((Object _) {}));
+                                  .catchError((Object _) {});
                             }
                             openNotice(context, n);
                           });

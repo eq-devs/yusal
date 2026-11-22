@@ -95,8 +95,7 @@ void main() {
   test('permission is asked after sign-in, not at first launch', () async {
     final m = FakeMessaging();
     addTearDown(m.close);
-    unawaited(PushSetup(backend.api, GlobalKey<NavigatorState>(), messaging: m)
-        .start());
+    PushSetup(backend.api, GlobalKey<NavigatorState>(), messaging: m).start();
     await pumpEventQueue();
     expect(m.asked, 0, reason: 'nobody is signed in yet');
     expect(registrations(), isEmpty);

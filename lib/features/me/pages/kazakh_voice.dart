@@ -37,7 +37,7 @@ class _KazakhVoicePageState extends State<KazakhVoicePage> {
 
   Future<void> download() async {
     // The status follows the download; a failure shows there too.
-    unawaited(reader.download().catchError((Object _) {}));
+    reader.download().catchError((Object _) {});
   }
 
   @override

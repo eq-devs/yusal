@@ -42,9 +42,9 @@ class FirebaseSetup {
   }
 
   static void _wireCrashlytics() {
-    final crashlytics = FirebaseCrashlytics.instance;
     // Debug runs on a developer's phone shouldn't fill the crash list.
-    unawaited(crashlytics.setCrashlyticsCollectionEnabled(!kDebugMode));
+    final crashlytics = FirebaseCrashlytics.instance
+      ..setCrashlyticsCollectionEnabled(!kDebugMode);
     final previousFlutterError = FlutterError.onError;
     FlutterError.onError = (details) {
       previousFlutterError?.call(details);

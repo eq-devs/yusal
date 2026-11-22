@@ -953,7 +953,7 @@ extension _EditorDialogs on _HouseEditorState {
         openingLabel: openingLabel,
         date:
             '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}');
-    unawaited(showDialog<void>(
+    showDialog<void>(
         context: context,
         barrierDismissible: false,
         builder: (context) => PopScope(
@@ -969,7 +969,7 @@ extension _EditorDialogs on _HouseEditorState {
                   child: ValueListenableBuilder<String>(
                       valueListenable: progress,
                       builder: (context, text, _) => Text(text))),
-            ])))));
+            ]))));
     try {
       final bytes = png
           ? await buildPlanPng(input, floorIndex)

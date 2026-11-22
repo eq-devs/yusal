@@ -310,7 +310,9 @@ class _HouseEditorState extends State<HouseEditor>
   }
 
   /// Plan layers, the selection shown in the card, and transient marks.
-  bool showFurniture = true, showDimensions = true, showFoundation = false;
+  bool showFurniture = true;
+  bool showDimensions = true;
+  bool showFoundation = false;
   bool showUtilities = false;
 
   /// Utility point being placed, the selected one and its drag preview.
@@ -476,8 +478,9 @@ class _HouseEditorState extends State<HouseEditor>
   void flash(List<PlanRect> areas) {
     highlights = areas;
     if (areas.isEmpty || MediaQuery.disableAnimationsOf(context)) {
-      pulse.stop();
-      pulse.value = 0;
+      pulse
+        ..stop()
+        ..value = 0;
     } else {
       // A few beats to draw the eye, then the area stays marked.
       pulse
@@ -994,8 +997,9 @@ class _HouseEditorState extends State<HouseEditor>
       saving = false;
       if (failed && mounted) {
         timer = Timer(const Duration(seconds: 5), save);
-      } else if (mounted && dirty && history.present != doc)
+      } else if (mounted && dirty && history.present != doc) {
         timer = Timer(const Duration(milliseconds: 1500), save);
+      }
     }
   }
 
@@ -1112,6 +1116,7 @@ class _HouseEditorState extends State<HouseEditor>
   Future<void> export() async {
     try {
       await save();
+      if (!mounted) return;
       final raw = encodeHouse(history.present);
       final cleanedName = history.present.meta.name
           .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '')
@@ -1155,21 +1160,22 @@ class _HouseEditorState extends State<HouseEditor>
   /// Short floating message above the tool card; [undo] adds an undo button.
   void notify(String message, {VoidCallback? undo}) {
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-    messenger.showSnackBar(
-        SnackBar(
-            content: Text(coreMessage(message)),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
-            duration: Duration(milliseconds: undo == null ? 2500 : 6000),
-            // Undo also stays in the header, so the message need not linger.
-            persist: false,
-            action: undo == null
-                ? null
-                : SnackBarAction(
-                    label: tr3('撤销', 'Болдырмау', 'Отменить'),
-                    onPressed: undo)),
-        snackBarAnimationStyle: Motion.toastStyle);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+          SnackBar(
+              content: Text(coreMessage(message)),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
+              duration: Duration(milliseconds: undo == null ? 2500 : 6000),
+              // Undo also stays in the header, so the message need not linger.
+              persist: false,
+              action: undo == null
+                  ? null
+                  : SnackBarAction(
+                      label: tr3('撤销', 'Болдырмау', 'Отменить'),
+                      onPressed: undo)),
+          snackBarAnimationStyle: Motion.toastStyle);
   }
 
   /// Forget a start point or selection that the document no longer has.
@@ -1762,8 +1768,7 @@ class _HouseEditorState extends State<HouseEditor>
     final candidates = [
       if (tool == EditorTool.drawWall && drawingOrigin != null) drawingOrigin!,
       ...visibleWallAttachments(size)
-    ];
-    candidates.sort((a, b) => (painter.point(a.dx, a.dy, size) - local)
+    ]..sort((a, b) => (painter.point(a.dx, a.dy, size) - local)
         .distance
         .compareTo((painter.point(b.dx, b.dy, size) - local).distance));
     if (candidates.isEmpty) return null;
@@ -2658,7 +2663,7 @@ class _HouseEditorState extends State<HouseEditor>
         onPopInvokedWithResult: (didPop, result) async {
           if (!didPop) {
             await save();
-            if (mounted && !dirty) Navigator.pop(context);
+            if (context.mounted && !dirty) Navigator.pop(context);
           }
         },
         child: CallbackShortcuts(

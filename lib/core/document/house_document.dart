@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import 'package:yusal/core/document/house_extras.dart';
 export 'house_extras.dart';
 
@@ -43,6 +44,7 @@ bool _listEquals<T>(List<T> a, List<T> b) {
   return true;
 }
 
+@immutable
 class Meta {
   const Meta({
     required this.name,
@@ -62,6 +64,7 @@ class Meta {
   int get hashCode => Object.hash(name, createdAt, updatedAt);
 }
 
+@immutable
 class Defaults {
   const Defaults({
     required this.outerWallThickness,
@@ -121,6 +124,7 @@ class Defaults {
       ]);
 }
 
+@immutable
 class BuildingFootprint {
   const BuildingFootprint({
     required this.width,
@@ -140,6 +144,7 @@ class BuildingFootprint {
   int get hashCode => Object.hash(width, depth, northAngleDeg);
 }
 
+@immutable
 class GlobalAxis {
   const GlobalAxis({required this.id, required this.dir, required this.pos});
   final String id;
@@ -155,6 +160,7 @@ class GlobalAxis {
   int get hashCode => Object.hash(id, dir, pos);
 }
 
+@immutable
 class FloorAxis {
   const FloorAxis({
     required this.id,
@@ -177,6 +183,7 @@ class FloorAxis {
   int get hashCode => Object.hash(id, floorId, dir, pos);
 }
 
+@immutable
 class AxisSystem {
   AxisSystem({required List<GlobalAxis> global, required List<FloorAxis> floor})
       : global = List.unmodifiable(global),
@@ -193,6 +200,7 @@ class AxisSystem {
       Object.hash(Object.hashAll(global), Object.hashAll(floor));
 }
 
+@immutable
 class AxisRectangle {
   const AxisRectangle({
     required this.x0,
@@ -215,6 +223,7 @@ class AxisRectangle {
   int get hashCode => Object.hash(x0, x1, y0, y1);
 }
 
+@immutable
 class BoundaryAnchor {
   const BoundaryAnchor({
     required this.axisId,
@@ -240,6 +249,7 @@ sealed class WallOverride {
   final BoundaryAnchor anchor;
 }
 
+@immutable
 class OpenWall extends WallOverride {
   const OpenWall({required super.id, required super.anchor});
   @override
@@ -249,6 +259,7 @@ class OpenWall extends WallOverride {
   int get hashCode => Object.hash(id, anchor);
 }
 
+@immutable
 class ThicknessWall extends WallOverride {
   const ThicknessWall({
     required super.id,
@@ -267,6 +278,7 @@ class ThicknessWall extends WallOverride {
 }
 
 /// An independently drawn wall, including unfinished partitions.
+@immutable
 class SolidWall extends WallOverride {
   const SolidWall(
       {required super.id, required super.anchor, required this.value});
@@ -285,6 +297,7 @@ sealed class OpeningPosition {
   const OpeningPosition();
 }
 
+@immutable
 class CenterPosition extends OpeningPosition {
   const CenterPosition();
   @override
@@ -293,6 +306,7 @@ class CenterPosition extends OpeningPosition {
   int get hashCode => 0;
 }
 
+@immutable
 class FromStartPosition extends OpeningPosition {
   const FromStartPosition(this.d);
   final int d;
@@ -302,6 +316,7 @@ class FromStartPosition extends OpeningPosition {
   int get hashCode => Object.hash('fromStart', d);
 }
 
+@immutable
 class FromEndPosition extends OpeningPosition {
   const FromEndPosition(this.d);
   final int d;
@@ -329,6 +344,7 @@ sealed class Opening {
   OpeningKind get kind;
 }
 
+@immutable
 class DoorOpening extends Opening {
   const DoorOpening({
     required super.id,
@@ -360,6 +376,7 @@ class DoorOpening extends Opening {
   OpeningKind get kind => OpeningKind.door;
 }
 
+@immutable
 class WindowOpening extends Opening {
   const WindowOpening({
     required super.id,
@@ -384,6 +401,7 @@ class WindowOpening extends Opening {
   int get hashCode => Object.hash(id, anchor, position, width, height, sill);
 }
 
+@immutable
 class SlidingOpening extends Opening {
   const SlidingOpening({
     required super.id,
@@ -420,6 +438,7 @@ sealed class Stair {
   StairType get type;
 }
 
+@immutable
 class StraightStair extends Stair {
   const StraightStair({
     required super.id,
@@ -438,6 +457,7 @@ class StraightStair extends Stair {
   StairType get type => StairType.straight;
 }
 
+@immutable
 class TurnStair extends Stair {
   const TurnStair({
     required super.id,
@@ -461,6 +481,7 @@ class TurnStair extends Stair {
   final StairType type;
 }
 
+@immutable
 class Roof {
   const Roof.flat(this.parapetHeight)
       : type = RoofType.flat,
@@ -498,6 +519,7 @@ class Roof {
       Object.hash(type, parapetHeight, ridgeDir, pitchDeg, overhang);
 }
 
+@immutable
 class Room {
   Room({
     required this.id,
@@ -520,6 +542,7 @@ class Room {
   int get hashCode => Object.hash(id, type, name, Object.hashAll(regions));
 }
 
+@immutable
 class Floor {
   Floor({
     this.explicitWalls = false,
@@ -574,6 +597,7 @@ class Floor {
       Object.hashAll(outside));
 }
 
+@immutable
 class HouseDocument {
   HouseDocument({
     required this.schemaVersion,
@@ -624,6 +648,7 @@ class HouseDocument {
       );
 }
 
+@immutable
 class UndoableDesignState {
   UndoableDesignState({
     required this.defaults,

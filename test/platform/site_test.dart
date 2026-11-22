@@ -196,8 +196,7 @@ void main() {
 
     test('a taken scope leaves "recruiting" and shows under who builds',
         () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner2);
+      final b = backend()..signInAs(SeedIds.owner2);
       expect((await b.demandsForPost('post_aigerim')).map((d) => d.id),
           contains('dem_wall'));
       await liveContract(b);

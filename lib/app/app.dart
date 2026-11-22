@@ -77,44 +77,43 @@ class _HouseAppState extends State<HouseApp> {
 
   @override
   Widget build(BuildContext context) => UncontrolledProviderScope(
-          container: _providers,
-          child: ListenableBuilder(
-              listenable: AppSettings.instance,
-              builder: (context, _) {
-                final settings = AppSettings.instance;
-                _themes(settings.theme);
-                return MaterialApp(
-                    navigatorKey: appNavigator,
-                    navigatorObservers: FirebaseSetup.observers,
-                    title: 'Yusal',
-                    debugShowCheckedModeBanner: false,
-                    // System texts (back, close, copy / paste, pickers) and
-                    // what screen readers announce follow the app language.
-                    locale: Locale(settings.lang.name),
-                    supportedLocales: _locales,
-                    localizationsDelegates:
-                        GlobalMaterialLocalizations.delegates,
-                    theme: _light,
-                    darkTheme: _dark,
-                    themeMode: switch (settings.theme) {
-                      ThemeChoice.auto => ThemeMode.system,
-                      ThemeChoice.day => ThemeMode.light,
-                      ThemeChoice.night => ThemeMode.dark
-                    },
-                    builder: (context, child) => AppScope(
-                        child: VoiceHost(
-                            navigator: appNavigator,
-                            repos: repos,
-                            audio: voiceAudio,
-                            child: child!)),
-                    // `/h/<id>` is a shared house: open it directly, signed in
-                    // or not. Everything else is the app shell.
-                    onGenerateRoute: _route,
-                    // One route for the opening address, not one per path
-                    // segment, so a shared house has nothing underneath it.
-                    onGenerateInitialRoutes: (name) =>
-                        [_route(RouteSettings(name: name))]);
-              }));
+      container: _providers,
+      child: ListenableBuilder(
+          listenable: AppSettings.instance,
+          builder: (context, _) {
+            final settings = AppSettings.instance;
+            _themes(settings.theme);
+            return MaterialApp(
+                navigatorKey: appNavigator,
+                navigatorObservers: FirebaseSetup.observers,
+                title: 'Yusal',
+                debugShowCheckedModeBanner: false,
+                // System texts (back, close, copy / paste, pickers) and
+                // what screen readers announce follow the app language.
+                locale: Locale(settings.lang.name),
+                supportedLocales: _locales,
+                localizationsDelegates: GlobalMaterialLocalizations.delegates,
+                theme: _light,
+                darkTheme: _dark,
+                themeMode: switch (settings.theme) {
+                  ThemeChoice.auto => ThemeMode.system,
+                  ThemeChoice.day => ThemeMode.light,
+                  ThemeChoice.night => ThemeMode.dark
+                },
+                builder: (context, child) => AppScope(
+                    child: VoiceHost(
+                        navigator: appNavigator,
+                        repos: repos,
+                        audio: voiceAudio,
+                        child: child!)),
+                // `/h/<id>` is a shared house: open it directly, signed in
+                // or not. Everything else is the app shell.
+                onGenerateRoute: _route,
+                // One route for the opening address, not one per path
+                // segment, so a shared house has nothing underneath it.
+                onGenerateInitialRoutes: (name) =>
+                    [_route(RouteSettings(name: name))]);
+          }));
 
   static Widget _loginPage(BuildContext _) => const LoginPage();
 

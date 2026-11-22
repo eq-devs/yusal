@@ -45,7 +45,8 @@ class _SceneLabState extends State<SceneLab> {
   final scene = GlobalKey<SceneViewState>();
 
   // Frame timings, averaged over the last second.
-  final builds = <double>[], rasters = <double>[];
+  final builds = <double>[];
+  final rasters = <double>[];
   String stats = '';
   Timer? statsTimer;
   Timer? spin;
@@ -65,7 +66,7 @@ class _SceneLabState extends State<SceneLab> {
           '(max ${worst(rasters).toStringAsFixed(1)})   '
           'frames ${builds.length}/s·2\n'
           'faces ${scene.currentState?.model.faces.length ?? 0}   '
-          'drawn ${p?.items.length ?? 0}   culled ${p?.culled ?? 0}');
+          'drawn ${p?.itemCount ?? 0}   culled ${p?.culled ?? 0}');
       if (!bench) {
         builds.clear();
         rasters.clear();
@@ -101,7 +102,7 @@ class _SceneLabState extends State<SceneLab> {
     };
     // ignore: avoid_print
     print('BENCH house mode uiAvg uiMax gpuAvg gpuMax drawn culled');
-    for (final h in houses.keys)
+    for (final h in houses.keys) {
       for (final m in modes.entries) {
         setState(() {
           house = h;
@@ -135,7 +136,7 @@ class _SceneLabState extends State<SceneLab> {
             }
           });
           await SchedulerBinding.instance.endOfFrame;
-          drawn += s.painter?.items.length ?? 0;
+          drawn += s.painter?.itemCount ?? 0;
           culled += s.painter?.culled ?? 0;
           n++;
         }
@@ -149,6 +150,7 @@ class _SceneLabState extends State<SceneLab> {
             '${worst(builds).toStringAsFixed(2)} ${avg(rasters).toStringAsFixed(2)} '
             '${worst(rasters).toStringAsFixed(2)} ${drawn ~/ n} ${culled ~/ n}');
       }
+    }
     exit(0);
   }
 

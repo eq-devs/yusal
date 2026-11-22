@@ -11,8 +11,7 @@ export 'package:yusal/app/app.dart';
 /// milliseconds, no network), so the launch screen hands straight over to
 /// the real app, signed-in account included. Server work runs after.
 void main() {
-  final binding = WidgetsFlutterBinding.ensureInitialized();
-  binding.deferFirstFrame();
+  final binding = WidgetsFlutterBinding.ensureInitialized()..deferFirstFrame();
   runApp(const BootGate());
   Boot.ready.whenComplete(binding.allowFirstFrame);
   unawaited(Boot.background);

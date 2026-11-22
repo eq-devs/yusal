@@ -96,10 +96,11 @@ Map<String, Object?> wishSpec(
 
     // A house far too small for the wish keeps the rooms it cannot do
     // without.
-    for (final (row, across) in [(day, rows ? width : inner), (night, inner)])
+    for (final (row, across) in [(day, rows ? width : inner), (night, inner)]) {
       for (final extra in ['storage', 'boiler', 'dining', 'hall']) {
         if (least(row) > across * 1.5) row.remove(extra);
       }
+    }
 
     final rooms = <Map<String, Object?>>[];
     final doors = <Map<String, Object?>>[];
@@ -111,8 +112,8 @@ Map<String, Object?> wishSpec(
       if (types.isEmpty) return;
       // Each room its least width, the rest shared out by weight; a row
       // too short for that shrinks every room alike.
-      final floor = least(types),
-          total = types.fold(0, (sum, t) => sum + kind(t).weight);
+      final floor = least(types);
+      final total = types.fold(0, (sum, t) => sum + kind(t).weight);
       var x = 0;
       for (final (i, type) in types.indexed) {
         final k = kind(type);
@@ -229,7 +230,7 @@ Map<String, Object?> wishSpec(
 /// Whether a draft squeezes a room people live in below 2 m, or a small
 /// one below 1 m: the house is too small for what was asked.
 bool wishTooSmall(Map<String, Object?> spec) {
-  for (final floor in spec['floors']! as List)
+  for (final floor in spec['floors']! as List) {
     for (final room in (floor as Map)['rooms'] as List) {
       final w = (room as Map)['w_mm'] as int;
       final d = room['d_mm'] as int;
@@ -237,5 +238,6 @@ bool wishTooSmall(Map<String, Object?> spec) {
           .contains(room['type']);
       if (w < (lived ? 2000 : 1000) || d < (lived ? 2000 : 1000)) return true;
     }
+  }
   return false;
 }

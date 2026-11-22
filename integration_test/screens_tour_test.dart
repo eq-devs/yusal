@@ -17,8 +17,10 @@ import 'package:yusal/services/storage/project_store.dart';
 /// screenshot`): each screen is held for a few seconds and announced with a
 /// `SCREEN <name>` line.
 ///
-///   flutter test integration_test/screens_tour_test.dart -d <device> \
-///       --dart-define=TOUR_LANG=kk --dart-define=TOUR_NIGHT=true
+/// ```
+/// flutter test integration_test/screens_tour_test.dart -d <device> \
+///     --dart-define=TOUR_LANG=kk --dart-define=TOUR_NIGHT=true
+/// ```
 const _lang = String.fromEnvironment('TOUR_LANG', defaultValue: 'ru');
 const _night = bool.fromEnvironment('TOUR_NIGHT');
 

@@ -10,18 +10,19 @@ import 'package:yusal/features/voice/widgets/read_aloud_button.dart';
 
 class FakeReader extends ReadAloud {
   FakeReader({bool installed = false})
-      : _status = ValueNotifier(installed
+      : phase = ValueNotifier(installed
             ? const VoiceModelStatus(VoiceModelPhase.installed)
             : VoiceModelStatus.notInstalled);
-  final ValueNotifier<VoiceModelStatus> _status;
+
+  /// What [status] reports; tests set it to move the model along.
+  final ValueNotifier<VoiceModelStatus> phase;
   final _speaking = ValueNotifier(false);
   final spoken = <String>[];
   int stops = 0;
   bool cancelled = false;
 
   @override
-  ValueListenable<VoiceModelStatus> get status => _status;
-  set phase(VoiceModelStatus s) => _status.value = s;
+  ValueListenable<VoiceModelStatus> get status => phase;
   @override
   int get downloadBytes => 119000000;
   @override
@@ -29,16 +30,16 @@ class FakeReader extends ReadAloud {
   @override
   Future<void> start() async {}
   @override
-  Future<void> download() async => _status.value =
+  Future<void> download() async => phase.value =
       const VoiceModelStatus(VoiceModelPhase.downloading, fraction: .4);
   @override
   Future<void> cancel() async {
     cancelled = true;
-    _status.value = VoiceModelStatus.notInstalled;
+    phase.value = VoiceModelStatus.notInstalled;
   }
 
   @override
-  Future<void> delete() async => _status.value = VoiceModelStatus.notInstalled;
+  Future<void> delete() async => phase.value = VoiceModelStatus.notInstalled;
   @override
   ValueListenable<bool> get speaking => _speaking;
   @override
@@ -124,7 +125,7 @@ void main() {
       await t.pump();
       expect(find.byKey(const Key('voice-download-percent')), findsOneWidget);
       expect(find.text('40%'), findsOneWidget);
-      r.phase = installed;
+      r.phase.value = installed;
       await t.pumpAndSettle();
       expect(find.byKey(const Key('voice-download')), findsNothing,
           reason: 'the dialog closes by itself');
@@ -144,7 +145,7 @@ void main() {
       expect(find.byKey(const Key('voice-download')), findsNothing);
       expect(find.byKey(const Key('voice-speak-progress')), findsOneWidget);
       expect(r.cancelled, isFalse);
-      r.phase = installed;
+      r.phase.value = installed;
       await t.pump();
       expect(r.spoken, ['Дайын']);
     });
@@ -159,14 +160,14 @@ void main() {
       await t.tap(find.byKey(const Key('voice-download-cancel')));
       await t.pumpAndSettle();
       expect(r.cancelled, isTrue);
-      r.phase = installed;
+      r.phase.value = installed;
       await t.pump();
       expect(r.spoken, isEmpty);
     });
 
     testWidgets('a failed download says why and can be retried', (t) async {
       final r = FakeReader()
-        ..phase =
+        ..phase.value =
             const VoiceModelStatus(VoiceModelPhase.failed, error: 'no space');
       await pump(t, r);
       await t.tap(find.byKey(const Key('voice-speak')));
@@ -198,7 +199,7 @@ void main() {
       await t.tap(find.byKey(const Key('kazakh-voice-download')));
       await t.pumpAndSettle();
       expect(find.byKey(const Key('kazakh-voice-progress')), findsOneWidget);
-      r.phase = installed;
+      r.phase.value = installed;
       await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('kazakh-voice-delete')));
       await t.pumpAndSettle();

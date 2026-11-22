@@ -36,7 +36,8 @@ class DesignExtract {
   final double buildingArea;
 
   /// Footprint, mm.
-  final int width, depth;
+  final int width;
+  final int depth;
   final int floors;
 
   /// Rooms over all floors and the estimate's grand total in tenge.

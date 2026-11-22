@@ -48,9 +48,9 @@ class HouseHome extends StatefulWidget {
 
   /// Platform hooks: publish a demand from a design and back it up. The
   /// design tool works without them.
-  final void Function(ProjectEntry entry)? onFindBuilders,
-      onPublishPost,
-      onBackup;
+  final void Function(ProjectEntry entry)? onFindBuilders;
+  final void Function(ProjectEntry entry)? onPublishPost;
+  final void Function(ProjectEntry entry)? onBackup;
 
   /// Fires when designs were added from outside, e.g. restored backups.
   final Listenable? reload;
@@ -485,7 +485,7 @@ class _HouseHomeState extends State<HouseHome>
                             }),
                           ])));
             });
-    if (key == null) return;
+    if (key == null || !mounted) return;
     if (key == 'blank') return create();
     if (key == 'sketch') return create(sketch: true);
     if (key == 'wizard') {
@@ -1203,13 +1203,14 @@ class _SizePreviewPainter extends CustomPainter {
         center: size.center(Offset.zero) + const Offset(6, -4),
         width: w * k,
         height: d * k);
-    canvas.drawRect(rect, Paint()..color = accent.withValues(alpha: 0.12));
-    canvas.drawRect(
-        rect,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3
-          ..color = ink);
+    canvas
+      ..drawRect(rect, Paint()..color = accent.withValues(alpha: 0.12))
+      ..drawRect(
+          rect,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3
+            ..color = ink);
     void label(String text, Offset at,
         {bool vertical = false, double size = 11}) {
       final tp = TextPainter(
@@ -1219,8 +1220,9 @@ class _SizePreviewPainter extends CustomPainter {
                   fontSize: size, color: vertical || size < 12 ? muted : ink)),
           textDirection: TextDirection.ltr)
         ..layout();
-      canvas.save();
-      canvas.translate(at.dx, at.dy);
+      canvas
+        ..save()
+        ..translate(at.dx, at.dy);
       if (vertical) canvas.rotate(-math.pi / 2);
       tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
       canvas.restore();

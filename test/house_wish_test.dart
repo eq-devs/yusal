@@ -77,7 +77,7 @@ void main() {
       (7000, 5500),
       (20000, 12000),
       (6000, 6000)
-    ])
+    ]) {
       for (final floors in [1, 2]) {
         for (final beds in [1, 2, 3, 4, 5]) {
           for (final baths in [1, 2]) {
@@ -119,6 +119,7 @@ void main() {
           }
         }
       }
+    }
     // ignore: avoid_print
     print(
         '$refused refused, ${notes.length} with notes\n${notes.take(40).join('\n')}');

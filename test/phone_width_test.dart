@@ -49,8 +49,8 @@ void main() {
       final repos = MockBackend(
           clock: MockClock(DateTime.utc(2026, 11, 3, 9)),
           latency: Duration.zero,
-          autoReviewDelay: Duration.zero);
-      repos.signInAs(SeedIds.owner);
+          autoReviewDelay: Duration.zero)
+        ..signInAs(SeedIds.owner);
       await t.pumpWidget(ProviderScope(
           child: HouseApp(
               repos: repos, store: ProjectStore(fileSystem: MemoryFiles()))));

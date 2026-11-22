@@ -133,13 +133,14 @@ List<UtilitySpot> suggestUtilities(
         if (!blocked) candidates.add((x: x, y: y));
       }
     }
-    if (candidates.isNotEmpty)
+    if (candidates.isNotEmpty) {
       for (var k = 0; k < sockets; k++) {
         final c = candidates[((k + 0.5) * candidates.length / sockets)
             .floor()
             .clamp(0, candidates.length - 1)];
         add(UtilityKind.socket, c.x, c.y);
       }
+    }
     // Water and drains at wet furniture, else a default pair.
     final wet = room.type == RoomType.kitchen || room.type == RoomType.bathroom;
     final fixtures = doc.extras.furniture.where((f) =>
@@ -217,7 +218,11 @@ class UtilityTakeoff {
 
   /// Metres: 3×1.5 mm² for lights, switches and vents; 3×2.5 mm² for
   /// sockets; cold plus hot water; drains; radiator supply plus return.
-  final double lightCable, powerCable, waterPipe, drainPipe, heatingPipe;
+  final double lightCable;
+  final double powerCable;
+  final double waterPipe;
+  final double drainPipe;
+  final double heatingPipe;
   int count(UtilityKind k) => counts[k] ?? 0;
   int get electrical =>
       count(UtilityKind.socket) +

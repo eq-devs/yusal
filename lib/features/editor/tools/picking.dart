@@ -14,9 +14,9 @@ extension _Picking on _HouseEditorState {
       }
     }
     // Tolerances are screen pixels, so they stay finger-sized at any zoom.
-    final x = painter.worldPoint(point, size).x,
-        y = painter.worldPoint(point, size).y,
-        tolerance = 14 / (painter.scale(size) * canvasZoom);
+    final x = painter.worldPoint(point, size).x;
+    final y = painter.worldPoint(point, size).y;
+    final tolerance = 14 / (painter.scale(size) * canvasZoom);
     final placements = derived.floors[floorIndex].openings.where((p) {
       final along = p.axis.dir == AxisDir.H ? x : y;
       final cross = p.axis.dir == AxisDir.H ? y : x;
@@ -233,24 +233,25 @@ extension _Picking on _HouseEditorState {
       if (choice == null || !mounted) return;
       if (choice == 'move') {
         startStairStamp(moving: stair);
-      } else if (choice == 'size')
+      } else if (choice == 'size') {
         await resizeStair(stair);
-      else if (choice == 'delete')
+      } else if (choice == 'delete') {
         action('RemoveStair', {'stairId': stair.id});
-      else if (choice == 'turn')
+      } else if (choice == 'turn') {
         action('UpdateStair', {
           'stairId': stair.id,
           'turn': stair is TurnStair && stair.turn == StairTurn.left
               ? 'right'
               : 'left'
         });
-      else if (choice == 'start')
+      } else if (choice == 'start') {
         action('UpdateStair', {
           'stairId': stair.id,
           'startEdge': StairEdge.values[(stair.startEdge.index + 1) % 4].name
         });
-      else
+      } else {
         action('UpdateStair', {'stairId': stair.id, 'type': choice});
+      }
     }
   }
 

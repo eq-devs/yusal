@@ -45,11 +45,11 @@ class FakeGallery extends FileSelectorPlatform {
 /// A small PNG drawn on the spot.
 Future<Uint8List> sitePhoto() async {
   final rec = ui.PictureRecorder();
-  final c = Canvas(rec);
-  c.drawRect(const Rect.fromLTWH(0, 0, 320, 240),
-      Paint()..color = const Color(0xffb5651d));
-  c.drawRect(const Rect.fromLTWH(40, 60, 240, 120),
-      Paint()..color = const Color(0xffeeeeee));
+  Canvas(rec)
+    ..drawRect(const Rect.fromLTWH(0, 0, 320, 240),
+        Paint()..color = const Color(0xffb5651d))
+    ..drawRect(const Rect.fromLTWH(40, 60, 240, 120),
+        Paint()..color = const Color(0xffeeeeee));
   final img = await rec.endRecording().toImage(320, 240);
   final png = await img.toByteData(format: ui.ImageByteFormat.png);
   return png!.buffer.asUint8List();

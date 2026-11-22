@@ -135,7 +135,8 @@ extension _WallTool on _HouseEditorState {
       alignGuide = null;
       if (across.abs() >= along.abs()) {
         // Sideways: walls that end on this one stretch along with it.
-        var position = carrier + across, best = 14 * pixel;
+        var position = carrier + across;
+        var best = 14 * pixel;
         for (final axis in vertical ? base.axes.v : base.axes.h) {
           if (axis.pos == carrier) continue;
           final distance = (axis.pos - (carrier + across)).abs();

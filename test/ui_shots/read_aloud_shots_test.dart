@@ -109,7 +109,7 @@ void main() {
     await t.tap(find.byKey(const Key('voice-download-hide')));
     await t.pumpAndSettle();
     await snap('downloading_in_background');
-    reader.phase = const VoiceModelStatus(VoiceModelPhase.installed);
+    reader.phase.value = const VoiceModelStatus(VoiceModelPhase.installed);
     await t.pump();
     await snap('reading');
     debugDefaultTargetPlatformOverride = null;

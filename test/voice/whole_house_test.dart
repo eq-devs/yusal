@@ -83,8 +83,7 @@ void main() {
   testWidgets('a whole house replaces the open design and undoes in one step',
       (t) async {
     await editor(t);
-    final host = VoiceScreens.current! as DesignHost;
-    host.beginUndoGroup();
+    final host = VoiceScreens.current! as DesignHost..beginUndoGroup();
     final made = await say('design.create_house', {'spec': spec});
     host.endUndoGroup();
     await t.pump();

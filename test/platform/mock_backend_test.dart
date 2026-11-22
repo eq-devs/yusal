@@ -136,8 +136,7 @@ void main() {
 
     test('the chat phone can be changed, cleared and must look like one',
         () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final a = await b.updatePhone('+7 (701) 555-00-11');
       expect(a.phone, '+77015550011');
       expect(b.currentAccount?.phone, '+77015550011');
@@ -149,8 +148,7 @@ void main() {
     });
 
     test('deleting an account takes its demands down', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       await b.deleteAccount();
       expect(b.currentAccount, isNull);
       expect(b.demands['dem_wall']!.status, DemandStatus.closed);
@@ -189,8 +187,7 @@ void main() {
     });
 
     test('a demand needs a valid budget but may ask for quotes', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final bad = DemandVersion(
           no: 0,
           title: 'x',
@@ -240,8 +237,9 @@ void main() {
     test('sends the outcome follow-up on day 3 only once', () async {
       final b = backend();
       final d = await publishAsOwner(b);
-      b.advanceTime(const Duration(days: 3, hours: 1));
-      b.advanceTime(const Duration(hours: 1));
+      b
+        ..advanceTime(const Duration(days: 3, hours: 1))
+        ..advanceTime(const Duration(hours: 1));
       final followUps = b.notices.values.where(
           (n) => n.kind == NoticeKind.outcomeFollowUp && n.refId == d.id);
       expect(followUps, hasLength(1));
@@ -277,8 +275,7 @@ void main() {
 
   group('applications and cooperation', () {
     test('a double tap creates one application', () async {
-      final b = backend();
-      b.signInAs(SeedIds.electrician);
+      final b = backend()..signInAs(SeedIds.electrician);
       final p = await b.saveProfile(ServiceProfile(
           id: '',
           ownerId: '',
@@ -300,8 +297,7 @@ void main() {
     });
 
     test('nobody can apply to their own demand', () async {
-      final b = backend();
-      b.signInAs(SeedIds.team);
+      final b = backend()..signInAs(SeedIds.team);
       await expectLater(
           b.submit(
               demandId: 'dem_rebar',
@@ -315,8 +311,7 @@ void main() {
 
     test('cooperation needs both sides; one side cannot confirm twice',
         () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final coop = await b.invite('app_mason_hire', terms(headcount: 1));
       expect(coop.status, CooperationStatus.pending);
       expect(b.applications['app_mason_hire']!.status,
@@ -336,8 +331,7 @@ void main() {
     });
 
     test('a declined invitation returns the application', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final coop = await b.invite('app_team_wall', terms());
       b.signInAs(SeedIds.team);
       final declined = await b.decline(coop.id);
@@ -350,8 +344,7 @@ void main() {
     });
 
     test('changes need the other side and keep history', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final coop = await b.invite('app_team_wall', terms());
       b.signInAs(SeedIds.team);
       await b.confirm(coop.id);
@@ -366,8 +359,7 @@ void main() {
     });
 
     test('an unanswered end is unilateral and opens no reviews', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final coop = await b.invite('app_team_wall', terms());
       b.signInAs(SeedIds.team);
       await b.confirm(coop.id);
@@ -380,8 +372,7 @@ void main() {
     });
 
     test('mutual end opens hidden reviews until both are in', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final coop = await b.invite('app_team_wall', terms());
       b.signInAs(SeedIds.team);
       await b.confirm(coop.id);
@@ -411,8 +402,7 @@ void main() {
 
   group('chat', () {
     test('blocking stops messages; offline sends fail and retry', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final conv = await b.openConversation(SeedIds.mason);
       b.simulateOffline = true;
       final failed = await b.send(conv.id, MessageKind.text, text: '你好');
@@ -428,8 +418,7 @@ void main() {
     });
 
     test('rate limit per minute', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final conv = await b.openConversation(SeedIds.electrician);
       for (var i = 0; i < chatLimitPerMinute; i++) {
         await b.send(conv.id, MessageKind.text, text: '$i');
@@ -441,8 +430,7 @@ void main() {
     });
 
     test('unread counts follow reading', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       expect(await b.unreadMessages(), greaterThan(0));
       final conv = (await b.conversations()).first;
       await b.markConversationRead(conv.id);
@@ -452,8 +440,7 @@ void main() {
 
   group('backups', () {
     test('a cloud copy changed elsewhere is never overwritten', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       await b.upload(
           projectId: 'p1', name: 'A', houseText: '{}', designUpdatedAt: 't1');
       b.touchBackupFromOtherDevice('p1', '{"x":1}', 't9');
@@ -480,8 +467,7 @@ void main() {
 
   group('moderation', () {
     test('only moderators review; decisions are audited', () async {
-      final b = backend();
-      b.autoReviewDelay = null;
+      final b = backend()..autoReviewDelay = null;
       final d = await publishAsOwner(b);
       expect(d.status, DemandStatus.pendingReview);
       await expectLater(b.approve(d.id), throwsA(isA<ApiFailure>()));
@@ -500,8 +486,7 @@ void main() {
     test(
         'roles: viewers read, only superadmins grant, nobody changes their own',
         () async {
-      final b = backend();
-      b.signInAs(SeedIds.admin);
+      final b = backend()..signInAs(SeedIds.admin);
       expect(b.currentAccount!.role, AdminRoles.superadmin);
       await b.setRole(SeedIds.owner2, AdminRoles.viewer);
       await expectLater(
@@ -518,8 +503,7 @@ void main() {
 
     test('a reported house is hidden, the owner appeals and it comes back',
         () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner2);
+      final b = backend()..signInAs(SeedIds.owner2);
       await b.report(ReportTarget.post, 'post_aigerim', 'code:fake');
       b.signInAs(SeedIds.admin);
       final open = await b.reports(status: ReportStatus.open);
@@ -570,8 +554,7 @@ void main() {
     });
 
     test('an upheld profile report keeps it hidden from its owner', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       await b.report(ReportTarget.profile, 'prof_mason', 'code:fake');
       b.signInAs(SeedIds.admin);
       final v = (await b.reports())
@@ -586,8 +569,7 @@ void main() {
     });
 
     test('restriction can be lifted; admins cannot be restricted', () async {
-      final b = backend();
-      b.signInAs(SeedIds.admin);
+      final b = backend()..signInAs(SeedIds.admin);
       await b.setRestriction(SeedIds.mason, true, 'code:spam');
       expect(b.accounts[SeedIds.mason]!.restricted, isTrue);
       expect((await b.users(restricted: true)).items.map((u) => u.id),
@@ -624,8 +606,7 @@ void main() {
     });
 
     test('a restricted account cannot share its phone in chat', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final c = await b.openConversation(SeedIds.mason);
       b.signInAs(SeedIds.admin);
       await b.setRestriction(SeedIds.owner, true, 'code:spam');
@@ -637,8 +618,7 @@ void main() {
     });
 
     test('batch decisions report what changed meanwhile', () async {
-      final b = backend();
-      b.autoReviewDelay = null;
+      final b = backend()..autoReviewDelay = null;
       final a = await publishAsOwner(b);
       final c = await publishAsOwner(b, text: '第二个');
       b.signInAs(SeedIds.admin);
@@ -651,8 +631,7 @@ void main() {
 
   group('trust', () {
     test('verification by a moderator marks the profile verified', () async {
-      final b = backend();
-      b.signInAs(SeedIds.mason);
+      final b = backend()..signInAs(SeedIds.mason);
       final v = await b.requestVerification('prof_mason', '+77010000000', [
         Uint8List.fromList([1, 2, 3])
       ]);
@@ -668,8 +647,7 @@ void main() {
     });
 
     test('alerts notify matching workers when a demand opens', () async {
-      final b = backend();
-      b.signInAs(SeedIds.mason);
+      final b = backend()..signInAs(SeedIds.mason);
       await b.saveDemandAlert(
           const DemandAlert(on: true, types: [DemandType.contract]));
       b.signInAs(SeedIds.electrician);
@@ -686,8 +664,7 @@ void main() {
     });
 
     test('only community and alert pushes can be muted', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       await b.saveNotificationSettings(
           const NotificationSettings(muted: [PushCategory.community]));
       expect((await b.notificationSettings()).muted, [PushCategory.community]);

@@ -249,8 +249,9 @@ class FloorPlanPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = px(1.4);
       dashedRect(canvas, r, line, dash: 6);
-      canvas.drawLine(r.topLeft, r.bottomRight, line..strokeWidth = px(0.8));
-      canvas.drawLine(r.topRight, r.bottomLeft, line);
+      canvas
+        ..drawLine(r.topLeft, r.bottomRight, line..strokeWidth = px(0.8))
+        ..drawLine(r.topRight, r.bottomLeft, line);
       // Low in the hole, clear of the name of the room around it.
       if (belowLabel != null && r.width > 40) {
         label(canvas, belowLabel!,
@@ -299,9 +300,10 @@ class FloorPlanPainter extends CustomPainter {
             fontWeight: weight);
     final t = _PlanText.laidOut(
         value, style, maxWidth, maxWidth == null ? null : maxLines ?? 3);
-    canvas.save();
-    canvas.translate(at.dx, at.dy);
-    canvas.rotate(angle);
+    canvas
+      ..save()
+      ..translate(at.dx, at.dy)
+      ..rotate(angle);
     if (halo != null) {
       final box = Rect.fromCenter(
           center: Offset.zero,
@@ -323,11 +325,12 @@ class FloorPlanPainter extends CustomPainter {
     final s = scale(size);
 
     // Site pieces (terrace, porch) sit under the house.
-    if (showFurniture)
+    if (showFurniture) {
       for (final f in furniture.where((f) =>
           f.kind == FurnitureKind.terrace || f.kind == FurnitureKind.porch)) {
         drawFurniture(canvas, size, f);
       }
+    }
 
     // One path per space so adjacent cells do not show anti-aliased seams.
     final fills = <String?, Path>{};
@@ -350,7 +353,7 @@ class FloorPlanPainter extends CustomPainter {
       canvas.drawPath(entry.value, paint);
     }
     drawBelow(canvas, size);
-    if (showGridDimensions)
+    if (showGridDimensions) {
       for (final entry in base.owners.entries) {
         final c = entry.key;
         final r = PlanRect(
@@ -365,6 +368,7 @@ class FloorPlanPainter extends CustomPainter {
               ..style = PaintingStyle.stroke
               ..strokeWidth = 0.8);
       }
+    }
 
     if (showFurniture) {
       final flat = furniture
@@ -394,12 +398,12 @@ class FloorPlanPainter extends CustomPainter {
           temporary.addRect(r);
       }
     }
-    canvas.drawPath(
-        temporary, Paint()..color = Tokens.mix(t.wall, 0.3, t.panel));
-    canvas.drawPath(solid, Paint()..color = t.wall);
-    canvas.drawPath(hatched, Paint()..color = t.wall);
-    canvas.save();
-    canvas.clipPath(hatched);
+    canvas
+      ..drawPath(temporary, Paint()..color = Tokens.mix(t.wall, 0.3, t.panel))
+      ..drawPath(solid, Paint()..color = t.wall)
+      ..drawPath(hatched, Paint()..color = t.wall)
+      ..save()
+      ..clipPath(hatched);
     final bounds = hatched.getBounds();
     final hatch = Paint()
       ..color = t.bg
@@ -487,29 +491,32 @@ class FloorPlanPainter extends CustomPainter {
               angle0 + sweep * k / pieces, sweep / pieces, false, arc);
         }
       } else {
-        canvas.drawRect(cut, Paint()..color = t.panel);
-        canvas.drawRect(
-            cut,
-            Paint()
-              ..color = t.wall
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = px(0.8));
+        canvas
+          ..drawRect(cut, Paint()..color = t.panel)
+          ..drawRect(
+              cut,
+              Paint()
+                ..color = t.wall
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = px(0.8));
         final glass = Paint()
           ..color = t.chk
           ..strokeWidth = px(1.2);
         final normal = horizontal ? Offset(0, px(2.2)) : Offset(px(2.2), 0);
-        canvas.drawLine(start - normal, end - normal, glass);
-        canvas.drawLine(start + normal, end + normal, glass);
+        canvas
+          ..drawLine(start - normal, end - normal, glass)
+          ..drawLine(start + normal, end + normal, glass);
         if (opening is SlidingOpening) {
           final mid = (start + end) / 2;
           final along = (end - start) / (end - start).distance;
           final leafPaint = Paint()
             ..color = t.ink
             ..strokeWidth = px(1.8);
-          canvas.drawLine(start - normal * 1.4,
-              mid + along * px(4) - normal * 1.4, leafPaint);
-          canvas.drawLine(mid - along * px(4) + normal * 1.4,
-              end + normal * 1.4, leafPaint);
+          canvas
+            ..drawLine(start - normal * 1.4, mid + along * px(4) - normal * 1.4,
+                leafPaint)
+            ..drawLine(mid - along * px(4) + normal * 1.4, end + normal * 1.4,
+                leafPaint);
         }
       }
     }
@@ -541,15 +548,16 @@ class FloorPlanPainter extends CustomPainter {
       }
       for (final sl in sleeves) {
         final c = point(sl.x.toDouble(), sl.y.toDouble(), size);
-        canvas.drawCircle(c, math.max(px(4), sl.diameter / 2 * s * 1.6),
-            Paint()..color = t.chk);
-        canvas.drawCircle(
-            c,
-            math.max(px(4), sl.diameter / 2 * s * 1.6),
-            Paint()
-              ..color = t.panel
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = px(1));
+        canvas
+          ..drawCircle(c, math.max(px(4), sl.diameter / 2 * s * 1.6),
+              Paint()..color = t.chk)
+          ..drawCircle(
+              c,
+              math.max(px(4), sl.diameter / 2 * s * 1.6),
+              Paint()
+                ..color = t.panel
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = px(1));
         label(canvas, '${sleeveName(sl.kind)} Ø${sl.diameter}',
             c + Offset(0, px(14)),
             font: 10, color: t.chk, monospace: true, halo: t.panel);
@@ -564,10 +572,10 @@ class FloorPlanPainter extends CustomPainter {
           largest == null ? 80.0 : (largest.right - largest.left) * s;
       // Fit the label to the room as seen on screen: drop the dimensions,
       // then the area, then the name, rather than spill over walls.
-      final screenWidth = available * handleScale,
-          screenHeight = largest == null
-              ? 60.0
-              : (largest.top - largest.bottom) * s * handleScale;
+      final screenWidth = available * handleScale;
+      final screenHeight = largest == null
+          ? 60.0
+          : (largest.top - largest.bottom) * s * handleScale;
       if (screenWidth < 28 || screenHeight < 18) continue;
       final name = labels[room.id] ?? '';
       final showArea = screenHeight >= 36 && screenWidth >= 44;
@@ -686,54 +694,61 @@ class FloorPlanPainter extends CustomPainter {
     }
     switch (u.kind) {
       case UtilityKind.light:
-        canvas.drawCircle(c, px(7), back);
-        canvas.drawCircle(c, px(7), stroke);
+        canvas
+          ..drawCircle(c, px(7), back)
+          ..drawCircle(c, px(7), stroke);
         final d = px(4.9);
-        canvas.drawLine(c + Offset(-d, -d), c + Offset(d, d), stroke);
-        canvas.drawLine(c + Offset(-d, d), c + Offset(d, -d), stroke);
+        canvas
+          ..drawLine(c + Offset(-d, -d), c + Offset(d, d), stroke)
+          ..drawLine(c + Offset(-d, d), c + Offset(d, -d), stroke);
       case UtilityKind.lightSwitch:
-        canvas.drawLine(c, c + Offset(px(7), -px(7)), stroke);
-        canvas.drawCircle(c, px(3.5), fill);
+        canvas
+          ..drawLine(c, c + Offset(px(7), -px(7)), stroke)
+          ..drawCircle(c, px(3.5), fill);
       case UtilityKind.socket:
         final r = Rect.fromCircle(center: c, radius: px(6));
-        canvas.drawArc(r, math.pi, math.pi, true, back);
-        canvas.drawArc(r, math.pi, math.pi, false, stroke);
-        canvas.drawLine(c + Offset(-px(7), 0), c + Offset(px(7), 0), stroke);
-        canvas.drawLine(c + Offset(0, -px(6)), c + Offset(0, -px(10)), stroke);
+        canvas
+          ..drawArc(r, math.pi, math.pi, true, back)
+          ..drawArc(r, math.pi, math.pi, false, stroke)
+          ..drawLine(c + Offset(-px(7), 0), c + Offset(px(7), 0), stroke)
+          ..drawLine(c + Offset(0, -px(6)), c + Offset(0, -px(10)), stroke);
       case UtilityKind.vent:
         final r = Rect.fromCenter(center: c, width: px(14), height: px(14));
-        canvas.drawRect(r, back);
-        canvas.drawRect(r, stroke);
-        canvas.drawCircle(c, px(4.5), stroke);
+        canvas
+          ..drawRect(r, back)
+          ..drawRect(r, stroke)
+          ..drawCircle(c, px(4.5), stroke);
       case UtilityKind.panel:
         final r = Rect.fromCenter(center: c, width: px(18), height: px(9));
-        canvas.drawRect(r, fill);
-        canvas.drawLine(
-            r.topLeft,
-            r.bottomRight,
-            Paint()
-              ..color = t.panel
-              ..strokeWidth = px(1.2));
+        canvas
+          ..drawRect(r, fill)
+          ..drawLine(
+              r.topLeft,
+              r.bottomRight,
+              Paint()
+                ..color = t.panel
+                ..strokeWidth = px(1.2));
       case UtilityKind.water:
-        canvas.drawCircle(c, px(5.5), fill);
-        canvas.drawCircle(
-            c,
-            px(5.5),
-            Paint()
-              ..color = t.panel
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = px(1));
+        canvas
+          ..drawCircle(c, px(5.5), fill)
+          ..drawCircle(
+              c,
+              px(5.5),
+              Paint()
+                ..color = t.panel
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = px(1));
       case UtilityKind.drain:
-        canvas.drawCircle(c, px(5.5), back);
-        canvas.drawCircle(c, px(5.5), stroke);
-        canvas.drawLine(
-            c + Offset(-px(5.5), 0), c + Offset(px(5.5), 0), stroke);
-        canvas.drawLine(
-            c + Offset(0, -px(5.5)), c + Offset(0, px(5.5)), stroke);
+        canvas
+          ..drawCircle(c, px(5.5), back)
+          ..drawCircle(c, px(5.5), stroke)
+          ..drawLine(c + Offset(-px(5.5), 0), c + Offset(px(5.5), 0), stroke)
+          ..drawLine(c + Offset(0, -px(5.5)), c + Offset(0, px(5.5)), stroke);
       case UtilityKind.radiator:
         final r = Rect.fromCenter(center: c, width: px(22), height: px(8));
-        canvas.drawRect(r, back);
-        canvas.drawRect(r, stroke);
+        canvas
+          ..drawRect(r, back)
+          ..drawRect(r, stroke);
         for (var k = 1; k < 5; k++) {
           final x = r.left + r.width * k / 5;
           canvas.drawLine(Offset(x, r.top), Offset(x, r.bottom), stroke);
@@ -769,30 +784,33 @@ class FloorPlanPainter extends CustomPainter {
 
     if (wallHandle != null) {
       final rect = rectangle(wallHandle!, size);
-      canvas.drawLine(
-          rect.topLeft,
-          rect.bottomRight,
-          Paint()
-            ..color = t.accent
-            ..strokeWidth = 4);
-      canvas.drawCircle(rect.center, 13, Paint()..color = t.accent);
+      canvas
+        ..drawLine(
+            rect.topLeft,
+            rect.bottomRight,
+            Paint()
+              ..color = t.accent
+              ..strokeWidth = 4)
+        ..drawCircle(rect.center, 13, Paint()..color = t.accent);
       final cross = Paint()
         ..color = t.accentInk
         ..strokeWidth = 2;
-      canvas.drawLine(rect.center - const Offset(6, 0),
-          rect.center + const Offset(6, 0), cross);
-      canvas.drawLine(rect.center - const Offset(0, 6),
-          rect.center + const Offset(0, 6), cross);
+      canvas
+        ..drawLine(rect.center - const Offset(6, 0),
+            rect.center + const Offset(6, 0), cross)
+        ..drawLine(rect.center - const Offset(0, 6),
+            rect.center + const Offset(0, 6), cross);
     }
     if (resizeHandles) {
       // Round grips with two-way arrows: drag right edge for width, top
       // edge for length.
-      final right = point(width, depth / 2, size),
-          top = point(width / 2, depth, size);
+      final right = point(width, depth / 2, size);
+      final top = point(width / 2, depth, size);
       for (final (center, horizontal) in [(right, true), (top, false)]) {
         final r = px(16);
-        canvas.drawCircle(center, r + px(2), Paint()..color = t.panel);
-        canvas.drawCircle(center, r, Paint()..color = t.accent);
+        canvas
+          ..drawCircle(center, r + px(2), Paint()..color = t.panel)
+          ..drawCircle(center, r, Paint()..color = t.accent);
         final pen = Paint()
           ..color = t.accentInk
           ..strokeWidth = px(2)
@@ -804,8 +822,9 @@ class FloorPlanPainter extends CustomPainter {
         canvas.drawLine(center - axis * reach, center + axis * reach, pen);
         for (final sign in [-1.0, 1.0]) {
           final tip = center + axis * reach * sign;
-          canvas.drawLine(tip, tip - axis * head * sign + normal * head, pen);
-          canvas.drawLine(tip, tip - axis * head * sign - normal * head, pen);
+          canvas
+            ..drawLine(tip, tip - axis * head * sign + normal * head, pen)
+            ..drawLine(tip, tip - axis * head * sign - normal * head, pen);
         }
       }
     }
@@ -824,13 +843,14 @@ class FloorPlanPainter extends CustomPainter {
       final box = Rect.fromCenter(
           center: at, width: tp.width + px(16), height: tp.height + px(8));
       final shape = RRect.fromRectAndRadius(box, Radius.circular(px(10)));
-      canvas.drawRRect(shape, Paint()..color = t.panel.withValues(alpha: 0.94));
-      canvas.drawRRect(
-          shape,
-          Paint()
-            ..color = color
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = px(1.2));
+      canvas
+        ..drawRRect(shape, Paint()..color = t.panel.withValues(alpha: 0.94))
+        ..drawRRect(
+            shape,
+            Paint()
+              ..color = color
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = px(1.2));
       tp.paint(canvas, box.center - Offset(tp.width / 2, tp.height / 2));
       tp.dispose();
     }
@@ -849,19 +869,21 @@ class FloorPlanPainter extends CustomPainter {
         canvas.drawLine(a + unit * d, a + unit * (d + dash), guide);
       }
       final n = Offset(-unit.dy, unit.dx) * px(8);
-      canvas.drawLine(b, b - unit * px(12) + n, guide);
-      canvas.drawLine(b, b - unit * px(12) - n, guide);
+      canvas
+        ..drawLine(b, b - unit * px(12) + n, guide)
+        ..drawLine(b, b - unit * px(12) - n, guide);
     }
     if (draft != null) {
       final rect = rectangle(draft!, size);
       final tone = draftInvalid ? t.crit : t.accent;
-      canvas.drawRect(rect, Paint()..color = tone.withValues(alpha: 0.15));
-      canvas.drawRect(
-          rect,
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..color = tone
-            ..strokeWidth = 3);
+      canvas
+        ..drawRect(rect, Paint()..color = tone.withValues(alpha: 0.15))
+        ..drawRect(
+            rect,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..color = tone
+              ..strokeWidth = 3);
       if (draftIsLine && draftLabel != null) {
         // Beside the middle of the line: never under the start handle or
         // the finger at the free end.
@@ -902,23 +924,25 @@ class FloorPlanPainter extends CustomPainter {
       final end = point(draftEnd!.dx, draftEnd!.dy, size);
       final tone = draftInvalid ? t.crit : t.ok;
       if (draftConnected && !draftInvalid) {
-        canvas.drawCircle(
-            end,
-            px(13),
-            Paint()
-              ..color = tone
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = px(3));
-        canvas.drawCircle(end, px(6), Paint()..color = tone);
+        canvas
+          ..drawCircle(
+              end,
+              px(13),
+              Paint()
+                ..color = tone
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = px(3))
+          ..drawCircle(end, px(6), Paint()..color = tone);
       } else {
-        canvas.drawCircle(end, px(7), Paint()..color = t.panel);
-        canvas.drawCircle(
-            end,
-            px(7),
-            Paint()
-              ..color = tone
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = px(2));
+        canvas
+          ..drawCircle(end, px(7), Paint()..color = t.panel)
+          ..drawCircle(
+              end,
+              px(7),
+              Paint()
+                ..color = tone
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = px(2));
       }
     }
     if (editableWall != null) {
@@ -948,8 +972,9 @@ class FloorPlanPainter extends CustomPainter {
         grips.end,
         if (grips.middle != null) grips.middle!
       ]) {
-        canvas.drawCircle(p, px(12), Paint()..color = t.panel);
-        canvas.drawCircle(p, px(9), Paint()..color = color);
+        canvas
+          ..drawCircle(p, px(12), Paint()..color = t.panel)
+          ..drawCircle(p, px(9), Paint()..color = color);
       }
       if (draftLabel != null && draft == null) {
         pill(
@@ -964,27 +989,29 @@ class FloorPlanPainter extends CustomPainter {
     for (final attachment in wallAttachments) {
       final center = point(attachment.dx, attachment.dy, size);
       final radius = px(13);
-      canvas.drawCircle(center, radius + px(2), Paint()..color = t.panel);
-      canvas.drawCircle(center, radius, Paint()..color = t.accent);
+      canvas
+        ..drawCircle(center, radius + px(2), Paint()..color = t.panel)
+        ..drawCircle(center, radius, Paint()..color = t.accent);
       final pen = Paint()
         ..color = t.accentInk
         ..strokeWidth = px(2);
       final span = px(5);
-      canvas.drawLine(center - Offset(span, 0), center + Offset(span, 0), pen);
-      canvas.drawLine(center - Offset(0, span), center + Offset(0, span), pen);
+      canvas
+        ..drawLine(center - Offset(span, 0), center + Offset(span, 0), pen)
+        ..drawLine(center - Offset(0, span), center + Offset(0, span), pen);
     }
     if (wallSeed != null) {
       final center = point(wallSeed!.dx, wallSeed!.dy, size);
-      canvas.drawCircle(center, px(23), Paint()..color = t.panel);
-      canvas.drawCircle(center, px(21), Paint()..color = t.accent);
+      canvas
+        ..drawCircle(center, px(23), Paint()..color = t.panel)
+        ..drawCircle(center, px(21), Paint()..color = t.accent);
       final plus = Paint()
         ..color = t.accentInk
         ..strokeWidth = px(2.5)
         ..strokeCap = StrokeCap.round;
-      canvas.drawLine(
-          center - Offset(px(8), 0), center + Offset(px(8), 0), plus);
-      canvas.drawLine(
-          center - Offset(0, px(8)), center + Offset(0, px(8)), plus);
+      canvas
+        ..drawLine(center - Offset(px(8), 0), center + Offset(px(8), 0), plus)
+        ..drawLine(center - Offset(0, px(8)), center + Offset(0, px(8)), plus);
     }
     if (furnitureDraft != null) {
       drawFurniture(canvas, size, furnitureDraft!, ghost: true);
@@ -992,14 +1019,14 @@ class FloorPlanPainter extends CustomPainter {
     for (final h in highlights) {
       final r = rectangle(h, size);
       final glow = 0.55 + 0.45 * (1 - (pulse?.value ?? 0));
-      canvas.drawRect(
-          r, Paint()..color = t.accent.withValues(alpha: 0.28 * glow));
-      canvas.drawRect(
-          r,
-          Paint()
-            ..color = t.accent.withValues(alpha: glow)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = px(3));
+      canvas
+        ..drawRect(r, Paint()..color = t.accent.withValues(alpha: 0.28 * glow))
+        ..drawRect(
+            r,
+            Paint()
+              ..color = t.accent.withValues(alpha: glow)
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = px(3));
     }
     if (focus != null) {
       final stroke = Paint()
@@ -1028,13 +1055,14 @@ class FloorPlanPainter extends CustomPainter {
       canvas.drawCircle(a, px(4), dot);
       if (measure.length > 1) {
         final b = point(measure[1].dx, measure[1].dy, size);
-        canvas.drawLine(
-            a,
-            b,
-            Paint()
-              ..color = t.crit
-              ..strokeWidth = px(2));
-        canvas.drawCircle(b, px(4), dot);
+        canvas
+          ..drawLine(
+              a,
+              b,
+              Paint()
+                ..color = t.crit
+                ..strokeWidth = px(2))
+          ..drawCircle(b, px(4), dot);
         final mm = (measure[1] - measure[0]).distance.round();
         label(canvas, '$mm $unitMm', (a + b) / 2 - Offset(0, px(12)),
             color: t.crit, monospace: true, halo: t.panel);
@@ -1102,7 +1130,7 @@ class FloorPlanPainter extends CustomPainter {
     var best = centre;
     var bestScore = -double.infinity;
     const steps = 10;
-    for (var i = 0; i <= steps; i++)
+    for (var i = 0; i <= steps; i++) {
       for (var j = 0; j <= steps; j++) {
         final p = Offset(inner.left + inner.width * i / steps,
             inner.top + inner.height * j / steps);
@@ -1127,6 +1155,7 @@ class FloorPlanPainter extends CustomPainter {
           best = p;
         }
       }
+    }
     return best;
   }
 
@@ -1234,15 +1263,16 @@ class FloorPlanPainter extends CustomPainter {
       canvas.drawLine(q0, q1, pen);
       final tick = px(4);
       for (final q in [q0, q1]) {
-        canvas.drawLine(q + Offset(-tick, tick), q + Offset(tick, -tick), pen);
-        canvas.drawLine(
-            s.horizontal
-                ? q + Offset(0, -tick * 1.4)
-                : q + Offset(-tick * 1.4, 0),
-            s.horizontal
-                ? q + Offset(0, tick * 1.4)
-                : q + Offset(tick * 1.4, 0),
-            pen);
+        canvas
+          ..drawLine(q + Offset(-tick, tick), q + Offset(tick, -tick), pen)
+          ..drawLine(
+              s.horizontal
+                  ? q + Offset(0, -tick * 1.4)
+                  : q + Offset(-tick * 1.4, 0),
+              s.horizontal
+                  ? q + Offset(0, tick * 1.4)
+                  : q + Offset(tick * 1.4, 0),
+              pen);
       }
       if (!s.labelled) continue;
       final picked = s.sameAs(selectedDimension);
@@ -1290,13 +1320,14 @@ class FloorPlanPainter extends CustomPainter {
       case FurnitureKind.rug:
         fill.color =
             Tokens.mix(t.rug, 0.16, t.room).withValues(alpha: alpha(1));
-        canvas.drawRect(r, fill);
-        canvas.drawRect(
-            r,
-            Paint()
-              ..style = PaintingStyle.stroke
-              ..color = selected ? t.accent : t.rug
-              ..strokeWidth = px(selected ? 2 : 1.4));
+        canvas
+          ..drawRect(r, fill)
+          ..drawRect(
+              r,
+              Paint()
+                ..style = PaintingStyle.stroke
+                ..color = selected ? t.accent : t.rug
+                ..strokeWidth = px(selected ? 2 : 1.4));
         final inner = r.deflate(math.min(px(7), r.shortestSide / 6));
         dashedRect(
             canvas,
@@ -1342,21 +1373,24 @@ class FloorPlanPainter extends CustomPainter {
         if (selected) canvas.drawRect(r.inflate(px(3)), stroke);
       case FurnitureKind.dastarkhan:
         fill.color = t.furn.withValues(alpha: alpha(1));
-        canvas.drawOval(r, fill);
-        canvas.drawOval(r, stroke);
+        canvas
+          ..drawOval(r, fill)
+          ..drawOval(r, stroke);
       case FurnitureKind.korpe || FurnitureKind.cushion || FurnitureKind.sandyq:
         fill.color = kz.withValues(alpha: alpha(1));
-        canvas.drawRect(r, fill);
-        canvas.drawRect(
-            r,
-            Paint()
-              ..style = PaintingStyle.stroke
-              ..color = selected ? t.accent : t.rug
-              ..strokeWidth = px(selected ? 2 : 1));
+        canvas
+          ..drawRect(r, fill)
+          ..drawRect(
+              r,
+              Paint()
+                ..style = PaintingStyle.stroke
+                ..color = selected ? t.accent : t.rug
+                ..strokeWidth = px(selected ? 2 : 1));
       default:
         fill.color = t.furn.withValues(alpha: alpha(1));
-        canvas.drawRect(r, fill);
-        canvas.drawRect(r, stroke);
+        canvas
+          ..drawRect(r, fill)
+          ..drawRect(r, stroke);
         final detail = Paint()
           ..style = PaintingStyle.stroke
           ..color = t.furnLine
@@ -1370,17 +1404,18 @@ class FloorPlanPainter extends CustomPainter {
                     r.top + r.height * 0.1, r.width * 0.12, r.height * 0.8)
                 : Rect.fromLTWH(r.left + r.width * 0.1, r.top + r.height * 0.04,
                     r.width * 0.8, r.height * 0.12);
-            canvas.drawRRect(
-                RRect.fromRectAndRadius(pillow, Radius.circular(px(3))),
-                detail);
-            canvas.drawLine(
-                long
-                    ? Offset(r.right - r.width * 0.2, r.top)
-                    : Offset(r.left, r.top + r.height * 0.2),
-                long
-                    ? Offset(r.right - r.width * 0.2, r.bottom)
-                    : Offset(r.right, r.top + r.height * 0.2),
-                detail);
+            canvas
+              ..drawRRect(
+                  RRect.fromRectAndRadius(pillow, Radius.circular(px(3))),
+                  detail)
+              ..drawLine(
+                  long
+                      ? Offset(r.right - r.width * 0.2, r.top)
+                      : Offset(r.left, r.top + r.height * 0.2),
+                  long
+                      ? Offset(r.right - r.width * 0.2, r.bottom)
+                      : Offset(r.right, r.top + r.height * 0.2),
+                  detail);
           case FurnitureKind.bathtub:
             canvas.drawRRect(
                 RRect.fromRectAndRadius(r.deflate(r.shortestSide * 0.12),
@@ -1396,21 +1431,23 @@ class FloorPlanPainter extends CustomPainter {
           case FurnitureKind.basin || FurnitureKind.sink:
             canvas.drawOval(r.deflate(r.shortestSide * 0.18), detail);
           case FurnitureKind.stove:
-            for (final dx in [0.3, 0.7])
+            for (final dx in [0.3, 0.7]) {
               for (final dy in [0.3, 0.7]) {
                 canvas.drawCircle(
                     Offset(r.left + r.width * dx, r.top + r.height * dy),
                     r.shortestSide * 0.13,
                     detail);
               }
+            }
           case FurnitureKind.wardrobe ||
                 FurnitureKind.pantry ||
                 FurnitureKind.shelf ||
                 FurnitureKind.shoeCabinet:
             canvas.drawLine(r.topLeft, r.bottomRight, detail);
           case FurnitureKind.shower:
-            canvas.drawLine(r.topLeft, r.bottomRight, detail);
-            canvas.drawLine(r.topRight, r.bottomLeft, detail);
+            canvas
+              ..drawLine(r.topLeft, r.bottomRight, detail)
+              ..drawLine(r.topRight, r.bottomLeft, detail);
           default:
         }
     }
@@ -1456,23 +1493,25 @@ class FloorPlanPainter extends CustomPainter {
     if (selected && !ghost) {
       // Corner grip for resizing and a round grip for turning.
       final grip = Paint()..color = t.accent;
-      canvas.drawCircle(r.bottomRight, px(7), Paint()..color = t.panel);
-      canvas.drawCircle(r.bottomRight, px(5.5), grip);
+      canvas
+        ..drawCircle(r.bottomRight, px(7), Paint()..color = t.panel)
+        ..drawCircle(r.bottomRight, px(5.5), grip);
       final turn = Offset(r.center.dx, r.top - px(18));
-      canvas.drawLine(
-          Offset(r.center.dx, r.top),
-          turn,
-          Paint()
-            ..color = t.accent
-            ..strokeWidth = px(1.5));
-      canvas.drawCircle(turn, px(7), Paint()..color = t.panel);
-      canvas.drawCircle(
-          turn,
-          px(6),
-          Paint()
-            ..color = t.accent
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = px(2));
+      canvas
+        ..drawLine(
+            Offset(r.center.dx, r.top),
+            turn,
+            Paint()
+              ..color = t.accent
+              ..strokeWidth = px(1.5))
+        ..drawCircle(turn, px(7), Paint()..color = t.panel)
+        ..drawCircle(
+            turn,
+            px(6),
+            Paint()
+              ..color = t.accent
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = px(2));
     }
   }
 
@@ -1520,7 +1559,9 @@ class DimensionSpan {
 
   /// Ends of the dimension line and the centre of its figure, in the
   /// painter's own coordinates.
-  final Offset from, to, label;
+  final Offset from;
+  final Offset to;
+  final Offset label;
   double get length => b - a;
   bool sameAs(DimensionSpan? o) =>
       o != null &&

@@ -158,7 +158,9 @@ class CostLine {
       this.custom = false});
 
   /// Price key, or the item id for the user's own lines.
-  final String key, stage, unit;
+  final String key;
+  final String stage;
+  final String unit;
   final double quantity;
   final int price;
 
@@ -297,8 +299,10 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
   }
 
   // Doors and windows.
-  var glass = 0.0, entry = 0, inner = 0;
-  for (final g in derived.floors)
+  var glass = 0.0;
+  var entry = 0;
+  var inner = 0;
+  for (final g in derived.floors) {
     for (final p in g.openings) {
       if (p.opening.kind == OpeningKind.door) {
         p.host?.kind == 'exterior' ? entry++ : inner++;
@@ -306,12 +310,15 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
         glass += p.opening.width * p.opening.height / 1e6;
       }
     }
+  }
   line('windows', 'openings', glass);
   line('doorEntry', 'openings', entry.toDouble());
   line('doorsInt', 'openings', inner.toDouble());
 
   // Services: measured from the points when there are any.
-  var rooms = 0, wetRooms = 0, windows = 0;
+  var rooms = 0;
+  var wetRooms = 0;
+  var windows = 0;
   var clear = 0.0;
   for (var i = 0; i < doc.floors.length; i++) {
     final g = derived.floors[i];

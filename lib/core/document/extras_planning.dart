@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import 'dart:convert';
 import 'package:yusal/core/document/house_extras.dart';
 
@@ -121,10 +122,11 @@ class CostSpec {
   static CostSpec fromJson(Object? v, String p, JsonReader r) {
     final m = r.obj(v, p);
     final prices = <String, int>{};
-    if (m['prices'] != null)
+    if (m['prices'] != null) {
       for (final e in r.obj(m['prices'], '$p/prices').entries) {
         prices[e.key] = r.integer(e.value, '$p/prices/${e.key}', 0);
       }
+    }
     final raw = r.list(m['items'], '$p/items');
     return CostSpec(
         currency: m['currency'] == null
@@ -150,6 +152,7 @@ const fuelEfficiency = {
 
 /// Climate and equipment for the heat-loss calculation. U-values and the
 /// air change rate are in hundredths (110 = 1.10 W/m²K, 50 = 0.5 per hour).
+@immutable
 class HeatSpec {
   const HeatSpec(
       {this.outdoor = -25,
@@ -162,10 +165,14 @@ class HeatSpec {
       this.efficiency = 75});
 
   /// Design temperatures, °C.
-  final int outdoor, indoor;
+  final int outdoor;
+  final int indoor;
 
   /// Heating degree-days, K·day.
-  final int degreeDays, airChange, windowU, doorU;
+  final int degreeDays;
+  final int airChange;
+  final int windowU;
+  final int doorU;
   final FuelKind fuel;
 
   /// Boiler or stove efficiency, percent.

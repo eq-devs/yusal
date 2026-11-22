@@ -1,5 +1,7 @@
+import 'package:meta/meta.dart';
 import 'package:yusal/core/document/house_document.dart';
 
+@immutable
 class ResolvedAxis {
   const ResolvedAxis({
     required this.id,
@@ -25,6 +27,7 @@ class ResolvedAxis {
   int get hashCode => Object.hash(id, dir, pos, kind, index);
 }
 
+@immutable
 class AxisIssue {
   AxisIssue(this.code, this.dir, List<String> axisIds)
       : axisIds = List.unmodifiable(axisIds);
@@ -78,6 +81,7 @@ class AxisLookupFailure {
   final String code;
 }
 
+@immutable
 class Cell {
   const Cell(this.i, this.j);
   final int i;
@@ -113,6 +117,7 @@ class ResolvedRect {
   int get nominalArea => (right - left) * (top - bottom);
 }
 
+@immutable
 class AxisReferenceError {
   const AxisReferenceError(this.code, this.field);
   final String code;
@@ -202,8 +207,6 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
       (a) => a.floorId == floorId && !a.id.startsWith('@'),
     ))
       ResolvedAxis(id: a.id, dir: a.dir, pos: a.pos, kind: 'floor', index: -1),
-  ];
-  visible.add(
     ResolvedAxis(
       id: '@right',
       dir: AxisDir.V,
@@ -211,8 +214,6 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
       kind: 'boundary',
       index: -1,
     ),
-  );
-  visible.addAll([
     const ResolvedAxis(
       id: '@bottom',
       dir: AxisDir.H,
@@ -227,7 +228,7 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
       kind: 'boundary',
       index: -1,
     ),
-  ]);
+  ];
   int kindOrder(String k) => switch (k) {
         'boundary' => 0,
         'global' => 1,
@@ -290,10 +291,11 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
             delta <
                 (doc.floors.firstWhere((f) => f.id == floorId).explicitWalls
                     ? 1
-                    : 300))
+                    : 300)) {
           issues.add(
             AxisIssue('SPACING_TOO_SMALL', dir, [list[i - 1].id, a.id]),
           );
+        }
       }
     }
   }

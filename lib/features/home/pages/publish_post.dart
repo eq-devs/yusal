@@ -93,10 +93,12 @@ class _PublishPostPageState extends State<PublishPostPage> {
             ? doc.meta.name
             : '${(e.width / 1000).toStringAsFixed(1)} × ${(e.depth / 1000).toStringAsFixed(1)} m · ${e.floors} ${tr3('层', 'қабат', 'эт.')} · ${e.buildingArea.toStringAsFixed(0)} m²',
         preview: widget.entry.preview);
+    final snapshots = context.read(snapshotRepositoryProvider);
+    final posts = context.read(postRepositoryProvider);
+    final now = context.now;
     final post = await attempt(context, () async {
-      final saved =
-          await context.read(snapshotRepositoryProvider).saveSnapshot(snapshot);
-      return context.read(postRepositoryProvider).publishPost(HousePost(
+      final saved = await snapshots.saveSnapshot(snapshot);
+      return posts.publishPost(HousePost(
           id: '',
           ownerId: '',
           projectId: widget.entry.id,
@@ -104,8 +106,8 @@ class _PublishPostPageState extends State<PublishPostPage> {
           title: title.text,
           story: story.text,
           region: region,
-          createdAt: context.now,
-          updatedAt: context.now,
+          createdAt: now,
+          updatedAt: now,
           area: e?.buildingArea ?? 0,
           floors: e?.floors ?? doc.floors.length,
           rooms: e?.rooms ?? 0,
@@ -221,13 +223,14 @@ class _PublishPostPageState extends State<PublishPostPage> {
                             onTap: () => setState(() {
                                   if (focus.contains(k)) {
                                     focus.remove(k);
-                                  } else if (focus.length < 3)
+                                  } else if (focus.length < 3) {
                                     focus.add(k);
-                                  else
+                                  } else {
                                     toast(
                                         context,
                                         tr3('最多选 3 个', 'Ең көбі 3',
                                             'Не больше 3'));
+                                  }
                                 })),
                     ]),
                     const SizedBox(height: 4),

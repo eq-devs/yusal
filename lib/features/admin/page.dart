@@ -945,8 +945,9 @@ class _ReportsState extends State<_Reports> {
       case ReportTarget.post:
         pushPage<void>(context, (_) => PostPage(postId: r.targetId));
       case ReportTarget.comment:
-        if (v.postId != null)
+        if (v.postId != null) {
           pushPage<void>(context, (_) => PostPage(postId: v.postId!));
+        }
       case ReportTarget.account:
         pushPage<void>(
             context, (_) => AccountDetailPage(accountId: r.targetId));
@@ -1633,8 +1634,9 @@ class AccountDetailPage extends StatelessWidget {
                                               context,
                                               tr3('隐藏原因', 'Жасыру себебі',
                                                   'Причина скрытия'));
-                                      if (note == null || !context.mounted)
+                                      if (note == null || !context.mounted) {
                                         return;
+                                      }
                                       await attempt(
                                           context,
                                           () => context

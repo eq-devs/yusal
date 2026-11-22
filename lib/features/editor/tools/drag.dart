@@ -39,10 +39,10 @@ extension _DragTool on _HouseEditorState {
           .where((a) =>
               a.kind != 'boundary' &&
               ((a.dir == AxisDir.V ? x : y) - a.pos).abs() <= tolerance)
-          .toList();
-      axes.sort((a, b) => ((a.dir == AxisDir.V ? x : y) - a.pos)
-          .abs()
-          .compareTo(((b.dir == AxisDir.V ? x : y) - b.pos).abs()));
+          .toList()
+        ..sort((a, b) => ((a.dir == AxisDir.V ? x : y) - a.pos)
+            .abs()
+            .compareTo(((b.dir == AxisDir.V ? x : y) - b.pos).abs()));
       draggingAxis = axes.firstOrNull;
     } else if (tool == EditorTool.opening || browse) {
       draggingOpening = openingAt(point, size);
@@ -109,10 +109,10 @@ extension _DragTool on _HouseEditorState {
         return along >= wall.start.pos &&
             along <= wall.end.pos &&
             (cross - wall.axis.pos).abs() <= tolerance;
-      }).toList();
-      candidates.sort((a, b) => ((a.axis.dir == AxisDir.H ? y : x) - a.axis.pos)
-          .abs()
-          .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
+      }).toList()
+        ..sort((a, b) => ((a.axis.dir == AxisDir.H ? y : x) - a.axis.pos)
+            .abs()
+            .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
       final wall = candidates.firstOrNull;
       if (wall == null) {
         placementHint = tr3(
@@ -345,12 +345,13 @@ extension _DragTool on _HouseEditorState {
           along <= wall.end.pos &&
           (cross - wall.axis.pos).abs() <= tolerance &&
           wall.kind != 'open';
-    }).toList();
-    walls.sort((a, b) => ((a.axis.dir == AxisDir.H ? world.y : world.x) -
-            a.axis.pos)
-        .abs()
-        .compareTo(((b.axis.dir == AxisDir.H ? world.y : world.x) - b.axis.pos)
-            .abs()));
+    }).toList()
+      ..sort((a, b) =>
+          ((a.axis.dir == AxisDir.H ? world.y : world.x) - a.axis.pos)
+              .abs()
+              .compareTo(
+                  ((b.axis.dir == AxisDir.H ? world.y : world.x) - b.axis.pos)
+                      .abs()));
     final wall = walls.firstOrNull;
     openingDrop = null;
     derive();

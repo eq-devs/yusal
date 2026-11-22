@@ -128,7 +128,7 @@ List<CheckResult> runChecks(HouseDocument doc, DerivedHouse derived) {
     }
     // A bathroom door should open to a hall, not to where food is.
     for (final p in g.openings) {
-      if (p.status == 'ok' && p.opening.kind != OpeningKind.window)
+      if (p.status == 'ok' && p.opening.kind != OpeningKind.window) {
         for (final bath
             in floor.rooms.where((r) => r.type == RoomType.bathroom)) {
           for (final other in floor.rooms.where(
@@ -139,6 +139,7 @@ List<CheckResult> runChecks(HouseDocument doc, DerivedHouse derived) {
             }
           }
         }
+      }
     }
     for (final stair in g.stairs) {
       final geometry =
@@ -187,7 +188,7 @@ List<CheckResult> runChecks(HouseDocument doc, DerivedHouse derived) {
           '${floor.name}还有 ${(g.base.unassignedNominalArea / 1e6).toStringAsFixed(1)} ㎡ 没有划分成房间。');
     }
     final ok = g.openings.where((p) => p.status == 'ok').toList();
-    for (var i = 0; i < ok.length; i++)
+    for (var i = 0; i < ok.length; i++) {
       for (var j = i + 1; j < ok.length; j++) {
         final a = ok[i];
         final b = ok[j];
@@ -200,6 +201,7 @@ List<CheckResult> runChecks(HouseDocument doc, DerivedHouse derived) {
               '这两扇门窗在墙上重叠了，可以挪开其中一扇。');
         }
       }
+    }
   }
   final entrance = derived.floors
       .expand((f) => f.openings)

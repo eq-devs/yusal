@@ -27,7 +27,8 @@ import 'package:yusal/render3d/scene_view.dart';
 /// interface language.
 
 /// A4 landscape at 150 dpi.
-const sheetWidth = 1754.0, sheetHeight = 1240.0;
+const sheetWidth = 1754.0;
+const sheetHeight = 1240.0;
 
 const _ink = Color(0xff1C2326);
 const _muted = Color(0xff5B666B);
@@ -109,8 +110,8 @@ double _text(Canvas c, String text, Offset at,
       color: color,
       monospace: monospace,
       maxWidth: maxWidth,
-      maxLines: maxLines);
-  p.paint(c, at);
+      maxLines: maxLines)
+    ..paint(c, at);
   return p.height;
 }
 
@@ -250,17 +251,19 @@ void _paintSheet(
       size: 26, weight: FontWeight.w700);
   final area = Rect.fromLTRB(
       frame.left + 24, frame.top + 66, frame.right - 24, strip.top - 18);
-  c.save();
-  c.clipRect(area.inflate(8));
+  c
+    ..save()
+    ..clipRect(area.inflate(8));
   sheet.draw(c, area);
   c.restore();
 }
 
 /// Paints [painter] scaled into [area] as if it were [size] on screen.
 void _fit(Canvas c, Rect area, CustomPainter painter, {double zoom = 1}) {
-  c.save();
-  c.translate(area.left, area.top);
-  c.scale(zoom);
+  c
+    ..save()
+    ..translate(area.left, area.top)
+    ..scale(zoom);
   painter.paint(c, Size(area.width / zoom, area.height / zoom));
   c.restore();
 }
@@ -318,9 +321,10 @@ List<_Sheet> _sheets(DrawingInput input) {
     final model =
         buildScene(doc, derived, const SceneOptions(), input.roomName);
     final pose = viewPose(model, 'iso');
-    c.save();
-    c.clipRect(picture);
-    c.translate(picture.left, picture.top);
+    c
+      ..save()
+      ..clipRect(picture)
+      ..translate(picture.left, picture.top);
     ScenePainter(
             model: model,
             camera:
@@ -335,10 +339,11 @@ List<_Sheet> _sheets(DrawingInput input) {
         Rect.fromLTRB(picture.right + 36, area.top, area.right, area.bottom);
     var y = side.top;
     var area0 = 0.0;
-    for (final g in derived.floors)
+    for (final g in derived.floors) {
       for (final r in g.base.roomGeometry) {
         area0 += r.clearArea / 1e6;
       }
+    }
     y += _figures(c, Rect.fromLTRB(side.left, y, side.right, side.bottom), [
       (
         tr3('外形尺寸', 'Сыртқы өлшемі', 'Габаритные размеры'),
@@ -376,7 +381,7 @@ List<_Sheet> _sheets(DrawingInput input) {
     _heading(c, Offset(side.left, y), tr3('房间', 'Бөлмелер', 'Комнаты'));
     y += 30;
     final rows = <List<_Cell>>[];
-    for (var f = 0; f < doc.floors.length; f++)
+    for (var f = 0; f < doc.floors.length; f++) {
       for (final r in doc.floors[f].rooms) {
         final g =
             derived.floors[f].base.roomGeometry.firstWhere((s) => s.id == r.id);
@@ -386,6 +391,7 @@ List<_Sheet> _sheets(DrawingInput input) {
           _Cell('${_n(g.clearArea / 1e6)} $unitM2', numeric: true),
         ]);
       }
+    }
     final fit = _rowsFitting(side.bottom - y);
     _table(
         c,
@@ -470,149 +476,159 @@ List<_Sheet> _sheets(DrawingInput input) {
   }
 
   // 4. Foundation plan and section.
-  final fd = foundationTakeoff(doc, derived), f0 = x.foundation;
-  sheets.add(_Sheet(
-      tr3('基础平面图与剖面', 'Іргетас жоспары және қимасы',
-          'План и разрез фундамента'), (c, area) {
-    final plan = Rect.fromLTRB(
-        area.left, area.top, area.left + area.width * 0.58, area.bottom);
-    _fit(c, plan, _plan(input, 0, furniture: false, foundation: true),
-        zoom: 1.2);
-    final side =
-        Rect.fromLTRB(plan.right + 30, area.top, area.right, area.bottom);
-    final section = FoundationSectionPainter(
-        Tokens.light, f0, doc.defaults.outerWallThickness, {
-      'ground': tr3('室外地面', 'жер беті', 'уровень земли'),
-      'wall':
-          '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} ${doc.defaults.outerWallThickness}',
-      'damp': tr3('水平防水：2 层卷材', 'Көлденең гидрооқшау: 2 қабат',
-          'Горизонтальная гидроизоляция: 2 слоя рулонного материала'),
-      'topBars':
-          '${tr3('上部纵筋', 'Үстіңгі арматура', 'Верхняя арматура')} ${f0.topBars}Ø${f0.barDia}',
-      'floor': tr3('地坪（见地坪构造）', 'Еден (еден құрылымын қараңыз)',
-          'Пол (см. конструкцию пола)'),
-      'stirrups':
-          '${tr3('箍筋', 'Қамыт', 'Хомут')} Ø${f0.stirrupDia} @${f0.stirrupStep}',
-      'concrete': '${tr3('混凝土', 'Бетон', 'Бетон')} ${f0.concrete}',
-      'bottomBars':
-          '${tr3('下部纵筋', 'Астыңғы арматура', 'Нижняя арматура')} ${f0.bottomBars}Ø${f0.barDia}',
-      'cover':
-          '${tr3('保护层', 'Қорғаныш қабаты', 'Защитный слой')} ${f0.cover} $unitMm',
-      'cushion':
-          '${tr3('砂砾石垫层', 'Құм-қиыршық', 'Песчано-гравийная подушка')} ${f0.cushion}',
-      'blind': tr3(
-          '保温散水 1000 · 下铺 XPS 50',
-          'Жылы отмостка 1000 · астында XPS 50',
-          'Утеплённая отмостка 1000 · снизу XPS 50'),
-      'xps': tr3('XPS 50 + 沥青防水', 'XPS 50 + битум', 'XPS 50 + битум'),
-    });
-    final h = math.min(
-        side.height * 0.55, side.width * section.viewH / section.viewW);
-    final w = h * section.viewW / section.viewH;
-    c.save();
-    c.translate(side.left, side.top);
-    section.paint(c, Size(w, h));
-    c.restore();
-    final rebar = (fd.mainBarLength / 1000 * barKgPerM(f0.barDia) +
-            fd.partitionBarLength / 1000 * barKgPerM(f0.partitionBarDia) +
-            fd.stirrupLength / 1000 * barKgPerM(f0.stirrupDia) +
-            fd.partitionStirrupLength /
-                1000 *
-                barKgPerM(f0.partitionStirrupDia)) /
-        1000;
-    _figures(c,
-        Rect.fromLTRB(side.left, side.top + h + 24, side.right, side.bottom), [
-      (
-        tr3('基础长度', 'Іргетас ұзындығы', 'Длина фундамента'),
-        '${_n((fd.mainLength + fd.partitionLength) / 1000)} $unitM'
-      ),
-      (
-        tr3('混凝土 (+3%)', 'Бетон (+3%)', 'Бетон (+3%)'),
-        '${_n(fd.concrete * 1.03 / 1e9)} $unitM3'
-      ),
-      (
-        tr3('钢筋', 'Арматура', 'Арматура'),
-        '${_n(rebar, 2)} ${tr3('吨', 'т', 'т')}'
-      ),
-      (
-        tr3('挖土', 'Қазу', 'Выемка грунта'),
-        '${_n(fd.excavation / 1e9)} $unitM3'
-      ),
-      (
-        tr3('砂砾石垫层', 'Құм-қиыршық', 'Песчано-гравийная подушка'),
-        '${_n(fd.cushion / 1e9)} $unitM3'
-      ),
-      (tr3('模板', 'Қалып', 'Опалубка'), '${_n(fd.formwork / 1e6)} $unitM2'),
-      (tr3('预留套管', 'Гильзалар', 'Гильзы'), '${x.sleeves.length}'),
-    ]);
-  }));
-
-  // 5. Wall, roof and floor build-ups.
-  sheets.add(_Sheet(tr3('构造做法', 'Құрылым шешімдері', 'Конструктивные решения'),
-      (c, area) {
-    final groups = [
-      (
-        '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} · U ${_n(loss.wallU, 2)}',
-        x.wallLayers,
-        true
-      ),
-      ('$roofName · U ${_n(loss.roofU, 2)}', x.roofLayers, false),
-      (
-        '${tr3('首层地面', 'Бірінші қабат едені', 'Пол первого этажа')} · U ${_n(loss.floorU, 2)}',
-        x.floorLayers,
-        false
-      ),
-    ];
-    final colW = (area.width - 2 * 30) / 3;
-    for (var i = 0; i < groups.length; i++) {
-      final (title, layers, horizontal) = groups[i];
-      final col = Rect.fromLTWH(
-          area.left + i * (colW + 30), area.top, colW, area.height);
-      _heading(c, col.topLeft,
-          '$title · ${layers.fold(0, (s, l) => s + l.thickness)} $unitMm');
-      final names = [for (final l in layers) tr(l.name, l.nameKk)];
-      final SectionPainter painter = horizontal
-          ? WallSectionPainter(Tokens.light, layers, names,
-              outside: tr3('室外', 'Сырты', 'Снаружи'),
-              inside: tr3('室内', 'Іші', 'Внутри'))
-          : LayerStackPainter(Tokens.light, layers, names, scale: 0.2);
-      final h =
-          math.min(col.height * 0.5, colW * painter.viewH / painter.viewW);
-      final w = h * painter.viewW / painter.viewH;
-      c.save();
-      c.translate(col.left, col.top + 36);
-      painter.paint(c, Size(w, h));
+  final fd = foundationTakeoff(doc, derived);
+  final f0 = x.foundation;
+  sheets
+    ..add(_Sheet(
+        tr3('基础平面图与剖面', 'Іргетас жоспары және қимасы',
+            'План и разрез фундамента'), (c, area) {
+      final plan = Rect.fromLTRB(
+          area.left, area.top, area.left + area.width * 0.58, area.bottom);
+      _fit(c, plan, _plan(input, 0, furniture: false, foundation: true),
+          zoom: 1.2);
+      final side =
+          Rect.fromLTRB(plan.right + 30, area.top, area.right, area.bottom);
+      final section = FoundationSectionPainter(
+          Tokens.light, f0, doc.defaults.outerWallThickness, {
+        'ground': tr3('室外地面', 'жер беті', 'уровень земли'),
+        'wall':
+            '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} ${doc.defaults.outerWallThickness}',
+        'damp': tr3('水平防水：2 层卷材', 'Көлденең гидрооқшау: 2 қабат',
+            'Горизонтальная гидроизоляция: 2 слоя рулонного материала'),
+        'topBars':
+            '${tr3('上部纵筋', 'Үстіңгі арматура', 'Верхняя арматура')} ${f0.topBars}Ø${f0.barDia}',
+        'floor': tr3('地坪（见地坪构造）', 'Еден (еден құрылымын қараңыз)',
+            'Пол (см. конструкцию пола)'),
+        'stirrups':
+            '${tr3('箍筋', 'Қамыт', 'Хомут')} Ø${f0.stirrupDia} @${f0.stirrupStep}',
+        'concrete': '${tr3('混凝土', 'Бетон', 'Бетон')} ${f0.concrete}',
+        'bottomBars':
+            '${tr3('下部纵筋', 'Астыңғы арматура', 'Нижняя арматура')} ${f0.bottomBars}Ø${f0.barDia}',
+        'cover':
+            '${tr3('保护层', 'Қорғаныш қабаты', 'Защитный слой')} ${f0.cover} $unitMm',
+        'cushion':
+            '${tr3('砂砾石垫层', 'Құм-қиыршық', 'Песчано-гравийная подушка')} ${f0.cushion}',
+        'blind': tr3(
+            '保温散水 1000 · 下铺 XPS 50',
+            'Жылы отмостка 1000 · астында XPS 50',
+            'Утеплённая отмостка 1000 · снизу XPS 50'),
+        'xps': tr3('XPS 50 + 沥青防水', 'XPS 50 + битум', 'XPS 50 + битум'),
+      });
+      final h = math.min(
+          side.height * 0.55, side.width * section.viewH / section.viewW);
+      final w = h * section.viewW / section.viewH;
+      c
+        ..save()
+        ..translate(side.left, side.top);
+      section.paint(c, Size(w, h));
       c.restore();
-      _table(
+      final rebar = (fd.mainBarLength / 1000 * barKgPerM(f0.barDia) +
+              fd.partitionBarLength / 1000 * barKgPerM(f0.partitionBarDia) +
+              fd.stirrupLength / 1000 * barKgPerM(f0.stirrupDia) +
+              fd.partitionStirrupLength /
+                  1000 *
+                  barKgPerM(f0.partitionStirrupDia)) /
+          1000;
+      _figures(
           c,
-          Rect.fromLTRB(col.left, col.top + 36 + h + 20, col.right, col.bottom),
+          Rect.fromLTRB(side.left, side.top + h + 24, side.right, side.bottom),
           [
-            tr3('构造层', 'Қабат', 'Слой'),
-            unitMm,
-            'λ'
-          ],
-          [
-            for (final l in layers)
-              [
-                _Cell(tr(l.name, l.nameKk)),
-                _Cell('${l.thickness}', numeric: true),
-                _Cell(dec((l.conductivity / 1000).toStringAsFixed(3)),
-                    numeric: true),
-              ]
-          ],
-          [
-            5,
-            1.3,
-            1.5
+            (
+              tr3('基础长度', 'Іргетас ұзындығы', 'Длина фундамента'),
+              '${_n((fd.mainLength + fd.partitionLength) / 1000)} $unitM'
+            ),
+            (
+              tr3('混凝土 (+3%)', 'Бетон (+3%)', 'Бетон (+3%)'),
+              '${_n(fd.concrete * 1.03 / 1e9)} $unitM3'
+            ),
+            (
+              tr3('钢筋', 'Арматура', 'Арматура'),
+              '${_n(rebar, 2)} ${tr3('吨', 'т', 'т')}'
+            ),
+            (
+              tr3('挖土', 'Қазу', 'Выемка грунта'),
+              '${_n(fd.excavation / 1e9)} $unitM3'
+            ),
+            (
+              tr3('砂砾石垫层', 'Құм-қиыршық', 'Песчано-гравийная подушка'),
+              '${_n(fd.cushion / 1e9)} $unitM3'
+            ),
+            (
+              tr3('模板', 'Қалып', 'Опалубка'),
+              '${_n(fd.formwork / 1e6)} $unitM2'
+            ),
+            (tr3('预留套管', 'Гильзалар', 'Гильзы'), '${x.sleeves.length}'),
           ]);
-    }
-  }));
+    }))
+
+    // 5. Wall, roof and floor build-ups.
+    ..add(_Sheet(tr3('构造做法', 'Құрылым шешімдері', 'Конструктивные решения'),
+        (c, area) {
+      final groups = [
+        (
+          '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} · U ${_n(loss.wallU, 2)}',
+          x.wallLayers,
+          true
+        ),
+        ('$roofName · U ${_n(loss.roofU, 2)}', x.roofLayers, false),
+        (
+          '${tr3('首层地面', 'Бірінші қабат едені', 'Пол первого этажа')} · U ${_n(loss.floorU, 2)}',
+          x.floorLayers,
+          false
+        ),
+      ];
+      final colW = (area.width - 2 * 30) / 3;
+      for (var i = 0; i < groups.length; i++) {
+        final (title, layers, horizontal) = groups[i];
+        final col = Rect.fromLTWH(
+            area.left + i * (colW + 30), area.top, colW, area.height);
+        _heading(c, col.topLeft,
+            '$title · ${layers.fold(0, (s, l) => s + l.thickness)} $unitMm');
+        final names = [for (final l in layers) tr(l.name, l.nameKk)];
+        final SectionPainter painter = horizontal
+            ? WallSectionPainter(Tokens.light, layers, names,
+                outside: tr3('室外', 'Сырты', 'Снаружи'),
+                inside: tr3('室内', 'Іші', 'Внутри'))
+            : LayerStackPainter(Tokens.light, layers, names, scale: 0.2);
+        final h =
+            math.min(col.height * 0.5, colW * painter.viewH / painter.viewW);
+        final w = h * painter.viewW / painter.viewH;
+        c
+          ..save()
+          ..translate(col.left, col.top + 36);
+        painter.paint(c, Size(w, h));
+        c.restore();
+        _table(
+            c,
+            Rect.fromLTRB(
+                col.left, col.top + 36 + h + 20, col.right, col.bottom),
+            [
+              tr3('构造层', 'Қабат', 'Слой'),
+              unitMm,
+              'λ'
+            ],
+            [
+              for (final l in layers)
+                [
+                  _Cell(tr(l.name, l.nameKk)),
+                  _Cell('${l.thickness}', numeric: true),
+                  _Cell(dec((l.conductivity / 1000).toStringAsFixed(3)),
+                      numeric: true),
+                ]
+            ],
+            [
+              5,
+              1.3,
+              1.5
+            ]);
+      }
+    }));
 
   // 6. Door and window schedule; room areas.
   final openingRows = <List<_Cell>>[];
   var doorNo = 0;
   var windowNo = 0;
-  for (var f = 0; f < doc.floors.length; f++)
+  for (var f = 0; f < doc.floors.length; f++) {
     for (final p in derived.floors[f].openings) {
       final o = p.opening;
       final door = o.kind != OpeningKind.window;
@@ -629,8 +645,9 @@ List<_Sheet> _sheets(DrawingInput input) {
         }),
       ]);
     }
+  }
   final roomRows = <List<_Cell>>[];
-  for (var f = 0; f < doc.floors.length; f++)
+  for (var f = 0; f < doc.floors.length; f++) {
     for (final r in doc.floors[f].rooms) {
       final g =
           derived.floors[f].base.roomGeometry.firstWhere((s) => s.id == r.id);
@@ -642,6 +659,7 @@ List<_Sheet> _sheets(DrawingInput input) {
         _Cell(label == null ? '—' : _n(label / 100), numeric: true),
       ]);
     }
+  }
   const scheduleRows = 30;
   final pages = math.max(
       1,
@@ -891,8 +909,9 @@ List<_Sheet> _sheets(DrawingInput input) {
         (c, area) {
       final plan =
           Rect.fromLTRB(area.left, area.top, area.right - 420, area.bottom);
-      c.save();
-      c.translate(plan.left, plan.top);
+      c
+        ..save()
+        ..translate(plan.left, plan.top);
       SitePlanPainter(doc: doc, site: site, tokens: Tokens.light)
           .paint(c, plan.size);
       c.restore();

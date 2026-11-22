@@ -20,7 +20,8 @@ class HouseWish {
       this.dining = false});
 
   /// Metres.
-  final double width, depth;
+  final double width;
+  final double depth;
   final int floors;
   final int bedrooms;
   final int bathrooms;

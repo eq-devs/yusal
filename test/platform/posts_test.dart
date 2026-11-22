@@ -56,8 +56,7 @@ void main() {
   });
 
   test("publishing needs the owner's own snapshot and clean text", () async {
-    final b = backend();
-    b.signInAs(SeedIds.mason);
+    final b = backend()..signInAs(SeedIds.mason);
     expect(
         () => b.publishPost(draft('snap_aigerim')),
         throwsA(isA<ApiFailure>()
@@ -80,8 +79,7 @@ void main() {
   });
 
   test('likes toggle and notify the owner', () async {
-    final b = backend();
-    b.signInAs(SeedIds.roofTeam);
+    final b = backend()..signInAs(SeedIds.roofTeam);
     expect(await b.liked('post_aigerim'), isFalse);
     expect(await b.toggleLike('post_aigerim'), isTrue);
     expect((await b.post('post_aigerim'))!.likeCount, 4);
@@ -94,8 +92,7 @@ void main() {
   });
 
   test('one rating per person; owners cannot rate their own house', () async {
-    final b = backend();
-    b.signInAs(SeedIds.owner);
+    final b = backend()..signInAs(SeedIds.owner);
     expect(
         () => b.comment('post_aigerim', '好', rating: 5),
         throwsA(isA<ApiFailure>()
@@ -125,8 +122,7 @@ void main() {
   });
 
   test('a comment can be removed by its author or the house owner', () async {
-    final b = backend();
-    b.signInAs(SeedIds.mason);
+    final b = backend()..signInAs(SeedIds.mason);
     expect(
         () => b.deleteComment('cmt2'),
         throwsA(isA<ApiFailure>()
@@ -143,8 +139,7 @@ void main() {
   });
 
   test('comments are rate limited', () async {
-    final b = backend();
-    b.signInAs(SeedIds.mason);
+    final b = backend()..signInAs(SeedIds.mason);
     for (var i = 0; i < 10; i++) {
       await b.comment('post_dinara', '评论 $i');
     }
@@ -157,8 +152,7 @@ void main() {
   });
 
   test("a blocked person's house and comments disappear", () async {
-    final b = backend();
-    b.signInAs(SeedIds.owner2);
+    final b = backend()..signInAs(SeedIds.owner2);
     await b.block(SeedIds.electrician);
     expect((await b.feed(const FeedFilter())).any((p) => p.id == 'post_erlan'),
         isFalse);

@@ -22,7 +22,8 @@ class DesignSummary {
   final double frontWidth;
 
   /// mm² and mm.
-  final double buildingArea, exteriorLength;
+  final double buildingArea;
+  final double exteriorLength;
 
   /// Clear area per room name (prefixed by the floor name on upper floors).
   final Map<String, double> roomAreas;
@@ -35,7 +36,8 @@ class DesignSummary {
 
   /// Rooms with an outside window on the back (opposite the entrance) and
   /// on the front.
-  final List<String> backRooms, frontRooms;
+  final List<String> backRooms;
+  final List<String> frontRooms;
 }
 
 DesignSummary summarizeDesign(HouseDocument doc, DerivedHouse derived,

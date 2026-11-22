@@ -44,7 +44,8 @@ HouseDocument paintCells(HouseDocument doc, String floorId, List<Cell> stroke,
   }
 
   if (start == null && !erase) {
-    append(Room(id: target, type: type, name: roomNames[type]!, regions: []),
+    append(
+        Room(id: target, type: type, name: roomNames[type]!, regions: const []),
         sets[target]!);
   }
   for (final room in floor.rooms) {
@@ -120,7 +121,7 @@ HouseDocument createHouse(
         for (var j = 1; j < rows; j++)
           GlobalAxis(
               id: newId(), dir: AxisDir.H, pos: (depth * j / rows).round())
-      ], floor: []),
+      ], floor: const []),
       floors: [
         Floor(
             id: floorId,
@@ -132,8 +133,8 @@ HouseDocument createHouse(
                         id: newId(),
                         type: RoomType.custom,
                         name: '房间',
-                        regions: [
-                          const AxisRectangle(
+                        regions: const [
+                          AxisRectangle(
                               x0: '@left',
                               x1: '@right',
                               y0: '@bottom',
@@ -141,9 +142,9 @@ HouseDocument createHouse(
                         ])
                   ]
                 : [],
-            wallOverrides: [],
-            openings: [],
-            stairs: [])
+            wallOverrides: const [],
+            openings: const [],
+            stairs: const [])
       ],
       roof: const Roof.gable(ridgeDir: AxisDir.V, pitchDeg: 30, overhang: 500));
 }

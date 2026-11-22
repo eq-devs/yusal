@@ -232,8 +232,7 @@ class _ChatPageState extends State<ChatPage>
                                     .block(other),
                                 success:
                                     tr3('已拉黑', 'Бұғатталды', 'Заблокировано'));
-                          }
-                          if (v == 'unblock') {
+                          } else if (v == 'unblock') {
                             await attempt(
                                 context,
                                 () => context
@@ -285,8 +284,8 @@ class _ChatPageState extends State<ChatPage>
                             return _PendingBubble(
                                 text: _pending[_pending.length - 1 - i]);
                           }
-                          i -= _pending.length;
-                          final at = data.messages.length - 1 - i;
+                          final at =
+                              data.messages.length - 1 - (i - _pending.length);
                           final m = data.messages[at];
                           final bubble = _Bubble(
                               message: m,

@@ -1,9 +1,11 @@
+import 'package:meta/meta.dart';
 import 'package:yusal/core/geometry/floor_base.dart';
 
 sealed class SourceRef {
   const SourceRef();
 }
 
+@immutable
 class RoomSource extends SourceRef {
   const RoomSource(this.roomId);
   final String roomId;
@@ -14,6 +16,7 @@ class RoomSource extends SourceRef {
   int get hashCode => Object.hash(RoomSource, roomId);
 }
 
+@immutable
 class StairSource extends SourceRef {
   const StairSource(this.stairId);
   final String stairId;
@@ -24,6 +27,7 @@ class StairSource extends SourceRef {
   int get hashCode => Object.hash(StairSource, stairId);
 }
 
+@immutable
 class OpeningSource extends SourceRef {
   const OpeningSource(this.openingId);
   final String openingId;
@@ -34,6 +38,7 @@ class OpeningSource extends SourceRef {
   int get hashCode => Object.hash(OpeningSource, openingId);
 }
 
+@immutable
 class WallSource extends SourceRef {
   const WallSource(this.wall);
   final WallRef wall;
@@ -43,6 +48,7 @@ class WallSource extends SourceRef {
   int get hashCode => Object.hash(WallSource, wall);
 }
 
+@immutable
 class FurnitureSource extends SourceRef {
   const FurnitureSource(this.furnitureId);
   final String furnitureId;

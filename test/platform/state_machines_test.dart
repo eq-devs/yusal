@@ -70,8 +70,7 @@ void main() {
   });
 
   test('an upheld report takes a paused demand down too', () async {
-    final b = backend();
-    b.signInAs(SeedIds.team);
+    final b = backend()..signInAs(SeedIds.team);
     await b.pause('dem_rebar');
     b.signInAs(SeedIds.admin);
     await b.resolveReport('rep_seed', true, '工资信息虚假');

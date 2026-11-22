@@ -75,6 +75,7 @@ extension _EditorDialogs on _HouseEditorState {
           tr3('屋檐伸出', 'Карниз шығыңқылығы', 'Карнизный свес'),
           history.present.roof.overhang ?? 500);
       if (overhang == null) return;
+      if (!mounted) return;
       final direction = await showMotionSheet<String>(
           context: context,
           builder: (context) => SafeArea(
@@ -128,6 +129,7 @@ extension _EditorDialogs on _HouseEditorState {
         'windowSill': tr3('默认窗台高度', 'Әдепкі терезе алды биіктігі',
             'Высота подоконника по умолчанию')
       };
+      if (!mounted) return;
       final field = await showMotionSheet<String>(
           context: context,
           builder: (context) => SafeArea(
@@ -147,6 +149,7 @@ extension _EditorDialogs on _HouseEditorState {
       }
     }
     if (choice == 'north') {
+      if (!mounted) return;
       final value = await showMotionSheet<int>(
           context: context,
           builder: (context) => SafeArea(
@@ -197,6 +200,7 @@ extension _EditorDialogs on _HouseEditorState {
               ? history.present.footprint.width ~/ 2
               : history.present.footprint.depth ~/ 2);
       if (value != null) {
+        if (!mounted) return;
         final scope = await showMotionSheet<String>(
             context: context,
             builder: (context) => SafeArea(
@@ -219,6 +223,7 @@ extension _EditorDialogs on _HouseEditorState {
       }
     }
     if (selected is ResolvedAxis) {
+      if (!mounted) return;
       final operation = await showMotionSheet<String>(
         context: context,
         builder: (context) => SafeArea(
@@ -554,6 +559,7 @@ extension _EditorDialogs on _HouseEditorState {
       if (value != null) action(choice, {'floorId': floor.id, 'value': value});
     } else {
       if (choice == 'DeleteFloor') {
+        if (!mounted) return;
         final yes = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
@@ -765,6 +771,7 @@ extension _EditorDialogs on _HouseEditorState {
               ? current.value
               : selectedWall?.thickness.round() ??
                   history.present.defaults.innerWallThickness;
+      if (!mounted) return;
       value = await showDialog<int>(
           context: context,
           builder: (_) => WallThicknessDialog(initial: thickness));

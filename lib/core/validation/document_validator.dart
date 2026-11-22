@@ -102,10 +102,11 @@ List<ValidationError> validateHouse(HouseDocument d) {
       }
     }
     if (floor.height < 2400) add(15, '/floors/$f/height', '层高不得低于 2400 毫米');
-    if (f == d.floors.length - 1)
+    if (f == d.floors.length - 1) {
       for (var s = 0; s < floor.stairs.length; s++) {
         add(16, '/floors/$f/stairs/$s', '楼梯不能放在顶层');
       }
+    }
     for (var o = 0; o < floor.openings.length; o++) {
       final x = floor.openings[o];
       final p = '/floors/$f/openings/$o';
@@ -153,8 +154,9 @@ List<ValidationError> validateHouse(HouseDocument d) {
     if (d.roof.overhang! < 0 || d.roof.overhang! > 1500) {
       add(21, '/roof/overhang', '挑檐必须在 0 到 1500 毫米之间');
     }
-  } else if (d.roof.parapetHeight! < 0 || d.roof.parapetHeight! > 1500)
+  } else if (d.roof.parapetHeight! < 0 || d.roof.parapetHeight! > 1500) {
     add(21, '/roof/parapetHeight', '女儿墙高度必须在 0 到 1500 毫米之间');
+  }
   if (d.schemaVersion < 1 || d.schemaVersion > 4) {
     add(24, '/schemaVersion', '不支持此文件版本');
   }
@@ -401,7 +403,7 @@ List<ValidationError> validateHouse(HouseDocument d) {
     }
     for (var o = 0; o < floor.openings.length; o++) {
       final res = resolveAnchor(axes, floor.openings[o].anchor);
-      if (!res.isSuccess)
+      if (!res.isSuccess) {
         for (final error in res.errors) {
           add(
               error.code == 'AXIS_NOT_VISIBLE'
@@ -412,6 +414,7 @@ List<ValidationError> validateHouse(HouseDocument d) {
               '/floors/$f/openings/$o/anchor${error.code.startsWith('ANCHOR_') ? '' : '/${error.field}'}',
               '门窗锚点无效（${error.code}）');
         }
+      }
     }
   }
   return List.unmodifiable(out);

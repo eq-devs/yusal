@@ -307,8 +307,11 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                                           tr3('撤回？', 'Қайтару?',
                                               'Отозвать?')) &&
                                       context.mounted) {
-                                    await attempt(context,
-                                        () => context.read(applicationRepositoryProvider).withdraw(e.id));
+                                    await attempt(
+                                        context,
+                                        () => context
+                                            .read(applicationRepositoryProvider)
+                                            .withdraw(e.id));
                                     if (context.mounted) Navigator.pop(context);
                                   }
                                 },

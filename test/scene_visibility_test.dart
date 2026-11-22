@@ -39,8 +39,8 @@ ScenePainter paint(SceneModel model, Camera cam, SceneSettings s,
       settings: s,
       northAngleDeg: 0,
       walk: walk,
-      labels: false);
-  p.paint(Canvas(ui.PictureRecorder()), const Size(800, 600));
+      labels: false)
+    ..paint(Canvas(ui.PictureRecorder()), const Size(800, 600));
   return p;
 }
 
@@ -101,7 +101,7 @@ void main() {
         kzModel,
         orbitCamera(pose.target, pose.yaw + 0.6, 0.25, pose.distance * 0.3),
         const SceneSettings(cut: true));
-    expect(near.items.length, lessThan(far.items.length * 0.8));
+    expect(near.itemCount, lessThan(far.itemCount * 0.8));
     expect(near.culled, greaterThan(0));
   });
 
@@ -162,7 +162,7 @@ void main() {
         const Vec3(0, 0, -1), 72 * math.pi / 180);
     final p = paint(model, outside, const SceneSettings(), walk: true);
     expect(p.walkerInside, isFalse);
-    expect(p.items.length, greaterThan(100));
+    expect(p.itemCount, greaterThan(100));
     final inside = Camera(Vec3(model.width * 0.3, 1.6, model.depth * 0.6),
         const Vec3(0, 0, -1), 72 * math.pi / 180);
     final q =

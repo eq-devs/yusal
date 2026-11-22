@@ -371,7 +371,7 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
     List<Offset>? uvFor(List<Vec3> pts) {
       if (textile == null) return null;
       if (tile == null) {
-        return const [Offset(0, 0), Offset(0, 1), Offset(1, 1), Offset(1, 0)];
+        return const [Offset.zero, Offset(0, 1), Offset(1, 1), Offset(1, 0)];
       }
       final v = (pts[1] - pts[0]).length / tile;
       final u = (pts[3] - pts[0]).length / tile;
@@ -593,13 +593,14 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       }
     }
     // Plinth under the exterior walls of the ground floor.
-    if (f == 0)
+    if (f == 0) {
       for (final wall in walls.where((w) => w.role == WallRole.exterior)) {
         final r = wall.rect;
         planBox(PlanRect(r.left - 45, r.bottom - 45, r.right + 45, r.top + 45),
             gl, 0, Mat.plinth,
             floor: f);
       }
+    }
     // Windows (glass + frame) and doors (leaf swung open).
     for (final p in g.openings.where((p) => p.status == 'ok')) {
       final o = p.opening;
@@ -693,7 +694,7 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       }
     }
     // Ceiling of this floor for the walk-through.
-    if (options.walk)
+    if (options.walk) {
       for (final r in outline) {
         faces.add(Face3([
           Vec3(px(r.left), elevation + h - slab - 0.005, pz(r.top)),
@@ -702,12 +703,14 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
           Vec3(px(r.left), elevation + h - slab - 0.005, pz(r.bottom)),
         ], Mat.ceil, layer: Layer3.ceiling, floorIndex: f, castsShadow: false));
       }
+    }
     // Furniture.
-    if (options.furniture || options.walk)
+    if (options.furniture || options.walk) {
       for (final item
           in doc.extras.furniture.where((i) => i.floorId == floor.id)) {
         furnitureFaces(item, elevation, f, box, faces, d);
       }
+    }
     elevation += h;
   }
 
@@ -745,7 +748,7 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
         }
         // One parapet per wall line, as on a rectangular roof, so each
         // long face sorts against the membrane as a whole.
-        if (parH > slab)
+        if (parH > slab) {
           for (final r in _joinRuns(outer)) {
             planBox(r, rs, top + parH, Mat.bear,
                 roof: true, floor: -1, covering: true);
@@ -758,6 +761,7 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
                 floor: -1,
                 covering: true);
           }
+        }
         final hatch = rects.reduce((a, b) => a.area >= b.area ? a : b);
         final cx = (hatch.left + hatch.right) / 2;
         final cy = (hatch.bottom + hatch.top) / 2;
@@ -769,7 +773,7 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
             roof: true, floor: -1, covering: true);
         box(parT, rs, parT, w - parT, rt, d - parT, Mat.membrane,
             roof: true, floor: -1, covering: true);
-        if (parH > slab)
+        if (parH > slab) {
           for (final (x0, z0, x1, z1) in [
             (0.0, 0.0, w, parT),
             (0.0, d - parT, w, d),
@@ -782,6 +786,7 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
                 z1 + 0.04, Mat.coping,
                 roof: true, floor: -1, covering: true);
           }
+        }
         for (final x in [1.5, w - 1.5]) {
           if (x < 0.5 || x > w - 0.5) continue;
           box(x - 0.15, rt, -0.18, x + 0.15, rt + 0.12, parT, Mat.coping,
@@ -836,13 +841,14 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
           horizontal ? pz((r.bottom + r.top) / 2) : px((r.left + r.right) / 2);
       final half = s.width / 2000 - cover;
       final bars = main ? math.max(spec.topBars, spec.bottomBars) : 2;
-      for (final y in [-hh + cover, -cover])
+      for (final y in [-hh + cover, -cover]) {
         for (var i = 0; i < bars; i++) {
           final o = bars == 1 ? 0.0 : -half + i * 2 * half / (bars - 1);
           final a = horizontal ? Vec3(a0, y, cc + o) : Vec3(cc + o, y, a0);
           final b = horizontal ? Vec3(a1, y, cc + o) : Vec3(cc + o, y, a1);
           lines.add(Line3(a, b, Mat.rebar, 2.2));
         }
+      }
       final step = spec.stirrupStep / 1000;
       for (var a = a0 + 0.1; a < a1 - 0.05 && stirrups < 500; a += step) {
         stirrups++;
@@ -1075,7 +1081,7 @@ List<PlanRect> _subtract(List<PlanRect> area, List<PlanRect> holes) {
   return out;
 }
 
-typedef _BoxFn = void Function(double x0, double y0, double z0, double x1,
+typedef BoxFaceFn = void Function(double x0, double y0, double z0, double x1,
     double y1, double z1, Color color,
     {double alpha,
     Layer3 layer,
@@ -1093,8 +1099,8 @@ typedef _BoxFn = void Function(double x0, double y0, double z0, double x1,
 
 /// Simple shapes for each piece of furniture, coloured like the drafting
 /// page (Kazakh textiles keep their reds, blues and golds).
-void furnitureFaces(FurnitureItem item, double elevation, int floor, _BoxFn box,
-    List<Face3> faces, double planDepth) {
+void furnitureFaces(FurnitureItem item, double elevation, int floor,
+    BoxFaceFn box, List<Face3> faces, double planDepth) {
   final w = item.width / 1000;
   final dp = item.depth / 1000;
   final h = item.height / 1000;
@@ -1152,12 +1158,13 @@ void furnitureFaces(FurnitureItem item, double elevation, int floor, _BoxFn box,
           source: source, furniture: true, floorIndex: floor));
       for (var k = 0; k < n; k++) {
         final k1 = (k + 1) % n;
-        faces.add(Face3(
-            [topRing[k], topRing[k1], midRing[k1], midRing[k]], Mat.dastTop,
-            source: source, furniture: true, floorIndex: floor));
-        faces.add(Face3(
-            [legTop[k], legTop[k1], legBottom[k1], legBottom[k]], Mat.table,
-            source: source, furniture: true, floorIndex: floor));
+        faces
+          ..add(Face3(
+              [topRing[k], topRing[k1], midRing[k1], midRing[k]], Mat.dastTop,
+              source: source, furniture: true, floorIndex: floor))
+          ..add(Face3(
+              [legTop[k], legTop[k1], legBottom[k1], legBottom[k]], Mat.table,
+              source: source, furniture: true, floorIndex: floor));
       }
     case FurnitureKind.sandyq:
       b(x0, y0, z0, x1, y0 + h, z1, Mat.sandyq[v],

@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import 'dart:math' as math;
 import 'package:yusal/core/axis/axis_resolver.dart';
 import 'package:yusal/core/canonicalization/room_canonicalizer.dart';
@@ -14,6 +15,7 @@ class PlanRect {
       x >= left && x <= right && y >= bottom && y <= top;
 }
 
+@immutable
 class WallRef {
   const WallRef(this.floorId, this.carrierId, this.startAxisId, this.endAxisId);
   final String floorId;
@@ -23,12 +25,12 @@ class WallRef {
   BoundaryAnchor get anchor => BoundaryAnchor(
       axisId: carrierId, startAxisId: startAxisId, endAxisId: endAxisId);
   @override
-  bool operator ==(Object o) =>
-      o is WallRef &&
-      floorId == o.floorId &&
-      carrierId == o.carrierId &&
-      startAxisId == o.startAxisId &&
-      endAxisId == o.endAxisId;
+  bool operator ==(Object other) =>
+      other is WallRef &&
+      floorId == other.floorId &&
+      carrierId == other.carrierId &&
+      startAxisId == other.startAxisId &&
+      endAxisId == other.endAxisId;
   @override
   int get hashCode => Object.hash(floorId, carrierId, startAxisId, endAxisId);
 }
@@ -226,16 +228,18 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
     edges.add(wall);
   }
 
-  for (var j = 0; j <= axes.ny; j++)
+  for (var j = 0; j <= axes.ny; j++) {
     for (var i = 0; i < axes.nx; i++) {
       edge(axes.h[j], axes.v[i], axes.v[i + 1], j == 0 ? null : Cell(i, j - 1),
           j == axes.ny ? null : Cell(i, j));
     }
-  for (var i = 0; i <= axes.nx; i++)
+  }
+  for (var i = 0; i <= axes.nx; i++) {
     for (var j = 0; j < axes.ny; j++) {
       edge(axes.v[i], axes.h[j], axes.h[j + 1], i == 0 ? null : Cell(i - 1, j),
           i == axes.nx ? null : Cell(i, j));
     }
+  }
 
   /// Which side of an outside wall is outdoors: the negative one or not.
   bool outdoorsBelow(UnitEdge e) =>
@@ -351,7 +355,7 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
     }.first.toList()
       ..sort();
     final clear = <Cell>{};
-    for (var j = 0; j < ys.length - 1; j++)
+    for (var j = 0; j < ys.length - 1; j++) {
       for (var i = 0; i < xs.length - 1; i++) {
         final x = (xs[i] + xs[i + 1]) / 2;
         final y = (ys[j] + ys[j + 1]) / 2;
@@ -360,6 +364,7 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
           clear.add(Cell(i, j));
         }
       }
+    }
     // Merge row intervals and identical intervals on consecutive rows.
     final open = <(int, int), ({int j0, int j1})>{};
     final merged = <PlanRect>[];

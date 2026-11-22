@@ -30,8 +30,9 @@ abstract class SectionPainter extends CustomPainter {
   void draw(Canvas canvas);
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.save();
-    canvas.scale(size.width / viewW);
+    canvas
+      ..save()
+      ..scale(size.width / viewW);
     draw(canvas);
     canvas.restore();
   }
@@ -70,9 +71,10 @@ abstract class SectionPainter extends CustomPainter {
         maxLines: maxWidth == null ? 1 : 2,
         ellipsis: '…')
       ..layout(maxWidth: maxWidth ?? double.infinity);
-    canvas.save();
-    canvas.translate(at.dx, at.dy);
-    canvas.rotate(angle);
+    canvas
+      ..save()
+      ..translate(at.dx, at.dy)
+      ..rotate(angle);
     final dx = switch (align) {
       TextAlign.right => -tp.width,
       TextAlign.center => -tp.width / 2,
@@ -100,18 +102,18 @@ void paintMaterial(Canvas canvas, Rect r, LayerMaterial m, Tokens t) {
     ..strokeWidth = 0.8
     ..style = PaintingStyle.stroke;
   final dot = Paint()..color = t.furnLine;
-  canvas.save();
-  canvas.clipRect(r);
+  canvas
+    ..save()
+    ..clipRect(r);
   switch (m) {
     case LayerMaterial.conc:
       canvas.drawRect(r, Paint()..color = t.furn);
       final rnd = math.Random(7);
-      for (var x = r.left; x < r.right; x += 10)
+      for (var x = r.left; x < r.right; x += 10) {
         for (var y = r.top; y < r.bottom; y += 10) {
-          canvas.drawCircle(
-              Offset(x + 2 + rnd.nextDouble() * 3, y + 3), 0.9, dot);
-          canvas.drawCircle(
-              Offset(x + 7, y + 7 + rnd.nextDouble() * 2), 0.6, dot);
+          canvas
+            ..drawCircle(Offset(x + 2 + rnd.nextDouble() * 3, y + 3), 0.9, dot)
+            ..drawCircle(Offset(x + 7, y + 7 + rnd.nextDouble() * 2), 0.6, dot);
           final p = Path()
             ..moveTo(x + 5, y + 1)
             ..lineTo(x + 7, y + 3)
@@ -119,6 +121,7 @@ void paintMaterial(Canvas canvas, Rect r, LayerMaterial m, Tokens t) {
             ..close();
           canvas.drawPath(p, dot);
         }
+      }
     case LayerMaterial.block:
       canvas.drawRect(r, Paint()..color = t.panel);
       for (var d = -r.height; d < r.width; d += 8) {
@@ -130,26 +133,30 @@ void paintMaterial(Canvas canvas, Rect r, LayerMaterial m, Tokens t) {
       for (var y = r.top + 4; y < r.bottom; y += 8) {
         final p = Path()..moveTo(r.left, y);
         for (var x = r.left; x < r.right; x += 12) {
-          p.quadraticBezierTo(x + 3, y - 4, x + 6, y);
-          p.quadraticBezierTo(x + 9, y + 4, x + 12, y);
+          p
+            ..quadraticBezierTo(x + 3, y - 4, x + 6, y)
+            ..quadraticBezierTo(x + 9, y + 4, x + 12, y);
         }
         canvas.drawPath(p, pen);
       }
     case LayerMaterial.earth:
       canvas.drawRect(r, Paint()..color = t.panel);
       for (var d = -r.height; d < r.width; d += 10) {
-        canvas.drawLine(Offset(r.left + d, r.bottom),
-            Offset(r.left + d + r.height, r.top), pen);
-        canvas.drawLine(Offset(r.left + d + 4, r.bottom),
-            Offset(r.left + d + 4 + r.height, r.top), pen);
+        canvas
+          ..drawLine(Offset(r.left + d, r.bottom),
+              Offset(r.left + d + r.height, r.top), pen)
+          ..drawLine(Offset(r.left + d + 4, r.bottom),
+              Offset(r.left + d + 4 + r.height, r.top), pen);
       }
     case LayerMaterial.sand:
       canvas.drawRect(r, Paint()..color = t.panel);
-      for (var x = r.left; x < r.right; x += 6)
+      for (var x = r.left; x < r.right; x += 6) {
         for (var y = r.top; y < r.bottom; y += 6) {
-          canvas.drawCircle(Offset(x + 1.5, y + 1.5), 0.6, dot);
-          canvas.drawCircle(Offset(x + 4.5, y + 4.2), 0.5, dot);
+          canvas
+            ..drawCircle(Offset(x + 1.5, y + 1.5), 0.6, dot)
+            ..drawCircle(Offset(x + 4.5, y + 4.2), 0.5, dot);
         }
+      }
     case LayerMaterial.plaster:
       canvas.drawRect(r, Paint()..color = t.furn);
     case LayerMaterial.metal:
@@ -279,15 +286,17 @@ class FoundationSectionPainter extends SectionPainter {
     final cover = spec.cover * k;
     final earth = Paint()..color = t.panel;
     // Earth outside and under the floor.
-    canvas.save();
-    canvas.clipRect(Rect.fromLTRB(0, 0, viewW, viewH));
+    canvas
+      ..save()
+      ..clipRect(Rect.fromLTRB(0, 0, viewW, viewH));
     paintMaterial(
         canvas, Rect.fromLTRB(0, yG, x0 - 12.5, viewH), LayerMaterial.earth, t);
     paintMaterial(canvas, Rect.fromLTRB(x0 + b, y0 + 62.5, right, viewH),
         LayerMaterial.earth, t);
-    canvas.restore();
-    canvas.drawRect(Rect.fromLTRB(0, yG, x0 - 12.5, viewH),
-        Paint()..color = earth.color.withValues(alpha: 0.45));
+    canvas
+      ..restore()
+      ..drawRect(Rect.fromLTRB(0, yG, x0 - 12.5, viewH),
+          Paint()..color = earth.color.withValues(alpha: 0.45));
     // Cushion, foundation, insulation, wall.
     final cushion = Rect.fromLTRB(x0 - ext, yB, x0 + b + ext, yC);
     fillMaterial(canvas, cushion, LayerMaterial.sand);
@@ -302,9 +311,10 @@ class FoundationSectionPainter extends SectionPainter {
     final wallRect =
         Rect.fromLTRB(x0 + (b - tw) / 2, 8, x0 + (b + tw) / 2, y0 - 1.5);
     fillMaterial(canvas, wallRect, LayerMaterial.block);
-    canvas.drawRect(wallRect, edge);
-    canvas.drawRect(Rect.fromLTRB(x0 - 2, y0 - 2.5, x0 + b + 2, y0 + 0.5),
-        Paint()..color = t.chk);
+    canvas
+      ..drawRect(wallRect, edge)
+      ..drawRect(Rect.fromLTRB(x0 - 2, y0 - 2.5, x0 + b + 2, y0 + 0.5),
+          Paint()..color = t.chk);
     // Warm blind area outside, floor build-up inside.
     final blind = Path()
       ..moveTo(60, yG - 10)
@@ -312,11 +322,13 @@ class FoundationSectionPainter extends SectionPainter {
       ..lineTo(x0 - 12.5, yG + 1)
       ..lineTo(60, yG + 1)
       ..close();
-    canvas.save();
-    canvas.clipPath(blind);
+    canvas
+      ..save()
+      ..clipPath(blind);
     paintMaterial(canvas, blind.getBounds(), LayerMaterial.conc, t);
-    canvas.restore();
-    canvas.drawPath(blind, edge);
+    canvas
+      ..restore()
+      ..drawPath(blind, edge);
     final blindIns = Rect.fromLTRB(60, yG + 1, x0 - 12.5, yG + 13.5);
     fillMaterial(canvas, blindIns, LayerMaterial.ins);
     canvas.drawRect(blindIns, edge);

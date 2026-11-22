@@ -232,7 +232,7 @@ extension _FurnitureTool on _HouseEditorState {
     var bestScore = -double.infinity;
     final w = math.max(0.0, r.right - r.left - 2 * inset);
     final h = math.max(0.0, r.top - r.bottom - 2 * inset);
-    for (var i = 0; i <= steps; i++)
+    for (var i = 0; i <= steps; i++) {
       for (var j = 0; j <= steps; j++) {
         final x = r.left + inset + w * i / steps;
         final y = r.bottom + inset + h * j / steps;
@@ -250,6 +250,7 @@ extension _FurnitureTool on _HouseEditorState {
           best = (x: x, y: y);
         }
       }
+    }
     // Face the middle of the room (yaw 0 looks up the drawing).
     final yaw = (best.x - cx).abs() + (best.y - cy).abs() < 1
         ? 0.0

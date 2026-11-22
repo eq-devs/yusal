@@ -29,10 +29,10 @@ abstract interface class ApplicationRepository {
   Future<Application> markNotSelected(String applicationId);
 }
 
-
 /// Overridden in `lib/app` with the one backend (the fake in tests).
-final applicationRepositoryProvider = Provider<ApplicationRepository>(
-    (ref) => throw UnimplementedError('applicationRepositoryProvider is not overridden'));
+final applicationRepositoryProvider = Provider<ApplicationRepository>((ref) =>
+    throw UnimplementedError(
+        'applicationRepositoryProvider is not overridden'));
 
 /// [ApplicationRepository] over yusal-api.
 mixin HttpApplicationRepository on ApiClient implements ApplicationRepository {

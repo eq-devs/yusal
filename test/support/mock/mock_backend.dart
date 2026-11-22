@@ -2140,7 +2140,8 @@ class MockBackend implements Backend, ClockSource {
         if (times.length >= 10) throw const ApiFailure(ApiCodes.rateLimited);
         times.add(now);
         // One rating per person: a new rating replaces the old one.
-        var sum = p.ratingSum, count = p.ratingCount;
+        var sum = p.ratingSum;
+        var count = p.ratingCount;
         if (rating != null) {
           final prev = commentsById.values
               .where((c) =>

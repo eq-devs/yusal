@@ -7,29 +7,30 @@ extension _StairTool on _HouseEditorState {
   void startStairStamp({Stair? moving, ({int w, int d})? size}) {
     if (floorIndex == history.present.floors.length - 1) {
       final floorId = floor.id;
-      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-      messenger.showSnackBar(
-          SnackBar(
-              key: const Key('stair-needs-floor'),
-              content: Text(tr3(
-                  '楼梯要通到上面一层，现在还没有。',
-                  'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
-                  'Лестница ведёт на этаж выше, а его пока нет.')),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
-              duration: const Duration(seconds: 8),
-              persist: false,
-              action: SnackBarAction(
-                  label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
-                      'Добавить этаж и лестницу'),
-                  onPressed: () {
-                    final before = history.present;
-                    action('AddFloor', {'floorId': floorId});
-                    if (history.present == before || !mounted) return;
-                    update(derive);
-                    startStairStamp();
-                  })),
-          snackBarAnimationStyle: Motion.toastStyle);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+            SnackBar(
+                key: const Key('stair-needs-floor'),
+                content: Text(tr3(
+                    '楼梯要通到上面一层，现在还没有。',
+                    'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
+                    'Лестница ведёт на этаж выше, а его пока нет.')),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
+                duration: const Duration(seconds: 8),
+                persist: false,
+                action: SnackBarAction(
+                    label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
+                        'Добавить этаж и лестницу'),
+                    onPressed: () {
+                      final before = history.present;
+                      action('AddFloor', {'floorId': floorId});
+                      if (history.present == before || !mounted) return;
+                      update(derive);
+                      startStairStamp();
+                    })),
+            snackBarAnimationStyle: Motion.toastStyle);
       return;
     }
     final fp = history.present.footprint;
@@ -81,29 +82,30 @@ extension _StairTool on _HouseEditorState {
   void placeStair(AxisRectangle region) {
     final floorId = floor.id;
     if (floorIndex == history.present.floors.length - 1) {
-      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-      messenger.showSnackBar(
-          SnackBar(
-              key: const Key('stair-needs-floor'),
-              content: Text(tr3(
-                  '楼梯要通到上面一层，现在还没有。',
-                  'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
-                  'Лестница ведёт на этаж выше, а его пока нет.')),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
-              duration: const Duration(seconds: 8),
-              persist: false,
-              action: SnackBarAction(
-                  label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
-                      'Добавить этаж и лестницу'),
-                  onPressed: () {
-                    final before = history.present;
-                    action('AddFloor', {'floorId': floorId});
-                    if (history.present == before || !mounted) return;
-                    update(derive);
-                    placeStair(region);
-                  })),
-          snackBarAnimationStyle: Motion.toastStyle);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+            SnackBar(
+                key: const Key('stair-needs-floor'),
+                content: Text(tr3(
+                    '楼梯要通到上面一层，现在还没有。',
+                    'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
+                    'Лестница ведёт на этаж выше, а его пока нет.')),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
+                duration: const Duration(seconds: 8),
+                persist: false,
+                action: SnackBarAction(
+                    label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
+                        'Добавить этаж и лестницу'),
+                    onPressed: () {
+                      final before = history.present;
+                      action('AddFloor', {'floorId': floorId});
+                      if (history.present == before || !mounted) return;
+                      update(derive);
+                      placeStair(region);
+                    })),
+            snackBarAnimationStyle: Motion.toastStyle);
       return;
     }
     final rect = resolveRect(base.axes, region).rect;

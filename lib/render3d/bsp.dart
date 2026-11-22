@@ -22,7 +22,8 @@ class _Node {
   _Node? back;
 
   /// Box around every fragment in this subtree.
-  Vec3 lo = const Vec3(0, 0, 0), hi = const Vec3(0, 0, 0);
+  Vec3 lo = const Vec3(0, 0, 0);
+  Vec3 hi = const Vec3(0, 0, 0);
 }
 
 /// Binary space partitioning tree of the scene faces.
@@ -61,8 +62,9 @@ class BspTree {
         _split(f, n, node.offset, node.on, front, back);
       }
       count += node.on.length;
-      node.front = build(front);
-      node.back = build(back);
+      node
+        ..front = build(front)
+        ..back = build(back);
       var lo = const Vec3(double.infinity, double.infinity, double.infinity);
       var hi = const Vec3(-double.infinity, -double.infinity, -double.infinity);
       void grow(Vec3 a, Vec3 b) {
@@ -72,15 +74,17 @@ class BspTree {
             b.z > hi.z ? b.z : hi.z);
       }
 
-      for (final f in node.on)
+      for (final f in node.on) {
         for (final p in f.points) {
           grow(p, p);
         }
+      }
       for (final c in [node.front, node.back]) {
         if (c != null) grow(c.lo, c.hi);
       }
-      node.lo = lo;
-      node.hi = hi;
+      node
+        ..lo = lo
+        ..hi = hi;
       return node;
     }
 

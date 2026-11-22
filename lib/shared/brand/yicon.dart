@@ -72,9 +72,10 @@ class _YIconPainter extends CustomPainter {
     // so a Yusal icon reads as large as a Material one at the same size.
     final k = size.shortestSide / 76;
     // A layer so "knock-out" strokes cut through to whatever is behind.
-    canvas.saveLayer(Offset.zero & size, Paint());
-    canvas.scale(k);
-    canvas.translate(-10, -10);
+    canvas
+      ..saveLayer(Offset.zero & size, Paint())
+      ..scale(k)
+      ..translate(-10, -10);
     for (final (s, path) in shapes) {
       final paint = Paint()..isAntiAlias = true;
       switch (s.role) {

@@ -33,7 +33,7 @@ void main() {
       return (r as Applied).newState;
     }
 
-    for (var i = 1; i < 6; i++)
+    for (var i = 1; i < 6; i++) {
       for (var j = 0; j < 6; j++) {
         s = run('AddDrawnWall', {
           'x0': i * 5000,
@@ -42,7 +42,8 @@ void main() {
           'y1': j * 4000 + 4000
         });
       }
-    for (var j = 1; j < 6; j++)
+    }
+    for (var j = 1; j < 6; j++) {
       for (var i = 0; i < 6; i++) {
         s = run('AddDrawnWall', {
           'x0': i * 5000,
@@ -51,6 +52,7 @@ void main() {
           'y1': j * 4000
         });
       }
+    }
     final doc = composeDocument(
         Meta(name: '大户型', createdAt: ctx.now(), updatedAt: ctx.now()), s);
     for (final w in deriveFloorBase(doc, floorId).wallSegments) {

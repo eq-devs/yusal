@@ -377,7 +377,8 @@ class DemandVersion {
   final List<String> trades;
 
   /// Region code; [locality] is the public village / district text.
-  final String region, locality;
+  final String region;
+  final String locality;
 
   /// Never public; shared with a partner on purpose.
   final String exactAddress;
@@ -743,7 +744,7 @@ class Milestone {
       this.requestedAt});
 
   /// A built-in point ("foundation", "walls", "roof", "finish") or a
-  /// custom one written as "c:<name>".
+  /// custom one written as `c:<name>`.
   final String key;
   final String criteria;
   final String note;
@@ -1204,7 +1205,8 @@ class AuditEntry {
   final DateTime at;
 
   /// What kind of record (demand, post, account…) and its title then.
-  final String target, title;
+  final String target;
+  final String title;
 
   /// The decider's name ('' for the automatic check).
   final String byName;
@@ -1344,7 +1346,8 @@ class PostBuild {
   final List<({ServiceProfile profile, String scope, bool ended})> builders;
 
   /// Sums over agreements with a known amount, in tenge.
-  final int agreedAmount, acceptedAmount;
+  final int agreedAmount;
+  final int acceptedAmount;
 
   /// Every cooperation ended by both sides.
   final bool finished;

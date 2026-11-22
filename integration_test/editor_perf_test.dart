@@ -114,7 +114,8 @@ void main() {
 
     {
       // The plan painter alone, recorded off screen: which layer costs what.
-      final g = deriveHouse(doc).floors.first, floor = doc.floors.first;
+      final g = deriveHouse(doc).floors.first;
+      final floor = doc.floors.first;
       final size = t.getSize(canvas);
       double paint(
           {bool labels = true, bool dims = true, bool furniture = true}) {

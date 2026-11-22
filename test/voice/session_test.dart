@@ -27,7 +27,7 @@ class ScriptedBackend implements VoiceBackend {
   VoiceTurn _next() {
     final next = script.removeAt(0);
     if (next is VoiceTurn) return next;
-    throw next;
+    throw next as Exception;
   }
 
   @override

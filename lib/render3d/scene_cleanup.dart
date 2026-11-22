@@ -121,7 +121,8 @@ bool _covered(_Rect r, Face3 f, List<SolidBox> solids) {
   }
   if (cover.isEmpty) return false;
   // Covered when every cell of the grid the boxes' edges make is.
-  final us = {r.u0, r.u1}, vs = {r.v0, r.v1};
+  final us = {r.u0, r.u1};
+  final vs = {r.v0, r.v1};
   for (final b in cover) {
     if (b.$1 > r.u0 && b.$1 < r.u1) us.add(b.$1);
     if (b.$2 > r.u0 && b.$2 < r.u1) us.add(b.$2);
@@ -130,7 +131,7 @@ bool _covered(_Rect r, Face3 f, List<SolidBox> solids) {
   }
   final ul = us.toList()..sort();
   final vl = vs.toList()..sort();
-  for (var i = 0; i < ul.length - 1; i++)
+  for (var i = 0; i < ul.length - 1; i++) {
     for (var j = 0; j < vl.length - 1; j++) {
       if (ul[i + 1] - ul[i] < _eps || vl[j + 1] - vl[j] < _eps) continue;
       final u = (ul[i] + ul[i + 1]) / 2;
@@ -143,6 +144,7 @@ bool _covered(_Rect r, Face3 f, List<SolidBox> solids) {
         return false;
       }
     }
+  }
   return true;
 }
 
@@ -178,7 +180,7 @@ List<Face3> _merge(List<_Rect> rects) {
     var changed = true;
     while (changed && g.length > 1) {
       changed = false;
-      for (var i = 0; i < g.length && !changed; i++)
+      for (var i = 0; i < g.length && !changed; i++) {
         for (var j = i + 1; j < g.length; j++) {
           final a = g[i];
           final b = g[j];
@@ -199,6 +201,7 @@ List<Face3> _merge(List<_Rect> rects) {
           changed = true;
           break;
         }
+      }
     }
     for (final r in g) {
       out.add(r.build());

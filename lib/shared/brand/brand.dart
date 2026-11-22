@@ -73,8 +73,9 @@ class _BrandPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paths =
         _paths[parts] ??= [for (final (_, ops) in parts) pathFromOps(ops)];
-    canvas.save();
-    canvas.scale(size.height / box.height);
+    canvas
+      ..save()
+      ..scale(size.height / box.height);
     for (var i = 0; i < parts.length; i++) {
       canvas.drawPath(
           paths[i],

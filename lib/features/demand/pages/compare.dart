@@ -170,7 +170,7 @@ class _LineTable extends StatelessWidget {
     final names = <String>[];
     final unitOf = <String, String>{};
     final qtyOf = <String, double>{};
-    for (final a in quotes)
+    for (final a in quotes) {
       for (final l in a.current.lines) {
         if (!names.contains(l.name)) {
           names.add(l.name);
@@ -178,6 +178,7 @@ class _LineTable extends StatelessWidget {
           qtyOf[l.name] = l.quantity;
         }
       }
+    }
     QuoteLine? lineOf(Application a, String n) =>
         a.current.lines.where((l) => l.name == n).firstOrNull;
     Widget cell(String text, {Color? color, bool bold = false}) => Padding(

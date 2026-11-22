@@ -81,15 +81,15 @@ Future<List<MyHouse>> _myHouses(Ref ref) async {
     if (p.status != PostStatus.published) continue;
     final existing = byKey[p.projectId] ??
         byKey.values.where((h) => h.postId == p.id).firstOrNull;
-    final h = existing ??
+    (existing ??
         (byKey[p.projectId] = MyHouse(
             key: p.projectId,
             name: designs[p.projectId]?.document.meta.name ?? p.title,
             projectId: designs.containsKey(p.projectId) ? p.projectId : null,
             preview: designs[p.projectId]?.preview ?? p.preview,
-            postId: p.id));
-    h.comments = p.commentCount;
-    h.sharedAt = p.updatedAt;
+            postId: p.id)))
+      ..comments = p.commentCount
+      ..sharedAt = p.updatedAt;
   }
   final coopLists = await coopsF;
   final coops = {

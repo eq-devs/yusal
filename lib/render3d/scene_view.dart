@@ -102,7 +102,7 @@ class Camera {
   final tanV = math.tan(fov / 2) * 0.86;
   final tanH = tanV * aspect.clamp(0.4, 3.0);
   var distance = 2.0;
-  for (final cx in [lo.x, hi.x])
+  for (final cx in [lo.x, hi.x]) {
     for (final cy in [lo.y, hi.y]) {
       for (final cz in [lo.z, hi.z]) {
         final d = Vec3(cx, cy, cz) - target;
@@ -114,6 +114,7 @@ class Camera {
                 along);
       }
     }
+  }
   return (target: target, distance: distance, yaw: yaw, pitch: pitch);
 }
 
@@ -188,7 +189,10 @@ class ScenePainter extends CustomPainter {
   /// textile patterns as plain colour, then draw everything when it rests
   /// (the "interactive quality" switch of CAD and map viewers).
   final bool fast;
-  List<_Item> items = [];
+  List<_Item> _items = [];
+
+  /// How many items the last paint drew (faces, edges, labels).
+  int get itemCount => _items.length;
 
   /// Faces left out of the last frame as off screen or hidden inside the
   /// closed shell; for tests and diagnostics.
@@ -196,7 +200,7 @@ class ScenePainter extends CustomPainter {
 
   /// Layer and source of each drawn item, for tests.
   List<(int, SourceRef?)> get debugItems =>
-      [for (final i in items) (i.layer, i.source)];
+      [for (final i in _items) (i.layer, i.source)];
   Path? groundPath;
   Paint? groundPaint;
 
@@ -224,7 +228,7 @@ class ScenePainter extends CustomPainter {
       camera.eye.z < model.depth;
 
   SourceRef? pick(Offset p) {
-    for (final i in items.reversed) {
+    for (final i in _items.reversed) {
       if (i.stroke == 0 && i.source != null && i.path.contains(p)) {
         return i.source;
       }
@@ -323,12 +327,12 @@ class ScenePainter extends CustomPainter {
     final light = sun;
     final cutY = settings.cut && !walk ? settings.cutHeight : double.infinity;
     final foundation = settings.foundation && !walk;
-    items = [];
+    _items = [];
     groundPath = null;
     culled = 0;
     // The view frustum, a few pixels wider for the seam hairlines.
-    final tanH = (size.width / 2 + 3) / focal,
-        tanV = (size.height / 2 + 3) / focal;
+    final tanH = (size.width / 2 + 3) / focal;
+    final tanV = (size.height / 2 + 3) / focal;
     bool inView(Vec3 lo, Vec3 hi) {
       var behind = true;
       var left = true;
@@ -362,7 +366,7 @@ class ScenePainter extends CustomPainter {
             e.y < model.height + 8)) {
       portals = [];
       for (final p in model.portals) {
-        var lo = const Offset(double.infinity, double.infinity);
+        var lo = Offset.infinite;
         var hi = const Offset(-double.infinity, -double.infinity);
         for (var i = 0; i < 8 && portals != null; i++) {
           final c = camera.toCamera(Vec3(i & 1 == 0 ? p.lo.x : p.hi.x,
@@ -413,7 +417,7 @@ class ScenePainter extends CustomPainter {
       for (final c in cam) {
         depth += c.z;
       }
-      items.add(_Item(null, color.withValues(alpha: alpha), depth / cam.length,
+      _items.add(_Item(null, color.withValues(alpha: alpha), depth / cam.length,
           layer, source,
           points: pts));
     }
@@ -489,7 +493,7 @@ class ScenePainter extends CustomPainter {
         }
         if (ok && pts.length >= 3) shadow.addPolygon(pts, true);
       }
-      items
+      _items
           .add(_Item(shadow, Colors.black.withValues(alpha: 0.22), 0, 2, null));
     }
 
@@ -547,7 +551,7 @@ class ScenePainter extends CustomPainter {
                 : 7,
       };
       final alpha = f.glow && night ? 0.62 : f.alpha;
-      final before = items.length;
+      final before = _items.length;
       final enclosed = f.enclosed && shell;
       if (f.textile != null && frag.uv != null && !clipped && !fast) {
         final outline = [
@@ -563,22 +567,22 @@ class ScenePainter extends CustomPainter {
             layer, f.source,
             enclosed: enclosed);
       }
-      for (var i = before; i < items.length; i++) {
-        items[i].order = order++;
+      for (var i = before; i < _items.length; i++) {
+        _items[i].order = order++;
       }
     });
     // Section fill: where the cut plane passes through a wall, its cut face
     // is filled solid (the poché of a CAD section) instead of leaving the
     // wall open as a hollow box. Seen from above the cut nothing else can
     // be in front of it, so it is drawn last.
-    if (cutY.isFinite && camera.eye.y > cutY + 0.01)
+    if (cutY.isFinite && camera.eye.y > cutY + 0.01) {
       for (final b in model.sections) {
         if (b.floor > settings.maxFloor ||
             b.lo.y >= cutY - 1e-3 ||
             b.hi.y <= cutY + 1e-3) {
           continue;
         }
-        final before = items.length;
+        final before = _items.length;
         addPoly(
             [
               Vec3(b.lo.x, cutY, b.lo.z),
@@ -592,11 +596,12 @@ class ScenePainter extends CustomPainter {
             1,
             9,
             b.source);
-        for (var i = before; i < items.length; i++) {
-          items[i].order = order++;
+        for (var i = before; i < _items.length; i++) {
+          _items[i].order = order++;
         }
       }
-    if (foundation)
+    }
+    if (foundation) {
       for (final l in model.lines) {
         var a = camera.toCamera(l.a);
         var b = camera.toCamera(l.b);
@@ -609,11 +614,12 @@ class ScenePainter extends CustomPainter {
         final path = Path()
           ..moveTo(p0.dx, p0.dy)
           ..lineTo(p1.dx, p1.dy);
-        items.add(_Item(path, l.color, (a.z + b.z) / 2, 0, null,
+        _items.add(_Item(path, l.color, (a.z + b.z) / 2, 0, null,
             stroke: (l.width * 6 / math.max(1.0, (a.z + b.z) / 2))
                 .clamp(0.6, 3.0)));
       }
-    items.sort((a, b) {
+    }
+    _items.sort((a, b) {
       final l = a.layer.compareTo(b.layer);
       if (l != 0) return l;
       // The foundation layer mixes faces with rebar lines: by depth.
@@ -650,7 +656,7 @@ class ScenePainter extends CustomPainter {
       batchCol.clear();
     }
 
-    for (final i in items) {
+    for (final i in _items) {
       if (fast && i.points != null && i.stroke == 0 && i.vertices == null) {
         if (i.layer >= 1 && !groundDrawn) {
           flush();
@@ -765,7 +771,8 @@ class ScenePainter extends CustomPainter {
     var count = 0;
     (Vec3, Offset) at(double s, double t) {
       // Bilinear over the quad: s along p0→p3, t along p0→p1.
-      final a = Vec3.lerp(pts[0], pts[3], s), b = Vec3.lerp(pts[1], pts[2], s);
+      final a = Vec3.lerp(pts[0], pts[3], s);
+      final b = Vec3.lerp(pts[1], pts[2], s);
       final ua = Offset.lerp(uv[0], uv[3], s)!;
       final ub = Offset.lerp(uv[1], uv[2], s)!;
       return (camera.toCamera(Vec3.lerp(a, b, t)), Offset.lerp(ua, ub, t)!);
@@ -786,12 +793,13 @@ class ScenePainter extends CustomPainter {
       }
       if (out.length < 3) return;
       final screen = [for (final p in out) project(p.$1, size, focal)!];
-      for (var i = 1; i < out.length - 1; i++)
+      for (var i = 1; i < out.length - 1; i++) {
         for (final k in [0, i, i + 1]) {
           positions.add(screen[k]);
           coords.add(
               Offset(out[k].$2.dx * image.width, out[k].$2.dy * image.height));
         }
+      }
       for (final p in out) {
         depth += p.$1.z;
       }
@@ -799,7 +807,7 @@ class ScenePainter extends CustomPainter {
     }
 
     if (quad) {
-      for (var i = 0; i < cells; i++)
+      for (var i = 0; i < cells; i++) {
         for (var j = 0; j < cells; j++) {
           final s0 = i / cells;
           final s1 = (i + 1) / cells;
@@ -807,6 +815,7 @@ class ScenePainter extends CustomPainter {
           final t1 = (j + 1) / cells;
           cell([at(s0, t0), at(s0, t1), at(s1, t1), at(s1, t0)]);
         }
+      }
     } else {
       cell([
         for (var i = 0; i < pts.length; i++) (camera.toCamera(pts[i]), uv[i])
@@ -819,7 +828,7 @@ class ScenePainter extends CustomPainter {
     }
     final path = Path();
     if (outline.length >= 3) path.addPolygon(outline, true);
-    items.add(_Item(path, tint, depth / count, layer, f.source,
+    _items.add(_Item(path, tint, depth / count, layer, f.source,
         vertices: ui.Vertices(ui.VertexMode.triangles, positions,
             textureCoordinates: coords,
             colors: List.filled(positions.length, tint)),
@@ -933,7 +942,8 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   double startRotation = 0;
 
   /// Orbit speed (radians per second) left by a flick, decaying to rest.
-  double spinYaw = 0, spinPitch = 0;
+  double spinYaw = 0;
+  double spinPitch = 0;
   late final Ticker spin = createTicker(coast);
 
   /// Fingers or buttons down on the view.
@@ -942,7 +952,10 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   Duration spinLast = Duration.zero;
 
   // Walk state: world position, look angles.
-  double wx = 0, wz = 0, wYaw = 0, wPitch = 0;
+  double wx = 0;
+  double wz = 0;
+  double wYaw = 0;
+  double wPitch = 0;
   int floor = 0;
   Offset joy = Offset.zero;
   int? joyPointer;
@@ -975,8 +988,9 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   }
 
   @override
-  void didUpdateWidget(covariant SceneView old) {
-    super.didUpdateWidget(old);
+  void didUpdateWidget(covariant SceneView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final old = oldWidget;
     rebuild();
     if (old.viewToken != widget.viewToken || old.view != widget.view) {
       applyView(widget.view);
@@ -1031,7 +1045,8 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
     final d = Vec3(math.cos(pitch) * math.sin(yaw), math.sin(pitch),
         math.cos(pitch) * math.cos(yaw));
     // Where the ray from the target toward the eye leaves the box.
-    var tNear = -double.infinity, tFar = double.infinity;
+    var tNear = -double.infinity;
+    var tFar = double.infinity;
     for (final (o, v, a, b) in [
       (target.x, d.x, lo.x, hi.x),
       (target.y, d.y, lo.y, hi.y),
@@ -1164,8 +1179,8 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   }
 
   /// Zoom to [next] keeping the point under [focal] (view-local) still.
-  void zoomAt(Offset focal, double next) {
-    next = next.clamp(math.min(minDistance, 90.0), 90.0);
+  void zoomAt(Offset focal, double wanted) {
+    final double next = wanted.clamp(math.min(minDistance, 90.0), 90.0);
     final cam = orbitCamera(target, yaw, pitch, distance);
     final f = viewSize.height / 2 / math.tan(cam.fov / 2);
     final dx = focal.dx - viewSize.width / 2;

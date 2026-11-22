@@ -13,8 +13,8 @@ Future<List<int>?> renderProjectPreview(HouseDocument document) async {
       ? Size(512, 96 + 416 * depth / width)
       : Size(96 + 416 * width / depth, 512);
   final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder);
-  canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xfff6f7f3));
+  final canvas = Canvas(recorder)
+    ..drawRect(Offset.zero & size, Paint()..color = const Color(0xfff6f7f3));
   final rooms = document.floors.first.rooms;
   FloorPlanPainter(derived.base, {for (final r in rooms) r.id: r.name},
           {for (final r in rooms) r.id: roomColors[r.type]!},

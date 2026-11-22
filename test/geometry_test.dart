@@ -39,9 +39,9 @@ void main() {
             .single
             .kind,
         'none');
-    final h = DesignHistory(d);
-    h.commit(painted);
-    h.undo();
+    final h = DesignHistory(d)
+      ..commit(painted)
+      ..undo();
     expect(h.present, d);
     h.redo();
     expect(h.present, painted);

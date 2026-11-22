@@ -211,7 +211,9 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
     final wasBoundary = oldOwner(e.negative) != oldOwner(e.positive);
     if (e.hasWall && !(wasBoundary && n == p)) {
       edges.add(e);
-    } else if (wanted.edges[i].hasWall && n != p) edges.add(wanted.edges[i]);
+    } else if (wanted.edges[i].hasWall && n != p) {
+      edges.add(wanted.edges[i]);
+    }
   }
   final originals = floor.wallOverrides.whereType<SolidWall>().toList();
   final used = <String>{};
@@ -590,8 +592,8 @@ EditResult editDrawnWall(HouseDocument original, String kind,
             outside: floor.outside),
         axes: AxisSystem(global: doc.axes.global, floor: localAxes));
     if (removed.contains(doc.mainEntranceOpeningId)) {
-      final raw = jsonDecode(encodeHouse(doc)) as Map<String, dynamic>;
-      raw.remove('mainEntranceOpeningId');
+      final raw = jsonDecode(encodeHouse(doc)) as Map<String, dynamic>
+        ..remove('mainEntranceOpeningId');
       doc = decodeV1(raw).document!;
     }
     final preferred = <String, List<({double x, double y})>>{};

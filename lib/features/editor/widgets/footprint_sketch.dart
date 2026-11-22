@@ -223,13 +223,14 @@ class _SketchPainter extends CustomPainter {
     if (start == null || end == null) return;
     final rect = Rect.fromPoints(start!, end!);
     final color = valid ? const Color(0xff356a55) : const Color(0xffa14539);
-    canvas.drawRect(rect, Paint()..color = color.withValues(alpha: 0.12));
-    canvas.drawRect(
-        rect,
-        Paint()
-          ..color = color
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3);
+    canvas
+      ..drawRect(rect, Paint()..color = color.withValues(alpha: 0.12))
+      ..drawRect(
+          rect,
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3);
     for (final point in [
       rect.topLeft,
       rect.topRight,

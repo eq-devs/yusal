@@ -188,10 +188,11 @@ class _Decoder {
   }
 
   T en<T extends Enum>(Object? v, String p, List<T> values) {
-    if (v is String)
+    if (v is String) {
       for (final x in values) {
         if (x.name == v) return x;
       }
+    }
     err('UNKNOWN_ENUM', p, '未知枚举值');
     return values.first;
   }
@@ -652,8 +653,8 @@ class _Decoder {
           depth: 3000,
           northAngleDeg: 0,
         ),
-        axes: AxisSystem(global: [], floor: []),
-        floors: [],
+        axes: AxisSystem(global: const [], floor: const []),
+        floors: const [],
         roof: const Roof.flat(0),
       );
 }

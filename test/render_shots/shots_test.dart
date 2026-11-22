@@ -144,5 +144,5 @@ Future<void> _shot(
     diff = '\tchanged=$changed';
   }
   stats.writeln(
-      '${path.split('/').last}\titems=${p.items.length}\tculled=${p.culled}\tfaces=${model.faces.length}\tpaint=${ms.toStringAsFixed(1)}ms$diff');
+      '${path.split('/').last}\titems=${p.itemCount}\tculled=${p.culled}\tfaces=${model.faces.length}\tpaint=${ms.toStringAsFixed(1)}ms$diff');
 }

@@ -12,7 +12,10 @@ import 'package:yusal/core/analysis/house_analysis.dart';
 
 /// Surface resistances, m²K/W: inside for walls, roofs (heat up) and
 /// floors (heat down), and outside.
-const rsiWall = 0.13, rsiRoof = 0.10, rsiFloor = 0.17, rse = 0.04;
+const rsiWall = 0.13;
+const rsiRoof = 0.10;
+const rsiFloor = 0.17;
+const rse = 0.04;
 
 /// Thermal conductivity of the ground, W/(m·K).
 const groundLambda = 2.0;
@@ -104,7 +107,12 @@ class HeatLoss {
   final List<SpaceHeat> spaces;
 
   /// Envelope areas, m², and the heated volume, m³.
-  final double wallArea, windowArea, doorArea, roofArea, floorArea, volume;
+  final double wallArea;
+  final double windowArea;
+  final double doorArea;
+  final double roofArea;
+  final double floorArea;
+  final double volume;
 
   double get windowU => spec.windowU / 100;
   double get doorU => spec.doorU / 100;

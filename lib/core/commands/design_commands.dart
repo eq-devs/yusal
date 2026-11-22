@@ -154,10 +154,11 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
           for (final a in locals) {
             mapping[a['id'] as String] = newId();
           }
-          for (final list in ['rooms', 'wallOverrides', 'openings'])
+          for (final list in ['rooms', 'wallOverrides', 'openings']) {
             for (final o in (copy[list] as List)) {
               mapping[o['id'] as String] = newId();
             }
+          }
           dynamic remap(dynamic value) {
             if (value is String) return value;
             if (value is List) return value.map(remap).toList();
@@ -232,8 +233,8 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         final cells = {...ca, ...cb};
         if (!isConnected(cells)) return const EditResult(null, '只能合并相邻房间');
         final keep = compareComponentPriority(axes, ca, cb) <= 0 ? ra : rb;
-        final rooms = floor(f.id)['rooms'] as List;
-        rooms.removeWhere((r) => r['id'] == (keep.id == a ? b : a));
+        (floor(f.id)['rooms'] as List)
+            .removeWhere((r) => r['id'] == (keep.id == a ? b : a));
         object('rooms', keep.id)['regions'] = canonicalizeCells(axes, cells)
             .regions
             .map((r) => {'x0': r.x0, 'x1': r.x1, 'y0': r.y0, 'y1': r.y1})
@@ -336,8 +337,9 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
                   ? 'positiveSide'
                   : 'negativeSide';
         } else {
-          o.remove('hinge');
-          o.remove('opensTo');
+          o
+            ..remove('hinge')
+            ..remove('opensTo');
           o['sill'] = kind == OpeningKind.window ? doc.defaults.windowSill : 0;
           if (kind == OpeningKind.window) {
             o['height'] = doc.defaults.windowHeight;

@@ -409,12 +409,15 @@ void seedMockData(MockBackend b) {
             note: _l('可以带自己的瓦刀和水平尺。', 'Өз қалағым мен деңгейіммен келемін.',
                 'Приду со своей кельмой и уровнем.')),
       ]);
-  b.notice(SeedIds.owner, NoticeKind.newApplication, RefType.demand, 'dem_wall',
-      title: _l('120 平米住宅砌墙', '120 м² үйдің қабырғасын қалау',
-          'Кладка стен дома 120 м²'));
-  b.notice(SeedIds.owner, NoticeKind.newApplication, RefType.demand, 'dem_hire',
-      title: _l('找两名瓦工，按天结算', 'Екі қалаушы керек, күндік төлем',
-          'Нужны два каменщика, оплата по дням'));
+  b
+    ..notice(
+        SeedIds.owner, NoticeKind.newApplication, RefType.demand, 'dem_wall',
+        title: _l('120 平米住宅砌墙', '120 м² үйдің қабырғасын қалау',
+            'Кладка стен дома 120 м²'))
+    ..notice(
+        SeedIds.owner, NoticeKind.newApplication, RefType.demand, 'dem_hire',
+        title: _l('找两名瓦工，按天结算', 'Екі қалаушы керек, күндік төлем',
+            'Нужны два каменщика, оплата по дням'));
 
   // A finished cooperation with both reviews in.
   b.applications['app_team_found'] = Application(

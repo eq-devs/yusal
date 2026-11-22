@@ -183,7 +183,7 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
         }
       }.first.toList()
         ..sort();
-      for (var j = 0; j < zs.length - 1; j++)
+      for (var j = 0; j < zs.length - 1; j++) {
         for (var i = 0; i < us.length - 1; i++) {
           final u = (us[i] + us[i + 1]) / 2;
           final z = (zs[j] + zs[j + 1]) / 2;
@@ -205,6 +205,7 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
               elevation + zs[j],
               elevation + zs[j + 1]);
         }
+      }
     }
     for (final p in openings.where((p) => p.status == 'ok')) {
       final o = p.opening;
@@ -388,7 +389,7 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
       }
     }.first.toList()
       ..sort();
-    for (var j = 0; j < ys.length - 1; j++)
+    for (var j = 0; j < ys.length - 1; j++) {
       for (var i = 0; i < xs.length - 1; i++) {
         final x = (xs[i] + xs[i + 1]) / 2;
         final y = (ys[j] + ys[j + 1]) / 2;
@@ -403,6 +404,7 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
             elevation + height - slab,
             elevation + height);
       }
+    }
     for (final stair in stairs) {
       for (final step in stair.steps) {
         box('StairStep', f, StairSource(stair.stairId), 'stair', step.rect,
@@ -441,8 +443,8 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
     // Four planes at one pitch: height grows with the distance from the
     // nearest wall line, so the ridge runs along the longer side (a point
     // on a square house) and the eaves droop by the overhang.
-    final o = roof.overhang!.toDouble(),
-        slope = math.tan(roof.pitchDeg! * math.pi / 180);
+    final o = roof.overhang!.toDouble();
+    final slope = math.tan(roof.pitchDeg! * math.pi / 180);
     final half = math.min(width, depth) / 2;
     final eave = elevation - o * slope;
     final ridge = elevation + half * slope;

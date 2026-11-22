@@ -101,9 +101,10 @@ void _dia(Canvas x, double cx, double cy, double rx, double ry, Color fill) =>
 
 void _hornRing(Canvas x, double cx, double cy, double s, Color col, double lw) {
   for (var k = 0; k < 4; k++) {
-    x.save();
-    x.translate(cx, cy);
-    x.rotate(k * math.pi / 2);
+    x
+      ..save()
+      ..translate(cx, cy)
+      ..rotate(k * math.pi / 2);
     _horn(x, 0, -s * .55, s, col, lw);
     x.restore();
   }
@@ -111,9 +112,10 @@ void _hornRing(Canvas x, double cx, double cy, double s, Color col, double lw) {
 
 void _kilem(Canvas x, Color base, Color border, Color orn, Color acc) {
   const w = 512.0;
-  x.drawRect(const Rect.fromLTWH(0, 0, w, w), Paint()..color = border);
-  x.drawRect(
-      const Rect.fromLTWH(48, 48, w - 96, w - 96), Paint()..color = base);
+  x
+    ..drawRect(const Rect.fromLTWH(0, 0, w, w), Paint()..color = border)
+    ..drawRect(
+        const Rect.fromLTWH(48, 48, w - 96, w - 96), Paint()..color = base);
   for (var i = 0; i < 8; i++) {
     final p = 32.0 + i * 64;
     for (final (px, py, rot) in [
@@ -122,9 +124,10 @@ void _kilem(Canvas x, Color base, Color border, Color orn, Color acc) {
       (24.0, p, -math.pi / 2),
       (w - 24, p, math.pi / 2)
     ]) {
-      x.save();
-      x.translate(px, py);
-      x.rotate(rot);
+      x
+        ..save()
+        ..translate(px, py)
+        ..rotate(rot);
       _horn(x, 0, 4, 30, orn, 3);
       x.restore();
     }
@@ -133,9 +136,10 @@ void _kilem(Canvas x, Color base, Color border, Color orn, Color acc) {
     ..color = orn
     ..style = PaintingStyle.stroke
     ..strokeWidth = 4;
-  x.drawRect(const Rect.fromLTWH(56, 56, w - 112, w - 112), frame);
-  x.drawRect(
-      const Rect.fromLTWH(66, 66, w - 132, w - 132), frame..strokeWidth = 2);
+  x
+    ..drawRect(const Rect.fromLTWH(56, 56, w - 112, w - 112), frame)
+    ..drawRect(
+        const Rect.fromLTWH(66, 66, w - 132, w - 132), frame..strokeWidth = 2);
   _dia(x, w / 2, w / 2, 150, 150, border);
   _dia(x, w / 2, w / 2, 128, 128, acc);
   _dia(x, w / 2, w / 2, 70, 70, border);
@@ -162,34 +166,39 @@ void _kilem(Canvas x, Color base, Color border, Color orn, Color acc) {
 void _tus(Canvas x, Color base, List<Color> cols) {
   const w = 512.0;
   const h = 340.0;
-  x.drawRect(const Rect.fromLTWH(0, 0, w, h), Paint()..color = base);
-  x.drawRect(
-      const Rect.fromLTWH(14, 14, w - 28, h - 28),
-      Paint()
-        ..color = cols[0]
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 5);
+  x
+    ..drawRect(const Rect.fromLTWH(0, 0, w, h), Paint()..color = base)
+    ..drawRect(
+        const Rect.fromLTWH(14, 14, w - 28, h - 28),
+        Paint()
+          ..color = cols[0]
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 5);
   for (var i = 0; i < 12; i++) {
     final px = 36.0 + i * 40;
     _horn(x, px, 34, 22, cols[i % 3], 2.4);
     _horn(x, px, h - 30, 22, cols[(i + 1) % 3], 2.4);
   }
-  x.save();
-  x.translate(w / 2, h / 2);
+  x
+    ..save()
+    ..translate(w / 2, h / 2);
   for (var k = 0; k < 4; k++) {
-    x.save();
-    x.rotate(k * math.pi / 2);
+    x
+      ..save()
+      ..rotate(k * math.pi / 2);
     _horn(x, 0, -58, 80, cols[k % 3], 5);
     x.restore();
   }
   x.restore();
   _dia(x, w / 2, h / 2, 20, 20, cols[1]);
   for (final s in [-1.0, 1.0]) {
-    x.save();
-    x.translate(w / 2 + s * 160, h / 2);
+    x
+      ..save()
+      ..translate(w / 2 + s * 160, h / 2);
     for (var k = 0; k < 4; k++) {
-      x.save();
-      x.rotate(k * math.pi / 2);
+      x
+        ..save()
+        ..rotate(k * math.pi / 2);
       _horn(x, 0, -34, 48, cols[(k + 1) % 3], 3.5);
       x.restore();
     }
@@ -201,13 +210,13 @@ void _kurak(Canvas x, List<Color> cols) {
   const w = 256.0;
   const n = 8;
   const s = w / n;
-  for (var i = 0; i < n; i++)
+  for (var i = 0; i < n; i++) {
     for (var j = 0; j < n; j++) {
       final a = cols[(i * 3 + j) % cols.length];
       final b = cols[(i + j * 2 + 1) % cols.length];
       x.drawRect(Rect.fromLTWH(i * s, j * s, s, s), Paint()..color = a);
       final p = Path();
-      if ((i + j) % 2 == 1) {
+      if ((i + j).isOdd) {
         p
           ..moveTo(i * s, j * s)
           ..lineTo(i * s + s, j * s)
@@ -220,12 +229,14 @@ void _kurak(Canvas x, List<Color> cols) {
       }
       x.drawPath(p, Paint()..color = b);
     }
+  }
   final seam = Paint()
     ..color = const Color(0x59FFFFFF)
     ..strokeWidth = 1;
   for (var i = 0; i <= n; i++) {
-    x.drawLine(Offset(i * s, 0), Offset(i * s, w), seam);
-    x.drawLine(Offset(0, i * s), Offset(w, i * s), seam);
+    x
+      ..drawLine(Offset(i * s, 0), Offset(i * s, w), seam)
+      ..drawLine(Offset(0, i * s), Offset(w, i * s), seam);
   }
 }
 
@@ -246,8 +257,9 @@ void _sandyq(Canvas x, Color base, Color metal) {
   for (var i = 0; i < 24; i++) {
     x.drawCircle(Offset(10 + i * 21.5, 24), 3, m);
   }
-  x.drawRect(const Rect.fromLTWH(w / 2 - 16, h / 2 - 24, 32, 40), m);
-  x.drawCircle(const Offset(w / 2, h / 2 - 6), 6, Paint()..color = base);
+  x
+    ..drawRect(const Rect.fromLTWH(w / 2 - 16, h / 2 - 24, 32, 40), m)
+    ..drawCircle(const Offset(w / 2, h / 2 - 6), 6, Paint()..color = base);
 }
 
 void _alasha(Canvas x) {

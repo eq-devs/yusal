@@ -20,6 +20,14 @@ class FakeMessaging implements PushMessaging {
   final refreshes = StreamController<String>();
   final taps = StreamController<Map<String, dynamic>>();
   Map<String, dynamic>? launch;
+
+  /// Closes the fake streams; not awaited, since an unheard stream's close
+  /// never completes.
+  void close() {
+    refreshes.close();
+    taps.close();
+  }
+
   @override
   Future<bool> init() async => available;
   @override
@@ -71,6 +79,7 @@ void main() {
       () async {
     await signIn();
     final m = FakeMessaging();
+    addTearDown(m.close);
     await PushSetup(backend, GlobalKey<NavigatorState>(), messaging: m).start();
     expect(registrations(), [
       {'token': 'tok-1', 'platform': PushSetup.platform, 'language': 'kk'}
@@ -82,6 +91,7 @@ void main() {
 
   test('permission is asked after sign-in, not at first launch', () async {
     final m = FakeMessaging();
+    addTearDown(m.close);
     unawaited(
         PushSetup(backend, GlobalKey<NavigatorState>(), messaging: m).start());
     await pumpEventQueue();
@@ -113,6 +123,7 @@ void main() {
     // the network out of the widget test (registration is tested above).
     final m = FakeMessaging(allowed: false)
       ..launch = {'ref_type': 'cooperation', 'ref_id': 'k1'};
+    addTearDown(m.close);
     final setup = PushSetup(backend, nav,
         messaging: m, opener: (_, type, id) async => opened.add((type, id)));
     await setup.start();

@@ -36,8 +36,8 @@ class ProjectFiles implements ProjectFileSystem {
   @override
   Future<String?> read(String id) async {
     final file = File('${(await root()).path}/$id/document.house');
-    if (!await file.exists()) return null;
-    if (await file.length() > 10485760) return null;
+    if (!file.existsSync()) return null;
+    if (file.lengthSync() > 10485760) return null;
     final bytes = <int>[];
     await for (final chunk in file.openRead()) {
       if (bytes.length + chunk.length > 10485760) {
@@ -57,7 +57,7 @@ class ProjectFiles implements ProjectFileSystem {
       await temp.writeAsString(text, flush: true);
       await temp.rename('${directory.path}/document.house');
     } catch (_) {
-      if (await temp.exists()) await temp.delete();
+      if (temp.existsSync()) await temp.delete();
       rethrow;
     }
   }
@@ -65,7 +65,7 @@ class ProjectFiles implements ProjectFileSystem {
   @override
   Future<List<int>?> readPreview(String id) async {
     final file = File('${(await root()).path}/$id/preview.webp');
-    if (!await file.exists() || await file.length() > 1048576) return null;
+    if (!file.existsSync() || file.lengthSync() > 1048576) return null;
     return file.readAsBytes();
   }
 
@@ -77,7 +77,7 @@ class ProjectFiles implements ProjectFileSystem {
       await temp.writeAsBytes(bytes, flush: true);
       await temp.rename('${directory.path}/preview.webp');
     } catch (_) {
-      if (await temp.exists()) await temp.delete();
+      if (temp.existsSync()) await temp.delete();
       rethrow;
     }
   }
@@ -85,7 +85,7 @@ class ProjectFiles implements ProjectFileSystem {
   @override
   Future<String?> readIndex() async {
     final file = File('${(await root()).path}/index.json');
-    return await file.exists() ? file.readAsString() : null;
+    return file.existsSync() ? file.readAsString() : null;
   }
 
   @override
@@ -96,7 +96,7 @@ class ProjectFiles implements ProjectFileSystem {
       await temp.writeAsString(text, flush: true);
       await temp.rename('${directory.path}/index.json');
     } catch (_) {
-      if (await temp.exists()) await temp.delete();
+      if (temp.existsSync()) await temp.delete();
       rethrow;
     }
   }
@@ -104,6 +104,6 @@ class ProjectFiles implements ProjectFileSystem {
   @override
   Future<void> delete(String id) async {
     final dir = Directory('${(await root()).path}/$id');
-    if (await dir.exists()) await dir.delete(recursive: true);
+    if (dir.existsSync()) await dir.delete(recursive: true);
   }
 }

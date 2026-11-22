@@ -16,7 +16,8 @@ class ConstructionIssue {
   final IssueLevel level;
 
   /// (Chinese, Kazakh, Russian).
-  final (String, String, String) title, text;
+  final (String, String, String) title;
+  final (String, String, String) text;
   final String? floorId;
   final List<PlanRect> areas;
   final bool showFoundation;

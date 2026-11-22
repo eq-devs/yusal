@@ -347,27 +347,23 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
   }
 
   Future<void> _submit() async {
+    final snapshots = context.read(snapshotRepositoryProvider);
+    final demands = context.read(demandRepositoryProvider);
     final result = await attempt(context, () async {
       if (widget.snapshot != null && _snapshotId == null) {
-        _snapshotId = (await context
-                .read(snapshotRepositoryProvider)
-                .saveSnapshot(widget.snapshot!))
-            .id;
+        _snapshotId = (await snapshots.saveSnapshot(widget.snapshot!)).id;
       }
       final d = widget.editing;
       if (d == null) {
-        final draft = await context.read(demandRepositoryProvider).saveDraft(
-            type, compose(),
+        final draft = await demands.saveDraft(type, compose(),
             role: role, designProjectId: widget.designProjectId);
-        return context.read(demandRepositoryProvider).publish(draft.id);
+        return demands.publish(draft.id);
       }
       if (d.status == DemandStatus.draft) {
-        await context
-            .read(demandRepositoryProvider)
-            .saveDraft(type, compose(), existingId: d.id);
-        return context.read(demandRepositoryProvider).publish(d.id);
+        await demands.saveDraft(type, compose(), existingId: d.id);
+        return demands.publish(d.id);
       }
-      return context.read(demandRepositoryProvider).revise(d.id, compose());
+      return demands.revise(d.id, compose());
     });
     if (result == null || !mounted) return;
     toast(
@@ -397,14 +393,13 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
   }
 
   Future<void> _saveDraftOnly() async {
+    final snapshots = context.read(snapshotRepositoryProvider);
+    final demands = context.read(demandRepositoryProvider);
     final d = await attempt(context, () async {
       if (widget.snapshot != null && _snapshotId == null) {
-        _snapshotId = (await context
-                .read(snapshotRepositoryProvider)
-                .saveSnapshot(widget.snapshot!))
-            .id;
+        _snapshotId = (await snapshots.saveSnapshot(widget.snapshot!)).id;
       }
-      return context.read(demandRepositoryProvider).saveDraft(type, compose(),
+      return demands.saveDraft(type, compose(),
           role: role, designProjectId: widget.designProjectId);
     }, success: tr3('草稿已保存，仅自己可见', 'Жоба сақталды', 'Черновик сохранён'));
     if (d != null && mounted) Navigator.pop(context);

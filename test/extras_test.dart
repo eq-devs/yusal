@@ -104,30 +104,33 @@ void main() {
     Map<String, dynamic> wardrobe(int x) =>
         {'floorId': floor, 'kind': FurnitureKind.wardrobe, 'x': x, 'y': 0};
     s = run(s, 'AddFurniture', wardrobe(0));
-    history.commit(doc(s));
-
-    history.beginGroup();
+    history
+      ..commit(doc(s))
+      ..beginGroup();
     s = run(s, 'AddFurniture', wardrobe(2000));
     history.commit(doc(s));
     s = run(s, 'AddFurniture', wardrobe(4000));
-    history.commit(doc(s));
-    history.endGroup();
+    history
+      ..commit(doc(s))
+      ..endGroup();
     expect(history.present.extras.furniture, hasLength(3));
 
     history.undo();
     expect(history.present.extras.furniture, hasLength(1));
     history.redo();
     expect(history.present.extras.furniture, hasLength(3));
-    history.undo();
-    history.undo();
+    history
+      ..undo()
+      ..undo();
     expect(history.present.extras.isEmpty, true);
     expect(history.canUndo, false);
 
     // A group in which nothing changed leaves the history alone.
-    history.redo();
-    history.beginGroup();
-    history.endGroup();
-    history.undo();
+    history
+      ..redo()
+      ..beginGroup()
+      ..endGroup()
+      ..undo();
     expect(history.present.extras.isEmpty, true);
   });
 
@@ -148,8 +151,9 @@ void main() {
     s = run(s, 'RotateFurniture', {'furnitureId': id});
     expect((s.extras.furniture.single.width, s.extras.furniture.single.depth),
         (600, 1200));
-    history.commit(doc(s));
-    history.undo();
+    history
+      ..commit(doc(s))
+      ..undo();
     expect(history.present.extras.furniture.single.x, 3000);
     history.undo();
     expect(history.present.extras.furniture.single.x, 0);

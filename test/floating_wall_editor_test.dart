@@ -33,8 +33,8 @@ void main() {
       {double scale = 1, bool reduce = false}) async {
     final files = MemoryFiles();
     // Use the same filesystem for preview isolation and persisted verification.
-    final actual = ProjectStore(fileSystem: files),
-        id = await actual.createProject(doc);
+    final actual = ProjectStore(fileSystem: files);
+    final id = await actual.createProject(doc);
     await t.pumpWidget(MaterialApp(
         builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context).copyWith(
@@ -475,11 +475,12 @@ void main() {
       'rapid page changes keep the latest page and interrupt motion safely',
       (t) async {
     await mount(t, initial());
-    for (var i = 0; i < 3; i++)
+    for (var i = 0; i < 3; i++) {
       for (final key in ['ext', 'det', 'plan']) {
         await showTab(t, key);
         await t.pump(const Duration(milliseconds: 20));
       }
+    }
     await t.pumpAndSettle();
     expect(find.byTooltip('墙体'), findsOneWidget);
     expect(t.takeException(), isNull);

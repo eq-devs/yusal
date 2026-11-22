@@ -289,8 +289,8 @@ void main() {
           apply.startsWith('RESTRICTED'));
       String? conv;
       final openConv = await attempt(t, () async {
-        conv = (await repos.openConversation(ownerId!, demandId: demandId)).id;
-        return conv;
+        return conv =
+            (await repos.openConversation(ownerId!, demandId: demandId)).id;
       });
       row('D-restricted-3', 'API: restricted opens a conversation',
           'RESTRICTED', openConv, openConv.startsWith('RESTRICTED'));

@@ -190,7 +190,7 @@ void main() {
         find.byType(PillToggle),
         find.byType(ActionChip),
         find.byType(Btn),
-      ])
+      ]) {
         for (final e in finder.evaluate()) {
           final box = e.renderObject! as RenderBox;
           var rect = box.localToGlobal(Offset.zero) & box.size;
@@ -202,6 +202,7 @@ void main() {
           expect(rect.overlaps(at.deflate(4)), isFalse,
               reason: '$tab: ${e.widget.runtimeType} at $rect under $at');
         }
+      }
     }
   });
 
@@ -234,7 +235,7 @@ void main() {
         find.byType(TextButton),
         find.byWidgetPredicate(
             (w) => w is CustomPaint && w.painter is FloorPlanPainter),
-      ])
+      ]) {
         for (final e in finder.evaluate()) {
           if (find
               .ancestor(
@@ -249,6 +250,7 @@ void main() {
           expect(rect.overlaps(at.deflate(4)), isFalse,
               reason: '${e.widget.runtimeType} at $rect under the orb $at');
         }
+      }
       expect(t.takeException(), isNull);
     });
   }

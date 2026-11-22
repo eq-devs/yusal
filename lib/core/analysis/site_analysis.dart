@@ -149,7 +149,7 @@ List<ConstructionIssue> siteChecks(HouseDocument doc,
   }
   final buildings =
       site.items.where((i) => siteBuildings.contains(i.kind)).toList();
-  for (var a = 0; a < buildings.length; a++)
+  for (var a = 0; a < buildings.length; a++) {
     for (var b = a + 1; b < buildings.length; b++) {
       final ra = itemRect(buildings[a]);
       final rb = itemRect(buildings[b]);
@@ -167,10 +167,11 @@ List<ConstructionIssue> siteChecks(HouseDocument doc,
             site: true));
       }
     }
+  }
   // Room to the street and the neighbours.
-  final front = house.bottom,
-      side = math.min(house.left, site.width - house.right),
-      back = site.depth - house.top;
+  final front = house.bottom;
+  final side = math.min(house.left, site.width - house.right);
+  final back = site.depth - house.top;
   if (_inside(house, site) && (front < 5000 || side < 3000 || back < 3000)) {
     out.add(ConstructionIssue(
         'S04',

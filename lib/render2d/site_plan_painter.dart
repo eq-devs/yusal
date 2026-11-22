@@ -69,9 +69,10 @@ class SitePlanPainter extends CustomPainter {
         ellipsis: maxWidth == null ? null : '…',
         textAlign: TextAlign.center)
       ..layout(maxWidth: maxWidth ?? double.infinity);
-    canvas.save();
-    canvas.translate(at.dx, at.dy);
-    canvas.rotate(angle);
+    canvas
+      ..save()
+      ..translate(at.dx, at.dy)
+      ..rotate(angle);
     p.paint(canvas, Offset(-p.width / 2, -p.height / 2));
     canvas.restore();
     p.dispose();
@@ -142,13 +143,14 @@ class SitePlanPainter extends CustomPainter {
         SiteKind.greenhouse => Tokens.mix(t.chk, 0.12, t.panel),
         _ => t.furn,
       };
-      canvas.drawRect(r, Paint()..color = fill);
-      canvas.drawRect(
-          r,
-          Paint()
-            ..color = siteBuildings.contains(item.kind) ? t.wall : t.furnLine
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = siteBuildings.contains(item.kind) ? 1.6 : 1);
+      canvas
+        ..drawRect(r, Paint()..color = fill)
+        ..drawRect(
+            r,
+            Paint()
+              ..color = siteBuildings.contains(item.kind) ? t.wall : t.furnLine
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = siteBuildings.contains(item.kind) ? 1.6 : 1);
       if (item.kind == SiteKind.garden) {
         final rows = Paint()
           ..color = Tokens.mix(t.ok, 0.6, t.panel)
@@ -294,8 +296,8 @@ class SitePlanPainter extends CustomPainter {
         mono_: true);
 
     // Distances from the house to the plot edges.
-    final midY = (house.bottom + house.top) / 2,
-        midX = (house.left + house.right) / 2;
+    final midY = (house.bottom + house.top) / 2;
+    final midX = (house.left + house.right) / 2;
     _dim(canvas, v.point(0, midY), v.point(house.left, midY), _m(house.left));
     _dim(canvas, v.point(house.right, midY),
         v.point(site.width.toDouble(), midY), _m(site.width - house.right));

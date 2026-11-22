@@ -271,7 +271,7 @@ EditResult removeStair(
   // The room that shares the most of the stair's edge takes the space.
   final shared = <String, int>{};
   Cell? hostCell;
-  for (final c in cells)
+  for (final c in cells) {
     for (final n in [
       Cell(c.i - 1, c.j),
       Cell(c.i + 1, c.j),
@@ -281,6 +281,7 @@ EditResult removeStair(
       final room = roomOf[n];
       if (room != null) shared[room] = (shared[room] ?? 0) + 1;
     }
+  }
   if (shared.isNotEmpty) {
     final host =
         (shared.entries.toList()..sort((a, b) => b.value - a.value)).first.key;
@@ -365,9 +366,10 @@ EditResult removeStair(
 /// the first shape that fits it (straight, L, then U) unless [type] says
 /// which. Its sides are open to the room. With [stairId] an existing stair
 /// moves there instead and keeps its shape where that still fits.
-EditResult placeStair(HouseDocument doc, String floorId, int left, int bottom,
+EditResult placeStair(HouseDocument input, String floorId, int left, int bottom,
     int right, int top, String Function() newId,
     {StairType? type, String? stairId}) {
+  var doc = input;
   final index = doc.floors.indexWhere((f) => f.id == floorId);
   if (index < 0) return const EditResult(null, '找不到这一层');
   if (index == doc.floors.length - 1) {

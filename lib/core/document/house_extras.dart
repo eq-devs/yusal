@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import 'dart:convert';
 import 'package:yusal/core/document/extras_planning.dart';
 export 'extras_planning.dart';
@@ -130,7 +131,13 @@ class FurnitureItem {
   });
 
   /// Lower-left corner in plan millimetres (y grows to the top of the plan).
-  final int x, y, width, depth, height, elevation, variant;
+  final int x;
+  final int y;
+  final int width;
+  final int depth;
+  final int height;
+  final int elevation;
+  final int variant;
   final String id;
   final String floorId;
   final FurnitureKind kind;
@@ -217,6 +224,7 @@ class RoomInfo {
 
 /// Strip foundation in the drafting-table drawing: concrete section, rebar,
 /// cushion and the rule that decides which walls are load-bearing.
+@immutable
 class FoundationSpec {
   const FoundationSpec({
     this.width = 450,
@@ -551,6 +559,7 @@ class Sleeve {
   }
 }
 
+@immutable
 class HouseExtras {
   HouseExtras({
     List<FurnitureItem> furniture = const [],
@@ -840,7 +849,7 @@ class HouseExtras {
       ('wallLayers', wallLayers),
       ('roofLayers', roofLayers),
       ('floorLayers', floorLayers)
-    ])
+    ]) {
       for (var i = 0; i < layers.length; i++) {
         if (layers[i].thickness < 0 || layers[i].thickness > 5000) {
           out.add(('/extras/$key/$i/thickness', '层厚超出范围'));
@@ -850,6 +859,7 @@ class HouseExtras {
           out.add(('/extras/$key/$i/lambda', '导热系数超出范围'));
         }
       }
+    }
     final issueIds = <String>{};
     for (var i = 0; i < issues.length; i++) {
       if (issues[i].id.isEmpty || !issueIds.add(issues[i].id)) {

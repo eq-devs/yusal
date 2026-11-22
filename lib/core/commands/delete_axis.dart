@@ -50,10 +50,11 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
         owners[c] = r.id;
       }
     }
-    for (final s in floor.stairs)
+    for (final s in floor.stairs) {
       for (final c in cellsOfRect(resolveRect(axes, s.region).rect!)) {
         owners[c] = s.id;
       }
+    }
     ownerMaps[floor.id] = owners;
     final count = a.dir == AxisDir.V ? axes.ny : axes.nx;
     for (var n = 0; n < count; n++) {
@@ -156,7 +157,7 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
       }
     }
     final newOwner = <Cell, String?>{};
-    for (var j = 0; j < axes.ny; j++)
+    for (var j = 0; j < axes.ny; j++) {
       for (var i = 0; i < axes.nx; i++) {
         final collapsed =
             a.dir == AxisDir.V ? i == a.index - 1 : j == a.index - 1;
@@ -192,6 +193,7 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
                     ? (low ?? high)
                     : low;
       }
+    }
     final rooms = <Room>[];
     for (final room in floor.rooms) {
       if (root(room.id) != room.id) continue;

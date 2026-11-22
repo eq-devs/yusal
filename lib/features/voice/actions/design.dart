@@ -770,8 +770,9 @@ final designActions = [
             say: {'param': a == null ? 'a' : 'b'});
       }
       for (final (to, from) in [(a, b), (b, a)]) {
-        host.runDesign('SetRoomType', {'roomId': to.id, 'value': from.type});
-        host.runDesign('RenameRoom', {'roomId': to.id, 'value': from.name});
+        host
+          ..runDesign('SetRoomType', {'roomId': to.id, 'value': from.type})
+          ..runDesign('RenameRoom', {'roomId': to.id, 'value': from.name});
       }
       return ActionResult.ok(changed: [a.id, b.id]);
     },

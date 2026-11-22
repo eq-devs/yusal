@@ -60,8 +60,6 @@ class _Spec {
   final int days;
 }
 
-Cell c(int x, int y) => Cell(x, y);
-
 /// Nine houses of the pilot region, sized and laid out like the houses
 /// people around Almaty actually build.
 final _specs = <(_Spec, int, int)>[
@@ -515,7 +513,8 @@ HouseDocument _build(
         for (final e in edges) {
           if (e.kind != 'exterior') continue;
           final owner = base.owners[e.negative] ?? base.owners[e.positive];
-          if (owner == null || !(rooms[owner]?.name.startsWith(pref) ?? false)) {
+          if (owner == null ||
+              !(rooms[owner]?.name.startsWith(pref) ?? false)) {
             continue;
           }
           if (add(e, OpeningKind.door, 1000, 2100, 0)) {
@@ -568,8 +567,8 @@ Future<List<int>> _preview(HouseDocument document) async {
       ? Size(512, 96 + 416 * depth / width)
       : Size(96 + 416 * width / depth, 512);
   final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder);
-  canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xfff6f7f3));
+  final canvas = Canvas(recorder)
+    ..drawRect(Offset.zero & size, Paint()..color = const Color(0xfff6f7f3));
   final rooms = document.floors.first.rooms;
   FloorPlanPainter(derived.base, {for (final r in rooms) r.id: r.name},
           {for (final r in rooms) r.id: roomColors[r.type]!},

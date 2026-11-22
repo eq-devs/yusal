@@ -134,6 +134,8 @@ class _BackupTile extends StatelessWidget {
 
     /// Restores the cloud copy as a new local design; nothing is overwritten.
     Future<void> restoreAsCopy({required bool copy}) async {
+      // My houses lists it too, when this page sits over the shell.
+      final reload = PlatformReload.of(context);
       final c =
           await context.read(backupRepositoryProvider).backup(cloud!.projectId);
       if (c == null) return;
@@ -165,8 +167,7 @@ class _BackupTile extends StatelessWidget {
           // that is "only in the account".
           id: copy ? null : cloud.projectId);
       if (!copy) await BackupMarks.write(id, doc.meta.updatedAt);
-      // My houses lists it too, when this page sits over the shell.
-      PlatformReload.of(context)?.bump();
+      reload?.bump();
       await onRestored();
       if (context.mounted) {
         toast(context, tr3('已恢复到本设备', 'Қалпына келтірілді', 'Восстановлено'));

@@ -51,7 +51,7 @@ void main() {
       Vec3(0, 2, 1),
       Vec3(0, 2, -1),
     ], uv: const [
-      Offset(0, 0),
+      Offset.zero,
       Offset(1, 0),
       Offset(1, 1),
       Offset(0, 1),

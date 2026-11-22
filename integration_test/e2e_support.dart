@@ -70,9 +70,9 @@ Future<void> tapIt(WidgetTester t, Finder f) async {
   // A toast from the previous step can float over the bottom of the page.
   if (find.byType(SnackBar).evaluate().isNotEmpty) {
     for (final m in find.byType(ScaffoldMessenger).evaluate()) {
-      (m as StatefulElement).state is ScaffoldMessengerState
-          ? (m.state as ScaffoldMessengerState).clearSnackBars()
-          : null;
+      if ((m as StatefulElement).state case final ScaffoldMessengerState s) {
+        s.clearSnackBars();
+      }
     }
     await t.pumpAndSettle();
   }
@@ -107,15 +107,17 @@ Future<void> tab(WidgetTester t, String label) async {
 
 /// Back to the shell's root, whatever is pushed on top.
 Future<void> home(WidgetTester t) async {
-  final nav = t.state<NavigatorState>(find.byType(Navigator).first);
-  nav.popUntil((r) => r.isFirst);
+  t
+      .state<NavigatorState>(find.byType(Navigator).first)
+      .popUntil((r) => r.isFirst);
   await idle(t);
 }
 
 /// Pushes [page] on the root navigator, as the app's own links do.
 Future<void> open(WidgetTester t, Widget page) async {
-  final nav = t.state<NavigatorState>(find.byType(Navigator).first);
-  nav.push(MaterialPageRoute<void>(builder: (_) => page));
+  t
+      .state<NavigatorState>(find.byType(Navigator).first)
+      .push(MaterialPageRoute<void>(builder: (_) => page));
   await idle(t);
 }
 

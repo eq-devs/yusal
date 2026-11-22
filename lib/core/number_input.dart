@@ -16,7 +16,9 @@ double? parseNumber(String text) {
       .toList();
   final signs = RegExp(r'(?<=\d)[+\-*/]').allMatches(s).map((m) => m[0]!);
   // Fold products into the running term, then add the terms up.
-  var sum = 0.0, term = numbers.first, i = 1;
+  var sum = 0.0;
+  var term = numbers.first;
+  var i = 1;
   for (final sign in signs) {
     final n = numbers[i++];
     switch (sign) {

@@ -110,9 +110,8 @@ Future<void> main() async {
           scaffoldBackgroundColor: const Color(0xfff6f7f3),
           useMaterial3: true),
       home: const HouseHome()));
-  WidgetsBinding.instance.addPostFrameCallback(
-      (_) => navigator.currentState!.push(MaterialPageRoute<void>(
-          builder: (_) => HouseEditor(
-              entry: ProjectEntry(id, doc),
-              store: store))));
+  WidgetsBinding.instance.addPostFrameCallback((_) => navigator.currentState!
+      .push(MaterialPageRoute<void>(
+          builder: (_) =>
+              HouseEditor(entry: ProjectEntry(id, doc), store: store))));
 }

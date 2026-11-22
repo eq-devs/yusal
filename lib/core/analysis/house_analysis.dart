@@ -48,7 +48,7 @@ double unionArea(List<PlanRect> rects) {
   }.toList()
     ..sort();
   var area = 0.0;
-  for (var i = 0; i < xs.length - 1; i++)
+  for (var i = 0; i < xs.length - 1; i++) {
     for (var j = 0; j < ys.length - 1; j++) {
       final x = (xs[i] + xs[i + 1]) / 2;
       final y = (ys[j] + ys[j + 1]) / 2;
@@ -56,6 +56,7 @@ double unionArea(List<PlanRect> rects) {
         area += (xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j]);
       }
     }
+  }
   return area;
 }
 
@@ -106,7 +107,8 @@ class RoomStats {
   final SpaceGeometry geometry;
 
   /// Net size of the largest clear rectangle.
-  final double clearWidth, clearDepth;
+  final double clearWidth;
+  final double clearDepth;
   final List<OpeningPlacement> windows;
   final double windowArea;
   final double volume;
@@ -183,19 +185,19 @@ class FoundationTakeoff {
   final List<FoundationStrip> strips;
 
   /// Lengths in mm; areas in mm²; volumes in mm³.
-  final double mainLength,
-      partitionLength,
-      concrete,
-      mainBarLength,
-      partitionBarLength,
-      stirrupLength,
-      partitionStirrupLength,
-      excavation,
-      cushion,
-      formwork,
-      xps,
-      blinding,
-      waterproofing;
+  final double mainLength;
+  final double partitionLength;
+  final double concrete;
+  final double mainBarLength;
+  final double partitionBarLength;
+  final double stirrupLength;
+  final double partitionStirrupLength;
+  final double excavation;
+  final double cushion;
+  final double formwork;
+  final double xps;
+  final double blinding;
+  final double waterproofing;
   final int stirrups;
   final int partitionStirrups;
 }

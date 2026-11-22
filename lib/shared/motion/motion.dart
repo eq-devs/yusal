@@ -425,8 +425,9 @@ class PressTint extends InteractiveInkFeature {
     final tint = color.withValues(alpha: color.a * v);
     final spread = Motion.settle.transform(_spread.value);
     final grown = _start + (1 - _start) * spread;
-    canvas.save();
-    canvas.transform(transform.storage);
+    canvas
+      ..save()
+      ..transform(transform.storage);
     if (_contained) {
       final rect = _rect?.call() ?? Offset.zero & referenceBox.size;
       final border = customBorder;
@@ -459,10 +460,11 @@ class PressTint extends InteractiveInkFeature {
       if (spread >= 1) {
         canvas.drawCircle(centre, _radius, Paint()..color = tint);
       } else {
-        canvas.clipPath(
-            Path()..addOval(Rect.fromCircle(center: centre, radius: _radius)));
-        canvas.drawCircle(centre, _radius,
-            _bloom(centre, _radius / (1 - _feather) * grown, tint));
+        canvas
+          ..clipPath(
+              Path()..addOval(Rect.fromCircle(center: centre, radius: _radius)))
+          ..drawCircle(centre, _radius,
+              _bloom(centre, _radius / (1 - _feather) * grown, tint));
       }
     }
     canvas.restore();

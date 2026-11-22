@@ -67,7 +67,9 @@ void main() {
     await t.pump();
 
     // Zooming about a corner keeps what is under it in place.
-    final yaw = s.yaw, pitch = s.pitch, before = s.distance;
+    final yaw = s.yaw;
+    final pitch = s.pitch;
+    final before = s.distance;
     final cam = orbitCamera(s.target, yaw, pitch, before);
     final f = 300 / math.tan(cam.fov / 2);
     const at = Offset(650, 120);
@@ -109,7 +111,7 @@ void main() {
   test('preset views fit the whole house to any screen shape', () {
     final model = buildScene(doc, derived, const SceneOptions(), (r) => r.name);
     final (lo, hi) = model.bounds;
-    for (final aspect in [390 / 520, 1.5, 2.2])
+    for (final aspect in [390 / 520, 1.5, 2.2]) {
       for (final view in ['iso', 'front', 'back', 'side', 'top']) {
         final pose = viewPose(model, view, aspect: aspect);
         final cam =
@@ -118,7 +120,7 @@ void main() {
         final tanH = tanV * aspect;
         var maxX = 0.0;
         var maxY = 0.0;
-        for (final x in [lo.x, hi.x])
+        for (final x in [lo.x, hi.x]) {
           for (final y in [lo.y, hi.y]) {
             for (final z in [lo.z, hi.z]) {
               final c = cam.toCamera(Vec3(x, y, z));
@@ -126,11 +128,13 @@ void main() {
               maxY = math.max(maxY, (c.y / c.z).abs() / tanV);
             }
           }
+        }
         final reason = '$view at $aspect';
         expect(math.max(maxX, maxY), lessThanOrEqualTo(0.9), reason: reason);
         // And fills the screen in one direction, not a speck in the middle.
         expect(math.max(maxX, maxY), greaterThan(0.8), reason: reason);
       }
+    }
   });
 
   testWidgets('zooming in stops before the camera enters the house', (t) async {
@@ -146,8 +150,9 @@ void main() {
     }
 
     for (final (yaw, pitch) in [(s.yaw, s.pitch), (0.3, 0.12), (2.0, 0.5)]) {
-      s.yaw = yaw;
-      s.pitch = pitch;
+      s
+        ..yaw = yaw
+        ..pitch = pitch;
       for (var i = 0; i < 40; i++) {
         s.zoomAt(const Offset(400, 300), s.distance * 0.7);
       }

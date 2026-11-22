@@ -71,7 +71,8 @@ CommandResult executeCommand(
     UndoableDesignState state, DesignCommand command, CommandContext context) {
   final doc = _document(state);
   final args = command.arguments;
-  CommandResult apply(HouseDocument document) {
+  CommandResult apply(HouseDocument input) {
+    var document = input;
     if ([
       'SplitSpace',
       'CarveRoom',

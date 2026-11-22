@@ -13,8 +13,9 @@ List<Offset> wallAttachmentPoints(
       ? Offset(along, w.axis.pos.toDouble())
       : Offset(w.axis.pos.toDouble(), along);
   for (final w in base.wallSegments) {
-    endpoints.add(point(w, w.start.pos.toDouble()));
-    endpoints.add(point(w, w.end.pos.toDouble()));
+    endpoints
+      ..add(point(w, w.start.pos.toDouble()))
+      ..add(point(w, w.end.pos.toDouble()));
     middle.add(point(w, (w.start.pos + w.end.pos) / 2));
   }
   bool available(Offset p) => canExtendWallFrom(base, openings, p);

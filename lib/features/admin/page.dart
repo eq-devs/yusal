@@ -1946,13 +1946,9 @@ class AuditPage extends StatelessWidget {
           item: (context, e) => _AuditRow(e)));
 }
 
-class _PushPolicyPage extends StatefulWidget {
+class _PushPolicyPage extends StatelessWidget {
   const _PushPolicyPage();
-  @override
-  State<_PushPolicyPage> createState() => _PushPolicyPageState();
-}
 
-class _PushPolicyPageState extends State<_PushPolicyPage> {
   static const _hours = ['', '20:00', '21:00', '22:00', '23:00', '00:00'];
   static const _ends = ['', '06:00', '07:00', '08:00', '09:00'];
 
@@ -1961,7 +1957,7 @@ class _PushPolicyPageState extends State<_PushPolicyPage> {
       ? tr3('不限', 'Шексіз', 'Без лимита')
       : tr3('$n 条', 'Күніне $n', '$n в день');
 
-  Future<void> _save(PushPolicy p) => attempt(
+  Future<void> _save(BuildContext context, PushPolicy p) => attempt(
       context, () => context.read(adminRepositoryProvider).savePushPolicy(p),
       success: tr3('已保存', 'Сақталды', 'Сохранено'));
 
@@ -1998,15 +1994,17 @@ class _PushPolicyPageState extends State<_PushPolicyPage> {
                                             (h, h.isEmpty ? _noQuiet : h)
                                         ],
                                         selected: p.quietStart);
-                                    if (v != null) {
-                                      await _save(PushPolicy(
-                                          quietStart: v,
-                                          quietEnd: v.isEmpty
-                                              ? ''
-                                              : (p.quietEnd.isEmpty
-                                                  ? '08:00'
-                                                  : p.quietEnd),
-                                          dailyCap: p.dailyCap));
+                                    if (v != null && context.mounted) {
+                                      await _save(
+                                          context,
+                                          PushPolicy(
+                                              quietStart: v,
+                                              quietEnd: v.isEmpty
+                                                  ? ''
+                                                  : (p.quietEnd.isEmpty
+                                                      ? '08:00'
+                                                      : p.quietEnd),
+                                              dailyCap: p.dailyCap));
                                     }
                                   }
                                 : null),
@@ -2021,11 +2019,13 @@ class _PushPolicyPageState extends State<_PushPolicyPage> {
                                         quietEnd,
                                         [for (final h in _ends.skip(1)) (h, h)],
                                         selected: p.quietEnd);
-                                    if (v != null) {
-                                      await _save(PushPolicy(
-                                          quietStart: p.quietStart,
-                                          quietEnd: v,
-                                          dailyCap: p.dailyCap));
+                                    if (v != null && context.mounted) {
+                                      await _save(
+                                          context,
+                                          PushPolicy(
+                                              quietStart: p.quietStart,
+                                              quietEnd: v,
+                                              dailyCap: p.dailyCap));
                                     }
                                   }
                                 : null),
@@ -2049,11 +2049,13 @@ class _PushPolicyPageState extends State<_PushPolicyPage> {
                                             (n, _cap(n)),
                                         ],
                                         selected: p.dailyCap);
-                                    if (v != null) {
-                                      await _save(PushPolicy(
-                                          quietStart: p.quietStart,
-                                          quietEnd: p.quietEnd,
-                                          dailyCap: v));
+                                    if (v != null && context.mounted) {
+                                      await _save(
+                                          context,
+                                          PushPolicy(
+                                              quietStart: p.quietStart,
+                                              quietEnd: p.quietEnd,
+                                              dailyCap: v));
                                     }
                                   }
                                 : null),

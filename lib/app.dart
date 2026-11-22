@@ -85,34 +85,24 @@ final AudioDevice? voiceAudio =
 
 const _locales = [Locale('kk'), Locale('ru'), Locale('zh')];
 
+/// Light and dark themes per theme choice, built once each: a language
+/// switch rebuilds the app but keeps the same ThemeData objects.
+final _themes = <ThemeChoice, (ThemeData, ThemeData)>{};
+(ThemeData, ThemeData) _themesFor(ThemeChoice choice) => _themes[choice] ??= (
+      buildTheme(choice == ThemeChoice.night ? Tokens.night : Tokens.light),
+      buildTheme(choice == ThemeChoice.day ? Tokens.light : Tokens.night),
+    );
+
 /// The root widget: theme, language and routes.
-class HouseApp extends ConsumerStatefulWidget {
+class HouseApp extends ConsumerWidget {
   const HouseApp({super.key});
 
   @override
-  ConsumerState<HouseApp> createState() => _HouseAppState();
-}
-
-class _HouseAppState extends ConsumerState<HouseApp> {
-  // Themes are rebuilt only when the theme choice changes, not on every
-  // settings change (a language switch keeps the same ThemeData objects).
-  ThemeChoice? _themeFor;
-  late ThemeData _light;
-  late ThemeData _dark;
-  void _themes(ThemeChoice choice) {
-    if (choice == _themeFor) return;
-    _themeFor = choice;
-    _light =
-        buildTheme(choice == ThemeChoice.night ? Tokens.night : Tokens.light);
-    _dark = buildTheme(choice == ThemeChoice.day ? Tokens.light : Tokens.night);
-  }
-
-  @override
-  Widget build(BuildContext context) => ListenableBuilder(
+  Widget build(BuildContext context, WidgetRef ref) => ListenableBuilder(
       listenable: AppSettings.instance,
       builder: (context, _) {
         final settings = AppSettings.instance;
-        _themes(settings.theme);
+        final (light, dark) = _themesFor(settings.theme);
         return MaterialApp(
             navigatorKey: appNavigator,
             navigatorObservers: FirebaseSetup.observers,
@@ -123,8 +113,8 @@ class _HouseAppState extends ConsumerState<HouseApp> {
             locale: Locale(settings.lang.name),
             supportedLocales: _locales,
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
-            theme: _light,
-            darkTheme: _dark,
+            theme: light,
+            darkTheme: dark,
             themeMode: switch (settings.theme) {
               ThemeChoice.auto => ThemeMode.system,
               ThemeChoice.day => ThemeMode.light,

@@ -115,13 +115,9 @@ class MyAppealsPage extends StatelessWidget {
 }
 
 /// Which pushes I get; the inbox keeps everything either way.
-class NotificationSettingsPage extends StatefulWidget {
+class NotificationSettingsPage extends StatelessWidget {
   const NotificationSettingsPage({super.key});
-  @override
-  State<NotificationSettingsPage> createState() => _NotificationSettingsState();
-}
 
-class _NotificationSettingsState extends State<NotificationSettingsPage> {
   static const _quiet = [
     ('', ''),
     ('22:00', '08:00'),
@@ -134,7 +130,8 @@ class _NotificationSettingsState extends State<NotificationSettingsPage> {
           'По умолчанию (22:00–08:00)')
       : '$start–$end';
 
-  Future<void> _save(NotificationSettings s) => attempt(context,
+  Future<void> _save(BuildContext context, NotificationSettings s) => attempt(
+      context,
       () => context.read(trustRepositoryProvider).saveNotificationSettings(s));
 
   @override
@@ -176,7 +173,7 @@ class _NotificationSettingsState extends State<NotificationSettingsPage> {
                                   '点赞与点评', 'Ұнату мен пікір', 'Лайки и отзывы'),
                               trailing: Switch(
                                   value: on(PushCategory.community),
-                                  onChanged: (v) => _save(
+                                  onChanged: (v) => _save(context,
                                       toggled(PushCategory.community, v)))),
                           SettingsRow(
                               icon: Icons.notifications_active_outlined,
@@ -184,8 +181,8 @@ class _NotificationSettingsState extends State<NotificationSettingsPage> {
                                   '新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки'),
                               trailing: Switch(
                                   value: on(PushCategory.alerts),
-                                  onChanged: (v) =>
-                                      _save(toggled(PushCategory.alerts, v)))),
+                                  onChanged: (v) => _save(context,
+                                      toggled(PushCategory.alerts, v)))),
                         ]),
                     SettingsGroup(children: [
                       SettingsRow(
@@ -201,11 +198,13 @@ class _NotificationSettingsState extends State<NotificationSettingsPage> {
                               s.quietStart,
                               s.quietEnd
                             ));
-                            if (v != null) {
-                              await _save(NotificationSettings(
-                                  muted: s.muted,
-                                  quietStart: v.$1,
-                                  quietEnd: v.$2));
+                            if (v != null && context.mounted) {
+                              await _save(
+                                  context,
+                                  NotificationSettings(
+                                      muted: s.muted,
+                                      quietStart: v.$1,
+                                      quietEnd: v.$2));
                             }
                           }),
                     ]),

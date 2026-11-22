@@ -29,23 +29,15 @@ BackupState backupState(
 /// Account backup and restore of local designs. Local saving keeps working
 /// offline; a failed upload changes nothing locally; conflicts are never
 /// resolved silently.
-class BackupPage extends StatefulWidget {
+class BackupPage extends StatelessWidget {
   const BackupPage({super.key, this.highlight});
   final String? highlight;
 
   @override
-  State<BackupPage> createState() => _BackupPageState();
-}
-
-class _BackupPageState extends State<BackupPage> {
-  String? get highlight => widget.highlight;
-
-  /// A restore writes to this device only, which the backend does not
-  /// report: the list is read again by hand.
-  final refresh = LiveRefresh();
-
-  @override
   Widget build(BuildContext context) {
+    // A restore writes to this device only, which the backend does not
+    // report: the list is read again by hand.
+    final refresh = LiveRefresh();
     AppScope.watch(context);
     return PageScaffold(
         title: tr3('备份与恢复', 'Сақтық көшірме', 'Резервные копии'),

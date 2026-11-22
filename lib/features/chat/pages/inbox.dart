@@ -116,20 +116,16 @@ class InboxPage extends StatelessWidget {
 
 // Stateful so each copy of the page has its own pull-to-refresh: the
 // Messages tab and an inbox opened from the mail button live at once.
-class _Conversations extends StatefulWidget {
+class _Conversations extends StatelessWidget {
   const _Conversations();
-  @override
-  State<_Conversations> createState() => _ConversationsState();
-}
 
-class _ConversationsState extends State<_Conversations> {
-  final _refresh = LiveRefresh();
   @override
   Widget build(BuildContext context) {
+    final refresh = LiveRefresh();
     final t = YTokens.of(context);
     return Live<List<(Conversation, Account?)>>(
         fadeIn: true,
-        refresh: _refresh,
+        refresh: refresh,
         loading: const SkeletonList(
             count: 4,
             avatar: true,
@@ -142,7 +138,7 @@ class _ConversationsState extends State<_Conversations> {
                 body: tr3('在需求或名片页点击“联系”开始沟通。', 'Тапсырыс бетінен жазыңыз.',
                     'Напишите со страницы заявки или профиля.'))
             : RefreshIndicator(
-                onRefresh: _refresh.call,
+                onRefresh: refresh.call,
                 child: ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding:
@@ -204,20 +200,16 @@ String messagePreview(ChatMessage m) => switch (m.kind) {
 
 // Stateful so each copy of the page has its own pull-to-refresh: the
 // Messages tab and an inbox opened from the mail button live at once.
-class _Notices extends StatefulWidget {
+class _Notices extends StatelessWidget {
   const _Notices();
-  @override
-  State<_Notices> createState() => _NoticesState();
-}
 
-class _NoticesState extends State<_Notices> {
-  final _refresh = LiveRefresh();
   @override
   Widget build(BuildContext context) {
+    final refresh = LiveRefresh();
     final t = YTokens.of(context);
     return Live<List<AppNotification>>(
         fadeIn: true,
-        refresh: _refresh,
+        refresh: refresh,
         loading: const SkeletonList(
             count: 4, padding: EdgeInsets.fromLTRB(20, 20, 20, 0)),
         provider: noticesProvider,
@@ -226,7 +218,7 @@ class _NoticesState extends State<_Notices> {
                 icon: Icons.notifications_none,
                 title: tr3('暂无通知', 'Хабарлама жоқ', 'Нет уведомлений'))
             : RefreshIndicator(
-                onRefresh: _refresh.call,
+                onRefresh: refresh.call,
                 child: ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding:

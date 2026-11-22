@@ -1,5 +1,4 @@
-# Same rule set as janapost: flutter_lints plus the performance, safety and
-# style rules below. Run `flutter analyze`; `dart fix --apply` fixes most.
+# flutter_lints plus the performance, safety and style rules below. Run `flutter analyze`; `dart fix --apply` fixes most.
 include: package:flutter_lints/flutter.yaml
 
 analyzer:

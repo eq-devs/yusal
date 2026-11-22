@@ -16,7 +16,7 @@
 
 ## 开发
 
-- [architecture.md](architecture.md)：代码结构（和 janapost 一样的 feature-first）。
+- [architecture.md](architecture.md)：代码结构（feature-first）。
 - [STATE_MACHINES.md](STATE_MACHINES.md)、[state_machines.json](state_machines.json)：需求、报价、合作等状态机；和 yusal-api 共用。
 - [voice_tools.json](voice_tools.json)：语音助手能做的动作。
 - [SHOREBIRD.md](SHOREBIRD.md)：热更新发布。

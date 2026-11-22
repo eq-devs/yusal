@@ -10,9 +10,8 @@ import 'package:yusal/features/auth/model/auth_json.dart';
 import 'package:yusal/service/api/session_store.dart';
 import 'package:yusal/features/shared/model/models.dart';
 
-/// The connection to the Go backend (`eq-devs/yusal-api`), like janapost's
-/// `dio`: requests and their retries, the tokens, and the signed-in
-/// account. Each feature's repository keeps its own paths and caches.
+/// The connection to the Go backend (`eq-devs/yusal-api`): requests and
+/// their retries, the tokens, and the signed-in account. Each feature's repository keeps its own paths and caches.
 ///
 /// Each feature's `Http…Repository` takes this client and calls [request]
 /// and [write] on it, so they all share one session.

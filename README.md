@@ -67,7 +67,7 @@ The unit/widget suite includes 10,000 seeded canonicalization cases, byte-for-by
 - `lib/features/editor/util/drawing_export.dart`: the PDF/PNG drawing set.
 - `lib/features/editor/engine/render3d/scene_model.dart`, `scene_view.dart`: software 3D with sun, night, cut, foundation and the walk-through.
 
-Layout, the same as janapost (see `docs/architecture.md`):
+Feature-first layout (see `docs/architecture.md`):
 
 - `lib/main.dart`: startup only; `lib/app.dart`: Boot, BootGate and `HouseApp` (theme, language, routes).
 - `lib/constant/`: theme and colour tokens; `lib/localization/`: the zh / kk / ru texts; `lib/utils/`: small helpers.

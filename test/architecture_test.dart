@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Keeps lib/ in janapost's shape: main.dart and app.dart at the root,
+/// Keeps lib/ feature-first: main.dart and app.dart at the root,
 /// then constant/, localization/, service/, utils/ and features/.
 void main() {
-  test("only janapost's top-level folders and files", () {
+  test('only the known top-level folders and files', () {
     final entries = {
       for (final e in Directory('lib').listSync()) e.path.split('/').last
     };
@@ -21,7 +21,7 @@ void main() {
     });
   });
 
-  test("every feature folder uses janapost's sub-folders", () {
+  test('every feature folder uses the known sub-folders', () {
     const allowed = {
       'pages', 'widgets', 'state', 'repository', 'model', 'util',
       // The design tool: its library parts and the house engine.

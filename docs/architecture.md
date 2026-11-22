@@ -1,6 +1,6 @@
 # Yusal 客户端架构
 
-_2026-11-22，和 janapost（`~/Desktop/janapost/janapost`）一样的 feature-first 结构。_
+_2026-11-22，feature-first 结构。_
 
 ```
 lib/
@@ -21,7 +21,7 @@ lib/
 
 ## 一个 feature 怎么写
 
-和 janapost 的 `referral` 一样：
+以一个 feature `x` 为例：
 
 ```dart
 // repository/x_repository.dart

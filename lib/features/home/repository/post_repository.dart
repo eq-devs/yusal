@@ -174,7 +174,7 @@ final class HttpPostRepository implements PostRepository {
 
   @override
   Future<List<HousePost>> postsBy(String accountId) async =>
-      _posts(await api.request('GET', '/client/api.accounts/$accountId/posts')
+      _posts(await api.request('GET', '/client/accounts/$accountId/posts')
           as List);
 
   @override

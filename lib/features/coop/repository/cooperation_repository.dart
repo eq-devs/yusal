@@ -199,7 +199,7 @@ final class HttpReviewRepository implements ReviewRepository {
   Future<List<Review>> reviewsAbout(String accountId) async {
     final list = [
       for (final j
-          in await api.getList('/client/api.accounts/$accountId/reviews'))
+          in await api.getList('/client/accounts/$accountId/reviews'))
         reviewFrom(j)
     ];
     await api.loadNames(list.map((r) => r.authorId));

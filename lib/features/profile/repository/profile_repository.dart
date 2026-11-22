@@ -53,7 +53,7 @@ final class HttpProfileRepository implements ProfileRepository {
   @override
   Future<List<ServiceProfile>> profilesOf(String accountId) async => [
         for (final j
-            in await api.getList('/client/api.accounts/$accountId/profiles'))
+            in await api.getList('/client/accounts/$accountId/profiles'))
           profileFrom(j)
       ];
 

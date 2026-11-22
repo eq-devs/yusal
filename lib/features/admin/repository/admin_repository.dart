@@ -166,7 +166,7 @@ final class HttpAdminRepository implements AdminRepository {
   @override
   Future<void> setRestriction(
       String accountId, bool restricted, String note) async {
-    await api.write('POST', '/admin/api.accounts/$accountId/restriction',
+    await api.write('POST', '/admin/accounts/$accountId/restriction',
         body: {'restricted': restricted, 'note': note});
   }
 
@@ -212,7 +212,7 @@ final class HttpAdminRepository implements AdminRepository {
 
   @override
   Future<AccountDetail> accountDetail(String accountId) async {
-    final j = await api.request('GET', '/admin/api.accounts/$accountId')
+    final j = await api.request('GET', '/admin/accounts/$accountId')
         as Map<String, dynamic>;
     return accountDetailFrom(j, api.plainCooperation);
   }
@@ -220,11 +220,11 @@ final class HttpAdminRepository implements AdminRepository {
   // ── back office, HTTP only ──
 
   Future<void> setBanned(String accountId, bool banned, String note) =>
-      api.write('POST', '/admin/api.accounts/$accountId/ban',
+      api.write('POST', '/admin/accounts/$accountId/ban',
           body: {'banned': banned, 'note': note});
 
   Future<void> deleteAccountFor(String accountId, String note) =>
-      api.write('POST', '/admin/api.accounts/$accountId/delete',
+      api.write('POST', '/admin/accounts/$accountId/delete',
           body: {'note': note});
 
   /// [target] is demand, profile, post, comment or message.

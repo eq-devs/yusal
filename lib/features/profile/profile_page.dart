@@ -178,12 +178,6 @@ class _ProfileView extends StatelessWidget {
                 ]),
               ])),
           const SizedBox(height: 18),
-          if (s.phoneVerified)
-            InfoRow(
-                tr3('认证事实', 'Расталған', 'Проверено'),
-                tr3('手机号已验证（不等于实名）', 'Телефон расталған',
-                    'Телефон подтверждён (не паспорт)'),
-                icon: Icons.verified_outlined),
           InfoRow(tr3('接活状态', 'Күйі', 'Статус'),
               '${availabilityName(p)} · ${tr3('确认于 ${fmtDay(p.availabilityConfirmedAt)}', '${fmtDay(p.availabilityConfirmedAt)} расталды', 'обновлено ${fmtDay(p.availabilityConfirmedAt)}')}${stale ? tr3('（较久未更新）', ' (ескі)', ' (давно)') : ''}',
               icon: Icons.event_available_outlined),

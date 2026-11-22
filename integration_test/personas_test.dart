@@ -69,7 +69,7 @@ void main() {
     await shot(t, 't02-admin-entry');
 
     await chip('seed:moderator', 'Әлия · модератор');
-    expect(repos.currentAccount!.adminRole, 'moderator');
+    expect(repos.currentAccount!.role, 'moderator');
 
     await chip('seed:spam', 'Стройбаза Опт');
     expect(repos.currentAccount!.restricted, isTrue);

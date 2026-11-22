@@ -133,6 +133,8 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
   Rect? slot;
   // The page on top is one the assistant can do something on.
   bool here = false;
+  // The page on top is a tab, not a page opened over one.
+  bool onTab = true;
   // One turn of the orb, and how loud the voice is (0 to 1).
   late final glow = AnimationController(vsync: this, duration: _calm);
   late final level = AnimationController(vsync: this);
@@ -179,10 +181,13 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
     if (!mounted) return;
     final now = VoiceSlot.rect;
     final onPage = VoiceScreens.current?.showsAssistant ?? false;
-    if (now != slot || onPage != here) {
+    // The bar lives in the navigator's overlay, so this is the app's.
+    final tab = !(Navigator.maybeOf(context)?.canPop() ?? false);
+    if (now != slot || onPage != here || tab != onTab) {
       setState(() {
         slot = now;
         here = onPage;
+        onTab = tab;
       });
     }
     WidgetsBinding.instance.addPostFrameCallback(_followSlot);
@@ -566,8 +571,10 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
         ? suggestions()
         : const <String>[];
     // What the orb is and what to say to it, until it is first used.
-    // Not over a page that keeps a slot: there it would cover the work.
+    // Only on the tabs: over a page that keeps a slot, or a page opened
+    // over a tab (a cooperation, a demand), it would cover the work.
     final welcome = intro &&
+            onTab &&
             this.slot == null &&
             !active &&
             !typing &&

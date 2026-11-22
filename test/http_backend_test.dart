@@ -333,6 +333,17 @@ void main() {
         ['/admin/me', '/client/auth/me']);
   });
 
+  test('signing out drops the cached views of other accounts', () async {
+    await backend.auth.signInWithProvider('google', 'id-token');
+    await backend.auth.account('u9');
+    await backend.auth.account('u9');
+    await backend.auth.signOut();
+    await backend.auth.signInWithProvider('google', 'id-token');
+    await backend.auth.account('u9');
+    expect(api.requests.where((r) => r.url.path == '/client/accounts/u9'),
+        hasLength(2));
+  });
+
   test('signing out forgets the saved account too', () async {
     await backend.auth.signInWithProvider('google', 'id-token');
     await backend.auth.signOut();

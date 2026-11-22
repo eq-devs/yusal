@@ -39,7 +39,14 @@ final authRepositoryProvider =
 
 /// [AuthRepository] over yusal-api.
 final class HttpAuthRepository implements AuthRepository {
-  HttpAuthRepository(this.api);
+  HttpAuthRepository(this.api) {
+    // Who is signed in changes what an account looks like (one deleted by
+    // the account that is signing out, a block), so start over.
+    api.onForget.add(() {
+      _accounts.clear();
+      _accountAt.clear();
+    });
+  }
   final ApiClient api;
 
   @override

@@ -16,6 +16,8 @@ import '../../shared/ui/theme.dart';
 import '../../shared/ui/widgets.dart';
 import '../../services/voice/read_aloud.dart';
 import '../../voice/voice_overlay.dart' show voiceBuiltIn;
+import '../../data/http/http_backend.dart';
+import '../auth/sign_in_methods_page.dart';
 import 'admin_page.dart';
 import 'feedback_page.dart';
 import 'kazakh_voice_page.dart';
@@ -60,104 +62,104 @@ class MePage extends StatelessWidget {
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                            Semantics(
-                                header: true,
-                                child: Text(tr3('我的', 'Менің', 'Профиль'),
-                                    style: display(size: 28))),
-                            const SizedBox(height: YSpace.lg),
-                            if (account == null)
-                              const _GuestCard()
-                            else
-                              _AccountHeader(account: account),
-                            if (account != null) ...[
-                              SectionTitle(
-                                  tr3('我发布的房子', 'Жарияланған үйлерім',
-                                      'Мои публикации')),
-                              const _MyPosts(),
-                              const SizedBox(height: YSpace.xl),
-                              SettingsGroup(children: [
-                                SettingsRow(
-                                    icon: Icons.favorite_border,
-                                    title: tr3('收藏', 'Таңдаулы', 'Избранное'),
-                                    onTap: () => pushPage<void>(context,
-                                        (_) => const FavouritesPage())),
-                                SettingsRow(
-                                    icon: Icons.cloud_outlined,
-                                    title: tr3(
-                                        '设计备份与恢复',
-                                        'Сақтық көшірме',
-                                        'Резервные копии'),
-                                    onTap: () => pushPage<void>(
-                                        context, (_) => const BackupPage())),
-                                SettingsRow(
-                                      key: const Key('me-phone'),
-                                      icon: Icons.phone_outlined,
-                                      title: tr3('手机号', 'Телефон нөмірі',
-                                          'Номер телефона'),
-                                      subtitle: tr3(
-                                          '只在你在聊天里主动分享时对方才能看到',
-                                          'Чатта өзіңіз бөліскенде ғана көрінеді',
-                                          'Виден, только когда вы делитесь им в чате'),
-                                      onTap: () => editPhone(context)),
-                                SettingsRow(
-                                    icon: Icons.block,
-                                    title: tr3('隐私与拉黑', 'Құпиялық',
-                                        'Приватность и блокировки'),
-                                    onTap: () => pushPage<void>(
-                                        context, (_) => const PrivacyPage())),
-                                ...trustRows(context, account),
-                                if (account.can(AdminPerms.read))
-                                  SettingsRow(
-                                      key: const Key('me-admin'),
-                                      icon:
-                                          Icons.admin_panel_settings_outlined,
-                                      title: tr3('管理后台', 'Әкімшілік', 'Админка'),
-                                      onTap: () => pushPage<void>(context,
-                                          (_) => const AdminPage())),
-                              ]),
-                              const _ProProfiles(),
-                            ],
-                            SettingsGroup(
-                                title: tr3('设置', 'Баптаулар', 'Настройки'),
-                                children: [
-                                  SettingsRow(
-                                      key: const Key('me-language'),
-                                      icon: Icons.language,
-                                      title: tr3('语言', 'Тіл', 'Язык'),
-                                      value: _langs
-                                          .firstWhere((l) => l.$1 == app.lang)
-                                          .$2,
-                                      onTap: () async {
-                                        final v = await pickOne<AppLang>(
-                                            context,
-                                            tr3('语言', 'Тіл', 'Язык'),
-                                            _langs,
-                                            selected: app.lang);
-                                        if (v != null) app.setLang(v);
-                                      }),
-                                  SettingsRow(
-                                      key: const Key('me-theme'),
-                                      icon: Icons.brightness_6_outlined,
-                                      title: tr3('外观', 'Көрініс', 'Тема'),
-                                      value: themes
-                                          .firstWhere(
-                                              (c) => c.$1 == app.theme)
-                                          .$2,
-                                      onTap: () async {
-                                        final v = await pickOne<ThemeChoice>(
-                                            context,
-                                            tr3('外观', 'Көрініс', 'Тема'),
-                                            themes,
-                                            selected: app.theme);
-                                        if (v != null) app.setTheme(v);
-                                      }),
-                                  if (voiceBuiltIn)
-                                    if (ReadAloud.instance
-                                        case final reader?)
-                                      ValueListenableBuilder<VoiceModelStatus>(
-                                          valueListenable: reader.status,
-                                          builder: (context, s, _) =>
-                                              SettingsRow(
+                                Semantics(
+                                    header: true,
+                                    child: Text(tr3('我的', 'Менің', 'Профиль'),
+                                        style: display(size: 28))),
+                                const SizedBox(height: YSpace.lg),
+                                if (account == null)
+                                  const _GuestCard()
+                                else
+                                  _AccountHeader(account: account),
+                                if (account != null) ...[
+                                  SectionTitle(tr3('我发布的房子',
+                                      'Жарияланған үйлерім', 'Мои публикации')),
+                                  const _MyPosts(),
+                                  const SizedBox(height: YSpace.xl),
+                                  SettingsGroup(children: [
+                                    SettingsRow(
+                                        icon: Icons.favorite_border,
+                                        title:
+                                            tr3('收藏', 'Таңдаулы', 'Избранное'),
+                                        onTap: () => pushPage<void>(context,
+                                            (_) => const FavouritesPage())),
+                                    SettingsRow(
+                                        icon: Icons.cloud_outlined,
+                                        title: tr3('设计备份与恢复', 'Сақтық көшірме',
+                                            'Резервные копии'),
+                                        onTap: () => pushPage<void>(context,
+                                            (_) => const BackupPage())),
+                                    SettingsRow(
+                                        key: const Key('me-phone'),
+                                        icon: Icons.phone_outlined,
+                                        title: tr3('手机号', 'Телефон нөмірі',
+                                            'Номер телефона'),
+                                        subtitle: tr3(
+                                            '只在你在聊天里主动分享时对方才能看到',
+                                            'Чатта өзіңіз бөліскенде ғана көрінеді',
+                                            'Виден, только когда вы делитесь им в чате'),
+                                        onTap: () => editPhone(context)),
+                                    SettingsRow(
+                                        icon: Icons.block,
+                                        title: tr3('隐私与拉黑', 'Құпиялық',
+                                            'Приватность и блокировки'),
+                                        onTap: () => pushPage<void>(context,
+                                            (_) => const PrivacyPage())),
+                                    ...trustRows(context, account),
+                                    if (account.can(AdminPerms.read))
+                                      SettingsRow(
+                                          key: const Key('me-admin'),
+                                          icon: Icons
+                                              .admin_panel_settings_outlined,
+                                          title: tr3(
+                                              '管理后台', 'Әкімшілік', 'Админка'),
+                                          onTap: () => pushPage<void>(context,
+                                              (_) => const AdminPage())),
+                                  ]),
+                                  const _ProProfiles(),
+                                ],
+                                SettingsGroup(
+                                    title: tr3('设置', 'Баптаулар', 'Настройки'),
+                                    children: [
+                                      SettingsRow(
+                                          key: const Key('me-language'),
+                                          icon: Icons.language,
+                                          title: tr3('语言', 'Тіл', 'Язык'),
+                                          value: _langs
+                                              .firstWhere(
+                                                  (l) => l.$1 == app.lang)
+                                              .$2,
+                                          onTap: () async {
+                                            final v = await pickOne<AppLang>(
+                                                context,
+                                                tr3('语言', 'Тіл', 'Язык'),
+                                                _langs,
+                                                selected: app.lang);
+                                            if (v != null) app.setLang(v);
+                                          }),
+                                      SettingsRow(
+                                          key: const Key('me-theme'),
+                                          icon: Icons.brightness_6_outlined,
+                                          title: tr3('外观', 'Көрініс', 'Тема'),
+                                          value: themes
+                                              .firstWhere(
+                                                  (c) => c.$1 == app.theme)
+                                              .$2,
+                                          onTap: () async {
+                                            final v = await pickOne<
+                                                    ThemeChoice>(
+                                                context,
+                                                tr3('外观', 'Көрініс', 'Тема'),
+                                                themes,
+                                                selected: app.theme);
+                                            if (v != null) app.setTheme(v);
+                                          }),
+                                      if (voiceBuiltIn)
+                                        if (ReadAloud.instance
+                                            case final reader?)
+                                          ValueListenableBuilder<VoiceModelStatus>(
+                                              valueListenable: reader.status,
+                                              builder: (context, s, _) => SettingsRow(
                                                   key: const Key(
                                                       'me-kazakh-voice'),
                                                   icon: Icons
@@ -166,62 +168,81 @@ class MePage extends StatelessWidget {
                                                       '哈萨克语朗读',
                                                       'Қазақша дауыс',
                                                       'Казахский голос'),
-                                                  value:
-                                                      kazakhVoiceValue(s),
+                                                  value: kazakhVoiceValue(s),
                                                   onTap: () => pushPage<void>(
                                                       context,
                                                       (_) => KazakhVoicePage(
                                                           reader: reader)))),
-                                  SettingsRow(
-                                      key: const Key('me-feedback'),
-                                      icon: Icons.chat_bubble_outline,
-                                      title: tr3('意见反馈', 'Пікір қалдыру',
-                                          'Обратная связь'),
-                                      onTap: () => pushPage<void>(context,
-                                          (_) => const FeedbackPage())),
-                                ]),
-                            if (account != null)
-                              SettingsGroup(
-                                  title: tr3('账号', 'Аккаунт', 'Аккаунт'),
-                                  children: [
-                                    SettingsRow(
-                                        key: const Key('me-sign-out'),
-                                        icon: Icons.logout,
-                                        title: tr3('退出登录', 'Шығу', 'Выйти'),
-                                        trailing: const SizedBox.shrink(),
-                                        onTap: () async {
-                                          if (await confirmDialog(
+                                      SettingsRow(
+                                          key: const Key('me-feedback'),
+                                          icon: Icons.chat_bubble_outline,
+                                          title: tr3('意见反馈', 'Пікір қалдыру',
+                                              'Обратная связь'),
+                                          onTap: () => pushPage<void>(context,
+                                              (_) => const FeedbackPage())),
+                                    ]),
+                                if (account != null)
+                                  SettingsGroup(
+                                      title: tr3('账号', 'Аккаунт', 'Аккаунт'),
+                                      children: [
+                                        if (context.repos
+                                            case final HttpBackend api)
+                                          SettingsRow(
+                                              key: const Key(
+                                                  'me-sign-in-methods'),
+                                              icon: Icons.key_outlined,
+                                              title: tr3(
+                                                  '登录方式',
+                                                  'Кіру тәсілдері',
+                                                  'Способы входа'),
+                                              onTap: () => pushPage<void>(
                                                   context,
-                                                  tr3('退出登录？', 'Шығасыз ба?',
-                                                      'Выйти из аккаунта?'),
-                                                  body: tr3(
-                                                      '本机的设计会保留，再次登录即可继续。',
-                                                      'Құрылғыдағы жобалар сақталады, қайта кірсеңіз жалғастырасыз.',
-                                                      'Проекты на этом устройстве сохранятся, войдите снова, чтобы продолжить.'),
-                                                  ok: tr3('退出', 'Шығу', 'Выйти')) &&
-                                              context.mounted) {
-                                            await attempt(context,
-                                                () => context.repos.signOut());
-                                          }
-                                        }),
-                                    SettingsRow(
-                                        key: const Key('me-delete-account'),
-                                        icon: Icons.delete_outline,
-                                        danger: true,
-                                        title: tr3('注销账号', 'Аккаунтты жою',
-                                            'Удалить аккаунт'),
-                                        onTap: () => _deleteAccount(context)),
-                                  ]),
-                            const SizedBox(height: YSpace.xl),
-                            Text(
-                                tr3(
-                                    'Yusal 不提供付款担保或资金托管，不承诺施工质量。',
-                                    'Yusal төлем кепілдігін бермейді.',
-                                    'Yusal не гарантирует оплату и качество работ.'),
-                                textAlign: TextAlign.center,
-                                style:
-                                    YText.caption.copyWith(color: t.muted)),
-                          ]))))));
+                                                  (_) => SignInMethodsPage(
+                                                      api: api))),
+                                        SettingsRow(
+                                            key: const Key('me-sign-out'),
+                                            icon: Icons.logout,
+                                            title: tr3('退出登录', 'Шығу', 'Выйти'),
+                                            trailing: const SizedBox.shrink(),
+                                            onTap: () async {
+                                              if (await confirmDialog(
+                                                      context,
+                                                      tr3(
+                                                          '退出登录？',
+                                                          'Шығасыз ба?',
+                                                          'Выйти из аккаунта?'),
+                                                      body: tr3(
+                                                          '本机的设计会保留，再次登录即可继续。',
+                                                          'Құрылғыдағы жобалар сақталады, қайта кірсеңіз жалғастырасыз.',
+                                                          'Проекты на этом устройстве сохранятся, войдите снова, чтобы продолжить.'),
+                                                      ok: tr3('退出', 'Шығу',
+                                                          'Выйти')) &&
+                                                  context.mounted) {
+                                                await attempt(
+                                                    context,
+                                                    () => context.repos
+                                                        .signOut());
+                                              }
+                                            }),
+                                        SettingsRow(
+                                            key: const Key('me-delete-account'),
+                                            icon: Icons.delete_outline,
+                                            danger: true,
+                                            title: tr3('注销账号', 'Аккаунтты жою',
+                                                'Удалить аккаунт'),
+                                            onTap: () =>
+                                                _deleteAccount(context)),
+                                      ]),
+                                const SizedBox(height: YSpace.xl),
+                                Text(
+                                    tr3(
+                                        'Yusal 不提供付款担保或资金托管，不承诺施工质量。',
+                                        'Yusal төлем кепілдігін бермейді.',
+                                        'Yusal не гарантирует оплату и качество работ.'),
+                                    textAlign: TextAlign.center,
+                                    style:
+                                        YText.caption.copyWith(color: t.muted)),
+                              ]))))));
     });
   }
 
@@ -328,8 +349,8 @@ class _MyPosts extends StatelessWidget {
                     children: [
                       for (final (i, post) in list.indexed)
                         Padding(
-                            padding: EdgeInsets.only(
-                                left: i == 0 ? 0 : YSpace.md),
+                            padding:
+                                EdgeInsets.only(left: i == 0 ? 0 : YSpace.md),
                             child: SizedBox(
                                 width: 220,
                                 child: HouseCard(
@@ -338,8 +359,7 @@ class _MyPosts extends StatelessWidget {
                                     onTap: () => pushPage<void>(
                                         context,
                                         (_) => PostPage(
-                                            postId: post.id,
-                                            preview: post))))),
+                                            postId: post.id, preview: post))))),
                     ])));
   }
 }
@@ -353,77 +373,78 @@ class _ProProfiles extends StatelessWidget {
     return Live<List<ServiceProfile>>(
         load: (r) => r.myProfiles(),
         loading: const SizedBox.shrink(),
-        builder: (context, list) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (list.isNotEmpty) ...[
-                    SectionTitle(
-                        tr3('入驻接活', 'Кәсіби профиль', 'Профиль мастера')),
-                    for (final p in list)
-                      Padding(
-                          padding: const EdgeInsets.only(bottom: YSpace.md),
-                          child: ProfileCard(
-                              profile: p,
-                              onTap: () => pushPage<void>(context,
-                                  (_) => ProfilePage(profileId: p.id)))),
-                    SettingsGroup(children: [
-                      SettingsRow(
-                          key: const Key('me-demand-alert'),
-                          icon: Icons.notifications_active_outlined,
-                          title: tr3('新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки'),
-                          subtitle: tr3('按地区、工种订阅，有新需求时提醒你',
-                              'Аймақ пен мамандық бойынша', 'По региону и специальности'),
+        builder: (context, list) =>
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (list.isNotEmpty) ...[
+                SectionTitle(tr3('入驻接活', 'Кәсіби профиль', 'Профиль мастера')),
+                for (final p in list)
+                  Padding(
+                      padding: const EdgeInsets.only(bottom: YSpace.md),
+                      child: ProfileCard(
+                          profile: p,
                           onTap: () => pushPage<void>(
-                              context, (_) => const DemandAlertPage())),
-                      for (final p in list)
-                        if (!p.verified)
-                          SettingsRow(
-                              key: Key('me-verify-${p.id}'),
-                              icon: Icons.verified_outlined,
-                              title: tr3('实名核验：${p.name}', 'Тексеру: ${p.name}',
-                                  'Проверка: ${p.name}'),
-                              subtitle: tr3('核验手机号和施工现场，名片显示“已核验”',
-                                  'Профильде «тексерілген» белгісі', 'Значок «проверен» в профиле'),
-                              onTap: () => pushPage<void>(
-                                  context, (_) => VerificationPage(profile: p))),
+                              context, (_) => ProfilePage(profileId: p.id)))),
+                SettingsGroup(children: [
+                  SettingsRow(
+                      key: const Key('me-demand-alert'),
+                      icon: Icons.notifications_active_outlined,
+                      title: tr3('新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки'),
+                      subtitle: tr3(
+                          '按地区、工种订阅，有新需求时提醒你',
+                          'Аймақ пен мамандық бойынша',
+                          'По региону и специальности'),
+                      onTap: () => pushPage<void>(
+                          context, (_) => const DemandAlertPage())),
+                  for (final p in list)
+                    if (!p.verified)
+                      SettingsRow(
+                          key: Key('me-verify-${p.id}'),
+                          icon: Icons.verified_outlined,
+                          title: tr3('实名核验：${p.name}', 'Тексеру: ${p.name}',
+                              'Проверка: ${p.name}'),
+                          subtitle: tr3(
+                              '核验手机号和施工现场，名片显示“已核验”',
+                              'Профильде «тексерілген» белгісі',
+                              'Значок «проверен» в профиле'),
+                          onTap: () => pushPage<void>(
+                              context, (_) => VerificationPage(profile: p))),
+                ]),
+                const SizedBox(height: YSpace.sm),
+                Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                        onPressed: () => pushPage<void>(
+                            context, (_) => const ProfileEditPage()),
+                        icon: const Icon(Icons.add, size: 20),
+                        label: Text(
+                            tr3('再建一个名片', 'Тағы профиль', 'Ещё профиль')))),
+              ] else ...[
+                SettingsGroup(
+                    title: tr3('入驻接活', 'Кәсіби профиль', 'Профиль мастера'),
+                    children: [
+                      for (final r in ProRole.values)
+                        SettingsRow(
+                            key: Key('me-join-${r.name}'),
+                            icon: switch (r) {
+                              ProRole.worker => Icons.handyman_outlined,
+                              ProRole.contractor => Icons.groups_outlined,
+                              ProRole.engineer => Icons.architecture_outlined,
+                            },
+                            title: proRoleName(r),
+                            onTap: () => pushPage<void>(
+                                context, (_) => ProfileEditPage(role: r))),
                     ]),
-                    const SizedBox(height: YSpace.sm),
-                    Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: TextButton.icon(
-                            onPressed: () => pushPage<void>(
-                                context, (_) => const ProfileEditPage()),
-                            icon: const Icon(Icons.add, size: 20),
-                            label: Text(tr3(
-                                '再建一个名片', 'Тағы профиль', 'Ещё профиль')))),
-                  ] else ...[
-                    SettingsGroup(
-                        title: tr3('入驻接活', 'Кәсіби профиль', 'Профиль мастера'),
-                        children: [
-                          for (final r in ProRole.values)
-                            SettingsRow(
-                                key: Key('me-join-${r.name}'),
-                                icon: switch (r) {
-                                  ProRole.worker => Icons.handyman_outlined,
-                                  ProRole.contractor => Icons.groups_outlined,
-                                  ProRole.engineer =>
-                                    Icons.architecture_outlined,
-                                },
-                                title: proRoleName(r),
-                                onTap: () => pushPage<void>(context,
-                                    (_) => ProfileEditPage(role: r))),
-                        ]),
-                    Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                            YSpace.xs, YSpace.sm, YSpace.xs, 0),
-                        child: Text(
-                            tr3(
-                                '工人、包工头或工程师：建一张名片，房主就能找到你。',
-                                'Жұмысшы, мердігер не инженер: профиль жасаңыз.',
-                                'Рабочий, прораб или инженер: создайте профиль, и вас найдут.'),
-                            style: YText.caption.copyWith(color: t.muted))),
-                  ],
-                ]));
+                Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        YSpace.xs, YSpace.sm, YSpace.xs, 0),
+                    child: Text(
+                        tr3(
+                            '工人、包工头或工程师：建一张名片，房主就能找到你。',
+                            'Жұмысшы, мердігер не инженер: профиль жасаңыз.',
+                            'Рабочий, прораб или инженер: создайте профиль, и вас найдут.'),
+                        style: YText.caption.copyWith(color: t.muted))),
+              ],
+            ]));
   }
 }
 
@@ -513,74 +534,72 @@ class FavouritesPage extends StatelessWidget {
         title: tr3('收藏', 'Таңдаулы', 'Избранное'),
         body: Live<(List<HousePost>, List<ServiceProfile>, List<Demand>)>(
             load: (r) async {
-              final houses = [
-                for (final id in await r.likedPosts())
-                  if (await r.post(id) case final p?) p
-              ];
-              final profiles = <ServiceProfile>[];
-              final demands = <Demand>[];
-              for (final id in await r.favourites()) {
-                if (await r.demand(id) case final d?) {
-                  demands.add(d);
-                } else if (await r.profile(id) case final p?) {
-                  profiles.add(p);
-                }
-              }
-              return (houses, profiles, demands);
-            },
-            builder: (context, data) {
-              final (houses, profiles, demands) = data;
-              if (houses.isEmpty && profiles.isEmpty && demands.isEmpty) {
-                return EmptyState(
-                    icon: Icons.favorite_border,
-                    title: tr3('还没有收藏', 'Бос', 'Пусто'),
-                    body: tr3(
-                        '在房子、师傅名片或需求上点 ♡，就会出现在这里',
-                        'Үйдегі, шебердегі не тапсырыстағы ♡ белгісін басыңыз',
-                        'Нажмите ♡ на доме, мастере или заявке, и они появятся здесь'));
-              }
-              return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (houses.isNotEmpty) ...[
-                      SectionTitle(tr3('房子', 'Үйлер', 'Дома')),
-                      for (final p in houses)
-                        Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: HouseCard(
-                                key: Key('fav-house-${p.id}'),
-                                compact: true,
-                                post: p,
-                                liked: true,
-                                onTap: () => pushPage<void>(context,
-                                    (_) => PostPage(postId: p.id, preview: p)))),
-                    ],
-                    if (profiles.isNotEmpty) ...[
-                      SectionTitle(
-                          tr3('师傅和施工队', 'Шеберлер', 'Мастера и бригады')),
-                      for (final p in profiles)
-                        Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: ProfileCard(
-                                key: Key('fav-profile-${p.id}'),
-                                profile: p,
-                                onTap: () => pushPage<void>(context,
-                                    (_) => ProfilePage(profileId: p.id)))),
-                    ],
-                    if (demands.isNotEmpty) ...[
-                      SectionTitle(tr3('需求', 'Тапсырыстар', 'Заявки')),
-                      for (final d in demands)
-                        Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: DemandCard(
-                                key: Key('fav-demand-${d.id}'),
-                                compact: true,
-                                demand: d,
-                                onTap: () => pushPage<void>(context,
-                                    (_) => DemandDetailPage(demandId: d.id)))),
-                    ],
-                  ]);
-            }));
+          final houses = [
+            for (final id in await r.likedPosts())
+              if (await r.post(id) case final p?) p
+          ];
+          final profiles = <ServiceProfile>[];
+          final demands = <Demand>[];
+          for (final id in await r.favourites()) {
+            if (await r.demand(id) case final d?) {
+              demands.add(d);
+            } else if (await r.profile(id) case final p?) {
+              profiles.add(p);
+            }
+          }
+          return (houses, profiles, demands);
+        }, builder: (context, data) {
+          final (houses, profiles, demands) = data;
+          if (houses.isEmpty && profiles.isEmpty && demands.isEmpty) {
+            return EmptyState(
+                icon: Icons.favorite_border,
+                title: tr3('还没有收藏', 'Бос', 'Пусто'),
+                body: tr3(
+                    '在房子、师傅名片或需求上点 ♡，就会出现在这里',
+                    'Үйдегі, шебердегі не тапсырыстағы ♡ белгісін басыңыз',
+                    'Нажмите ♡ на доме, мастере или заявке, и они появятся здесь'));
+          }
+          return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (houses.isNotEmpty) ...[
+                  SectionTitle(tr3('房子', 'Үйлер', 'Дома')),
+                  for (final p in houses)
+                    Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: HouseCard(
+                            key: Key('fav-house-${p.id}'),
+                            compact: true,
+                            post: p,
+                            liked: true,
+                            onTap: () => pushPage<void>(context,
+                                (_) => PostPage(postId: p.id, preview: p)))),
+                ],
+                if (profiles.isNotEmpty) ...[
+                  SectionTitle(tr3('师傅和施工队', 'Шеберлер', 'Мастера и бригады')),
+                  for (final p in profiles)
+                    Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: ProfileCard(
+                            key: Key('fav-profile-${p.id}'),
+                            profile: p,
+                            onTap: () => pushPage<void>(
+                                context, (_) => ProfilePage(profileId: p.id)))),
+                ],
+                if (demands.isNotEmpty) ...[
+                  SectionTitle(tr3('需求', 'Тапсырыстар', 'Заявки')),
+                  for (final d in demands)
+                    Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: DemandCard(
+                            key: Key('fav-demand-${d.id}'),
+                            compact: true,
+                            demand: d,
+                            onTap: () => pushPage<void>(context,
+                                (_) => DemandDetailPage(demandId: d.id)))),
+                ],
+              ]);
+        }));
   }
 }
 

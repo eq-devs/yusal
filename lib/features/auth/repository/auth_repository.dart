@@ -34,8 +34,8 @@ abstract interface class AuthRepository {
   Future<Account?> account(String id);
 }
 
-final authRepositoryProvider = Provider<AuthRepository>(
-    (ref) => HttpAuthRepository(ref.watch(apiClientProvider)));
+final authRepositoryProvider =
+    Provider<AuthRepository>((ref) => HttpAuthRepository(ApiClient.app));
 
 /// [AuthRepository] over yusal-api.
 final class HttpAuthRepository implements AuthRepository {

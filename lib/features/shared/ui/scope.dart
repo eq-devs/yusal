@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yusal/features/auth/page.dart';
 import 'package:yusal/service/api/api_failure.dart';
 import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/localization/l10n.dart';
@@ -15,7 +16,7 @@ export 'package:yusal/features/shared/state/session.dart' show ProviderContext;
 
 extension ProjectStoreContext on BuildContext {
   /// The local design store.
-  ProjectStore get projectStore => read(projectStoreProvider);
+  ProjectStore get projectStore => ProjectStore.app;
 }
 
 /// Route that keeps the platform look.
@@ -277,8 +278,7 @@ Future<T?> attempt<T>(BuildContext context, Future<T> Function() call,
 /// caller can carry on with what the user was doing.
 Future<bool> requireLogin(BuildContext context) async {
   if (context.session.currentAccount != null) return true;
-  final page = context.read(loginPageProvider);
-  if (page == null) return false;
-  final ok = await Navigator.of(context).push<bool>(platformRoute(page));
+  final ok = await Navigator.of(context)
+      .push<bool>(platformRoute((_) => const LoginPage()));
   return ok == true;
 }

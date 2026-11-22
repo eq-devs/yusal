@@ -25,8 +25,8 @@ abstract interface class ProfileRepository {
   Future<void> toggleFavourite(String id);
 }
 
-final profileRepositoryProvider = Provider<ProfileRepository>(
-    (ref) => HttpProfileRepository(ref.watch(apiClientProvider)));
+final profileRepositoryProvider =
+    Provider<ProfileRepository>((ref) => HttpProfileRepository(ApiClient.app));
 
 /// [ProfileRepository] over yusal-api.
 final class HttpProfileRepository implements ProfileRepository {

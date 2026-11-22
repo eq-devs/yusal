@@ -57,8 +57,8 @@ abstract interface class PostRepository {
   Future<HousePost?> postForDemand(String demandId);
 }
 
-final postRepositoryProvider = Provider<PostRepository>(
-    (ref) => HttpPostRepository(ref.watch(apiClientProvider)));
+final postRepositoryProvider =
+    Provider<PostRepository>((ref) => HttpPostRepository(ApiClient.app));
 
 /// [PostRepository] over yusal-api.
 final class HttpPostRepository implements PostRepository {

@@ -38,8 +38,8 @@ abstract interface class DemandRepository {
   Future<PublicDemandView?> publicView(String shareToken);
 }
 
-final demandRepositoryProvider = Provider<DemandRepository>(
-    (ref) => HttpDemandRepository(ref.watch(apiClientProvider)));
+final demandRepositoryProvider =
+    Provider<DemandRepository>((ref) => HttpDemandRepository(ApiClient.app));
 
 /// [DemandRepository] over yusal-api.
 final class HttpDemandRepository implements DemandRepository {

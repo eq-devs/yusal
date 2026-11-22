@@ -9,7 +9,6 @@ import 'package:yusal/service/api/api_failure.dart';
 import 'package:yusal/features/auth/model/auth_json.dart';
 import 'package:yusal/service/api/session_store.dart';
 import 'package:yusal/features/shared/model/models.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The connection to the Go backend (`eq-devs/yusal-api`), like janapost's
 /// `dio`: requests and their retries, the tokens, and the signed-in
@@ -36,9 +35,6 @@ abstract interface class ChangeSource {
 abstract interface class Session implements ChangeSource {
   Account? get currentAccount;
 }
-
-/// The app's one connection to yusal-api.
-final apiClientProvider = Provider<ApiClient>((ref) => ApiClient.app);
 
 class ApiClient implements Session {
   /// The one client of the app; its session is read before the first frame.

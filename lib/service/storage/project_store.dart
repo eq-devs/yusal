@@ -1,7 +1,6 @@
 import 'dart:convert';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/editor/engine/render2d/project_preview.dart';
-import 'package:yusal/features/shared/state/session.dart';
+import 'package:yusal/service/api/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
@@ -50,6 +49,12 @@ class PrefsProjectOwners implements ProjectOwners {
 }
 
 class ProjectStore {
+  /// The app's design store: each account sees its own designs. Tests put
+  /// an in-memory store here.
+  static ProjectStore app = ProjectStore(
+      previewRenderer: renderProjectPreview, owners: PrefsProjectOwners())
+    ..currentOwner = () => ApiClient.app.currentAccount?.id;
+
   ProjectStore(
       {ProjectFileSystem? fileSystem, this.previewRenderer, this.owners})
       : files = fileSystem ?? ProjectFiles();
@@ -204,11 +209,3 @@ class ProjectStore {
     await _index();
   }
 }
-
-/// The local design store: each account sees its own designs.
-final projectStoreProvider = Provider<ProjectStore>((ref) {
-  final session = ref.watch(sessionProvider);
-  return ProjectStore(
-      previewRenderer: renderProjectPreview, owners: PrefsProjectOwners())
-    ..currentOwner = () => session.currentAccount?.id;
-});

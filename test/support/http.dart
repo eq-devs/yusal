@@ -49,7 +49,6 @@ class TestHttp {
       session: api, demands: demands, cooperations: cooperations);
 
   List<Override> get overrides => [
-        apiClientProvider.overrideWithValue(api),
         sessionProvider.overrideWithValue(api),
         authRepositoryProvider.overrideWithValue(auth),
         profileRepositoryProvider.overrideWithValue(profiles),

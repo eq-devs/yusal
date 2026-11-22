@@ -1,10 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/app.dart';
-import 'package:yusal/features/auth/page.dart';
 import 'package:yusal/features/houses/model/my_house.dart';
 import 'package:yusal/features/houses/state/my_houses.dart';
-import 'package:yusal/features/shared/state/session.dart';
 import 'package:yusal/service/storage/project_store.dart';
 
 import 'http.dart';
@@ -21,48 +19,36 @@ List<Override> overridesFor(Object repos) => switch (repos) {
     };
 
 /// What the app root gives every page, for tests that pump a page alone:
-/// the backend behind every repository provider, the design store and,
-/// optionally, a sign-in page (none by default).
+/// the backend behind every repository provider and the design store.
 class TestScope extends StatelessWidget {
   const TestScope(
-      {super.key,
-      required this.repos,
-      this.store,
-      this.loginPage,
-      required this.child});
+      {super.key, required this.repos, this.store, required this.child});
 
   /// A [Backend] fake or a [TestHttp].
   final Object repos;
   final ProjectStore? store;
-  final WidgetBuilder? loginPage;
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => ProviderScope(overrides: [
-        ...overridesFor(repos),
-        if (store != null) projectStoreProvider.overrideWithValue(store!),
-        loginPageProvider.overrideWithValue(loginPage),
-      ], child: child);
+  Widget build(BuildContext context) {
+    if (store != null) ProjectStore.app = store!;
+    return ProviderScope(overrides: overridesFor(repos), child: child);
+  }
 }
 
 /// The whole app over [repos] (a [Backend] fake or a [TestHttp]) and
 /// [store], signing in through the real login page.
-Widget testApp(Object repos, {ProjectStore? store, Key? key}) => ProviderScope(
-    key: key,
-    overrides: [
-      ...overridesFor(repos),
-      if (store != null) projectStoreProvider.overrideWithValue(store),
-      loginPageProvider.overrideWithValue((_) => const LoginPage()),
-    ],
-    child: const HouseApp());
+Widget testApp(Object repos, {ProjectStore? store, Key? key}) {
+  if (store != null) ProjectStore.app = store;
+  return ProviderScope(
+      key: key, overrides: overridesFor(repos), child: const HouseApp());
+}
 
 /// Reads [provider] once against [repos] and [store], as a page would.
 Future<T> readOnce<T>(Backend repos, ProjectStore store,
     ProviderListenable<Future<T>> provider) async {
-  final container = ProviderContainer(overrides: [
-    ...mockOverrides(repos),
-    projectStoreProvider.overrideWithValue(store),
-  ]);
+  ProjectStore.app = store;
+  final container = ProviderContainer(overrides: mockOverrides(repos));
   try {
     return await container.read(provider);
   } finally {

@@ -31,9 +31,9 @@ abstract interface class BackupRepository {
 }
 
 final snapshotRepositoryProvider = Provider<SnapshotRepository>(
-    (ref) => HttpSnapshotRepository(ref.watch(apiClientProvider)));
-final backupRepositoryProvider = Provider<BackupRepository>(
-    (ref) => HttpBackupRepository(ref.watch(apiClientProvider)));
+    (ref) => HttpSnapshotRepository(ApiClient.app));
+final backupRepositoryProvider =
+    Provider<BackupRepository>((ref) => HttpBackupRepository(ApiClient.app));
 
 /// [SnapshotRepository] over yusal-api.
 final class HttpSnapshotRepository implements SnapshotRepository {

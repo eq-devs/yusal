@@ -44,11 +44,11 @@ abstract interface class FeedbackRepository {
 }
 
 final moderationRepositoryProvider = Provider<ModerationRepository>(
-    (ref) => HttpModerationRepository(ref.watch(apiClientProvider)));
-final trustRepositoryProvider = Provider<TrustRepository>(
-    (ref) => HttpTrustRepository(ref.watch(apiClientProvider)));
+    (ref) => HttpModerationRepository(ApiClient.app));
+final trustRepositoryProvider =
+    Provider<TrustRepository>((ref) => HttpTrustRepository(ApiClient.app));
 final feedbackRepositoryProvider = Provider<FeedbackRepository>(
-    (ref) => HttpFeedbackRepository(ref.watch(apiClientProvider)));
+    (ref) => HttpFeedbackRepository(ApiClient.app));
 
 /// [ModerationRepository] over yusal-api.
 final class HttpModerationRepository implements ModerationRepository {

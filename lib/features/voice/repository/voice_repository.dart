@@ -11,8 +11,8 @@ import 'package:yusal/features/voice/state/session.dart';
 /// The assistant and speech, which yusal-api forwards to the AI gateway.
 
 /// The assistant; the app's also turns speech into text.
-final voiceRepositoryProvider = Provider<VoiceBackend>(
-    (ref) => HttpVoiceRepository(ref.watch(apiClientProvider)));
+final voiceRepositoryProvider =
+    Provider<VoiceBackend>((ref) => HttpVoiceRepository(ApiClient.app));
 
 /// [VoiceBackend] over yusal-api.
 final class HttpVoiceRepository implements VoiceBackend, SpeechBackend {

@@ -30,7 +30,7 @@ abstract interface class ApplicationRepository {
 }
 
 final applicationRepositoryProvider = Provider<ApplicationRepository>(
-    (ref) => HttpApplicationRepository(ref.watch(apiClientProvider)));
+    (ref) => HttpApplicationRepository(ApiClient.app));
 
 /// [ApplicationRepository] over yusal-api.
 final class HttpApplicationRepository implements ApplicationRepository {

@@ -36,10 +36,10 @@ abstract interface class NotificationRepository {
   Future<void> markAllRead();
 }
 
-final chatRepositoryProvider = Provider<ChatRepository>(
-    (ref) => HttpChatRepository(ref.watch(apiClientProvider)));
+final chatRepositoryProvider =
+    Provider<ChatRepository>((ref) => HttpChatRepository(ApiClient.app));
 final notificationRepositoryProvider = Provider<NotificationRepository>(
-    (ref) => HttpNotificationRepository(ref.watch(apiClientProvider)));
+    (ref) => HttpNotificationRepository(ApiClient.app));
 
 /// [ChatRepository] over yusal-api.
 final class HttpChatRepository implements ChatRepository {

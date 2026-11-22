@@ -66,9 +66,9 @@ abstract interface class ReviewRepository {
 String _c(String id) => '/client/cooperations/$id';
 
 final cooperationRepositoryProvider = Provider<CooperationRepository>(
-    (ref) => HttpCooperationRepository(ref.watch(apiClientProvider)));
-final reviewRepositoryProvider = Provider<ReviewRepository>(
-    (ref) => HttpReviewRepository(ref.watch(apiClientProvider)));
+    (ref) => HttpCooperationRepository(ApiClient.app));
+final reviewRepositoryProvider =
+    Provider<ReviewRepository>((ref) => HttpReviewRepository(ApiClient.app));
 
 /// [CooperationRepository] over yusal-api.
 final class HttpCooperationRepository implements CooperationRepository {

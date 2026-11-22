@@ -54,8 +54,8 @@ abstract interface class AdminRepository {
   Future<PushPolicy> savePushPolicy(PushPolicy policy);
 }
 
-final adminRepositoryProvider = Provider<AdminRepository>(
-    (ref) => HttpAdminRepository(ref.watch(apiClientProvider)));
+final adminRepositoryProvider =
+    Provider<AdminRepository>((ref) => HttpAdminRepository(ApiClient.app));
 
 /// [AdminRepository] over yusal-api.
 final class HttpAdminRepository implements AdminRepository {

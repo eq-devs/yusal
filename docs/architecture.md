@@ -35,7 +35,7 @@ final class HttpXRepository implements XRepository {
 }
 
 final xRepositoryProvider =
-    Provider<XRepository>((ref) => HttpXRepository(ref.watch(apiClientProvider)));
+    Provider<XRepository>((ref) => HttpXRepository(ApiClient.app));
 
 // state/x.dart
 final xListProvider = FutureProvider.autoDispose<List<X>>(

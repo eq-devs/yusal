@@ -16,7 +16,7 @@ final myHousesProvider = FutureProvider.autoDispose<List<MyHouse>>(_myHouses);
 /// platform activity are left to the design list.
 Future<List<MyHouse>> _myHouses(Ref ref) async {
   final session = ref.watch(sessionProvider);
-  final store = ref.watch(projectStoreProvider);
+  final store = ProjectStore.app;
   final posts = ref.watch(postRepositoryProvider);
   final demandRepo = ref.watch(demandRepositoryProvider);
   final applications = ref.watch(applicationRepositoryProvider);

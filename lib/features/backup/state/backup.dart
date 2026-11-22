@@ -38,7 +38,7 @@ class BackupRow {
 /// reloads it by hand.
 final backupRowsProvider =
     FutureProvider.autoDispose<List<BackupRow>>((ref) async {
-  final store = ref.watch(projectStoreProvider);
+  final store = ProjectStore.app;
   final repo = ref.watch(backupRepositoryProvider);
   final local = await store.listProjects();
   final cloud = {for (final b in await repo.backups()) b.projectId: b};

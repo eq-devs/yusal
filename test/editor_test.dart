@@ -70,7 +70,7 @@ void main() {
     final canvas = find.byWidgetPredicate(
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     final paint =
-        (tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter);
+        tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
     final point = tester.getTopLeft(canvas) +
         paint.point(2000, 2000, tester.getSize(canvas));
     await tester.tapAt(point);
@@ -199,7 +199,8 @@ void main() {
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     final painter =
         tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
-    final origin = tester.getTopLeft(canvas), size = tester.getSize(canvas);
+    final origin = tester.getTopLeft(canvas);
+    final size = tester.getSize(canvas);
     final gesture =
         await tester.startGesture(origin + painter.point(0, 0, size));
     await gesture.moveTo(origin + painter.point(3000, 4000, size));
@@ -281,7 +282,8 @@ void main() {
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     final painter =
         tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
-    final origin = tester.getTopLeft(canvas), size = tester.getSize(canvas);
+    final origin = tester.getTopLeft(canvas);
+    final size = tester.getSize(canvas);
     final gesture =
         await tester.startGesture(origin + painter.point(6000, 2000, size));
     await gesture.moveTo(origin + painter.point(6000, 8000, size));
@@ -322,7 +324,8 @@ void main() {
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     final painter =
         tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
-    final origin = tester.getTopLeft(canvas), size = tester.getSize(canvas);
+    final origin = tester.getTopLeft(canvas);
+    final size = tester.getSize(canvas);
     final gesture =
         await tester.startGesture(origin + painter.point(12000, 5000, size));
     await gesture.moveBy(const Offset(20, 0));

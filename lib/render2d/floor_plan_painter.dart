@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../app/settings.dart';
-import '../app/tokens.dart';
-import '../core/analysis/house_analysis.dart';
-import '../core/document/house_document.dart';
-import '../core/geometry/floor_base.dart';
-import '../core/axis/axis_resolver.dart';
-import '../core/geometry/derived_house.dart';
-import 'furniture_names.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/app/tokens.dart';
+import 'package:yusal/core/analysis/house_analysis.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/render2d/furniture_names.dart';
 import 'dart:math' as math;
 
 /// Kept for previews and older callers; the drafting plan fills every room
@@ -37,7 +37,9 @@ abstract final class _PlanText {
   static var _listening = false;
 
   static void _clear() {
-    for (final p in _cache.values) p.dispose();
+    for (final p in _cache.values) {
+      p.dispose();
+    }
     _cache.clear();
   }
 
@@ -111,8 +113,12 @@ class FloorPlanPainter extends CustomPainter {
       this.showLabels = true})
       : super(repaint: pulse);
   final FloorBase base;
-  final PlanRect? focus, draft, wallHandle, editableWall;
-  final Offset? wallSeed, draftEnd;
+  final PlanRect? focus;
+  final PlanRect? draft;
+  final PlanRect? wallHandle;
+  final PlanRect? editableWall;
+  final Offset? wallSeed;
+  final Offset? draftEnd;
 
   /// Alignment guides (world mm), drawn as dashed lines: pairs of points.
   final List<(Offset, Offset)> guides;
@@ -121,11 +127,15 @@ class FloorPlanPainter extends CustomPainter {
   /// First-use guide: a dashed arrow from a wall attachment into the house.
   final (Offset, Offset)? coach;
   final List<Offset> wallAttachments;
+
   /// The dimension figure being edited, drawn in the accent colour.
   final DimensionSpan? selectedDimension;
   final double handleScale;
   final String? draftLabel;
-  final bool draftIsLine, draftInvalid, resizeHandles, showGridDimensions;
+  final bool draftIsLine;
+  final bool draftInvalid;
+  final bool resizeHandles;
+  final bool showGridDimensions;
   final ({double scale, Offset origin})? viewport;
   final EdgeInsets viewportInsets;
   final int northAngleDeg;
@@ -140,8 +150,10 @@ class FloorPlanPainter extends CustomPainter {
   /// Inner walls at least this thick are drawn hatched as load-bearing.
   final int bearingMin;
   final List<FurnitureItem> furniture;
-  final String? selectedFurniture, selectedRoom;
-  final bool showFurniture, showDimensions;
+  final String? selectedFurniture;
+  final String? selectedRoom;
+  final bool showFurniture;
+  final bool showDimensions;
 
   /// Foundation strips to overlay; null hides the layer.
   final FoundationTakeoff? foundation;
@@ -199,7 +211,8 @@ class FloorPlanPainter extends CustomPainter {
   Offset point(double x, double y, Size size) =>
       origin(size) + Offset(x * scale(size), -y * scale(size));
   ({double x, double y}) worldPoint(Offset point, Size size) {
-    final offset = point - origin(size), factor = scale(size);
+    final offset = point - origin(size);
+    final factor = scale(size);
     return (x: offset.dx / factor, y: -offset.dy / factor);
   }
 
@@ -235,13 +248,14 @@ class FloorPlanPainter extends CustomPainter {
         ..color = t.accent
         ..style = PaintingStyle.stroke
         ..strokeWidth = px(1.4);
-      dashedRect(canvas, r, line, dash: 6, gap: 4);
+      dashedRect(canvas, r, line, dash: 6);
       canvas.drawLine(r.topLeft, r.bottomRight, line..strokeWidth = px(0.8));
       canvas.drawLine(r.topRight, r.bottomLeft, line);
       // Low in the hole, clear of the name of the room around it.
-      if (belowLabel != null && r.width > 40)
+      if (belowLabel != null && r.width > 40) {
         label(canvas, belowLabel!,
             Offset(r.center.dx, r.bottom - math.min(14, r.height / 4)));
+      }
     }
   }
 
@@ -250,9 +264,10 @@ class FloorPlanPainter extends CustomPainter {
     final length = (b - a).distance;
     if (length == 0) return;
     final unit = (b - a) / length;
-    for (var d = 0.0; d < length; d += px(dash + gap))
-      canvas.drawLine(a + unit * d,
-          a + unit * math.min(length, d + px(dash)), paint);
+    for (var d = 0.0; d < length; d += px(dash + gap)) {
+      canvas.drawLine(
+          a + unit * d, a + unit * math.min(length, d + px(dash)), paint);
+    }
   }
 
   void dashedRect(Canvas canvas, Rect r, Paint paint,
@@ -282,8 +297,8 @@ class FloorPlanPainter extends CustomPainter {
             fontSize: px(font),
             height: 1.25,
             fontWeight: weight);
-    final t = _PlanText.laidOut(value, style, maxWidth,
-        maxWidth == null ? null : maxLines ?? 3);
+    final t = _PlanText.laidOut(
+        value, style, maxWidth, maxWidth == null ? null : maxLines ?? 3);
     canvas.save();
     canvas.translate(at.dx, at.dy);
     canvas.rotate(angle);
@@ -303,15 +318,16 @@ class FloorPlanPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final t = tokens;
     final paint = Paint();
-    final width = base.axes.v.last.pos.toDouble(),
-        depth = base.axes.h.last.pos.toDouble();
+    final width = base.axes.v.last.pos.toDouble();
+    final depth = base.axes.h.last.pos.toDouble();
     final s = scale(size);
 
     // Site pieces (terrace, porch) sit under the house.
     if (showFurniture)
       for (final f in furniture.where((f) =>
-          f.kind == FurnitureKind.terrace || f.kind == FurnitureKind.porch))
+          f.kind == FurnitureKind.terrace || f.kind == FurnitureKind.porch)) {
         drawFurniture(canvas, size, f);
+      }
 
     // One path per space so adjacent cells do not show anti-aliased seams.
     final fills = <String?, Path>{};
@@ -357,12 +373,16 @@ class FloorPlanPainter extends CustomPainter {
           .toList()
         ..sort((a, b) => (isFlatFurniture(a.kind) ? 0 : 1)
             .compareTo(isFlatFurniture(b.kind) ? 0 : 1));
-      for (final f in flat) drawFurniture(canvas, size, f);
+      for (final f in flat) {
+        drawFurniture(canvas, size, f);
+      }
     }
 
     // Walls in plan cut: load-bearing hatched, partitions solid.
     final walls = wallsOf(base, FoundationSpec(bearingMin: bearingMin));
-    final hatched = Path(), solid = Path(), temporary = Path();
+    final hatched = Path();
+    final solid = Path();
+    final temporary = Path();
     for (final w in walls) {
       final r = rectangle(w.rect, size);
       switch (w.role) {
@@ -374,18 +394,21 @@ class FloorPlanPainter extends CustomPainter {
           temporary.addRect(r);
       }
     }
-    canvas.drawPath(temporary, Paint()..color = Tokens.mix(t.wall, 0.3, t.panel));
+    canvas.drawPath(
+        temporary, Paint()..color = Tokens.mix(t.wall, 0.3, t.panel));
     canvas.drawPath(solid, Paint()..color = t.wall);
     canvas.drawPath(hatched, Paint()..color = t.wall);
     canvas.save();
     canvas.clipPath(hatched);
-    final bounds = hatched.getBounds(), hatch = Paint()
+    final bounds = hatched.getBounds();
+    final hatch = Paint()
       ..color = t.bg
       ..strokeWidth = math.max(0.6, px(1.1));
     final step = px(6);
-    for (var d = -bounds.height; d < bounds.width; d += step)
+    for (var d = -bounds.height; d < bounds.width; d += step) {
       canvas.drawLine(Offset(bounds.left + d, bounds.bottom),
           Offset(bounds.left + d + bounds.height, bounds.top), hatch);
+    }
     canvas.restore();
 
     // Open (wall-less) edges between rooms: dashed arch lines.
@@ -394,12 +417,12 @@ class FloorPlanPainter extends CustomPainter {
       ..strokeWidth = px(1.5);
     for (final e in base.edges.where((e) => e.kind == 'open')) {
       final a = e.axis.dir == AxisDir.H
-              ? point(e.start.pos.toDouble(), e.axis.pos.toDouble(), size)
-              : point(e.axis.pos.toDouble(), e.start.pos.toDouble(), size),
-          b = e.axis.dir == AxisDir.H
-              ? point(e.end.pos.toDouble(), e.axis.pos.toDouble(), size)
-              : point(e.axis.pos.toDouble(), e.end.pos.toDouble(), size);
-      dashedLine(canvas, a, b, arch, dash: 6, gap: 4);
+          ? point(e.start.pos.toDouble(), e.axis.pos.toDouble(), size)
+          : point(e.axis.pos.toDouble(), e.start.pos.toDouble(), size);
+      final b = e.axis.dir == AxisDir.H
+          ? point(e.end.pos.toDouble(), e.axis.pos.toDouble(), size)
+          : point(e.axis.pos.toDouble(), e.end.pos.toDouble(), size);
+      dashedLine(canvas, a, b, arch, dash: 6);
     }
 
     for (final placement in openings) {
@@ -407,7 +430,8 @@ class FloorPlanPainter extends CustomPainter {
       final axis = placement.axis.pos.toDouble();
       Offset at(double u, double cross) =>
           horizontal ? point(u, cross, size) : point(cross, u, size);
-      final start = at(placement.start, axis), end = at(placement.end, axis);
+      final start = at(placement.start, axis);
+      final end = at(placement.end, axis);
       if (placement.status != 'ok') {
         canvas.drawLine(
             start,
@@ -446,17 +470,22 @@ class FloorPlanPainter extends CustomPainter {
             ? (sign > 0 ? -math.pi / 2 : math.pi / 2)
             : (sign > 0 ? 0.0 : math.pi);
         var sweep = angle1 - angle0;
-        while (sweep > math.pi) sweep -= 2 * math.pi;
-        while (sweep < -math.pi) sweep += 2 * math.pi;
+        while (sweep > math.pi) {
+          sweep -= 2 * math.pi;
+        }
+        while (sweep < -math.pi) {
+          sweep += 2 * math.pi;
+        }
         // Dashed swing arc.
         final arc = Paint()
           ..color = t.muted
           ..style = PaintingStyle.stroke
           ..strokeWidth = px(1);
         const pieces = 14;
-        for (var k = 0; k < pieces; k += 2)
+        for (var k = 0; k < pieces; k += 2) {
           canvas.drawArc(Rect.fromCircle(center: hinge, radius: span),
               angle0 + sweep * k / pieces, sweep / pieces, false, arc);
+        }
       } else {
         canvas.drawRect(cut, Paint()..color = t.panel);
         canvas.drawRect(
@@ -472,8 +501,8 @@ class FloorPlanPainter extends CustomPainter {
         canvas.drawLine(start - normal, end - normal, glass);
         canvas.drawLine(start + normal, end + normal, glass);
         if (opening is SlidingOpening) {
-          final mid = (start + end) / 2,
-              along = (end - start) / (end - start).distance;
+          final mid = (start + end) / 2;
+          final along = (end - start) / (end - start).distance;
           final leafPaint = Paint()
             ..color = t.ink
             ..strokeWidth = px(1.8);
@@ -499,17 +528,16 @@ class FloorPlanPainter extends CustomPainter {
       for (final strip in foundation!.strips) {
         final r = rectangle(strip.rect, size);
         final color = strip.exists ? t.ok : t.crit;
-        if (!strip.exists)
-          canvas.drawRect(
-              r, Paint()..color = color.withValues(alpha: 0.22));
+        if (!strip.exists) {
+          canvas.drawRect(r, Paint()..color = color.withValues(alpha: 0.22));
+        }
         dashedRect(
             canvas,
             r,
             Paint()
               ..color = color
               ..strokeWidth = px(1.6),
-            dash: 6,
-            gap: 4);
+            dash: 6);
       }
       for (final sl in sleeves) {
         final c = point(sl.x.toDouble(), sl.y.toDouble(), size);
@@ -532,7 +560,8 @@ class FloorPlanPainter extends CustomPainter {
       final largest = room.clearRects.isEmpty
           ? null
           : room.clearRects.reduce((a, b) => a.area >= b.area ? a : b);
-      final available = largest == null ? 80.0 : (largest.right - largest.left) * s;
+      final available =
+          largest == null ? 80.0 : (largest.right - largest.left) * s;
       // Fit the label to the room as seen on screen: drop the dimensions,
       // then the area, then the name, rather than spill over walls.
       final screenWidth = available * handleScale,
@@ -568,7 +597,8 @@ class FloorPlanPainter extends CustomPainter {
               room_,
               [
                 textWidth(name, px(nameFont), FontWeight.w700),
-                if (showArea) textWidth(area, px(12), FontWeight.w400, monospace: true),
+                if (showArea)
+                  textWidth(area, px(12), FontWeight.w400, monospace: true),
                 if (showSize) textWidth(net, px(11), FontWeight.w400),
               ].reduce(math.max)) +
           px(6);
@@ -597,8 +627,9 @@ class FloorPlanPainter extends CustomPainter {
       }
     }
 
-    for (final u in utilities)
+    for (final u in utilities) {
       drawUtility(canvas, size, u, selected: u.id == selectedUtility);
+    }
 
     if (showGridDimensions) {
       final grid = Paint()
@@ -614,7 +645,8 @@ class FloorPlanPainter extends CustomPainter {
         canvas.drawLine(first, last, grid);
       }
       for (var i = 0; i < base.axes.nx; i++) {
-        final a = base.axes.v[i], b = base.axes.v[i + 1];
+        final a = base.axes.v[i];
+        final b = base.axes.v[i + 1];
         label(canvas, '${m2dp(b.pos - a.pos)} $unitM',
             point((a.pos + b.pos) / 2, 0, size) + Offset(0, px(30)),
             font: 11, color: t.dim, monospace: true);
@@ -644,13 +676,14 @@ class FloorPlanPainter extends CustomPainter {
       ..strokeWidth = px(1.6);
     final fill = Paint()..color = color;
     final back = Paint()..color = t.panel;
-    if (selected)
+    if (selected) {
       canvas.drawCircle(
           c,
           px(13),
           Paint()
             ..color = t.accent.withValues(alpha: 0.25)
             ..style = PaintingStyle.fill);
+    }
     switch (u.kind) {
       case UtilityKind.light:
         canvas.drawCircle(c, px(7), back);
@@ -675,9 +708,12 @@ class FloorPlanPainter extends CustomPainter {
       case UtilityKind.panel:
         final r = Rect.fromCenter(center: c, width: px(18), height: px(9));
         canvas.drawRect(r, fill);
-        canvas.drawLine(r.topLeft, r.bottomRight, Paint()
-          ..color = t.panel
-          ..strokeWidth = px(1.2));
+        canvas.drawLine(
+            r.topLeft,
+            r.bottomRight,
+            Paint()
+              ..color = t.panel
+              ..strokeWidth = px(1.2));
       case UtilityKind.water:
         canvas.drawCircle(c, px(5.5), fill);
         canvas.drawCircle(
@@ -690,8 +726,10 @@ class FloorPlanPainter extends CustomPainter {
       case UtilityKind.drain:
         canvas.drawCircle(c, px(5.5), back);
         canvas.drawCircle(c, px(5.5), stroke);
-        canvas.drawLine(c + Offset(-px(5.5), 0), c + Offset(px(5.5), 0), stroke);
-        canvas.drawLine(c + Offset(0, -px(5.5)), c + Offset(0, px(5.5)), stroke);
+        canvas.drawLine(
+            c + Offset(-px(5.5), 0), c + Offset(px(5.5), 0), stroke);
+        canvas.drawLine(
+            c + Offset(0, -px(5.5)), c + Offset(0, px(5.5)), stroke);
       case UtilityKind.radiator:
         final r = Rect.fromCenter(center: c, width: px(22), height: px(8));
         canvas.drawRect(r, back);
@@ -701,9 +739,10 @@ class FloorPlanPainter extends CustomPainter {
           canvas.drawLine(Offset(x, r.top), Offset(x, r.bottom), stroke);
         }
     }
-    if (u.label != null && showLabels)
+    if (u.label != null && showLabels) {
       label(canvas, u.label!, c + Offset(0, px(15)),
           font: 10, color: t.dim, weight: FontWeight.w500, halo: t.panel);
+    }
   }
 
   void drawNorth(Canvas canvas, Size size, double width, double depth) {
@@ -740,10 +779,10 @@ class FloorPlanPainter extends CustomPainter {
       final cross = Paint()
         ..color = t.accentInk
         ..strokeWidth = 2;
-      canvas.drawLine(
-          rect.center - const Offset(6, 0), rect.center + const Offset(6, 0), cross);
-      canvas.drawLine(
-          rect.center - const Offset(0, 6), rect.center + const Offset(0, 6), cross);
+      canvas.drawLine(rect.center - const Offset(6, 0),
+          rect.center + const Offset(6, 0), cross);
+      canvas.drawLine(rect.center - const Offset(0, 6),
+          rect.center + const Offset(0, 6), cross);
     }
     if (resizeHandles) {
       // Round grips with two-way arrows: drag right edge for width, top
@@ -758,9 +797,10 @@ class FloorPlanPainter extends CustomPainter {
           ..color = t.accentInk
           ..strokeWidth = px(2)
           ..strokeCap = StrokeCap.round;
-        final axis = horizontal ? const Offset(1, 0) : const Offset(0, 1),
-            normal = Offset(axis.dy, axis.dx);
-        final reach = px(8), head = px(4);
+        final axis = horizontal ? const Offset(1, 0) : const Offset(0, 1);
+        final normal = Offset(axis.dy, axis.dx);
+        final reach = px(8);
+        final head = px(4);
         canvas.drawLine(center - axis * reach, center + axis * reach, pen);
         for (final sign in [-1.0, 1.0]) {
           final tip = center + axis * reach * sign;
@@ -796,16 +836,18 @@ class FloorPlanPainter extends CustomPainter {
     }
 
     if (coach != null) {
-      final a = point(coach!.$1.dx, coach!.$1.dy, size),
-          b = point(coach!.$2.dx, coach!.$2.dy, size);
+      final a = point(coach!.$1.dx, coach!.$1.dy, size);
+      final b = point(coach!.$2.dx, coach!.$2.dy, size);
       final guide = Paint()
         ..color = t.accent.withValues(alpha: 0.8)
         ..strokeWidth = px(3)
         ..strokeCap = StrokeCap.round;
-      final length = (b - a).distance, unit = (b - a) / length;
+      final length = (b - a).distance;
+      final unit = (b - a) / length;
       final dash = px(10);
-      for (var d = px(24); d < length - dash; d += dash * 2)
+      for (var d = px(24); d < length - dash; d += dash * 2) {
         canvas.drawLine(a + unit * d, a + unit * (d + dash), guide);
+      }
       final n = Offset(-unit.dy, unit.dx) * px(8);
       canvas.drawLine(b, b - unit * px(12) + n, guide);
       canvas.drawLine(b, b - unit * px(12) - n, guide);
@@ -824,7 +866,8 @@ class FloorPlanPainter extends CustomPainter {
         // Beside the middle of the line: never under the start handle or
         // the finger at the free end.
         final vertical = rect.width < rect.height;
-        pill(draftLabel!,
+        pill(
+            draftLabel!,
             rect.center + (vertical ? Offset(-px(34), 0) : Offset(0, -px(24))),
             tone);
       } else {
@@ -832,25 +875,28 @@ class FloorPlanPainter extends CustomPainter {
             canvas,
             draftLabel ??
                 (draftIsLine
-                    ? tr3('松手分房', 'Жіберсеңіз бөлінеді', 'Отпустите, чтобы разделить')
+                    ? tr3('松手分房', 'Жіберсеңіз бөлінеді',
+                        'Отпустите, чтобы разделить')
                     : '${dec(((draft!.right - draft!.left) / 1000).toStringAsFixed(1))} × '
                         '${dec(((draft!.top - draft!.bottom) / 1000).toStringAsFixed(1))} $unitM'),
             Offset(rect.center.dx, rect.top - 18),
-            font: 13,
             color: tone);
       }
     }
     for (final (ga, gb) in guides) {
-      final a = point(ga.dx, ga.dy, size), b = point(gb.dx, gb.dy, size);
+      final a = point(ga.dx, ga.dy, size);
+      final b = point(gb.dx, gb.dy, size);
       final length = (b - a).distance;
       if (length < 1) continue;
       final dir = (b - a) / length;
       final pen = Paint()
         ..color = t.accent.withValues(alpha: 0.85)
         ..strokeWidth = px(1.5);
-      final dash = px(6), gap = px(5);
-      for (var d = 0.0; d < length; d += dash + gap)
+      final dash = px(6);
+      final gap = px(5);
+      for (var d = 0.0; d < length; d += dash + gap) {
         canvas.drawLine(a + dir * d, a + dir * math.min(length, d + dash), pen);
+      }
     }
     if (draftEnd != null) {
       final end = point(draftEnd!.dx, draftEnd!.dy, size);
@@ -876,8 +922,8 @@ class FloorPlanPainter extends CustomPainter {
       }
     }
     if (editableWall != null) {
-      final a = point(editableWall!.left, editableWall!.bottom, size),
-          b = point(editableWall!.right, editableWall!.top, size);
+      final a = point(editableWall!.left, editableWall!.bottom, size);
+      final b = point(editableWall!.right, editableWall!.top, size);
       final color = draftInvalid ? t.crit : t.accent;
       canvas.drawLine(
           a,
@@ -888,13 +934,14 @@ class FloorPlanPainter extends CustomPainter {
             ..strokeCap = StrokeCap.round);
       final grips = wallGrips(a, b, zoom: handleScale);
       for (final p in [grips.start, grips.end]) {
-        if (p != a && p != b)
+        if (p != a && p != b) {
           canvas.drawLine(
               (p - a).distance < (p - b).distance ? a : b,
               p,
               Paint()
                 ..color = color.withValues(alpha: 0.6)
                 ..strokeWidth = px(2));
+        }
       }
       for (final p in [
         grips.start,
@@ -904,7 +951,7 @@ class FloorPlanPainter extends CustomPainter {
         canvas.drawCircle(p, px(12), Paint()..color = t.panel);
         canvas.drawCircle(p, px(9), Paint()..color = color);
       }
-      if (draftLabel != null && draft == null)
+      if (draftLabel != null && draft == null) {
         pill(
             draftLabel!,
             (a + b) / 2 +
@@ -912,6 +959,7 @@ class FloorPlanPainter extends CustomPainter {
                     ? Offset(-px(38), 0)
                     : Offset(0, -px(26))),
             color);
+      }
     }
     for (final attachment in wallAttachments) {
       final center = point(attachment.dx, attachment.dy, size);
@@ -933,11 +981,14 @@ class FloorPlanPainter extends CustomPainter {
         ..color = t.accentInk
         ..strokeWidth = px(2.5)
         ..strokeCap = StrokeCap.round;
-      canvas.drawLine(center - Offset(px(8), 0), center + Offset(px(8), 0), plus);
-      canvas.drawLine(center - Offset(0, px(8)), center + Offset(0, px(8)), plus);
+      canvas.drawLine(
+          center - Offset(px(8), 0), center + Offset(px(8), 0), plus);
+      canvas.drawLine(
+          center - Offset(0, px(8)), center + Offset(0, px(8)), plus);
     }
-    if (furnitureDraft != null) drawFurniture(canvas, size, furnitureDraft!,
-        ghost: true);
+    if (furnitureDraft != null) {
+      drawFurniture(canvas, size, furnitureDraft!, ghost: true);
+    }
     for (final h in highlights) {
       final r = rectangle(h, size);
       final glow = 0.55 + 0.45 * (1 - (pulse?.value ?? 0));
@@ -956,10 +1007,11 @@ class FloorPlanPainter extends CustomPainter {
         ..color = t.crit
         ..strokeWidth = px(3);
       final rect = rectangle(focus!, size);
-      if (rect.width == 0 && rect.height == 0)
+      if (rect.width == 0 && rect.height == 0) {
         canvas.drawCircle(rect.center, px(18), stroke);
-      else
+      } else {
         canvas.drawRect(rect.inflate(px(4)), stroke);
+      }
     }
     for (final c in preview) {
       canvas.drawRect(
@@ -985,7 +1037,7 @@ class FloorPlanPainter extends CustomPainter {
         canvas.drawCircle(b, px(4), dot);
         final mm = (measure[1] - measure[0]).distance.round();
         label(canvas, '$mm $unitMm', (a + b) / 2 - Offset(0, px(12)),
-            font: 13, color: t.crit, monospace: true, halo: t.panel);
+            color: t.crit, monospace: true, halo: t.panel);
       }
     }
   }
@@ -1024,39 +1076,47 @@ class FloorPlanPainter extends CustomPainter {
           f.top <= largest.bottom ||
           f.y >= largest.top ||
           f.kind == FurnitureKind.wallRug ||
-          f.kind == FurnitureKind.alasha) continue;
+          f.kind == FurnitureKind.alasha) {
+        continue;
+      }
       final r = rectangle(
           PlanRect(f.x.toDouble(), f.y.toDouble(), f.right.toDouble(),
               f.top.toDouble()),
           size);
       if (f.kind == FurnitureKind.rug) {
-        if (captionedRug(f))
-          obstacles.add(Rect.fromLTRB(r.left, r.bottom - px(20), r.right, r.bottom));
+        if (captionedRug(f)) {
+          obstacles
+              .add(Rect.fromLTRB(r.left, r.bottom - px(20), r.right, r.bottom));
+        }
         continue;
       }
       obstacles.add(r);
     }
     if (obstacles.isEmpty) return centre;
     final bounds = rectangle(largest, size).deflate(px(3));
-    final halfW = math.min(box.width / 2, bounds.width / 2),
-        halfH = math.min(box.height / 2, bounds.height / 2);
+    final halfW = math.min(box.width / 2, bounds.width / 2);
+    final halfH = math.min(box.height / 2, bounds.height / 2);
     final inner = Rect.fromLTRB(bounds.left + halfW, bounds.top + halfH,
         bounds.right - halfW, bounds.bottom - halfH);
     if (inner.width < 0 || inner.height < 0) return centre;
-    var best = centre, bestScore = -double.infinity;
+    var best = centre;
+    var bestScore = -double.infinity;
     const steps = 10;
     for (var i = 0; i <= steps; i++)
       for (var j = 0; j <= steps; j++) {
         final p = Offset(inner.left + inner.width * i / steps,
             inner.top + inner.height * j / steps);
-        final label = Rect.fromCenter(
-            center: p, width: halfW * 2, height: halfH * 2);
-        var overlap = 0.0, clearance = double.infinity;
+        final label =
+            Rect.fromCenter(center: p, width: halfW * 2, height: halfH * 2);
+        var overlap = 0.0;
+        var clearance = double.infinity;
         for (final r in obstacles) {
           final o = label.intersect(r);
           if (o.width > 0 && o.height > 0) overlap += o.width * o.height;
-          final dx = math.max(0.0, math.max(r.left - label.right, label.left - r.right)),
-              dy = math.max(0.0, math.max(r.top - label.bottom, label.top - r.bottom));
+          final dx = math.max(
+              0.0, math.max(r.left - label.right, label.left - r.right));
+          final dy = math.max(
+              0.0, math.max(r.top - label.bottom, label.top - r.bottom));
           clearance = math.min(clearance, math.sqrt(dx * dx + dy * dy));
         }
         final score = -overlap * 4 / (handleScale * handleScale) +
@@ -1073,12 +1133,12 @@ class FloorPlanPainter extends CustomPainter {
   /// Every figure of the dimension chains with where it is drawn, so a
   /// tap can find the figure under it. Same geometry as [drawDimensions].
   List<DimensionSpan> dimensionSpans(Size size, {List<WallInfo>? walls}) {
-    final width = base.axes.v.last.pos.toDouble(),
-        depth = base.axes.h.last.pos.toDouble();
+    final width = base.axes.v.last.pos.toDouble();
+    final depth = base.axes.h.last.pos.toDouble();
     walls ??= wallsOf(base, FoundationSpec(bearingMin: bearingMin));
     const eps = 1.0;
-    List<double> faces(bool vertical, bool Function(PlanRect) touches,
-        double extent) {
+    List<double> faces(
+        bool vertical, bool Function(PlanRect) touches, double extent) {
       final out = <double>{0, extent};
       for (final w in walls!.where((w) =>
           w.role != WallRole.temporary &&
@@ -1098,18 +1158,20 @@ class FloorPlanPainter extends CustomPainter {
         {required bool before, bool overall = false}) {
       // [offset] in screen pixels from the outer face.
       for (var i = 0; i < stops.length - 1; i++) {
-        final a = stops[i], b = stops[i + 1];
+        final a = stops[i];
+        final b = stops[i + 1];
         if (b - a < 1) continue;
         final p0 = horizontal
-                ? point(a, before ? depth : 0, size)
-                : point(before ? 0 : width, a, size),
-            p1 = horizontal
-                ? point(b, before ? depth : 0, size)
-                : point(before ? 0 : width, b, size);
+            ? point(a, before ? depth : 0, size)
+            : point(before ? 0 : width, a, size);
+        final p1 = horizontal
+            ? point(b, before ? depth : 0, size)
+            : point(before ? 0 : width, b, size);
         final shift = horizontal
             ? Offset(0, before ? -px(offset) : px(offset))
             : Offset(before ? -px(offset) : px(offset), 0);
-        final q0 = p0 + shift, q1 = p1 + shift;
+        final q0 = p0 + shift;
+        final q1 = p1 + shift;
         final lengthPx = (q1 - q0).distance;
         final text = '${(b - a).round()}';
         final mid = (q0 + q1) / 2;
@@ -1122,7 +1184,9 @@ class FloorPlanPainter extends CustomPainter {
             from: q0,
             to: q1,
             labelled: lengthPx >= px(text.length * 6.0 + 4),
-            label: horizontal ? mid + Offset(0, -px(7)) : mid + Offset(-px(7), 0)));
+            label: horizontal
+                ? mid + Offset(0, -px(7))
+                : mid + Offset(-px(7), 0)));
       }
     }
 
@@ -1134,8 +1198,8 @@ class FloorPlanPainter extends CustomPainter {
     chain(faces(false, (r) => r.left <= 600, depth), false, 22, 'left',
         before: true);
     chain([0, depth], false, 42, 'left', before: true, overall: true);
-    chain(faces(false, (r) => r.right >= width - 600, depth), false, 22,
-        'right',
+    chain(
+        faces(false, (r) => r.right >= width - 600, depth), false, 22, 'right',
         before: false);
     return spans;
   }
@@ -1160,18 +1224,24 @@ class FloorPlanPainter extends CustomPainter {
   /// in millimetres, like a construction drawing.
   void drawDimensions(Canvas canvas, Size size, List<WallInfo> walls,
       double width, double depth) {
-    final t = tokens, pen = Paint()
+    final t = tokens;
+    final pen = Paint()
       ..color = t.dim
       ..strokeWidth = math.max(0.6, px(0.9));
     for (final s in dimensionSpans(size, walls: walls)) {
-      final q0 = s.from, q1 = s.to;
+      final q0 = s.from;
+      final q1 = s.to;
       canvas.drawLine(q0, q1, pen);
       final tick = px(4);
       for (final q in [q0, q1]) {
         canvas.drawLine(q + Offset(-tick, tick), q + Offset(tick, -tick), pen);
         canvas.drawLine(
-            s.horizontal ? q + Offset(0, -tick * 1.4) : q + Offset(-tick * 1.4, 0),
-            s.horizontal ? q + Offset(0, tick * 1.4) : q + Offset(tick * 1.4, 0),
+            s.horizontal
+                ? q + Offset(0, -tick * 1.4)
+                : q + Offset(-tick * 1.4, 0),
+            s.horizontal
+                ? q + Offset(0, tick * 1.4)
+                : q + Offset(tick * 1.4, 0),
             pen);
       }
       if (!s.labelled) continue;
@@ -1209,15 +1279,17 @@ class FloorPlanPainter extends CustomPainter {
           ..color = t.furnLine.withValues(alpha: 0.5)
           ..strokeWidth = px(0.8);
         final vertical = r.height > r.width;
-        for (var d = px(12); d < (vertical ? r.width : r.height); d += px(12))
+        for (var d = px(12); d < (vertical ? r.width : r.height); d += px(12)) {
           vertical
               ? canvas.drawLine(Offset(r.left + d, r.top),
                   Offset(r.left + d, r.bottom), planks)
               : canvas.drawLine(Offset(r.left, r.top + d),
                   Offset(r.right, r.top + d), planks);
+        }
         if (selected || ghost) canvas.drawRect(r, stroke);
       case FurnitureKind.rug:
-        fill.color = Tokens.mix(t.rug, 0.16, t.room).withValues(alpha: alpha(1));
+        fill.color =
+            Tokens.mix(t.rug, 0.16, t.room).withValues(alpha: alpha(1));
         canvas.drawRect(r, fill);
         canvas.drawRect(
             r,
@@ -1234,7 +1306,8 @@ class FloorPlanPainter extends CustomPainter {
               ..strokeWidth = px(0.9),
             dash: 4,
             gap: 3);
-        final d = r.shortestSide * 0.22, c = r.center;
+        final d = r.shortestSide * 0.22;
+        final c = r.center;
         canvas.drawPath(
             Path()
               ..moveTo(c.dx, c.dy - d)
@@ -1247,7 +1320,8 @@ class FloorPlanPainter extends CustomPainter {
               ..color = t.rug
               ..strokeWidth = px(0.9));
       case FurnitureKind.alasha:
-        fill.color = Tokens.mix(t.rug, 0.16, t.room).withValues(alpha: alpha(1));
+        fill.color =
+            Tokens.mix(t.rug, 0.16, t.room).withValues(alpha: alpha(1));
         canvas.drawRect(r, fill);
         dashedRect(
             canvas,
@@ -1260,17 +1334,17 @@ class FloorPlanPainter extends CustomPainter {
       case FurnitureKind.wallRug:
         canvas.drawRect(
             r.width < r.height
-                ? Rect.fromLTRB(r.left - px(1.5), r.top, r.right + px(1.5), r.bottom)
-                : Rect.fromLTRB(r.left, r.top - px(1.5), r.right, r.bottom + px(1.5)),
+                ? Rect.fromLTRB(
+                    r.left - px(1.5), r.top, r.right + px(1.5), r.bottom)
+                : Rect.fromLTRB(
+                    r.left, r.top - px(1.5), r.right, r.bottom + px(1.5)),
             Paint()..color = t.rug.withValues(alpha: alpha(1)));
         if (selected) canvas.drawRect(r.inflate(px(3)), stroke);
       case FurnitureKind.dastarkhan:
         fill.color = t.furn.withValues(alpha: alpha(1));
         canvas.drawOval(r, fill);
         canvas.drawOval(r, stroke);
-      case FurnitureKind.korpe ||
-            FurnitureKind.cushion ||
-            FurnitureKind.sandyq:
+      case FurnitureKind.korpe || FurnitureKind.cushion || FurnitureKind.sandyq:
         fill.color = kz.withValues(alpha: alpha(1));
         canvas.drawRect(r, fill);
         canvas.drawRect(
@@ -1292,12 +1366,13 @@ class FloorPlanPainter extends CustomPainter {
             // Pillows at the end nearest the longer edge's wall: right side.
             final long = r.width >= r.height;
             final pillow = long
-                ? Rect.fromLTWH(r.right - r.width * 0.16, r.top + r.height * 0.1,
-                    r.width * 0.12, r.height * 0.8)
+                ? Rect.fromLTWH(r.right - r.width * 0.16,
+                    r.top + r.height * 0.1, r.width * 0.12, r.height * 0.8)
                 : Rect.fromLTWH(r.left + r.width * 0.1, r.top + r.height * 0.04,
                     r.width * 0.8, r.height * 0.12);
             canvas.drawRRect(
-                RRect.fromRectAndRadius(pillow, Radius.circular(px(3))), detail);
+                RRect.fromRectAndRadius(pillow, Radius.circular(px(3))),
+                detail);
             canvas.drawLine(
                 long
                     ? Offset(r.right - r.width * 0.2, r.top)
@@ -1308,8 +1383,7 @@ class FloorPlanPainter extends CustomPainter {
                 detail);
           case FurnitureKind.bathtub:
             canvas.drawRRect(
-                RRect.fromRectAndRadius(
-                    r.deflate(r.shortestSide * 0.12),
+                RRect.fromRectAndRadius(r.deflate(r.shortestSide * 0.12),
                     Radius.circular(r.shortestSide * 0.3)),
                 detail);
           case FurnitureKind.toilet:
@@ -1323,11 +1397,12 @@ class FloorPlanPainter extends CustomPainter {
             canvas.drawOval(r.deflate(r.shortestSide * 0.18), detail);
           case FurnitureKind.stove:
             for (final dx in [0.3, 0.7])
-              for (final dy in [0.3, 0.7])
+              for (final dy in [0.3, 0.7]) {
                 canvas.drawCircle(
                     Offset(r.left + r.width * dx, r.top + r.height * dy),
                     r.shortestSide * 0.13,
                     detail);
+              }
           case FurnitureKind.wardrobe ||
                 FurnitureKind.pantry ||
                 FurnitureKind.shelf ||
@@ -1340,14 +1415,16 @@ class FloorPlanPainter extends CustomPainter {
         }
     }
     final name = f.label ?? furnitureName(f.kind);
-    final w = r.width, h = r.height;
+    final w = r.width;
+    final h = r.height;
     if (!showLabels) {
       // Previews draw shapes only.
     } else if (f.kind == FurnitureKind.rug) {
       // Rug names sit along the lower edge, clear of what stands on them.
-      if (captionedRug(f) && w > px(name.length * 7.0 + 16) && h > px(40))
+      if (captionedRug(f) && w > px(name.length * 7.0 + 16) && h > px(40)) {
         label(canvas, name, Offset(r.center.dx, r.bottom - px(11)),
-            font: 10.5, color: t.rug, weight: FontWeight.w600);
+            font: 10.5, color: t.rug);
+      }
     } else if (f.kind == FurnitureKind.terrace ||
         f.kind == FurnitureKind.porch) {
       // Outside the house: name on the far edge, away from the dimensions.
@@ -1357,9 +1434,10 @@ class FloorPlanPainter extends CustomPainter {
           : f.top <= 0
               ? r.bottom - px(10)
               : r.center.dy;
-      if (w > px(name.length * 6.0))
+      if (w > px(name.length * 6.0)) {
         label(canvas, name, Offset(r.center.dx, y),
             font: 10, color: t.muted, weight: FontWeight.w400);
+      }
     } else if (f.kind != FurnitureKind.wallRug &&
         f.kind != FurnitureKind.cushion &&
         (w > px(36) || h > px(60))) {
@@ -1411,7 +1489,8 @@ class FloorPlanPainter extends CustomPainter {
   if (length >= minimumGap * 2) return (start: a, end: b, middle: (a + b) / 2);
   final direction =
       length == 0 ? const Offset(1, 0) : (b - a) / (b - a).distance;
-  final center = (a + b) / 2, half = minimumGap / zoom;
+  final center = (a + b) / 2;
+  final half = minimumGap / zoom;
   return (
     start: center - direction * half,
     end: center + direction * half,
@@ -1432,8 +1511,11 @@ class DimensionSpan {
       required this.to,
       required this.label,
       required this.labelled});
-  final double a, b;
-  final bool horizontal, overall, labelled;
+  final double a;
+  final double b;
+  final bool horizontal;
+  final bool overall;
+  final bool labelled;
   final String side;
 
   /// Ends of the dimension line and the centre of its figure, in the

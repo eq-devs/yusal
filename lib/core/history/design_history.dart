@@ -1,9 +1,10 @@
-import '../document/house_document.dart';
+import 'package:yusal/core/document/house_document.dart';
 
 class DesignHistory {
   DesignHistory(HouseDocument doc) : present = doc;
   HouseDocument present;
-  final List<HouseDocument> _past = [], _future = [];
+  final List<HouseDocument> _past = [];
+  final List<HouseDocument> _future = [];
   bool get canUndo => _past.isNotEmpty;
   bool get canRedo => _future.isNotEmpty;
   bool commit(HouseDocument next) {

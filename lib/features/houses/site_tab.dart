@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../domain/rules.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import 'my_houses_data.dart';
-import '../../shared/ui/photos.dart';
-import '../../shared/motion/motion.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/rules.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/houses/my_houses_data.dart';
+import 'package:yusal/shared/ui/photos.dart';
+import 'package:yusal/shared/motion/motion.dart';
 
 /// The building-site tab of a house: each confirmed cooperation with its
 /// inspection points and daily work log.
@@ -22,7 +22,7 @@ class SiteTab extends StatelessWidget {
             c.status == CooperationStatus.confirmed ||
             c.status == CooperationStatus.ended)
         .toList();
-    if (active.isEmpty)
+    if (active.isEmpty) {
       return EmptyState(
           icon: Icons.foundation_outlined,
           title: tr3('还没开工', 'Құрылыс басталмады', 'Стройка не начата'),
@@ -30,6 +30,7 @@ class SiteTab extends StatelessWidget {
               '合作确认后，节点验收和每天的记工会出现在这里。',
               'Келісімнен кейін осында болады.',
               'После соглашения здесь будут этапы и рабочие дни.'));
+    }
     String title(String demandId) =>
         house.demands
             .where((d) => d.id == demandId)
@@ -42,8 +43,8 @@ class SiteTab extends StatelessWidget {
         children: [
           for (final c in active) ...[
             Text(title(c.demandId),
-                style:
-                    const TextStyle(fontWeight: FontWeight.w700, fontSize: YFont.body)),
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700, fontSize: YFont.body)),
             const SizedBox(height: 8),
             SiteSection(cooperation: c),
             const SizedBox(height: 28),
@@ -64,7 +65,8 @@ class SiteSection extends StatelessWidget {
     final t = YTokens.of(context);
     final c = cooperation;
     final me = context.repos.currentAccount?.id;
-    final owner = me == c.ownerId, pro = me == c.providerId;
+    final owner = me == c.ownerId;
+    final pro = me == c.providerId;
     final live = c.status == CooperationStatus.confirmed;
     final amount = c.agreement.amount;
     // Inspections go in order: only the first open point can be requested.
@@ -91,20 +93,19 @@ class SiteSection extends StatelessWidget {
               amount: amount,
               current: live && i == current,
               // The same moves voice is offered.
-              onRequest: milestoneMoves(c, me, i)
-                      .contains(MilestoneEvent.request)
-                  ? () => _request(context, i)
-                  : null,
-              onAccept: milestoneMoves(c, me, i)
-                      .contains(MilestoneEvent.accept)
+              onRequest:
+                  milestoneMoves(c, me, i).contains(MilestoneEvent.request)
+                      ? () => _request(context, i)
+                      : null,
+              onAccept: milestoneMoves(c, me, i).contains(MilestoneEvent.accept)
                   ? () => attempt(context,
                       () => context.repos.answerMilestone(c.id, i, true),
                       success: tr3('已记录验收', 'Қабылданды', 'Приёмка записана'))
                   : null,
-              onDispute: milestoneMoves(c, me, i)
-                      .contains(MilestoneEvent.dispute)
-                  ? () => _dispute(context, i)
-                  : null),
+              onDispute:
+                  milestoneMoves(c, me, i).contains(MilestoneEvent.dispute)
+                      ? () => _dispute(context, i)
+                      : null),
         Padding(
             padding: const EdgeInsets.only(top: 4, bottom: 12),
             child: Text(
@@ -237,7 +238,8 @@ Future<SiteEntry?> composeSiteEntry(BuildContext context,
 class _SiteEntrySheet extends StatefulWidget {
   const _SiteEntrySheet(
       {required this.title, required this.hint, this.headcount});
-  final String title, hint;
+  final String title;
+  final String hint;
   final int? headcount;
   @override
   State<_SiteEntrySheet> createState() => _SiteEntrySheetState();
@@ -296,7 +298,8 @@ class _SiteEntrySheetState extends State<_SiteEntrySheet> {
                           tr3('$people 人', '$people адам', '$people чел.'),
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: YFont.body))),
+                              fontWeight: FontWeight.w700,
+                              fontSize: YFont.body))),
                   IconButton.outlined(
                       key: const Key('people-plus'),
                       onPressed: people! < 200
@@ -341,7 +344,8 @@ class _SiteEntrySheetState extends State<_SiteEntrySheet> {
                   child: Text(
                       tr3('照片只给合作双方看。', 'Фотоны тек екі жақ көреді.',
                           'Фото видят только стороны соглашения.'),
-                      style: TextStyle(color: t.muted, fontSize: YFont.caption))),
+                      style:
+                          TextStyle(color: t.muted, fontSize: YFont.caption))),
             ])));
   }
 }
@@ -360,7 +364,9 @@ class _MilestoneTile extends StatelessWidget {
 
   /// The point the crew is working towards now.
   final bool current;
-  final VoidCallback? onRequest, onAccept, onDispute;
+  final VoidCallback? onRequest;
+  final VoidCallback? onAccept;
+  final VoidCallback? onDispute;
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
@@ -402,7 +408,8 @@ class _MilestoneTile extends StatelessWidget {
           if (m.note.isNotEmpty)
             Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(m.note, style: const TextStyle(fontSize: YFont.small))),
+                child: Text(m.note,
+                    style: const TextStyle(fontSize: YFont.small))),
           if (m.photos.isNotEmpty)
             Padding(
                 padding: const EdgeInsets.only(top: 6),

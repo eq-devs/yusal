@@ -1,7 +1,7 @@
-import '../../core/number_input.dart';
+import 'package:yusal/core/number_input.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
+import 'package:yusal/app/settings.dart';
 
 typedef FootprintDimensions = ({int width, int depth});
 
@@ -13,10 +13,13 @@ class FootprintSketch extends StatefulWidget {
 }
 
 class _FootprintSketchState extends State<FootprintSketch> {
-  Offset? start, end;
+  Offset? start;
+  Offset? end;
   final pointers = <int>{};
-  bool cancelled = false, numericPreview = false;
-  final width = TextEditingController(), depth = TextEditingController();
+  bool cancelled = false;
+  bool numericPreview = false;
+  final width = TextEditingController();
+  final depth = TextEditingController();
   FootprintDimensions? dimensions;
   double factor(Size size) => math.max(
       0.001,
@@ -41,7 +44,8 @@ class _FootprintSketchState extends State<FootprintSketch> {
 
   void editDimensions() {
     numericPreview = true;
-    final w = parseNumber(width.text), d = parseNumber(depth.text);
+    final w = parseNumber(width.text);
+    final d = parseNumber(depth.text);
     setState(() => dimensions = w != null &&
             d != null &&
             w.isFinite &&
@@ -63,7 +67,9 @@ class _FootprintSketchState extends State<FootprintSketch> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(title: Text(tr3('拖出房屋外形', 'Үй пішінін сызу', 'Нарисовать контур дома'))),
+      appBar: AppBar(
+          title:
+              Text(tr3('拖出房屋外形', 'Үй пішінін сызу', 'Нарисовать контур дома'))),
       body: SafeArea(
           child: LayoutBuilder(
               builder: (context, viewport) => SingleChildScrollView(
@@ -72,8 +78,10 @@ class _FootprintSketchState extends State<FootprintSketch> {
                       child: Column(children: [
                         Padding(
                             padding: const EdgeInsets.all(16),
-                            child: Text(tr3('从一个角拖到另一个角。1 格为 1 米，之后可以输入精确长宽。',
-                                'Бір бұрыштан екіншісіне тартыңыз. 1 тор — 1 м, кейін нақты өлшем енгізуге болады.', 'Протяните от одного угла к другому. 1 клетка — 1 м, точные размеры можно ввести позже.'))),
+                            child: Text(tr3(
+                                '从一个角拖到另一个角。1 格为 1 米，之后可以输入精确长宽。',
+                                'Бір бұрыштан екіншісіне тартыңыз. 1 тор — 1 м, кейін нақты өлшем енгізуге болады.',
+                                'Протяните от одного угла к другому. 1 клетка — 1 м, точные размеры можно ввести позже.'))),
                         Expanded(child:
                             LayoutBuilder(builder: (context, constraints) {
                           final size =
@@ -81,20 +89,22 @@ class _FootprintSketchState extends State<FootprintSketch> {
                           return Listener(
                               onPointerDown: (event) {
                                 pointers.add(event.pointer);
-                                if (pointers.length == 1)
+                                if (pointers.length == 1) {
                                   setState(() {
                                     cancelled = false;
                                     numericPreview = false;
                                     start = null;
                                     update(event.localPosition, size);
                                   });
-                                if (pointers.length > 1)
+                                }
+                                if (pointers.length > 1) {
                                   setState(() {
                                     cancelled = true;
                                     start = null;
                                     end = null;
                                     dimensions = null;
                                   });
+                                }
                               },
                               onPointerUp: (event) =>
                                   pointers.remove(event.pointer),
@@ -111,14 +121,16 @@ class _FootprintSketchState extends State<FootprintSketch> {
                                   behavior: HitTestBehavior.opaque,
                                   onPanStart: (details) {
                                     if (pointers.length > 1) return;
-                                    if (start == null && !cancelled)
+                                    if (start == null && !cancelled) {
                                       setState(() =>
                                           update(details.localPosition, size));
+                                    }
                                   },
                                   onPanUpdate: (details) {
-                                    if (!cancelled && pointers.length <= 1)
+                                    if (!cancelled && pointers.length <= 1) {
                                       setState(() =>
                                           update(details.localPosition, size));
+                                    }
                                   },
                                   child: CustomPaint(
                                       key: const ValueKey(
@@ -151,7 +163,8 @@ class _FootprintSketchState extends State<FootprintSketch> {
                                         keyboardType: const TextInputType
                                             .numberWithOptions(decimal: true),
                                         decoration: InputDecoration(
-                                            labelText: tr3('宽（米）', 'Ені (м)', 'Ширина (м)')))),
+                                            labelText: tr3('宽（米）', 'Ені (м)',
+                                                'Ширина (м)')))),
                                 const SizedBox(width: 16),
                                 Expanded(
                                     child: TextField(
@@ -160,14 +173,19 @@ class _FootprintSketchState extends State<FootprintSketch> {
                                         keyboardType: const TextInputType
                                             .numberWithOptions(decimal: true),
                                         decoration: InputDecoration(
-                                            labelText: tr3('长（米）', 'Ұзындығы (м)', 'Длина (м)'))))
+                                            labelText: tr3('长（米）',
+                                                'Ұзындығы (м)', 'Длина (м)'))))
                               ]),
                               const SizedBox(height: 12),
                               Text(dimensions == null
-                                  ? tr3('长宽至少 3 米，可重新拖动或输入尺寸',
-                                      'Өлшем кемінде 3 м: қайта тартыңыз не енгізіңіз', 'Длина и ширина — не менее 3 м: протяните заново или введите размеры')
-                                  : tr3('外形已确定，可以继续分房',
-                                      'Пішін дайын, бөлмелерге бөлуге болады', 'Контур готов, можно делить на комнаты')),
+                                  ? tr3(
+                                      '长宽至少 3 米，可重新拖动或输入尺寸',
+                                      'Өлшем кемінде 3 м: қайта тартыңыз не енгізіңіз',
+                                      'Длина и ширина — не менее 3 м: протяните заново или введите размеры')
+                                  : tr3(
+                                      '外形已确定，可以继续分房',
+                                      'Пішін дайын, бөлмелерге бөлуге болады',
+                                      'Контур готов, можно делить на комнаты')),
                               const SizedBox(height: 12),
                               SizedBox(
                                   width: double.infinity,
@@ -176,14 +194,18 @@ class _FootprintSketchState extends State<FootprintSketch> {
                                           ? null
                                           : () => Navigator.pop(
                                               context, dimensions),
-                                      child: Text(tr3('使用这个外形', 'Осы пішінді қолдану', 'Использовать этот контур')))),
+                                      child: Text(tr3(
+                                          '使用这个外形',
+                                          'Осы пішінді қолдану',
+                                          'Использовать этот контур')))),
                             ])),
                       ]))))));
 }
 
 class _SketchPainter extends CustomPainter {
   _SketchPainter(this.start, this.end, this.scale, this.valid);
-  final Offset? start, end;
+  final Offset? start;
+  final Offset? end;
   final double scale;
   final bool valid;
   @override
@@ -192,10 +214,12 @@ class _SketchPainter extends CustomPainter {
       ..color = const Color(0xffdce2dd)
       ..strokeWidth = 0.6;
     final gap = math.max(1.0, 1000 * scale);
-    for (double x = 24; x < size.width - 24; x += gap)
+    for (double x = 24; x < size.width - 24; x += gap) {
       canvas.drawLine(Offset(x, 24), Offset(x, size.height - 24), grid);
-    for (double y = 24; y < size.height - 24; y += gap)
+    }
+    for (double y = 24; y < size.height - 24; y += gap) {
       canvas.drawLine(Offset(24, y), Offset(size.width - 24, y), grid);
+    }
     if (start == null || end == null) return;
     final rect = Rect.fromPoints(start!, end!);
     final color = valid ? const Color(0xff356a55) : const Color(0xffa14539);
@@ -211,7 +235,9 @@ class _SketchPainter extends CustomPainter {
       rect.topRight,
       rect.bottomLeft,
       rect.bottomRight
-    ]) canvas.drawCircle(point, 5, Paint()..color = color);
+    ]) {
+      canvas.drawCircle(point, 5, Paint()..color = color);
+    }
   }
 
   @override

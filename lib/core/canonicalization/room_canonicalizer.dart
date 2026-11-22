@@ -1,5 +1,5 @@
-import '../axis/axis_resolver.dart';
-import '../document/house_document.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/document/house_document.dart';
 
 class RegionCellsResult {
   const RegionCellsResult(this.cells, this.selfOverlap, this.errors);
@@ -35,8 +35,9 @@ RegionCellsResult regionCells(ResolvedAxes axes, List<AxisRectangle> regions) {
   for (var r = 0; r < regions.length; r++) {
     final resolved = resolveRect(axes, regions[r]);
     if (!resolved.isSuccess) {
-      for (final e in resolved.errors)
+      for (final e in resolved.errors) {
         errors.add(AxisReferenceError(e.code, 'regions/$r/${e.field}'));
+      }
       continue;
     }
     for (final cell in cellsOfRect(resolved.rect!)) {
@@ -54,10 +55,11 @@ CanonicalCellsResult canonicalizeCells(ResolvedAxes axes, Set<Cell> cells) {
   final invalid = _ordered(
     cells.where((c) => c.i < 0 || c.i >= axes.nx || c.j < 0 || c.j >= axes.ny),
   );
-  if (invalid.isNotEmpty)
+  if (invalid.isNotEmpty) {
     return CanonicalCellsResult.failure([
       for (final c in invalid) AxisReferenceError('CELL_OUT_OF_RANGE', '$c'),
     ]);
+  }
   final rows = <int, Set<int>>{};
   for (final c in cells) {
     (rows[c.j] ??= <int>{}).add(c.i);
@@ -66,8 +68,9 @@ CanonicalCellsResult canonicalizeCells(ResolvedAxes axes, Set<Cell> cells) {
   final out = <({int i0, int i1, int j0, int j1})>[];
   var previous = -2;
   void closeAll() {
-    for (final e in open.values)
+    for (final e in open.values) {
       out.add((i0: e.$1, i1: e.$2, j0: e.$3, j1: previous + 1));
+    }
     open.clear();
   }
 
@@ -75,7 +78,8 @@ CanonicalCellsResult canonicalizeCells(ResolvedAxes axes, Set<Cell> cells) {
     if (j != previous + 1 && open.isNotEmpty) closeAll();
     final cols = rows[j]!.toList()..sort();
     final intervals = <(int, int)>[];
-    var start = cols.first, end = start + 1;
+    var start = cols.first;
+    var end = start + 1;
     for (final x in cols.skip(1)) {
       if (x == end) {
         end++;
@@ -88,11 +92,12 @@ CanonicalCellsResult canonicalizeCells(ResolvedAxes axes, Set<Cell> cells) {
     intervals.add((start, end));
     final keys =
         intervals.map((interval) => '${interval.$1}:${interval.$2}').toSet();
-    for (final key in open.keys.toList())
+    for (final key in open.keys.toList()) {
       if (!keys.contains(key)) {
         final e = open.remove(key)!;
         out.add((i0: e.$1, i1: e.$2, j0: e.$3, j1: previous + 1));
       }
+    }
     for (final interval in intervals) {
       final key = '${interval.$1}:${interval.$2}';
       open[key] = (interval.$1, interval.$2, open[key]?.$3 ?? j);
@@ -108,7 +113,8 @@ CanonicalCellsResult canonicalizeCells(ResolvedAxes axes, Set<Cell> cells) {
     c = a.j1.compareTo(b.j1);
     return c != 0 ? c : a.i1.compareTo(b.i1);
   });
-  final v = axes.v, h = axes.h;
+  final v = axes.v;
+  final h = axes.h;
   return CanonicalCellsResult.success(
     List.unmodifiable([
       for (final r in out)
@@ -135,10 +141,12 @@ bool isCanonical(ResolvedAxes axes, List<AxisRectangle> regions) {
   final expanded = regionCells(axes, regions);
   if (!expanded.isSuccess || expanded.selfOverlap) return false;
   final normalized = canonicalizeCells(axes, expanded.cells);
-  if (!normalized.isSuccess || normalized.regions.length != regions.length)
+  if (!normalized.isSuccess || normalized.regions.length != regions.length) {
     return false;
-  for (var i = 0; i < regions.length; i++)
+  }
+  for (var i = 0; i < regions.length; i++) {
     if (regions[i] != normalized.regions[i]) return false;
+  }
   return true;
 }
 
@@ -153,7 +161,9 @@ bool isConnected(Set<Cell> cells) {
       Cell(c.i - 1, c.j),
       Cell(c.i, c.j + 1),
       Cell(c.i, c.j - 1),
-    ]) if (cells.contains(n) && visited.add(n)) queue.add(n);
+    ]) {
+      if (cells.contains(n) && visited.add(n)) queue.add(n);
+    }
   }
   return visited.length == cells.length;
 }
@@ -175,11 +185,12 @@ CellSetResult components(ResolvedAxes axes, Set<Cell> cells) {
         Cell(c.i - 1, c.j),
         Cell(c.i, c.j + 1),
         Cell(c.i, c.j - 1),
-      ])
+      ]) {
         if (remaining.remove(n)) {
           part.add(n);
           queue.add(n);
         }
+      }
     }
     parts.add(Set.unmodifiable(part));
   }

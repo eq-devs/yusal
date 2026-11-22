@@ -1,11 +1,14 @@
 import 'dart:math' as math;
-import '../axis/axis_resolver.dart';
-import '../canonicalization/room_canonicalizer.dart';
-import '../document/house_document.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/canonicalization/room_canonicalizer.dart';
+import 'package:yusal/core/document/house_document.dart';
 
 class PlanRect {
   const PlanRect(this.left, this.bottom, this.right, this.top);
-  final double left, bottom, right, top;
+  final double left;
+  final double bottom;
+  final double right;
+  final double top;
   double get area => math.max(0, right - left) * math.max(0, top - bottom);
   bool contains(double x, double y) =>
       x >= left && x <= right && y >= bottom && y <= top;
@@ -13,7 +16,10 @@ class PlanRect {
 
 class WallRef {
   const WallRef(this.floorId, this.carrierId, this.startAxisId, this.endAxisId);
-  final String floorId, carrierId, startAxisId, endAxisId;
+  final String floorId;
+  final String carrierId;
+  final String startAxisId;
+  final String endAxisId;
   BoundaryAnchor get anchor => BoundaryAnchor(
       axisId: carrierId, startAxisId: startAxisId, endAxisId: endAxisId);
   @override
@@ -30,8 +36,11 @@ class WallRef {
 class UnitEdge {
   UnitEdge(this.axis, this.start, this.end, this.negative, this.positive,
       this.kind, this.thickness);
-  final ResolvedAxis axis, start, end;
-  final Cell? negative, positive;
+  final ResolvedAxis axis;
+  final ResolvedAxis start;
+  final ResolvedAxis end;
+  final Cell? negative;
+  final Cell? positive;
   final String kind;
   final double thickness;
   bool get hasWall =>
@@ -42,7 +51,9 @@ class WallSegment {
   WallSegment(this.ref, this.axis, this.start, this.end, this.kind,
       this.thickness, this.edges);
   final WallRef ref;
-  final ResolvedAxis axis, start, end;
+  final ResolvedAxis axis;
+  final ResolvedAxis start;
+  final ResolvedAxis end;
   final String kind;
   final double thickness;
   final List<UnitEdge> edges;
@@ -60,7 +71,9 @@ class SpaceGeometry {
       this.labelAnchor);
   final String id;
   final Set<Cell> cells;
-  final double nominalArea, clearArea, minClearSpan;
+  final double nominalArea;
+  final double clearArea;
+  final double minClearSpan;
   final List<PlanRect> clearRects;
   final List<Cell> collapsedCells;
   final ({double x, double y}) labelAnchor;
@@ -84,7 +97,8 @@ class FloorBase {
   final List<UnitEdge> edges;
   final List<WallSegment> wallSegments;
   final List<PlanRect> wallRects;
-  final List<SpaceGeometry> roomGeometry, stairGeometryBase;
+  final List<SpaceGeometry> roomGeometry;
+  final List<SpaceGeometry> stairGeometryBase;
   final List<Cell> unassignedCells;
   final double unassignedNominalArea;
 
@@ -93,8 +107,8 @@ class FloorBase {
 
   /// Whether the plan point is inside the footprint and not cut out.
   bool inside(double x, double y) {
-    final i = axes.v.indexWhere((a) => a.pos > x) - 1,
-        j = axes.h.indexWhere((a) => a.pos > y) - 1;
+    final i = axes.v.indexWhere((a) => a.pos > x) - 1;
+    final j = axes.h.indexWhere((a) => a.pos > y) - 1;
     return i >= 0 && j >= 0 && !outside.contains(Cell(i, j));
   }
 }
@@ -113,7 +127,10 @@ class DerivedCache<K extends Object, V> {
     for (var i = _entries.length - 1; i >= 0; i--) {
       final e = _entries[i];
       if (identical(e.$1, doc) && e.$2 == key) {
-        if (i != _entries.length - 1) _entries..removeAt(i)..add(e);
+        if (i != _entries.length - 1)
+          _entries
+            ..removeAt(i)
+            ..add(e);
         return e.$3;
       }
     }
@@ -143,19 +160,24 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
   for (final room in floor.rooms) {
     final cells = regionCells(axes, room.regions).cells;
     spaces[room.id] = cells;
-    for (final c in cells) owners[c] = room.id;
+    for (final c in cells) {
+      owners[c] = room.id;
+    }
   }
   for (final stair in floor.stairs) {
     final cells = cellsOfRect(resolveRect(axes, stair.region).rect!).toSet();
     spaces[stair.id] = cells;
-    for (final c in cells) owners[c] = stair.id;
+    for (final c in cells) {
+      owners[c] = stair.id;
+    }
   }
   final edges = <UnitEdge>[];
   void edge(
       ResolvedAxis a, ResolvedAxis s, ResolvedAxis e, Cell? neg, Cell? pos) {
-    final n = owners[neg], p = owners[pos];
-    final outN = neg == null || outside.contains(neg),
-        outP = pos == null || outside.contains(pos);
+    final n = owners[neg];
+    final p = owners[pos];
+    final outN = neg == null || outside.contains(neg);
+    final outP = pos == null || outside.contains(pos);
     // Between two cut-out cells (or a cut-out and the edge) nothing is built.
     if (outN && outP) {
       edges.add(UnitEdge(a, s, e, neg, pos, 'none', 0));
@@ -188,9 +210,10 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
           e.pos <= chain.endPos) {
         if (override is SolidWall) {
           // A drawn wall on the outline stays an outside wall.
-          if (wall.kind != 'exterior')
+          if (wall.kind != 'exterior') {
             wall = UnitEdge(
                 a, s, e, neg, pos, 'interior', override.value.toDouble());
+          }
         } else if (override is OpenWall) {
           wall = UnitEdge(a, s, e, neg, pos, 'open', 0);
         } else if (override is ThicknessWall && wall.hasWall) {
@@ -203,13 +226,16 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
   }
 
   for (var j = 0; j <= axes.ny; j++)
-    for (var i = 0; i < axes.nx; i++)
+    for (var i = 0; i < axes.nx; i++) {
       edge(axes.h[j], axes.v[i], axes.v[i + 1], j == 0 ? null : Cell(i, j - 1),
           j == axes.ny ? null : Cell(i, j));
+    }
   for (var i = 0; i <= axes.nx; i++)
-    for (var j = 0; j < axes.ny; j++)
+    for (var j = 0; j < axes.ny; j++) {
       edge(axes.v[i], axes.h[j], axes.h[j + 1], i == 0 ? null : Cell(i - 1, j),
           i == axes.nx ? null : Cell(i, j));
+    }
+
   /// Which side of an outside wall is outdoors: the negative one or not.
   bool outdoorsBelow(UnitEdge e) =>
       e.negative == null || outside.contains(e.negative);
@@ -223,7 +249,8 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
   var pending = <UnitEdge>[];
   void flush() {
     if (pending.isEmpty) return;
-    final first = pending.first, last = pending.last;
+    final first = pending.first;
+    final last = pending.last;
     segments.add(WallSegment(
         WallRef(floorId, first.axis.id, first.start.id, last.end.id),
         first.axis,
@@ -247,13 +274,16 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
           prev.kind != e.kind ||
           prev.thickness != e.thickness ||
           (e.kind == 'exterior' && outdoorsBelow(prev) != outdoorsBelow(e)) ||
-          junction(e, e.start.pos)) flush();
+          junction(e, e.start.pos)) {
+        flush();
+      }
     }
     pending.add(e);
   }
   flush();
   ({double low, double high}) cross(WallSegment s) {
-    final p = s.axis.pos.toDouble(), t = s.thickness;
+    final p = s.axis.pos.toDouble();
+    final t = s.thickness;
     return switch (s.axis.id) {
       '@left' || '@bottom' => (low: 0, high: t),
       '@right' => (
@@ -275,11 +305,14 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
   final rects = <PlanRect>[];
   for (final s in segments) {
     final c = cross(s);
-    var start = s.start.pos.toDouble(), end = s.end.pos.toDouble();
+    var start = s.start.pos.toDouble();
+    var end = s.end.pos.toDouble();
     for (final p in segments) {
       if (p.axis.dir == s.axis.dir ||
           p.start.pos > s.axis.pos ||
-          p.end.pos < s.axis.pos) continue;
+          p.end.pos < s.axis.pos) {
+        continue;
+      }
       final pc = cross(p);
       if (p.axis.pos == s.start.pos) start = math.min(start, pc.low);
       if (p.axis.pos == s.end.pos) end = math.max(end, pc.high);
@@ -319,9 +352,12 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
     final clear = <Cell>{};
     for (var j = 0; j < ys.length - 1; j++)
       for (var i = 0; i < xs.length - 1; i++) {
-        final x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2;
+        final x = (xs[i] + xs[i + 1]) / 2;
+        final y = (ys[j] + ys[j + 1]) / 2;
         if (nominal.any((r) => r.contains(x, y)) &&
-            !rects.any((r) => r.contains(x, y))) clear.add(Cell(i, j));
+            !rects.any((r) => r.contains(x, y))) {
+          clear.add(Cell(i, j));
+        }
       }
     // Merge row intervals and identical intervals on consecutive rows.
     final open = <(int, int), ({int j0, int j1})>{};
@@ -340,30 +376,50 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
           continue;
         }
         final start = i;
-        while (i < xs.length - 1 && clear.contains(Cell(i, j))) i++;
+        while (i < xs.length - 1 && clear.contains(Cell(i, j))) {
+          i++;
+        }
         ranges.add((start, i));
       }
-      for (final key in open.keys.toList())
+      for (final key in open.keys.toList()) {
         if (!ranges.contains(key)) close(key);
-      for (final key in ranges) open[key] = (j0: open[key]?.j0 ?? j, j1: j + 1);
+      }
+      for (final key in ranges) {
+        open[key] = (j0: open[key]?.j0 ?? j, j1: j + 1);
+      }
     }
-    for (final key in open.keys.toList()) close(key);
+    for (final key in open.keys.toList()) {
+      close(key);
+    }
     merged.sort((a, b) {
       for (final c in [
         a.bottom.compareTo(b.bottom),
         a.left.compareTo(b.left),
         a.top.compareTo(b.top),
         a.right.compareTo(b.right)
-      ]) if (c != 0) return c;
+      ]) {
+        if (c != 0) return c;
+      }
       return 0;
     });
     var span = double.infinity;
     for (final c in clear) {
-      var left = c.i, right = c.i + 1, bottom = c.j, top = c.j + 1;
-      while (clear.contains(Cell(left - 1, c.j))) left--;
-      while (clear.contains(Cell(right, c.j))) right++;
-      while (clear.contains(Cell(c.i, bottom - 1))) bottom--;
-      while (clear.contains(Cell(c.i, top))) top++;
+      var left = c.i;
+      var right = c.i + 1;
+      var bottom = c.j;
+      var top = c.j + 1;
+      while (clear.contains(Cell(left - 1, c.j))) {
+        left--;
+      }
+      while (clear.contains(Cell(right, c.j))) {
+        right++;
+      }
+      while (clear.contains(Cell(c.i, bottom - 1))) {
+        bottom--;
+      }
+      while (clear.contains(Cell(c.i, top))) {
+        top++;
+      }
       span =
           math.min(span, math.min(xs[right] - xs[left], ys[top] - ys[bottom]));
     }
@@ -413,16 +469,19 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
 /// Plan area of the building on [base]'s floor, mm², cut-outs left out.
 double footprintArea(FloorBase base) {
   var area = 0.0;
-  for (final c in base.owners.keys)
-    if (!base.outside.contains(c))
+  for (final c in base.owners.keys) {
+    if (!base.outside.contains(c)) {
       area += (base.axes.v[c.i + 1].pos - base.axes.v[c.i].pos) *
           (base.axes.h[c.j + 1].pos - base.axes.h[c.j].pos).toDouble();
+    }
+  }
   return area;
 }
 
 /// Length of the building's outline on [base]'s floor, mm.
 double outlineLength(FloorBase base) => base.edges
-    .where((e) => e.kind == 'exterior' || (e.kind == 'open' && _onOutline(base, e)))
+    .where((e) =>
+        e.kind == 'exterior' || (e.kind == 'open' && _onOutline(base, e)))
     .fold(0.0, (s, e) => s + e.end.pos - e.start.pos);
 
 bool _onOutline(FloorBase base, UnitEdge e) =>
@@ -452,13 +511,18 @@ List<PlanRect> insideRects(FloorBase base) {
           continue;
         }
         final start = i;
-        while (i < axes.nx && !base.outside.contains(Cell(i, j))) i++;
+        while (i < axes.nx && !base.outside.contains(Cell(i, j))) {
+          i++;
+        }
         runs.add((start, i));
       }
     }
-    for (final run in open.keys.toList())
+    for (final run in open.keys.toList()) {
       if (!runs.contains(run)) close(run, open.remove(run)!, j);
-    for (final run in runs) open.putIfAbsent(run, () => j);
+    }
+    for (final run in runs) {
+      open.putIfAbsent(run, () => j);
+    }
   }
   return out;
 }

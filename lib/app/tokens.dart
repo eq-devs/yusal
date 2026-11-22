@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'settings.dart';
-import '../shared/motion/motion.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/motion/motion.dart';
 
 /// Drafting-table palette from the Yusal logo book: a warm stone desk,
 /// white sheets, ink wall cuts and one orange accent. Every screen and painter reads colours from here.
@@ -28,25 +28,25 @@ class Tokens extends ThemeExtension<Tokens> {
     required this.chk,
     required this.dark,
   });
-  final Color bg,
-      panel,
-      ink,
-      muted,
-      line,
-      accent,
-      accentInk,
-      wall,
-      room,
-      roomHi,
-      furn,
-      furnLine,
-      rug,
-      rebar,
-      dim,
-      crit,
-      warn,
-      ok,
-      chk;
+  final Color bg;
+  final Color panel;
+  final Color ink;
+  final Color muted;
+  final Color line;
+  final Color accent;
+  final Color accentInk;
+  final Color wall;
+  final Color room;
+  final Color roomHi;
+  final Color furn;
+  final Color furnLine;
+  final Color rug;
+  final Color rebar;
+  final Color dim;
+  final Color crit;
+  final Color warn;
+  final Color ok;
+  final Color chk;
   final bool dark;
 
   static const light = Tokens(
@@ -261,8 +261,7 @@ ThemeData buildTheme(Tokens t) {
 }
 
 /// The effective palette for the current choice and platform brightness.
-Tokens tokensFor(ThemeChoice choice, Brightness platform) =>
-    switch (choice) {
+Tokens tokensFor(ThemeChoice choice, Brightness platform) => switch (choice) {
       ThemeChoice.day => Tokens.light,
       ThemeChoice.night => Tokens.night,
       ThemeChoice.auto =>

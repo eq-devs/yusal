@@ -7,9 +7,10 @@ extension _EditorHeader on _HouseEditorState {
     final t = Tokens.of(context);
     final app = AppScope.watch(context);
     final doc = history.present;
-    final w = doc.footprint.width, d = doc.footprint.depth;
-    String meters(int mm) => dec((mm / 1000).toStringAsFixed(
-        mm % 1000 == 0 ? 0 : (mm % 100 == 0 ? 1 : 2)));
+    final w = doc.footprint.width;
+    final d = doc.footprint.depth;
+    String meters(int mm) => dec((mm / 1000)
+        .toStringAsFixed(mm % 1000 == 0 ? 0 : (mm % 100 == 0 ? 1 : 2)));
     final roof = switch (doc.roof.type) {
       RoofType.flat => tr3('平屋顶', 'тегіс шатыр', 'плоская крыша'),
       RoofType.gable => tr3('双坡屋顶', 'қос беткейлі шатыр', 'двускатная крыша'),
@@ -67,11 +68,12 @@ extension _EditorHeader on _HouseEditorState {
         label: tr3('楼层', 'Қабат', 'Этаж'),
         value: floorIndex,
         items: [
-          for (var i = 0; i < doc.floors.length; i++) (i, displayFloorName(doc.floors[i].name))
+          for (var i = 0; i < doc.floors.length; i++)
+            (i, displayFloorName(doc.floors[i].name))
         ],
         onChanged: selectFloor);
-    Widget icon(String zh, String kk, String ru, IconData data,
-            VoidCallback? onTap,
+    Widget icon(
+            String zh, String kk, String ru, IconData data, VoidCallback? onTap,
             {double size = 20}) =>
         IconButton(
             tooltip: zh.trKey(kk, ru),
@@ -87,29 +89,29 @@ extension _EditorHeader on _HouseEditorState {
             onPressed: addFloorAbove,
             icon: const Icon(Icons.add, size: 20))
         : Padding(
-        padding: const EdgeInsets.only(left: 6),
-        child: OutlinedButton.icon(
-            key: const Key('add-floor'),
-            style: OutlinedButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 10)),
-            onPressed: addFloorAbove,
-            icon: const Icon(Icons.add, size: 16),
-            label: Text(tr3('加一层', 'Қабат қосу', 'Этаж'))));
+            padding: const EdgeInsets.only(left: 6),
+            child: OutlinedButton.icon(
+                key: const Key('add-floor'),
+                style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 10)),
+                onPressed: addFloorAbove,
+                icon: const Icon(Icons.add, size: 16),
+                label: Text(tr3('加一层', 'Қабат қосу', 'Этаж'))));
     final floorOps = icon('楼层操作', 'Қабат әрекеттері', 'Действия с этажом',
-        Icons.layers_outlined,
-        floorOptions);
-    final sizeButton = icon('房屋长宽', 'Үйдің ені мен ұзындығы', 'Ширина и длина дома',
-        Icons.aspect_ratio, footprintOptions);
+        Icons.layers_outlined, floorOptions);
+    final sizeButton = icon('房屋长宽', 'Үйдің ені мен ұзындығы',
+        'Ширина и длина дома', Icons.aspect_ratio, footprintOptions);
     final history_ = Row(mainAxisSize: MainAxisSize.min, children: [
-      icon('撤销', 'Болдырмау', 'Отменить', Icons.undo, history.canUndo ? undo : null,
+      icon('撤销', 'Болдырмау', 'Отменить', Icons.undo,
+          history.canUndo ? undo : null,
           size: 21),
-      icon('重做', 'Қайталау', 'Повторить', Icons.redo, history.canRedo ? redo : null,
+      icon('重做', 'Қайталау', 'Повторить', Icons.redo,
+          history.canRedo ? redo : null,
           size: 21),
     ]);
-    final saveButton =
-        icon('立即保存', 'Қазір сақтау', 'Сохранить сейчас',
-        Icons.save_outlined, save);
+    final saveButton = icon(
+        '立即保存', 'Қазір сақтау', 'Сохранить сейчас', Icons.save_outlined, save);
     final more = PopupMenuButton<String>(
         tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия'),
         onSelected: (value) {
@@ -125,37 +127,47 @@ extension _EditorHeader on _HouseEditorState {
             chooseCompare();
           }
           if (value == 'lang') chooseLanguage();
-          if (value == 'theme')
+          if (value == 'theme') {
             app.setTheme(ThemeChoice
                 .values[(app.theme.index + 1) % ThemeChoice.values.length]);
+          }
         },
         itemBuilder: (context) => [
               PopupMenuItem(
-                  value: 'roof', child: Text(tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши'))),
+                  value: 'roof',
+                  child: Text(tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши'))),
               PopupMenuItem(
-                  value: 'checks', child: Text(tr3('设计检查', 'Жобаны тексеру', 'Проверка проекта'))),
+                  value: 'checks',
+                  child:
+                      Text(tr3('设计检查', 'Жобаны тексеру', 'Проверка проекта'))),
               PopupMenuItem(
                   value: 'variant',
-                  child: Text(tr3('复制为新方案', 'Жаңа нұсқа ретінде көшіру', 'Копировать как новый вариант'))),
+                  child: Text(tr3('复制为新方案', 'Жаңа нұсқа ретінде көшіру',
+                      'Копировать как новый вариант'))),
               PopupMenuItem(
                   value: 'compare',
-                  child: Text(tr3('方案对比', 'Нұсқаларды салыстыру', 'Сравнение вариантов'))),
+                  child: Text(tr3(
+                      '方案对比', 'Нұсқаларды салыстыру', 'Сравнение вариантов'))),
               PopupMenuItem(
-                  value: 'settings', child: Text(tr3('设置', 'Баптаулар', 'Настройки'))),
+                  value: 'settings',
+                  child: Text(tr3('设置', 'Баптаулар', 'Настройки'))),
               PopupMenuItem(
                   value: 'pdf',
-                  child: Text(tr3('导出图纸 PDF', 'Сызбаларды PDF ету', 'Экспорт чертежей в PDF'))),
+                  child: Text(tr3('导出图纸 PDF', 'Сызбаларды PDF ету',
+                      'Экспорт чертежей в PDF'))),
               PopupMenuItem(
                   value: 'png',
-                  child: Text(tr3('导出本层平面图 PNG', 'Қабат жоспарын PNG ету', 'Экспорт плана этажа в PNG'))),
+                  child: Text(tr3('导出本层平面图 PNG', 'Қабат жоспарын PNG ету',
+                      'Экспорт плана этажа в PNG'))),
               PopupMenuItem(
                   value: 'export',
-                  child: Text(tr3('导出 .house', '.house файлын шығару', 'Экспорт .house'))),
+                  child: Text(tr3(
+                      '导出 .house', '.house файлын шығару', 'Экспорт .house'))),
               // On phones language and theme live here, not in the header,
               // so the drawing gets the room.
               if (!wide) ...[
                 const PopupMenuDivider(),
-                PopupMenuItem(
+                const PopupMenuItem(
                     value: 'lang', child: Text('Тіл / Язык / 语言')),
                 PopupMenuItem(
                     value: 'theme',
@@ -167,7 +179,7 @@ extension _EditorHeader on _HouseEditorState {
               ],
             ]);
     final back = BackButton(color: t.ink);
-    if (wide)
+    if (wide) {
       return Padding(
           padding: const EdgeInsets.fromLTRB(4, 8, 12, 4),
           child: Row(children: [
@@ -187,32 +199,33 @@ extension _EditorHeader on _HouseEditorState {
             const SizedBox(width: 8),
             theme,
           ]));
+    }
     return Padding(
         padding: const EdgeInsets.fromLTRB(0, 4, 4, 0),
         child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-          Row(children: [back, Expanded(child: title), history_, more]),
-          // The buttons scroll; whether the design is saved stays in
-          // sight at the end of the row, whatever the language's length.
-          Row(children: [
-            Expanded(
-                child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.fromLTRB(12, 2, 4, 4),
-                    child: Row(children: [
-                      floors,
-                      addFloor,
-                      floorOps,
-                      sizeButton,
-                      saveButton,
-                    ]))),
-            Padding(
-                padding: const EdgeInsets.only(left: 4, right: 8),
-                child: saveIndicator()),
-          ]),
-        ]));
+              Row(children: [back, Expanded(child: title), history_, more]),
+              // The buttons scroll; whether the design is saved stays in
+              // sight at the end of the row, whatever the language's length.
+              Row(children: [
+                Expanded(
+                    child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.fromLTRB(12, 2, 4, 4),
+                        child: Row(children: [
+                          floors,
+                          addFloor,
+                          floorOps,
+                          sizeButton,
+                          saveButton,
+                        ]))),
+                Padding(
+                    padding: const EdgeInsets.only(left: 4, right: 8),
+                    child: saveIndicator()),
+              ]),
+            ]));
   }
 
   /// Three groups on top, the pages of the open group under them, and
@@ -231,8 +244,8 @@ extension _EditorHeader on _HouseEditorState {
                 child: InkWell(
                     key: ValueKey('group-$key'),
                     borderRadius: BorderRadius.circular(8),
-                    onTap: () =>
-                        showTab(lastInGroup[key] ?? _HouseEditorState.tabGroups[key]!.first),
+                    onTap: () => showTab(lastInGroup[key] ??
+                        _HouseEditorState.tabGroups[key]!.first),
                     child: SizedBox(
                         height: 38,
                         child: Center(
@@ -251,9 +264,8 @@ extension _EditorHeader on _HouseEditorState {
             button: true,
             selected: key == tab,
             child: Material(
-                color: key == tab
-                    ? Tokens.mix(t.accent, 0.14, t.panel)
-                    : t.panel,
+                color:
+                    key == tab ? Tokens.mix(t.accent, 0.14, t.panel) : t.panel,
                 shape: StadiumBorder(
                     side: BorderSide(
                         color: key == tab ? t.accent : t.line,
@@ -292,12 +304,14 @@ extension _EditorHeader on _HouseEditorState {
                 child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(children: [
-                      for (final key in _HouseEditorState.tabGroups[group]!) page(key)
+                      for (final key in _HouseEditorState.tabGroups[group]!)
+                        page(key)
                     ]))),
             // Drawing and looking are one tap apart, either way.
             if (group != 'build')
               FilledButton.tonalIcon(
-                  key: ValueKey(flat || group == 'draw' ? 'quick-3d' : 'quick-2d'),
+                  key: ValueKey(
+                      flat || group == 'draw' ? 'quick-3d' : 'quick-2d'),
                   style: FilledButton.styleFrom(
                       visualDensity: VisualDensity.compact,
                       padding: const EdgeInsets.symmetric(horizontal: 12)),
@@ -320,8 +334,8 @@ extension _EditorHeader on _HouseEditorState {
     final t = Tokens.of(context);
     final app = AppScope.watch(context);
     return Container(
-        decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: t.line))),
+        decoration:
+            BoxDecoration(border: Border(bottom: BorderSide(color: t.line))),
         padding: const EdgeInsets.fromLTRB(0, 2, 4, 0),
         child: Row(children: [
           BackButton(color: t.ink),
@@ -336,8 +350,8 @@ extension _EditorHeader on _HouseEditorState {
                           fontSize: 15, fontWeight: FontWeight.w700)))),
           const SizedBox(width: 8),
           Expanded(
-              child: TabStrip(
-                  tabs: editorTabs, current: tab, onSelect: showTab)),
+              child:
+                  TabStrip(tabs: editorTabs, current: tab, onSelect: showTab)),
           const VoiceSlot(size: 40),
           IconButton(
               tooltip: '撤销'.trKey('Болдырмау', 'Отменить'),
@@ -353,7 +367,7 @@ extension _EditorHeader on _HouseEditorState {
               tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия'),
               onSelected: (value) {
                 if (value == 'checks') showTab('iss');
-          if (value == 'roof') chooseRoof();
+                if (value == 'roof') chooseRoof();
                 if (value == 'settings') settings();
                 if (value == 'export') export();
                 if (value == 'pdf') exportDrawings();
@@ -368,9 +382,10 @@ extension _EditorHeader on _HouseEditorState {
                 if (value == 'floors') floorOptions();
                 // All three languages; the old toggle skipped Russian.
                 if (value == 'lang') chooseLanguage();
-                if (value == 'theme')
-                  app.setTheme(ThemeChoice
-                      .values[(app.theme.index + 1) % ThemeChoice.values.length]);
+                if (value == 'theme') {
+                  app.setTheme(ThemeChoice.values[
+                      (app.theme.index + 1) % ThemeChoice.values.length]);
+                }
               },
               itemBuilder: (context) => [
                     PopupMenuItem(
@@ -378,27 +393,33 @@ extension _EditorHeader on _HouseEditorState {
                         child: Text(tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши'))),
                     PopupMenuItem(
                         value: 'checks',
-                        child: Text(tr3('设计检查', 'Жобаны тексеру', 'Проверка проекта'))),
+                        child: Text(
+                            tr3('设计检查', 'Жобаны тексеру', 'Проверка проекта'))),
                     PopupMenuItem(
                         value: 'variant',
-                        child: Text(tr3('复制为新方案', 'Жаңа нұсқа ретінде көшіру', 'Копировать как новый вариант'))),
+                        child: Text(tr3('复制为新方案', 'Жаңа нұсқа ретінде көшіру',
+                            'Копировать как новый вариант'))),
                     PopupMenuItem(
                         value: 'compare',
-                        child: Text(tr3('方案对比', 'Нұсқаларды салыстыру', 'Сравнение вариантов'))),
+                        child: Text(tr3('方案对比', 'Нұсқаларды салыстыру',
+                            'Сравнение вариантов'))),
                     PopupMenuItem(
-                        value: 'settings', child: Text(tr3('设置', 'Баптаулар', 'Настройки'))),
+                        value: 'settings',
+                        child: Text(tr3('设置', 'Баптаулар', 'Настройки'))),
                     PopupMenuItem(
                         value: 'pdf',
-                        child: Text(tr3('导出图纸 PDF', 'Сызбаларды PDF ету', 'Экспорт чертежей в PDF'))),
+                        child: Text(tr3('导出图纸 PDF', 'Сызбаларды PDF ету',
+                            'Экспорт чертежей в PDF'))),
                     PopupMenuItem(
                         value: 'png',
-                        child: Text(tr3('导出本层平面图 PNG', 'Қабат жоспарын PNG ету', 'Экспорт плана этажа в PNG'))),
+                        child: Text(tr3('导出本层平面图 PNG', 'Қабат жоспарын PNG ету',
+                            'Экспорт плана этажа в PNG'))),
                     PopupMenuItem(
                         value: 'export',
-                        child: Text(tr3('导出 .house', '.house файлын шығару', 'Экспорт .house'))),
-                    PopupMenuItem(
-                        value: 'lang',
-                        child: const Text('Тіл / Язык / 语言')),
+                        child: Text(tr3('导出 .house', '.house файлын шығару',
+                            'Экспорт .house'))),
+                    const PopupMenuItem(
+                        value: 'lang', child: Text('Тіл / Язык / 语言')),
                     PopupMenuItem(
                         value: 'theme',
                         child: Text(switch (app.theme) {
@@ -423,7 +444,8 @@ extension _EditorHeader on _HouseEditorState {
               ])
                 ListTile(
                     title: Text(label),
-                    trailing: value == app.lang ? const Icon(Icons.check) : null,
+                    trailing:
+                        value == app.lang ? const Icon(Icons.check) : null,
                     onTap: () => Navigator.pop(context, value)),
             ])));
     if (lang != null) app.setLang(lang);

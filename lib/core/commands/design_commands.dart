@@ -1,12 +1,12 @@
 import 'dart:convert';
-import '../document/house_document.dart';
-import '../serialization/house_codec.dart';
-import '../axis/axis_resolver.dart';
-import '../geometry/derived_house.dart';
-import '../geometry/opening_constraints.dart';
-import '../geometry/floor_base.dart';
-import 'room_commands.dart';
-import '../canonicalization/room_canonicalizer.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/serialization/house_codec.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/geometry/opening_constraints.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/commands/room_commands.dart';
+import 'package:yusal/core/canonicalization/room_canonicalizer.dart';
 
 class EditResult {
   const EditResult(this.document, this.error);
@@ -31,10 +31,11 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
               .firstWhere((f) => f.stairs.any((s) => s.id == args['stairId']))
               .id;
       final index = doc.floors.indexWhere((f) => f.id == targetFloor);
-      if (index < 0 || index == doc.floors.length - 1)
+      if (index < 0 || index == doc.floors.length - 1) {
         return const EditResult(null, '楼梯需要上方还有楼层');
-      final region = args['region'] as AxisRectangle,
-          axes = resolveFloorAxes(doc, targetFloor)!;
+      }
+      final region = args['region'] as AxisRectangle;
+      final axes = resolveFloorAxes(doc, targetFloor)!;
       if (doc.floors[index].explicitWalls) {
         final r = resolveRect(axes, region).rect!;
         final walls = deriveFloorBase(doc, targetFloor).wallSegments;
@@ -48,8 +49,9 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
                 : w.axis.pos > r.bottom &&
                     w.axis.pos < r.top &&
                     w.start.pos < r.right &&
-                    w.end.pos > r.left)))
+                    w.end.pos > r.left))) {
           return const EditResult(null, '楼梯不能穿过已有墙体，请先移动或删除这段墙');
+        }
       }
       doc = paintCells(doc, targetFloor,
           cellsOfRect(resolveRect(axes, region).rect!), RoomType.custom, newId,
@@ -70,12 +72,14 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         };
     switch (kind) {
       case 'SetFootprintSize':
-        for (final field in ['width', 'depth'])
+        for (final field in ['width', 'depth']) {
           if (args.containsKey(field)) raw['footprint'][field] = args[field];
+        }
         break;
       case 'SetNorthAngle':
-        if (![0, 90, 180, 270].contains(args['value']))
+        if (![0, 90, 180, 270].contains(args['value'])) {
           return const EditResult(null, '请选择四个正北方向之一');
+        }
         raw['footprint']['northAngleDeg'] = args['value'];
         break;
       case 'SetRoof':
@@ -104,27 +108,32 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         (raw['axes']['global'] as List).add(axis);
         break;
       case 'MoveAxis':
-        final id = args['axisId'] as String, value = args['pos'] as int;
+        final id = args['axisId'] as String;
+        final value = args['pos'] as int;
         for (final f in doc.floors) {
           final axes = resolveFloorAxes(doc, f.id)!;
           final lookup = lookupAxis(axes, id).axis;
           if (lookup == null) continue;
-          if (lookup.kind == 'boundary')
+          if (lookup.kind == 'boundary') {
             return const EditResult(null, '边界尺寸请通过房屋宽深修改');
+          }
           final list = lookup.dir == AxisDir.V ? axes.v : axes.h;
           if (value < list[lookup.index - 1].pos + 300 ||
-              value > list[lookup.index + 1].pos - 300)
+              value > list[lookup.index + 1].pos - 300) {
             return const EditResult(null, '分隔线不能越过相邻线，间距至少 0.30 米');
+          }
         }
         for (final a in [
           ...(raw['axes']['global'] as List),
           ...(raw['axes']['floor'] as List)
-        ]) if (a['id'] == id) a['pos'] = value;
+        ]) {
+          if (a['id'] == id) a['pos'] = value;
+        }
         break;
       case 'AddFloor':
       case 'CopyFloor':
-        final source = floor(args['floorId'] as String),
-            index = floors.indexOf(source);
+        final source = floor(args['floorId'] as String);
+        final index = floors.indexOf(source);
         final id = newId();
         if (kind == 'AddFloor') {
           floors.insert(index + 1, {
@@ -142,14 +151,17 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
           final locals = (raw['axes']['floor'] as List)
               .where((a) => a['floorId'] == source['id'])
               .toList();
-          for (final a in locals) mapping[a['id'] as String] = newId();
+          for (final a in locals) {
+            mapping[a['id'] as String] = newId();
+          }
           for (final list in ['rooms', 'wallOverrides', 'openings'])
-            for (final o in (copy[list] as List))
+            for (final o in (copy[list] as List)) {
               mapping[o['id'] as String] = newId();
+            }
           dynamic remap(dynamic value) {
             if (value is String) return value;
             if (value is List) return value.map(remap).toList();
-            if (value is Map)
+            if (value is Map) {
               return value.map((k, v) => MapEntry(
                   k,
                   [
@@ -166,6 +178,7 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
                           v is String
                       ? mapping[v] ?? v
                       : remap(v)));
+            }
             return value;
           }
 
@@ -173,7 +186,9 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
           mapped['name'] = '${source['name']} 副本';
           mapped['stairs'] = [];
           floors.insert(index + 1, mapped);
-          for (final a in locals) (raw['axes']['floor'] as List).add(remap(a));
+          for (final a in locals) {
+            (raw['axes']['floor'] as List).add(remap(a));
+          }
         }
         break;
       case 'DeleteFloor':
@@ -183,14 +198,16 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         if (removedIndex == floors.length - 1 &&
             removedIndex > 0 &&
             (floors[removedIndex - 1]['stairs'] as List).isNotEmpty) {
-          if (args['deleteStairs'] != true)
+          if (args['deleteStairs'] != true) {
             return const EditResult(null, '删除顶层后，下层楼梯没有上层。请确认同时删除这些楼梯');
+          }
           (floors[removedIndex - 1]['stairs'] as List).clear();
         }
         final openingIds =
             (removed['openings'] as List).map((o) => o['id']).toSet();
-        if (openingIds.contains(raw['mainEntranceOpeningId']))
+        if (openingIds.contains(raw['mainEntranceOpeningId'])) {
           raw.remove('mainEntranceOpeningId');
+        }
         floors.remove(removed);
         (raw['axes']['floor'] as List)
             .removeWhere((a) => a['floorId'] == args['floorId']);
@@ -202,15 +219,16 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         floor(args['floorId'] as String)['name'] = args['value'];
         break;
       case 'MergeRooms':
-        final a = args['roomIdA'] as String, b = args['roomIdB'] as String;
+        final a = args['roomIdA'] as String;
+        final b = args['roomIdB'] as String;
         if (a == b) return EditResult(original, null);
         final f = doc.floors.firstWhere((f) => f.rooms.any((r) => r.id == a));
         final ra = f.rooms.firstWhere((r) => r.id == a);
         final rb = f.rooms.where((r) => r.id == b).firstOrNull;
         if (rb == null) return const EditResult(null, '只能合并同一楼层的房间');
         final axes = resolveFloorAxes(doc, f.id)!;
-        final ca = regionCells(axes, ra.regions).cells,
-            cb = regionCells(axes, rb.regions).cells;
+        final ca = regionCells(axes, ra.regions).cells;
+        final cb = regionCells(axes, rb.regions).cells;
         final cells = {...ca, ...cb};
         if (!isConnected(cells)) return const EditResult(null, '只能合并相邻房间');
         final keep = compareComponentPriority(axes, ca, cb) <= 0 ? ra : rb;
@@ -232,16 +250,17 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         room['type'] = next.name;
         break;
       case 'AddOpening':
-        final a = args['anchor'] as BoundaryAnchor,
-            f = floor(args['floorId'] as String),
-            base = deriveFloorBase(doc, args['floorId'] as String);
-        final chain = resolveAnchor(base.axes, a).chain!,
-            tap = (args['tapT'] as num).toDouble(),
-            openingKind = args['kind'] as OpeningKind;
-        if (tap < 0 || tap > chain.nominalLength)
+        final a = args['anchor'] as BoundaryAnchor;
+        final f = floor(args['floorId'] as String);
+        final base = deriveFloorBase(doc, args['floorId'] as String);
+        final chain = resolveAnchor(base.axes, a).chain!;
+        final tap = (args['tapT'] as num).toDouble();
+        final openingKind = args['kind'] as OpeningKind;
+        if (tap < 0 || tap > chain.nominalLength) {
           return const EditResult(null, '点击位置不在墙段内');
-        final isDoor = openingKind == OpeningKind.door,
-            start = tap <= chain.nominalLength / 2;
+        }
+        final isDoor = openingKind == OpeningKind.door;
+        final start = tap <= chain.nominalLength / 2;
         final opening = <String, dynamic>{
           'kind': openingKind.name,
           'id': newId(),
@@ -320,27 +339,32 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
           o.remove('hinge');
           o.remove('opensTo');
           o['sill'] = kind == OpeningKind.window ? doc.defaults.windowSill : 0;
-          if (kind == OpeningKind.window)
+          if (kind == OpeningKind.window) {
             o['height'] = doc.defaults.windowHeight;
-          if (raw['mainEntranceOpeningId'] == o['id'])
+          }
+          if (raw['mainEntranceOpeningId'] == o['id']) {
             raw.remove('mainEntranceOpeningId');
+          }
         }
         break;
       case 'ResizeOpening':
         final o = object('openings', args['openingId'] as String);
-        for (final field in ['width', 'height', 'sill'])
+        for (final field in ['width', 'height', 'sill']) {
           if (args.containsKey(field)) o[field] = args[field];
+        }
         break;
       case 'FlipDoor':
         final o = object('openings', args['openingId'] as String);
         if (o['kind'] != 'door') return const EditResult(null, '只有门可以调整开向');
-        for (final field in ['hinge', 'opensTo'])
+        for (final field in ['hinge', 'opensTo']) {
           if (args.containsKey(field)) o[field] = args[field];
+        }
         break;
       case 'MoveOpening':
         final o = object('openings', args['openingId'] as String);
-        if (args['anchor'] != null)
+        if (args['anchor'] != null) {
           o['anchor'] = anchor(args['anchor'] as BoundaryAnchor);
+        }
         o['position'] = args['position'];
         if (args['anchor'] != null && o['kind'] == 'door') {
           final f = doc.floors
@@ -373,24 +397,28 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         }
         break;
       case 'DeleteOpening':
-        for (final f in floors)
+        for (final f in floors) {
           (f['openings'] as List)
               .removeWhere((o) => o['id'] == args['openingId']);
-        if (raw['mainEntranceOpeningId'] == args['openingId'])
+        }
+        if (raw['mainEntranceOpeningId'] == args['openingId']) {
           raw.remove('mainEntranceOpeningId');
+        }
         break;
       case 'SetMainEntrance':
         if (args['openingId'] == null) {
           raw.remove('mainEntranceOpeningId');
         } else {
-          if (object('openings', args['openingId'] as String)['kind'] != 'door')
+          if (object('openings', args['openingId'] as String)['kind'] !=
+              'door') {
             return const EditResult(null, '主入口需要是一扇门');
+          }
           raw['mainEntranceOpeningId'] = args['openingId'];
         }
         break;
       case 'AddStair':
-        final r = args['region'] as AxisRectangle,
-            type = args['type'] as StairType;
+        final r = args['region'] as AxisRectangle;
+        final type = args['type'] as StairType;
         (floor(args['floorId'] as String)['stairs'] as List).add({
           'type': type.name,
           'id': newId(),
@@ -405,8 +433,9 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
           final r = args['region'] as AxisRectangle;
           stair['region'] = {'x0': r.x0, 'x1': r.x1, 'y0': r.y0, 'y1': r.y1};
         }
-        for (final field in ['type', 'startEdge', 'turn'])
+        for (final field in ['type', 'startEdge', 'turn']) {
           if (args.containsKey(field)) stair[field] = args[field];
+        }
         if (stair['type'] == 'straight') {
           stair.remove('turn');
         } else {
@@ -414,30 +443,31 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         }
         break;
       case 'DeleteStair':
-        for (final f in floors)
+        for (final f in floors) {
           (f['stairs'] as List).removeWhere((s) => s['id'] == args['stairId']);
+        }
         break;
       case 'SetWallOverride':
-        final a = args['anchor'] as BoundaryAnchor,
-            type = args['type'],
-            f = floor(args['floorId'] as String);
-        final axes = resolveFloorAxes(doc, args['floorId'] as String)!,
-            chain = resolveAnchor(axes, a).chain!;
+        final a = args['anchor'] as BoundaryAnchor;
+        final type = args['type'];
+        final f = floor(args['floorId'] as String);
+        final axes = resolveFloorAxes(doc, args['floorId'] as String)!;
+        final chain = resolveAnchor(axes, a).chain!;
         final newOverrides = <dynamic>[];
         for (final w in (f['wallOverrides'] as List)) {
           final old = BoundaryAnchor(
-                  axisId: w['anchor']['axisId'] as String,
-                  startAxisId: w['anchor']['startAxisId'] as String,
-                  endAxisId: w['anchor']['endAxisId'] as String),
-              c = resolveAnchor(axes, old).chain!;
+              axisId: w['anchor']['axisId'] as String,
+              startAxisId: w['anchor']['startAxisId'] as String,
+              endAxisId: w['anchor']['endAxisId'] as String);
+          final c = resolveAnchor(axes, old).chain!;
           if (c.carrier.id != chain.carrier.id ||
               c.startPos >= chain.endPos ||
               chain.startPos >= c.endPos) {
             newOverrides.add(w);
             continue;
           }
-          final left = c.startPos < chain.startPos,
-              right = c.endPos > chain.endPos;
+          final left = c.startPos < chain.startPos;
+          final right = c.endPos > chain.endPos;
           if (left) {
             final copy = jsonDecode(jsonEncode(w));
             copy['anchor']['endAxisId'] = a.startAxisId;
@@ -452,7 +482,7 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         }
         final explicit =
             f['explicitWalls'] == true && chain.carrier.kind != 'boundary';
-        if (type != 'default' || explicit)
+        if (type != 'default' || explicit) {
           newOverrides.add({
             'type': explicit && type != 'open' ? 'solid' : type,
             'id': newId(),
@@ -461,17 +491,21 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
             if (explicit && type == 'default')
               'value': doc.defaults.innerWallThickness,
           });
+        }
         f['wallOverrides'] = newOverrides;
         break;
       default:
         return EditResult(null, '尚未支持的命令 $kind');
     }
     // A hip roof needs version 4; the caller settles the final version.
-    if ((raw['roof'] as Map)['type'] == 'hip' && (raw['schemaVersion'] as int) < 4)
+    if ((raw['roof'] as Map)['type'] == 'hip' &&
+        (raw['schemaVersion'] as int) < 4) {
       raw['schemaVersion'] = 4;
+    }
     final loaded = loadHouse(utf8.encode(jsonEncode(raw)));
-    if (!loaded.isSuccess)
+    if (!loaded.isSuccess) {
       return EditResult(null, '操作无法完成：${loaded.failure!.errors.first.message}');
+    }
     if (kind == 'SetFootprintSize' || kind == 'MoveAxis') {
       final healthy = documentOpenings(doc)
           .where((p) => p.status == 'ok')
@@ -496,8 +530,10 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
           return const EditResult(null, '门窗超出有效墙面，请换一个位置或调整尺寸');
         }
         for (final other in placements) {
-          if (candidate.opening.id == other.opening.id || other.status != 'ok')
+          if (candidate.opening.id == other.opening.id ||
+              other.status != 'ok') {
             continue;
+          }
           if (candidate.host?.ref == other.host?.ref &&
               candidate.start < other.end &&
               other.start < candidate.end &&

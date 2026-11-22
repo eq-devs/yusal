@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:indexd_stack_dev/indexd_stack_dev.dart';
 
-import 'motion_tokens.dart';
+import 'package:yusal/shared/motion/motion_tokens.dart';
 
 /// Every indexed page switch in the app (bottom tabs, segments, tab bars)
 /// goes through this: a lazy [LazyLoadIndexedStack] that builds a page the

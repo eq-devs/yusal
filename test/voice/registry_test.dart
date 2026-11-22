@@ -110,7 +110,7 @@ void main() {
 
   // The AI gateway loads docs/voice_tools.json. After changing an action,
   // rewrite it with: UPDATE_VOICE_TOOLS=1 flutter test test/voice/registry_test.dart
-  test('docs/voice_tools.json matches the app\'s actions', () {
+  test("docs/voice_tools.json matches the app's actions", () {
     final file = File('docs/voice_tools.json');
     final now =
         '${const JsonEncoder.withIndent('  ').convert(appActions.tools())}\n';

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../demand/demand_detail_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../profile/profile_edit_page.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import '../../voice/action.dart';
-import '../../voice/form.dart';
-import '../../voice/screen.dart';
-import '../../shared/brand/yicon.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/features/profile/profile_edit_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/form.dart';
+import 'package:yusal/voice/screen.dart';
+import 'package:yusal/shared/brand/yicon.dart';
 
 /// Sign-up (hire) or quote (contract) editor. Sending again creates a new
 /// version of the same application; history is kept.
@@ -26,7 +26,9 @@ class ApplyPage extends StatefulWidget {
 
 class _QuoteRow {
   _QuoteRow(this.name, this.qty, this.unit, this.price);
-  final TextEditingController name, qty, price;
+  final TextEditingController name;
+  final TextEditingController qty;
+  final TextEditingController price;
   String unit;
 }
 
@@ -63,14 +65,14 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
   String? profileId;
   DateTime? availableFrom;
   bool acceptsOffer = true;
-  final wage = TextEditingController(),
-      headcount = TextEditingController(text: '1'),
-      note = TextEditingController(),
-      scope = TextEditingController(),
-      lump = TextEditingController(),
-      days = TextEditingController(),
-      includes = TextEditingController(),
-      excludes = TextEditingController();
+  final wage = TextEditingController();
+  final headcount = TextEditingController(text: '1');
+  final note = TextEditingController();
+  final scope = TextEditingController();
+  final lump = TextEditingController();
+  final days = TextEditingController();
+  final includes = TextEditingController();
+  final excludes = TextEditingController();
   MaterialMode materials = MaterialMode.labourOnly;
   PricingMode pricing = PricingMode.lumpSum;
   DateTime? validUntil;
@@ -144,7 +146,8 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
   double? get lineTotal {
     var sum = 0.0;
     for (final r in rows) {
-      final q = parseNum(r.qty.text), p = parseInt(r.price.text);
+      final q = parseNum(r.qty.text);
+      final p = parseInt(r.price.text);
       if (q == null || p == null) return null;
       sum += q * p;
     }
@@ -179,20 +182,25 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
       validUntil: validUntil);
 
   String? validate() {
-    if (profileId == null)
+    if (profileId == null) {
       return tr3('请选择用哪个名片报名', 'Профильді таңдаңыз', 'Выберите профиль');
+    }
     if (hire) {
-      if (!acceptsOffer && (parseInt(wage.text) ?? 0) <= 0)
+      if (!acceptsOffer && (parseInt(wage.text) ?? 0) <= 0) {
         return tr3('请填写期望工资，或接受原条件', 'Жалақыны жазыңыз', 'Укажите ставку');
+      }
       return null;
     }
-    if (scope.text.trim().isEmpty)
+    if (scope.text.trim().isEmpty) {
       return tr3('请写明承接范围', 'Көлемді жазыңыз', 'Опишите объём работ');
-    if (pricing == PricingMode.lumpSum && (parseInt(lump.text) ?? 0) <= 0)
+    }
+    if (pricing == PricingMode.lumpSum && (parseInt(lump.text) ?? 0) <= 0) {
       return tr3('请填写总价', 'Жалпы бағаны жазыңыз', 'Укажите сумму');
-    if (pricing == PricingMode.perQuantity && lineTotal == null)
+    }
+    if (pricing == PricingMode.perQuantity && lineTotal == null) {
       return tr3('请为每一项填写数量和单价', 'Әр жолға сан мен баға',
           'Заполните количество и цену');
+    }
     return null;
   }
 
@@ -256,15 +264,17 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
         body: Live<List<ServiceProfile>>(
             load: (r) => r.myProfiles(),
             builder: (context, profiles) {
-              if (profileId == null && profiles.length == 1)
+              if (profileId == null && profiles.length == 1) {
                 profileId = profiles.first.id;
+              }
               final hireTerms = d.current.hire;
               return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(d.current.title,
                         style: const TextStyle(
-                            fontSize: YFont.title, fontWeight: FontWeight.w700)),
+                            fontSize: YFont.title,
+                            fontWeight: FontWeight.w700)),
                     Text(
                         tr3(
                             '依据第 ${d.current.no} 版需求',

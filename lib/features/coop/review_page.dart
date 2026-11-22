@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 
 /// Optional review after a mutually ended cooperation, on a few clear
 /// dimensions. Each dimension can be left out.
@@ -14,7 +14,8 @@ class ReviewPage extends StatefulWidget {
       required this.cooperationId,
       required this.otherName,
       this.ratingPro = true});
-  final String cooperationId, otherName;
+  final String cooperationId;
+  final String otherName;
 
   /// The owner rates the pro's work; the pro rates the owner.
   final bool ratingPro;
@@ -49,8 +50,8 @@ class _ReviewPageState extends State<ReviewPage> {
           Text(
               tr3('评价 ${widget.otherName}', '${widget.otherName} туралы',
                   'Отзыв о ${widget.otherName}'),
-              style:
-                  const TextStyle(fontSize: YFont.title, fontWeight: FontWeight.w700)),
+              style: const TextStyle(
+                  fontSize: YFont.title, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           Text(
               tr3(

@@ -1,16 +1,16 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../app/settings.dart';
-import '../../core/document/house_document.dart';
-import '../../core/serialization/house_codec.dart';
-import '../../storage/project_store.dart';
-import '../../data/repositories.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/serialization/house_codec.dart';
+import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 
 /// What this device last synced per design, so a cloud copy changed on
 /// another device is recognised instead of overwritten.
@@ -135,7 +135,8 @@ class _BackupTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
-    final e = row.entry, cloud = row.cloud;
+    final e = row.entry;
+    final cloud = row.cloud;
     final repos = context.repos;
     final store = context.projectStore;
     final state = e == null
@@ -155,8 +156,9 @@ class _BackupTile extends StatelessWidget {
             designUpdatedAt: doc.meta.updatedAt,
             expectedPreviousUpdatedAt: force ? null : row.mark);
         await BackupMarks.write(e.id, doc.meta.updatedAt);
-        if (context.mounted)
+        if (context.mounted) {
           toast(context, tr3('已备份', 'Сақталды', 'Сохранено'));
+        }
       } on ApiFailure catch (f) {
         if (!context.mounted) return;
         if (f.code == ApiCodes.conflict) {
@@ -174,25 +176,27 @@ class _BackupTile extends StatelessWidget {
       if (c == null) return;
       final loaded = loadHouse(utf8.encode(c.houseText));
       if (!loaded.isSuccess) {
-        if (context.mounted)
+        if (context.mounted) {
           toast(
               context,
               tr3(
                   '此备份的文件版本不受支持，无法恢复；原文件未改动。',
                   'Бұл нұсқа қолдау көрсетілмейді.',
                   'Версия файла не поддерживается; ничего не изменено.'));
+        }
         return;
       }
       final doc = loaded.document!;
-      final id = await store.createProject(copy
-          ? composeDocument(
-              Meta(
-                  name:
-                      '${doc.meta.name}（${tr3('云端副本', 'бұлт көшірмесі', 'копия из облака')}）',
-                  createdAt: doc.meta.createdAt,
-                  updatedAt: doc.meta.updatedAt),
-              extractDesignState(doc))
-          : doc,
+      final id = await store.createProject(
+          copy
+              ? composeDocument(
+                  Meta(
+                      name:
+                          '${doc.meta.name}（${tr3('云端副本', 'бұлт көшірмесі', 'копия из облака')}）',
+                      createdAt: doc.meta.createdAt,
+                      updatedAt: doc.meta.updatedAt),
+                  extractDesignState(doc))
+              : doc,
           // Restored in place of the lost design: the same design, so its
           // row reads "backed up" rather than a new one beside a copy
           // that is "only in the account".
@@ -201,8 +205,9 @@ class _BackupTile extends StatelessWidget {
       // My houses lists it too, when this page sits over the shell.
       PlatformReload.of(context)?.bump();
       await onRestored();
-      if (context.mounted)
+      if (context.mounted) {
         toast(context, tr3('已恢复到本设备', 'Қалпына келтірілді', 'Восстановлено'));
+      }
     }
 
     resolveConflict = () async {
@@ -266,9 +271,8 @@ class _BackupTile extends StatelessWidget {
           Wrap(spacing: 8, runSpacing: 8, children: [
             if (e != null && state != BackupState.inSync)
               OutlinedButton(
-                  onPressed: state == BackupState.diverged
-                      ? resolveConflict
-                      : () => upload(),
+                  onPressed:
+                      state == BackupState.diverged ? resolveConflict : upload,
                   child: Text(state == BackupState.diverged
                       ? tr3('选择保留哪个', 'Таңдау', 'Выбрать версию')
                       : tr3('备份', 'Сақтау', 'Сохранить копию'))),

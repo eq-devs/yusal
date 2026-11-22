@@ -1,17 +1,21 @@
 // Back-office and trust records: paged lists, the to-do list, the dashboard,
 // appeals, worker verification, new-demand alerts and push settings.
-import 'models.dart';
+import 'package:yusal/domain/models.dart';
 
 /// One page of a back-office list.
 class Paged<T> {
-  const Paged(this.items, {required this.total, this.page = 1, this.pageSize = 20});
+  const Paged(this.items,
+      {required this.total, this.page = 1, this.pageSize = 20});
   final List<T> items;
-  final int total, page, pageSize;
+  final int total;
+  final int page;
+  final int pageSize;
   bool get hasMore => page * pageSize < total;
   static Paged<T> of<T>(List<T> all, int page, int size) {
     final from = ((page - 1) * size).clamp(0, all.length);
     final to = (from + size).clamp(0, all.length);
-    return Paged(all.sublist(from, to), total: all.length, page: page, pageSize: size);
+    return Paged(all.sublist(from, to),
+        total: all.length, page: page, pageSize: size);
   }
 }
 
@@ -25,7 +29,10 @@ class ReportView {
       this.targetOwnerName = '',
       this.postId});
   final Report report;
-  final String reporterName, targetTitle, targetOwnerId, targetOwnerName;
+  final String reporterName;
+  final String targetTitle;
+  final String targetOwnerId;
+  final String targetOwnerName;
 
   /// The house a reported comment belongs to.
   final String? postId;
@@ -47,7 +54,13 @@ class Appeal {
       this.status = AppealStatus.open,
       this.resolution = '',
       this.handledAt});
-  final String id, accountId, targetId, text, targetTitle, accountName, resolution;
+  final String id;
+  final String accountId;
+  final String targetId;
+  final String text;
+  final String targetTitle;
+  final String accountName;
+  final String resolution;
 
   /// demand | profile | post | account
   final String target;
@@ -72,7 +85,14 @@ class Verification {
       this.ownerName = '',
       this.status = VerificationStatus.pending,
       this.resolution = ''});
-  final String id, profileId, ownerId, name, phone, note, ownerName, resolution;
+  final String id;
+  final String profileId;
+  final String ownerId;
+  final String name;
+  final String phone;
+  final String note;
+  final String ownerName;
+  final String resolution;
   final List<String> photos;
   final DateTime createdAt;
   final VerificationStatus status;
@@ -86,7 +106,8 @@ class DemandAlert {
       this.trades = const [],
       this.types = const []});
   final bool on;
-  final List<String> regions, trades;
+  final List<String> regions;
+  final List<String> trades;
   final List<DemandType> types;
 
   bool matches(Demand d) {
@@ -100,7 +121,8 @@ class DemandAlert {
 
 /// Push categories the user can mute (deal notices always push).
 abstract final class PushCategory {
-  static const community = 'community', alerts = 'alerts';
+  static const community = 'community';
+  static const alerts = 'alerts';
 }
 
 /// One account's push preferences.
@@ -108,14 +130,16 @@ class NotificationSettings {
   const NotificationSettings(
       {this.muted = const [], this.quietStart = '', this.quietEnd = ''});
   final List<String> muted;
-  final String quietStart, quietEnd;
+  final String quietStart;
+  final String quietEnd;
 }
 
 /// The platform's push restraint.
 class PushPolicy {
   const PushPolicy(
       {this.quietStart = '22:00', this.quietEnd = '08:00', this.dailyCap = 10});
-  final String quietStart, quietEnd;
+  final String quietStart;
+  final String quietEnd;
   final int dailyCap;
 }
 
@@ -144,19 +168,27 @@ class AdminTodo {
   /// Warnings: sweep_stalled, manual_review_on.
   final List<String> health;
   int get total =>
-      review.count + reports.count + appeals.count + verifications.count + disputes.count;
+      review.count +
+      reports.count +
+      appeals.count +
+      verifications.count +
+      disputes.count;
 }
 
 class DashboardDay {
-  const DashboardDay(this.day, {this.active = 0, this.demands = 0, this.quotes = 0});
+  const DashboardDay(this.day,
+      {this.active = 0, this.demands = 0, this.quotes = 0});
   final String day;
-  final int active, demands, quotes;
+  final int active;
+  final int demands;
+  final int quotes;
 }
 
 class RegionSupply {
   const RegionSupply(this.region, {this.demands = 0, this.workers = 0});
   final String region;
-  final int demands, workers;
+  final int demands;
+  final int workers;
 }
 
 /// The back office's numbers.
@@ -192,8 +224,11 @@ class AdminUserRow {
       this.restricted = false,
       this.deleted = false,
       this.role});
-  final String id, name, email;
-  final bool restricted, deleted;
+  final String id;
+  final String name;
+  final String email;
+  final bool restricted;
+  final bool deleted;
   final String? role;
   final DateTime createdAt;
 }
@@ -226,7 +261,8 @@ class AccountDetail {
   final DateTime? lastLogin;
   final List<ServiceProfile> profiles;
   final List<Demand> demands;
-  final int applications, reportsFiled;
+  final int applications;
+  final int reportsFiled;
   final List<Cooperation> cooperations;
   final List<({String id, String title, bool hidden, bool featured})> posts;
   final List<Report> reportsAbout;
@@ -243,7 +279,8 @@ class FeedbackItem {
       this.accountId,
       this.context = const {},
       this.handledAt});
-  final String id, text;
+  final String id;
+  final String text;
   final String? accountId;
   final Map<String, String> context;
   final DateTime createdAt;
@@ -254,7 +291,10 @@ class FeedbackItem {
 class TrendDay {
   const TrendDay(this.date, this.users, this.posts, this.demands, this.quotes);
   final String date;
-  final int users, posts, demands, quotes;
+  final int users;
+  final int posts;
+  final int demands;
+  final int quotes;
 }
 
 /// Result of a batch decision.

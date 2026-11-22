@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
-import 'read_aloud_stub.dart' if (dart.library.ffi) 'read_aloud_qazvoice.dart'
-    as impl;
+import 'package:yusal/services/voice/read_aloud_stub.dart'
+    if (dart.library.ffi) 'read_aloud_qazvoice.dart' as impl;
 
 /// Where the on-device Kazakh voice model is.
 enum VoiceModelPhase {
@@ -50,7 +50,9 @@ class VoiceModelStatus {
 @immutable
 class VoiceCredit {
   const VoiceCredit(this.name, this.license, this.text);
-  final String name, license, text;
+  final String name;
+  final String license;
+  final String text;
 }
 
 /// Reads text aloud in Kazakh on the phone itself, through the qazvoice

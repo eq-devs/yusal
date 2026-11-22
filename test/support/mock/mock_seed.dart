@@ -196,7 +196,6 @@ void seedMockData(MockBackend b) {
                       source: QtySource.manual,
                       stage: 'walls'),
                 ],
-                materials: MaterialMode.labourOnly,
                 targetDays: 25,
                 quoteDeadline: now.add(const Duration(days: 6))),
             photoCount: 2),
@@ -233,8 +232,7 @@ void seedMockData(MockBackend b) {
                 wage: 20000,
                 days: 10,
                 foodLodging: true,
-                toolsByEmployer: true,
-                settleCycle: 'weekly')),
+                toolsByEmployer: true)),
       ]);
   b.demands['dem_rebar'] = Demand(
       id: 'dem_rebar',
@@ -246,7 +244,6 @@ void seedMockData(MockBackend b) {
       publishedAt: ago(2),
       expiresAt: now.add(const Duration(days: 28)),
       shareToken: 'share_rebar',
-      followUpsSent: 0,
       versions: [
         DemandVersion(
             no: 1,
@@ -353,7 +350,6 @@ void seedMockData(MockBackend b) {
                 '外墙与内墙砌筑，含构造柱模板',
                 'Сыртқы және ішкі қабырғаларды қалау, бағандардың қалыбымен',
                 'Кладка наружных и внутренних стен, с опалубкой колонн'),
-            materials: MaterialMode.labourOnly,
             pricing: PricingMode.perQuantity,
             lines: [
               QuoteLine(
@@ -390,8 +386,6 @@ void seedMockData(MockBackend b) {
             createdAt: ago(2),
             scopeText: _l('全部砌墙，两人施工', 'Барлық қабырғаны қалау, екі адам',
                 'Вся кладка, работаем вдвоём'),
-            materials: MaterialMode.labourOnly,
-            pricing: PricingMode.lumpSum,
             lumpSum: 1350000,
             durationDays: 30,
             includes:
@@ -412,8 +406,6 @@ void seedMockData(MockBackend b) {
             demandVersionNo: 1,
             createdAt: ago(0, 20),
             availableFrom: now.add(const Duration(days: 5)),
-            acceptsOffer: true,
-            headcountOffered: 1,
             note: _l('可以带自己的瓦刀和水平尺。', 'Өз қалағым мен деңгейіммен келемін.',
                 'Приду со своей кельмой и уровнем.')),
       ]);
@@ -440,7 +432,6 @@ void seedMockData(MockBackend b) {
             scopeText: _l('条形基础，包工包料', 'Таспалы іргетас, жұмыс пен материал',
                 'Ленточный фундамент, работа и материалы'),
             materials: MaterialMode.labourAndMaterial,
-            pricing: PricingMode.lumpSum,
             lumpSum: 2100000,
             durationDays: 12),
       ]);

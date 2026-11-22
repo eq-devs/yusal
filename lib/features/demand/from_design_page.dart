@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../render2d/planning_names.dart';
-import '../../storage/project_store.dart';
-import '../../domain/models.dart';
-import '../../domain/design_snapshot.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import 'demand_detail_page.dart';
-import 'publish_page.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/render2d/planning_names.dart';
+import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/design_snapshot.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/features/demand/publish_page.dart';
 
 /// "Find builders" from a design: pick the whole house or stages, check the
 /// quantities measured from the design, then continue in the publish
@@ -89,8 +89,8 @@ class _FromDesignPageState extends State<FromDesignPage> {
             child: Text(tr3('下一步：补充信息', 'Келесі', 'Далее'))),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(widget.entry.document.meta.name,
-              style:
-                  const TextStyle(fontSize: YFont.display, fontWeight: FontWeight.w700)),
+              style: const TextStyle(
+                  fontSize: YFont.display, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(
               tr3(

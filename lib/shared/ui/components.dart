@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../motion/motion.dart';
-import 'scope.dart';
-import 'theme.dart';
-import '../brand/yicon.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/brand/yicon.dart';
 
 /// Parts of the design system that several pages share. Sizes, radii and
 /// colours come from `theme.dart`; nothing here has its own palette.
@@ -105,7 +105,8 @@ class SettingsRow extends StatelessWidget {
       this.trailing});
   final IconData icon;
   final String title;
-  final String? subtitle, value;
+  final String? subtitle;
+  final String? value;
   final VoidCallback? onTap;
   final bool danger;
   final Widget? trailing;
@@ -161,7 +162,8 @@ class Skeleton extends StatefulWidget {
   const Skeleton(
       {super.key, this.width, this.height = 14, this.radius = YRadius.row});
   final double? width;
-  final double height, radius;
+  final double height;
+  final double radius;
   @override
   State<Skeleton> createState() => _SkeletonState();
 }
@@ -179,8 +181,8 @@ class _SkeletonState extends State<Skeleton>
       _breath = null;
       _opacity = null;
     } else if (_breath == null) {
-      final breath = _breath =
-          AnimationController(vsync: this, duration: Motion.breath)
+      final breath =
+          _breath = AnimationController(vsync: this, duration: Motion.breath)
             ..repeat(reverse: true);
       _opacity = Tween<double>(begin: 1, end: 0.45)
           .animate(CurvedAnimation(parent: breath, curve: Curves.easeInOut));
@@ -220,14 +222,12 @@ class SkeletonRow extends StatelessWidget {
           const SizedBox(width: YSpace.md),
         ],
         const Expanded(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-              FractionallySizedBox(
-                  widthFactor: 0.7, child: Skeleton(height: 16)),
-              SizedBox(height: YSpace.sm),
-              FractionallySizedBox(widthFactor: 0.45, child: Skeleton()),
-            ])),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          FractionallySizedBox(widthFactor: 0.7, child: Skeleton(height: 16)),
+          SizedBox(height: YSpace.sm),
+          FractionallySizedBox(widthFactor: 0.45, child: Skeleton()),
+        ])),
       ]);
 }
 
@@ -302,8 +302,7 @@ class SkeletonPage extends StatelessWidget {
                               const SizedBox(height: YSpace.xl),
                             ],
                             const FractionallySizedBox(
-                                widthFactor: 0.6,
-                                child: Skeleton(height: 24)),
+                                widthFactor: 0.6, child: Skeleton(height: 24)),
                             const SizedBox(height: YSpace.md),
                             const FractionallySizedBox(
                                 widthFactor: 0.85, child: Skeleton()),
@@ -389,4 +388,3 @@ class SignInPrompt extends StatelessWidget {
             ])));
   }
 }
-

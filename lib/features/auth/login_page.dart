@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../app/settings.dart';
-import '../../voice/voice_overlay.dart';
-import '../../data/http/http_backend.dart';
-import '../../data/repositories.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import 'social_sign_in.dart';
-import '../../shared/brand/brand.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/voice/voice_overlay.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/auth/social_sign_in.dart';
+import 'package:yusal/shared/brand/brand.dart';
 
 /// Sign-in: Google / Apple or email and password, plus the one-tap test
 /// accounts while the app is in development. Pops `true` once signed in so the caller continues the

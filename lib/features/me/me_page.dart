@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../apply/apply_page.dart';
-import '../backup/backup_page.dart';
-import '../../shared/ui/cards.dart';
-import '../../shared/ui/components.dart';
-import '../demand/demand_detail_page.dart';
-import '../home/house_card.dart';
-import '../home/post_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../profile/profile_edit_page.dart';
-import '../profile/profile_page.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import '../../services/voice/read_aloud.dart';
-import '../../voice/voice_overlay.dart' show voiceBuiltIn;
-import '../../data/http/http_backend.dart';
-import '../auth/sign_in_methods_page.dart';
-import 'admin_page.dart';
-import 'feedback_page.dart';
-import 'kazakh_voice_page.dart';
-import 'trust_pages.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/apply/apply_page.dart';
+import 'package:yusal/features/backup/backup_page.dart';
+import 'package:yusal/shared/ui/cards.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/features/home/house_card.dart';
+import 'package:yusal/features/home/post_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/features/profile/profile_edit_page.dart';
+import 'package:yusal/features/profile/profile_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/services/voice/read_aloud.dart';
+import 'package:yusal/voice/voice_overlay.dart' show voiceBuiltIn;
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/features/auth/sign_in_methods_page.dart';
+import 'package:yusal/features/me/admin_page.dart';
+import 'package:yusal/features/me/feedback_page.dart';
+import 'package:yusal/features/me/kazakh_voice_page.dart';
+import 'package:yusal/features/me/trust_pages.dart';
 
 /// Fourth tab: who I am, what I published, my professional profile,
 /// settings and the account itself, each as its own group.
@@ -255,9 +255,10 @@ class MePage extends StatelessWidget {
                 'Профили и заявки будут сняты, облачные копии удалены. Локальные проекты останутся.'),
             ok: tr3('注销', 'Жою', 'Удалить'),
             danger: true) &&
-        context.mounted)
+        context.mounted) {
       await attempt(context, () => context.repos.deleteAccount(),
           success: tr3('账号已注销', 'Аккаунт жойылды', 'Аккаунт удалён'));
+    }
   }
 }
 
@@ -314,8 +315,9 @@ class _AccountHeader extends StatelessWidget {
           onPressed: () async {
             final name = await askText(context, tr3('称呼', 'Аты', 'Имя'),
                 initial: account.displayName, lines: 1);
-            if (name != null && context.mounted)
+            if (name != null && context.mounted) {
               await attempt(context, () => context.repos.updateName(name));
+            }
           }),
     ]);
   }
@@ -509,8 +511,9 @@ class MyApplicationsPage extends StatelessWidget {
                                       final c = coops
                                           .where((c) => c.applicationId == a.id)
                                           .lastOrNull;
-                                      if (c != null && context.mounted)
+                                      if (c != null && context.mounted) {
                                         openCooperation(context, c.id);
+                                      }
                                     },
                                     child: Text(a.status ==
                                             ApplicationStatus.pendingConfirm

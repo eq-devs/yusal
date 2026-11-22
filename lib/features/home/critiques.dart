@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../data/repositories.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/l10n.dart';
-import '../me/trust_pages.dart';
-import '../profile/profile_page.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import '../../shared/brand/yicon.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/features/me/trust_pages.dart';
+import 'package:yusal/features/profile/profile_page.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/shared/brand/yicon.dart';
 
 /// "What the author wants to hear about": the focus topics of a shared
 /// house, shown under its title.
@@ -71,10 +71,12 @@ class _CritiqueSectionState extends State<CritiqueSection> {
     final all = widget.comments;
     final top = all.where((c) => c.parentId == null).toList();
     final replies = <String, List<PostComment>>{};
-    for (final c in all.where((c) => c.parentId != null))
+    for (final c in all.where((c) => c.parentId != null)) {
       replies.putIfAbsent(c.parentId!, () => []).add(c);
-    for (final r in replies.values)
+    }
+    for (final r in replies.values) {
       r.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    }
     final topics = {
       for (final c in top)
         if (c.topic != null) c.topic!
@@ -369,7 +371,10 @@ class _CritiqueTile extends StatelessWidget {
       this.reply = false});
   final PostComment comment;
   final HousePost post;
-  final bool canDelete, canMarkHelpful, canReply, reply;
+  final bool canDelete;
+  final bool canMarkHelpful;
+  final bool canReply;
+  final bool reply;
 
   Future<void> _reply(BuildContext context) async {
     final text = await askText(context, tr3('回复', 'Жауап', 'Ответить'),
@@ -488,16 +493,17 @@ class _CritiqueTile extends StatelessWidget {
                           visualDensity: VisualDensity.compact,
                           tooltip: tr3('删除', 'Жою', 'Удалить'),
                           icon: Icon(Icons.close, size: 16, color: t.faint),
-                          onPressed: () => attempt(context,
-                              () => context.repos.deleteComment(c.id)))
+                          onPressed: () => attempt(
+                              context, () => context.repos.deleteComment(c.id)))
                     else
                       IconButton(
                           key: Key('critique-report-${c.id}'),
                           visualDensity: VisualDensity.compact,
                           tooltip: tr3('举报', 'Шағым', 'Пожаловаться'),
-                          icon: YusalIcon(YIcon.report, size: 16, color: t.faint),
-                          onPressed: () =>
-                              reportContent(context, ReportTarget.comment, c.id)),
+                          icon:
+                              YusalIcon(YIcon.report, size: 16, color: t.faint),
+                          onPressed: () => reportContent(
+                              context, ReportTarget.comment, c.id)),
                   ]);
             }));
   }

@@ -18,12 +18,17 @@ void main() {
         locality: 'Талгар',
         exactAddress: 'Абая 1',
         budget: const Budget(mode: BudgetMode.range, min: 100, max: 200),
-        hire: const HireTerms(headcount: 3, payMode: PayMode.daily, wage: 15000),
+        hire:
+            const HireTerms(headcount: 3, payMode: PayMode.daily, wage: 15000),
         contract: ContractTerms(
             scopeKind: ScopeKind.stages,
             stages: const ['walls'],
             quantities: const [
-              QtyItem(name: 'Кладка', quantity: null, unit: 'm3', source: QtySource.siteMeasure)
+              QtyItem(
+                  name: 'Кладка',
+                  quantity: null,
+                  unit: 'm3',
+                  source: QtySource.siteMeasure)
             ],
             quoteDeadline: t),
         snapshotId: 's1',
@@ -78,7 +83,14 @@ void main() {
       ],
       'end_request': {'by': 'p', 'at': ts(t), 'note': 'Готово'},
       'milestones': [
-        {'key': 'walls', 'percent': 40, 'status': 'requested', 'photos': [base64Encode([1, 2])]}
+        {
+          'key': 'walls',
+          'percent': 40,
+          'status': 'requested',
+          'photos': [
+            base64Encode([1, 2])
+          ]
+        }
       ],
       'work_logs': [],
       'updates': [],
@@ -90,8 +102,7 @@ void main() {
     expect(c.milestones.single.status, MilestoneStatus.requested);
   });
 
-  test('cooperation photos given as /media/ paths come from the media map',
-      () {
+  test('cooperation photos given as /media/ paths come from the media map', () {
     final j = {
       'id': 'c1',
       'demand_id': 'd1',
@@ -103,10 +114,21 @@ void main() {
       'created_at': ts(t),
       'agreements': [],
       'milestones': [
-        {'key': 'walls', 'percent': 40, 'status': 'requested', 'photos': ['/media/a', '/media/missing']}
+        {
+          'key': 'walls',
+          'percent': 40,
+          'status': 'requested',
+          'photos': ['/media/a', '/media/missing']
+        }
       ],
       'work_logs': [
-        {'id': 'w1', 'by': 'p', 'day': ts(t), 'headcount': 2, 'photos': ['/media/b']}
+        {
+          'id': 'w1',
+          'by': 'p',
+          'day': ts(t),
+          'headcount': 2,
+          'photos': ['/media/b']
+        }
       ],
       'updates': [],
     };

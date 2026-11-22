@@ -8,7 +8,7 @@ import 'package:yusal/shared/ui/l10n.dart';
 void main() {
   tearDown(() => AppSettings.instance.lang = AppLang.zh);
 
-  test('lists are joined with the language\'s own comma', () {
+  test("lists are joined with the language's own comma", () {
     AppSettings.instance.lang = AppLang.zh;
     expect(['瓦工', '抹灰'].join(listSep), '瓦工、抹灰');
     for (final lang in [AppLang.kk, AppLang.ru]) {

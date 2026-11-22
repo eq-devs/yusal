@@ -2,10 +2,10 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import '../../app/settings.dart';
-import 'scope.dart';
-import 'theme.dart';
-import 'widgets.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 
 /// Most photos one site entry or inspection request can carry.
 const maxSitePhotos = 9;
@@ -24,11 +24,12 @@ Future<List<List<int>>> pickPhotos(BuildContext context,
           uniformTypeIdentifiers: ['public.image']),
     ]);
   } catch (_) {
-    if (context.mounted)
+    if (context.mounted) {
       toast(
           context,
           tr3('无法打开相册', 'Галереяны ашу мүмкін емес',
               'Не удалось открыть галерею'));
+    }
     return const [];
   }
   final out = <List<int>>[];
@@ -51,7 +52,8 @@ Future<List<List<int>>> pickPhotos(BuildContext context,
             tr3('$skipped 张照片无法读取或太大', '$skipped фото оқылмады не тым үлкен',
                 '$skipped фото не удалось прочитать или они слишком большие'),
           if (over > 0)
-            tr3('这次只能再加 $max 张，$over 张没有加入',
+            tr3(
+                '这次只能再加 $max 张，$over 张没有加入',
                 'Тағы $max фото ғана қосуға болады, $over қосылмады',
                 'Можно добавить ещё $max фото, $over не добавлено'),
         ].join(' · '));

@@ -50,8 +50,8 @@ void main() {
     t.view.physicalSize = const Size(390, 844);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    final store = ProjectStore(fileSystem: MemoryFiles()),
-        id = await store.createProject(doc);
+    final store = ProjectStore(fileSystem: MemoryFiles());
+    final id = await store.createProject(doc);
     await t.pumpWidget(MaterialApp(
         home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
     await t.pumpAndSettle();

@@ -54,8 +54,8 @@ void main() {
       addTearDown(t.view.resetPhysicalSize);
       addTearDown(t.view.resetDevicePixelRatio);
     }
-    final store = ProjectStore(fileSystem: MemoryFiles()),
-        id = await store.createProject(doc);
+    final store = ProjectStore(fileSystem: MemoryFiles());
+    final id = await store.createProject(doc);
     await t.pumpWidget(MaterialApp(
         home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
     await t.pumpAndSettle();
@@ -96,9 +96,11 @@ void main() {
 
   testWidgets('a wall end lined up with another wall shows a dashed guide',
       (t) async {
-    await mount(t, initial(walls: [
-      [3000, 7000, 3000, 10000]
-    ]));
+    await mount(
+        t,
+        initial(walls: [
+          [3000, 7000, 3000, 10000]
+        ]));
     await t.tap(find.byTooltip('墙体'));
     await t.pumpAndSettle();
     final g = await t.startGesture(point(t, 0, 5000));
@@ -107,7 +109,8 @@ void main() {
     await g.moveTo(point(t, 3060, 5000));
     await t.pump();
     expect(painter(t).draftEnd, const Offset(3000, 5000));
-    expect(painter(t).guides, [(const Offset(3000, 0), const Offset(3000, 10000))]);
+    expect(painter(t).guides,
+        [(const Offset(3000, 0), const Offset(3000, 10000))]);
     await g.moveTo(point(t, 4550, 5000));
     await t.pump();
     expect(painter(t).guides, isEmpty, reason: 'on the grid, not aligned');
@@ -118,8 +121,9 @@ void main() {
 
   testWidgets('phones show six tools; the rest open from 更多工具', (t) async {
     await mount(t, initial(), size: const Size(390, 844));
-    for (final tip in ['墙体', '拖入门', '家具', '更多工具'])
+    for (final tip in ['墙体', '拖入门', '家具', '更多工具']) {
       expect(find.byTooltip(tip), findsOneWidget, reason: tip);
+    }
     expect(find.byTooltip('拖动划房'), findsNothing);
     await t.tap(find.byTooltip('更多工具'));
     await t.pumpAndSettle();
@@ -130,7 +134,8 @@ void main() {
         reason: 'the active tool shows in the row');
   });
 
-  testWidgets('the phone 3D page gives the stage the screen and folds settings away',
+  testWidgets(
+      'the phone 3D page gives the stage the screen and folds settings away',
       (t) async {
     await mount(t, initial(), size: const Size(390, 844));
     await openTab(t, 'ext');
@@ -153,7 +158,8 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('a door added on a wall lands where tapped and deletes from the top of its card',
+  testWidgets(
+      'a door added on a wall lands where tapped and deletes from the top of its card',
       (t) async {
     final session = await mount(t, initial(), size: const Size(390, 844));
     await t.tapAt(point(t, 6000, 120));

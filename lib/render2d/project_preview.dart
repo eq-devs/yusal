@@ -1,14 +1,14 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import '../core/document/house_document.dart';
-import '../core/geometry/derived_house.dart';
-import 'floor_plan_painter.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/render2d/floor_plan_painter.dart';
 
 Future<List<int>?> renderProjectPreview(HouseDocument document) async {
   final derived = deriveHouse(document).floors.first;
-  final width = document.footprint.width.toDouble(),
-      depth = document.footprint.depth.toDouble();
+  final width = document.footprint.width.toDouble();
+  final depth = document.footprint.depth.toDouble();
   final size = width >= depth
       ? Size(512, 96 + 416 * depth / width)
       : Size(96 + 416 * width / depth, 512);

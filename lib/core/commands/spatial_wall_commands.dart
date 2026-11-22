@@ -1,18 +1,19 @@
 import 'dart:convert';
-import '../axis/axis_resolver.dart';
-import '../canonicalization/room_canonicalizer.dart';
-import '../document/house_document.dart';
-import '../geometry/derived_house.dart';
-import '../geometry/opening_constraints.dart';
-import '../geometry/floor_base.dart';
-import '../serialization/house_codec.dart';
-import 'design_commands.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/canonicalization/room_canonicalizer.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/geometry/opening_constraints.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/serialization/house_codec.dart';
+import 'package:yusal/core/commands/design_commands.dart';
 
 /// Transfers only the strip swept by the selected wall. All other room edges
 /// and all other floors retain their physical coordinates.
 EditResult moveLocalWall(HouseDocument doc, String floorId,
     BoundaryAnchor anchor, int position, String Function() newId) {
-  final base = deriveFloorBase(doc, floorId), axes = base.axes;
+  final base = deriveFloorBase(doc, floorId);
+  final axes = base.axes;
   final oldOpenings = deriveOpenings(doc, base, floorId);
   final wall = base.wallSegments
       .where((w) =>
@@ -21,8 +22,9 @@ EditResult moveLocalWall(HouseDocument doc, String floorId,
           w.ref.anchor.endAxisId == anchor.endAxisId)
       .firstOrNull;
   if (wall == null) return const EditResult(null, '这段墙已经变化，请重新选择');
-  if (wall.axis.kind == 'boundary')
+  if (wall.axis.kind == 'boundary') {
     return const EditResult(null, '外墙请通过房屋长宽调整');
+  }
   final floor = doc.floors.firstWhere((f) => f.id == floorId);
   final list = wall.axis.dir == AxisDir.V ? axes.v : axes.h;
   final index = wall.axis.index;
@@ -96,8 +98,9 @@ EditResult moveLocalWall(HouseDocument doc, String floorId,
         }
         owner = replacement;
       }
-      if (owner != null && sets.containsKey(owner))
+      if (owner != null && sets.containsKey(owner)) {
         sets[owner]!.add(Cell(i, j));
+      }
     }
   }
   final rooms = <Room>[];
@@ -153,8 +156,9 @@ EditResult moveLocalWall(HouseDocument doc, String floorId,
     }
   }
   final loaded = loadHouse(utf8.encode(jsonEncode(raw)));
-  if (!loaded.isSuccess)
+  if (!loaded.isSuccess) {
     return EditResult(null, loaded.failure!.errors.first.message);
+  }
   final result = loaded.document!;
   final healthy = oldOpenings
       .where((p) => p.status == 'ok')

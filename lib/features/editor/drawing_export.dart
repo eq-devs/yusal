@@ -4,22 +4,22 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import '../../app/settings.dart';
-import '../../app/tokens.dart';
-import '../../core/analysis/build_schedule.dart';
-import '../../core/analysis/cost_estimate.dart';
-import '../../core/analysis/heat_loss.dart';
-import '../../core/analysis/house_analysis.dart';
-import '../../core/analysis/site_analysis.dart';
-import '../../core/analysis/utility_plan.dart';
-import '../../core/document/house_document.dart';
-import '../../core/geometry/derived_house.dart';
-import '../../render2d/floor_plan_painter.dart';
-import '../../render2d/planning_names.dart';
-import '../../render2d/section_painters.dart';
-import '../../render2d/site_plan_painter.dart';
-import '../../render3d/scene_model.dart';
-import '../../render3d/scene_view.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/app/tokens.dart';
+import 'package:yusal/core/analysis/build_schedule.dart';
+import 'package:yusal/core/analysis/cost_estimate.dart';
+import 'package:yusal/core/analysis/heat_loss.dart';
+import 'package:yusal/core/analysis/house_analysis.dart';
+import 'package:yusal/core/analysis/site_analysis.dart';
+import 'package:yusal/core/analysis/utility_plan.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/render2d/floor_plan_painter.dart';
+import 'package:yusal/render2d/planning_names.dart';
+import 'package:yusal/render2d/section_painters.dart';
+import 'package:yusal/render2d/site_plan_painter.dart';
+import 'package:yusal/render3d/scene_model.dart';
+import 'package:yusal/render3d/scene_view.dart';
 
 /// A drawing set to print or send to builders: A4 landscape sheets drawn
 /// with the app's own painters (plans, sections, 3D, site) and tables,
@@ -29,7 +29,9 @@ import '../../render3d/scene_view.dart';
 /// A4 landscape at 150 dpi.
 const sheetWidth = 1754.0, sheetHeight = 1240.0;
 
-const _ink = Color(0xff1C2326), _muted = Color(0xff5B666B), _line = Color(0xffC8D0D2);
+const _ink = Color(0xff1C2326);
+const _muted = Color(0xff5B666B);
+const _line = Color(0xffC8D0D2);
 
 /// What the sheets need from the editor besides the design.
 class DrawingInput {
@@ -51,9 +53,12 @@ class DrawingInput {
 }
 
 class _Cell {
-  const _Cell(this.text, {this.numeric = false, this.bold = false, this.muted = false});
+  const _Cell(this.text,
+      {this.numeric = false, this.bold = false, this.muted = false});
   final String text;
-  final bool numeric, bold, muted;
+  final bool numeric;
+  final bool bold;
+  final bool muted;
 }
 
 typedef _Draw = void Function(Canvas canvas, Rect area);
@@ -109,7 +114,8 @@ double _text(Canvas c, String text, Offset at,
   return p.height;
 }
 
-const _rowHeight = 27.0, _headHeight = 30.0;
+const _rowHeight = 27.0;
+const _headHeight = 30.0;
 
 /// Rows of a table that fit [height].
 int _rowsFitting(double height) =>
@@ -132,12 +138,15 @@ double _table(Canvas c, Rect area, List<String> header, List<List<_Cell>> rows,
         weight: FontWeight.w500,
         maxWidth: widths[i] - 12,
         maxLines: 1);
-    final numeric = rows.isNotEmpty && i < rows.first.length && rows.first[i].numeric;
+    final numeric =
+        rows.isNotEmpty && i < rows.first.length && rows.first[i].numeric;
     p.paint(c, Offset(numeric ? x + widths[i] - 6 - p.width : x + 6, y + 7));
     x += widths[i];
   }
   y += _headHeight;
-  c.drawLine(Offset(area.left, y), Offset(area.right, y),
+  c.drawLine(
+      Offset(area.left, y),
+      Offset(area.right, y),
       Paint()
         ..color = _ink
         ..strokeWidth = 1.2);
@@ -152,8 +161,8 @@ double _table(Canvas c, Rect area, List<String> header, List<List<_Cell>> rows,
           monospace: cell.numeric,
           maxWidth: widths[i] - 12,
           maxLines: 1);
-      p.paint(c,
-          Offset(cell.numeric ? x + widths[i] - 6 - p.width : x + 6, y + 5));
+      p.paint(
+          c, Offset(cell.numeric ? x + widths[i] - 6 - p.width : x + 6, y + 5));
       x += widths[i];
     }
     y += _rowHeight;
@@ -166,13 +175,18 @@ double _table(Canvas c, Rect area, List<String> header, List<List<_Cell>> rows,
 double _figures(Canvas c, Rect area, List<(String, String)> items) {
   var y = area.top;
   for (final (label, value) in items) {
-    _text(c, label, Offset(area.left, y), size: 14, color: _muted,
-        maxWidth: area.width * 0.55, maxLines: 1);
-    final p = _tp(value, size: 15, weight: FontWeight.w600, monospace: true,
-        maxWidth: area.width * 0.45, maxLines: 1);
+    _text(c, label, Offset(area.left, y),
+        size: 14, color: _muted, maxWidth: area.width * 0.55, maxLines: 1);
+    final p = _tp(value,
+        weight: FontWeight.w600,
+        monospace: true,
+        maxWidth: area.width * 0.45,
+        maxLines: 1);
     p.paint(c, Offset(area.right - p.width, y));
     y += 28;
-    c.drawLine(Offset(area.left, y - 4), Offset(area.right, y - 4),
+    c.drawLine(
+        Offset(area.left, y - 4),
+        Offset(area.right, y - 4),
         Paint()
           ..color = _line
           ..strokeWidth = 0.8);
@@ -184,35 +198,47 @@ void _heading(Canvas c, Offset at, String text) =>
     _text(c, text, at, size: 17, weight: FontWeight.w700);
 
 /// Paints a whole sheet: frame, title block and the sheet's content.
-void _paintSheet(Canvas c, _Sheet sheet, DrawingInput input, int number, int count) {
+void _paintSheet(
+    Canvas c, _Sheet sheet, DrawingInput input, int number, int count) {
   c.drawRect(const Rect.fromLTWH(0, 0, sheetWidth, sheetHeight),
       Paint()..color = Colors.white);
-  final frame = const Rect.fromLTRB(36, 36, sheetWidth - 36, sheetHeight - 36);
+  const frame = Rect.fromLTRB(36, 36, sheetWidth - 36, sheetHeight - 36);
   final pen = Paint()
     ..color = _ink
     ..style = PaintingStyle.stroke
     ..strokeWidth = 2;
   c.drawRect(frame, pen);
   // Title block along the bottom.
-  final strip = Rect.fromLTRB(frame.left, frame.bottom - 78, frame.right, frame.bottom);
+  final strip =
+      Rect.fromLTRB(frame.left, frame.bottom - 78, frame.right, frame.bottom);
   c.drawLine(strip.topLeft, strip.topRight, pen);
   final cells = [0.34, 0.30, 0.12, 0.12, 0.12];
   var x = strip.left;
   final values = [
     (tr3('工程名称', 'Жоба', 'Проект'), input.doc.meta.name),
     (tr3('图名', 'Сызба', 'Чертёж'), sheet.title),
-    (tr3('图号', 'Нөмірі', 'Номер листа'), 'A-${number.toString().padLeft(2, '0')} / $count'),
+    (
+      tr3('图号', 'Нөмірі', 'Номер листа'),
+      'A-${number.toString().padLeft(2, '0')} / $count'
+    ),
     (tr3('日期', 'Күні', 'Дата'), input.date),
-    (tr3('单位', 'Бірлік', 'Единицы'), tr3('毫米 · 示意', 'мм · сызба-нұсқа', 'мм · схема')),
+    (
+      tr3('单位', 'Бірлік', 'Единицы'),
+      tr3('毫米 · 示意', 'мм · сызба-нұсқа', 'мм · схема')
+    ),
   ];
   for (var i = 0; i < cells.length; i++) {
     final w = strip.width * cells[i];
-    if (i > 0)
-      c.drawLine(Offset(x, strip.top), Offset(x, strip.bottom),
+    if (i > 0) {
+      c.drawLine(
+          Offset(x, strip.top),
+          Offset(x, strip.bottom),
           Paint()
             ..color = _ink
             ..strokeWidth = 1);
-    _text(c, values[i].$1, Offset(x + 12, strip.top + 10), size: 12, color: _muted);
+    }
+    _text(c, values[i].$1, Offset(x + 12, strip.top + 10),
+        size: 12, color: _muted);
     _text(c, values[i].$2, Offset(x + 12, strip.top + 32),
         size: i < 2 ? 20 : 15,
         weight: i < 2 ? FontWeight.w700 : FontWeight.w500,
@@ -240,20 +266,16 @@ void _fit(Canvas c, Rect area, CustomPainter painter, {double zoom = 1}) {
 }
 
 FloorPlanPainter _plan(DrawingInput input, int f,
-    {bool furniture = true,
-    bool utilities = false,
-    bool foundation = false}) {
-  final doc = input.doc, g = input.derived.floors[f];
+    {bool furniture = true, bool utilities = false, bool foundation = false}) {
+  final doc = input.doc;
+  final g = input.derived.floors[f];
   final floor = doc.floors[f];
   return FloorPlanPainter(
-      g.base,
-      {for (final r in floor.rooms) r.id: input.roomName(r)},
-      const {},
+      g.base, {for (final r in floor.rooms) r.id: input.roomName(r)}, const {},
       openings: g.openings,
       stairs: g.stairs,
       northAngleDeg: doc.footprint.northAngleDeg,
       viewportInsets: const EdgeInsets.fromLTRB(70, 70, 80, 70),
-      tokens: Tokens.light,
       bearingMin: doc.extras.foundation.bearingMin,
       furniture: [
         for (final i in doc.extras.furniture)
@@ -273,7 +295,9 @@ FloorPlanPainter _plan(DrawingInput input, int f,
 String _n(double v, [int digits = 1]) => dec(v.toStringAsFixed(digits));
 
 List<_Sheet> _sheets(DrawingInput input) {
-  final doc = input.doc, derived = input.derived, x = doc.extras;
+  final doc = input.doc;
+  final derived = input.derived;
+  final x = doc.extras;
   final sheets = <_Sheet>[];
   final multi = doc.floors.length > 1;
   final cost = estimateCost(doc, derived, currency: languageCurrency);
@@ -286,37 +310,66 @@ List<_Sheet> _sheets(DrawingInput input) {
   };
 
   // 1. Cover: the house in 3D and the main figures.
-  sheets.add(_Sheet(tr3('总说明与效果图', 'Жалпы мәлімет және көрініс', 'Общие сведения и визуализация'), (c, area) {
-    final picture = Rect.fromLTRB(area.left, area.top, area.left + area.width * 0.62, area.bottom);
-    final model = buildScene(doc, derived, const SceneOptions(), input.roomName);
+  sheets.add(_Sheet(
+      tr3('总说明与效果图', 'Жалпы мәлімет және көрініс',
+          'Общие сведения и визуализация'), (c, area) {
+    final picture = Rect.fromLTRB(
+        area.left, area.top, area.left + area.width * 0.62, area.bottom);
+    final model =
+        buildScene(doc, derived, const SceneOptions(), input.roomName);
     final pose = viewPose(model, 'iso');
     c.save();
     c.clipRect(picture);
     c.translate(picture.left, picture.top);
     ScenePainter(
             model: model,
-            camera: orbitCamera(pose.target, pose.yaw, pose.pitch, pose.distance),
+            camera:
+                orbitCamera(pose.target, pose.yaw, pose.pitch, pose.distance),
             settings: const SceneSettings(),
             northAngleDeg: doc.footprint.northAngleDeg,
             walk: false,
             labels: false)
         .paint(c, picture.size);
     c.restore();
-    final side = Rect.fromLTRB(picture.right + 36, area.top, area.right, area.bottom);
+    final side =
+        Rect.fromLTRB(picture.right + 36, area.top, area.right, area.bottom);
     var y = side.top;
     var area0 = 0.0;
     for (final g in derived.floors)
-      for (final r in g.base.roomGeometry) area0 += r.clearArea / 1e6;
+      for (final r in g.base.roomGeometry) {
+        area0 += r.clearArea / 1e6;
+      }
     y += _figures(c, Rect.fromLTRB(side.left, y, side.right, side.bottom), [
-      (tr3('外形尺寸', 'Сыртқы өлшемі', 'Габаритные размеры'), '${_n(doc.footprint.width / 1000, 2)} × ${_n(doc.footprint.depth / 1000, 2)} ${tr3('米', 'м', 'м')}'),
+      (
+        tr3('外形尺寸', 'Сыртқы өлшемі', 'Габаритные размеры'),
+        '${_n(doc.footprint.width / 1000, 2)} × ${_n(doc.footprint.depth / 1000, 2)} ${tr3('米', 'м', 'м')}'
+      ),
       (tr3('层数', 'Қабат саны', 'Число этажей'), '${doc.floors.length}'),
-      (tr3('建筑面积 (各层)', 'Құрылыс ауданы', 'Общая площадь'), '${_n(cost.buildingArea)} $unitM2'),
-      (tr3('室内净面积', 'Ішкі таза аудан', 'Площадь помещений нетто'), '${_n(area0)} $unitM2'),
-      (tr3('外墙厚', 'Сыртқы қабырға', 'Толщина наружной стены'), '${doc.defaults.outerWallThickness} $unitMm'),
+      (
+        tr3('建筑面积 (各层)', 'Құрылыс ауданы', 'Общая площадь'),
+        '${_n(cost.buildingArea)} $unitM2'
+      ),
+      (
+        tr3('室内净面积', 'Ішкі таза аудан', 'Площадь помещений нетто'),
+        '${_n(area0)} $unitM2'
+      ),
+      (
+        tr3('外墙厚', 'Сыртқы қабырға', 'Толщина наружной стены'),
+        '${doc.defaults.outerWallThickness} $unitMm'
+      ),
       (tr3('屋顶', 'Шатыр', 'Крыша'), roofName),
-      (tr3('条形基础', 'Таспалы іргетас', 'Ленточный фундамент'), '${x.foundation.width} × ${x.foundation.height}'),
-      (tr3('预算合计', 'Смета барлығы', 'Итого по смете'), '$sym ${money(cost.total)}'),
-      (tr3('设计热负荷', 'Жылу жүктемесі', 'Тепловая нагрузка'), '${_n(loss.total / 1000)} kW'),
+      (
+        tr3('条形基础', 'Таспалы іргетас', 'Ленточный фундамент'),
+        '${x.foundation.width} × ${x.foundation.height}'
+      ),
+      (
+        tr3('预算合计', 'Смета барлығы', 'Итого по смете'),
+        '$sym ${money(cost.total)}'
+      ),
+      (
+        tr3('设计热负荷', 'Жылу жүктемесі', 'Тепловая нагрузка'),
+        '${_n(loss.total / 1000)} kW'
+      ),
       (tr3('建议锅炉', 'Қазандық', 'Рекомендуемый котёл'), '${loss.boilerKw} kW'),
     ]);
     y += 20;
@@ -325,7 +378,8 @@ List<_Sheet> _sheets(DrawingInput input) {
     final rows = <List<_Cell>>[];
     for (var f = 0; f < doc.floors.length; f++)
       for (final r in doc.floors[f].rooms) {
-        final g = derived.floors[f].base.roomGeometry.firstWhere((s) => s.id == r.id);
+        final g =
+            derived.floors[f].base.roomGeometry.firstWhere((s) => s.id == r.id);
         rows.add([
           _Cell(input.roomName(r)),
           if (multi) _Cell(input.floorName(doc.floors[f].name), muted: true),
@@ -333,28 +387,44 @@ List<_Sheet> _sheets(DrawingInput input) {
         ]);
       }
     final fit = _rowsFitting(side.bottom - y);
-    _table(c, Rect.fromLTRB(side.left, y, side.right, side.bottom),
-        [tr3('房间', 'Бөлме', 'Комната'), if (multi) tr3('楼层', 'Қабат', 'Этаж'), tr3('净面积', 'Таза аудан', 'Площадь нетто')],
-        rows.take(fit).toList(), multi ? [3, 2, 2] : [3, 2]);
+    _table(
+        c,
+        Rect.fromLTRB(side.left, y, side.right, side.bottom),
+        [
+          tr3('房间', 'Бөлме', 'Комната'),
+          if (multi) tr3('楼层', 'Қабат', 'Этаж'),
+          tr3('净面积', 'Таза аудан', 'Площадь нетто')
+        ],
+        rows.take(fit).toList(),
+        multi ? [3, 2, 2] : [3, 2]);
   }));
 
   // 2. Floor plans.
-  for (var f = 0; f < doc.floors.length; f++)
+  for (var f = 0; f < doc.floors.length; f++) {
     sheets.add(_Sheet(
         '${input.floorName(doc.floors[f].name)} ${tr3('平面图', 'жоспары', 'план')}',
         (c, area) => _fit(c, area, _plan(input, f), zoom: 1.25)));
+  }
 
   // 3. Electrical, water and heating points.
   for (var f = 0; f < doc.floors.length; f++) {
-    final points = x.utilities.where((u) => u.floorId == doc.floors[f].id).toList();
+    final points =
+        x.utilities.where((u) => u.floorId == doc.floors[f].id).toList();
     if (points.isEmpty) continue;
     sheets.add(_Sheet(
         '${input.floorName(doc.floors[f].name)} ${tr3('水电暖点位图', 'су, электр, жылу нүктелері', 'точки воды, электрики и отопления')}',
         (c, area) {
-      final plan = Rect.fromLTRB(area.left, area.top, area.right - 360, area.bottom);
-      _fit(c, plan, _plan(input, f, furniture: false, utilities: true), zoom: 1.25);
-      final legend = Rect.fromLTRB(plan.right + 24, area.top, area.right, area.bottom);
-      _heading(c, legend.topLeft, tr3('图例与数量', 'Шартты белгі және саны', 'Условные обозначения и количество'));
+      final plan =
+          Rect.fromLTRB(area.left, area.top, area.right - 360, area.bottom);
+      _fit(c, plan, _plan(input, f, furniture: false, utilities: true),
+          zoom: 1.25);
+      final legend =
+          Rect.fromLTRB(plan.right + 24, area.top, area.right, area.bottom);
+      _heading(
+          c,
+          legend.topLeft,
+          tr3('图例与数量', 'Шартты белгі және саны',
+              'Условные обозначения и количество'));
       final take = utilityTakeoff(doc);
       var y = legend.top + 36;
       for (final k in UtilityKind.values) {
@@ -365,45 +435,79 @@ List<_Sheet> _sheets(DrawingInput input) {
           UtilityKind.radiator => Tokens.light.rug,
           _ => Tokens.light.accent,
         };
-        c.drawCircle(Offset(legend.left + 8, y + 10), 6, Paint()..color = color);
-        _text(c, utilityName(k), Offset(legend.left + 24, y), size: 15);
-        final p = _tp('$n', size: 15, monospace: true);
+        c.drawCircle(
+            Offset(legend.left + 8, y + 10), 6, Paint()..color = color);
+        _text(c, utilityName(k), Offset(legend.left + 24, y));
+        final p = _tp('$n', monospace: true);
         p.paint(c, Offset(legend.right - p.width, y));
         y += 30;
       }
       y += 16;
       _figures(c, Rect.fromLTRB(legend.left, y, legend.right, legend.bottom), [
-        (tr3('照明线 3×1.5', 'Жарық сымы 3×1,5', 'Кабель освещения 3×1,5'), '${money(take.lightCable)} $unitM'),
-        (tr3('插座线 3×2.5', 'Розетка сымы 3×2,5', 'Кабель розеток 3×2,5'), '${money(take.powerCable)} $unitM'),
-        (tr3('给水管 (冷热)', 'Су құбыры (суық+ыстық)', 'Труба водоснабжения (хол.+гор.)'), '${money(take.waterPipe)} $unitM'),
-        (tr3('排水管', 'Кәріз құбыры', 'Канализационная труба'), '${money(take.drainPipe)} $unitM'),
-        (tr3('暖气管 (供回)', 'Жылу құбыры', 'Труба отопления (подача/обратка)'), '${money(take.heatingPipe)} $unitM'),
+        (
+          tr3('照明线 3×1.5', 'Жарық сымы 3×1,5', 'Кабель освещения 3×1,5'),
+          '${money(take.lightCable)} $unitM'
+        ),
+        (
+          tr3('插座线 3×2.5', 'Розетка сымы 3×2,5', 'Кабель розеток 3×2,5'),
+          '${money(take.powerCable)} $unitM'
+        ),
+        (
+          tr3('给水管 (冷热)', 'Су құбыры (суық+ыстық)',
+              'Труба водоснабжения (хол.+гор.)'),
+          '${money(take.waterPipe)} $unitM'
+        ),
+        (
+          tr3('排水管', 'Кәріз құбыры', 'Канализационная труба'),
+          '${money(take.drainPipe)} $unitM'
+        ),
+        (
+          tr3('暖气管 (供回)', 'Жылу құбыры', 'Труба отопления (подача/обратка)'),
+          '${money(take.heatingPipe)} $unitM'
+        ),
       ]);
     }));
   }
 
   // 4. Foundation plan and section.
   final fd = foundationTakeoff(doc, derived), f0 = x.foundation;
-  sheets.add(_Sheet(tr3('基础平面图与剖面', 'Іргетас жоспары және қимасы', 'План и разрез фундамента'), (c, area) {
-    final plan = Rect.fromLTRB(area.left, area.top, area.left + area.width * 0.58, area.bottom);
-    _fit(c, plan, _plan(input, 0, furniture: false, foundation: true), zoom: 1.2);
-    final side = Rect.fromLTRB(plan.right + 30, area.top, area.right, area.bottom);
-    final section = FoundationSectionPainter(Tokens.light, f0,
-        doc.defaults.outerWallThickness, {
+  sheets.add(_Sheet(
+      tr3('基础平面图与剖面', 'Іргетас жоспары және қимасы',
+          'План и разрез фундамента'), (c, area) {
+    final plan = Rect.fromLTRB(
+        area.left, area.top, area.left + area.width * 0.58, area.bottom);
+    _fit(c, plan, _plan(input, 0, furniture: false, foundation: true),
+        zoom: 1.2);
+    final side =
+        Rect.fromLTRB(plan.right + 30, area.top, area.right, area.bottom);
+    final section = FoundationSectionPainter(
+        Tokens.light, f0, doc.defaults.outerWallThickness, {
       'ground': tr3('室外地面', 'жер беті', 'уровень земли'),
-      'wall': '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} ${doc.defaults.outerWallThickness}',
-      'damp': tr3('水平防水：2 层卷材', 'Көлденең гидрооқшау: 2 қабат', 'Горизонтальная гидроизоляция: 2 слоя рулонного материала'),
-      'topBars': '${tr3('上部纵筋', 'Үстіңгі арматура', 'Верхняя арматура')} ${f0.topBars}Ø${f0.barDia}',
-      'floor': tr3('地坪（见地坪构造）', 'Еден (еден құрылымын қараңыз)', 'Пол (см. конструкцию пола)'),
-      'stirrups': '${tr3('箍筋', 'Қамыт', 'Хомут')} Ø${f0.stirrupDia} @${f0.stirrupStep}',
+      'wall':
+          '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} ${doc.defaults.outerWallThickness}',
+      'damp': tr3('水平防水：2 层卷材', 'Көлденең гидрооқшау: 2 қабат',
+          'Горизонтальная гидроизоляция: 2 слоя рулонного материала'),
+      'topBars':
+          '${tr3('上部纵筋', 'Үстіңгі арматура', 'Верхняя арматура')} ${f0.topBars}Ø${f0.barDia}',
+      'floor': tr3('地坪（见地坪构造）', 'Еден (еден құрылымын қараңыз)',
+          'Пол (см. конструкцию пола)'),
+      'stirrups':
+          '${tr3('箍筋', 'Қамыт', 'Хомут')} Ø${f0.stirrupDia} @${f0.stirrupStep}',
       'concrete': '${tr3('混凝土', 'Бетон', 'Бетон')} ${f0.concrete}',
-      'bottomBars': '${tr3('下部纵筋', 'Астыңғы арматура', 'Нижняя арматура')} ${f0.bottomBars}Ø${f0.barDia}',
-      'cover': '${tr3('保护层', 'Қорғаныш қабаты', 'Защитный слой')} ${f0.cover} $unitMm',
-      'cushion': '${tr3('砂砾石垫层', 'Құм-қиыршық', 'Песчано-гравийная подушка')} ${f0.cushion}',
-      'blind': tr3('保温散水 1000 · 下铺 XPS 50', 'Жылы отмостка 1000 · астында XPS 50', 'Утеплённая отмостка 1000 · снизу XPS 50'),
+      'bottomBars':
+          '${tr3('下部纵筋', 'Астыңғы арматура', 'Нижняя арматура')} ${f0.bottomBars}Ø${f0.barDia}',
+      'cover':
+          '${tr3('保护层', 'Қорғаныш қабаты', 'Защитный слой')} ${f0.cover} $unitMm',
+      'cushion':
+          '${tr3('砂砾石垫层', 'Құм-қиыршық', 'Песчано-гравийная подушка')} ${f0.cushion}',
+      'blind': tr3(
+          '保温散水 1000 · 下铺 XPS 50',
+          'Жылы отмостка 1000 · астында XPS 50',
+          'Утеплённая отмостка 1000 · снизу XPS 50'),
       'xps': tr3('XPS 50 + 沥青防水', 'XPS 50 + битум', 'XPS 50 + битум'),
     });
-    final h = math.min(side.height * 0.55, side.width * section.viewH / section.viewW);
+    final h = math.min(
+        side.height * 0.55, side.width * section.viewH / section.viewW);
     final w = h * section.viewW / section.viewH;
     c.save();
     c.translate(side.left, side.top);
@@ -412,57 +516,102 @@ List<_Sheet> _sheets(DrawingInput input) {
     final rebar = (fd.mainBarLength / 1000 * barKgPerM(f0.barDia) +
             fd.partitionBarLength / 1000 * barKgPerM(f0.partitionBarDia) +
             fd.stirrupLength / 1000 * barKgPerM(f0.stirrupDia) +
-            fd.partitionStirrupLength / 1000 * barKgPerM(f0.partitionStirrupDia)) /
+            fd.partitionStirrupLength /
+                1000 *
+                barKgPerM(f0.partitionStirrupDia)) /
         1000;
-    _figures(c, Rect.fromLTRB(side.left, side.top + h + 24, side.right, side.bottom), [
-      (tr3('基础长度', 'Іргетас ұзындығы', 'Длина фундамента'), '${_n((fd.mainLength + fd.partitionLength) / 1000)} $unitM'),
-      (tr3('混凝土 (+3%)', 'Бетон (+3%)', 'Бетон (+3%)'), '${_n(fd.concrete * 1.03 / 1e9)} $unitM3'),
-      (tr3('钢筋', 'Арматура', 'Арматура'), '${_n(rebar, 2)} ${tr3('吨', 'т', 'т')}'),
-      (tr3('挖土', 'Қазу', 'Выемка грунта'), '${_n(fd.excavation / 1e9)} $unitM3'),
-      (tr3('砂砾石垫层', 'Құм-қиыршық', 'Песчано-гравийная подушка'), '${_n(fd.cushion / 1e9)} $unitM3'),
+    _figures(c,
+        Rect.fromLTRB(side.left, side.top + h + 24, side.right, side.bottom), [
+      (
+        tr3('基础长度', 'Іргетас ұзындығы', 'Длина фундамента'),
+        '${_n((fd.mainLength + fd.partitionLength) / 1000)} $unitM'
+      ),
+      (
+        tr3('混凝土 (+3%)', 'Бетон (+3%)', 'Бетон (+3%)'),
+        '${_n(fd.concrete * 1.03 / 1e9)} $unitM3'
+      ),
+      (
+        tr3('钢筋', 'Арматура', 'Арматура'),
+        '${_n(rebar, 2)} ${tr3('吨', 'т', 'т')}'
+      ),
+      (
+        tr3('挖土', 'Қазу', 'Выемка грунта'),
+        '${_n(fd.excavation / 1e9)} $unitM3'
+      ),
+      (
+        tr3('砂砾石垫层', 'Құм-қиыршық', 'Песчано-гравийная подушка'),
+        '${_n(fd.cushion / 1e9)} $unitM3'
+      ),
       (tr3('模板', 'Қалып', 'Опалубка'), '${_n(fd.formwork / 1e6)} $unitM2'),
       (tr3('预留套管', 'Гильзалар', 'Гильзы'), '${x.sleeves.length}'),
     ]);
   }));
 
   // 5. Wall, roof and floor build-ups.
-  sheets.add(_Sheet(tr3('构造做法', 'Құрылым шешімдері', 'Конструктивные решения'), (c, area) {
+  sheets.add(_Sheet(tr3('构造做法', 'Құрылым шешімдері', 'Конструктивные решения'),
+      (c, area) {
     final groups = [
-      ('${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} · U ${_n(loss.wallU, 2)}', x.wallLayers, true),
+      (
+        '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} · U ${_n(loss.wallU, 2)}',
+        x.wallLayers,
+        true
+      ),
       ('$roofName · U ${_n(loss.roofU, 2)}', x.roofLayers, false),
-      ('${tr3('首层地面', 'Бірінші қабат едені', 'Пол первого этажа')} · U ${_n(loss.floorU, 2)}', x.floorLayers, false),
+      (
+        '${tr3('首层地面', 'Бірінші қабат едені', 'Пол первого этажа')} · U ${_n(loss.floorU, 2)}',
+        x.floorLayers,
+        false
+      ),
     ];
     final colW = (area.width - 2 * 30) / 3;
     for (var i = 0; i < groups.length; i++) {
       final (title, layers, horizontal) = groups[i];
-      final col = Rect.fromLTWH(area.left + i * (colW + 30), area.top, colW, area.height);
-      _heading(c, col.topLeft, '$title · ${layers.fold(0, (s, l) => s + l.thickness)} $unitMm');
+      final col = Rect.fromLTWH(
+          area.left + i * (colW + 30), area.top, colW, area.height);
+      _heading(c, col.topLeft,
+          '$title · ${layers.fold(0, (s, l) => s + l.thickness)} $unitMm');
       final names = [for (final l in layers) tr(l.name, l.nameKk)];
       final SectionPainter painter = horizontal
           ? WallSectionPainter(Tokens.light, layers, names,
-              outside: tr3('室外', 'Сырты', 'Снаружи'), inside: tr3('室内', 'Іші', 'Внутри'))
+              outside: tr3('室外', 'Сырты', 'Снаружи'),
+              inside: tr3('室内', 'Іші', 'Внутри'))
           : LayerStackPainter(Tokens.light, layers, names, scale: 0.2);
-      final h = math.min(col.height * 0.5, colW * painter.viewH / painter.viewW);
+      final h =
+          math.min(col.height * 0.5, colW * painter.viewH / painter.viewW);
       final w = h * painter.viewW / painter.viewH;
       c.save();
       c.translate(col.left, col.top + 36);
       painter.paint(c, Size(w, h));
       c.restore();
-      _table(c, Rect.fromLTRB(col.left, col.top + 36 + h + 20, col.right, col.bottom),
-          [tr3('构造层', 'Қабат', 'Слой'), unitMm, 'λ'], [
-        for (final l in layers)
+      _table(
+          c,
+          Rect.fromLTRB(col.left, col.top + 36 + h + 20, col.right, col.bottom),
           [
-            _Cell(tr(l.name, l.nameKk)),
-            _Cell('${l.thickness}', numeric: true),
-            _Cell(dec((l.conductivity / 1000).toStringAsFixed(3)), numeric: true),
-          ]
-      ], [5, 1.3, 1.5]);
+            tr3('构造层', 'Қабат', 'Слой'),
+            unitMm,
+            'λ'
+          ],
+          [
+            for (final l in layers)
+              [
+                _Cell(tr(l.name, l.nameKk)),
+                _Cell('${l.thickness}', numeric: true),
+                _Cell(dec((l.conductivity / 1000).toStringAsFixed(3)),
+                    numeric: true),
+              ]
+          ],
+          [
+            5,
+            1.3,
+            1.5
+          ]);
     }
   }));
 
   // 6. Door and window schedule; room areas.
   final openingRows = <List<_Cell>>[];
-  var doorNo = 0, windowNo = 0;
+  var doorNo = 0;
+  var windowNo = 0;
   for (var f = 0; f < doc.floors.length; f++)
     for (final p in derived.floors[f].openings) {
       final o = p.opening;
@@ -483,7 +632,8 @@ List<_Sheet> _sheets(DrawingInput input) {
   final roomRows = <List<_Cell>>[];
   for (var f = 0; f < doc.floors.length; f++)
     for (final r in doc.floors[f].rooms) {
-      final g = derived.floors[f].base.roomGeometry.firstWhere((s) => s.id == r.id);
+      final g =
+          derived.floors[f].base.roomGeometry.firstWhere((s) => s.id == r.id);
       final label = x.rooms[r.id]?.labelArea;
       roomRows.add([
         _Cell(input.roomName(r)),
@@ -493,33 +643,51 @@ List<_Sheet> _sheets(DrawingInput input) {
       ]);
     }
   const scheduleRows = 30;
-  final pages = math.max(1,
-      math.max((openingRows.length / scheduleRows).ceil(), (roomRows.length / scheduleRows).ceil()));
-  for (var page = 0; page < pages; page++)
+  final pages = math.max(
+      1,
+      math.max((openingRows.length / scheduleRows).ceil(),
+          (roomRows.length / scheduleRows).ceil()));
+  for (var page = 0; page < pages; page++) {
     sheets.add(_Sheet(
         '${tr3('门窗表与房间面积', 'Есік-терезе және бөлме аудандары', 'Окна, двери и площади комнат')}${pages > 1 ? ' (${page + 1})' : ''}',
         (c, area) {
-      final left = Rect.fromLTRB(area.left, area.top, area.left + area.width * 0.6, area.bottom);
-      _heading(c, left.topLeft, tr3('门窗表', 'Есік-терезе кестесі', 'Ведомость окон и дверей'));
-      _table(c, Rect.fromLTRB(left.left, left.top + 32, left.right, left.bottom), [
-        tr3('编号', 'Код', 'Марка'),
-        if (multi) tr3('楼层', 'Қабат', 'Этаж'),
-        tr3('位置', 'Орны', 'Место'),
-        tr3('宽 × 高', 'Ені × биіктігі', 'Ширина × высота'),
-        tr3('窗台', 'Терезе алды', 'Подоконник'),
-        tr3('类型', 'Түрі', 'Тип'),
-      ], openingRows.skip(page * scheduleRows).take(scheduleRows).toList(),
+      final left = Rect.fromLTRB(
+          area.left, area.top, area.left + area.width * 0.6, area.bottom);
+      _heading(c, left.topLeft,
+          tr3('门窗表', 'Есік-терезе кестесі', 'Ведомость окон и дверей'));
+      _table(
+          c,
+          Rect.fromLTRB(left.left, left.top + 32, left.right, left.bottom),
+          [
+            tr3('编号', 'Код', 'Марка'),
+            if (multi) tr3('楼层', 'Қабат', 'Этаж'),
+            tr3('位置', 'Орны', 'Место'),
+            tr3('宽 × 高', 'Ені × биіктігі', 'Ширина × высота'),
+            tr3('窗台', 'Терезе алды', 'Подоконник'),
+            tr3('类型', 'Түрі', 'Тип'),
+          ],
+          openingRows.skip(page * scheduleRows).take(scheduleRows).toList(),
           multi ? [1, 1.4, 3.6, 2, 1.2, 1.6] : [1, 4, 2, 1.2, 1.6]);
-      final right = Rect.fromLTRB(left.right + 30, area.top, area.right, area.bottom);
-      _heading(c, right.topLeft, tr3('房间面积 (实算 / 图纸)', 'Бөлме ауданы (есеп / сызба)', 'Площадь комнат (расчёт / чертёж)'));
-      _table(c, Rect.fromLTRB(right.left, right.top + 32, right.right, right.bottom), [
-        tr3('房间', 'Бөлме', 'Комната'),
-        if (multi) tr3('楼层', 'Қабат', 'Этаж'),
-        tr3('实算 m²', 'Есеп, м²', 'Расчёт, м²'),
-        tr3('图纸 m²', 'Сызба, м²', 'Чертёж, м²'),
-      ], roomRows.skip(page * scheduleRows).take(scheduleRows).toList(),
+      final right =
+          Rect.fromLTRB(left.right + 30, area.top, area.right, area.bottom);
+      _heading(
+          c,
+          right.topLeft,
+          tr3('房间面积 (实算 / 图纸)', 'Бөлме ауданы (есеп / сызба)',
+              'Площадь комнат (расчёт / чертёж)'));
+      _table(
+          c,
+          Rect.fromLTRB(right.left, right.top + 32, right.right, right.bottom),
+          [
+            tr3('房间', 'Бөлме', 'Комната'),
+            if (multi) tr3('楼层', 'Қабат', 'Этаж'),
+            tr3('实算 m²', 'Есеп, м²', 'Расчёт, м²'),
+            tr3('图纸 m²', 'Сызба, м²', 'Чертёж, м²'),
+          ],
+          roomRows.skip(page * scheduleRows).take(scheduleRows).toList(),
           multi ? [3, 2, 2, 2] : [3, 2, 2]);
     }));
+  }
 
   // 7. Budget.
   final costRows = <List<_Cell>>[];
@@ -532,24 +700,50 @@ List<_Sheet> _sheets(DrawingInput input) {
       const _Cell(''),
       _Cell(money(cost.stageMaterials(stage)), numeric: true, bold: true),
     ]);
-    for (final l in lines)
+    for (final l in lines) {
       costRows.add([
-        _Cell('   ${l.custom ? l.name! : costLineName(l.key)}${l.estimated ? tr3(' (估)', ' (шамамен)', ' (прибл.)') : ''}',
+        _Cell(
+            '   ${l.custom ? l.name! : costLineName(l.key)}${l.estimated ? tr3(' (估)', ' (шамамен)', ' (прибл.)') : ''}',
             muted: l.estimated),
-        _Cell('${_n(l.quantity, l.quantity >= 100 ? 0 : 2)} ${l.custom ? l.unit : unitName(l.unit)}', numeric: true),
+        _Cell(
+            '${_n(l.quantity, l.quantity >= 100 ? 0 : 2)} ${l.custom ? l.unit : unitName(l.unit)}',
+            numeric: true),
         _Cell(money(l.price), numeric: true),
         _Cell(money(l.total), numeric: true),
       ]);
+    }
   }
   costRows.addAll([
-    [_Cell(tr3('材料合计', 'Материалдар', 'Материалы'), bold: true), const _Cell(''), const _Cell(''), _Cell(money(cost.materials), numeric: true, bold: true)],
-    [_Cell('${tr3('人工', 'Жұмыс ақысы', 'Оплата работ')} ${cost.labourPct}%', bold: true), const _Cell(''), const _Cell(''), _Cell(money(cost.labour), numeric: true, bold: true)],
-    [_Cell('${tr3('预备费', 'Резерв', 'Резерв')} ${cost.contingencyPct}%', bold: true), const _Cell(''), const _Cell(''), _Cell(money(cost.contingency), numeric: true, bold: true)],
-    [_Cell('${tr3('总计', 'Барлығы', 'Итого')} ($sym)', bold: true), _Cell('${money(cost.perArea)} $sym/$unitM2', numeric: true, muted: true), const _Cell(''), _Cell(money(cost.total), numeric: true, bold: true)],
+    [
+      _Cell(tr3('材料合计', 'Материалдар', 'Материалы'), bold: true),
+      const _Cell(''),
+      const _Cell(''),
+      _Cell(money(cost.materials), numeric: true, bold: true)
+    ],
+    [
+      _Cell('${tr3('人工', 'Жұмыс ақысы', 'Оплата работ')} ${cost.labourPct}%',
+          bold: true),
+      const _Cell(''),
+      const _Cell(''),
+      _Cell(money(cost.labour), numeric: true, bold: true)
+    ],
+    [
+      _Cell('${tr3('预备费', 'Резерв', 'Резерв')} ${cost.contingencyPct}%',
+          bold: true),
+      const _Cell(''),
+      const _Cell(''),
+      _Cell(money(cost.contingency), numeric: true, bold: true)
+    ],
+    [
+      _Cell('${tr3('总计', 'Барлығы', 'Итого')} ($sym)', bold: true),
+      _Cell('${money(cost.perArea)} $sym/$unitM2', numeric: true, muted: true),
+      const _Cell(''),
+      _Cell(money(cost.total), numeric: true, bold: true)
+    ],
   ]);
   const costPerColumn = 31;
   final costColumns = (costRows.length / costPerColumn).ceil();
-  for (var page = 0; page < (costColumns / 2).ceil(); page++)
+  for (var page = 0; page < (costColumns / 2).ceil(); page++) {
     sheets.add(_Sheet(
         '${tr3('造价预算', 'Құрылыс сметасы', 'Смета строительства')} ($sym)${costColumns > 2 ? ' (${page + 1})' : ''}',
         (c, area) {
@@ -560,40 +754,87 @@ List<_Sheet> _sheets(DrawingInput input) {
             .take(costPerColumn)
             .toList();
         if (chunk.isEmpty) continue;
-        _table(c, Rect.fromLTWH(area.left + k * (colW + 30), area.top, colW, area.height), [
-          tr3('项目', 'Атауы', 'Наименование'),
-          tr3('数量', 'Мөлшері', 'Количество'),
-          tr3('单价', 'Бағасы', 'Цена'),
-          tr3('金额', 'Сомасы', 'Сумма'),
-        ], chunk, [4, 2, 1.6, 1.8]);
+        _table(
+            c,
+            Rect.fromLTWH(
+                area.left + k * (colW + 30), area.top, colW, area.height),
+            [
+              tr3('项目', 'Атауы', 'Наименование'),
+              tr3('数量', 'Мөлшері', 'Количество'),
+              tr3('单价', 'Бағасы', 'Цена'),
+              tr3('金额', 'Сомасы', 'Сумма'),
+            ],
+            chunk,
+            [4, 2, 1.6, 1.8]);
       }
-      final note = tr3('单价为示例或用户填写，工程量按模型计算，未含损耗以外的变更。仅供估算和与施工方沟通。',
-          'Бағалар — мысал не пайдаланушы енгізгені, көлемдер модельден есептелген. Тек бағалау және құрылысшымен сөйлесу үшін.', 'Цены — примерные или введённые пользователем, объёмы рассчитаны по модели; изменения сверх запаса на отходы не учтены. Только для оценки и обсуждения со строителями.');
-      _text(c, note, Offset(area.left, area.bottom - 22), size: 12, color: _muted,
-          maxWidth: area.width, maxLines: 1);
+      final note = tr3(
+          '单价为示例或用户填写，工程量按模型计算，未含损耗以外的变更。仅供估算和与施工方沟通。',
+          'Бағалар — мысал не пайдаланушы енгізгені, көлемдер модельден есептелген. Тек бағалау және құрылысшымен сөйлесу үшін.',
+          'Цены — примерные или введённые пользователем, объёмы рассчитаны по модели; изменения сверх запаса на отходы не учтены. Только для оценки и обсуждения со строителями.');
+      _text(c, note, Offset(area.left, area.bottom - 22),
+          size: 12, color: _muted, maxWidth: area.width, maxLines: 1);
     }));
+  }
 
   // 8. Heat loss.
-  sheets.add(_Sheet(tr3('保温与采暖计算', 'Жылу шығыны есебі', 'Расчёт теплопотерь'), (c, area) {
+  sheets.add(_Sheet(tr3('保温与采暖计算', 'Жылу шығыны есебі', 'Расчёт теплопотерь'),
+      (c, area) {
     final colW = (area.width - 30) / 2;
     final left = Rect.fromLTWH(area.left, area.top, colW, area.height);
     var y = left.top;
     y += _figures(c, Rect.fromLTRB(left.left, y, left.right, left.bottom), [
-      (tr3('室外 / 室内计算温度', 'Сыртқы / ішкі температура', 'Расчётная температура: наружная / внутренняя'), '${x.heat.outdoor} / ${x.heat.indoor} °C'),
-      (tr3('设计热负荷', 'Есептік жүктеме', 'Расчётная тепловая нагрузка'), '${_n(loss.total / 1000)} kW'),
-      (tr3('每平方米', 'Әр шаршы метрге', 'На квадратный метр'), '${loss.perArea.round()} W/$unitM2'),
-      (tr3('建议锅炉', 'Ұсынылатын қазандық', 'Рекомендуемый котёл'), '${loss.boilerKw} kW'),
-      (tr3('采暖季用热', 'Маусымдық жылу', 'Расход тепла за сезон'), '${money(loss.seasonKwh)} kWh'),
-      ('${tr3('燃料', 'Отын', 'Топливо')} · ${fuelName(x.heat.fuel)}', '${_n(loss.fuel)} ${fuelUnit(x.heat.fuel)}'),
+      (
+        tr3('室外 / 室内计算温度', 'Сыртқы / ішкі температура',
+            'Расчётная температура: наружная / внутренняя'),
+        '${x.heat.outdoor} / ${x.heat.indoor} °C'
+      ),
+      (
+        tr3('设计热负荷', 'Есептік жүктеме', 'Расчётная тепловая нагрузка'),
+        '${_n(loss.total / 1000)} kW'
+      ),
+      (
+        tr3('每平方米', 'Әр шаршы метрге', 'На квадратный метр'),
+        '${loss.perArea.round()} W/$unitM2'
+      ),
+      (
+        tr3('建议锅炉', 'Ұсынылатын қазандық', 'Рекомендуемый котёл'),
+        '${loss.boilerKw} kW'
+      ),
+      (
+        tr3('采暖季用热', 'Маусымдық жылу', 'Расход тепла за сезон'),
+        '${money(loss.seasonKwh)} kWh'
+      ),
+      (
+        '${tr3('燃料', 'Отын', 'Топливо')} · ${fuelName(x.heat.fuel)}',
+        '${_n(loss.fuel)} ${fuelUnit(x.heat.fuel)}'
+      ),
     ]);
     y += 24;
     _table(c, Rect.fromLTRB(left.left, y, left.right, left.bottom), [
-      tr3('部位', 'Бөлік', 'Элемент'), 'U W/(m²·K)', tr3('面积', 'Аудан', 'Площадь'), 'W'
+      tr3('部位', 'Бөлік', 'Элемент'),
+      'U W/(m²·K)',
+      tr3('面积', 'Аудан', 'Площадь'),
+      'W'
     ], [
       for (final (name, u, a, w) in [
-        (tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены'), loss.wallU, loss.wallArea, loss.walls),
-        (tr3('窗', 'Терезе', 'Окно'), loss.windowU, loss.windowArea, loss.windows),
-        (tr3('外门', 'Сыртқы есік', 'Наружная дверь'), loss.doorU, loss.doorArea, loss.doors),
+        (
+          tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены'),
+          loss.wallU,
+          loss.wallArea,
+          loss.walls
+        ),
+        (
+          tr3('窗', 'Терезе', 'Окно'),
+          loss.windowU,
+          loss.windowArea,
+          loss.windows
+        ),
+        (
+          tr3('外门', 'Сыртқы есік', 'Наружная дверь'),
+          loss.doorU,
+          loss.doorArea,
+          loss.doors
+        ),
         (tr3('屋顶', 'Шатыр', 'Крыша'), loss.roofU, loss.roofArea, loss.roof),
         (tr3('地面', 'Еден', 'Пол'), loss.floorU, loss.floorArea, loss.floor),
       ])
@@ -609,11 +850,18 @@ List<_Sheet> _sheets(DrawingInput input) {
         _Cell('${_n(loss.volume)} $unitM3', numeric: true),
         _Cell(money(loss.air), numeric: true),
       ],
-    ], [3, 2, 2, 2]);
-    final right = Rect.fromLTWH(area.left + colW + 30, area.top, colW, area.height);
+    ], [
+      3,
+      2,
+      2,
+      2
+    ]);
+    final right =
+        Rect.fromLTWH(area.left + colW + 30, area.top, colW, area.height);
     final rows = <List<_Cell>>[];
     for (final s in loss.spaces) {
-      final room = doc.floors[s.floorIndex].rooms.where((r) => r.id == s.id).firstOrNull;
+      final room =
+          doc.floors[s.floorIndex].rooms.where((r) => r.id == s.id).firstOrNull;
       if (room == null || s.total <= 0) continue;
       rows.add([
         _Cell(input.roomName(room)),
@@ -622,50 +870,80 @@ List<_Sheet> _sheets(DrawingInput input) {
         _Cell('${s.sections}', numeric: true),
       ]);
     }
-    _table(c, right, [
-      tr3('房间', 'Бөлме', 'Комната'), unitM2, 'W', tr3('暖气片 片', 'Секция', 'Секций')
-    ], rows.take(_rowsFitting(right.height)).toList(), [3, 1.5, 1.5, 1.5]);
+    _table(
+        c,
+        right,
+        [
+          tr3('房间', 'Бөлме', 'Комната'),
+          unitM2,
+          'W',
+          tr3('暖气片 片', 'Секция', 'Секций')
+        ],
+        rows.take(_rowsFitting(right.height)).toList(),
+        [3, 1.5, 1.5, 1.5]);
   }));
 
   // 9. Site plan.
   final site = x.site;
-  if (site != null)
-    sheets.add(_Sheet(tr3('宅基地总平面图', 'Учаскенің бас жоспары', 'Генеральный план участка'), (c, area) {
-      final plan = Rect.fromLTRB(area.left, area.top, area.right - 420, area.bottom);
+  if (site != null) {
+    sheets.add(_Sheet(
+        tr3('宅基地总平面图', 'Учаскенің бас жоспары', 'Генеральный план участка'),
+        (c, area) {
+      final plan =
+          Rect.fromLTRB(area.left, area.top, area.right - 420, area.bottom);
       c.save();
       c.translate(plan.left, plan.top);
-      SitePlanPainter(doc: doc, site: site, tokens: Tokens.light).paint(c, plan.size);
+      SitePlanPainter(doc: doc, site: site, tokens: Tokens.light)
+          .paint(c, plan.size);
       c.restore();
-      final side = Rect.fromLTRB(plan.right + 24, area.top, area.right, area.bottom);
+      final side =
+          Rect.fromLTRB(plan.right + 24, area.top, area.right, area.bottom);
       var y = side.top;
       y += _figures(c, Rect.fromLTRB(side.left, y, side.right, side.bottom), [
-        (tr3('宅基地', 'Учаске', 'Участок'), '${_n(site.width / 1000)} × ${_n(site.depth / 1000)} ${tr3('米', 'м', 'м')}'),
-        (tr3('占地', 'Аудан', 'Площадь'), '${_n(site.width * site.depth / 1e6, 0)} $unitM2'),
+        (
+          tr3('宅基地', 'Учаске', 'Участок'),
+          '${_n(site.width / 1000)} × ${_n(site.depth / 1000)} ${tr3('米', 'м', 'м')}'
+        ),
+        (
+          tr3('占地', 'Аудан', 'Площадь'),
+          '${_n(site.width * site.depth / 1e6, 0)} $unitM2'
+        ),
         for (final i in site.items)
-          (i.label ?? siteName(i.kind), '${_n(i.width / 1000)} × ${_n(i.depth / 1000)}'),
+          (
+            i.label ?? siteName(i.kind),
+            '${_n(i.width / 1000)} × ${_n(i.depth / 1000)}'
+          ),
       ]);
       final checks =
           siteChecks(doc, nameOf: (i) => i.label ?? siteName(i.kind));
       if (checks.isNotEmpty) {
         y += 16;
-        _heading(c, Offset(side.left, y), tr3('间距检查', 'Арақашықтық тексеруі', 'Проверка расстояний'));
+        _heading(c, Offset(side.left, y),
+            tr3('间距检查', 'Арақашықтық тексеруі', 'Проверка расстояний'));
         y += 32;
         for (final ch in checks) {
           if (y > side.bottom - 40) break;
-          y += _text(c, '• ${tr3(ch.title.$1, ch.title.$2, ch.title.$3)}', Offset(side.left, y),
+          y += _text(c, '• ${tr3(ch.title.$1, ch.title.$2, ch.title.$3)}',
+                  Offset(side.left, y),
                   size: 14, weight: FontWeight.w600, maxWidth: side.width) +
               2;
-          y += _text(c, tr3(ch.text.$1, ch.text.$2, ch.text.$3), Offset(side.left + 14, y),
-                  size: 12, color: _muted, maxWidth: side.width - 14, maxLines: 4) +
+          y += _text(c, tr3(ch.text.$1, ch.text.$2, ch.text.$3),
+                  Offset(side.left + 14, y),
+                  size: 12,
+                  color: _muted,
+                  maxWidth: side.width - 14,
+                  maxLines: 4) +
               8;
         }
       }
     }));
+  }
 
   // 10. Schedule.
   final plan = planStages(x.stages);
   final budgets = stageBudgets(cost);
-  sheets.add(_Sheet(tr3('施工进度计划', 'Құрылыс кестесі', 'График строительства'), (c, area) {
+  sheets.add(_Sheet(tr3('施工进度计划', 'Құрылыс кестесі', 'График строительства'),
+      (c, area) {
     _table(c, area, [
       '#',
       tr3('阶段', 'Кезең', 'Этап'),
@@ -682,19 +960,38 @@ List<_Sheet> _sheets(DrawingInput input) {
           _Cell('${i + 1}', muted: true),
           _Cell(stageName(plan[i].stage), bold: true),
           _Cell(statusName(plan[i].stage.status)),
-          _Cell(plan[i].start == null ? '—' : formatDay(plan[i].start!), numeric: true),
-          _Cell(plan[i].end == null ? '—' : formatDay(plan[i].end!), numeric: true),
+          _Cell(plan[i].start == null ? '—' : formatDay(plan[i].start!),
+              numeric: true),
+          _Cell(plan[i].end == null ? '—' : formatDay(plan[i].end!),
+              numeric: true),
           _Cell('${plan[i].stage.days}', numeric: true),
-          _Cell(budgets[plan[i].stage.key] == null ? '—' : money(budgets[plan[i].stage.key]!), numeric: true),
+          _Cell(
+              budgets[plan[i].stage.key] == null
+                  ? '—'
+                  : money(budgets[plan[i].stage.key]!),
+              numeric: true),
           _Cell(money(plan[i].stage.spent), numeric: true),
-          _Cell('${plan[i].stage.checks.length}/${stageChecks[plan[i].stage.key]?.length ?? 0}', numeric: true),
+          _Cell(
+              '${plan[i].stage.checks.length}/${stageChecks[plan[i].stage.key]?.length ?? 0}',
+              numeric: true),
         ]
-    ], [0.5, 3, 1.4, 1.8, 1.8, 0.9, 2, 2, 1.1]);
+    ], [
+      0.5,
+      3,
+      1.4,
+      1.8,
+      1.8,
+      0.9,
+      2,
+      2,
+      1.1
+    ]);
   }));
   return sheets;
 }
 
-Future<Uint8List> _rasterize(_Sheet sheet, DrawingInput input, int number, int count) async {
+Future<Uint8List> _rasterize(
+    _Sheet sheet, DrawingInput input, int number, int count) async {
   final recorder = ui.PictureRecorder();
   _paintSheet(Canvas(recorder), sheet, input, number, count);
   final picture = recorder.endRecording();
@@ -722,13 +1019,14 @@ Future<Uint8List> buildDrawingPdf(DrawingInput input,
   final sheets = _sheets(input);
   await _warmUp(sheets, input);
   final document = pw.Document(
-      title: input.doc.meta.name, creator: tr3('自建房设计', 'Үй жобалау', 'Проектирование дома'));
+      title: input.doc.meta.name,
+      creator: tr3('自建房设计', 'Үй жобалау', 'Проектирование дома'));
   for (var i = 0; i < sheets.length; i++) {
     final png = await _rasterize(sheets[i], input, i + 1, sheets.length);
     document.addPage(pw.Page(
         pageFormat: PdfPageFormat.a4.landscape,
         margin: pw.EdgeInsets.zero,
-        build: (_) => pw.Image(pw.MemoryImage(png), fit: pw.BoxFit.contain)));
+        build: (_) => pw.Image(pw.MemoryImage(png))));
     onProgress?.call(i + 1, sheets.length);
     // Let the progress dialog repaint between pages.
     await Future<void>.delayed(Duration.zero);
@@ -739,7 +1037,8 @@ Future<Uint8List> buildDrawingPdf(DrawingInput input,
 /// One floor's plan sheet as a PNG, for chat apps.
 Future<Uint8List> buildPlanPng(DrawingInput input, int floorIndex) async {
   final sheets = _sheets(input);
-  final title = '${input.floorName(input.doc.floors[floorIndex].name)} ${tr3('平面图', 'жоспары', 'план')}';
+  final title =
+      '${input.floorName(input.doc.floors[floorIndex].name)} ${tr3('平面图', 'жоспары', 'план')}';
   final index = sheets.indexWhere((s) => s.title == title);
   await _warmUp([sheets[index]], input);
   return _rasterize(sheets[index], input, index + 1, sheets.length);

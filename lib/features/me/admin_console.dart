@@ -82,8 +82,9 @@ class _FeedbackInboxPageState extends State<FeedbackInboxPage> {
                                                     () =>
                                                         api.markFeedbackHandled(
                                                             f.id));
-                                                if (mounted)
+                                                if (mounted) {
                                                   setState(() => _version++);
+                                                }
                                               },
                                               child: Text(tr3(
                                                   '标为已处理',
@@ -146,7 +147,9 @@ class _BroadcastPageState extends State<BroadcastPage> {
                 'Хабарландыру бірден барлық телефонға кетеді, қайтарылмайды.',
                 'Уведомление сразу уйдёт на все телефоны, отменить нельзя.'),
             ok: tr3('发送', 'Жіберу', 'Отправить')) ||
-        !mounted) return;
+        !mounted) {
+      return;
+    }
     final sent = await attempt(
         context, () => api.broadcast(_title.text.trim(), texts, lang: _lang));
     if (sent != null && mounted) {
@@ -234,7 +237,7 @@ class BannedWordsPage extends StatelessWidget {
         body: api == null
             ? const SizedBox.shrink()
             : _Reloading<({List<String> builtin, List<String> words})>(
-                load: () => api.bannedWords(),
+                load: api.bannedWords,
                 builder: (context, b, reload) => ListView(
                         padding: const EdgeInsets.all(YSpace.gutter),
                         children: [
@@ -349,7 +352,8 @@ class _TrendBars extends StatelessWidget {
                                 color: v == 0
                                     ? color.withValues(alpha: 0.2)
                                     : color,
-                                borderRadius: BorderRadius.circular(YRadius.row))))))),
+                                borderRadius:
+                                    BorderRadius.circular(YRadius.row))))))),
     ]);
   }
 }

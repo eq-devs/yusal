@@ -1,15 +1,15 @@
 import 'dart:convert';
 import 'dart:math' as math;
-import '../axis/axis_resolver.dart';
-import '../canonicalization/room_canonicalizer.dart';
-import '../document/house_document.dart';
-import '../geometry/floor_base.dart';
-import '../geometry/derived_house.dart';
-import '../geometry/opening_constraints.dart';
-import '../serialization/house_codec.dart';
-import '../validation/document_validator.dart';
-import 'design_commands.dart';
-import 'room_commands.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/canonicalization/room_canonicalizer.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/geometry/opening_constraints.dart';
+import 'package:yusal/core/serialization/house_codec.dart';
+import 'package:yusal/core/validation/document_validator.dart';
+import 'package:yusal/core/commands/design_commands.dart';
+import 'package:yusal/core/commands/room_commands.dart';
 
 HouseDocument _replaceFloor(HouseDocument doc, Floor floor,
         {AxisSystem? axes}) =>
@@ -69,11 +69,13 @@ HouseDocument recognizeWallRooms(
     bool preserveOpenZones = true}) {
   final floor = doc.floors.firstWhere((f) => f.id == floorId);
   if (!floor.explicitWalls) return doc;
-  final base = deriveFloorBase(doc, floorId), axes = base.axes;
+  final base = deriveFloorBase(doc, floorId);
+  final axes = base.axes;
   final stairs = floor.stairs.map((s) => s.id).toSet();
   if (axes.v.length > maxExplicitAxesPerDirection + 2 ||
-      axes.h.length > maxExplicitAxesPerDirection + 2)
+      axes.h.length > maxExplicitAxesPerDirection + 2) {
     throw const FormatException('墙体坐标过多，请整理布局后再继续');
+  }
   final remaining = <Cell>{
     for (var j = 0; j < axes.ny; j++)
       for (var i = 0; i < axes.nx; i++)
@@ -89,19 +91,23 @@ HouseDocument recognizeWallRooms(
         e.kind == 'open' &&
         base.owners[e.negative] != null &&
         base.owners[e.positive] != null &&
-        base.owners[e.negative] != base.owners[e.positive]) continue;
+        base.owners[e.negative] != base.owners[e.positive]) {
+      continue;
+    }
     (adjacency[e.negative!] ??= {}).add(e.positive!);
     (adjacency[e.positive!] ??= {}).add(e.negative!);
   }
   final groups = <Set<Cell>>[];
   while (remaining.isNotEmpty) {
-    final pending = <Cell>[remaining.first], group = <Cell>{};
+    final pending = <Cell>[remaining.first];
+    final group = <Cell>{};
     remaining.remove(pending.first);
     while (pending.isNotEmpty) {
       final c = pending.removeLast();
       group.add(c);
-      for (final n in adjacency[c] ?? <Cell>{})
+      for (final n in adjacency[c] ?? <Cell>{}) {
         if (remaining.remove(n)) pending.add(n);
+      }
     }
     groups.add(group);
   }
@@ -114,7 +120,8 @@ HouseDocument recognizeWallRooms(
                 (axes.h[c.j + 1].pos - axes.h[c.j].pos));
     return area(b).compareTo(area(a));
   });
-  final used = <String>{}, rooms = <Room>[];
+  final used = <String>{};
+  final rooms = <Room>[];
   for (final group in groups) {
     Room? prior;
     var best = 0.0;
@@ -123,12 +130,13 @@ HouseDocument recognizeWallRooms(
       if (used.contains(room.id)) continue;
       final cells = regionCells(axes, room.regions).cells;
       var overlap = 0.0;
-      for (final c in group.intersection(cells))
+      for (final c in group.intersection(cells)) {
         overlap += (axes.v[c.i + 1].pos - axes.v[c.i].pos) *
             (axes.h[c.j + 1].pos - axes.h[c.j].pos);
+      }
       final seeds = (preferred[room.id] ?? []).where((p) {
-        final i = axes.v.indexWhere((a) => a.pos > p.x) - 1,
-            j = axes.h.indexWhere((a) => a.pos > p.y) - 1;
+        final i = axes.v.indexWhere((a) => a.pos > p.x) - 1;
+        final j = axes.h.indexWhere((a) => a.pos > p.y) - 1;
         return group.contains(Cell(i, j));
       }).length;
       if ((seeds > bestSeeds || seeds == bestSeeds && overlap > best) &&
@@ -168,8 +176,8 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
     String floorId, String Function() newId) {
   final floor = after.floors.firstWhere((f) => f.id == floorId);
   if (!floor.explicitWalls) return after;
-  final old = deriveFloorBase(before, floorId),
-      current = deriveFloorBase(after, floorId);
+  final old = deriveFloorBase(before, floorId);
+  final current = deriveFloorBase(after, floorId);
   final natural = _replaceFloor(
       after,
       Floor(
@@ -189,24 +197,24 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
     if (c == null) return null;
     final x = (current.axes.v[c.i].pos + current.axes.v[c.i + 1].pos) / 2;
     final y = (current.axes.h[c.j].pos + current.axes.h[c.j + 1].pos) / 2;
-    final i = old.axes.v.indexWhere((a) => a.pos > x) - 1,
-        j = old.axes.h.indexWhere((a) => a.pos > y) - 1;
+    final i = old.axes.v.indexWhere((a) => a.pos > x) - 1;
+    final j = old.axes.h.indexWhere((a) => a.pos > y) - 1;
     return old.owners[Cell(i, j)];
   }
 
   final edges = <UnitEdge>[];
   for (var i = 0; i < current.edges.length; i++) {
-    final e = current.edges[i],
-        n = current.owners[e.negative],
-        p = current.owners[e.positive];
+    final e = current.edges[i];
+    final n = current.owners[e.negative];
+    final p = current.owners[e.positive];
     if (e.axis.kind == 'boundary') continue;
     final wasBoundary = oldOwner(e.negative) != oldOwner(e.positive);
-    if (e.hasWall && !(wasBoundary && n == p))
+    if (e.hasWall && !(wasBoundary && n == p)) {
       edges.add(e);
-    else if (wanted.edges[i].hasWall && n != p) edges.add(wanted.edges[i]);
+    } else if (wanted.edges[i].hasWall && n != p) edges.add(wanted.edges[i]);
   }
-  final originals = floor.wallOverrides.whereType<SolidWall>().toList(),
-      used = <String>{};
+  final originals = floor.wallOverrides.whereType<SolidWall>().toList();
+  final used = <String>{};
   final walls = <WallOverride>[
     for (final w in floor.wallOverrides)
       if (w is OpenWall ||
@@ -220,7 +228,8 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
   var group = <UnitEdge>[];
   void flush() {
     if (group.isEmpty) return;
-    final first = group.first, last = group.last;
+    final first = group.first;
+    final last = group.last;
     final prior = originals.where((w) {
       final c = resolveAnchor(current.axes, w.anchor).chain!;
       return c.carrier.id == first.axis.id &&
@@ -254,7 +263,9 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
         (group.last.axis.id != e.axis.id ||
             group.last.end.pos != e.start.pos ||
             group.last.thickness != e.thickness ||
-            originalId(group.last) != originalId(e))) flush();
+            originalId(group.last) != originalId(e))) {
+      flush();
+    }
     group.add(e);
   }
   flush();
@@ -288,14 +299,15 @@ EditResult moveDrawnWall(HouseDocument original, Map<String, dynamic> args,
     final floor = doc.floors.firstWhere((f) => f.id == floorId);
     final axes = resolveFloorAxes(doc, floorId)!;
     final solids = floor.wallOverrides.whereType<SolidWall>().toList();
-    final wallId = args['wallId'] as String?,
-        anchor = args['anchor'] as BoundaryAnchor?;
+    final wallId = args['wallId'] as String?;
+    final anchor = args['anchor'] as BoundaryAnchor?;
     final target = solids
         .where((w) => wallId != null ? w.id == wallId : w.anchor == anchor)
         .firstOrNull;
     if (target == null) return const EditResult(null, '找不到这段墙，请重新选择');
     final chain = resolveAnchor(axes, target.anchor).chain!;
-    final from = chain.carrier.pos, to = args['pos'] as int;
+    final from = chain.carrier.pos;
+    final to = args['pos'] as int;
     if (from == to) return EditResult(original, null);
     final vertical = chain.carrier.dir == AxisDir.V;
     Map<String, dynamic> wall(String id, bool v, int carrier, int lo, int hi) =>
@@ -307,14 +319,18 @@ EditResult moveDrawnWall(HouseDocument original, Map<String, dynamic> args,
           'x1': v ? carrier : hi,
           'y1': v ? hi : carrier
         };
-    final grow = <Map<String, dynamic>>[], shrink = <Map<String, dynamic>>[];
+    final grow = <Map<String, dynamic>>[];
+    final shrink = <Map<String, dynamic>>[];
     for (final w in solids) {
       if (w.id == target.id) continue;
       final c = resolveAnchor(axes, w.anchor).chain!;
       if (c.carrier.dir == chain.carrier.dir ||
           c.carrier.pos < chain.startPos ||
-          c.carrier.pos > chain.endPos) continue;
-      final atStart = c.startPos == from, atEnd = c.endPos == from;
+          c.carrier.pos > chain.endPos) {
+        continue;
+      }
+      final atStart = c.startPos == from;
+      final atEnd = c.endPos == from;
       if (!atStart && !atEnd) continue;
       // At the moved wall's own end, a line that continues past it is a
       // through wall the end simply slides along, not an attached wall.
@@ -324,8 +340,11 @@ EditResult moveDrawnWall(HouseDocument original, Map<String, dynamic> args,
             final other = resolveAnchor(axes, o.anchor).chain!;
             return other.carrier.id == c.carrier.id &&
                 (atStart ? other.endPos == from : other.startPos == from);
-          })) continue;
-      final lo = atStart ? to : c.startPos, hi = atEnd ? to : c.endPos;
+          })) {
+        continue;
+      }
+      final lo = atStart ? to : c.startPos;
+      final hi = atEnd ? to : c.endPos;
       if (hi - lo < 300) return const EditResult(null, '相连的墙会短于 0.30 米，请少移动一些');
       (hi - lo > c.endPos - c.startPos ? grow : shrink)
           .add(wall(w.id, !vertical, c.carrier.pos, lo, hi));
@@ -377,23 +396,25 @@ EditResult editDrawnWall(HouseDocument original, String kind,
             ? w.id == wallId
             : targetAnchor != null && w.anchor == targetAnchor)
         .firstOrNull;
-    if (kind != 'AddDrawnWall' && prior == null)
+    if (kind != 'AddDrawnWall' && prior == null) {
       return const EditResult(null, '找不到这段墙，请重新选择');
+    }
     final oldChain =
         prior == null ? null : resolveAnchor(oldAxes, prior.anchor).chain!;
     if (kind == 'UpdateDrawnWall' && oldChain != null) {
-      final x0 = args['x0'] as int,
-          y0 = args['y0'] as int,
-          x1 = args['x1'] as int,
-          y1 = args['y1'] as int;
+      final x0 = args['x0'] as int;
+      final y0 = args['y0'] as int;
+      final x1 = args['x1'] as int;
+      final y1 = args['y1'] as int;
       final vertical = oldChain.carrier.dir == AxisDir.V;
       if ((vertical
               ? x0 == x1 && x0 == oldChain.carrier.pos
               : y0 == y1 && y0 == oldChain.carrier.pos) &&
           math.min(vertical ? y0 : x0, vertical ? y1 : x1) ==
               oldChain.startPos &&
-          math.max(vertical ? y0 : x0, vertical ? y1 : x1) == oldChain.endPos)
+          math.max(vertical ? y0 : x0, vertical ? y1 : x1) == oldChain.endPos) {
         return EditResult(original, null);
+      }
     }
     if (prior != null) walls.remove(prior);
     final localAxes = [...doc.axes.floor];
@@ -413,13 +434,15 @@ EditResult editDrawnWall(HouseDocument original, String kind,
     }
 
     BoundaryAnchor? anchor;
-    int? lo, hi, carrier;
+    int? lo;
+    int? hi;
+    int? carrier;
     AxisDir? direction;
     if (kind != 'DeleteDrawnWall') {
-      final x0 = args['x0'] as int,
-          y0 = args['y0'] as int,
-          x1 = args['x1'] as int,
-          y1 = args['y1'] as int;
+      final x0 = args['x0'] as int;
+      final y0 = args['y0'] as int;
+      final x1 = args['x1'] as int;
+      final y1 = args['y1'] as int;
       if ((x0 == x1) == (y0 == y1)) return const EditResult(null, '请拉出一段横墙或竖墙');
       direction = x0 == x1 ? AxisDir.V : AxisDir.H;
       lo = math.min(
@@ -434,31 +457,35 @@ EditResult editDrawnWall(HouseDocument original, String kind,
               coordinate(direction == AxisDir.V ? AxisDir.H : AxisDir.V, lo),
           endAxisId:
               coordinate(direction == AxisDir.V ? AxisDir.H : AxisDir.V, hi));
-      if (anchor.axisId.startsWith('@'))
+      if (anchor.axisId.startsWith('@')) {
         return const EditResult(null, '外墙请通过房屋长宽调整');
+      }
       for (final w in [...walls]) {
         final c = resolveAnchor(oldAxes, w.anchor).chain!;
         if (c.carrier.dir == direction &&
             c.carrier.pos == carrier &&
             c.startPos < hi &&
             lo < c.endPos) {
-          if (w is! OpenWall)
+          if (w is! OpenWall) {
             return const EditResult(null, '这段位置已有墙体，请拖动端点延长已有墙');
+          }
           walls.remove(w);
-          if (c.startPos < lo)
+          if (c.startPos < lo) {
             walls.add(OpenWall(
                 id: w.id,
                 anchor: BoundaryAnchor(
                     axisId: w.anchor.axisId,
                     startAxisId: w.anchor.startAxisId,
                     endAxisId: anchor.startAxisId)));
-          if (hi < c.endPos)
+          }
+          if (hi < c.endPos) {
             walls.add(OpenWall(
                 id: c.startPos < lo ? newId() : w.id,
                 anchor: BoundaryAnchor(
                     axisId: w.anchor.axisId,
                     startAxisId: anchor.endAxisId,
                     endAxisId: w.anchor.endAxisId)));
+          }
         }
       }
       for (final stair in floor.stairs) {
@@ -471,7 +498,9 @@ EditResult editDrawnWall(HouseDocument original, String kind,
             : carrier > r.bottom &&
                 carrier < r.top &&
                 lo < r.right &&
-                hi > r.left) return const EditResult(null, '墙体不能穿过楼梯');
+                hi > r.left) {
+          return const EditResult(null, '墙体不能穿过楼梯');
+        }
       }
       for (final opening in identical(doc, original)
           ? originalOpenings()
@@ -481,8 +510,9 @@ EditResult editDrawnWall(HouseDocument original, String kind,
             carrier > opening.start &&
             carrier < opening.end &&
             lo <= opening.axis.pos &&
-            hi >= opening.axis.pos)
+            hi >= opening.axis.pos) {
           return const EditResult(null, '接墙位置不能穿过已有门窗，请换一个位置');
+        }
       }
       walls.add(SolidWall(
           id: prior?.id ?? newId(),
@@ -507,16 +537,18 @@ EditResult editDrawnWall(HouseDocument original, String kind,
         continue;
       }
       if (kind == 'DeleteDrawnWall') {
-        if (args['deleteHostedObjects'] != true)
+        if (args['deleteHostedObjects'] != true) {
           return const EditResult(null, '删除墙体会移除其门窗，请确认后再删除');
+        }
         removed.add(o.id);
         continue;
       }
       final shift = lo! - oldChain.startPos;
       final translated = hi! - oldChain.endPos == shift ? shift : 0;
       final offset = (start + translated - lo).round();
-      if (offset < 0 || offset + o.width > hi - lo)
+      if (offset < 0 || offset + o.width > hi - lo) {
         return const EditResult(null, '墙体调整后无法容纳已有门窗');
+      }
       final p = FromStartPosition(offset);
       opens.add(switch (o) {
         DoorOpening() => DoorOpening(
@@ -596,11 +628,19 @@ EditResult editDrawnWall(HouseDocument original, String kind,
           refs.addAll([a.axisId, a.startAxisId, a.endAxisId]);
       for (final f in doc.floors) {
         for (final r in f.rooms) {
-          for (final region in r.regions) rect(region);
+          for (final region in r.regions) {
+            rect(region);
+          }
         }
-        for (final s in f.stairs) rect(s.region);
-        for (final w in f.wallOverrides) wallAnchor(w.anchor);
-        for (final o in f.openings) wallAnchor(o.anchor);
+        for (final s in f.stairs) {
+          rect(s.region);
+        }
+        for (final w in f.wallOverrides) {
+          wallAnchor(w.anchor);
+        }
+        for (final o in f.openings) {
+          wallAnchor(o.anchor);
+        }
       }
       doc = _replaceFloor(doc, doc.floors.firstWhere((f) => f.id == floorId),
           axes: AxisSystem(global: doc.axes.global, floor: [
@@ -620,8 +660,9 @@ EditResult editDrawnWall(HouseDocument original, String kind,
         .map((o) => o.opening.id)
         .toSet();
     if (documentOpenings(doc, floorId: floorId)
-        .any((o) => healthy.contains(o.opening.id) && o.status != 'ok'))
+        .any((o) => healthy.contains(o.opening.id) && o.status != 'ok')) {
       return const EditResult(null, '此调整会影响已有门窗，请避开门窗位置');
+    }
     return EditResult(doc, null);
   } on FormatException catch (e) {
     return EditResult(null, e.message);

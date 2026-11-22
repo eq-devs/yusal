@@ -38,7 +38,7 @@ class VoiceMock extends MockBackend implements VoiceBackend {
         id: 'me',
         phone: '',
         displayName: 'Me',
-        createdAt: DateTime.utc(2026, 11, 1));
+        createdAt: DateTime.utc(2026, 11));
     if (signedIn) signInAs('me');
   }
   final ScriptedBackend inner;
@@ -262,7 +262,6 @@ void main() {
         builder: (context, child) => VoiceHost(
             navigator: navigator,
             repos: MockBackend(latency: Duration.zero, seed: false),
-            enabled: true,
             child: child!),
         home: const Scaffold()));
     await t.pump();

@@ -6,7 +6,8 @@ class _FakeUpdater implements ShorebirdUpdater {
   _FakeUpdater({this.available = true, this.status = UpdateStatus.outdated});
   final bool available;
   UpdateStatus status;
-  int checks = 0, updates = 0;
+  int checks = 0;
+  int updates = 0;
   bool failUpdate = false;
 
   @override

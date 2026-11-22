@@ -1,8 +1,8 @@
-import '../axis/axis_resolver.dart';
-import '../canonicalization/room_canonicalizer.dart';
-import '../document/house_document.dart';
-import '../validation/document_validator.dart';
-import 'design_commands.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/canonicalization/room_canonicalizer.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/validation/document_validator.dart';
+import 'package:yusal/core/commands/design_commands.dart';
 
 /// Flips the whole house left to right ([horizontal]) or top to bottom:
 /// every floor, with its walls, rooms, doors, windows, stairs, cut
@@ -26,9 +26,7 @@ EditResult mirrorPlan(HouseDocument doc, {required bool horizontal}) {
 
   final axes = AxisSystem(global: [
     for (final a in doc.axes.global)
-      a.dir == flipped
-          ? GlobalAxis(id: a.id, dir: a.dir, pos: size - a.pos)
-          : a
+      a.dir == flipped ? GlobalAxis(id: a.id, dir: a.dir, pos: size - a.pos) : a
   ], floor: [
     for (final a in doc.axes.floor)
       a.dir == flipped
@@ -67,9 +65,11 @@ EditResult mirrorPlan(HouseDocument doc, {required bool horizontal}) {
         explicitWalls: floor.explicitWalls,
         rooms: [
           for (final r in floor.rooms)
-            Room(id: r.id, type: r.type, name: r.name, regions: [
-              for (final region in r.regions) rect(region)
-            ])
+            Room(
+                id: r.id,
+                type: r.type,
+                name: r.name,
+                regions: [for (final region in r.regions) rect(region)])
         ],
         wallOverrides: [
           for (final w in floor.wallOverrides)
@@ -142,7 +142,9 @@ EditResult mirrorPlan(HouseDocument doc, {required bool horizontal}) {
               };
             }()
         ],
-        outside: [for (final r in floor.outside) rect(r)]));
+        outside: [
+          for (final r in floor.outside) rect(r)
+        ]));
   }
 
   int box(int at, int length) => size - at - length;
@@ -210,7 +212,8 @@ EditResult mirrorPlan(HouseDocument doc, {required bool horizontal}) {
           outside: floor.outside)
   ]);
   final errors = validateHouse(result);
-  if (errors.isNotEmpty)
+  if (errors.isNotEmpty) {
     return EditResult(null, '操作无法完成：${errors.first.message}');
+  }
   return EditResult(result, null);
 }

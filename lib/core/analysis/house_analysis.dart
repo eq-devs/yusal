@@ -1,7 +1,7 @@
 import 'dart:math' as math;
-import '../document/house_document.dart';
-import '../geometry/floor_base.dart';
-import '../geometry/derived_house.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
 
 /// Construction reading of a derived house: which walls carry load, where
 /// the foundation strips run, what each opening faces, and the quantities.
@@ -39,14 +39,22 @@ List<WallInfo> wallsOf(FloorBase base, FoundationSpec spec) => [
 /// Area covered by [rects], overlaps counted once.
 double unionArea(List<PlanRect> rects) {
   if (rects.isEmpty) return 0;
-  final xs = {for (final r in rects) ...[r.left, r.right]}.toList()..sort();
-  final ys = {for (final r in rects) ...[r.bottom, r.top]}.toList()..sort();
+  final xs = {
+    for (final r in rects) ...[r.left, r.right]
+  }.toList()
+    ..sort();
+  final ys = {
+    for (final r in rects) ...[r.bottom, r.top]
+  }.toList()
+    ..sort();
   var area = 0.0;
   for (var i = 0; i < xs.length - 1; i++)
     for (var j = 0; j < ys.length - 1; j++) {
-      final x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2;
-      if (rects.any((r) => r.contains(x, y)))
+      final x = (xs[i] + xs[i + 1]) / 2;
+      final y = (ys[j] + ys[j + 1]) / 2;
+      if (rects.any((r) => r.contains(x, y))) {
         area += (xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j]);
+      }
     }
   return area;
 }
@@ -55,8 +63,9 @@ double unionArea(List<PlanRect> rects) {
 (String?, String?) roomsBeside(OpeningPlacement p, FloorBase base) {
   final mid = (p.start + p.end) / 2;
   for (final e in base.edges) {
-    if (e.axis.id != p.axis.id || e.start.pos > mid || e.end.pos < mid)
+    if (e.axis.id != p.axis.id || e.start.pos > mid || e.end.pos < mid) {
       continue;
+    }
     return (
       e.negative == null ? null : base.owners[e.negative],
       e.positive == null ? null : base.owners[e.positive]
@@ -82,8 +91,10 @@ Facing? facingOf(OpeningPlacement p, FloorBase base, int northAngleDeg) {
   };
   if (neg != null && pos != null) return null;
   final a = northAngleDeg * math.pi / 180;
-  final n = (math.sin(a), math.cos(a)), e = (math.cos(a), -math.sin(a));
-  final dn = out.$1 * n.$1 + out.$2 * n.$2, de = out.$1 * e.$1 + out.$2 * e.$2;
+  final n = (math.sin(a), math.cos(a));
+  final e = (math.cos(a), -math.sin(a));
+  final dn = out.$1 * n.$1 + out.$2 * n.$2;
+  final de = out.$1 * e.$1 + out.$2 * e.$2;
   if (dn.abs() >= de.abs()) return dn >= 0 ? Facing.north : Facing.south;
   return de >= 0 ? Facing.east : Facing.west;
 }
@@ -97,7 +108,8 @@ class RoomStats {
   /// Net size of the largest clear rectangle.
   final double clearWidth, clearDepth;
   final List<OpeningPlacement> windows;
-  final double windowArea, volume;
+  final double windowArea;
+  final double volume;
   double get area => geometry.clearArea;
 
   /// Floor area per unit of window area: 7 means 1 : 7.
@@ -136,11 +148,13 @@ RoomStats roomStats(Room room, DerivedFloor floor, int floorHeight) {
 }
 
 class FoundationStrip {
-  const FoundationStrip(this.wall, this.rect, this.cushion, this.width,
-      this.height, this.exists);
+  const FoundationStrip(
+      this.wall, this.rect, this.cushion, this.width, this.height, this.exists);
   final WallInfo wall;
-  final PlanRect rect, cushion;
-  final int width, height;
+  final PlanRect rect;
+  final PlanRect cushion;
+  final int width;
+  final int height;
 
   /// Partition strips only exist when the spec includes them.
   final bool exists;
@@ -182,7 +196,8 @@ class FoundationTakeoff {
       xps,
       blinding,
       waterproofing;
-  final int stirrups, partitionStirrups;
+  final int stirrups;
+  final int partitionStirrups;
 }
 
 /// Weight of reinforcing bar per metre, kg: 0.00617 × d².
@@ -190,7 +205,8 @@ double barKgPerM(int diameter) => 0.00617 * diameter * diameter;
 
 FoundationTakeoff foundationTakeoff(HouseDocument doc, DerivedHouse derived) {
   final spec = doc.extras.foundation;
-  final w = doc.footprint.width.toDouble(), d = doc.footprint.depth.toDouble();
+  final w = doc.footprint.width.toDouble();
+  final d = doc.footprint.depth.toDouble();
   final strips = <FoundationStrip>[];
   for (final wall in wallsOf(derived.floors.first.base, spec)) {
     if (wall.role == WallRole.temporary) continue;
@@ -201,13 +217,13 @@ FoundationTakeoff foundationTakeoff(HouseDocument doc, DerivedHouse derived) {
     PlanRect strip(double half) {
       if (wall.horizontal) {
         final c = (r.bottom + r.top) / 2;
-        final x0 = r.left <= 0 ? r.left - grow : r.left,
-            x1 = r.right >= w ? r.right + grow : r.right;
+        final x0 = r.left <= 0 ? r.left - grow : r.left;
+        final x1 = r.right >= w ? r.right + grow : r.right;
         return PlanRect(x0, c - half, x1, c + half);
       }
       final c = (r.left + r.right) / 2;
-      final y0 = r.bottom <= 0 ? r.bottom - grow : r.bottom,
-          y1 = r.top >= d ? r.top + grow : r.top;
+      final y0 = r.bottom <= 0 ? r.bottom - grow : r.bottom;
+      final y1 = r.top >= d ? r.top + grow : r.top;
       return PlanRect(c - half, y0, c + half, y1);
     }
 
@@ -219,16 +235,15 @@ FoundationTakeoff foundationTakeoff(HouseDocument doc, DerivedHouse derived) {
         main ? spec.height : spec.partitionHeight,
         main || spec.partitions));
   }
-  final mainStrips = strips.where((s) => s.main).toList(),
-      partStrips = strips.where((s) => !s.main && s.exists).toList();
-  final lm = unionArea([for (final s in mainStrips) s.rect]) / spec.width,
-      lp = partStrips.isEmpty
-          ? 0.0
-          : unionArea([for (final s in partStrips) s.rect]) /
-              spec.partitionWidth;
+  final mainStrips = strips.where((s) => s.main).toList();
+  final partStrips = strips.where((s) => !s.main && s.exists).toList();
+  final lm = unionArea([for (final s in mainStrips) s.rect]) / spec.width;
+  final lp = partStrips.isEmpty
+      ? 0.0
+      : unionArea([for (final s in partStrips) s.rect]) / spec.partitionWidth;
   const lap = 1.08;
-  final nSt = (lm / spec.stirrupStep).ceil(),
-      nSp = (lp / spec.stirrupStep).ceil();
+  final nSt = (lm / spec.stirrupStep).ceil();
+  final nSp = (lp / spec.stirrupStep).ceil();
   final stL = 2 *
           ((spec.width - 2 * spec.cover + 20) +
               (spec.height - 2 * spec.cover + 20)) +
@@ -257,8 +272,7 @@ FoundationTakeoff foundationTakeoff(HouseDocument doc, DerivedHouse derived) {
       formwork: 2 * (lm * spec.height + lp * spec.partitionHeight),
       xps: perimeter * math.max(0, spec.height - 100),
       blinding: perimeter * 1000 + 4 * 1000 * 1000,
-      waterproofing:
-          (lm * spec.width + lp * spec.partitionWidth) * 2);
+      waterproofing: (lm * spec.width + lp * spec.partitionWidth) * 2);
 }
 
 class WallTakeoff {
@@ -274,24 +288,33 @@ class WallTakeoff {
       required this.partitionVolume,
       required this.exteriorGross,
       required this.height});
-  final double exteriorLength,
-      bearingLength,
-      partitionLength,
-      exteriorOpenings,
-      bearingOpenings,
-      partitionOpenings,
-      exteriorVolume,
-      bearingVolume,
-      partitionVolume,
-      exteriorGross,
-      height;
+  final double exteriorLength;
+  final double bearingLength;
+  final double partitionLength;
+  final double exteriorOpenings;
+  final double bearingOpenings;
+  final double partitionOpenings;
+  final double exteriorVolume;
+  final double bearingVolume;
+  final double partitionVolume;
+  final double exteriorGross;
+  final double height;
 }
 
 /// Masonry over all floors: centreline lengths, openings and volumes.
 WallTakeoff wallTakeoff(HouseDocument doc, DerivedHouse derived) {
   final spec = doc.extras.foundation;
-  var el = 0.0, bl = 0.0, pl = 0.0, eo = 0.0, bo = 0.0, po = 0.0;
-  var ev = 0.0, bv = 0.0, pv = 0.0, height = 0.0, gross = 0.0;
+  var el = 0.0;
+  var bl = 0.0;
+  var pl = 0.0;
+  var eo = 0.0;
+  var bo = 0.0;
+  var po = 0.0;
+  var ev = 0.0;
+  var bv = 0.0;
+  var pv = 0.0;
+  var height = 0.0;
+  var gross = 0.0;
   for (var f = 0; f < doc.floors.length; f++) {
     final h = doc.floors[f].height.toDouble();
     height += h;
@@ -301,8 +324,8 @@ WallTakeoff wallTakeoff(HouseDocument doc, DerivedHouse derived) {
       if (wall.role == WallRole.temporary) continue;
       final openings = g.openings
           .where((p) => p.status == 'ok' && p.host?.ref == wall.segment.ref)
-          .fold(0.0,
-              (s, p) => s + p.opening.width * p.opening.height.toDouble());
+          .fold(
+              0.0, (s, p) => s + p.opening.width * p.opening.height.toDouble());
       // Centreline length: the rect runs to the outer faces of cross walls.
       final along = wall.segment.end.pos - wall.segment.start.pos.toDouble();
       final volume = (along * h - openings) * wall.thickness;

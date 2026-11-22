@@ -1,14 +1,14 @@
 import 'dart:convert';
 
-import '../../domain/models.dart';
-import '../repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/data/repositories.dart';
 
 /// JSON ⇄ models for the yusal-api platform endpoints. Field names are the
 /// models' names in snake_case; enums travel by name; bytes as base64;
 /// times as UTC ISO-8601.
 
 DateTime? _t(Object? v) => v == null ? null : DateTime.parse(v as String);
-DateTime _tt(Object? v) => DateTime.parse(v as String);
+DateTime _tt(Object? v) => DateTime.parse(v! as String);
 String? ts(DateTime? t) => t?.toUtc().toIso8601String();
 List<String> _strs(Object? v) =>
     [for (final s in v as List? ?? const []) s as String];
@@ -555,7 +555,7 @@ AuditEntry auditFrom(Map<String, dynamic> j) => AuditEntry(
 // ── back office ──
 
 Paged<T> pagedFrom<T>(Object? v, T Function(Map<String, dynamic>) item) {
-  final j = v as Map<String, dynamic>;
+  final j = v! as Map<String, dynamic>;
   return Paged([for (final m in _maps(j['items'])) item(m)],
       total: _i(j['total']) ?? 0,
       page: _i(j['page']) ?? 1,

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import '../../shared/brand/yicon.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/shared/brand/yicon.dart';
 
 /// Terms of a cooperation agreement ("合作约定"). Used to invite the chosen
 /// applicant and to propose a change; pops the [Agreement] to send.
@@ -22,15 +22,16 @@ class AgreementForm extends StatefulWidget {
 }
 
 class _AgreementFormState extends State<AgreementForm> {
-  final scope = TextEditingController(),
-      headcount = TextEditingController(),
-      amount = TextEditingController(),
-      payment = TextEditingController(),
-      materials = TextEditingController(),
-      open = TextEditingController();
+  final scope = TextEditingController();
+  final headcount = TextEditingController();
+  final amount = TextEditingController();
+  final payment = TextEditingController();
+  final materials = TextEditingController();
+  final open = TextEditingController();
   PricingMode pricing = PricingMode.lumpSum;
   String unit = 'total';
-  DateTime? start, end;
+  DateTime? start;
+  DateTime? end;
   bool shareAddress = false;
   String? error;
 
@@ -57,8 +58,9 @@ class _AgreementFormState extends State<AgreementForm> {
     }
     final v = widget.application?.current;
     start = v?.availableFrom ?? d.startDate;
-    if (d.durationDays != null && start != null)
+    if (d.durationDays != null && start != null) {
       end = start!.add(Duration(days: d.durationDays!));
+    }
     if (hire) {
       final h = d.hire!;
       scope.text = d.title;
@@ -76,8 +78,9 @@ class _AgreementFormState extends State<AgreementForm> {
       scope.text = v?.scopeText.isNotEmpty == true ? v!.scopeText : d.title;
       pricing = v?.pricing ?? PricingMode.lumpSum;
       amount.text = v?.total?.round().toString() ?? '';
-      if (v?.durationDays != null && start != null)
+      if (v?.durationDays != null && start != null) {
         end = start!.add(Duration(days: v!.durationDays!));
+      }
       materials.text = materialName(v?.materials ?? MaterialMode.labourOnly);
       open.text = v?.excludes.isNotEmpty == true
           ? '${tr3('不包含', 'Кірмейді', 'Не входит')}: ${v!.excludes}'
@@ -217,7 +220,8 @@ class _AgreementFormState extends State<AgreementForm> {
                       'Әдепкі 4 кезең. Растағанға дейін өзгертуге болады. Yusal төлем қабылдамайды.',
                       'По умолчанию 4 этапа, их можно изменить до подтверждения. Yusal не принимает платежи.'),
                   style: TextStyle(
-                      fontSize: YFont.caption, color: YTokens.of(context).muted))),
+                      fontSize: YFont.caption,
+                      color: YTokens.of(context).muted))),
           _field(materials,
               tr3('材料与工具责任', 'Материал мен құрал', 'Материалы и инструмент')),
           _field(

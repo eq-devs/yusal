@@ -68,8 +68,7 @@ void main() {
     expect(find.text('给父母盖的一层砖房'), findsOneWidget);
     expect(find.text('120 m²'), findsOneWidget);
     expect(
-        find.byWidgetPredicate(
-            (w) => w is YusalIcon && w.icon == YIcon.share),
+        find.byWidgetPredicate((w) => w is YusalIcon && w.icon == YIcon.share),
         findsOneWidget);
     // No page to go back to: a home button leads to the feed.
     await t.tap(find.byTooltip('首页'));

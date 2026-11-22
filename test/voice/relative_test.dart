@@ -99,7 +99,7 @@ void main() {
                 {'opening': 'o1', 'room': 'r2', 'side': 'south'}))
             .ok,
         isTrue);
-    expect(scene(), contains(RegExp(r' r2 .*windows o1 south')));
+    expect(scene(), contains(RegExp(' r2 .*windows o1 south')));
     expect((await say('design.move_opening', {'opening': 'o1'})).code,
         ActionCodes.badArgs);
 

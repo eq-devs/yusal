@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../motion/motion.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import 'plan_viewer.dart';
-import 'l10n.dart';
-import 'scope.dart';
-import 'theme.dart';
-import 'widgets.dart';
+import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/plan_viewer.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 
 IconData demandIcon(Demand d) => d.type == DemandType.hire
     ? Icons.engineering_outlined
@@ -56,7 +56,9 @@ class DemandCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                    fontSize: YFont.body, fontWeight: FontWeight.w700, height: 1.25))),
+                    fontSize: YFont.body,
+                    fontWeight: FontWeight.w700,
+                    height: 1.25))),
         if (demand.status != DemandStatus.open) ...[
           const SizedBox(width: 8),
           StatusPill(demandStatusName(demand.status),
@@ -65,8 +67,7 @@ class DemandCard extends StatelessWidget {
         if (trailing != null) trailing!,
       ]),
       const SizedBox(height: 3),
-      Text(
-          placeText(v.region, v.locality),
+      Text(placeText(v.region, v.locality),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(color: t.muted, fontSize: YFont.label)),
@@ -201,7 +202,8 @@ class ProfileCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              fontSize: YFont.body, fontWeight: FontWeight.w700))),
+                              fontSize: YFont.body,
+                              fontWeight: FontWeight.w700))),
                   if (p.verified) ...[
                     const VerifiedBadge(),
                     const SizedBox(width: 6),
@@ -225,13 +227,15 @@ class ProfileCard extends StatelessWidget {
                   Flexible(
                       child: Text(availabilityName(p),
                           style: const TextStyle(
-                              fontSize: YFont.small, fontWeight: FontWeight.w600))),
+                              fontSize: YFont.small,
+                              fontWeight: FontWeight.w600))),
                   if (stale) ...[
                     const SizedBox(width: 6),
                     Text(
                         tr3('· 较久未确认', '· ұзақ расталмаған',
                             '· давно не обновлял'),
-                        style: TextStyle(fontSize: YFont.caption, color: t.muted)),
+                        style:
+                            TextStyle(fontSize: YFont.caption, color: t.muted)),
                   ],
                 ]),
                 _TrackRecord(profile: p),
@@ -297,7 +301,8 @@ class _TrackRecord extends StatelessWidget {
                     child: Text(parts.join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: YFont.small, color: t.muted))),
+                        style:
+                            TextStyle(fontSize: YFont.small, color: t.muted))),
               ]));
         });
   }

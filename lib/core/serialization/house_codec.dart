@@ -1,15 +1,17 @@
 import 'dart:convert';
-import 'schema_validator.dart';
+import 'package:yusal/core/serialization/schema_validator.dart';
 
-import '../document/house_document.dart';
-import '../validation/document_validator.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/validation/document_validator.dart';
 
 const currentSchemaVersion = 4;
 const maxHouseBytes = 10485760;
 
 class LoadError {
   const LoadError(this.code, this.path, this.message);
-  final String code, path, message;
+  final String code;
+  final String path;
+  final String message;
 }
 
 class LoadFailure {
@@ -28,13 +30,17 @@ class LoadResult {
 
 class _DecodeException implements Exception {
   _DecodeException(this.code, this.path, this.message);
-  final String code, path, message;
+  final String code;
+  final String path;
+  final String message;
 }
 
 Object? _parseJson(String source) {
   var i = 0;
   void ws() {
-    while (i < source.length && ' \n\r\t'.contains(source[i])) i++;
+    while (i < source.length && ' \n\r\t'.contains(source[i])) {
+      i++;
+    }
   }
 
   String string() {
@@ -63,18 +69,21 @@ Object? _parseJson(String source) {
       }
       while (true) {
         ws();
-        if (i >= source.length || source[i] != '"')
+        if (i >= source.length || source[i] != '"') {
           throw const FormatException();
+        }
         final key = string();
-        if (map.containsKey(key))
+        if (map.containsKey(key)) {
           throw _DecodeException(
             'DUPLICATE_JSON_KEY',
             '$path/${key.replaceAll('~', '~0').replaceAll('/', '~1')}',
             'JSON 对象包含重复键 $key',
           );
+        }
         ws();
-        if (i >= source.length || source[i++] != ':')
+        if (i >= source.length || source[i++] != ':') {
           throw const FormatException();
+        }
         map[key] = value(
           '$path/${key.replaceAll('~', '~0').replaceAll('/', '~1')}',
         );
@@ -106,7 +115,9 @@ Object? _parseJson(String source) {
     }
     if (c == '"') return string();
     final start = i;
-    while (i < source.length && !',]} \n\r\t'.contains(source[i])) i++;
+    while (i < source.length && !',]} \n\r\t'.contains(source[i])) {
+      i++;
+    }
     if (start == i) throw const FormatException();
     return jsonDecode(source.substring(start, i));
   }
@@ -134,8 +145,9 @@ class _Decoder {
       if (!m.containsKey(key)) err('MISSING_FIELD', '$path/$key', '缺少字段 $key');
     }
     for (final key in m.keys) {
-      if (!allowed.contains(key) && !optional.contains(key))
+      if (!allowed.contains(key) && !optional.contains(key)) {
         err('UNKNOWN_FIELD', '$path/$key', '未知字段 $key');
+      }
     }
     return m;
   }
@@ -167,15 +179,19 @@ class _Decoder {
 
   List<Object?> arr(Object? v, String p) {
     if (v is List) return v;
-    if (v == null)
+    if (v == null) {
       err('NULL_NOT_ALLOWED', p, '不可为 null');
-    else
+    } else {
       err('WRONG_TYPE', p, '应为数组');
+    }
     return const [];
   }
 
   T en<T extends Enum>(Object? v, String p, List<T> values) {
-    if (v is String) for (final x in values) if (x.name == v) return x;
+    if (v is String)
+      for (final x in values) {
+        if (x.name == v) return x;
+      }
     err('UNKNOWN_ENUM', p, '未知枚举值');
     return values.first;
   }
@@ -187,11 +203,14 @@ class _Decoder {
     if (!re.hasMatch(v)) return false;
     try {
       final date = DateTime.parse(v.substring(0, 10));
-      if (date.toIso8601String().substring(0, 10) != v.substring(0, 10))
+      if (date.toIso8601String().substring(0, 10) != v.substring(0, 10)) {
         return false;
+      }
       if (int.parse(v.substring(11, 13)) > 23 ||
           int.parse(v.substring(14, 16)) > 59 ||
-          int.parse(v.substring(17, 19)) > 59) return false;
+          int.parse(v.substring(17, 19)) > 59) {
+        return false;
+      }
       DateTime.parse(v);
       return true;
     } catch (_) {
@@ -205,9 +224,9 @@ class _Decoder {
 
   Meta meta(Object? v, String p) {
     final m = obj(v, p, ['name', 'createdAt', 'updatedAt']);
-    final n = str(m['name'], '$p/name'),
-        c = str(m['createdAt'], '$p/createdAt'),
-        u = str(m['updatedAt'], '$p/updatedAt');
+    final n = str(m['name'], '$p/name');
+    final c = str(m['createdAt'], '$p/createdAt');
+    final u = str(m['updatedAt'], '$p/updatedAt');
     strictTimestamp(c, '$p/createdAt');
     strictTimestamp(u, '$p/updatedAt');
     return Meta(name: n, createdAt: c, updatedAt: u);
@@ -293,11 +312,14 @@ class _Decoder {
   void _shape(Map<String, Object?> m, String p, List<String> required,
       {List<String>? allowed}) {
     final accepted = allowed ?? required;
-    for (final k in required)
+    for (final k in required) {
       if (!m.containsKey(k)) err('MISSING_FIELD', '$p/$k', '缺少字段 $k');
-    for (final k in m.keys)
-      if (!accepted.contains(k))
+    }
+    for (final k in m.keys) {
+      if (!accepted.contains(k)) {
         err('FIELD_NOT_ALLOWED', '$p/$k', '此形状不允许字段 $k');
+      }
+    }
   }
 
   WallOverride wall(Object? v, String p) {
@@ -367,13 +389,13 @@ class _Decoder {
       if (kind == OpeningKind.door) 'opensTo',
     ];
     _shape(m, p, required);
-    final id = str(m['id'], '$p/id', id: true),
-        a = anchor(m['anchor'], '$p/anchor'),
-        pos = position(m['position'], '$p/position');
-    final w = integer(m['width'], '$p/width'),
-        h = integer(m['height'], '$p/height'),
-        s = integer(m['sill'], '$p/sill');
-    if (kind == OpeningKind.door)
+    final id = str(m['id'], '$p/id', id: true);
+    final a = anchor(m['anchor'], '$p/anchor');
+    final pos = position(m['position'], '$p/position');
+    final w = integer(m['width'], '$p/width');
+    final h = integer(m['height'], '$p/height');
+    final s = integer(m['sill'], '$p/sill');
+    if (kind == OpeningKind.door) {
       return DoorOpening(
         id: id,
         anchor: a,
@@ -384,7 +406,8 @@ class _Decoder {
         hinge: en(m['hinge'], '$p/hinge', Hinge.values),
         opensTo: en(m['opensTo'], '$p/opensTo', OpeningSide.values),
       );
-    if (kind == OpeningKind.sliding)
+    }
+    if (kind == OpeningKind.sliding) {
       return SlidingOpening(
         id: id,
         anchor: a,
@@ -393,6 +416,7 @@ class _Decoder {
         height: h,
         sill: s,
       );
+    }
     return WindowOpening(
       id: id,
       anchor: a,
@@ -423,10 +447,10 @@ class _Decoder {
       'startEdge',
       if (type == StairType.L || type == StairType.U) 'turn',
     ]);
-    final id = str(m['id'], '$p/id', id: true),
-        r = rect(m['region'], '$p/region'),
-        edge = en(m['startEdge'], '$p/startEdge', StairEdge.values);
-    if (type == StairType.L || type == StairType.U)
+    final id = str(m['id'], '$p/id', id: true);
+    final r = rect(m['region'], '$p/region');
+    final edge = en(m['startEdge'], '$p/startEdge', StairEdge.values);
+    if (type == StairType.L || type == StairType.U) {
       return TurnStair(
         id: id,
         region: r,
@@ -434,6 +458,7 @@ class _Decoder {
         turn: en(m['turn'], '$p/turn', StairTurn.values),
         type: type!,
       );
+    }
     return StraightStair(id: id, region: r, startEdge: edge);
   }
 
@@ -478,13 +503,13 @@ class _Decoder {
       'stairs',
     ];
     final m = obj(v, p, keys, optional: ['explicitWalls', 'outside']);
-    final rooms = arr(m['rooms'], '$p/rooms'),
-        walls = arr(m['wallOverrides'], '$p/wallOverrides'),
-        opens = arr(m['openings'], '$p/openings'),
-        stairs = arr(m['stairs'], '$p/stairs'),
-        outside = m['outside'] == null
-            ? const <Object?>[]
-            : arr(m['outside'], '$p/outside');
+    final rooms = arr(m['rooms'], '$p/rooms');
+    final walls = arr(m['wallOverrides'], '$p/wallOverrides');
+    final opens = arr(m['openings'], '$p/openings');
+    final stairs = arr(m['stairs'], '$p/stairs');
+    final outside = m['outside'] == null
+        ? const <Object?>[]
+        : arr(m['outside'], '$p/outside');
     return Floor(
       explicitWalls: m['explicitWalls'] == true,
       id: str(m['id'], '$p/id', id: true),
@@ -525,8 +550,10 @@ class _Decoder {
 
   AxisSystem axes(Object? v, String p) {
     final m = obj(v, p, ['global', 'floor']);
-    final g = arr(m['global'], '$p/global'), f = arr(m['floor'], '$p/floor');
-    final globals = <GlobalAxis>[], floors = <FloorAxis>[];
+    final g = arr(m['global'], '$p/global');
+    final f = arr(m['floor'], '$p/floor');
+    final globals = <GlobalAxis>[];
+    final floors = <FloorAxis>[];
     for (var i = 0; i < g.length; i++) {
       final x = obj(g[i], '$p/global/$i', ['id', 'dir', 'pos']);
       globals.add(
@@ -576,12 +603,13 @@ class _Decoder {
             .toList(),
         allowed: keys);
     String? entrance;
-    if (m.containsKey('mainEntranceOpeningId'))
+    if (m.containsKey('mainEntranceOpeningId')) {
       entrance = str(
         m['mainEntranceOpeningId'],
         '/mainEntranceOpeningId',
         id: true,
       );
+    }
     final ds = arr(m['floors'], '/floors');
     return HouseDocument(
       schemaVersion: integer(m['schemaVersion'], '/schemaVersion'),
@@ -631,17 +659,19 @@ class _Decoder {
 }
 
 LoadResult loadHouse(List<int> bytes) {
-  if (bytes.length > maxHouseBytes)
+  if (bytes.length > maxHouseBytes) {
     return const LoadResult.failure(
       LoadFailure('file', [LoadError('FILE_TOO_LARGE', '', '文件超过 10 MiB')]),
     );
+  }
   if (bytes.length >= 3 &&
       bytes[0] == 0xef &&
       bytes[1] == 0xbb &&
-      bytes[2] == 0xbf)
+      bytes[2] == 0xbf) {
     return const LoadResult.failure(
       LoadFailure('file', [LoadError('BOM_NOT_ALLOWED', '', '不允许 UTF-8 BOM')]),
     );
+  }
   String source;
   try {
     source = utf8.decode(bytes, allowMalformed: false);
@@ -654,57 +684,66 @@ LoadResult loadHouse(List<int> bytes) {
   try {
     raw = _parseJson(source);
   } catch (e) {
-    if (e is _DecodeException)
+    if (e is _DecodeException) {
       return LoadResult.failure(
         LoadFailure('file', [LoadError(e.code, e.path, e.message)]),
       );
+    }
     return const LoadResult.failure(
       LoadFailure('file', [LoadError('NOT_JSON', '', '文件不是合法 JSON')]),
     );
   }
-  if (raw is! Map)
+  if (raw is! Map) {
     return const LoadResult.failure(
       LoadFailure('envelope', [LoadError('ROOT_NOT_OBJECT', '', '根节点应为对象')]),
     );
+  }
   final env = raw.cast<String, Object?>();
-  if (!env.containsKey('schemaVersion'))
+  if (!env.containsKey('schemaVersion')) {
     return const LoadResult.failure(
       LoadFailure('envelope', [
         LoadError('MISSING_VERSION', '/schemaVersion', '缺少 schemaVersion'),
       ]),
     );
+  }
   final version = env['schemaVersion'];
-  if (version is! int || version < 1)
+  if (version is! int || version < 1) {
     return const LoadResult.failure(
       LoadFailure('envelope', [
         LoadError('INVALID_VERSION', '/schemaVersion', 'schemaVersion 无效'),
       ]),
     );
-  if (version > currentSchemaVersion)
+  }
+  if (version > currentSchemaVersion) {
     return const LoadResult.failure(
       LoadFailure('envelope', [
         LoadError('UNSUPPORTED_NEWER_VERSION', '/schemaVersion', '文件版本高于当前版本'),
       ]),
     );
+  }
   return decodeV1(raw);
 }
 
 LoadResult decodeV1(Object? raw) {
   final schemaErrors = validateSchemaV1(raw);
-  if (schemaErrors.isNotEmpty)
+  if (schemaErrors.isNotEmpty) {
     return LoadResult.failure(LoadFailure('decode', schemaErrors));
-  final d = _Decoder(), doc = d.document(raw);
-  if (d.errors.isNotEmpty)
+  }
+  final d = _Decoder();
+  final doc = d.document(raw);
+  if (d.errors.isNotEmpty) {
     return LoadResult.failure(
       LoadFailure('decode', List.unmodifiable(d.errors)),
     );
+  }
   final validation = validateHouse(doc);
-  if (validation.isNotEmpty)
+  if (validation.isNotEmpty) {
     return LoadResult.failure(
       LoadFailure('validate', [
         for (final e in validation) LoadError(e.code, e.path, e.message),
       ]),
     );
+  }
   return LoadResult.success(doc);
 }
 

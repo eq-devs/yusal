@@ -1,7 +1,7 @@
-import '../../app/settings.dart';
-import '../../data/repositories.dart';
-import '../../domain/models.dart';
-import '../../domain/rules.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/rules.dart';
 
 /// Names of codes and common words of the platform in Chinese, Kazakh and
 /// Russian.
@@ -37,7 +37,8 @@ String regionName(String code) => switch (code) {
 /// People often start the place with the town's own name ("Талгар, северная
 /// часть", or just "Есик"); then it is not printed a second time.
 String placeText(String region, String locality) {
-  final r = regionName(region), l = locality.trim();
+  final r = regionName(region);
+  final l = locality.trim();
   if (l.isEmpty) return r;
   if (r.isEmpty || l.toLowerCase().startsWith(r.toLowerCase())) return l;
   return '$r · $l';
@@ -261,8 +262,10 @@ String noticeText(AppNotification n) {
       tr3('你的房子 $t 收到新点评', '$t жаңа пікір', 'Новый отзыв о доме $t'),
     NoticeKind.commentReplied =>
       tr3('$t 有人回复了你的点评', '$t пікіріңізге жауап', 'Ответ на ваш отзыв: $t'),
-    NoticeKind.commentHelpful => tr3('作者觉得你对 $t 的点评有用',
-        '$t авторы пікіріңізді пайдалы деді', 'Автор $t отметил ваш отзыв полезным'),
+    NoticeKind.commentHelpful => tr3(
+        '作者觉得你对 $t 的点评有用',
+        '$t авторы пікіріңізді пайдалы деді',
+        'Автор $t отметил ваш отзыв полезным'),
     NoticeKind.confirmRequest => tr3('$t 对方发起合作约定，请确认', '$t келісімді растаңыз',
         '$t вам предложили соглашение'),
     NoticeKind.cooperationConfirmed => tr3(
@@ -291,22 +294,28 @@ String noticeText(AppNotification n) {
         '$t 需求已修改，请重新确认你的报名／报价', '$t тапсырыс өзгерді', '$t заявка изменилась'),
     NoticeKind.applicationNotSelected =>
       tr3('$t 发布者暂未选用你的报名', '$t сіз таңдалмадыңыз', '$t ваш отклик не выбран'),
-    NoticeKind.contentRemoved => tr3('$t 因违反社区规范被处理，可申诉',
+    NoticeKind.contentRemoved => tr3(
+        '$t 因违反社区规范被处理，可申诉',
         '$t ереже бұзғаны үшін алынды, шағым беруге болады',
         '$t снято за нарушение правил, можно обжаловать'),
-    NoticeKind.reportResolved => tr3('你对 $t 的举报已处理，谢谢', '$t шағымыңыз қаралды, рақмет',
+    NoticeKind.reportResolved => tr3(
+        '你对 $t 的举报已处理，谢谢',
+        '$t шағымыңыз қаралды, рақмет',
         'Ваша жалоба на $t рассмотрена, спасибо'),
-    NoticeKind.accountRestricted => tr3('你的账号已被限制发布与联系，可申诉',
+    NoticeKind.accountRestricted => tr3(
+        '你的账号已被限制发布与联系，可申诉',
         'Аккаунтыңыз шектелді, шағым беруге болады',
         'Ваш аккаунт ограничен, можно обжаловать'),
-    NoticeKind.accountRestored => tr3(
-        '你的账号已恢复正常', 'Аккаунтыңыз қалпына келді', 'Ограничения с аккаунта сняты'),
-    NoticeKind.appealAnswered => tr3('你对 $t 的申诉有了结果', '$t шағымыңызға жауап келді',
-        'Есть ответ на ваше обжалование $t'),
-    NoticeKind.verificationApproved => tr3('$t 已通过实名核验', '$t тексеруден өтті',
-        '$t прошёл проверку'),
-    NoticeKind.verificationRejected => tr3('$t 核验未通过，请查看原因',
-        '$t тексеруден өтпеді, себебін қараңыз', '$t не прошёл проверку, см. причину'),
+    NoticeKind.accountRestored => tr3('你的账号已恢复正常', 'Аккаунтыңыз қалпына келді',
+        'Ограничения с аккаунта сняты'),
+    NoticeKind.appealAnswered => tr3('你对 $t 的申诉有了结果',
+        '$t шағымыңызға жауап келді', 'Есть ответ на ваше обжалование $t'),
+    NoticeKind.verificationApproved =>
+      tr3('$t 已通过实名核验', '$t тексеруден өтті', '$t прошёл проверку'),
+    NoticeKind.verificationRejected => tr3(
+        '$t 核验未通过，请查看原因',
+        '$t тексеруден өтпеді, себебін қараңыз',
+        '$t не прошёл проверку, см. причину'),
     NoticeKind.newDemandMatch => tr3('有符合你订阅条件的新需求 $t',
         'Сізге сай жаңа тапсырыс: $t', 'Новая заявка по вашей подписке: $t'),
   };
@@ -315,20 +324,32 @@ String noticeText(AppNotification n) {
 /// Preset reasons a moderator picks; stored as `code:<name>` and shown in
 /// the reader's language. Anything else is the moderator's own words.
 const reasonCodes = [
-  'contact', 'fake', 'illegal', 'incomplete', 'duplicate', 'abuse', 'spam', 'ok'
+  'contact',
+  'fake',
+  'illegal',
+  'incomplete',
+  'duplicate',
+  'abuse',
+  'spam',
+  'ok'
 ];
 
 String reasonCodeText(String code) => switch (code) {
       'contact' => tr3('正文包含联系方式，请通过平台沟通', 'Мәтінде байланыс деректері бар',
           'В тексте есть контакты, общайтесь через приложение'),
-      'fake' => tr3('信息不真实或无法核实', 'Ақпарат шынайы емес', 'Недостоверная информация'),
-      'illegal' => tr3('包含违规内容', 'Ережеге қайшы мазмұн', 'Запрещённое содержание'),
+      'fake' =>
+        tr3('信息不真实或无法核实', 'Ақпарат шынайы емес', 'Недостоверная информация'),
+      'illegal' =>
+        tr3('包含违规内容', 'Ережеге қайшы мазмұн', 'Запрещённое содержание'),
       'incomplete' => tr3('信息不完整，请补充地点、范围和预算', 'Ақпарат толық емес',
           'Не хватает данных: место, объём, бюджет'),
-      'duplicate' => tr3('重复发布', 'Қайталанған жарияланым', 'Повторная публикация'),
-      'abuse' => tr3('辱骂、骚扰或歧视', 'Балағат не қудалау', 'Оскорбления или преследование'),
+      'duplicate' =>
+        tr3('重复发布', 'Қайталанған жарияланым', 'Повторная публикация'),
+      'abuse' =>
+        tr3('辱骂、骚扰或歧视', 'Балағат не қудалау', 'Оскорбления или преследование'),
       'spam' => tr3('广告或引流', 'Жарнама не спам', 'Реклама или спам'),
-      'ok' => tr3('经核查未发现问题', 'Тексеруде бұзушылық табылмады', 'Нарушений не найдено'),
+      'ok' => tr3(
+          '经核查未发现问题', 'Тексеруде бұзушылық табылмады', 'Нарушений не найдено'),
       _ => code,
     };
 
@@ -337,8 +358,9 @@ String reasonText(String reason) =>
     reason.startsWith('code:') ? reasonCodeText(reason.substring(5)) : reason;
 
 String failureText(Object e) {
-  if (e is! ApiFailure)
+  if (e is! ApiFailure) {
     return tr3('出了点问题，请重试', 'Қате шықты, қайталаңыз', 'Что-то пошло не так');
+  }
   return switch (e.code) {
     ApiCodes.notSignedIn => tr3('请先登录', 'Алдымен кіріңіз', 'Сначала войдите'),
     ApiCodes.badCode => tr3('验证码不正确', 'Код қате', 'Неверный код'),
@@ -373,12 +395,17 @@ String failureText(Object e) {
         'Эта почта уже зарегистрирована, войдите'),
     ApiCodes.badCredentials =>
       tr3('邮箱或密码不正确', 'Пошта не құпиясөз қате', 'Неверная почта или пароль'),
-    ApiCodes.providerTaken => tr3('这个账号已经绑定在另一个 Yusal 账号上',
+    ApiCodes.providerTaken => tr3(
+        '这个账号已经绑定在另一个 Yusal 账号上',
         'Бұл кіру басқа Yusal аккаунтына тіркелген',
         'Этот вход уже привязан к другому аккаунту Yusal'),
-    ApiCodes.providerLinked => tr3('已经绑定了同类账号，请先解绑',
-        'Осы түрі қосылған, алдымен ажыратыңыз', 'Такой вход уже привязан, сначала отвяжите'),
-    ApiCodes.lastMethod => tr3('至少要保留一种登录方式', 'Кемінде бір кіру тәсілі қалуы керек',
+    ApiCodes.providerLinked => tr3(
+        '已经绑定了同类账号，请先解绑',
+        'Осы түрі қосылған, алдымен ажыратыңыз',
+        'Такой вход уже привязан, сначала отвяжите'),
+    ApiCodes.lastMethod => tr3(
+        '至少要保留一种登录方式',
+        'Кемінде бір кіру тәсілі қалуы керек',
         'Должен остаться хотя бы один способ входа'),
     ApiCodes.noEmail => tr3('账号没有邮箱，无法设置密码', 'Аккаунтта пошта жоқ',
         'У аккаунта нет почты для пароля'),
@@ -422,12 +449,14 @@ String fmtTime(DateTime d) {
 String ago(DateTime then, DateTime now) {
   final d = now.difference(then);
   if (d.inMinutes < 1) return tr3('刚刚', 'жаңа ғана', 'только что');
-  if (d.inHours < 1)
+  if (d.inHours < 1) {
     return tr3('${d.inMinutes} 分钟前', '${d.inMinutes} мин бұрын',
         '${d.inMinutes} мин назад');
-  if (d.inDays < 1)
+  }
+  if (d.inDays < 1) {
     return tr3(
         '${d.inHours} 小时前', '${d.inHours} сағ бұрын', '${d.inHours} ч назад');
+  }
   return tr3(
       '${d.inDays} 天前', '${d.inDays} күн бұрын', '${d.inDays} дн. назад');
 }

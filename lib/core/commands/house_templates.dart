@@ -1,8 +1,8 @@
-import '../document/house_document.dart';
-import '../axis/axis_resolver.dart';
-import '../geometry/floor_base.dart';
-import 'room_commands.dart';
-import 'design_commands.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/commands/room_commands.dart';
+import 'package:yusal/core/commands/design_commands.dart';
 
 const houseTemplates = {
   'blank': '空白设计',

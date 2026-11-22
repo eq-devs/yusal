@@ -4,13 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/http/http_backend.dart';
-import '../features/chat/inbox_page.dart' show openRef;
-import '../services/firebase_setup.dart';
-import '../services/push/push_setup.dart';
-import '../services/update/code_push.dart';
-import 'house_app.dart';
-import 'settings.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/features/chat/inbox_page.dart' show openRef;
+import 'package:yusal/services/firebase_setup.dart';
+import 'package:yusal/services/push/push_setup.dart';
+import 'package:yusal/services/update/code_push.dart';
+import 'package:yusal/app/house_app.dart';
+import 'package:yusal/app/settings.dart';
 
 /// The backend (yusal-api on eqserver).
 const apiBaseUrl = 'https://eqserver.tail920a63.ts.net';
@@ -27,9 +27,9 @@ abstract final class Boot {
   /// The one backend for the app's lifetime.
   static final HttpBackend api = HttpBackend(apiBaseUrl);
 
-  static late final Future<void> ready = _ready();
+  static final Future<void> ready = _ready();
 
-  static late final Future<void> background = _background();
+  static final Future<void> background = _background();
 
   static Future<void> _ready() => Future.wait([
         _step('settings', AppSettings.instance.load),

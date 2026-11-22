@@ -1,5 +1,5 @@
 import 'dart:ui' show Offset;
-import 'scene_model.dart';
+import 'package:yusal/render3d/scene_model.dart';
 
 /// A piece of a [Face3] after the BSP tree split it; [uv] follows the
 /// split so textile patterns stay in place.
@@ -18,7 +18,8 @@ class _Node {
   final Vec3 normal;
   final double offset;
   final on = <Fragment>[];
-  _Node? front, back;
+  _Node? front;
+  _Node? back;
 
   /// Box around every fragment in this subtree.
   Vec3 lo = const Vec3(0, 0, 0), hi = const Vec3(0, 0, 0);
@@ -54,7 +55,8 @@ class BspTree {
       final splitter = _choose(frags);
       final n = splitter.face.normal;
       final node = _Node(n, n.dot(splitter.points.first));
-      final front = <Fragment>[], back = <Fragment>[];
+      final front = <Fragment>[];
+      final back = <Fragment>[];
       for (final f in frags) {
         _split(f, n, node.offset, node.on, front, back);
       }
@@ -70,8 +72,13 @@ class BspTree {
             b.z > hi.z ? b.z : hi.z);
       }
 
-      for (final f in node.on) for (final p in f.points) grow(p, p);
-      for (final c in [node.front, node.back]) if (c != null) grow(c.lo, c.hi);
+      for (final f in node.on)
+        for (final p in f.points) {
+          grow(p, p);
+        }
+      for (final c in [node.front, node.back]) {
+        if (c != null) grow(c.lo, c.hi);
+      }
       node.lo = lo;
       node.hi = hi;
       return node;
@@ -90,12 +97,16 @@ class BspTree {
     var bestScore = double.infinity;
     for (var i = 0; i < frags.length; i += step) {
       final c = frags[i];
-      final n = c.face.normal, d = n.dot(c.points.first);
-      var splits = 0, front = 0, back = 0;
+      final n = c.face.normal;
+      final d = n.dot(c.points.first);
+      var splits = 0;
+      var front = 0;
+      var back = 0;
       // Sample the others too on big inputs to keep the build fast.
       final sampleStep = frags.length > 400 ? (frags.length / 400).ceil() : 1;
       for (var j = 0; j < frags.length; j += sampleStep) {
-        var pos = false, neg = false;
+        var pos = false;
+        var neg = false;
         for (final p in frags[j].points) {
           final s = n.dot(p) - d;
           if (s > eps) pos = true;
@@ -122,7 +133,8 @@ class BspTree {
       List<Fragment> front, List<Fragment> back) {
     final pts = f.points;
     final dist = [for (final p in pts) n.dot(p) - d];
-    var pos = false, neg = false;
+    var pos = false;
+    var neg = false;
     for (final s in dist) {
       if (s > eps) pos = true;
       if (s < -eps) neg = true;
@@ -140,12 +152,16 @@ class BspTree {
       return;
     }
     final uv = f.uv;
-    final fp = <Vec3>[], bp = <Vec3>[];
-    final fu = <Offset>[], bu = <Offset>[];
+    final fp = <Vec3>[];
+    final bp = <Vec3>[];
+    final fu = <Offset>[];
+    final bu = <Offset>[];
     for (var i = 0; i < pts.length; i++) {
       final j = (i + 1) % pts.length;
-      final a = pts[i], b = pts[j];
-      final da = dist[i], db = dist[j];
+      final a = pts[i];
+      final b = pts[j];
+      final da = dist[i];
+      final db = dist[j];
       if (da >= -eps) {
         fp.add(a);
         if (uv != null) fu.add(uv[i]);

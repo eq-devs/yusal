@@ -27,9 +27,8 @@ Map<String, dynamic> roofValue(String style, int width, int depth,
 HouseDocument withRoof(HouseDocument doc, String style) {
   final r = executeCommand(
       extractDesignState(doc),
-      DesignCommand('SetRoof', {
-        'roof': roofValue(style, doc.footprint.width, doc.footprint.depth)
-      }),
+      DesignCommand('SetRoof',
+          {'roof': roofValue(style, doc.footprint.width, doc.footprint.depth)}),
       CommandContext(newId: () => const Uuid().v4(), now: () => 'unused'));
   return r is Applied ? composeDocument(doc.meta, r.newState) : doc;
 }
@@ -68,8 +67,11 @@ class _RoofIconPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
       ..strokeJoin = StrokeJoin.round;
-    final w = s.width, h = s.height;
-    final wallTop = h * 0.5, left = w * 0.18, right = w * 0.82;
+    final w = s.width;
+    final h = s.height;
+    final wallTop = h * 0.5;
+    final left = w * 0.18;
+    final right = w * 0.82;
     canvas.drawRect(Rect.fromLTRB(left, wallTop, right, h * 0.95), p);
     final roof = Path();
     switch (style) {
@@ -125,8 +127,8 @@ extension _RoofPicker on _HouseEditorState {
                           for (final style in roofStyles)
                             Expanded(
                                 child: Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(horizontal: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4),
                                     child: InkWell(
                                         key: ValueKey('roof-$style'),
                                         borderRadius: BorderRadius.circular(10),
@@ -163,8 +165,10 @@ extension _RoofPicker on _HouseEditorState {
                         ]),
                         const SizedBox(height: 10),
                         Text(
-                            tr3('坡度、挑檐和女儿墙高度在“构造细节”里调。',
-                                'Еңіс, карниз және парапет «Құрылым» бетінде.', 'Уклон, свес и высота парапета настраиваются в разделе «Детали конструкции».'),
+                            tr3(
+                                '坡度、挑檐和女儿墙高度在“构造细节”里调。',
+                                'Еңіс, карниз және парапет «Құрылым» бетінде.',
+                                'Уклон, свес и высота парапета настраиваются в разделе «Детали конструкции».'),
                             style: TextStyle(fontSize: 12, color: t.muted)),
                       ])));
         });
@@ -174,7 +178,8 @@ extension _RoofPicker on _HouseEditorState {
           pitch: doc.roof.pitchDeg, overhang: doc.roof.overhang)
     });
     // Show the roof that was just picked.
-    if (!sceneSettings.roof)
+    if (!sceneSettings.roof) {
       update(() => sceneSettings = sceneSettings.copyWith(roof: true));
+    }
   }
 }

@@ -1,10 +1,10 @@
 import 'dart:math' as math;
-import '../document/house_document.dart';
-import '../geometry/derived_house.dart';
-import '../geometry/floor_base.dart';
-import 'house_analysis.dart';
-import 'site_analysis.dart';
-import 'utility_plan.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/analysis/house_analysis.dart';
+import 'package:yusal/core/analysis/site_analysis.dart';
+import 'package:yusal/core/analysis/utility_plan.dart';
 
 /// A rough building budget: quantities from the model times unit prices,
 /// labour as a share of materials and a contingency on top. The example
@@ -180,21 +180,20 @@ class CostEstimate {
       required this.buildingArea});
   final Currency currency;
   final List<CostLine> lines;
-  final int labourPct, contingencyPct;
+  final int labourPct;
+  final int contingencyPct;
 
   /// Floor area over all floors, m².
   final double buildingArea;
 
-  double stageMaterials(String stage) => lines
-      .where((l) => l.stage == stage)
-      .fold(0.0, (s, l) => s + l.total);
+  double stageMaterials(String stage) =>
+      lines.where((l) => l.stage == stage).fold(0.0, (s, l) => s + l.total);
 
   /// Labour on the measured lines; the user's own lines are taken as quoted.
   double stageLabour(String stage) => lines
       .where((l) => l.stage == stage && !l.custom)
       .fold(0.0, (s, l) => s + l.total * labourPct / 100);
-  double stageTotal(String stage) =>
-      stageMaterials(stage) + stageLabour(stage);
+  double stageTotal(String stage) => stageMaterials(stage) + stageLabour(stage);
   double get materials => lines.fold(0.0, (s, l) => s + l.total);
   double get labour => costStages.fold(0.0, (s, k) => s + stageLabour(k));
   double get contingency => (materials + labour) * contingencyPct / 100;
@@ -205,7 +204,8 @@ class CostEstimate {
 /// [currency] decides when the design has not chosen one.
 CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
     {Currency currency = Currency.cny}) {
-  final x = doc.extras, spec = x.cost;
+  final x = doc.extras;
+  final spec = x.cost;
   final cur = spec.currency ?? currency;
   final prices = defaultPrices[cur]!;
   final lines = <CostLine>[];
@@ -221,7 +221,8 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
         estimated: estimated));
   }
 
-  final fd = foundationTakeoff(doc, derived), wt = wallTakeoff(doc, derived);
+  final fd = foundationTakeoff(doc, derived);
+  final wt = wallTakeoff(doc, derived);
   final f = x.foundation;
   final rebar = (fd.mainBarLength / 1000 * barKgPerM(f.barDia) +
           fd.partitionBarLength / 1000 * barKgPerM(f.partitionBarDia) +
@@ -243,25 +244,34 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
       .where((l) =>
           l.material == LayerMaterial.block || l.material == LayerMaterial.conc)
       .fold(0, (s, l) => s + l.thickness);
-  line('masonryExt', 'walls',
-      net * (structural > 0 ? structural : doc.defaults.outerWallThickness) / 1000);
+  line(
+      'masonryExt',
+      'walls',
+      net *
+          (structural > 0 ? structural : doc.defaults.outerWallThickness) /
+          1000);
   line('masonryInt', 'walls', (wt.bearingVolume + wt.partitionVolume) / 1e9);
-  if (x.wallLayers.any((l) => l.material == LayerMaterial.ins))
+  if (x.wallLayers.any((l) => l.material == LayerMaterial.ins)) {
     line('wallIns', 'walls', net);
+  }
   line('facade', 'walls', net);
 
-  final ground = derived.floors.first.base, top = derived.floors.last.base;
+  final ground = derived.floors.first.base;
+  final top = derived.floors.last.base;
   double cellArea(FloorBase base) => footprintArea(base) / 1e6;
-  final groundArea = cellArea(ground), topArea = cellArea(top);
+  final groundArea = cellArea(ground);
+  final topArea = cellArea(top);
   final slab = doc.defaults.slabThickness / 1000;
   var upperArea = 0.0;
-  for (var i = 1; i < derived.floors.length; i++)
+  for (var i = 1; i < derived.floors.length; i++) {
     upperArea += cellArea(derived.floors[i].base);
+  }
   line('floorSlab', 'walls', upperArea * slab);
 
   // Roof.
   final roof = doc.roof;
-  final w = doc.footprint.width / 1000, d = doc.footprint.depth / 1000;
+  final w = doc.footprint.width / 1000;
+  final d = doc.footprint.depth / 1000;
   final t = doc.defaults.outerWallThickness / 1000;
   final outerWalls = wallsOf(top, x.foundation)
       .where((wall) => wall.role == WallRole.exterior)
@@ -270,8 +280,9 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
   if (roof.type == RoofType.flat) {
     line('roofSlab', 'roof', topArea * slab);
     line('roofMembrane', 'roof', innerTop);
-    if (x.roofLayers.any((l) => l.material == LayerMaterial.ins))
+    if (x.roofLayers.any((l) => l.material == LayerMaterial.ins)) {
       line('roofIns', 'roof', innerTop);
+    }
     final perimeter = top.edges
         .where((e) => e.kind == 'exterior')
         .fold(0.0, (s, e) => s + (e.end.pos - e.start.pos) / 1000);
@@ -308,7 +319,9 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
       rooms++;
       if (r.type == RoomType.kitchen || r.type == RoomType.bathroom) wetRooms++;
     }
-    for (final s in g.base.roomGeometry) clear += s.clearArea / 1e6;
+    for (final s in g.base.roomGeometry) {
+      clear += s.clearArea / 1e6;
+    }
     windows += g.openings
         .where((p) =>
             p.opening.kind != OpeningKind.door && p.host?.kind == 'exterior')
@@ -318,12 +331,14 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
   final measured = !u.isEmpty;
   final fixtures =
       x.furniture.where((f) => wetFurniture.contains(f.kind)).length;
-  final points = measured ? u.electrical.toDouble() : (clear * 0.5).roundToDouble();
+  final points =
+      measured ? u.electrical.toDouble() : (clear * 0.5).roundToDouble();
   line('elecPoint', 'mep', points, estimated: !measured);
-  line('cable', 'mep',
-      measured ? u.lightCable + u.powerCable : points * 8,
+  line('cable', 'mep', measured ? u.lightCable + u.powerCable : points * 8,
       estimated: !measured);
-  line('pipe', 'mep',
+  line(
+      'pipe',
+      'mep',
       measured
           ? u.waterPipe + u.drainPipe + u.heatingPipe
           : wetRooms * 15.0 + windows * 8.0,
@@ -336,8 +351,7 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
           : windows.toDouble(),
       estimated: !(measured && u.count(UtilityKind.radiator) > 0));
   line('boiler', 'mep', rooms > 0 ? 1 : 0);
-  line('sanitary', 'mep',
-      fixtures > 0 ? fixtures.toDouble() : wetRooms * 2.0,
+  line('sanitary', 'mep', fixtures > 0 ? fixtures.toDouble() : wetRooms * 2.0,
       estimated: fixtures == 0);
 
   // Floors and finishes.
@@ -352,14 +366,16 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
   if (site != null) {
     final areas = siteAreas(site);
     final gates = site.items.where((i) => i.kind == SiteKind.gate);
-    if (site.fence)
+    if (site.fence) {
       line(
           'fence',
           'site',
           math.max(
               0.0,
               2 * (site.width + site.depth) / 1000 -
-                  gates.fold(0.0, (s, g) => s + math.max(g.width, g.depth) / 1000)));
+                  gates.fold(
+                      0.0, (s, g) => s + math.max(g.width, g.depth) / 1000)));
+    }
     line('gate', 'site', gates.length.toDouble());
     line('outbuilding', 'site',
         siteBuildings.fold(0.0, (s, k) => s + (areas[k] ?? 0)));
@@ -370,7 +386,7 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
         site.items.where((i) => i.kind == SiteKind.septic).length.toDouble());
   }
 
-  for (final item in spec.items)
+  for (final item in spec.items) {
     lines.add(CostLine(
         key: item.id,
         stage: 'other',
@@ -379,9 +395,12 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
         price: item.price,
         name: item.name,
         custom: true));
+  }
 
   var area = 0.0;
-  for (final g in derived.floors) area += cellArea(g.base);
+  for (final g in derived.floors) {
+    area += cellArea(g.base);
+  }
   return CostEstimate(
       currency: cur,
       lines: List.unmodifiable(lines),

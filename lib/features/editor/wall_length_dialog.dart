@@ -1,6 +1,6 @@
-import '../../core/number_input.dart';
+import 'package:yusal/core/number_input.dart';
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
+import 'package:yusal/app/settings.dart';
 
 typedef WallLengthChoice = ({int length, String direction});
 
@@ -23,7 +23,10 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
   void submit() {
     final meters = parseNumber(controller.text);
     if (meters == null || !meters.isFinite || meters < 0.3 || meters > 100) {
-      setState(() => error = tr3('请输入 0.30 到 100 米', '0,30–100 м аралығында енгізіңіз', 'Введите значение от 0,30 до 100 м'));
+      setState(() => error = tr3(
+          '请输入 0.30 到 100 米',
+          '0,30–100 м аралығында енгізіңіз',
+          'Введите значение от 0,30 до 100 м'));
       return;
     }
     Navigator.pop(
@@ -32,7 +35,8 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-          title: Text(tr3('从起点输入墙长', 'Бастаудан қабырға ұзындығы', 'Длина стены от начальной точки')),
+          title: Text(tr3('从起点输入墙长', 'Бастаудан қабырға ұзындығы',
+              'Длина стены от начальной точки')),
           scrollable: true,
           content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -42,10 +46,10 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
                     controller: controller,
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
-                    decoration:
-                        InputDecoration(
-                            labelText: tr3('墙长（米）', 'Қабырға ұзындығы (м)', 'Длина стены (м)'),
-                            errorText: error),
+                    decoration: InputDecoration(
+                        labelText: tr3(
+                            '墙长（米）', 'Қабырға ұзындығы (м)', 'Длина стены (м)'),
+                        errorText: error),
                     onSubmitted: (_) => submit()),
                 const SizedBox(height: 16),
                 Text(tr3('方向', 'Бағыты', 'Направление')),
@@ -68,7 +72,8 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
                 onPressed: () => Navigator.pop(context),
                 child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
             FilledButton(
-                onPressed: submit, child: Text(tr3('增加墙', 'Қабырға қосу', 'Добавить стену')))
+                onPressed: submit,
+                child: Text(tr3('增加墙', 'Қабырға қосу', 'Добавить стену')))
           ]);
 }
 
@@ -96,7 +101,10 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
   void submit() {
     final meters = parseNumber(controller.text);
     if (meters == null || !meters.isFinite || meters < 0.05 || meters > 1) {
-      setState(() => error = tr3('请输入 0.05 到 1.00 米', '0,05–1,00 м аралығында енгізіңіз', 'Введите значение от 0,05 до 1,00 м'));
+      setState(() => error = tr3(
+          '请输入 0.05 到 1.00 米',
+          '0,05–1,00 м аралығында енгізіңіз',
+          'Введите значение от 0,05 до 1,00 м'));
       return;
     }
     Navigator.pop(context, (meters * 1000).round());
@@ -127,10 +135,10 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
                   controller: controller,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration:
-                      InputDecoration(
-                          labelText: tr3('墙厚（米）', 'Қабырға қалыңдығы (м)', 'Толщина стены (м)'),
-                          errorText: error),
+                  decoration: InputDecoration(
+                      labelText: tr3('墙厚（米）', 'Қабырға қалыңдығы (м)',
+                          'Толщина стены (м)'),
+                      errorText: error),
                   onChanged: (_) => setState(() => error = null),
                   onSubmitted: (_) => submit()),
             ]),
@@ -138,7 +146,8 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
           TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
-          FilledButton(onPressed: submit, child: Text(tr3('确定', 'Жарайды', 'ОК')))
+          FilledButton(
+              onPressed: submit, child: Text(tr3('确定', 'Жарайды', 'ОК')))
         ]);
   }
 }
@@ -154,7 +163,8 @@ class WallResizeDialog extends StatefulWidget {
       required this.vertical,
       required this.keepEnd});
   final int initial;
-  final bool vertical, keepEnd;
+  final bool vertical;
+  final bool keepEnd;
   @override
   State<WallResizeDialog> createState() => _WallResizeDialogState();
 }
@@ -173,7 +183,10 @@ class _WallResizeDialogState extends State<WallResizeDialog> {
   void submit() {
     final meters = parseNumber(controller.text);
     if (meters == null || meters < 0.3 || meters > 100) {
-      setState(() => error = tr3('请输入 0.30 到 100 米', '0,30–100 м аралығында енгізіңіз', 'Введите значение от 0,30 до 100 м'));
+      setState(() => error = tr3(
+          '请输入 0.30 到 100 米',
+          '0,30–100 м аралығында енгізіңіз',
+          'Введите значение от 0,30 до 100 м'));
       return;
     }
     Navigator.pop(context, (length: (meters * 1000).round(), keepEnd: keepEnd));
@@ -193,13 +206,18 @@ class _WallResizeDialogState extends State<WallResizeDialog> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
-                        labelText: tr3('墙长（米）', 'Қабырға ұзындығы (м)', 'Длина стены (м)'),
-                        helperText: tr3('可以写 3,6+2,4', '3,6+2,4 деп жазуға болады', 'Можно написать 3,6+2,4'),
+                        labelText: tr3(
+                            '墙长（米）', 'Қабырға ұзындығы (м)', 'Длина стены (м)'),
+                        helperText: tr3(
+                            '可以写 3,6+2,4',
+                            '3,6+2,4 деп жазуға болады',
+                            'Можно написать 3,6+2,4'),
                         errorText: error),
                     onChanged: (_) => setState(() => error = null),
                     onSubmitted: (_) => submit()),
                 const SizedBox(height: 16),
-                Text(tr3('哪一头不动', 'Қай ұшы орнында қалады', 'Какой конец остаётся на месте')),
+                Text(tr3('哪一头不动', 'Қай ұшы орнында қалады',
+                    'Какой конец остаётся на месте')),
                 const SizedBox(height: 8),
                 Wrap(spacing: 8, runSpacing: 4, children: [
                   for (final (end, label) in [
@@ -226,6 +244,7 @@ class _WallResizeDialogState extends State<WallResizeDialog> {
             TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
-            FilledButton(onPressed: submit, child: Text(tr3('确定', 'Жарайды', 'ОК')))
+            FilledButton(
+                onPressed: submit, child: Text(tr3('确定', 'Жарайды', 'ОК')))
           ]);
 }

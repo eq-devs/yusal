@@ -3,15 +3,16 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart' show kTouchSlop;
-import 'package:flutter/cupertino.dart' show CupertinoPageTransition, CupertinoRouteTransitionMixin;
+import 'package:flutter/cupertino.dart'
+    show CupertinoPageTransition, CupertinoRouteTransitionMixin;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:cue/cue.dart' as cue;
 import 'package:motor/motor.dart' as motor;
 
-import '../../voice/voice_overlay.dart' show VoiceBar;
-import 'motion_tokens.dart';
+import 'package:yusal/voice/voice_overlay.dart' show VoiceBar;
+import 'package:yusal/shared/motion/motion_tokens.dart';
 
 export 'motion_stack.dart';
 export 'motion_tokens.dart';
@@ -45,7 +46,8 @@ class _StaggerState extends State<Stagger> with SingleTickerProviderStateMixin {
   // A motor spring per row, so a row caught mid-entrance just retargets.
   late final motor.SingleMotionController _c;
   Timer? _delay;
-  bool _decided = false, _nested = false;
+  bool _decided = false;
+  bool _nested = false;
 
   @override
   void initState() {
@@ -62,9 +64,8 @@ class _StaggerState extends State<Stagger> with SingleTickerProviderStateMixin {
     _nested = context.getInheritedWidgetOfExactType<_InStagger>() != null;
     if (_nested || Motion.reduced(context)) return;
     final explicit = widget.index;
-    final scope = context
-        .getInheritedWidgetOfExactType<_StaggerScopeMarker>()
-        ?.state;
+    final scope =
+        context.getInheritedWidgetOfExactType<_StaggerScopeMarker>()?.state;
     final int? step;
     if (scope == null || !scope.widget.enabled) {
       step = explicit;
@@ -108,8 +109,8 @@ class _StaggerState extends State<Stagger> with SingleTickerProviderStateMixin {
                   alwaysIncludeSemantics: true,
                   opacity: rest ? 1 : v,
                   child: Transform.translate(
-                      offset: Offset(0,
-                          widget.rise && !rest ? Motion.rise * (1 - v) : 0),
+                      offset: Offset(
+                          0, widget.rise && !rest ? Motion.rise * (1 - v) : 0),
                       child: child));
             }));
   }
@@ -200,32 +201,34 @@ Future<T?> showMotionSheet<T>({
   // The assistant's orb steps aside: a sheet's own buttons are under it.
   VoiceBar.hidden.value++;
   return showModalBottomSheet<T>(
-      context: context,
-      builder: (context) => StaggerScope(
-          enabled: !reduced,
-          child: Stagger(
-              index: 0, rise: false, child: Builder(builder: builder))),
-      backgroundColor: backgroundColor,
-      barrierLabel: barrierLabel,
-      elevation: elevation,
-      shape: shape,
-      clipBehavior: clipBehavior,
-      constraints: constraints,
-      barrierColor: barrierColor,
-      isScrollControlled: isScrollControlled,
-      scrollControlDisabledMaxHeightRatio: scrollControlDisabledMaxHeightRatio,
-      useRootNavigator: useRootNavigator,
-      isDismissible: isDismissible,
-      enableDrag: enableDrag,
-      showDragHandle: showDragHandle,
-      useSafeArea: useSafeArea,
-      routeSettings: routeSettings,
-      transitionAnimationController: transitionAnimationController,
-      anchorPoint: anchorPoint,
-      // Reduce motion: no slide, the sheet is simply there.
-      sheetAnimationStyle: sheetAnimationStyle ??
-          (reduced ? AnimationStyle.noAnimation : Motion.sheetStyle),
-      requestFocus: requestFocus).whenComplete(() => VoiceBar.hidden.value--);
+          context: context,
+          builder: (context) => StaggerScope(
+              enabled: !reduced,
+              child: Stagger(
+                  index: 0, rise: false, child: Builder(builder: builder))),
+          backgroundColor: backgroundColor,
+          barrierLabel: barrierLabel,
+          elevation: elevation,
+          shape: shape,
+          clipBehavior: clipBehavior,
+          constraints: constraints,
+          barrierColor: barrierColor,
+          isScrollControlled: isScrollControlled,
+          scrollControlDisabledMaxHeightRatio:
+              scrollControlDisabledMaxHeightRatio,
+          useRootNavigator: useRootNavigator,
+          isDismissible: isDismissible,
+          enableDrag: enableDrag,
+          showDragHandle: showDragHandle,
+          useSafeArea: useSafeArea,
+          routeSettings: routeSettings,
+          transitionAnimationController: transitionAnimationController,
+          anchorPoint: anchorPoint,
+          // Reduce motion: no slide, the sheet is simply there.
+          sheetAnimationStyle: sheetAnimationStyle ??
+              (reduced ? AnimationStyle.noAnimation : Motion.sheetStyle),
+          requestFocus: requestFocus)
+      .whenComplete(() => VoiceBar.hidden.value--);
 }
 
 /// Cards shrink a touch under the finger ([Motion.pressScale]) and settle
@@ -247,7 +250,8 @@ class Pressable extends StatefulWidget {
 
 class _PressableState extends State<Pressable> {
   bool _pressed = false;
-  Timer? _wait, _release;
+  Timer? _wait;
+  Timer? _release;
   Offset? _origin;
 
   void _set(bool down) {
@@ -376,7 +380,8 @@ class PressTint extends InteractiveInkFeature {
   final RectCallback? _rect;
   final BorderRadius _borderRadius;
   final double _radius;
-  late final AnimationController _t, _spread;
+  late final AnimationController _t;
+  late final AnimationController _spread;
   bool _released = false;
 
   void _onStatus(AnimationStatus s) {
@@ -426,8 +431,8 @@ class PressTint extends InteractiveInkFeature {
       final rect = _rect?.call() ?? Offset.zero & referenceBox.size;
       final border = customBorder;
       if (border != null) {
-        canvas.clipPath(
-            border.getOuterPath(rect, textDirection: _textDirection));
+        canvas
+            .clipPath(border.getOuterPath(rect, textDirection: _textDirection));
       } else if (_borderRadius != BorderRadius.zero) {
         canvas.clipRRect(_borderRadius.toRRect(rect));
       } else {
@@ -454,8 +459,8 @@ class PressTint extends InteractiveInkFeature {
       if (spread >= 1) {
         canvas.drawCircle(centre, _radius, Paint()..color = tint);
       } else {
-        canvas.clipPath(Path()
-          ..addOval(Rect.fromCircle(center: centre, radius: _radius)));
+        canvas.clipPath(
+            Path()..addOval(Rect.fromCircle(center: centre, radius: _radius)));
         canvas.drawCircle(centre, _radius,
             _bloom(centre, _radius / (1 - _feather) * grown, tint));
       }
@@ -548,7 +553,6 @@ class StateSwitcher extends StatelessWidget {
     if (Motion.reduced(context)) return child;
     return cue.Cue.onChange(
         value: child.key,
-        skipFirstAnimation: true,
         motion: const cue.CueMotion.smooth(),
         acts: [
           const cue.OpacityAct.fadeIn(),

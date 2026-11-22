@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import 'theme.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/theme.dart';
 
 /// Where a house stands on the one line every role sees:
 /// design → finding people → building → done.
@@ -10,12 +10,15 @@ enum HouseStage { design, finding, building, done }
 /// Public stage from the house's demands: any open demand means "finding";
 /// a demand marked found means building has started.
 HouseStage stageFromDemands(Iterable<Demand> demands) {
-  if (demands.any((d) => d.status == DemandStatus.found))
+  if (demands.any((d) => d.status == DemandStatus.found)) {
     return HouseStage.building;
+  }
   if (demands.any((d) =>
       d.status == DemandStatus.open ||
       d.status == DemandStatus.paused ||
-      d.status == DemandStatus.pendingReview)) return HouseStage.finding;
+      d.status == DemandStatus.pendingReview)) {
+    return HouseStage.finding;
+  }
   return HouseStage.design;
 }
 
@@ -37,7 +40,7 @@ class HouseProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
-    final steps = HouseStage.values;
+    const steps = HouseStage.values;
     return Semantics(
         label: '${tr3('进度', 'Барысы', 'Этап')}: ${houseStageName(stage)}',
         child: Row(children: [

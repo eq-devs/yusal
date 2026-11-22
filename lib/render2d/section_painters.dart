@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../app/tokens.dart';
-import '../core/document/house_document.dart';
+import 'package:yusal/app/tokens.dart';
+import 'package:yusal/core/document/house_document.dart';
 
 /// Construction sections drawn like the sheets of a drawing set. Each
 /// painter works in its own view units (like an SVG viewBox) and is scaled
@@ -79,8 +79,10 @@ abstract class SectionPainter extends CustomPainter {
       _ => 0.0
     };
     final offset = Offset(dx, -tp.height + 3);
-    if (halo)
-      canvas.drawRect((offset & tp.size).inflate(1.5), Paint()..color = t.panel);
+    if (halo) {
+      canvas.drawRect(
+          (offset & tp.size).inflate(1.5), Paint()..color = t.panel);
+    }
     tp.paint(canvas, offset);
     canvas.restore();
     tp.dispose();
@@ -106,8 +108,10 @@ void paintMaterial(Canvas canvas, Rect r, LayerMaterial m, Tokens t) {
       final rnd = math.Random(7);
       for (var x = r.left; x < r.right; x += 10)
         for (var y = r.top; y < r.bottom; y += 10) {
-          canvas.drawCircle(Offset(x + 2 + rnd.nextDouble() * 3, y + 3), 0.9, dot);
-          canvas.drawCircle(Offset(x + 7, y + 7 + rnd.nextDouble() * 2), 0.6, dot);
+          canvas.drawCircle(
+              Offset(x + 2 + rnd.nextDouble() * 3, y + 3), 0.9, dot);
+          canvas.drawCircle(
+              Offset(x + 7, y + 7 + rnd.nextDouble() * 2), 0.6, dot);
           final p = Path()
             ..moveTo(x + 5, y + 1)
             ..lineTo(x + 7, y + 3)
@@ -117,9 +121,10 @@ void paintMaterial(Canvas canvas, Rect r, LayerMaterial m, Tokens t) {
         }
     case LayerMaterial.block:
       canvas.drawRect(r, Paint()..color = t.panel);
-      for (var d = -r.height; d < r.width; d += 8)
+      for (var d = -r.height; d < r.width; d += 8) {
         canvas.drawLine(Offset(r.left + d, r.bottom),
             Offset(r.left + d + r.height, r.top), pen);
+      }
     case LayerMaterial.ins:
       canvas.drawRect(r, Paint()..color = t.roomHi);
       for (var y = r.top + 4; y < r.bottom; y += 8) {
@@ -151,8 +156,9 @@ void paintMaterial(Canvas canvas, Rect r, LayerMaterial m, Tokens t) {
       canvas.drawRect(r, Paint()..color = t.wall);
     case LayerMaterial.wood:
       canvas.drawRect(r, Paint()..color = t.roomHi);
-      for (var y = r.top + 3; y < r.bottom; y += 6)
+      for (var y = r.top + 3; y < r.bottom; y += 6) {
         canvas.drawLine(Offset(r.left, y), Offset(r.right, y), pen);
+      }
     case LayerMaterial.film:
       canvas.drawRect(r, Paint()..color = t.chk);
     case LayerMaterial.gyp:
@@ -167,7 +173,8 @@ class LayerStackPainter extends SectionPainter {
       {this.scale = 0.22, this.minH = 16});
   final List<Layer> layers;
   final List<String> names;
-  final double scale, minH;
+  final double scale;
+  final double minH;
   double h(Layer l) => math.max(minH, l.thickness * scale);
   @override
   double get viewW => 360;
@@ -176,19 +183,22 @@ class LayerStackPainter extends SectionPainter {
   @override
   void draw(Canvas canvas) {
     var y = 10.0;
-    const bx = 14.0, bw = 110.0;
+    const bx = 14.0;
+    const bw = 110.0;
     for (var i = 0; i < layers.length; i++) {
-      final l = layers[i], hh = h(l);
+      final l = layers[i];
+      final hh = h(l);
       final r = Rect.fromLTWH(bx, y, bw, hh);
       fillMaterial(canvas, r, l.material);
       canvas.drawRect(r, edge);
       final ty = y + hh / 2;
       canvas.drawLine(Offset(bx + bw, ty), Offset(bx + bw + 14, ty), leader);
       text(canvas, names[i], Offset(bx + bw + 18, ty + 5),
-          size: 11, maxWidth: viewW - bx - bw - 18 - 34);
-      if (l.thickness > 0)
+          maxWidth: viewW - bx - bw - 18 - 34);
+      if (l.thickness > 0) {
         text(canvas, '${l.thickness}', Offset(viewW - 4, ty + 5),
             monospace: true, size: 10, align: TextAlign.right);
+      }
       y += hh;
     }
   }
@@ -200,8 +210,11 @@ class WallSectionPainter extends SectionPainter {
       {required this.outside, required this.inside});
   final List<Layer> layers;
   final List<String> names;
-  final String outside, inside;
-  static const top = 34.0, hh = 150.0, sc = 0.62;
+  final String outside;
+  final String inside;
+  static const top = 34.0;
+  static const hh = 150.0;
+  static const sc = 0.62;
   @override
   double get viewW => 360;
   @override
@@ -212,11 +225,13 @@ class WallSectionPainter extends SectionPainter {
     final total = layers.fold(0, (s, l) => s + l.thickness);
     final scale = math.min(sc, 300 / math.max(1, total));
     for (var i = 0; i < layers.length; i++) {
-      final l = layers[i], w = math.max(6.0, l.thickness * scale);
+      final l = layers[i];
+      final w = math.max(6.0, l.thickness * scale);
       final r = Rect.fromLTWH(x, top, w, hh);
       fillMaterial(canvas, r, l.material);
       canvas.drawRect(r, edge);
-      final lx = x + w / 2, ly = top + hh + 16 + i * 16;
+      final lx = x + w / 2;
+      final ly = top + hh + 16 + i * 16;
       canvas.drawPath(
           Path()
             ..moveTo(lx, top + hh)
@@ -224,7 +239,7 @@ class WallSectionPainter extends SectionPainter {
             ..lineTo(lx + 8, ly - 4),
           leader);
       text(canvas, '${names[i]} · ${l.thickness}', Offset(lx + 11, ly),
-          size: 11, maxWidth: viewW - lx - 14);
+          maxWidth: viewW - lx - 14);
       x += w;
     }
     text(canvas, outside, const Offset(26, 22), size: 10, color: t.muted);
@@ -246,7 +261,9 @@ class FoundationSectionPainter extends SectionPainter {
   /// ground, wall, damp, topBars, floor, stirrups, concrete, bottomBars,
   /// cover, cushion, blind, xps.
   final Map<String, String> labels;
-  static const k = 0.25, x0 = 170.0, y0 = 80.0;
+  static const k = 0.25;
+  static const x0 = 170.0;
+  static const y0 = 80.0;
   double get b => spec.width * k;
   double get yG => y0 + spec.plinth * k;
   double get yB => y0 + spec.height * k;
@@ -258,13 +275,14 @@ class FoundationSectionPainter extends SectionPainter {
   double get viewH => yC + 55;
   @override
   void draw(Canvas canvas) {
-    final ext = spec.cushionExtra * k, cover = spec.cover * k;
+    final ext = spec.cushionExtra * k;
+    final cover = spec.cover * k;
     final earth = Paint()..color = t.panel;
     // Earth outside and under the floor.
     canvas.save();
     canvas.clipRect(Rect.fromLTRB(0, 0, viewW, viewH));
-    paintMaterial(canvas, Rect.fromLTRB(0, yG, x0 - 12.5, viewH),
-        LayerMaterial.earth, t);
+    paintMaterial(
+        canvas, Rect.fromLTRB(0, yG, x0 - 12.5, viewH), LayerMaterial.earth, t);
     paintMaterial(canvas, Rect.fromLTRB(x0 + b, y0 + 62.5, right, viewH),
         LayerMaterial.earth, t);
     canvas.restore();
@@ -312,7 +330,8 @@ class FoundationSectionPainter extends SectionPainter {
       canvas.drawRect(r, edge);
     }
     // Reinforcement cage.
-    final cage = Rect.fromLTRB(x0 + cover, y0 + cover, x0 + b - cover, yB - cover);
+    final cage =
+        Rect.fromLTRB(x0 + cover, y0 + cover, x0 + b - cover, yB - cover);
     canvas.drawRRect(
         RRect.fromRectAndRadius(cage, const Radius.circular(3)),
         Paint()
@@ -326,10 +345,14 @@ class FoundationSectionPainter extends SectionPainter {
                 : cage.left + 2.5 + i * (cage.width - 5) / (n - 1)
         ];
     final bar = Paint()..color = t.rebar;
-    final topY = cage.top + 2.5, bottomY = cage.bottom - 2.5;
-    for (final x in xs(spec.topBars)) canvas.drawCircle(Offset(x, topY), 2.6, bar);
-    for (final x in xs(spec.bottomBars))
+    final topY = cage.top + 2.5;
+    final bottomY = cage.bottom - 2.5;
+    for (final x in xs(spec.topBars)) {
+      canvas.drawCircle(Offset(x, topY), 2.6, bar);
+    }
+    for (final x in xs(spec.bottomBars)) {
       canvas.drawCircle(Offset(x, bottomY), 2.6, bar);
+    }
     // Dimensions and levels.
     void vd(double x, double a, double c, String l) {
       canvas.drawPath(
@@ -346,7 +369,10 @@ class FoundationSectionPainter extends SectionPainter {
             ..lineTo(x + 3, c - 3),
           leader);
       text(canvas, l, Offset(x - 4, (a + c) / 2),
-          monospace: true, size: 10, angle: -math.pi / 2, align: TextAlign.center);
+          monospace: true,
+          size: 10,
+          angle: -math.pi / 2,
+          align: TextAlign.center);
     }
 
     void hd(double a, double c, double y, String l) {
@@ -371,8 +397,9 @@ class FoundationSectionPainter extends SectionPainter {
       final dash = Paint()
         ..color = t.muted
         ..strokeWidth = 0.7;
-      for (var x = 58.0; x < to; x += 5)
+      for (var x = 58.0; x < to; x += 5) {
         canvas.drawLine(Offset(x, y), Offset(math.min(to, x + 3), y), dash);
+      }
       text(canvas, l, Offset(60, y - 2), monospace: true, size: 10, halo: true);
     }
 
@@ -401,7 +428,7 @@ class FoundationSectionPainter extends SectionPainter {
             ..lineTo(lx - 10, ly - 4)
             ..lineTo(lx - 4, ly - 4),
           leader);
-      text(canvas, l, Offset(lx, ly), size: 11, maxWidth: viewW - lx - 4);
+      text(canvas, l, Offset(lx, ly), maxWidth: viewW - lx - 4);
       ly += math.max(16, (yC - 30) / 10);
     }
 
@@ -414,7 +441,8 @@ class FoundationSectionPainter extends SectionPainter {
     note(Offset(xs(spec.bottomBars).last, bottomY), 'bottomBars');
     note(Offset(x0 + b - 2, yB - 2), 'cover');
     note(Offset(x0 + b + ext * 0.5, (yB + yC) / 2), 'cushion');
-    text(canvas, labels['blind'] ?? '', Offset(60, yG - 20), size: 10.5, halo: true);
+    text(canvas, labels['blind'] ?? '', Offset(60, yG - 20),
+        size: 10.5, halo: true);
     text(canvas, labels['xps'] ?? '', Offset(60, (yG + yB) / 2 + 20),
         size: 10.5, halo: true);
   }

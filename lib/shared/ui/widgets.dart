@@ -2,10 +2,10 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../voice/voice_overlay.dart' show VoiceSlot;
-import '../../app/settings.dart';
-import 'theme.dart';
-import '../motion/motion.dart';
+import 'package:yusal/voice/voice_overlay.dart' show VoiceSlot;
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/motion/motion.dart';
 
 export '../../app/image_bytes.dart';
 
@@ -85,8 +85,8 @@ class FrostedAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: Frost(
                     sigma: 14,
                     child: ColoredBox(
-                        color: t.bg.withValues(
-                            alpha: glassAlpha(context, 0.88)))))));
+                        color: t.bg
+                            .withValues(alpha: glassAlpha(context, 0.88)))))));
   }
 }
 
@@ -183,7 +183,7 @@ class YCard extends StatelessWidget {
     return Stagger(
         child: Pressable(
             enabled: onTap != null,
-            child: Container(
+            child: DecoratedBox(
                 decoration: BoxDecoration(
                     color: color ?? t.card,
                     borderRadius: BorderRadius.circular(yRadius),
@@ -339,7 +339,8 @@ class Avatar extends StatelessWidget {
 
 class InfoRow extends StatelessWidget {
   const InfoRow(this.label, this.value, {super.key, this.icon});
-  final String label, value;
+  final String label;
+  final String value;
   final IconData? icon;
   @override
   Widget build(BuildContext context) {
@@ -438,7 +439,8 @@ class BusyButton extends StatefulWidget {
       this.icon});
   final String label;
   final Future<void> Function()? onPressed;
-  final bool outlined, expand;
+  final bool outlined;
+  final bool expand;
   final IconData? icon;
   @override
   State<BusyButton> createState() => _BusyButtonState();
@@ -590,8 +592,9 @@ Future<List<T>?> pickMany<T>(BuildContext context, String title,
                                     label: label,
                                     selected: chosen.contains(value),
                                     onTap: () => setSheet(() {
-                                          if (!chosen.remove(value))
+                                          if (!chosen.remove(value)) {
                                             chosen.add(value);
+                                          }
                                         })),
                             ]),
                             const SizedBox(height: 16),
@@ -657,7 +660,8 @@ class SheetAnswers extends StatelessWidget {
       required this.ok,
       required this.onOk,
       this.danger = false});
-  final String cancel, ok;
+  final String cancel;
+  final String ok;
   final VoidCallback? onOk;
   final bool danger;
   @override
@@ -829,5 +833,6 @@ class VerifiedBadge extends StatelessWidget {
   Widget build(BuildContext context) => Tooltip(
       message: tr3('已核验身份与施工现场，不代表质量担保', 'Жеке басы тексерілген',
           'Личность и объекты проверены, качество не гарантируется'),
-      child: Icon(Icons.verified, size: size, color: YTokens.of(context).accent));
+      child:
+          Icon(Icons.verified, size: size, color: YTokens.of(context).accent));
 }

@@ -27,7 +27,8 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: FootprintSketch()));
     await tester.pumpAndSettle();
     final canvas = find.byKey(const ValueKey('footprint-sketch-canvas'));
-    final size = tester.getSize(canvas), origin = tester.getTopLeft(canvas);
+    final size = tester.getSize(canvas);
+    final origin = tester.getTopLeft(canvas);
     final scale = math.min(size.width - 48, size.height - 48) / 20000;
     final start = origin + const Offset(30, 30);
     final gesture = await tester.startGesture(start);

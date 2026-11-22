@@ -24,8 +24,10 @@ import 'explore_test.dart' show launch;
 
 /// WCAG contrast ratio of two opaque colours.
 double contrast(Color a, Color b) {
-  final la = a.computeLuminance(), lb = b.computeLuminance();
-  final hi = la > lb ? la : lb, lo = la > lb ? lb : la;
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  final hi = la > lb ? la : lb;
+  final lo = la > lb ? lb : la;
   return (hi + 0.05) / (lo + 0.05);
 }
 
@@ -129,7 +131,8 @@ void main() {
       await launch(t, route: '/h/post_aigerim', size: phone);
       AppSettings.instance.setLang(lang);
       await t.pumpAndSettle();
-      final l = MaterialLocalizations.of(t.element(find.byType(Scaffold).first));
+      final l =
+          MaterialLocalizations.of(t.element(find.byType(Scaffold).first));
       expect(
           l.backButtonTooltip,
           switch (lang) {
@@ -179,8 +182,7 @@ void main() {
       expect(find.text('打开这个示例'), findsOneWidget);
     });
 
-    testWidgets('the list and the new-design dialog are in Russian',
-        (t) async {
+    testWidgets('the list and the new-design dialog are in Russian', (t) async {
       AppSettings.instance.lang = AppLang.ru;
       final (_, store) = await launch(t, size: phone, lang: AppLang.ru);
       await addDesign(t, store);
@@ -223,7 +225,7 @@ void main() {
       expect((await store.listProjects()).length, 1);
       await t.tap(find.widgetWithText(FilledButton, '删除'));
       await t.pumpAndSettle();
-      expect((await store.listProjects()), isEmpty);
+      expect(await store.listProjects(), isEmpty);
       expect(find.byKey(const Key('designs-empty')), findsOneWidget);
     });
   });
@@ -316,8 +318,9 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.textContaining('语言'));
     await t.pumpAndSettle();
-    for (final name in ['Қазақша', 'Русский', '中文'])
+    for (final name in ['Қазақша', 'Русский', '中文']) {
       expect(find.text(name), findsOneWidget);
+    }
     await t.tap(find.text('Русский'));
     await t.pumpAndSettle();
     expect(AppSettings.instance.lang, AppLang.ru);
@@ -339,7 +342,7 @@ void main() {
     final zh = _backend();
     expect((await zh.post('post_aigerim'))!.title, '给父母盖的一层砖房');
     // No Chinese is left in any Russian title, story or name.
-    final cjk = RegExp(r'[一-鿿]');
+    final cjk = RegExp('[一-鿿]');
     for (final p in await ru.feed(const FeedFilter())) {
       expect(cjk.hasMatch(p.title + p.story), isFalse, reason: p.title);
     }

@@ -1,26 +1,29 @@
-import '../../voice/voice_overlay.dart' show VoiceSlot;
+import 'package:yusal/voice/voice_overlay.dart' show VoiceSlot;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:motor/motor.dart' as motor;
-import '../../app/settings.dart';
-import '../backup/backup_page.dart';
-import '../chat/inbox_page.dart';
-import '../explore/explore_page.dart';
-import '../me/me_page.dart';
-import '../projects/projects_page.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart' show Frost, glassAlpha;
-import '../../shared/ui/scope.dart';
-import '../../shared/motion/motion.dart';
-import '../../voice/actions_nav.dart';
-import '../../voice/screen.dart';
-import '../../shared/brand/yicon.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/features/backup/backup_page.dart';
+import 'package:yusal/features/chat/inbox_page.dart';
+import 'package:yusal/features/explore/explore_page.dart';
+import 'package:yusal/features/me/me_page.dart';
+import 'package:yusal/features/projects/projects_page.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart' show Frost, glassAlpha;
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/voice/actions_nav.dart';
+import 'package:yusal/voice/screen.dart';
+import 'package:yusal/shared/brand/yicon.dart';
 
 /// Tabs of the app shell, in order.
 abstract final class ShellTab {
-  static const explore = 0, houses = 1, messages = 2, me = 3;
+  static const explore = 0;
+  static const houses = 1;
+  static const messages = 2;
+  static const me = 3;
 }
 
 /// The app shell: Discover, My houses, Messages and Me. Every business
@@ -180,20 +183,18 @@ class _PlatformShellState extends State<PlatformShell>
               // Phones get the bottom bar; tablets and desktop a side rail,
               // so four icons are not spread across a wide window.
               final wide = MediaQuery.sizeOf(context).width >= yWide;
-              final pages = MotionIndexedStack(
-                  key: _pagesKey,
-                  index: tab,
-                  children: [
-                    page(ShellTab.explore, ExplorePage(segment: segment)),
-                    page(
-                        ShellTab.houses,
-                        ProjectsPage(
-                            drafting: drafting,
-                            reload: reload,
-                            createRequest: newDesign)),
-                    page(ShellTab.messages, const InboxPage()),
-                    page(ShellTab.me, const MePage()),
-                  ]);
+              final pages =
+                  MotionIndexedStack(key: _pagesKey, index: tab, children: [
+                page(ShellTab.explore, ExplorePage(segment: segment)),
+                page(
+                    ShellTab.houses,
+                    ProjectsPage(
+                        drafting: drafting,
+                        reload: reload,
+                        createRequest: newDesign)),
+                page(ShellTab.messages, const InboxPage()),
+                page(ShellTab.me, const MePage()),
+              ]);
               return Scaffold(
                   // The bar floats over the pages, which scroll under its
                   // glass; the scaffold reports its height as padding.
@@ -210,34 +211,34 @@ class _PlatformShellState extends State<PlatformShell>
                                 .removeViewInsets(removeBottom: true),
                             child: wide
                                 ? Row(children: [
-                                SafeArea(
-                                    right: false,
-                                    child: NavigationRail(
-                                        key: const Key('shell-rail'),
-                                        selectedIndex: tab,
-                                        onDestinationSelected: select,
-                                        labelType:
-                                            NavigationRailLabelType.all,
-                                        groupAlignment: -0.9,
-                                        minWidth: 88,
-                                        trailing: const Padding(
-                                            padding: EdgeInsets.only(top: 12),
-                                            child: VoiceSlot(size: 52)),
-                                        destinations: [
-                                          for (final (icon, selected, label)
-                                              in destinations)
-                                            NavigationRailDestination(
-                                                icon: icon,
-                                                selectedIcon: selected,
-                                                label: Text(label)),
-                                        ])),
-                                VerticalDivider(width: 1, color: t.line),
-                                Expanded(child: pages),
-                              ])
+                                    SafeArea(
+                                        right: false,
+                                        child: NavigationRail(
+                                            key: const Key('shell-rail'),
+                                            selectedIndex: tab,
+                                            onDestinationSelected: select,
+                                            labelType:
+                                                NavigationRailLabelType.all,
+                                            groupAlignment: -0.9,
+                                            minWidth: 88,
+                                            trailing: const Padding(
+                                                padding:
+                                                    EdgeInsets.only(top: 12),
+                                                child: VoiceSlot(size: 52)),
+                                            destinations: [
+                                              for (final (icon, selected, label)
+                                                  in destinations)
+                                                NavigationRailDestination(
+                                                    icon: icon,
+                                                    selectedIcon: selected,
+                                                    label: Text(label)),
+                                            ])),
+                                    VerticalDivider(width: 1, color: t.line),
+                                    Expanded(child: pages),
+                                  ])
                                 : NotificationListener<
                                         ScrollUpdateNotification>(
-                                    onNotification: _onScroll,
-                                    child: pages))),
+                                    onNotification: _onScroll, child: pages))),
                   ]),
                   bottomNavigationBar: wide
                       ? null
@@ -363,9 +364,7 @@ class _GlassPill extends StatelessWidget {
             borderRadius: BorderRadius.circular(YRadius.pill),
             boxShadow: [
               BoxShadow(
-                  color: t.shadow,
-                  blurRadius: 24,
-                  offset: const Offset(0, 8)),
+                  color: t.shadow, blurRadius: 24, offset: const Offset(0, 8)),
             ]),
         child: ClipRRect(
             borderRadius: BorderRadius.circular(YRadius.pill),
@@ -378,7 +377,8 @@ class _GlassPill extends StatelessWidget {
                         color: t.elevated.withValues(
                             alpha: glassAlpha(context, t.dark ? 0.82 : 0.86)),
                         borderRadius: BorderRadius.circular(YRadius.pill),
-                        border: Border.all(color: t.line.withValues(alpha: 0.6))),
+                        border:
+                            Border.all(color: t.line.withValues(alpha: 0.6))),
                     child: child))));
   }
 }
@@ -393,7 +393,8 @@ class ShellBarTab extends StatelessWidget {
       required this.selected,
       required this.fold,
       required this.onTap});
-  final Widget icon, activeIcon;
+  final Widget icon;
+  final Widget activeIcon;
   final String label;
   final bool selected;
 
@@ -437,8 +438,7 @@ class ShellBarTab extends StatelessWidget {
                                   alignment: Alignment.topCenter,
                                   heightFactor: open,
                                   child: Opacity(
-                                      opacity:
-                                          (1 - fold * 1.8).clamp(0.0, 1.0),
+                                      opacity: (1 - fold * 1.8).clamp(0.0, 1.0),
                                       child: Padding(
                                           padding: const EdgeInsets.fromLTRB(
                                               3, 3, 3, 0),

@@ -61,7 +61,8 @@ void main() {
   testWidgets('a form that becomes dirty while typing asks before leaving',
       (t) async {
     AppSettings.instance.lang = AppLang.zh;
-    final title = TextEditingController(), story = TextEditingController();
+    final title = TextEditingController();
+    final story = TextEditingController();
     addTearDown(title.dispose);
     addTearDown(story.dispose);
     await t.pumpWidget(MaterialApp(

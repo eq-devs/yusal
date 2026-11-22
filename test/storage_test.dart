@@ -78,8 +78,9 @@ void main() {
       newId: () => 'id${sequence++}');
   test('each account lists only its own designs', () async {
     String? me;
-    final store = ProjectStore(fileSystem: MemoryFiles(), owners: MemoryOwners())
-      ..currentOwner = () => me;
+    final store =
+        ProjectStore(fileSystem: MemoryFiles(), owners: MemoryOwners())
+          ..currentOwner = () => me;
     final guest = await store.createProject(doc);
     me = 'aigerim';
     final mine = await store.createProject(doc);
@@ -96,8 +97,8 @@ void main() {
   });
 
   test('project round trip, index and deletion', () async {
-    final files = MemoryFiles(),
-        store = ProjectStore(fileSystem: MemoryFiles());
+    final files = MemoryFiles();
+    final store = ProjectStore(fileSystem: MemoryFiles());
     final tested = ProjectStore(fileSystem: files);
     final id = await tested.createProject(doc);
     expect(await tested.openProject(id), doc);

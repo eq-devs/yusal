@@ -12,7 +12,8 @@ abstract interface class ProjectFileSystem {
 
 class StorageFailure implements Exception {
   const StorageFailure(this.code, this.details);
-  final String code, details;
+  final String code;
+  final String details;
   String get message => switch (code) {
         'NO_SPACE' => '存储空间不足，无法保存',
         'PERMISSION_DENIED' => '没有权限读取或保存设计',

@@ -1,4 +1,4 @@
-import '../document/house_document.dart';
+import 'package:yusal/core/document/house_document.dart';
 
 /// Default plan size, height and elevation of each furniture kind (mm).
 const furnitureDefaults = <FurnitureKind, (int w, int d, int h, int z)>{
@@ -57,8 +57,8 @@ const siteDefaults = <SiteKind, (int w, int d)>{
 /// A plot around [width] × [depth] house: room for outbuildings behind
 /// and a 5 m front yard towards the street.
 SitePlan defaultSitePlan(int width, int depth) {
-  final w = ((width + 12000) / 1000).ceil() * 1000,
-      d = ((depth + 25000) / 1000).ceil() * 1000;
+  final w = ((width + 12000) / 1000).ceil() * 1000;
+  final d = ((depth + 25000) / 1000).ceil() * 1000;
   return SitePlan(
       width: w, depth: d, houseX: ((w - width) / 2).round(), houseY: 5000);
 }
@@ -107,7 +107,8 @@ SitePlan defaultSitePlan(int width, int depth) {
         list.removeAt(index);
       } else if (kind == 'RotateFurniture') {
         final f = list[index];
-        final cx = f.x + f.width / 2, cy = f.y + f.depth / 2;
+        final cx = f.x + f.width / 2;
+        final cy = f.y + f.depth / 2;
         list[index] = f.copyWith(
             width: f.depth,
             depth: f.width,
@@ -127,8 +128,8 @@ SitePlan defaultSitePlan(int width, int depth) {
             kind: args['kind'] as FurnitureKind?,
             floorId: args['floorId'] as String?,
             label: label is String && label.isNotEmpty ? label : null,
-            clearLabel: args.containsKey('label') &&
-                (label == null || label == ''));
+            clearLabel:
+                args.containsKey('label') && (label == null || label == ''));
       }
       return ok(x.copyWith(furniture: list));
     case 'SetRoomInfo':
@@ -141,13 +142,14 @@ SitePlan defaultSitePlan(int width, int depth) {
           labelArea: args.containsKey('labelArea')
               ? i('labelArea')
               : current.labelArea);
-      return ok(x.copyWith(rooms: {
+      return ok(x.copyWith(
+          rooms: {
         ...x.rooms,
         id: info,
       }..removeWhere((_, v) => v.isEmpty)));
     case 'SetOpeningLabel':
-      final id = args['openingId'] as String,
-          value = (args['value'] as String? ?? '').trim();
+      final id = args['openingId'] as String;
+      final value = (args['value'] as String? ?? '').trim();
       return ok(x.copyWith(
           openingLabels: {...x.openingLabels, id: value}
             ..removeWhere((_, v) => v.isEmpty)));
@@ -155,14 +157,17 @@ SitePlan defaultSitePlan(int width, int depth) {
       var spec = x.foundation;
       if (args['field'] != null) {
         final field = args['field'] as String;
-        if (!FoundationSpec.fieldsInt.contains(field))
+        if (!FoundationSpec.fieldsInt.contains(field)) {
           return fail('操作参数无效');
+        }
         spec = spec.withInt(field, i('value')!);
       }
-      if (args['partitions'] != null)
+      if (args['partitions'] != null) {
         spec = spec.copyWith(partitions: args['partitions'] as bool);
-      if (args['concrete'] != null)
+      }
+      if (args['concrete'] != null) {
         spec = spec.copyWith(concrete: args['concrete'] as String);
+      }
       if (args['reset'] == true) spec = const FoundationSpec();
       return ok(x.copyWith(foundation: spec));
     case 'SetLayers':
@@ -229,24 +234,28 @@ SitePlan defaultSitePlan(int width, int depth) {
       }
       return ok(x.copyWith(sleeves: list));
     case 'SetNote':
-      final key = args['key'] as String,
-          value = (args['value'] as String? ?? '').trim();
+      final key = args['key'] as String;
+      final value = (args['value'] as String? ?? '').trim();
       return ok(x.copyWith(
           notes: {...x.notes, key: value}..removeWhere((_, v) => v.isEmpty)));
 
     // ------------------------------------------------------------ cost
     case 'SetCost':
       var cost = x.cost;
-      if (args['currency'] != null && args['currency'] != cost.currency)
+      if (args['currency'] != null && args['currency'] != cost.currency) {
         // Prices are in the old currency; start from the new examples.
-        cost = cost.copyWith(
-            currency: args['currency'] as Currency, prices: const {});
-      if (args.containsKey('labourPct'))
+        cost = cost
+            .copyWith(currency: args['currency'] as Currency, prices: const {});
+      }
+      if (args.containsKey('labourPct')) {
         cost = cost.copyWith(labourPct: i('labourPct'));
-      if (args.containsKey('contingencyPct'))
+      }
+      if (args.containsKey('contingencyPct')) {
         cost = cost.copyWith(contingencyPct: i('contingencyPct'));
+      }
       if (args['priceKey'] != null) {
-        final key = args['priceKey'] as String, price = i('price');
+        final key = args['priceKey'] as String;
+        final price = i('price');
         cost = cost.copyWith(
             prices: {...cost.prices, key: price ?? 0}
               ..removeWhere((k, _) => k == key && price == null));
@@ -262,8 +271,8 @@ SitePlan defaultSitePlan(int width, int depth) {
           unit: (args['unit'] as String? ?? '').trim(),
           quantity: i('quantity') ?? 100,
           price: i('price') ?? 0);
-      return ok(x.copyWith(
-          cost: x.cost.copyWith(items: [...x.cost.items, item])));
+      return ok(
+          x.copyWith(cost: x.cost.copyWith(items: [...x.cost.items, item])));
     case 'UpdateCostItem' || 'DeleteCostItem':
       final id = args['itemId'] as String;
       final list = [...x.cost.items];
@@ -294,8 +303,9 @@ SitePlan defaultSitePlan(int width, int depth) {
         final fuel = args['fuel'] as FuelKind;
         // A new fuel brings its usual efficiency unless one is given.
         heat = heat.withFuel(fuel);
-        if (args['field'] != 'efficiency')
+        if (args['field'] != 'efficiency') {
           heat = heat.withInt('efficiency', fuelEfficiency[fuel]!);
+        }
       }
       if (args['reset'] == true) heat = const HeatSpec();
       return ok(x.copyWith(heat: heat));
@@ -315,8 +325,9 @@ SitePlan defaultSitePlan(int width, int depth) {
             x: (p['x'] as num).round(),
             y: (p['y'] as num).round(),
             label: p['label'] as String?);
-        if (!state.floors.any((f) => f.id == point.floorId))
+        if (!state.floors.any((f) => f.id == point.floorId)) {
           return fail('找不到要编辑的对象');
+        }
         if (!ids.add(point.id)) return fail('点位 id 重复');
         added.add(point);
       }
@@ -392,7 +403,8 @@ SitePlan defaultSitePlan(int width, int depth) {
       if (kind == 'DeleteSiteItem') {
         list.removeAt(index);
       } else if (kind == 'RotateSiteItem') {
-        final cx = item.x + item.width / 2, cy = item.y + item.depth / 2;
+        final cx = item.x + item.width / 2;
+        final cy = item.y + item.depth / 2;
         list[index] = item.copyWith(
             width: item.depth,
             depth: item.width,
@@ -429,12 +441,16 @@ SitePlan defaultSitePlan(int width, int depth) {
         final c = i('toggleCheck')!;
         stage = stage.copyWith(
             checks: stage.checks.contains(c)
-                ? [for (final e in stage.checks) if (e != c) e]
+                ? [
+                    for (final e in stage.checks)
+                      if (e != c) e
+                  ]
                 : [...stage.checks, c]);
       }
       final name = (args['name'] as String?)?.trim();
-      if (name != null && name.isEmpty && stage.custom)
+      if (name != null && name.isEmpty && stage.custom) {
         return fail('请填写名称');
+      }
       stage = stage.copyWith(
           status: args['status'] as StageStatus?,
           days: i('days'),

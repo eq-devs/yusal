@@ -86,8 +86,8 @@ void main() {
 
   test('a narrow door is pointed out', () {
     var n = 0;
-    final doc = buildHouseFromSpec(spec(bathDoorTo: 'cor'),
-            '2026-11-15T00:00:00Z', () => 'id${n++}')
+    final doc = buildHouseFromSpec(
+            spec(bathDoorTo: 'cor'), '2026-11-15T00:00:00Z', () => 'id${n++}')
         .document!;
     expect(runChecks(doc, deriveHouse(doc)).map((c) => c.ruleId),
         isNot(contains('R13')));

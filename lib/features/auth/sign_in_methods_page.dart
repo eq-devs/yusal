@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../app/settings.dart';
-import '../../data/http/http_backend.dart';
-import '../../data/repositories.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/widgets.dart';
-import 'social_sign_in.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/auth/social_sign_in.dart';
 
 /// The ways the signed-in account can sign in: link Google or Apple, set an
 /// email password, or remove one. The last way cannot be removed.
@@ -61,7 +61,9 @@ class _SignInMethodsPageState extends State<SignInMethodsPage> {
                 'Войти в этот аккаунт через него больше не получится.'),
             ok: tr3('解绑', 'Ажырату', 'Отвязать'),
             danger: true) ||
-        !mounted) return;
+        !mounted) {
+      return;
+    }
     await _apply(() => widget.api.unlinkSignIn(provider),
         success: tr3('已解绑', 'Ажыратылды', 'Отвязано'));
   }
@@ -161,8 +163,8 @@ class _SignInMethodsPageState extends State<SignInMethodsPage> {
                             if (email != null)
                               TextButton(
                                   key: const Key('method-email-remove'),
-                                  onPressed: () => _unlink('email',
-                                      tr3('邮箱登录', 'Пошта', 'почту')),
+                                  onPressed: () => _unlink(
+                                      'email', tr3('邮箱登录', 'Пошта', 'почту')),
                                   child: Text(tr3('移除', 'Алу', 'Убрать'))),
                           ])),
                     ]),

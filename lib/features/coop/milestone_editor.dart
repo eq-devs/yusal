@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 
 /// Edits the inspection points of an agreement that is still waiting for
 /// confirmation: name, share of the amount, what is checked and when.
@@ -28,7 +28,9 @@ class _Row {
             text: m.criteria.isEmpty ? milestoneCriteria(m.key) : m.criteria),
         due = m.due;
   String key;
-  final TextEditingController name, percent, criteria;
+  final TextEditingController name;
+  final TextEditingController percent;
+  final TextEditingController criteria;
   DateTime? due;
   void dispose() {
     name.dispose();
@@ -59,7 +61,9 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
 
   @override
   void dispose() {
-    for (final r in rows) r.dispose();
+    for (final r in rows) {
+      r.dispose();
+    }
     super.dispose();
   }
 

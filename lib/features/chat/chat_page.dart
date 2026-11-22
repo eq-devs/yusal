@@ -1,19 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../data/repositories.dart';
-import '../../domain/models.dart';
-import '../demand/demand_detail_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import '../../voice/action.dart';
-import '../../voice/form.dart';
-import '../../voice/screen.dart';
-import '../me/trust_pages.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/form.dart';
+import 'package:yusal/voice/screen.dart';
+import 'package:yusal/features/me/trust_pages.dart';
 
 class _ChatData {
   _ChatData(
@@ -50,8 +50,7 @@ class _ChatPageState extends State<ChatPage>
 
   @override
   List<VoiceField> get fields => [
-        VoiceField.text('message',
-            const L3('消息', 'Хабар', 'Сообщение'), input),
+        VoiceField.text('message', const L3('消息', 'Хабар', 'Сообщение'), input),
       ];
 
   @override
@@ -209,23 +208,26 @@ class _ChatPageState extends State<ChatPage>
             () => repos.send(widget.conversationId, MessageKind.image,
                 text: tr3('现场照片', 'Фото', 'Фото объекта')));
       case 'demand':
-        final mine = await attempt(context, () => repos.myDemands());
+        final mine = await attempt(context, repos.myDemands);
         if (mine == null || !mounted) return;
         final id =
             await pickOne<String>(context, tr3('选择需求', 'Тапсырыс', 'Заявка'), [
           for (final d in mine.where((d) => d.status != DemandStatus.draft))
             (d.id, d.current.title)
         ]);
-        if (id != null && mounted)
+        if (id != null && mounted) {
           await attempt(
               context,
               () => repos.send(widget.conversationId, MessageKind.demandCard,
                   refId: id));
+        }
       case 'phone':
         if (repos.currentAccount?.phone.isEmpty ?? true) {
           if (!await editPhone(context) ||
               !mounted ||
-              (repos.currentAccount?.phone.isEmpty ?? true)) return;
+              (repos.currentAccount?.phone.isEmpty ?? true)) {
+            return;
+          }
         }
         if (!mounted) return;
         if (await confirmDialog(context,
@@ -234,8 +236,9 @@ class _ChatPageState extends State<ChatPage>
                     '对方将看到你的完整手机号。你的手机号默认对其他人隐藏。',
                     'Екінші жақ нөміріңізді көреді.',
                     'Собеседник увидит ваш номер.')) &&
-            mounted)
+            mounted) {
           await attempt(context, () => repos.sharePhone(widget.conversationId));
+        }
       case 'whatsapp':
         await confirmDialog(
             context, tr3('通过 WhatsApp 联系', 'WhatsApp', 'WhatsApp'),
@@ -262,9 +265,8 @@ class _ChatPageState extends State<ChatPage>
                     icon: Icons.error_outline,
                     title: failureText(e),
                     action: OutlinedButton(
-                        onPressed: _refresh,
-                        child:
-                            Text(tr3('重试', 'Қайталау', 'Повторить')))))),
+                        onPressed: _refresh.call,
+                        child: Text(tr3('重试', 'Қайталау', 'Повторить')))))),
         builder: (context, data) {
           final me = context.repos.currentAccount?.id;
           final name = deletedName(data.other);
@@ -280,17 +282,20 @@ class _ChatPageState extends State<ChatPage>
                     PopupMenuButton<String>(
                         onSelected: (v) async {
                           final other = data.conversation.otherSide(me ?? '');
-                          if (v == 'block')
+                          if (v == 'block') {
                             await attempt(
                                 context, () => context.repos.block(other),
                                 success:
                                     tr3('已拉黑', 'Бұғатталды', 'Заблокировано'));
-                          if (v == 'unblock')
+                          }
+                          if (v == 'unblock') {
                             await attempt(
                                 context, () => context.repos.unblock(other));
-                          if (v == 'report' && context.mounted)
+                          }
+                          if (v == 'report' && context.mounted) {
                             await reportContent(
                                 context, ReportTarget.account, other);
+                          }
                         },
                         itemBuilder: (context) => [
                               PopupMenuItem(
@@ -342,15 +347,16 @@ class _ChatPageState extends State<ChatPage>
                           // The time under a message has no date: the
                           // first message of each day is headed by its day.
                           if (at > 0 &&
-                              _sameDay(data.messages[at - 1].sentAt, m.sentAt)) {
+                              _sameDay(
+                                  data.messages[at - 1].sentAt, m.sentAt)) {
                             return bubble;
                           }
                           return Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 8),
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 8),
                                     child: Text(
                                         _dayLabel(m.sentAt, context.now),
                                         key: const Key('chat-day'),
@@ -386,24 +392,23 @@ class _ChatPageState extends State<ChatPage>
                                     textInputAction: TextInputAction.send,
                                     onSubmitted: (_) => send(),
                                     decoration: InputDecoration(
-                                        hintText: tr3('输入消息', 'Хабар жазыңыз',
-                                            'Сообщение'),
+                                        hintText: tr3(
+                                            '输入消息', 'Хабар жазыңыз', 'Сообщение'),
                                         contentPadding:
                                             const EdgeInsets.symmetric(
                                                 horizontal: 16, vertical: 10),
                                         border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(YRadius.pill)),
+                                            borderRadius: BorderRadius.circular(
+                                                YRadius.pill)),
                                         enabledBorder: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(YRadius.pill),
+                                            borderRadius: BorderRadius.circular(
+                                                YRadius.pill),
                                             borderSide:
                                                 BorderSide(color: t.line)),
                                         focusedBorder: OutlineInputBorder(
                                             borderRadius:
                                                 BorderRadius.circular(YRadius.pill),
-                                            borderSide:
-                                                BorderSide(color: t.ink))))),
+                                            borderSide: BorderSide(color: t.ink))))),
                             const SizedBox(width: 6),
                             IconButton.filled(
                                 tooltip: tr3('发送', 'Жіберу', 'Отправить'),
@@ -453,7 +458,8 @@ class _Bubble extends StatelessWidget {
               width: 180,
               height: 120,
               decoration: BoxDecoration(
-                  color: t.line, borderRadius: BorderRadius.circular(YRadius.control)),
+                  color: t.line,
+                  borderRadius: BorderRadius.circular(YRadius.control)),
               child: Icon(Icons.image_outlined, size: 40, color: t.muted)),
           if (m.text.isNotEmpty)
             Padding(
@@ -508,11 +514,11 @@ class _Bubble extends StatelessWidget {
                   : tr3('对方向你展示了电话', 'Телефонын көрсетті',
                       'Собеседник показал номер'),
               style: TextStyle(
-                  color: mine ? t.bg.withValues(alpha: 0.75) : t.muted, fontSize: YFont.caption)),
+                  color: mine ? t.bg.withValues(alpha: 0.75) : t.muted,
+                  fontSize: YFont.caption)),
           SelectableText(m.text,
               style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: mine ? t.bg : t.ink)),
+                  fontWeight: FontWeight.w700, color: mine ? t.bg : t.ink)),
         ]);
     }
     final bubble = Container(
@@ -523,8 +529,7 @@ class _Bubble extends StatelessWidget {
                 ? const EdgeInsets.all(4)
                 : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-            color: mine ? t.ink : t.surface,
-            borderRadius: _bubbleRadius(mine)),
+            color: mine ? t.ink : t.surface, borderRadius: _bubbleRadius(mine)),
         child: content);
     return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -545,10 +550,12 @@ class _Bubble extends StatelessWidget {
                             Text(
                                 tr3('发送失败，点击重试', 'Жіберілмеді, қайталау',
                                     'Не отправлено, повторить'),
-                                style: TextStyle(color: t.crit, fontSize: YFont.caption)),
+                                style: TextStyle(
+                                    color: t.crit, fontSize: YFont.caption)),
                           ]))
                       : Text(fmtTime(m.sentAt),
-                          style: TextStyle(color: t.muted, fontSize: YFont.caption))),
+                          style: TextStyle(
+                              color: t.muted, fontSize: YFont.caption))),
             ]));
   }
 }
@@ -571,10 +578,9 @@ class _PendingBubble extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                      color: t.ink,
-                      borderRadius: _bubbleRadius(true)),
-                  child: Text(text,
-                      style: TextStyle(color: t.bg, height: 1.35)))),
+                      color: t.ink, borderRadius: _bubbleRadius(true)),
+                  child:
+                      Text(text, style: TextStyle(color: t.bg, height: 1.35)))),
           Padding(
               padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
               child: Icon(Icons.schedule, size: 12, color: t.muted)),

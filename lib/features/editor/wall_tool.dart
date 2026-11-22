@@ -15,8 +15,9 @@ extension _WallTool on _HouseEditorState {
 
   void finishWallStroke() {
     settlePreview();
-    final end = drawingEnd, error = spatialError;
-    if (drawingOrigin == null) drawingOrigin = drawingBefore;
+    final end = drawingEnd;
+    final error = spatialError;
+    drawingOrigin ??= drawingBefore;
     final accepted = end != null &&
         drawingOrigin != null &&
         (end - drawingOrigin!).distance >= 300 &&
@@ -82,20 +83,24 @@ extension _WallTool on _HouseEditorState {
     if (wallGrip == null ||
         editDown == null ||
         editStart == null ||
-        editEnd == null) return;
+        editEnd == null) {
+      return;
+    }
     if (editPreviewStart == null &&
         downPoint != null &&
-        (local - downPoint!).distance * canvasZoom < 8) return;
-    final painter = interactionPainter(),
-        world = painter.worldPoint(local, size),
-        raw = Offset(world.x, world.y),
-        pixel = 1 / (painter.scale(size) * canvasZoom);
+        (local - downPoint!).distance * canvasZoom < 8) {
+      return;
+    }
+    final painter = interactionPainter();
+    final world = painter.worldPoint(local, size);
+    final raw = Offset(world.x, world.y);
+    final pixel = 1 / (painter.scale(size) * canvasZoom);
     final vertical = editStart!.dx == editEnd!.dx;
     final carrier = vertical ? editStart!.dx : editStart!.dy;
     final lo = math.min(vertical ? editStart!.dy : editStart!.dx,
-            vertical ? editEnd!.dy : editEnd!.dx),
-        hi = math.max(vertical ? editStart!.dy : editStart!.dx,
-            vertical ? editEnd!.dy : editEnd!.dx);
+        vertical ? editEnd!.dy : editEnd!.dx);
+    final hi = math.max(vertical ? editStart!.dy : editStart!.dx,
+        vertical ? editEnd!.dy : editEnd!.dx);
     bool own(WallSegment w) =>
         w.axis.dir == (vertical ? AxisDir.V : AxisDir.H) &&
         w.axis.pos == carrier &&
@@ -107,8 +112,8 @@ extension _WallTool on _HouseEditorState {
       if (selectedDrawnId == null) 'anchor': selectedDrawnAnchor,
     };
     if (wallGrip == 'start' || wallGrip == 'end') {
-      final fixed = wallGrip == 'start' ? editEnd! : editStart!,
-          moving = wallGrip == 'start' ? editStart! : editEnd!;
+      final fixed = wallGrip == 'start' ? editEnd! : editStart!;
+      final moving = wallGrip == 'start' ? editStart! : editEnd!;
       final snap = snapWallEnd(base, fixed, raw,
           connectRadius: 22 * pixel,
           alignRadius: 14 * pixel,
@@ -124,8 +129,8 @@ extension _WallTool on _HouseEditorState {
       editArgs = wallEditArguments(editPreviewStart!, editPreviewEnd!);
     } else {
       final delta = raw - editDown!;
-      final across = vertical ? delta.dx : delta.dy,
-          along = vertical ? delta.dy : delta.dx;
+      final across = vertical ? delta.dx : delta.dy;
+      final along = vertical ? delta.dy : delta.dx;
       drawConnected = false;
       alignGuide = null;
       if (across.abs() >= along.abs()) {
@@ -167,23 +172,25 @@ extension _WallTool on _HouseEditorState {
   /// Actions for the pressed wall, placed beside it rather than in a sheet
   /// so the wall and its grips stay visible.
   Widget? wallMenuCard() {
-    final wall = menuWall, point = menuPoint;
-    if (wall == null || point == null || view3d || canvasSize.isEmpty)
+    final wall = menuWall;
+    final point = menuPoint;
+    if (wall == null || point == null || view3d || canvasSize.isEmpty) {
       return null;
+    }
     final inner = wall.axis.kind != 'boundary';
     final painter = interactionPainter();
     Offset screen(Offset world) => MatrixUtils.transformPoint(
         canvasTransform.value, painter.point(world.dx, world.dy, canvasSize));
     final a = inner && editStart != null
-            ? editStart!
-            : wall.axis.dir == AxisDir.H
-                ? Offset(wall.start.pos.toDouble(), wall.axis.pos.toDouble())
-                : Offset(wall.axis.pos.toDouble(), wall.start.pos.toDouble()),
-        b = inner && editEnd != null
-            ? editEnd!
-            : wall.axis.dir == AxisDir.H
-                ? Offset(wall.end.pos.toDouble(), wall.axis.pos.toDouble())
-                : Offset(wall.axis.pos.toDouble(), wall.end.pos.toDouble());
+        ? editStart!
+        : wall.axis.dir == AxisDir.H
+            ? Offset(wall.start.pos.toDouble(), wall.axis.pos.toDouble())
+            : Offset(wall.axis.pos.toDouble(), wall.start.pos.toDouble());
+    final b = inner && editEnd != null
+        ? editEnd!
+        : wall.axis.dir == AxisDir.H
+            ? Offset(wall.end.pos.toDouble(), wall.axis.pos.toDouble())
+            : Offset(wall.axis.pos.toDouble(), wall.end.pos.toDouble());
     final anchor = screen(point);
     final around = Rect.fromPoints(screen(a), screen(b)).inflate(24);
     final opening = derived.floors[floorIndex].openings.any((o) {
@@ -194,10 +201,10 @@ extension _WallTool on _HouseEditorState {
           along >= o.start &&
           along <= o.end;
     });
-    final width = math.min(312.0, canvasSize.width - 24),
-        height = 104.0 + (opening ? 18 : 0),
-        top = overlayTop,
-        bottom = canvasSize.height - canvasInsets.bottom + 24;
+    final width = math.min(312.0, canvasSize.width - 24);
+    final height = 104.0 + (opening ? 18 : 0);
+    final top = overlayTop;
+    final bottom = canvasSize.height - canvasInsets.bottom + 24;
     var y = around.top - height - 6;
     var x = (anchor.dx - width / 2)
         .clamp(12.0, math.max(12.0, canvasSize.width - width - 12))
@@ -328,13 +335,13 @@ extension _WallTool on _HouseEditorState {
               ]),
               if (opening)
                 Padding(
-                    padding: EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
                         tr3(
                             '这里有门窗，换个位置才能接墙',
                             'Мұнда есік-терезе бар, жалғау үшін басқа жерді таңдаңыз',
                             'Здесь окно или дверь, выберите другое место для стены'),
-                        style: TextStyle(fontSize: 12))),
+                        style: const TextStyle(fontSize: 12))),
             ]))));
   }
 
@@ -396,7 +403,8 @@ extension _WallTool on _HouseEditorState {
 
   /// Runs the wall just drawn on to the wall it was heading for.
   void reachAcross() {
-    final to = reachAcrossPoint, from = drawingOrigin;
+    final to = reachAcrossPoint;
+    final from = drawingOrigin;
     if (to == null || from == null) return;
     final before = history.present;
     action('AddDrawnWall', {

@@ -8,11 +8,11 @@ import 'dart:math' as math;
 import 'dart:io' show exit;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import '../core/commands/house_templates.dart';
-import '../core/commands/kz_template.dart';
-import '../core/document/house_document.dart';
-import '../core/geometry/derived_house.dart';
-import '../render3d/scene_view.dart';
+import 'package:yusal/core/commands/house_templates.dart';
+import 'package:yusal/core/commands/kz_template.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/render3d/scene_view.dart';
 
 void main() => runApp(
     const MaterialApp(debugShowCheckedModeBanner: false, home: SceneLab()));
@@ -47,7 +47,8 @@ class _SceneLabState extends State<SceneLab> {
   // Frame timings, averaged over the last second.
   final builds = <double>[], rasters = <double>[];
   String stats = '';
-  Timer? statsTimer, spin;
+  Timer? statsTimer;
+  Timer? spin;
 
   @override
   void initState() {
@@ -121,7 +122,9 @@ class _SceneLabState extends State<SceneLab> {
         // As under a finger: the interactive-quality frames.
         if (drag) s.touching = 1;
         final sw = Stopwatch()..start();
-        var drawn = 0, culled = 0, n = 0;
+        var drawn = 0;
+        var culled = 0;
+        var n = 0;
         while (sw.elapsedMilliseconds < 2500) {
           // ignore: invalid_use_of_protected_member
           s.setState(() {

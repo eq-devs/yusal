@@ -18,7 +18,8 @@ void main() {
     testWidgets('house page at phone width in $lang', (t) async {
       SharedPreferences.setMockInitialValues({});
       AppSettings.instance.lang = lang;
-      t.binding.platformDispatcher.defaultRouteNameTestValue = '/h/post_aigerim';
+      t.binding.platformDispatcher.defaultRouteNameTestValue =
+          '/h/post_aigerim';
       addTearDown(t.binding.platformDispatcher.clearDefaultRouteNameTestValue);
       t.view.physicalSize = const Size(412, 915);
       t.view.devicePixelRatio = 1;

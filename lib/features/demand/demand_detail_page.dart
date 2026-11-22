@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../domain/rules.dart';
-import '../apply/apply_page.dart';
-import '../../shared/ui/cards.dart';
-import '../chat/chat_page.dart';
-import '../coop/coop_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/plan_viewer.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import 'applications_page.dart';
-import 'publish_page.dart';
-import 'share_page.dart';
-import '../home/post_page.dart';
-import '../../shared/motion/motion.dart';
-import '../../voice/actions_demand.dart';
-import '../../voice/screen.dart';
-import '../me/trust_pages.dart';
-import '../../shared/brand/yicon.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/rules.dart';
+import 'package:yusal/features/apply/apply_page.dart';
+import 'package:yusal/shared/ui/cards.dart';
+import 'package:yusal/features/chat/chat_page.dart';
+import 'package:yusal/features/coop/coop_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/plan_viewer.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/demand/applications_page.dart';
+import 'package:yusal/features/demand/publish_page.dart';
+import 'package:yusal/features/demand/share_page.dart';
+import 'package:yusal/features/home/post_page.dart';
+import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/voice/actions_demand.dart';
+import 'package:yusal/voice/screen.dart';
+import 'package:yusal/features/me/trust_pages.dart';
+import 'package:yusal/shared/brand/yicon.dart';
 
 class _DetailData {
   _DetailData(this.demand, this.owner, this.snapshot, this.myApps, this.coops,
@@ -43,11 +43,13 @@ class DemandDetailPage extends StatelessWidget {
     return Live<_DetailData>(
         load: (r) async {
           final d = await r.demand(demandId);
-          if (d == null)
+          if (d == null) {
             return _DetailData(null, null, null, const [], const [], 0);
+          }
           final me = r.currentAccount?.id;
           final mine = me == d.ownerId;
-          final (owner, snapshot, applications, cooperations, received) = await (
+          final (owner, snapshot, applications, cooperations, received) =
+              await (
             r.account(d.ownerId),
             d.current.snapshotId == null
                 ? Future<DesignSnapshot?>.value()
@@ -69,13 +71,14 @@ class DemandDetailPage extends StatelessWidget {
         loading: const SkeletonPage(),
         builder: (context, data) {
           final d = data.demand;
-          if (d == null)
+          if (d == null) {
             return PageScaffold(
                 title: '',
                 body: EmptyState(
                     icon: Icons.visibility_off_outlined,
                     title: tr3('需求不存在、已下架或无权查看', 'Тапсырыс табылмады не жабық',
                         'Заявка не найдена или недоступна')));
+          }
           return _DemandDetail(data: data);
         });
   }
@@ -132,8 +135,9 @@ class _DemandDetailState extends State<_DemandDetail>
       if (!await requireLogin(context) || !context.mounted) return;
       final conv = await attempt(context,
           () => context.repos.openConversation(d.ownerId, demandId: d.id));
-      if (conv != null && context.mounted)
+      if (conv != null && context.mounted) {
         await pushPage<void>(context, (_) => ChatPage(conversationId: conv.id));
+      }
     }
 
     final body =
@@ -220,8 +224,8 @@ class _DemandDetailState extends State<_DemandDetail>
                   '发布者：${deletedName(data.owner)}',
                   'Жариялаған: ${deletedName(data.owner)}',
                   'Автор: ${deletedName(data.owner)}'),
-              style:
-                  const TextStyle(fontWeight: FontWeight.w700, fontSize: YFont.body)),
+              style: const TextStyle(
+                  fontWeight: FontWeight.w700, fontSize: YFont.body)),
           Text(
               [
                 if (d.publisherRole == PublisherRole.contractor)
@@ -233,7 +237,8 @@ class _DemandDetailState extends State<_DemandDetail>
       ]),
       const Divider(height: 36),
       if (v.description.isNotEmpty) ...[
-        Text(v.description, style: const TextStyle(fontSize: YFont.body, height: 1.5)),
+        Text(v.description,
+            style: const TextStyle(fontSize: YFont.body, height: 1.5)),
         const SizedBox(height: 12),
       ],
       InfoRow(tr3('工种', 'Мамандық', 'Специальность'),
@@ -340,14 +345,16 @@ class _DemandDetailState extends State<_DemandDetail>
           if (!mine)
             PopupMenuButton<String>(
                 onSelected: (value) async {
-                  if (value == 'report')
+                  if (value == 'report') {
                     await reportContent(context, ReportTarget.demand, d.id);
+                  }
                   if (value == 'block' && context.mounted) {
-                    if (await requireLogin(context) && context.mounted)
+                    if (await requireLogin(context) && context.mounted) {
                       await attempt(
                           context, () => context.repos.block(d.ownerId),
                           success: tr3('已拉黑，不再看到对方内容', 'Бұғатталды',
                               'Пользователь заблокирован'));
+                    }
                   }
                 },
                 itemBuilder: (context) => [
@@ -425,7 +432,8 @@ class _DemandDetailState extends State<_DemandDetail>
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(s.projectName,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: YFont.body)),
+            style: const TextStyle(
+                fontWeight: FontWeight.w700, fontSize: YFont.body)),
         const SizedBox(height: 4),
         Text(s.summary, style: TextStyle(color: t.muted)),
         const SizedBox(height: 4),
@@ -554,9 +562,10 @@ class _DemandDetailState extends State<_DemandDetail>
           OutlinedButton(
               onPressed: () async {
                 final o = await pickOutcome(context, hired > 0);
-                if (o != null && context.mounted)
+                if (o != null && context.mounted) {
                   await act(() => repos.markFound(d.id, o),
                       tr3('已标记找到人，停止接收新申请', 'Белгіленді', 'Отмечено'));
+                }
               },
               child: Text(tr3('已找到人', 'Адам табылды', 'Исполнитель найден'))),
         if (can(DemandEvent.close))
@@ -565,18 +574,20 @@ class _DemandDetailState extends State<_DemandDetail>
                 final reason = await askText(
                     context, tr3('关闭需求', 'Жабу', 'Закрыть заявку'),
                     hint: tr3('原因，例如不再需要', 'Себебі', 'Причина'));
-                if (reason != null && context.mounted)
+                if (reason != null && context.mounted) {
                   await act(() => repos.close(d.id, reason),
                       tr3('已关闭', 'Жабылды', 'Закрыто'));
+                }
               },
               child: Text(tr3('关闭', 'Жабу', 'Закрыть'))),
         if (d.outcome == null && d.status != DemandStatus.draft)
           TextButton(
               onPressed: () async {
                 final o = await pickOutcome(context, hired > 0);
-                if (o != null && context.mounted)
+                if (o != null && context.mounted) {
                   await act(() => repos.recordOutcome(d.id, o),
                       tr3('谢谢反馈', 'Рақмет', 'Спасибо'));
+                }
               },
               child: Text(tr3('回答结果回访', 'Нәтижені айту', 'Ответить на опрос'))),
       ]),
@@ -603,7 +614,7 @@ class QtyTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
-    return Container(
+    return DecoratedBox(
         decoration: BoxDecoration(
             border: Border.all(color: t.line),
             borderRadius: BorderRadius.circular(YRadius.control)),
@@ -624,7 +635,8 @@ class QtyTable extends StatelessWidget {
                             style:
                                 const TextStyle(fontWeight: FontWeight.w600)),
                         Text(qtySourceName(l.source),
-                            style: TextStyle(color: t.muted, fontSize: YFont.caption)),
+                            style: TextStyle(
+                                color: t.muted, fontSize: YFont.caption)),
                       ])),
                   Text(
                       l.quantity == null

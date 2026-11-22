@@ -6,7 +6,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-import '../firebase_options.dart';
+import 'package:yusal/firebase_options.dart';
 
 /// Firebase (Analytics, Crashlytics, and the base for push) on iOS and
 /// Android. The web build and tests run without it.

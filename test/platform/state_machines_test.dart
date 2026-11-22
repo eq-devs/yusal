@@ -81,7 +81,7 @@ void main() {
         throwsA(isA<ApiFailure>()));
   });
 
-  test('a confirmed cooperation\'s ending: none, asked, disputed, asked again',
+  test("a confirmed cooperation's ending: none, asked, disputed, asked again",
       () {
     final at = DateTime.utc(2026);
     Cooperation coop(CooperationStatus status, EndRequest? r) => Cooperation(

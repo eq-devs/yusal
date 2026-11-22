@@ -66,7 +66,7 @@ void main() {
     expect(find.text('没有后台权限'), findsOneWidget);
   });
 
-  for (final lang in [AppLang.kk, AppLang.ru])
+  for (final lang in [AppLang.kk, AppLang.ru]) {
     testWidgets('in ${lang.name} the back office shows no Chinese', (t) async {
       final b = await pumpAdmin(t, SeedIds.admin, lang: lang);
       // What the seed's users wrote stays as they wrote it.
@@ -99,4 +99,5 @@ void main() {
       expect(found, isEmpty);
       expect(t.takeException(), isNull);
     });
+  }
 }

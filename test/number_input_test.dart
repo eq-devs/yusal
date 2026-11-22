@@ -20,7 +20,8 @@ void main() {
   });
 
   test('refuses what is not a number', () {
-    for (final bad in ['', 'abc', '3..2', '3+', '+3', '1/0', '2(3)', '3,6,1'])
+    for (final bad in ['', 'abc', '3..2', '3+', '+3', '1/0', '2(3)', '3,6,1']) {
       expect(parseNumber(bad), isNull, reason: bad);
+    }
   });
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-import '../data/repositories.dart';
-import 'action.dart';
-import 'form.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/form.dart';
 
 /// A page's contract with the voice layer: what it is, what it shows and
 /// what can be done on it. Pages keep their state privately, so each one

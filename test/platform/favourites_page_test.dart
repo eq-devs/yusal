@@ -44,7 +44,8 @@ void main() {
     await t.scrollUntilVisible(
         find.byKey(const Key('fav-profile-prof_mason')), 200);
     expect(find.byKey(const Key('fav-profile-prof_mason')), findsOneWidget);
-    await t.scrollUntilVisible(find.byKey(const Key('fav-demand-dem_wall')), 200);
+    await t.scrollUntilVisible(
+        find.byKey(const Key('fav-demand-dem_wall')), 200);
     expect(find.byKey(const Key('fav-demand-dem_wall')), findsOneWidget);
   });
 

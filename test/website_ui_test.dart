@@ -224,7 +224,9 @@ void main() {
     final state = t.state<SceneViewState>(find.byType(SceneView));
     final z0 = state.wz;
     await t.sendKeyDownEvent(LogicalKeyboardKey.keyW);
-    for (var i = 0; i < 30; i++) await t.pump(const Duration(milliseconds: 50));
+    for (var i = 0; i < 30; i++) {
+      await t.pump(const Duration(milliseconds: 50));
+    }
     await t.sendKeyUpEvent(LogicalKeyboardKey.keyW);
     await t.pump(const Duration(milliseconds: 50));
     expect(state.wz, lessThan(z0 - 1), reason: 'walked toward the house');
@@ -232,7 +234,9 @@ void main() {
     state.standAt(2000, -1500, 0, 0);
     await t.pump();
     await t.sendKeyDownEvent(LogicalKeyboardKey.keyW);
-    for (var i = 0; i < 60; i++) await t.pump(const Duration(milliseconds: 50));
+    for (var i = 0; i < 60; i++) {
+      await t.pump(const Duration(milliseconds: 50));
+    }
     await t.sendKeyUpEvent(LogicalKeyboardKey.keyW);
     await t.pump(const Duration(milliseconds: 50));
     expect(state.wz, greaterThan(state.model.depth - 0.05),

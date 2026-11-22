@@ -38,7 +38,9 @@ void main() {
       RoomType.hall,
       RoomType.boiler,
       RoomType.corridor
-    ]) expect(types, contains(t), reason: '$t');
+    ]) {
+      expect(types, contains(t), reason: '$t');
+    }
     expect(doc.mainEntranceOpeningId, isNotNull);
     // Every room can be walked into and the day rooms have windows.
     final issues = [
@@ -76,9 +78,9 @@ void main() {
       (20000, 12000),
       (6000, 6000)
     ])
-      for (final floors in [1, 2])
-        for (final beds in [1, 2, 3, 4, 5])
-          for (final baths in [1, 2])
+      for (final floors in [1, 2]) {
+        for (final beds in [1, 2, 3, 4, 5]) {
+          for (final baths in [1, 2]) {
             for (final extras in [true, false]) {
               final what = '$w×$d f$floors b$beds t$baths x$extras';
               // A wish the house cannot hold is turned down by the
@@ -110,10 +112,15 @@ void main() {
                   reason: what);
               expect(all, contains(RoomType.living), reason: what);
               expect(all, contains(RoomType.kitchen), reason: what);
-              if (built.notes.isNotEmpty)
+              if (built.notes.isNotEmpty) {
                 notes.add('$what: ${built.notes.join('; ')}');
+              }
             }
+          }
+        }
+      }
     // ignore: avoid_print
-    print('$refused refused, ${notes.length} with notes\n${notes.take(40).join('\n')}');
+    print(
+        '$refused refused, ${notes.length} with notes\n${notes.take(40).join('\n')}');
   });
 }

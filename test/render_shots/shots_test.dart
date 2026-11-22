@@ -57,12 +57,7 @@ void main() {
         final model = buildScene(
             h.value,
             derived,
-            SceneOptions(
-                roof: m.value.roof,
-                furniture: true,
-                foundation: m.value.foundation,
-                site: true,
-                walk: false),
+            SceneOptions(roof: m.value.roof, foundation: m.value.foundation),
             (r) => r.name);
         for (final v in views) {
           if (m.key != 'full' && v != 'iso' && v != 'top') continue;
@@ -83,15 +78,7 @@ void main() {
       }
       // Walk-through: inside the house, facing a wall.
       final wModel = buildScene(
-          h.value,
-          derived,
-          const SceneOptions(
-              roof: true,
-              furniture: true,
-              foundation: false,
-              site: true,
-              walk: true),
-          (r) => r.name);
+          h.value, derived, const SceneOptions(walk: true), (r) => r.name);
       for (final (name, eye, yaw, mf) in [
         ('walk_out', Vec3(wModel.width / 2, 1.6, wModel.depth + 8), 0.0, 999),
         ('walk_in', Vec3(wModel.width * 0.3, 1.6, wModel.depth * 0.6), 0.8, 0),
@@ -149,8 +136,9 @@ Future<void> _shot(
     var changed = 0;
     for (var i = 0; i < a.lengthInBytes; i += 4) {
       var d = 0;
-      for (var k = 0; k < 3; k++)
+      for (var k = 0; k < 3; k++) {
         d = math.max(d, (a.getUint8(i + k) - b.getUint8(i + k)).abs());
+      }
       if (d > 40) changed++;
     }
     diff = '\tchanged=$changed';

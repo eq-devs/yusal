@@ -47,12 +47,13 @@ void main() {
     expect(liftOf(tester, 'row 2'), rest[2]);
   });
 
-  testWidgets('Stagger keeps its child\'s state through the entrance',
+  testWidgets("Stagger keeps its child's state through the entrance",
       (tester) async {
     final key = GlobalKey<State<StatefulWidget>>();
     await tester.pumpWidget(_app(Stagger(
         index: 1,
-        child: StatefulBuilder(key: key, builder: (_, __) => const Text('row')))));
+        child:
+            StatefulBuilder(key: key, builder: (_, __) => const Text('row')))));
     final before = key.currentState;
     await tester.pumpAndSettle();
     expect(key.currentState, same(before));
@@ -111,11 +112,10 @@ void main() {
   });
 
   testWidgets('Pressable does nothing when disabled', (tester) async {
-    await tester.pumpWidget(_app(Center(
+    await tester.pumpWidget(_app(const Center(
         child: Pressable(
             enabled: false,
-            child: Container(
-                width: 120, height: 80, child: const Text('card'))))));
+            child: SizedBox(width: 120, height: 80, child: Text('card'))))));
     final g = await tester.startGesture(tester.getCenter(find.text('card')));
     await tester.pump(const Duration(milliseconds: 300));
     expect(_scaleOf(tester, find.text('card')), closeTo(1, 1e-3));
@@ -364,11 +364,11 @@ void main() {
   });
 
   testWidgets('MotionTabView follows its TabController', (tester) async {
-    await tester.pumpWidget(_app(DefaultTabController(
+    await tester.pumpWidget(_app(const DefaultTabController(
         length: 2,
         child: Column(children: [
-          const TabBar(tabs: [Tab(text: 'one'), Tab(text: 'two')]),
-          const Expanded(
+          TabBar(tabs: [Tab(text: 'one'), Tab(text: 'two')]),
+          Expanded(
               child: MotionTabView(
                   children: [Text('page one'), Text('page two')])),
         ]))));

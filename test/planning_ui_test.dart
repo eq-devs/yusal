@@ -56,7 +56,7 @@ void main() {
     await t.pumpAndSettle();
   }
 
-  for (final size in [const Size(1280, 900), const Size(390, 844)])
+  for (final size in [const Size(1280, 900), const Size(390, 844)]) {
     testWidgets('every new page opens without layout errors at ${size.width}',
         (t) async {
       await mount(t, village(), size: size);
@@ -73,6 +73,7 @@ void main() {
         }
       }
     });
+  }
 
   testWidgets('the budget edits a price and the schedule ticks a check',
       (t) async {

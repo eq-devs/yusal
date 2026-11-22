@@ -1,12 +1,14 @@
 import 'package:flutter/widgets.dart' show BuildContext;
 
-import '../app/settings.dart';
-import '../data/repositories.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/repositories.dart';
 
 /// One piece of wording in the app's three languages.
 class L3 {
   const L3(this.zh, this.kk, this.ru);
-  final String zh, kk, ru;
+  final String zh;
+  final String kk;
+  final String ru;
 
   String of(AppLang lang) => switch (lang) {
         AppLang.zh => zh,
@@ -101,7 +103,10 @@ class Param {
 /// is the short name given to the language model ("r1", "w3").
 class Entity {
   const Entity(this.kind, this.id, {required this.alias, this.title = ''});
-  final String kind, id, alias, title;
+  final String kind;
+  final String id;
+  final String alias;
+  final String title;
 }
 
 /// What an action may read: the backend and what is on screen.

@@ -1,16 +1,16 @@
-import '../document/house_document.dart';
-import '../axis/axis_resolver.dart';
-import '../validation/document_validator.dart';
-import 'design_commands.dart';
-import 'delete_axis.dart';
-import 'room_commands.dart';
-import 'spatial_commands.dart';
-import 'spatial_wall_commands.dart';
-import 'drawn_wall_commands.dart';
-import '../geometry/opening_constraints.dart';
-import 'extras_commands.dart';
-import 'outline_commands.dart';
-import 'mirror_commands.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/validation/document_validator.dart';
+import 'package:yusal/core/commands/design_commands.dart';
+import 'package:yusal/core/commands/delete_axis.dart';
+import 'package:yusal/core/commands/room_commands.dart';
+import 'package:yusal/core/commands/spatial_commands.dart';
+import 'package:yusal/core/commands/spatial_wall_commands.dart';
+import 'package:yusal/core/commands/drawn_wall_commands.dart';
+import 'package:yusal/core/geometry/opening_constraints.dart';
+import 'package:yusal/core/commands/extras_commands.dart';
+import 'package:yusal/core/commands/outline_commands.dart';
+import 'package:yusal/core/commands/mirror_commands.dart';
 
 class DesignCommand {
   DesignCommand(this.kind, Map<String, dynamic> arguments)
@@ -21,7 +21,8 @@ class DesignCommand {
 
 class CommandContext {
   const CommandContext({required this.newId, required this.now});
-  final String Function() newId, now;
+  final String Function() newId;
+  final String Function() now;
 }
 
 sealed class CommandResult {
@@ -35,7 +36,8 @@ class Applied extends CommandResult {
 
 class Rejected extends CommandResult {
   const Rejected(this.reason, this.message);
-  final String reason, message;
+  final String reason;
+  final String message;
 }
 
 class NeedsResolution extends CommandResult {
@@ -45,8 +47,10 @@ class NeedsResolution extends CommandResult {
 
 class CommandConflict {
   const CommandConflict(this.kind, this.message, this.choices, this.objectIds);
-  final String kind, message;
-  final List<String> choices, objectIds;
+  final String kind;
+  final String message;
+  final List<String> choices;
+  final List<String> objectIds;
 }
 
 HouseDocument _document(UndoableDesignState state) => composeDocument(
@@ -65,7 +69,8 @@ final _validInputs = Expando<bool>('validInputs');
 
 CommandResult executeCommand(
     UndoableDesignState state, DesignCommand command, CommandContext context) {
-  final doc = _document(state), args = command.arguments;
+  final doc = _document(state);
+  final args = command.arguments;
   CommandResult apply(HouseDocument document) {
     if ([
       'SplitSpace',
@@ -82,16 +87,18 @@ CommandResult executeCommand(
       'CutOutline',
       'RestoreOutline'
     ].contains(command.kind)) {
-      for (final floor in document.floors.where((f) => f.explicitWalls))
+      for (final floor in document.floors.where((f) => f.explicitWalls)) {
         document = syncRoomWalls(doc, document, floor.id, context.newId);
+      }
       if (command.kind != 'MergeRooms') {
         final healthy = documentOpenings(doc)
             .where((p) => p.status == 'ok')
             .map((p) => p.opening.id)
             .toSet();
         if (documentOpenings(document)
-            .any((p) => healthy.contains(p.opening.id) && p.status != 'ok'))
+            .any((p) => healthy.contains(p.opening.id) && p.status != 'ok')) {
           return const Rejected('HOST_CONFLICT', '此调整会影响已有门窗，请避开门窗位置');
+        }
       }
     }
     // Geometry operations build documents without extras; carry them over.
@@ -103,8 +110,9 @@ CommandResult executeCommand(
 
   try {
     if (_validInputs[state] != true) {
-      if (validateHouse(doc).isNotEmpty)
+      if (validateHouse(doc).isNotEmpty) {
         return const Rejected('INTERNAL_INVALID', '输入设计状态无效');
+      }
       _validInputs[state] = true;
     }
     final identities = <String, Set<String>>{
@@ -127,15 +135,17 @@ CommandResult executeCommand(
           ['roomIdA', 'roomIdB'].contains(entry.key) ? 'roomId' : entry.key;
       if (identities.containsKey(key) &&
           entry.value != null &&
-          !identities[key]!.contains(entry.value))
+          !identities[key]!.contains(entry.value)) {
         return const Rejected('NOT_FOUND', '找不到要编辑的对象');
+      }
     }
     final extras =
         executeExtrasCommand(state, command.kind, args, context.newId);
-    if (extras != null)
+    if (extras != null) {
       return extras.state != null
           ? Applied(extras.state!)
           : Rejected('INVALID_VALUE', extras.error!);
+    }
     if (['AddDrawnWall', 'UpdateDrawnWall', 'DeleteDrawnWall']
         .contains(command.kind)) {
       final result = editDrawnWall(doc, command.kind, args, context.newId);
@@ -153,8 +163,12 @@ CommandResult executeCommand(
       final ids = (args['floorIds'] as List?)?.cast<String>() ??
           [for (final f in doc.floors) f.id];
       final result = command.kind == 'CutOutline'
-          ? cutCorner(doc, ids, args['corner'] as String,
-              (args['width'] as num).round(), (args['depth'] as num).round(),
+          ? cutCorner(
+              doc,
+              ids,
+              args['corner'] as String,
+              (args['width'] as num).round(),
+              (args['depth'] as num).round(),
               context.newId)
           : restoreOutline(doc, ids);
       return result.accepted
@@ -168,9 +182,10 @@ CommandResult executeCommand(
           ? apply(result.document!)
           : Rejected('SPATIAL_CONFLICT', result.error!);
     }
-    if (command.kind == 'EnableWallDrawing')
+    if (command.kind == 'EnableWallDrawing') {
       return apply(
           enableWallDrawing(doc, args['floorId'] as String, context.newId));
+    }
     if (command.kind == 'MoveLocalWall') {
       final result = moveLocalWall(doc, args['floorId'] as String,
           args['anchor'] as BoundaryAnchor, args['pos'] as int, context.newId);
@@ -221,8 +236,7 @@ CommandResult executeCommand(
           : Rejected('SPATIAL_CONFLICT', result.error!);
     }
     if (command.kind == 'RemoveStair') {
-      final result =
-          removeStair(doc, args['stairId'] as String, context.newId);
+      final result = removeStair(doc, args['stairId'] as String, context.newId);
       return result.accepted
           ? apply(result.document!)
           : Rejected('NOT_FOUND', result.error!);
@@ -233,7 +247,7 @@ CommandResult executeCommand(
           deleteHostedObjects: args['deleteHostedObjects'] == true,
           deleteStairs: args['deleteStairs'] == true);
       if (result.document != null) return apply(result.document!);
-      if (result.needsResolution)
+      if (result.needsResolution) {
         return NeedsResolution(CommandConflict(
             'DeleteAxis',
             result.message!,
@@ -245,6 +259,7 @@ CommandResult executeCommand(
               if (result.hasStairs) 'deleteStairs'
             ]),
             List.unmodifiable([args['axisId'] as String])));
+      }
       return Rejected('INVALID_VALUE', result.message!);
     }
     if (command.kind == 'DeleteFloor') {
@@ -266,18 +281,22 @@ CommandResult executeCommand(
       final axes = resolveFloorAxes(doc, floor.id)!;
       final cells = args['cells'] as List<Cell>;
       if (cells
-          .any((c) => c.i < 0 || c.j < 0 || c.i >= axes.nx || c.j >= axes.ny))
+          .any((c) => c.i < 0 || c.j < 0 || c.i >= axes.nx || c.j >= axes.ny)) {
         return const Rejected('INVALID_VALUE', '格子超出房屋范围');
+      }
       final cut = {
-        for (final r in floor.outside) ...cellsOfRect(resolveRect(axes, r).rect!)
+        for (final r in floor.outside)
+          ...cellsOfRect(resolveRect(axes, r).rect!)
       };
-      if (command.kind == 'PaintCells' && cells.any(cut.contains))
+      if (command.kind == 'PaintCells' && cells.any(cut.contains)) {
         return const Rejected('OUTSIDE', '房间和楼梯不能放在房屋外（缺角处）');
+      }
       if (command.kind == 'PaintCells' &&
           cells.isNotEmpty &&
           floor.stairs.any((s) => cellsOfRect(resolveRect(axes, s.region).rect!)
-              .contains(cells.first)))
+              .contains(cells.first))) {
         return const Rejected('STAIR_CELL', '请从楼梯以外的格子开始');
+      }
       return apply(paintCells(doc, floor.id, cells,
           args['roomType'] as RoomType? ?? RoomType.custom, context.newId,
           erase: command.kind == 'EraseCells'));
@@ -287,8 +306,9 @@ CommandResult executeCommand(
     if (result.accepted) {
       var document = result.document!;
       if (command.kind == 'MergeRooms') {
-        for (final floor in document.floors.where((f) => f.explicitWalls))
+        for (final floor in document.floors.where((f) => f.explicitWalls)) {
           document = syncRoomWalls(doc, document, floor.id, context.newId);
+        }
         final healthy = documentOpenings(doc)
             .where((p) => p.status == 'ok')
             .map((p) => p.opening.id)
@@ -310,10 +330,11 @@ CommandResult executeCommand(
               .document!;
         }
       }
-      if (command.kind == 'SetWallOverride')
+      if (command.kind == 'SetWallOverride') {
         document = recognizeWallRooms(
             document, args['floorId'] as String, context.newId,
             preserveOpenZones: args['type'] != 'open');
+      }
       return apply(document);
     }
 

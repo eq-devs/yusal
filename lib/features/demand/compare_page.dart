@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../domain/rules.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/rules.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 
 /// Side-by-side view of quotes on one demand. No "cheapest" ranking; it
 /// warns when scopes, units, pricing or versions differ.
@@ -78,8 +78,8 @@ class ComparePage extends StatelessWidget {
         title: tr3('报价对比', 'Ұсыныстарды салыстыру', 'Сравнение предложений'),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(demand.current.title,
-              style:
-                  const TextStyle(fontSize: YFont.section, fontWeight: FontWeight.w700)),
+              style: const TextStyle(
+                  fontSize: YFont.section, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(
               tr3(
@@ -144,8 +144,8 @@ class ComparePage extends StatelessWidget {
                         Padding(
                             padding: const EdgeInsets.all(10),
                             child: Text(label,
-                                style:
-                                    TextStyle(color: t.muted, fontSize: YFont.small))),
+                                style: TextStyle(
+                                    color: t.muted, fontSize: YFont.small))),
                         for (final a in quotes)
                           Padding(
                               padding: const EdgeInsets.all(10),
@@ -171,12 +171,13 @@ class _LineTable extends StatelessWidget {
     final unitOf = <String, String>{};
     final qtyOf = <String, double>{};
     for (final a in quotes)
-      for (final l in a.current.lines)
+      for (final l in a.current.lines) {
         if (!names.contains(l.name)) {
           names.add(l.name);
           unitOf[l.name] = l.unit;
           qtyOf[l.name] = l.quantity;
         }
+      }
     QuoteLine? lineOf(Application a, String n) =>
         a.current.lines.where((l) => l.name == n).firstOrNull;
     Widget cell(String text, {Color? color, bool bold = false}) => Padding(

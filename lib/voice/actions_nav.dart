@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 
-import '../domain/models.dart';
-import '../features/chat/inbox_page.dart';
-import 'action.dart';
-import 'screen.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/chat/inbox_page.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/screen.dart';
 
 /// Implemented by the app shell so navigation can switch its tabs.
 abstract interface class ShellTabs {

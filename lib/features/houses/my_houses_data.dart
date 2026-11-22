@@ -1,8 +1,8 @@
-import '../../app/settings.dart';
-import '../../storage/project_store.dart';
-import '../../data/repositories.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/house_progress.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/house_progress.dart';
 
 /// One of my houses as the platform sees it: a local design (if any) plus
 /// every demand, quote and cooperation hanging off it. A demand published
@@ -18,7 +18,8 @@ class MyHouse {
       this.sharedAt,
       List<Demand>? demands})
       : demands = demands ?? [];
-  final String key, name;
+  final String key;
+  final String name;
   final String? projectId;
   final List<int>? preview;
 
@@ -39,10 +40,12 @@ class MyHouse {
 
   HouseStage get stage {
     if (cooperations.isNotEmpty &&
-        cooperations.every((c) => c.status == CooperationStatus.ended))
+        cooperations.every((c) => c.status == CooperationStatus.ended)) {
       return HouseStage.done;
-    if (cooperations.any((c) => c.status == CooperationStatus.confirmed))
+    }
+    if (cooperations.any((c) => c.status == CooperationStatus.confirmed)) {
       return HouseStage.building;
+    }
     final s = stageFromDemands(demands);
     return s == HouseStage.design && demands.isNotEmpty
         ? HouseStage.finding
@@ -59,9 +62,7 @@ class MyHouse {
       .length;
 
   /// The other side asked to end and waits for my answer.
-  int endAsks(String me) => cooperations
-      .where((c) => c.endAskedOf(me))
-      .length;
+  int endAsks(String me) => cooperations.where((c) => c.endAskedOf(me)).length;
 
   /// Whether the next step is mine to take now.
   bool needsMe(String me) =>
@@ -74,32 +75,38 @@ class MyHouse {
 
   /// The single most useful next step, in plain words.
   String nextStep(String me) {
-    if (pendingConfirm(me) > 0)
+    if (pendingConfirm(me) > 0) {
       return tr3('有合作约定待你确认', 'Келісімді растаңыз', 'Подтвердите соглашение');
-    if (endAsks(me) > 0)
+    }
+    if (endAsks(me) > 0) {
       return tr3(
           '对方请求结束合作，等你确认', 'Аяқтауды растаңыз', 'Подтвердите завершение');
+    }
     final inspections = cooperations
         .expand((c) => c.milestones)
         .where((m) => m.status == MilestoneStatus.requested)
         .length;
-    if (inspections > 0)
+    if (inspections > 0) {
       return tr3('$inspections 个节点等你验收', 'Кезеңді қабылдаңыз',
           'Этапов к приёмке: $inspections');
+    }
     final days = cooperations
         .expand((c) => c.workLogs)
         .where((w) => !w.confirmed)
         .length;
-    if (days > 0)
+    if (days > 0) {
       return tr3('$days 天记工等你确认', '$days күн расталмады',
           'Дней к подтверждению: $days');
-    if (newQuotes > 0)
+    }
+    if (newQuotes > 0) {
       return tr3('$newQuotes 个新报价，去比较', '$newQuotes жаңа ұсыныс',
           'Новых предложений: $newQuotes');
-    if (shareOnly)
+    }
+    if (shareOnly) {
       return comments == 0
           ? tr3('已分享，等大家点评', 'Пікір күтілуде', 'Ждём отзывов')
           : tr3('$comments 条点评，去看看', '$comments пікір', 'Отзывов: $comments');
+    }
     return switch (stage) {
       HouseStage.design => hasDesign
           ? tr3('设计好了就为它找人', 'Дайын болса, адам іздеңіз',
@@ -143,7 +150,8 @@ Future<List<MyHouse>> loadMyHouses(
       snaps[sid] ??= _quiet(() => r.snapshot(sid, demandId: d.id));
     }
   }
-  final coopsF = Future.wait([for (final d in demands) r.cooperationsFor(d.id)]);
+  final coopsF =
+      Future.wait([for (final d in demands) r.cooperationsFor(d.id)]);
   for (final d in demands) {
     final sid = d.current.snapshotId;
     final snap = sid == null ? null : await snaps[sid];
@@ -193,7 +201,9 @@ Future<List<MyHouse>> loadMyHouses(
     for (var i = 0; i < demands.length; i++) demands[i].id: coopLists[i]
   };
   for (final h in byKey.values)
-    for (final d in h.demands) h.cooperations.addAll(coops[d.id]!);
+    for (final d in h.demands) {
+      h.cooperations.addAll(coops[d.id]!);
+    }
   final list = byKey.values.toList()
     ..sort((a, b) => _latest(b).compareTo(_latest(a)));
   return list;

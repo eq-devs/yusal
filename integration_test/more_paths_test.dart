@@ -43,7 +43,8 @@ void main() {
       'backup restore, account deletion', (t) async {
     requireBackend();
     final run = DateTime.now().millisecondsSinceEpoch.toString();
-    final owner = 'Olga $run', worker = 'Wang $run';
+    final owner = 'Olga $run';
+    final worker = 'Wang $run';
     final title = '屋面翻新 $run';
     final houseName = '恢复测试 $run';
 
@@ -70,7 +71,7 @@ void main() {
       await createProfile(t, worker);
       await signIn(t, repos, owner);
       await publishDemand(t, title);
-      var demand = (await io(t, () => repos.myDemands()))
+      var demand = (await io(t, repos.myDemands))
           .singleWhere((d) => d.current.title == title);
       expect(demand.status, DemandStatus.open);
 
@@ -122,7 +123,7 @@ void main() {
           .ancestor(of: find.text(title), matching: find.byType(DemandCard))
           .first;
       await tapIt(t, find.descendant(of: card, matching: find.byTooltip('收藏')));
-      expect(await io(t, () => repos.favourites()), contains(demand.id));
+      expect(await io(t, repos.favourites), contains(demand.id));
       await home(t);
       await open(t, const FavouritesPage());
       await waitFor(t, find.text(title));
@@ -148,7 +149,7 @@ void main() {
       await shot(t, 'p05-itemised-quote');
       await scrollTap(t, find.text('发送报价'));
       await idle(t, 1000);
-      final quote = (await io(t, () => repos.myApplications()))
+      final quote = (await io(t, repos.myApplications))
           .singleWhere((a) => a.demandId == demand.id);
       expect(quote.current.pricing, PricingMode.perQuantity);
       expect(quote.current.lines, hasLength(1));
@@ -204,7 +205,7 @@ void main() {
           find.descendant(
               of: tile, matching: find.widgetWithText(OutlinedButton, '备份')));
       await idle(t, 1000);
-      expect((await io(t, () => repos.backups())).map((b) => b.projectId),
+      expect((await io(t, repos.backups)).map((b) => b.projectId),
           contains(projectId));
       await home(t);
       await store.deleteProject(projectId);
@@ -234,7 +235,7 @@ void main() {
       // The same identity can sign up again, as a new account.
       await signIn(t, repos, worker);
       expect(repos.currentAccount!.id, isNot(workerId));
-      expect(await io(t, () => repos.myProfiles()), isEmpty);
+      expect(await io(t, repos.myProfiles), isEmpty);
       await shot(t, 'p09-new-account-after-delete');
 
       // ignore: avoid_print

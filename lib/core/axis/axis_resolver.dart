@@ -1,4 +1,4 @@
-import '../document/house_document.dart';
+import 'package:yusal/core/document/house_document.dart';
 
 class ResolvedAxis {
   const ResolvedAxis({
@@ -64,7 +64,8 @@ class ResolvedAxes {
         axisRegistry = Map.unmodifiable(axisRegistry.map((key, value) =>
             MapEntry(key, List<AxisRecord>.unmodifiable(value))));
   final String floorId;
-  final List<ResolvedAxis> v, h;
+  final List<ResolvedAxis> v;
+  final List<ResolvedAxis> h;
   final List<AxisIssue> issues;
   final Map<String, List<AxisRecord>> axisRegistry;
   int get nx => v.length - 1;
@@ -79,7 +80,8 @@ class AxisLookupFailure {
 
 class Cell {
   const Cell(this.i, this.j);
-  final int i, j;
+  final int i;
+  final int j;
   @override
   bool operator ==(Object other) =>
       other is Cell && i == other.i && j == other.j;
@@ -100,13 +102,21 @@ class ResolvedRect {
     required this.j0,
     required this.j1,
   });
-  final int left, right, bottom, top, i0, i1, j0, j1;
+  final int left;
+  final int right;
+  final int bottom;
+  final int top;
+  final int i0;
+  final int i1;
+  final int j0;
+  final int j1;
   int get nominalArea => (right - left) * (top - bottom);
 }
 
 class AxisReferenceError {
   const AxisReferenceError(this.code, this.field);
-  final String code, field;
+  final String code;
+  final String field;
   @override
   bool operator ==(Object other) =>
       other is AxisReferenceError && code == other.code && field == other.field;
@@ -129,8 +139,10 @@ class ChainSegment {
     required this.negativeSide,
     required this.positiveSide,
   });
-  final int start, end;
-  final Cell? negativeSide, positiveSide;
+  final int start;
+  final int end;
+  final Cell? negativeSide;
+  final Cell? positiveSide;
 }
 
 class ResolvedChain {
@@ -142,8 +154,11 @@ class ResolvedChain {
     required this.endPos,
     required this.segments,
   });
-  final ResolvedAxis carrier, start, end;
-  final int startPos, endPos;
+  final ResolvedAxis carrier;
+  final ResolvedAxis start;
+  final ResolvedAxis end;
+  final int startPos;
+  final int endPos;
   final List<ChainSegment> segments;
   int get nominalLength => endPos - startPos;
   ChainSegment? locate(int t) {
@@ -174,7 +189,7 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
     (registry[a.id] ??= []).add(AxisRecord('floor', a.floorId, a.dir, a.pos));
   }
   final visible = <ResolvedAxis>[
-    ResolvedAxis(
+    const ResolvedAxis(
       id: '@left',
       dir: AxisDir.V,
       pos: 0,
@@ -198,7 +213,7 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
     ),
   );
   visible.addAll([
-    ResolvedAxis(
+    const ResolvedAxis(
       id: '@bottom',
       dir: AxisDir.H,
       pos: 0,
@@ -238,13 +253,16 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
     ]);
   }
 
-  final v = sort(AxisDir.V), h = sort(AxisDir.H);
+  final v = sort(AxisDir.V);
+  final h = sort(AxisDir.H);
   final issues = <AxisIssue>[];
   final reserved = [
     ...doc.axes.global.where((a) => a.id.startsWith('@')).map((a) => a.id),
     ...doc.axes.floor.where((a) => a.id.startsWith('@')).map((a) => a.id),
   ];
-  for (final id in reserved) issues.add(AxisIssue('RESERVED_ID', null, [id]));
+  for (final id in reserved) {
+    issues.add(AxisIssue('RESERVED_ID', null, [id]));
+  }
   for (final dir in AxisDir.values) {
     final list = dir == AxisDir.V ? v : h;
     for (var i = 0; i < list.length; i++) {
@@ -254,18 +272,21 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
               a.pos >=
                   (dir == AxisDir.V
                       ? doc.footprint.width
-                      : doc.footprint.depth)))
+                      : doc.footprint.depth))) {
         issues.add(AxisIssue('POSITION_OUT_OF_RANGE', dir, [a.id]));
-      for (var j = i + 1; j < list.length; j++)
-        if (list[j].id == a.id)
+      }
+      for (var j = i + 1; j < list.length; j++) {
+        if (list[j].id == a.id) {
           issues.add(AxisIssue('DUPLICATE_ID', dir, [a.id, list[j].id]));
+        }
+      }
       if (i > 0) {
         final delta = a.pos - list[i - 1].pos;
-        if (delta == 0)
+        if (delta == 0) {
           issues.add(
             AxisIssue('POSITION_COLLISION', dir, [list[i - 1].id, a.id]),
           );
-        else if (delta > 0 &&
+        } else if (delta > 0 &&
             delta <
                 (doc.floors.firstWhere((f) => f.id == floorId).explicitWalls
                     ? 1
@@ -313,8 +334,9 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
   String id,
 ) {
   if (id.startsWith('@')) {
-    for (final a in axes.all)
+    for (final a in axes.all) {
       if (a.id == id && a.kind == 'boundary') return (axis: a, failure: null);
+    }
     return (
       axis: null,
       failure: const AxisLookupFailure('INVALID_RESERVED_REF'),
@@ -322,11 +344,14 @@ ResolvedAxes? resolveFloorAxes(HouseDocument doc, String floorId) {
   }
   final matches = axes.all.where((a) => a.id == id).toList();
   if (matches.length == 1) return (axis: matches.single, failure: null);
-  if (matches.length > 1)
+  if (matches.length > 1) {
     return (axis: null, failure: const AxisLookupFailure('AXIS_AMBIGUOUS'));
+  }
   if ((axes.axisRegistry[id] ?? const <AxisRecord>[]).any(
     (a) => a.kind == 'floor' && a.floorId != axes.floorId,
-  )) return (axis: null, failure: const AxisLookupFailure('AXIS_NOT_VISIBLE'));
+  )) {
+    return (axis: null, failure: const AxisLookupFailure('AXIS_NOT_VISIBLE'));
+  }
   return (axis: null, failure: const AxisLookupFailure('AXIS_NOT_FOUND'));
 }
 
@@ -343,31 +368,39 @@ ResolveRectResult resolveRect(ResolvedAxes axes, AxisRectangle rect) {
           'y0' => rect.y0,
           _ => rect.y1,
         });
-    if (r.axis != null)
+    if (r.axis != null) {
       found[field] = r.axis!;
-    else
+    } else {
       errors.add(AxisReferenceError(r.failure!.code, field));
+    }
   }
-  if (errors.isNotEmpty)
+  if (errors.isNotEmpty) {
     return ResolveRectResult.failure(List.unmodifiable(errors));
+  }
   final wrong = <AxisReferenceError>[];
-  if (found['x0']!.dir != AxisDir.V)
+  if (found['x0']!.dir != AxisDir.V) {
     wrong.add(const AxisReferenceError('RECT_WRONG_DIR', 'x0'));
-  if (found['x1']!.dir != AxisDir.V)
+  }
+  if (found['x1']!.dir != AxisDir.V) {
     wrong.add(const AxisReferenceError('RECT_WRONG_DIR', 'x1'));
-  if (found['y0']!.dir != AxisDir.H)
+  }
+  if (found['y0']!.dir != AxisDir.H) {
     wrong.add(const AxisReferenceError('RECT_WRONG_DIR', 'y0'));
-  if (found['y1']!.dir != AxisDir.H)
+  }
+  if (found['y1']!.dir != AxisDir.H) {
     wrong.add(const AxisReferenceError('RECT_WRONG_DIR', 'y1'));
-  if (wrong.isNotEmpty)
+  }
+  if (wrong.isNotEmpty) {
     return ResolveRectResult.failure(List.unmodifiable(wrong));
+  }
   final inverted = <String>[];
   if (found['x0']!.pos >= found['x1']!.pos) inverted.add('x');
   if (found['y0']!.pos >= found['y1']!.pos) inverted.add('y');
-  if (inverted.isNotEmpty)
+  if (inverted.isNotEmpty) {
     return ResolveRectResult.failure([
       for (final d in inverted) AxisReferenceError('RECT_EMPTY_OR_INVERTED', d),
     ]);
+  }
   return ResolveRectResult.success(
     ResolvedRect(
       left: found['x0']!.pos,
@@ -397,32 +430,39 @@ ResolveChainResult resolveAnchor(ResolvedAxes axes, BoundaryAnchor anchor) {
   final errors = <AxisReferenceError>[];
   for (final (field, id) in refs) {
     final r = lookupAxis(axes, id);
-    if (r.axis != null)
+    if (r.axis != null) {
       found[field] = r.axis!;
-    else
+    } else {
       errors.add(AxisReferenceError(r.failure!.code, field));
+    }
   }
-  if (errors.isNotEmpty)
+  if (errors.isNotEmpty) {
     return ResolveChainResult.failure(List.unmodifiable(errors));
-  final c = found['axisId']!,
-      s = found['startAxisId']!,
-      e = found['endAxisId']!;
+  }
+  final c = found['axisId']!;
+  final s = found['startAxisId']!;
+  final e = found['endAxisId']!;
   final wrong = <AxisReferenceError>[];
-  if (s.dir == c.dir)
+  if (s.dir == c.dir) {
     wrong.add(const AxisReferenceError('ANCHOR_WRONG_DIR', 'startAxisId'));
-  if (e.dir == c.dir)
+  }
+  if (e.dir == c.dir) {
     wrong.add(const AxisReferenceError('ANCHOR_WRONG_DIR', 'endAxisId'));
+  }
   if (wrong.isNotEmpty) return ResolveChainResult.failure(wrong);
-  if (s.pos >= e.pos)
-    return ResolveChainResult.failure([
-      const AxisReferenceError('ANCHOR_EMPTY_OR_INVERTED', 'anchor'),
+  if (s.pos >= e.pos) {
+    return const ResolveChainResult.failure([
+      AxisReferenceError('ANCHOR_EMPTY_OR_INVERTED', 'anchor'),
     ]);
+  }
   final perpendicular = c.dir == AxisDir.H ? axes.v : axes.h;
   final segments = <ChainSegment>[];
   for (var k = s.index; k < e.index; k++) {
-    final a = perpendicular[k], b = perpendicular[k + 1];
+    final a = perpendicular[k];
+    final b = perpendicular[k + 1];
     final idx = c.index;
-    Cell? neg, pos;
+    Cell? neg;
+    Cell? pos;
     if (c.dir == AxisDir.H) {
       if (idx > 0) neg = Cell(k, idx - 1);
       if (idx < axes.ny) pos = Cell(k, idx);

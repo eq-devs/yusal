@@ -51,9 +51,13 @@ void main() {
     }
 
     // The first moves pass the touch slop and start the gesture.
-    for (var i = 1; i <= 3; i++) await step(i);
+    for (var i = 1; i <= 3; i++) {
+      await step(i);
+    }
     final start = screen(s, p);
-    for (var i = 4; i <= 7; i++) await step(i);
+    for (var i = 4; i <= 7; i++) {
+      await step(i);
+    }
     // From then on the point under the fingers moves with them (40, 40).
     final moved = screen(s, p) - start;
     expect(moved.dx, closeTo(40, 1.5));
@@ -108,16 +112,20 @@ void main() {
     for (final aspect in [390 / 520, 1.5, 2.2])
       for (final view in ['iso', 'front', 'back', 'side', 'top']) {
         final pose = viewPose(model, view, aspect: aspect);
-        final cam = orbitCamera(pose.target, pose.yaw, pose.pitch, pose.distance);
-        final tanV = math.tan(cam.fov / 2), tanH = tanV * aspect;
-        var maxX = 0.0, maxY = 0.0;
+        final cam =
+            orbitCamera(pose.target, pose.yaw, pose.pitch, pose.distance);
+        final tanV = math.tan(cam.fov / 2);
+        final tanH = tanV * aspect;
+        var maxX = 0.0;
+        var maxY = 0.0;
         for (final x in [lo.x, hi.x])
-          for (final y in [lo.y, hi.y])
+          for (final y in [lo.y, hi.y]) {
             for (final z in [lo.z, hi.z]) {
               final c = cam.toCamera(Vec3(x, y, z));
               maxX = math.max(maxX, (c.x / c.z).abs() / tanH);
               maxY = math.max(maxY, (c.y / c.z).abs() / tanV);
             }
+          }
         final reason = '$view at $aspect';
         expect(math.max(maxX, maxY), lessThanOrEqualTo(0.9), reason: reason);
         // And fills the screen in one direction, not a speck in the middle.
@@ -125,19 +133,24 @@ void main() {
       }
   });
 
-  testWidgets('zooming in stops before the camera enters the house',
-      (t) async {
+  testWidgets('zooming in stops before the camera enters the house', (t) async {
     final s = await mount(t);
     bool inside(Vec3 e) {
       final (lo, hi) = s.model.bounds;
-      return e.x > lo.x && e.x < hi.x && e.y > lo.y && e.y < hi.y &&
-          e.z > lo.z && e.z < hi.z;
+      return e.x > lo.x &&
+          e.x < hi.x &&
+          e.y > lo.y &&
+          e.y < hi.y &&
+          e.z > lo.z &&
+          e.z < hi.z;
     }
 
     for (final (yaw, pitch) in [(s.yaw, s.pitch), (0.3, 0.12), (2.0, 0.5)]) {
       s.yaw = yaw;
       s.pitch = pitch;
-      for (var i = 0; i < 40; i++) s.zoomAt(const Offset(400, 300), s.distance * 0.7);
+      for (var i = 0; i < 40; i++) {
+        s.zoomAt(const Offset(400, 300), s.distance * 0.7);
+      }
       // ignore: invalid_use_of_protected_member
       s.setState(() {});
       await t.pump();

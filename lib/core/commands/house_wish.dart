@@ -25,8 +25,12 @@ Map<String, Object?> wishSpec(
   final corridor = depth >= 9000 ? 1500 : 1200;
   var south = rows ? snap((depth - corridor) * 0.52) : depth - corridor;
   // The stair needs 3.6 m of the north row.
-  if (two && rows && depth - corridor - south < 3600 && depth - corridor >= 6300)
+  if (two &&
+      rows &&
+      depth - corridor - south < 3600 &&
+      depth - corridor >= 6300) {
     south = depth - corridor - 3600;
+  }
   final north = depth - corridor - south;
   const stairWidth = 2400;
   final inner = two ? width - stairWidth : width;
@@ -48,7 +52,8 @@ Map<String, Object?> wishSpec(
   var left = bedrooms;
   for (var f = 0; f < (two ? 2 : 1); f++) {
     final ground = f == 0;
-    final day = <String>[], night = <String>[];
+    final day = <String>[];
+    final night = <String>[];
     if (ground) {
       day.addAll([if (hall) 'hall', 'living', if (dining) 'dining', 'kitchen']);
       final here = two ? (bedrooms >= 3 ? 1 : 0) : bedrooms;
@@ -92,14 +97,15 @@ Map<String, Object?> wishSpec(
     // A house far too small for the wish keeps the rooms it cannot do
     // without.
     for (final (row, across) in [(day, rows ? width : inner), (night, inner)])
-      for (final extra in ['storage', 'boiler', 'dining', 'hall'])
+      for (final extra in ['storage', 'boiler', 'dining', 'hall']) {
         if (least(row) > across * 1.5) row.remove(extra);
+      }
 
-    final rooms = <Map<String, Object?>>[],
-        doors = <Map<String, Object?>>[],
-        windows = <Map<String, Object?>>[],
-        open = <List<String>>[],
-        furniture = <Map<String, Object?>>[];
+    final rooms = <Map<String, Object?>>[];
+    final doors = <Map<String, Object?>>[];
+    final windows = <Map<String, Object?>>[];
+    final open = <List<String>>[];
+    final furniture = <Map<String, Object?>>[];
     final counts = <String, int>{};
     void row(List<String> types, int x1, int y, int d, String side) {
       if (types.isEmpty) return;
@@ -120,8 +126,9 @@ Map<String, Object?> wishSpec(
         final id = '$type$n';
         final many = [...day, ...night].where((t) => t == type).length > 1;
         // Upstairs the room people sit in is a family room.
-        final label =
-            type == 'living' && !ground ? names['family'] ?? names[type] : names[type];
+        final label = type == 'living' && !ground
+            ? names['family'] ?? names[type]
+            : names[type];
         rooms.add({
           'id': id,
           'type': type,
@@ -135,12 +142,15 @@ Map<String, Object?> wishSpec(
         final beside = (x + w < inner ? x + w : inner) - x;
         doors.add({'room': id, 'to': two && beside < 1200 ? 'sth' : 'cor'});
         if (type == 'hall') doors.add({'room': id, 'side': side, 'main': true});
-        if (type == 'dining' && counts['living'] != null)
+        if (type == 'dining' && counts['living'] != null) {
           open.add(['living1', id]);
-        if (const ['living', 'bedroom', 'kitchen', 'dining'].contains(type))
+        }
+        if (const ['living', 'bedroom', 'kitchen', 'dining'].contains(type)) {
           windows.add({'room': id, 'side': side, 'count': w >= 4200 ? 2 : 1});
-        if ((type == 'bathroom' || type == 'boiler') && w >= 2000)
+        }
+        if ((type == 'bathroom' || type == 'boiler') && w >= 2000) {
           windows.add({'room': id, 'side': side, 'width_mm': 600});
+        }
         furniture.addAll([
           if (type == 'living' && w >= 3300 && d >= 3000) ...[
             {'room': id, 'kind': 'sofa'},
@@ -219,9 +229,10 @@ Map<String, Object?> wishSpec(
 /// Whether a draft squeezes a room people live in below 2 m, or a small
 /// one below 1 m: the house is too small for what was asked.
 bool wishTooSmall(Map<String, Object?> spec) {
-  for (final floor in spec['floors'] as List)
+  for (final floor in spec['floors']! as List)
     for (final room in (floor as Map)['rooms'] as List) {
-      final w = (room as Map)['w_mm'] as int, d = room['d_mm'] as int;
+      final w = (room as Map)['w_mm'] as int;
+      final d = room['d_mm'] as int;
       final lived = const ['living', 'bedroom', 'kitchen', 'dining']
           .contains(room['type']);
       if (w < (lived ? 2000 : 1000) || d < (lived ? 2000 : 1000)) return true;

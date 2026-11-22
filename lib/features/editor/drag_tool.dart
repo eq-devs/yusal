@@ -11,11 +11,12 @@ extension _DragTool on _HouseEditorState {
     dragged = false;
     dragAttempted = false;
     dragValid = false;
-    final painter = interactionPainter(), scale = painter.scale(size);
+    final painter = interactionPainter();
+    final scale = painter.scale(size);
     dragCoordinatePainter = painter;
-    final x = painter.worldPoint(point, size).x,
-        y = painter.worldPoint(point, size).y,
-        tolerance = 12 / scale;
+    final x = painter.worldPoint(point, size).x;
+    final y = painter.worldPoint(point, size).y;
+    final tolerance = 12 / scale;
     if (tool == EditorTool.wall && selectedWall != null) {
       final wall = selectedWall!;
       final along = (wall.start.pos + wall.end.pos) / 2;
@@ -24,8 +25,8 @@ extension _DragTool on _HouseEditorState {
           : painter.point(along, wall.axis.pos.toDouble(), size);
       if ((point - center).distance <= 24) draggingAxis = wall.axis;
     } else if (tool == EditorTool.resize) {
-      final width = history.present.footprint.width.toDouble(),
-          depth = history.present.footprint.depth.toDouble();
+      final width = history.present.footprint.width.toDouble();
+      final depth = history.present.footprint.depth.toDouble();
       final reach = 28 / canvasZoom;
       if ((point - painter.point(width, depth / 2, size)).distance <= reach) {
         draggingAxis = base.axes.v.last;
@@ -49,13 +50,14 @@ extension _DragTool on _HouseEditorState {
   }
 
   void previewDrag(Offset point, Size size) {
-    if (downPoint == null || (downPoint! - point).distance < 8 && !dragged)
+    if (downPoint == null || (downPoint! - point).distance < 8 && !dragged) {
       return;
+    }
     dragAttempted = true;
     dragValid = false;
     final painter = dragCoordinatePainter ?? interactionPainter();
-    final x = painter.worldPoint(point, size).x,
-        y = painter.worldPoint(point, size).y;
+    final x = painter.worldPoint(point, size).x;
+    final y = painter.worldPoint(point, size).y;
     if (draggingAxis != null) {
       final axis = draggingAxis!;
       if (tool == EditorTool.wall && selectedWall != null) {
@@ -79,10 +81,10 @@ extension _DragTool on _HouseEditorState {
                   100
         };
       } else {
-        var low = 0,
-            high = axis.dir == AxisDir.V
-                ? history.present.footprint.width
-                : history.present.footprint.depth;
+        var low = 0;
+        var high = axis.dir == AxisDir.V
+            ? history.present.footprint.width
+            : history.present.footprint.depth;
         for (final floor in history.present.floors) {
           final axes = resolveFloorAxes(history.present, floor.id)!;
           final resolved = lookupAxis(axes, axis.id).axis;
@@ -170,7 +172,9 @@ extension _DragTool on _HouseEditorState {
       final clamped = value.round().clamp(axes.first.pos, axes.last.pos);
       for (final axis in axes) {
         if ((axis.pos - clamped).abs() <
-            math.min(12 / painter.scale(size), 250)) return axis.pos;
+            math.min(12 / painter.scale(size), 250)) {
+          return axis.pos;
+        }
       }
       return (clamped / 100).round() * 100;
     }

@@ -22,7 +22,8 @@ extension _FurnitureTool on _HouseEditorState {
                         Padding(
                             padding: const EdgeInsets.only(top: 14, bottom: 6),
                             child: Text(group,
-                                style: TextStyle(fontSize: 12, color: t.muted))),
+                                style:
+                                    TextStyle(fontSize: 12, color: t.muted))),
                         Wrap(spacing: 8, runSpacing: 8, children: [
                           for (final kind in kinds)
                             Btn(
@@ -44,8 +45,10 @@ extension _FurnitureTool on _HouseEditorState {
       showFurniture = true;
       placingFurniture = kind;
       tool = EditorTool.placeFurniture;
-      placementHint = tr3('点平面放置「${furnitureName(kind)}」，可连续放置',
-          '«${furnitureName(kind)}» қою үшін жоспарды басыңыз, бірнеше рет қоюға болады', 'Нажмите на план, чтобы поставить «${furnitureName(kind)}»; можно ставить несколько раз подряд');
+      placementHint = tr3(
+          '点平面放置「${furnitureName(kind)}」，可连续放置',
+          '«${furnitureName(kind)}» қою үшін жоспарды басыңыз, бірнеше рет қоюға болады',
+          'Нажмите на план, чтобы поставить «${furnitureName(kind)}»; можно ставить несколько раз подряд');
     });
   }
 
@@ -70,11 +73,12 @@ extension _FurnitureTool on _HouseEditorState {
       'x': snap50(p.dx - d.$1 / 2),
       'y': snap50(p.dy - d.$2 / 2),
     });
-    if (history.present != before)
+    if (history.present != before) {
       update(() {
         selectedFurnitureId = id;
         panelCollapsed = false;
       });
+    }
   }
 
   List<FurnitureItem> get floorFurniture => [
@@ -92,16 +96,17 @@ extension _FurnitureTool on _HouseEditorState {
       if (world.dx >= f.x &&
           world.dx <= f.right &&
           world.dy >= f.y &&
-          world.dy <= f.top) return f;
+          world.dy <= f.top) {
+        return f;
+      }
     }
     return null;
   }
 
   /// Start moving, sizing or turning the selected piece under [local].
   bool beginFurnitureGesture(Offset local, Size size) {
-    final f = floorFurniture
-        .where((f) => f.id == selectedFurnitureId)
-        .firstOrNull;
+    final f =
+        floorFurniture.where((f) => f.id == selectedFurnitureId).firstOrNull;
     if (f == null || !showFurniture) return false;
     final painter = interactionPainter();
     final r = painter.rectangle(
@@ -109,7 +114,8 @@ extension _FurnitureTool on _HouseEditorState {
             f.top.toDouble()),
         size);
     final zoom = canvasZoom;
-    final corner = r.bottomRight, turn = Offset(r.center.dx, r.top - 18 / zoom);
+    final corner = r.bottomRight;
+    final turn = Offset(r.center.dx, r.top - 18 / zoom);
     String? grip;
     if ((local - turn).distance * zoom <= 22) {
       grip = 'rotate';
@@ -126,13 +132,14 @@ extension _FurnitureTool on _HouseEditorState {
   }
 
   void previewFurniture(Offset local, Size size) {
-    final f = floorFurniture
-        .where((f) => f.id == selectedFurnitureId)
-        .firstOrNull;
+    final f =
+        floorFurniture.where((f) => f.id == selectedFurnitureId).firstOrNull;
     if (f == null || furnitureGrip == null || furnitureDown == null) return;
     if (furnitureDraft == null &&
         downPoint != null &&
-        (local - downPoint!).distance * canvasZoom < 6) return;
+        (local - downPoint!).distance * canvasZoom < 6) {
+      return;
+    }
     final p = worldAt(local, size);
     final delta = p - furnitureDown!;
     switch (furnitureGrip) {
@@ -141,12 +148,13 @@ extension _FurnitureTool on _HouseEditorState {
         furnitureDraft = snapToWalls(
             f.copyWith(x: snap50(f.x + delta.dx), y: snap50(f.y + delta.dy)),
             [for (final r in base.roomGeometry) r.clearRects]);
-        placementHint = tr3('松手放下', 'Жіберіп қойыңыз', 'Отпустите, чтобы поставить');
+        placementHint =
+            tr3('松手放下', 'Жіберіп қойыңыз', 'Отпустите, чтобы поставить');
       case 'resize':
-        final right = math.max(f.x + 100, snap50(p.dx)),
-            bottom = math.min(f.top - 100, snap50(p.dy));
-        furnitureDraft = f.copyWith(
-            width: right - f.x, y: bottom, depth: f.top - bottom);
+        final right = math.max(f.x + 100, snap50(p.dx));
+        final bottom = math.min(f.top - 100, snap50(p.dy));
+        furnitureDraft =
+            f.copyWith(width: right - f.x, y: bottom, depth: f.top - bottom);
         placementHint =
             '${furnitureDraft!.width} × ${furnitureDraft!.depth} $unitMm';
       default:
@@ -155,10 +163,10 @@ extension _FurnitureTool on _HouseEditorState {
   }
 
   void finishFurniture() {
-    final f = floorFurniture
-        .where((f) => f.id == selectedFurnitureId)
-        .firstOrNull;
-    final draft = furnitureDraft, grip = furnitureGrip;
+    final f =
+        floorFurniture.where((f) => f.id == selectedFurnitureId).firstOrNull;
+    final draft = furnitureDraft;
+    final grip = furnitureGrip;
     furnitureDraft = null;
     furnitureGrip = null;
     furnitureDown = null;
@@ -199,13 +207,15 @@ extension _FurnitureTool on _HouseEditorState {
 
   /// Where to stand in a room for the walk-through: clear of furniture,
   /// off-centre, looking across the room (plan mm, walker yaw).
-  ({double x, double y, double yaw}) roomSpot(SpaceGeometry room, int floorIdx) {
+  ({double x, double y, double yaw}) roomSpot(
+      SpaceGeometry room, int floorIdx) {
     final rects = room.clearRects;
     final r = rects.isEmpty
         ? PlanRect(room.labelAnchor.x, room.labelAnchor.y, room.labelAnchor.x,
             room.labelAnchor.y)
         : rects.reduce((a, b) => a.area >= b.area ? a : b);
-    final cx = (r.left + r.right) / 2, cy = (r.bottom + r.top) / 2;
+    final cx = (r.left + r.right) / 2;
+    final cy = (r.bottom + r.top) / 2;
     final floorId = history.present.floors[floorIdx].id;
     final obstacles = [
       for (final f in history.present.extras.furniture)
@@ -216,19 +226,21 @@ extension _FurnitureTool on _HouseEditorState {
             f.kind != FurnitureKind.cushion)
           PlanRect(f.x - 300.0, f.y - 300.0, f.right + 300.0, f.top + 300.0)
     ];
-    const inset = 450.0, steps = 8;
-    var best = (x: cx, y: cy), bestScore = -double.infinity;
-    final w = math.max(0.0, r.right - r.left - 2 * inset),
-        h = math.max(0.0, r.top - r.bottom - 2 * inset);
+    const inset = 450.0;
+    const steps = 8;
+    var best = (x: cx, y: cy);
+    var bestScore = -double.infinity;
+    final w = math.max(0.0, r.right - r.left - 2 * inset);
+    final h = math.max(0.0, r.top - r.bottom - 2 * inset);
     for (var i = 0; i <= steps; i++)
       for (var j = 0; j <= steps; j++) {
-        final x = r.left + inset + w * i / steps,
-            y = r.bottom + inset + h * j / steps;
+        final x = r.left + inset + w * i / steps;
+        final y = r.bottom + inset + h * j / steps;
         if (obstacles.any((o) => o.contains(x, y))) continue;
         var clearance = 800.0;
         for (final o in obstacles) {
-          final dx = math.max(0.0, math.max(o.left - x, x - o.right)),
-              dy = math.max(0.0, math.max(o.bottom - y, y - o.top));
+          final dx = math.max(0.0, math.max(o.left - x, x - o.right));
+          final dy = math.max(0.0, math.max(o.bottom - y, y - o.top));
           clearance = math.min(clearance, math.sqrt(dx * dx + dy * dy));
         }
         final score = clearance * 2 +

@@ -167,7 +167,8 @@ void main() {
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     var painter =
         tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
-    var origin = tester.getTopLeft(canvas), size = tester.getSize(canvas);
+    var origin = tester.getTopLeft(canvas);
+    var size = tester.getSize(canvas);
     final line =
         await tester.startGesture(origin + painter.point(6000, 2000, size));
     await line.moveTo(origin + painter.point(6000, 8000, size));
@@ -223,7 +224,8 @@ void main() {
     await tester.tap(find.text('在画布上拖出外形'));
     await tester.pumpAndSettle();
     final canvas = find.byKey(const ValueKey('footprint-sketch-canvas'));
-    final size = tester.getSize(canvas), origin = tester.getTopLeft(canvas);
+    final size = tester.getSize(canvas);
+    final origin = tester.getTopLeft(canvas);
     final scale = math.min(size.width - 48, size.height - 48) / 20000;
     final start = origin + const Offset(30, 30);
     final gesture = await tester.startGesture(start);

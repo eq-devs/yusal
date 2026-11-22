@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../domain/rules.dart';
-import '../../shared/ui/cards.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import '../../shared/ui/unsaved_changes_guard.dart';
-import 'demand_detail_page.dart';
-import '../../voice/action.dart';
-import '../../voice/form.dart';
-import '../../voice/screen.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/rules.dart';
+import 'package:yusal/shared/ui/cards.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/shared/ui/unsaved_changes_guard.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/form.dart';
+import 'package:yusal/voice/screen.dart';
 
 /// Publish wizard for both demand types: type → work → time and budget →
 /// attachments and privacy → preview. Also edits a published demand, which
@@ -43,22 +43,24 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
             const L3('类型', 'Түрі', 'Тип'),
             [for (final t in DemandType.values) t.name],
             (v) => setState(() => type = DemandType.values.byName(v))),
-        VoiceField('title', const L3('标题', 'Тақырып', 'Заголовок'),
-            FieldType.text, (v) {
+        VoiceField(
+            'title', const L3('标题', 'Тақырып', 'Заголовок'), FieldType.text,
+            (v) {
           titleTouched = true;
           title.text = v as String;
         }),
-        VoiceField.text('locality',
-            const L3('村镇／街区', 'Ауыл / аудан', 'Посёлок / микрорайон'), locality),
+        VoiceField.text(
+            'locality',
+            const L3('村镇／街区', 'Ауыл / аудан', 'Посёлок / микрорайон'),
+            locality),
         VoiceField.text('address',
             const L3('具体地址', 'Нақты мекенжай', 'Точный адрес'), address),
-        VoiceField.text(
-            'description', const L3('说明', 'Сипаттама', 'Описание'), description),
+        VoiceField.text('description', const L3('说明', 'Сипаттама', 'Описание'),
+            description),
         VoiceField.number('headcount',
             const L3('需要人数', 'Адам саны', 'Сколько человек'), headcount),
         VoiceField.number('wage', const L3('工资', 'Жалақы', 'Ставка'), wage),
-        VoiceField.number(
-            'days', const L3('预计工作天数', 'Күн саны', 'Дней'), days),
+        VoiceField.number('days', const L3('预计工作天数', 'Күн саны', 'Дней'), days),
         VoiceField.number('target_days',
             const L3('目标工期（天）', 'Мерзім (күн)', 'Срок (дней)'), targetDays),
       ];
@@ -69,19 +71,19 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
   int step = 0;
   DemandType type = DemandType.contract;
   PublisherRole role = PublisherRole.owner;
-  final title = TextEditingController(),
-      locality = TextEditingController(),
-      address = TextEditingController(),
-      description = TextEditingController(),
-      siteNotes = TextEditingController(),
-      headcount = TextEditingController(text: '1'),
-      wage = TextEditingController(),
-      days = TextEditingController(),
-      duration = TextEditingController(),
-      targetDays = TextEditingController(),
-      budgetMin = TextEditingController(),
-      budgetMax = TextEditingController(),
-      budgetAmount = TextEditingController();
+  final title = TextEditingController();
+  final locality = TextEditingController();
+  final address = TextEditingController();
+  final description = TextEditingController();
+  final siteNotes = TextEditingController();
+  final headcount = TextEditingController(text: '1');
+  final wage = TextEditingController();
+  final days = TextEditingController();
+  final duration = TextEditingController();
+  final targetDays = TextEditingController();
+  final budgetMin = TextEditingController();
+  final budgetMax = TextEditingController();
+  final budgetAmount = TextEditingController();
   bool titleTouched = false;
   List<String> trades = [];
   String? region;
@@ -89,7 +91,8 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
   PayMode payMode = PayMode.daily;
   bool wageNegotiable = false;
   String wageUnit = 'day';
-  bool food = false, tools = false;
+  bool food = false;
+  bool tools = false;
   String settle = 'weekly';
   ScopeKind scopeKind = ScopeKind.custom;
   List<String> stages = [];
@@ -242,18 +245,23 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
 
   String? validate(int s) {
     if (s == 1) {
-      if (trades.isEmpty)
+      if (trades.isEmpty) {
         return tr3('请选择工种', 'Мамандықты таңдаңыз', 'Выберите специальность');
-      if (region == null)
+      }
+      if (region == null) {
         return tr3('请选择地区', 'Аймақты таңдаңыз', 'Выберите район');
-      if (title.text.trim().isEmpty)
+      }
+      if (title.text.trim().isEmpty) {
         return tr3('请填写标题', 'Тақырып жазыңыз', 'Введите заголовок');
+      }
       if (type == DemandType.hire) {
-        if ((parseInt(headcount.text) ?? 0) < 1)
+        if ((parseInt(headcount.text) ?? 0) < 1) {
           return tr3('人数至少 1 人', 'Кемінде 1 адам', 'Минимум 1 человек');
-        if (!wageNegotiable && (parseInt(wage.text) ?? 0) <= 0)
+        }
+        if (!wageNegotiable && (parseInt(wage.text) ?? 0) <= 0) {
           return tr3('请填写工资，或选择面议', 'Жалақыны жазыңыз не «келісіледі»',
               'Укажите ставку или «договорная»');
+        }
       } else if (scopeKind == ScopeKind.stages && stages.isEmpty) {
         return tr3('请选择施工阶段', 'Кезеңді таңдаңыз', 'Выберите этапы');
       }
@@ -261,14 +269,16 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
     if (s == 2) {
       switch (budgetMode) {
         case BudgetMode.fixed:
-          if ((parseInt(budgetAmount.text) ?? 0) <= 0)
+          if ((parseInt(budgetAmount.text) ?? 0) <= 0) {
             return tr3('请填写金额，或选择“请报价”', 'Соманы жазыңыз',
                 'Укажите сумму или «ждём предложений»');
+          }
         case BudgetMode.range:
-          final a = parseInt(budgetMin.text) ?? 0,
-              b = parseInt(budgetMax.text) ?? 0;
-          if (a <= 0 || b < a)
+          final a = parseInt(budgetMin.text) ?? 0;
+          final b = parseInt(budgetMax.text) ?? 0;
+          if (a <= 0 || b < a) {
             return tr3('区间不正确', 'Аралық қате', 'Неверный диапазон');
+          }
         case BudgetMode.askQuote:
           break;
       }
@@ -363,9 +373,10 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
               '已提交审核，通过后自动公开', 'Тексеруге жіберілді', 'Отправлено на проверку'),
         });
     Navigator.pop(context);
-    if (!editing)
+    if (!editing) {
       await pushPage<void>(
           context, (_) => DemandDetailPage(demandId: result.id));
+    }
   }
 
   Future<void> saveDraftOnly() async {
@@ -380,8 +391,9 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
 
   Future<void> _saveDraftOnly() async {
     final d = await attempt(context, () async {
-      if (widget.snapshot != null && _snapshotId == null)
+      if (widget.snapshot != null && _snapshotId == null) {
         _snapshotId = (await context.repos.saveSnapshot(widget.snapshot!)).id;
+      }
       return context.repos.saveDraft(type, compose(),
           role: role, designProjectId: widget.designProjectId);
     }, success: tr3('草稿已保存，仅自己可见', 'Жоба сақталды', 'Черновик сохранён'));
@@ -477,8 +489,8 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
         padding: const EdgeInsets.only(bottom: 16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(text,
-              style:
-                  const TextStyle(fontSize: YFont.display, fontWeight: FontWeight.w700)),
+              style: const TextStyle(
+                  fontSize: YFont.display, fontWeight: FontWeight.w700)),
           if (sub != null) ...[
             const SizedBox(height: 6),
             Text(sub, style: TextStyle(color: t.muted, height: 1.4)),
@@ -513,7 +525,8 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                               children: [
                             Text(title,
                                 style: const TextStyle(
-                                    fontSize: YFont.heading, fontWeight: FontWeight.w700)),
+                                    fontSize: YFont.heading,
+                                    fontWeight: FontWeight.w700)),
                             const SizedBox(height: 4),
                             Text(body, style: TextStyle(color: t.muted)),
                           ])),
@@ -802,7 +815,8 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
   }
 
   Future<void> addQuantity() async {
-    final name = TextEditingController(), qty = TextEditingController();
+    final name = TextEditingController();
+    final qty = TextEditingController();
     var unit = 'm3';
     var site = false;
     final item = await showDialog<QtyItem>(
@@ -862,7 +876,9 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                               onPressed: () {
                                 final q = parseNum(qty.text);
                                 if (name.text.trim().isEmpty ||
-                                    (!site && (q == null || q <= 0))) return;
+                                    (!site && (q == null || q <= 0))) {
+                                  return;
+                                }
                                 Navigator.pop(
                                     context,
                                     QtyItem(

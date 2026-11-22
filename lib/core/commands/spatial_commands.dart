@@ -1,12 +1,12 @@
-import '../axis/axis_resolver.dart';
-import '../canonicalization/room_canonicalizer.dart';
-import '../document/house_document.dart';
-import '../geometry/derived_house.dart';
-import '../geometry/floor_base.dart';
-import '../geometry/opening_constraints.dart';
-import '../validation/document_validator.dart';
-import 'design_commands.dart';
-import 'room_commands.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/canonicalization/room_canonicalizer.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/geometry/opening_constraints.dart';
+import 'package:yusal/core/validation/document_validator.dart';
+import 'package:yusal/core/commands/design_commands.dart';
+import 'package:yusal/core/commands/room_commands.dart';
 
 /// A rectangle carves one space in a single transaction. New axes are local to
 /// this floor; sharing a coordinate never creates a wall in unrelated rooms.
@@ -189,8 +189,9 @@ EditResult splitSpace(HouseDocument doc, String floorId, AxisDir dir, int pos,
           pos)
       .toSet();
   final upper = space.difference(lower);
-  if (lower.isEmpty || upper.isEmpty)
+  if (lower.isEmpty || upper.isEmpty) {
     return const EditResult(null, '分隔线需要穿过这个空间');
+  }
   final rooms = [
     for (final room in floor.rooms)
       if (room.id != source?.id) room
@@ -323,19 +324,28 @@ EditResult removeStair(
             ])
           : f
   ]);
-  if (hostCell != null)
+  if (hostCell != null) {
     next = paintCells(
         next, floor.id, [hostCell, ...cells], RoomType.custom, newId);
+  }
   final refs = <String>{};
   void use(AxisRectangle r) => refs.addAll([r.x0, r.x1, r.y0, r.y1]);
   for (final f in next.floors) {
-    for (final r in f.rooms) r.regions.forEach(use);
-    for (final s in f.stairs) use(s.region);
-    for (final r in f.outside) use(r);
-    for (final w in f.wallOverrides)
+    for (final r in f.rooms) {
+      r.regions.forEach(use);
+    }
+    for (final s in f.stairs) {
+      use(s.region);
+    }
+    for (final r in f.outside) {
+      use(r);
+    }
+    for (final w in f.wallOverrides) {
       refs.addAll([w.anchor.axisId, w.anchor.startAxisId, w.anchor.endAxisId]);
-    for (final o in f.openings)
+    }
+    for (final o in f.openings) {
       refs.addAll([o.anchor.axisId, o.anchor.startAxisId, o.anchor.endAxisId]);
+    }
   }
   final own = {
     stair.region.x0,
@@ -360,17 +370,21 @@ EditResult placeStair(HouseDocument doc, String floorId, int left, int bottom,
     {StairType? type, String? stairId}) {
   final index = doc.floors.indexWhere((f) => f.id == floorId);
   if (index < 0) return const EditResult(null, '找不到这一层');
-  if (index == doc.floors.length - 1)
+  if (index == doc.floors.length - 1) {
     return const EditResult(null, '楼梯需要上方还有楼层');
+  }
   if (left < 0 ||
       bottom < 0 ||
       right > doc.footprint.width ||
       top > doc.footprint.depth ||
       right - left < 300 ||
-      top - bottom < 300) return const EditResult(null, '楼梯需在房屋内');
+      top - bottom < 300) {
+    return const EditResult(null, '楼梯需在房屋内');
+  }
   Stair? previous;
   if (stairId != null) {
-    previous = doc.floors[index].stairs.where((s) => s.id == stairId).firstOrNull;
+    previous =
+        doc.floors[index].stairs.where((s) => s.id == stairId).firstOrNull;
     if (previous == null) return const EditResult(null, '找不到这部楼梯');
     final lifted = removeStair(doc, stairId, newId);
     if (!lifted.accepted) return lifted;
@@ -382,8 +396,9 @@ EditResult placeStair(HouseDocument doc, String floorId, int left, int bottom,
   String boundary(AxisDir dir, int position) {
     for (final axis in dir == AxisDir.V ? oldAxes.v : oldAxes.h) {
       if (axis.pos == position) return axis.id;
-      if ((axis.pos - position).abs() < 300)
+      if ((axis.pos - position).abs() < 300) {
         throw const FormatException('离已有墙线太近，请贴齐或留出至少 0.30 米');
+      }
     }
     final id = newId();
     additions.add(FloorAxis(id: id, floorId: floorId, dir: dir, pos: position));
@@ -406,12 +421,14 @@ EditResult placeStair(HouseDocument doc, String floorId, int left, int bottom,
         for (final c in regionCells(axes, room.regions).cells) c: room.id
     };
     final owners = {for (final c in cells) roomOf[c]};
-    if (owners.length != 1 || owners.first == null)
+    if (owners.length != 1 || owners.first == null) {
       return const EditResult(null, '楼梯要整个放在同一个房间里');
+    }
     final host = owners.first!;
     if (original.stairs.any((s) =>
-        cellsOfRect(resolveRect(axes, s.region).rect!).any(cells.contains)))
+        cellsOfRect(resolveRect(axes, s.region).rect!).any(cells.contains))) {
       return const EditResult(null, '这里已经有楼梯了');
+    }
     // The first step is on a side the room can be walked to from.
     bool reached(int di, int dj) => cells.any((c) =>
         roomOf[Cell(c.i + di, c.j + dj)] == host &&
@@ -467,8 +484,9 @@ EditResult placeStair(HouseDocument doc, String floorId, int left, int bottom,
       final runs = <List<UnitEdge>>[];
       for (final e in deriveFloorBase(next, floorId).edges) {
         if (!((cells.contains(e.negative) && hostCells.contains(e.positive)) ||
-            (cells.contains(e.positive) && hostCells.contains(e.negative))))
+            (cells.contains(e.positive) && hostCells.contains(e.negative)))) {
           continue;
+        }
         final run = runs
             .where((r) =>
                 r.last.axis.id == e.axis.id && r.last.end.id == e.start.id)
@@ -501,13 +519,13 @@ EditResult placeStair(HouseDocument doc, String floorId, int left, int bottom,
           .firstWhere((s) => s.stairId == id);
       if (geometry.fits) return EditResult(next, null);
       if (need == null ||
-          geometry.requiredA * geometry.requiredB < need.a * need.b)
+          geometry.requiredA * geometry.requiredB < need.a * need.b) {
         need = (a: geometry.requiredA, b: geometry.requiredB);
+      }
     }
     if (refusal != null) return EditResult(null, refusal);
     String m(double v) => (v / 1000).toStringAsFixed(1);
-    return EditResult(
-        null, '这里放不下楼梯，净空至少要 ${m(need!.a)} × ${m(need.b)} 米');
+    return EditResult(null, '这里放不下楼梯，净空至少要 ${m(need!.a)} × ${m(need.b)} 米');
   } on FormatException catch (error) {
     return EditResult(null, error.message);
   }

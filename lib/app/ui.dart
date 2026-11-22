@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'tokens.dart';
+import 'package:yusal/app/tokens.dart';
 
 /// Small building blocks shared by every screen, after the drafting-table
 /// page: segmented switches, a tab strip, sheets (cards), value grids, pills.
@@ -74,7 +74,8 @@ class TabStrip extends StatefulWidget {
 class _TabStripState extends State<TabStrip> {
   final _scroll = ScrollController();
   final _keys = <String, GlobalKey>{};
-  bool _before = false, _after = false;
+  bool _before = false;
+  bool _after = false;
 
   @override
   void initState() {
@@ -90,9 +91,10 @@ class _TabStripState extends State<TabStrip> {
       if (!mounted) return;
       if (old.current != widget.current) {
         final target = _keys[widget.current]?.currentContext;
-        if (target != null)
+        if (target != null) {
           Scrollable.ensureVisible(target,
               alignment: 0.5, duration: const Duration(milliseconds: 180));
+        }
       }
       _edges();
     });
@@ -107,18 +109,21 @@ class _TabStripState extends State<TabStrip> {
   void _edges() {
     if (!mounted || !_scroll.hasClients) return;
     final p = _scroll.position;
-    final before = p.extentBefore > 2, after = p.extentAfter > 2;
-    if (before != _before || after != _after)
+    final before = p.extentBefore > 2;
+    final after = p.extentAfter > 2;
+    if (before != _before || after != _after) {
       setState(() {
         _before = before;
         _after = after;
       });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final t = Tokens.of(context);
-    final tabs = widget.tabs, current = widget.current;
+    final tabs = widget.tabs;
+    final current = widget.current;
     Widget fade(bool show, Alignment from, Alignment to) => IgnorePointer(
         child: AnimatedOpacity(
             opacity: show ? 1 : 0,
@@ -172,22 +177,20 @@ class _TabStripState extends State<TabStrip> {
                                               color: key == current
                                                   ? t.ink
                                                   : t.muted,
-                                              fontWeight: key == current
-                                                  ? FontWeight.w600
-                                                  : FontWeight.w400)))))))
+                                              fontWeight:
+                                                  key == current ? FontWeight.w600 : FontWeight.w400)))))))
               ])),
           Positioned(
               left: 0,
               top: 0,
               bottom: 0,
-              child: fade(
-                  _before, Alignment.centerLeft, Alignment.centerRight)),
+              child:
+                  fade(_before, Alignment.centerLeft, Alignment.centerRight)),
           Positioned(
               right: 0,
               top: 0,
               bottom: 0,
-              child:
-                  fade(_after, Alignment.centerRight, Alignment.centerLeft)),
+              child: fade(_after, Alignment.centerRight, Alignment.centerLeft)),
         ]));
   }
 }
@@ -220,15 +223,18 @@ class InfoCard extends StatelessWidget {
       this.subtitle,
       this.trailing,
       required this.children});
-  final String? title, subtitle;
-  final Widget? titleWidget, trailing;
+  final String? title;
+  final String? subtitle;
+  final Widget? titleWidget;
+  final Widget? trailing;
   final List<Widget> children;
   @override
   Widget build(BuildContext context) {
     final t = Tokens.of(context);
     return Sheet(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           if (title != null || titleWidget != null)
             Row(children: [
               Expanded(
@@ -251,7 +257,8 @@ class InfoCard extends StatelessWidget {
 /// One value in a [KvGrid]: big monospace figure over a muted label.
 class Kv {
   const Kv(this.value, this.label, {this.onTap, this.color});
-  final String value, label;
+  final String value;
+  final String label;
   final VoidCallback? onTap;
   final Color? color;
 }
@@ -266,7 +273,8 @@ class KvGrid extends StatelessWidget {
     return Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: LayoutBuilder(builder: (context, c) {
-          final columns = math.max(1, ((c.maxWidth + 14) / (minWidth + 14)).floor());
+          final columns =
+              math.max(1, ((c.maxWidth + 14) / (minWidth + 14)).floor());
           final width = (c.maxWidth - 14 * (columns - 1)) / columns;
           return Wrap(spacing: 14, runSpacing: 8, children: [
             for (final item in items)
@@ -310,7 +318,8 @@ class PillToggle extends StatelessWidget {
       this.icon,
       this.tooltip});
   final String label;
-  final bool selected, checkbox;
+  final bool selected;
+  final bool checkbox;
   final IconData? icon;
   final String? tooltip;
   final ValueChanged<bool> onChanged;
@@ -344,11 +353,12 @@ class PillToggle extends StatelessWidget {
                             size: 16,
                             color: selected ? t.accent : t.muted),
                       if (icon != null)
-                        Icon(icon, size: 16, color: selected ? t.accent : t.ink),
+                        Icon(icon,
+                            size: 16, color: selected ? t.accent : t.ink),
                       const SizedBox(width: 6),
                       Text(label, style: TextStyle(fontSize: 13, color: t.ink))
                     ])))));
-    return tooltip == null ? pill : Tooltip(message: tooltip!, child: pill);
+    return tooltip == null ? pill : Tooltip(message: tooltip, child: pill);
   }
 }
 
@@ -366,7 +376,8 @@ class Btn extends StatelessWidget {
   final VoidCallback? onPressed;
   final IconData? icon;
   final String? tooltip;
-  final bool danger, primary;
+  final bool danger;
+  final bool primary;
   @override
   Widget build(BuildContext context) {
     final t = Tokens.of(context);
@@ -404,7 +415,7 @@ class Btn extends StatelessWidget {
                     ]))));
     return tooltip == null
         ? Semantics(button: true, label: label, child: button)
-        : Tooltip(message: tooltip!, child: button);
+        : Tooltip(message: tooltip, child: button);
   }
 }
 
@@ -466,7 +477,10 @@ class TableCellData {
       this.onTap,
       this.highlight = false});
   final String text;
-  final bool numeric, muted, bold, highlight;
+  final bool numeric;
+  final bool muted;
+  final bool bold;
+  final bool highlight;
   final Color? color;
   final VoidCallback? onTap;
 }
@@ -490,7 +504,6 @@ class PlainTable extends StatelessWidget {
               letterSpacing: 0.4)
           : d.numeric
               ? mono(
-                  size: 13,
                   weight: d.bold ? FontWeight.w600 : FontWeight.w400,
                   color: d.color ?? (d.muted ? t.muted : t.ink))
               : TextStyle(
@@ -504,7 +517,7 @@ class PlainTable extends StatelessWidget {
           : ConstrainedBox(
               constraints: BoxConstraints(maxWidth: wrap),
               child: Text(d.text, style: style));
-      if (d.onTap != null)
+      if (d.onTap != null) {
         text = Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment:
@@ -514,6 +527,7 @@ class PlainTable extends StatelessWidget {
               const SizedBox(width: 4),
               Icon(Icons.edit_outlined, size: 12, color: t.muted)
             ]);
+      }
       final highlight = d.highlight || column == highlightColumn;
       return Material(
           color: highlight
@@ -522,7 +536,8 @@ class PlainTable extends StatelessWidget {
           child: InkWell(
               onTap: d.onTap,
               child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                   child: Align(
                       alignment: d.numeric
                           ? Alignment.centerRight
@@ -538,26 +553,31 @@ class PlainTable extends StatelessWidget {
       // Text columns wrap at under half the width so two fit a phone.
       if (c.maxWidth.isFinite) wrap = (c.maxWidth * 0.42).clamp(110.0, 220.0);
       return _SidewaysHint(
-        child: ConstrainedBox(
-        constraints: BoxConstraints(
-            minWidth: c.maxWidth.isFinite ? c.maxWidth : 0),
-        child: Table(
-            defaultColumnWidth: const IntrinsicColumnWidth(flex: 1),
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-            border: TableBorder(horizontalInside: border, bottom: border),
-            children: [
-              if (header != null)
-                TableRow(children: [
-                  for (var i = 0; i < columns; i++)
-                    cell(TableCellData(i < header!.length ? header![i] : ''), i,
-                        head: true)
-                ]),
-              for (final row in rows)
-                TableRow(children: [
-                  for (var i = 0; i < columns; i++)
-                    cell(i < row.length ? row[i] : const TableCellData(''), i)
-                ])
-            ])));
+          child: ConstrainedBox(
+              constraints: BoxConstraints(
+                  minWidth: c.maxWidth.isFinite ? c.maxWidth : 0),
+              child: Table(
+                  defaultColumnWidth: const IntrinsicColumnWidth(flex: 1),
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  border: TableBorder(horizontalInside: border, bottom: border),
+                  children: [
+                    if (header != null)
+                      TableRow(children: [
+                        for (var i = 0; i < columns; i++)
+                          cell(
+                              TableCellData(
+                                  i < header!.length ? header![i] : ''),
+                              i,
+                              head: true)
+                      ]),
+                    for (final row in rows)
+                      TableRow(children: [
+                        for (var i = 0; i < columns; i++)
+                          cell(
+                              i < row.length ? row[i] : const TableCellData(''),
+                              i)
+                      ])
+                  ])));
     });
   }
 }
@@ -589,9 +609,8 @@ Future<String?> promptText(BuildContext context,
                               ? TextInputType.multiline
                               : TextInputType.text,
                       decoration: InputDecoration(suffixText: suffix),
-                      onSubmitted: multiline
-                          ? null
-                          : (v) => Navigator.pop(context, v))),
+                      onSubmitted:
+                          multiline ? null : (v) => Navigator.pop(context, v))),
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(context),
@@ -656,7 +675,8 @@ class ShareBars extends StatelessWidget {
                                             color: color,
                                             borderRadius:
                                                 const BorderRadius.horizontal(
-                                                    right: Radius.circular(4)))),
+                                                    right:
+                                                        Radius.circular(4)))),
                                     const SizedBox(width: 6),
                                     // Flexible: a value measured a fraction
                                     // of a pixel wider than reserved (other

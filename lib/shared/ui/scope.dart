@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../storage/project_store.dart';
-import '../../data/repositories.dart';
-import 'l10n.dart';
-import 'components.dart';
-import 'theme.dart';
-import 'widgets.dart';
-import '../motion/motion.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/shared/motion/motion.dart';
 
 /// Gives every platform page the repositories and the local
 /// design store.
@@ -264,9 +264,10 @@ class _LiveState<T> extends State<Live<T>> {
   }
 
   Widget _build(BuildContext context) {
-    if (!_loaded)
+    if (!_loaded) {
       return widget.loading ??
           const SkeletonList(padding: EdgeInsets.all(YSpace.xl));
+    }
     if (_error != null) {
       if (_data != null && widget.refreshError != null) {
         return widget.refreshError!(context, _data as T, _error!, _reload);
@@ -314,8 +315,9 @@ Future<T?> attempt<T>(BuildContext context, Future<T> Function() call,
     return result;
   } on ApiFailure catch (e) {
     if (e.code == ApiCodes.notSignedIn && context.mounted) {
-      if (await requireLogin(context) && context.mounted)
+      if (await requireLogin(context) && context.mounted) {
         return attempt(context, call, success: success);
+      }
       return null;
     }
     if (context.mounted) toast(context, failureText(e));

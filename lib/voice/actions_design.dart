@@ -1,15 +1,15 @@
 import 'package:uuid/uuid.dart';
 
-import '../core/analysis/house_analysis.dart';
-import '../core/checks/check_engine.dart';
-import '../core/commands/extras_commands.dart';
-import '../core/commands/house_spec.dart';
-import '../core/geometry/derived_house.dart';
-import '../core/geometry/floor_base.dart';
-import '../core/house_core.dart';
-import 'action.dart';
-import 'actions_houses.dart';
-import 'screen.dart';
+import 'package:yusal/core/analysis/house_analysis.dart';
+import 'package:yusal/core/checks/check_engine.dart';
+import 'package:yusal/core/commands/extras_commands.dart';
+import 'package:yusal/core/commands/house_spec.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/house_core.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/actions_houses.dart';
+import 'package:yusal/voice/screen.dart';
 
 export '../core/commands/house_spec.dart' show roomWall;
 
@@ -100,7 +100,8 @@ Future<ActionResult> designWholeHouse(Map<String, Object?> spec) async {
     for (final c in runChecks(doc, deriveHouse(doc)))
       if (c.level != 'info') '${c.ruleId} ${c.level}: ${c.message}'
   ];
-  final host = _host, library = HouseLibrary.instance;
+  final host = _host;
+  final library = HouseLibrary.instance;
   if (host != null) {
     host.replaceDesign(doc);
   } else if (library != null) {
@@ -120,7 +121,8 @@ Future<ActionResult> designWholeHouse(Map<String, Object?> spec) async {
 PlanRect _bounds(FloorBase base, String roomId) {
   final cells =
       base.owners.entries.where((e) => e.value == roomId).map((e) => e.key);
-  final v = base.axes.v, h = base.axes.h;
+  final v = base.axes.v;
+  final h = base.axes.h;
   return PlanRect(
       cells.map((c) => v[c.i].pos).reduce((a, b) => a < b ? a : b).toDouble(),
       cells.map((c) => h[c.j].pos).reduce((a, b) => a < b ? a : b).toDouble(),
@@ -191,7 +193,8 @@ final designActions = [
     run: (ctx, args) async {
       final host = _host!;
       final before = _rooms();
-      final x = args.integer('x_mm'), y = args.integer('y_mm');
+      final x = args.integer('x_mm');
+      final y = args.integer('y_mm');
       final result = await _design('CarveRoom', {
         'floorId': host.currentFloorId,
         'left': x,
@@ -268,8 +271,8 @@ final designActions = [
   ),
   AppAction(
     id: 'design.copy_floor',
-    title: const L3('照这一层再盖一层', 'Қабатты көшіріп қосу',
-        'Добавить этаж как этот'),
+    title:
+        const L3('照这一层再盖一层', 'Қабатты көшіріп қосу', 'Добавить этаж как этот'),
     examples: const L3('二楼和一楼一样', 'Екінші қабат біріншідей болсын',
         'Сделай второй этаж таким же, как первый'),
     params: const {'floor': Param.entity('floor', optional: true)},
@@ -299,8 +302,9 @@ final designActions = [
       final host = _host!;
       final floorId = _floor(args);
       final fp = host.document.footprint;
-      final type =
-          args.has('type') ? StairType.values.byName(args.choice('type')) : null;
+      final type = args.has('type')
+          ? StairType.values.byName(args.choice('type'))
+          : null;
       Set<String> stairs() => {
             for (final f in host.document.floors)
               for (final s in f.stairs) s.id
@@ -328,8 +332,9 @@ final designActions = [
             'top': y + d,
             if (type != null) 'type': type,
           });
-          if (last.ok)
+          if (last.ok) {
             return ActionResult.ok(changed: [...stairs().difference(before)]);
+          }
         }
       }
       return last!;
@@ -355,22 +360,25 @@ final designActions = [
       final host = _host!;
       final axes = host.floorBase.axes;
       final at = resolveRect(axes, stair.region).rect!;
-      final x = args.integer('x_mm'), y = args.integer('y_mm');
+      final x = args.integer('x_mm');
+      final y = args.integer('y_mm');
       return _design('PlaceStair', {
         'floorId': host.currentFloorId,
         'stairId': stair.id,
         'left': x,
         'bottom': y,
-        'right': x + (args.has('w_mm') ? args.integer('w_mm') : at.right - at.left),
-        'top': y + (args.has('d_mm') ? args.integer('d_mm') : at.top - at.bottom),
+        'right':
+            x + (args.has('w_mm') ? args.integer('w_mm') : at.right - at.left),
+        'top':
+            y + (args.has('d_mm') ? args.integer('d_mm') : at.top - at.bottom),
       });
     },
   ),
   AppAction(
     id: 'design.set_stair',
     title: const L3('换楼梯样式', 'Баспалдақ түрін өзгерту', 'Сменить вид лестницы'),
-    examples: const L3('楼梯换成 L 型', 'Баспалдақты L тәрізді қыл',
-        'Сделай лестницу Г-образной'),
+    examples: const L3(
+        '楼梯换成 L 型', 'Баспалдақты L тәрізді қыл', 'Сделай лестницу Г-образной'),
     params: {
       'stair': const Param.entity('stair', optional: true),
       'type': Param.choice([for (final t in StairType.values) t.name],
@@ -554,7 +562,8 @@ final designActions = [
   ),
   AppAction(
     id: 'design.resize_opening',
-    title: const L3('改门窗宽度', 'Есік-терезе енін өзгерту', 'Изменить ширину двери или окна'),
+    title: const L3(
+        '改门窗宽度', 'Есік-терезе енін өзгерту', 'Изменить ширину двери или окна'),
     examples: const L3('这扇窗改成一米五宽', 'Осы терезенің енін бір жарым метр қыл',
         'Сделай это окно шириной полтора метра'),
     params: const {
@@ -569,7 +578,8 @@ final designActions = [
   ),
   AppAction(
     id: 'design.flip_door',
-    title: const L3('门换个方向开', 'Есіктің ашылу жағын өзгерту', 'Открывать дверь в другую сторону'),
+    title: const L3('门换个方向开', 'Есіктің ашылу жағын өзгерту',
+        'Открывать дверь в другую сторону'),
     examples: const L3('这扇门朝另一边开', 'Осы есік екінші жаққа ашылсын',
         'Пусть эта дверь открывается в другую сторону'),
     params: const {'opening': Param.entity('opening')},
@@ -608,8 +618,8 @@ final designActions = [
   AppAction(
     id: 'design.set_roof',
     title: const L3('换屋顶样式', 'Шатыр түрін өзгерту', 'Изменить тип крыши'),
-    examples: const L3('屋顶改成四坡的', 'Шатырды төрт еңісті қыл',
-        'Сделай крышу четырёхскатной'),
+    examples: const L3(
+        '屋顶改成四坡的', 'Шатырды төрт еңісті қыл', 'Сделай крышу четырёхскатной'),
     params: {
       // flat, gable (two slopes) or hip (four slopes).
       'type': Param.choice([for (final t in RoofType.values) t.name]),
@@ -688,8 +698,11 @@ final designActions = [
   ),
   AppAction(
     id: 'design.resize_room',
-    title: const L3('改房间大小', 'Бөлме өлшемін өзгерту', 'Изменить размер комнаты'),
-    examples: const L3('把主卧往东加宽到四米', 'Жатын бөлмені шығысқа қарай төрт метрге кеңейт',
+    title:
+        const L3('改房间大小', 'Бөлме өлшемін өзгерту', 'Изменить размер комнаты'),
+    examples: const L3(
+        '把主卧往东加宽到四米',
+        'Жатын бөлмені шығысқа қарай төрт метрге кеңейт',
         'Расширь спальню на восток до четырёх метров'),
     params: {
       'room': const Param.entity('room'),
@@ -735,7 +748,8 @@ final designActions = [
   ),
   AppAction(
     id: 'design.swap_rooms',
-    title: const L3('交换两个房间', 'Екі бөлмені ауыстыру', 'Поменять две комнаты местами'),
+    title: const L3(
+        '交换两个房间', 'Екі бөлмені ауыстыру', 'Поменять две комнаты местами'),
     examples: const L3('把厨房和书房对调', 'Асхана мен кабинетті ауыстыр',
         'Поменяй местами кухню и кабинет'),
     // The two rooms trade their use and name; walls, doors and windows
@@ -749,7 +763,8 @@ final designActions = [
         for (final f in host.document.floors)
           for (final r in f.rooms) r.id: r
       };
-      final a = rooms[args.id('a')], b = rooms[args.id('b')];
+      final a = rooms[args.id('a')];
+      final b = rooms[args.id('b')];
       if (a == null || b == null || a.id == b.id) {
         return ActionResult.fail(ActionCodes.unknownEntity,
             say: {'param': a == null ? 'a' : 'b'});
@@ -763,7 +778,8 @@ final designActions = [
   ),
   AppAction(
     id: 'design.move_opening',
-    title: const L3('移动门窗', 'Есік-терезені жылжыту', 'Передвинуть дверь или окно'),
+    title:
+        const L3('移动门窗', 'Есік-терезені жылжыту', 'Передвинуть дверь или окно'),
     examples: const L3('这扇窗往东移半米', 'Осы терезені шығысқа жарты метр жылжыт',
         'Передвинь это окно на полметра к востоку'),
     params: {
@@ -773,8 +789,8 @@ final designActions = [
       'shift_mm': const Param.integer(optional: true),
       // Or to the middle of another wall: the side of a room.
       'room': const Param.entity('room', optional: true),
-      'side': Param.choice([for (final f in Facing.values) f.name],
-          optional: true),
+      'side':
+          Param.choice([for (final f in Facing.values) f.name], optional: true),
     },
     when: _inEditor,
     risk: Risk.undoable,
@@ -832,8 +848,8 @@ final designActions = [
   AppAction(
     id: 'design.move_furniture',
     title: const L3('移动家具', 'Жиһазды жылжыту', 'Передвинуть мебель'),
-    examples: const L3(
-        '把床往北挪一米', 'Төсекті солтүстікке бір метр жылжыт', 'Передвинь кровать на метр к северу'),
+    examples: const L3('把床往北挪一米', 'Төсекті солтүстікке бір метр жылжыт',
+        'Передвинь кровать на метр к северу'),
     params: const {
       'furniture': Param.entity('furniture'),
       // On the plan; negative is west or south.
@@ -860,8 +876,7 @@ final designActions = [
       if (!args.has('east_mm') && !args.has('north_mm')) {
         return ActionResult.ok(changed: [id]);
       }
-      final now =
-          host.document.extras.furniture.firstWhere((f) => f.id == id);
+      final now = host.document.extras.furniture.firstWhere((f) => f.id == id);
       return _design('UpdateFurniture', {
         'furnitureId': id,
         'x': now.x + (args.has('east_mm') ? args.integer('east_mm') : 0),
@@ -874,8 +889,8 @@ final designActions = [
   AppAction(
     id: 'editor.select',
     title: const L3('选中并显示', 'Таңдап көрсету', 'Выбрать и показать'),
-    examples:
-        const L3('哪个是主卧，指给我看', 'Жатын бөлме қайсы, көрсет', 'Покажи, где спальня'),
+    examples: const L3(
+        '哪个是主卧，指给我看', 'Жатын бөлме қайсы, көрсет', 'Покажи, где спальня'),
     // One of the three: what to select on the plan.
     params: const {
       'room': Param.entity('room', optional: true),
@@ -889,7 +904,8 @@ final designActions = [
         if (!args.has(kind)) continue;
         return _host!.select(args.id(kind))
             ? ActionResult.ok(changed: [args.id(kind)])
-            : ActionResult.fail(ActionCodes.unknownEntity, say: {'param': kind});
+            : ActionResult.fail(ActionCodes.unknownEntity,
+                say: {'param': kind});
       }
       return const ActionResult.fail(ActionCodes.badArgs);
     },

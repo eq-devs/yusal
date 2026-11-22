@@ -27,8 +27,8 @@ void main() {
         initialRoom: true,
         timestamp: '2026-10-08T00:00:00Z',
         newId: () => 'loupe_${sequence++}');
-    final store = ProjectStore(fileSystem: MemoryFiles()),
-        id = await store.createProject(doc);
+    final store = ProjectStore(fileSystem: MemoryFiles());
+    final id = await store.createProject(doc);
     await t.pumpWidget(MaterialApp(
         home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
     await t.pumpAndSettle();

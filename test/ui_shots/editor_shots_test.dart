@@ -33,7 +33,8 @@ final shotKey = GlobalKey();
 
 void main() {
   final out = Platform.environment['SHOTS_OUT'];
-  final lang = AppLang.values.byName(Platform.environment['SHOTS_LANG'] ?? 'zh');
+  final lang =
+      AppLang.values.byName(Platform.environment['SHOTS_LANG'] ?? 'zh');
   final introSeen = Platform.environment['SHOTS_INTRO'] != '1';
   final sizeEnv = (Platform.environment['SHOTS_SIZE'] ?? '390x844').split('x');
   final size = Size(double.parse(sizeEnv[0]), double.parse(sizeEnv[1]));
@@ -41,8 +42,9 @@ void main() {
     await loadFont('Inter', [
       for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Inter-$w.otf'
     ]);
-    await loadFont('InterDisplay',
-        [for (final w in [600, 700]) 'assets/fonts/InterDisplay-$w.otf']);
+    await loadFont('InterDisplay', [
+      for (final w in [600, 700]) 'assets/fonts/InterDisplay-$w.otf'
+    ]);
     await loadFont('JetBrainsMono', [
       'assets/fonts/JetBrainsMono-Regular.ttf',
       'assets/fonts/JetBrainsMono-SemiBold.ttf'
@@ -83,8 +85,7 @@ void main() {
 
     final navigator = GlobalKey<NavigatorState>();
     final backend = ScriptedBackend([
-      const VoiceTurn(
-          reply: '已经把客厅北墙加了一扇窗。还需要调整别的吗？', options: ['再加一扇', '不用了'])
+      const VoiceTurn(reply: '已经把客厅北墙加了一扇窗。还需要调整别的吗？', options: ['再加一扇', '不用了'])
     ]);
     var n = 0;
     final store = ProjectStore(fileSystem: MemoryFiles());
@@ -101,7 +102,6 @@ void main() {
                 child: VoiceHost(
                     navigator: navigator,
                     repos: VoiceMock(backend),
-                    enabled: true,
                     child: child!)),
             home: direct
                 ? HouseEditor(entry: ProjectEntry(id, doc), store: store)
@@ -126,8 +126,8 @@ void main() {
     final canvas = find.byWidgetPredicate(
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     Offset at(double x, double y) {
-      final painter = t.widget<CustomPaint>(canvas.first).painter!
-          as FloorPlanPainter;
+      final painter =
+          t.widget<CustomPaint>(canvas.first).painter! as FloorPlanPainter;
       return t.getTopLeft(canvas.first) +
           painter.point(x, y, t.getSize(canvas.first));
     }
@@ -148,7 +148,16 @@ void main() {
         await t.pumpAndSettle();
       }
     }
-    for (final tab in ['ext', 'walk', 'det', 'qty', 'cost', 'build', 'iss', 'plan']) {
+    for (final tab in [
+      'ext',
+      'walk',
+      'det',
+      'qty',
+      'cost',
+      'build',
+      'iss',
+      'plan'
+    ]) {
       final f = find.byKey(ValueKey('tab-$tab'));
       if (f.evaluate().isEmpty) continue;
       await t.ensureVisible(f);

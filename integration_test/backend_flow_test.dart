@@ -48,7 +48,8 @@ void main() {
     requireBackend();
 
     final run = DateTime.now().millisecondsSinceEpoch.toString();
-    final ana = 'Ana $run', bek = 'Bek $run';
+    final ana = 'Ana $run';
+    final bek = 'Bek $run';
     final houseName = 'E2E 小屋 $run';
     final title = '给父母的一层砖房 $run';
 
@@ -111,7 +112,7 @@ void main() {
       await idle(t);
       await shot(t, '03-published-post');
 
-      final mine = await t.runAsync(() => repos.myPosts());
+      final mine = await t.runAsync(repos.myPosts);
       final post = mine!.firstWhere((p) => p.title == title);
       expect(post.ownerId, anaId);
       expect(post.projectId, projectId);
@@ -131,7 +132,7 @@ void main() {
       await openPost(t, title);
       await tapIt(t, find.byTooltip('收藏').first);
       expect(await t.runAsync(() => repos.liked(post.id)), isTrue);
-      expect(await t.runAsync(() => repos.likedPosts()), contains(post.id));
+      expect(await t.runAsync(repos.likedPosts), contains(post.id));
 
       // The composer opens in a sheet from the bar's comment button.
       await tapIt(t, find.byKey(const Key('post-comment')));
@@ -199,7 +200,7 @@ void main() {
       );
       await idle(t, 1000);
       await shot(t, '07-backup-list');
-      final backups = await t.runAsync(() => repos.backups());
+      final backups = await t.runAsync(repos.backups);
       final cloud = backups!.singleWhere((b) => b.projectId == projectId);
       expect(cloud.name, houseName);
 
@@ -224,7 +225,7 @@ void main() {
 
       // ── The saved refresh token signs a fresh start back in ──
       final relaunch = HttpBackend(api);
-      await t.runAsync(() => relaunch.restore());
+      await t.runAsync(relaunch.restore);
       expect(relaunch.currentAccount?.id, anaId);
 
       // ── Rename ──
@@ -244,7 +245,7 @@ void main() {
       expect(repos.currentAccount?.displayName, 'Ana 改名 $run');
       // A later start reads the new name from the server.
       final again = HttpBackend(api);
-      await t.runAsync(() => again.restore());
+      await t.runAsync(again.restore);
       expect(again.currentAccount?.displayName, 'Ana 改名 $run');
 
       // ignore: avoid_print

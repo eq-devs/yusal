@@ -15,7 +15,10 @@ FurnitureItem bed(int x, int y) => FurnitureItem(
 
 void main() {
   // An L-shaped room: 4 × 3 m with a 2 × 2 m arm above its left half.
-  const room = [PlanRect(100, 100, 4100, 3100), PlanRect(100, 3100, 2100, 5100)];
+  const room = [
+    PlanRect(100, 100, 4100, 3100),
+    PlanRect(100, 3100, 2100, 5100)
+  ];
 
   test('furniture near a wall goes flush against it', () {
     final corner = snapToWalls(bed(200, 180), [room]);

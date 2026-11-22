@@ -64,8 +64,11 @@ void main() {
       (t) async {
     requireBackend();
     final run = DateTime.now().millisecondsSinceEpoch.toString();
-    final owner = 'Olga $run', worker = 'Wang $run', rita = 'Rita $run';
-    final good = '砌墙找师傅 $run', bad = '找人砌墙押金 $run';
+    final owner = 'Olga $run';
+    final worker = 'Wang $run';
+    final rita = 'Rita $run';
+    final good = '砌墙找师傅 $run';
+    final bad = '找人砌墙押金 $run';
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('yusal_api.refresh_token');
@@ -88,7 +91,7 @@ void main() {
       final ownerId = repos.currentAccount!.id;
       await publishDemand(t, good);
       await publishDemand(t, bad);
-      var mine = await io(t, () => repos.myDemands());
+      var mine = await io(t, repos.myDemands);
       final goodId = mine.singleWhere((d) => d.current.title == good).id;
       final badId = mine.singleWhere((d) => d.current.title == bad).id;
       expect(mine.map((d) => d.status).toSet(), {DemandStatus.pendingReview});
@@ -109,18 +112,18 @@ void main() {
       await idle(t, 1000);
       expect(find.text(good), findsNothing);
       expect(find.text(bad), findsNothing);
-      final audit = (await io(t, () => repos.audit())).items;
+      final audit = (await io(t, repos.audit)).items;
       expect(audit.where((a) => a.targetId == goodId || a.targetId == badId),
           hasLength(2));
 
       // ── The owner sees the outcome and gets both notices ──
       await signIn(t, repos, owner);
-      mine = await io(t, () => repos.myDemands());
+      mine = await io(t, repos.myDemands);
       expect(mine.singleWhere((d) => d.id == goodId).status, DemandStatus.open);
       final rejected = mine.singleWhere((d) => d.id == badId);
       expect(rejected.status, DemandStatus.rejected);
       expect(rejected.rejectReason, contains('不要收押金'));
-      final notes = await io(t, () => repos.notifications());
+      final notes = await io(t, repos.notifications);
       expect(notes.where((n) => n.refId == goodId), isNotEmpty);
       expect(notes.where((n) => n.refId == badId), isNotEmpty);
       await home(t);
@@ -162,7 +165,7 @@ void main() {
       await tapIt(t, find.text('自己填写…'));
       await answerDialog(t, '收押金，限制账号 $run');
       await idle(t, 1000);
-      final reports = (await io(t, () => repos.reports())).items;
+      final reports = (await io(t, repos.reports)).items;
       final report = reports.singleWhere((r) => r.report.targetId == workerId);
       expect(report.report.status, ReportStatus.upheld);
 
@@ -174,7 +177,7 @@ void main() {
               t, () => repos.send(conv.id, MessageKind.text, text: 'hi')),
           ApiCodes.restricted);
       final openDemand = await io(t, () => repos.demand(goodId));
-      final profile = (await io(t, () => repos.myProfiles())).single;
+      final profile = (await io(t, repos.myProfiles)).single;
       expect(
           await failure(
               t,

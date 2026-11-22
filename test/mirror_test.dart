@@ -45,7 +45,8 @@ void main() {
           () {
         final before = entry.value();
         final after = run(before, 'MirrorPlan', {'direction': direction});
-        final a = deriveHouse(before), b = deriveHouse(after);
+        final a = deriveHouse(before);
+        final b = deriveHouse(after);
         final size =
             (horizontal ? before.footprint.width : before.footprint.depth)
                 .toDouble();
@@ -60,8 +61,8 @@ void main() {
           }, {
             for (final w in a.floors[f].base.wallSegments)
               w.axis.dir == flips
-                  ? wall(w.axis.dir, size - w.axis.pos, w.start.pos,
-                      w.end.pos, w.thickness)
+                  ? wall(w.axis.dir, size - w.axis.pos, w.start.pos, w.end.pos,
+                      w.thickness)
                   : wall(w.axis.dir, w.axis.pos, size - w.end.pos,
                       size - w.start.pos, w.thickness)
           });
@@ -80,8 +81,8 @@ void main() {
           }
           // Rooms keep their areas.
           for (final r in a.floors[f].base.roomGeometry) {
-            final s = b.floors[f].base.roomGeometry
-                .firstWhere((x) => x.id == r.id);
+            final s =
+                b.floors[f].base.roomGeometry.firstWhere((x) => x.id == r.id);
             expect(s.clearArea, r.clearArea, reason: r.id);
           }
           // Stairs still fit, with as many steps.
@@ -107,8 +108,7 @@ void main() {
           }
         }
         // Flipping back gives the design it started from.
-        expect(
-            encodeHouse(run(after, 'MirrorPlan', {'direction': direction})),
+        expect(encodeHouse(run(after, 'MirrorPlan', {'direction': direction})),
             encodeHouse(before));
       });
     }

@@ -1,17 +1,17 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../../core/document/house_document.dart';
-import '../../core/geometry/derived_house.dart';
-import '../../core/serialization/house_codec.dart';
-import '../../render2d/floor_plan_painter.dart';
-import '../../render2d/furniture_names.dart';
-import '../../render3d/scene_view.dart';
-import '../../domain/models.dart';
-import '../../app/settings.dart';
-import 'l10n.dart';
-import 'scope.dart';
-import 'theme.dart';
-import 'widgets.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/serialization/house_codec.dart';
+import 'package:yusal/render2d/floor_plan_painter.dart';
+import 'package:yusal/render2d/furniture_names.dart';
+import 'package:yusal/render3d/scene_view.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 
 HouseDocument? _document(DesignSnapshot? snapshot) {
   final text = snapshot?.planJson;
@@ -30,7 +30,8 @@ class PlanCover extends StatelessWidget {
   const PlanCover(
       {super.key, required this.snapshotId, this.postId, this.demandId});
   final String snapshotId;
-  final String? postId, demandId;
+  final String? postId;
+  final String? demandId;
 
   static final _cache = <String, _CoverPlan?>{};
 
@@ -159,7 +160,8 @@ class _PlanViewerState extends State<PlanViewer> {
   late HouseDocument? document = _document(widget.snapshot);
   final transform = TransformationController();
   int floor = 0;
-  bool threeD = false, roof = true;
+  bool threeD = false;
+  bool roof = true;
   int viewToken = 0;
   @override
   void dispose() {
@@ -177,7 +179,10 @@ class _PlanViewerState extends State<PlanViewer> {
             IconButton(
                 tooltip: tr3(
                     '重置缩放', 'Масштабты қалпына келтіру', 'Сбросить масштаб'),
-                onPressed: () => setState(() { transform.value = Matrix4.identity(); viewToken++; }),
+                onPressed: () => setState(() {
+                      transform.value = Matrix4.identity();
+                      viewToken++;
+                    }),
                 icon: const Icon(Icons.fit_screen)),
           ]),
       body: SafeArea(
@@ -190,9 +195,14 @@ class _PlanViewerState extends State<PlanViewer> {
           SegmentedButton<bool>(segments: const [
             ButtonSegment(value: false, label: Text('2D')),
             ButtonSegment(value: true, label: Text('3D')),
-          ], selected: {threeD}, onSelectionChanged: (v) => setState(() => threeD = v.single)),
-          if (threeD) FilterChip(label: Text(tr3('显示屋顶', 'Шатырды көрсету', 'Показать крышу')),
-            selected: roof, onSelected: (v) => setState(() => roof = v)),
+          ], selected: {
+            threeD
+          }, onSelectionChanged: (v) => setState(() => threeD = v.single)),
+          if (threeD)
+            FilterChip(
+                label: Text(tr3('显示屋顶', 'Шатырды көрсету', 'Показать крышу')),
+                selected: roof,
+                onSelected: (v) => setState(() => roof = v)),
           Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: DropdownButton<int>(
@@ -202,31 +212,40 @@ class _PlanViewerState extends State<PlanViewer> {
                   for (var i = 0; i < doc.floors.length; i++)
                     DropdownMenuItem(
                         value: i,
-                        child: Text('${i + 1} · ${floorDisplayName(doc.floors[i].name)}'))
+                        child: Text(
+                            '${i + 1} · ${floorDisplayName(doc.floors[i].name)}'))
                 ],
                 onChanged: (value) {
-                  if (value != null)
+                  if (value != null) {
                     setState(() {
                       floor = value;
                       transform.value = Matrix4.identity();
                     });
+                  }
                 },
               )),
         ],
         Expanded(
             child: threeD && doc != null
-                ? SceneView(doc: doc, derived: deriveHouse(doc), roomName: shownRoomName,
-                    settings: SceneSettings(roof: roof, furniture: false, site: false),
-                    walk: false, viewToken: viewToken)
+                ? SceneView(
+                    doc: doc,
+                    derived: deriveHouse(doc),
+                    roomName: shownRoomName,
+                    settings: SceneSettings(
+                        roof: roof, furniture: false, site: false),
+                    walk: false,
+                    viewToken: viewToken)
                 : ClipRect(
-                child: InteractiveViewer(
-          transformationController: transform,
-          minScale: 1,
-          maxScale: 8,
-          child: SizedBox.expand(
-              child: _Sheet(
-                  document: doc, snapshot: widget.snapshot, floor: floor)),
-        ))),
+                    child: InteractiveViewer(
+                    transformationController: transform,
+                    minScale: 1,
+                    maxScale: 8,
+                    child: SizedBox.expand(
+                        child: _Sheet(
+                            document: doc,
+                            snapshot: widget.snapshot,
+                            floor: floor)),
+                  ))),
         Padding(
             padding: const EdgeInsets.all(12),
             child: Text(tr3(
@@ -249,10 +268,11 @@ class _Sheet extends StatelessWidget {
     final doc = document;
     if (doc == null) {
       final bytes = snapshot.preview;
-      if (bytes == null)
+      if (bytes == null) {
         return Center(
             child:
                 Text(tr3('图纸暂不可用', 'Сызба қолжетімсіз', 'Чертежи недоступны')));
+      }
       return Image.memory(imageBytes(bytes),
           fit: BoxFit.contain,
           errorBuilder: (_, error, stack) => Center(

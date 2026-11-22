@@ -1,8 +1,8 @@
 import 'dart:math' as math;
-import '../document/house_document.dart';
-import '../geometry/derived_house.dart';
-import '../geometry/floor_base.dart';
-import 'house_analysis.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/analysis/house_analysis.dart';
 
 /// Figures for comparing two designs side by side, after the layout
 /// comparison of the drafting page.
@@ -41,7 +41,8 @@ class DesignSummary {
 DesignSummary summarizeDesign(HouseDocument doc, DerivedHouse derived,
     {String Function(Room room)? nameOf, String Function(Floor f)? floorName}) {
   String room(Room r) => nameOf?.call(r) ?? r.name;
-  final w = doc.footprint.width.toDouble(), d = doc.footprint.depth.toDouble();
+  final w = doc.footprint.width.toDouble();
+  final d = doc.footprint.depth.toDouble();
   final entrance = derived.floors.first.openings
       .where((p) => p.opening.id == doc.mainEntranceOpeningId)
       .firstOrNull;
@@ -59,9 +60,11 @@ DesignSummary summarizeDesign(HouseDocument doc, DerivedHouse derived,
   }[front]!;
   final areas = <String, double>{};
   final throughLiving = <String>[];
-  final backRooms = <String>{}, frontRooms = <String>{};
+  final backRooms = <String>{};
+  final frontRooms = <String>{};
   for (var f = 0; f < doc.floors.length; f++) {
-    final floor = doc.floors[f], g = derived.floors[f];
+    final floor = doc.floors[f];
+    final g = derived.floors[f];
     String label(Room r) => f == 0 || floorName == null
         ? room(r)
         : '${floorName(floor)} · ${room(r)}';
@@ -82,19 +85,21 @@ DesignSummary summarizeDesign(HouseDocument doc, DerivedHouse derived,
       final (a, b) = roomsBeside(p, g.base);
       link(a, b);
     }
-    for (final e in g.base.edges.where((e) => e.kind == 'open'))
+    for (final e in g.base.edges.where((e) => e.kind == 'open')) {
       link(e.negative == null ? null : g.base.owners[e.negative],
           e.positive == null ? null : g.base.owners[e.positive]);
+    }
     Room? byId(String id) => floor.rooms.where((r) => r.id == id).firstOrNull;
     for (final bed in floor.rooms.where((r) => r.type == RoomType.bedroom)) {
       final neighbours =
           (links[bed.id] ?? const <String>{}).map(byId).whereType<Room>();
       if (neighbours.isNotEmpty &&
-          neighbours.every((r) => r.type == RoomType.living))
+          neighbours.every((r) => r.type == RoomType.living)) {
         throughLiving.add(label(bed));
+      }
     }
-    for (final p in g.openings.where(
-        (p) => p.status == 'ok' && p.opening.kind != OpeningKind.door)) {
+    for (final p in g.openings
+        .where((p) => p.status == 'ok' && p.opening.kind != OpeningKind.door)) {
       if (p.axis.id != back && p.axis.id != front) continue;
       final (a, b) = roomsBeside(p, g.base);
       final r = byId(a ?? b ?? '');
@@ -110,8 +115,8 @@ DesignSummary summarizeDesign(HouseDocument doc, DerivedHouse derived,
   List<double> spansAcross(bool vertical) {
     final faces = <(double, double)>[];
     for (final x in walls.where((x) => x.horizontal != vertical)) {
-      final lo = vertical ? x.rect.left : x.rect.bottom,
-          hi = vertical ? x.rect.right : x.rect.top;
+      final lo = vertical ? x.rect.left : x.rect.bottom;
+      final hi = vertical ? x.rect.right : x.rect.top;
       if (faces.any((f) => (f.$1 - lo).abs() < 300)) continue;
       faces.add((lo, hi));
     }
@@ -121,8 +126,10 @@ DesignSummary summarizeDesign(HouseDocument doc, DerivedHouse derived,
     ];
   }
 
-  final innerVertical = walls.any((x) => !x.horizontal && x.role == WallRole.bearing),
-      innerHorizontal = walls.any((x) => x.horizontal && x.role == WallRole.bearing);
+  final innerVertical =
+      walls.any((x) => !x.horizontal && x.role == WallRole.bearing);
+  final innerHorizontal =
+      walls.any((x) => x.horizontal && x.role == WallRole.bearing);
   final spans = innerVertical && !innerHorizontal
       ? spansAcross(true)
       : innerHorizontal && !innerVertical

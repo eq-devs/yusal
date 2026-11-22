@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../discover/discover_page.dart';
-import '../home/home_page.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import 'create_sheet.dart';
-import '../../shared/motion/motion.dart';
-import '../../shared/brand/brand.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/features/discover/discover_page.dart';
+import 'package:yusal/features/home/home_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/features/explore/create_sheet.dart';
+import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/shared/brand/brand.dart';
 
 /// Segments of Discover, in order.
 abstract final class ExploreSegment {
-  static const houses = 0, work = 1, people = 2;
+  static const houses = 0;
+  static const work = 1;
+  static const people = 2;
 }
 
 /// First tab. One header (wordmark, messages, ＋) and three segments:
@@ -59,8 +61,9 @@ class _ExplorePageState extends State<ExplorePage> {
     if (picked || decidedFor == (me ?? '')) return;
     decidedFor = me ?? '';
     if (me == null) {
-      if (current != ExploreSegment.houses)
+      if (current != ExploreSegment.houses) {
         setState(() => current = ExploreSegment.houses);
+      }
       return;
     }
     try {
@@ -106,11 +109,10 @@ class _ExplorePageState extends State<ExplorePage> {
                           padding: const EdgeInsets.fromLTRB(20, 10, 8, 0),
                           child: Column(children: [
                             Row(children: [
-                              Expanded(
-                                  child:
-                                      const Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: YusalLogo(height: 26))),
+                              const Expanded(
+                                  child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: YusalLogo(height: 26))),
                               IconButton(
                                   key: const Key('explore-create'),
                                   tooltip: tr3('发布', 'Жариялау', 'Создать'),

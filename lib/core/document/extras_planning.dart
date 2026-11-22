@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'house_extras.dart';
+import 'package:yusal/core/document/house_extras.dart';
 
 /// Planning content added in schema version 4: prices for the cost
 /// estimate, climate for the heat-loss calculation, electrical and plumbing
@@ -10,7 +10,16 @@ enum Currency { cny, kzt }
 
 enum FuelKind { coal, gas, electricity, wood }
 
-enum UtilityKind { panel, socket, lightSwitch, light, vent, water, drain, radiator }
+enum UtilityKind {
+  panel,
+  socket,
+  lightSwitch,
+  light,
+  vent,
+  water,
+  drain,
+  radiator
+}
 
 enum SiteKind {
   barn,
@@ -37,8 +46,11 @@ class CostItem {
       this.unit = '',
       this.quantity = 100,
       this.price = 0});
-  final String id, name, unit;
-  final int quantity, price;
+  final String id;
+  final String name;
+  final String unit;
+  final int quantity;
+  final int price;
   CostItem copyWith({String? name, String? unit, int? quantity, int? price}) =>
       CostItem(
           id: id,
@@ -77,7 +89,8 @@ class CostSpec {
         items = List.unmodifiable(items);
   final Currency? currency;
   final Map<String, int> prices;
-  final int labourPct, contingencyPct;
+  final int labourPct;
+  final int contingencyPct;
   final List<CostItem> items;
 
   CostSpec copyWith(
@@ -109,8 +122,9 @@ class CostSpec {
     final m = r.obj(v, p);
     final prices = <String, int>{};
     if (m['prices'] != null)
-      for (final e in r.obj(m['prices'], '$p/prices').entries)
+      for (final e in r.obj(m['prices'], '$p/prices').entries) {
         prices[e.key] = r.integer(e.value, '$p/prices/${e.key}', 0);
+      }
     final raw = r.list(m['items'], '$p/items');
     return CostSpec(
         currency: m['currency'] == null
@@ -214,10 +228,11 @@ class HeatSpec {
   static HeatSpec fromJson(Object? v, String p, JsonReader r) {
     final m = r.obj(v, p);
     var spec = const HeatSpec();
-    for (final f in fields)
+    for (final f in fields) {
       spec = spec.withInt(f, r.integer(m[f], '$p/$f', spec.ints[f]!));
-    return spec.withFuel(
-        r.en(m['fuel'], '$p/fuel', FuelKind.values, FuelKind.coal));
+    }
+    return spec
+        .withFuel(r.en(m['fuel'], '$p/fuel', FuelKind.values, FuelKind.coal));
   }
 
   @override
@@ -236,12 +251,18 @@ class UtilityPoint {
       required this.x,
       required this.y,
       this.label});
-  final String id, floorId;
+  final String id;
+  final String floorId;
   final UtilityKind kind;
-  final int x, y;
+  final int x;
+  final int y;
   final String? label;
   UtilityPoint copyWith(
-          {int? x, int? y, UtilityKind? kind, String? label, bool clearLabel = false}) =>
+          {int? x,
+          int? y,
+          UtilityKind? kind,
+          String? label,
+          bool clearLabel = false}) =>
       UtilityPoint(
           id: id,
           floorId: floorId,
@@ -262,7 +283,8 @@ class UtilityPoint {
     return UtilityPoint(
         id: r.text(m['id'], '$p/id'),
         floorId: r.text(m['floorId'], '$p/floorId'),
-        kind: r.en(m['kind'], '$p/kind', UtilityKind.values, UtilityKind.socket),
+        kind:
+            r.en(m['kind'], '$p/kind', UtilityKind.values, UtilityKind.socket),
         x: r.integer(m['x'], '$p/x', 0),
         y: r.integer(m['y'], '$p/y', 0),
         label: r.optionalText(m['label'], '$p/label'));
@@ -282,7 +304,10 @@ class SiteItem {
       this.label});
   final String id;
   final SiteKind kind;
-  final int x, y, width, depth;
+  final int x;
+  final int y;
+  final int width;
+  final int depth;
   final String? label;
   int get right => x + width;
   int get top => y + depth;
@@ -336,7 +361,10 @@ class SitePlan {
       this.fence = true,
       List<SiteItem> items = const []})
       : items = List.unmodifiable(items);
-  final int width, depth, houseX, houseY;
+  final int width;
+  final int depth;
+  final int houseX;
+  final int houseY;
   final bool fence;
   final List<SiteItem> items;
 
@@ -421,12 +449,15 @@ class BuildStage {
       List<int> checks = const []})
       : days = days ?? stageDays[key] ?? 14,
         checks = List.unmodifiable(checks.toSet().toList()..sort());
-  final String key, name, note;
+  final String key;
+  final String name;
+  final String note;
   final StageStatus status;
 
   /// Planned start, "YYYY-MM-DD"; null follows the previous stage.
   final String? start;
-  final int days, spent;
+  final int days;
+  final int spent;
 
   /// Indexes of the stage's checklist items that are done.
   final List<int> checks;
@@ -468,8 +499,8 @@ class BuildStage {
     return BuildStage(
         key: r.text(m['key'], '$p/key'),
         name: r.text(m['name'], '$p/name'),
-        status:
-            r.en(m['status'], '$p/status', StageStatus.values, StageStatus.todo),
+        status: r.en(
+            m['status'], '$p/status', StageStatus.values, StageStatus.todo),
         start: r.optionalText(m['start'], '$p/start'),
         days: r.integer(m['days'], '$p/days', 14),
         spent: r.integer(m['spent'], '$p/spent', 0),
@@ -482,7 +513,8 @@ class BuildStage {
 }
 
 /// The schedule before the user changes anything.
-List<BuildStage> defaultSchedule() => [for (final k in stageKeys) BuildStage(key: k)];
+List<BuildStage> defaultSchedule() =>
+    [for (final k in stageKeys) BuildStage(key: k)];
 
 final _date = RegExp(r'^\d{4}-\d{2}-\d{2}$');
 
@@ -494,79 +526,104 @@ List<(String, String)> planningProblems(
     required SitePlan? site,
     required List<BuildStage> schedule}) {
   final out = <(String, String)>[];
-  for (final e in cost.prices.entries)
-    if (e.value < 0 || e.value > 1000000000)
+  for (final e in cost.prices.entries) {
+    if (e.value < 0 || e.value > 1000000000) {
       out.add(('/extras/cost/prices/${e.key}', '单价超出范围'));
-  if (cost.labourPct < 0 || cost.labourPct > 300)
+    }
+  }
+  if (cost.labourPct < 0 || cost.labourPct > 300) {
     out.add(('/extras/cost/labourPct', '人工比例超出范围'));
-  if (cost.contingencyPct < 0 || cost.contingencyPct > 100)
+  }
+  if (cost.contingencyPct < 0 || cost.contingencyPct > 100) {
     out.add(('/extras/cost/contingencyPct', '预备费比例超出范围'));
+  }
   final itemIds = <String>{};
   for (var i = 0; i < cost.items.length; i++) {
     final item = cost.items[i];
-    if (item.id.isEmpty || !itemIds.add(item.id))
+    if (item.id.isEmpty || !itemIds.add(item.id)) {
       out.add(('/extras/cost/items/$i/id', '预算项 id 无效或重复'));
-    if (item.quantity < 0 || item.price < 0)
+    }
+    if (item.quantity < 0 || item.price < 0) {
       out.add(('/extras/cost/items/$i', '数量和单价不得为负'));
+    }
   }
-  if (heat.outdoor < -60 || heat.outdoor > 20)
+  if (heat.outdoor < -60 || heat.outdoor > 20) {
     out.add(('/extras/heat/outdoor', '室外计算温度应在 -60 到 20 °C 之间'));
-  if (heat.indoor < 10 || heat.indoor > 30)
+  }
+  if (heat.indoor < 10 || heat.indoor > 30) {
     out.add(('/extras/heat/indoor', '室内温度应在 10 到 30 °C 之间'));
-  if (heat.indoor <= heat.outdoor)
+  }
+  if (heat.indoor <= heat.outdoor) {
     out.add(('/extras/heat/indoor', '室内温度应高于室外'));
-  if (heat.degreeDays < 0 || heat.degreeDays > 15000)
+  }
+  if (heat.degreeDays < 0 || heat.degreeDays > 15000) {
     out.add(('/extras/heat/degreeDays', '采暖度日数超出范围'));
-  if (heat.airChange < 0 || heat.airChange > 500)
+  }
+  if (heat.airChange < 0 || heat.airChange > 500) {
     out.add(('/extras/heat/airChange', '换气次数超出范围'));
-  if (heat.windowU <= 0 || heat.windowU > 1000)
+  }
+  if (heat.windowU <= 0 || heat.windowU > 1000) {
     out.add(('/extras/heat/windowU', '窗传热系数超出范围'));
-  if (heat.doorU <= 0 || heat.doorU > 1000)
+  }
+  if (heat.doorU <= 0 || heat.doorU > 1000) {
     out.add(('/extras/heat/doorU', '门传热系数超出范围'));
-  if (heat.efficiency < 10 || heat.efficiency > 110)
+  }
+  if (heat.efficiency < 10 || heat.efficiency > 110) {
     out.add(('/extras/heat/efficiency', '效率应在 10% 到 110% 之间'));
+  }
   final utilityIds = <String>{};
   for (var i = 0; i < utilities.length; i++) {
     final u = utilities[i];
-    if (u.id.isEmpty || !utilityIds.add(u.id))
+    if (u.id.isEmpty || !utilityIds.add(u.id)) {
       out.add(('/extras/utilities/$i/id', '点位 id 无效或重复'));
-    if (u.x.abs() > 200000 || u.y.abs() > 200000)
+    }
+    if (u.x.abs() > 200000 || u.y.abs() > 200000) {
       out.add(('/extras/utilities/$i', '点位位置超出范围'));
+    }
   }
   if (site != null) {
     if (site.width < 3000 ||
         site.depth < 3000 ||
         site.width > 500000 ||
-        site.depth > 500000)
+        site.depth > 500000) {
       out.add(('/extras/site', '宅基地长宽应在 3 到 500 米之间'));
-    if (site.houseX.abs() > 500000 || site.houseY.abs() > 500000)
+    }
+    if (site.houseX.abs() > 500000 || site.houseY.abs() > 500000) {
       out.add(('/extras/site', '房屋位置超出范围'));
+    }
     final ids = <String>{};
     for (var i = 0; i < site.items.length; i++) {
       final item = site.items[i];
-      if (item.id.isEmpty || !ids.add(item.id))
+      if (item.id.isEmpty || !ids.add(item.id)) {
         out.add(('/extras/site/items/$i/id', '附属设施 id 无效或重复'));
+      }
       if (item.width <= 0 ||
           item.depth <= 0 ||
           item.width > 200000 ||
-          item.depth > 200000)
+          item.depth > 200000) {
         out.add(('/extras/site/items/$i', '附属设施尺寸超出范围'));
-      if (item.x.abs() > 500000 || item.y.abs() > 500000)
+      }
+      if (item.x.abs() > 500000 || item.y.abs() > 500000) {
         out.add(('/extras/site/items/$i', '附属设施位置超出范围'));
+      }
     }
   }
   final keys = <String>{};
   for (var i = 0; i < schedule.length; i++) {
     final s = schedule[i];
-    if (s.key.isEmpty || !keys.add(s.key))
+    if (s.key.isEmpty || !keys.add(s.key)) {
       out.add(('/extras/schedule/$i/key', '施工阶段重复'));
-    if (s.days < 1 || s.days > 3650)
+    }
+    if (s.days < 1 || s.days > 3650) {
       out.add(('/extras/schedule/$i/days', '工期应在 1 到 3650 天之间'));
+    }
     if (s.spent < 0) out.add(('/extras/schedule/$i/spent', '花费不得为负'));
-    if (s.start != null && !_date.hasMatch(s.start!))
+    if (s.start != null && !_date.hasMatch(s.start!)) {
       out.add(('/extras/schedule/$i/start', '日期格式应为 YYYY-MM-DD'));
-    if (s.checks.any((c) => c < 0 || c > 99))
+    }
+    if (s.checks.any((c) => c < 0 || c > 99)) {
       out.add(('/extras/schedule/$i/checks', '检查项编号无效'));
+    }
   }
   return out;
 }

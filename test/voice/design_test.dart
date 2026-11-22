@@ -158,16 +158,15 @@ void main() {
         'design.add_opening', {'room': 'r1', 'side': 'north', 'kind': 'door'});
     expect(door.ok, isTrue);
     await t.pump();
-    DoorOpening theDoor() => host.document.floors.single.openings
-        .whereType<DoorOpening>()
-        .single;
+    DoorOpening theDoor() =>
+        host.document.floors.single.openings.whereType<DoorOpening>().single;
     final alias = VoiceScreens.current!.entities
         .firstWhere((e) => e.id == theDoor().id)
         .alias;
     final swing = theDoor().opensTo;
     expect(
-        (await say('design.resize_opening',
-                {'opening': alias, 'width_mm': 1000}))
+        (await say(
+                'design.resize_opening', {'opening': alias, 'width_mm': 1000}))
             .ok,
         isTrue);
     expect((await say('design.flip_door', {'opening': alias})).ok, isTrue);
@@ -178,8 +177,8 @@ void main() {
     expect(theDoor().opensTo, isNot(swing));
     expect(host.document.mainEntranceOpeningId, theDoor().id);
     // A window cannot be the way in: the reason comes back.
-    expect((await say('design.set_main_entrance', {'opening': 'o2'})).ok,
-        isFalse);
+    expect(
+        (await say('design.set_main_entrance', {'opening': 'o2'})).ok, isFalse);
     expect((await say('design.delete_opening', {'opening': alias})).ok, isTrue);
     await t.pump();
 
@@ -188,7 +187,6 @@ void main() {
       await t.pump();
       expect(host.document.roof.type.name, type);
     }
-
 
     // Furniture lands inside the room it was asked for.
     final bed =

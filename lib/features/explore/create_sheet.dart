@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../demand/publish_page.dart';
-import '../profile/profile_edit_page.dart';
-import '../../shared/ui/scope.dart';
-import '../shell/shell.dart';
-import '../../shared/ui/theme.dart';
-import 'explore_page.dart';
-import '../../shared/motion/motion.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/features/demand/publish_page.dart';
+import 'package:yusal/features/profile/profile_edit_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/features/shell/shell.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/features/explore/explore_page.dart';
+import 'package:yusal/shared/motion/motion.dart';
 
 /// "＋": the four ways in. Draw from scratch, start from someone's plan,
 /// find people without a drawing, or join as a pro.
@@ -24,11 +24,13 @@ Future<void> showCreateSheet(BuildContext context) async {
     case 1:
       nav?.go(ShellTab.explore, exploreSegment: ExploreSegment.houses);
     case 2:
-      if (await requireLogin(context) && context.mounted)
+      if (await requireLogin(context) && context.mounted) {
         await pushPage<void>(context, (_) => const PublishPage());
+      }
     case 3:
-      if (await requireLogin(context) && context.mounted)
+      if (await requireLogin(context) && context.mounted) {
         await pushPage<void>(context, (_) => const ProfileEditPage());
+      }
   }
 }
 
@@ -80,16 +82,19 @@ class _CreateSheet extends StatelessWidget {
                         stagger ? Stagger(index: i + 1, child: c) : c;
                     return Wrap(spacing: 12, runSpacing: 10, children: [
                       for (final (i, o) in options.indexed)
-                        row(i, SizedBox(
-                            width: w,
-                            child: _OptionCard(
-                                key: Key('create-option-${o.$1}'),
-                                icon: o.$2,
-                                title: o.$3,
-                                body: o.$4,
-                                recommended: i == 0,
-                                row: cols == 1,
-                                onTap: () => Navigator.of(context).pop(o.$1)))),
+                        row(
+                            i,
+                            SizedBox(
+                                width: w,
+                                child: _OptionCard(
+                                    key: Key('create-option-${o.$1}'),
+                                    icon: o.$2,
+                                    title: o.$3,
+                                    body: o.$4,
+                                    recommended: i == 0,
+                                    row: cols == 1,
+                                    onTap: () =>
+                                        Navigator.of(context).pop(o.$1)))),
                     ]);
                   }),
                   const SizedBox(height: 6),
@@ -98,7 +103,8 @@ class _CreateSheet extends StatelessWidget {
                           key: const Key('create-option-3'),
                           onPressed: () => Navigator.of(context).pop(3),
                           child: Text(
-                              tr3('我是工人 / 包工头 / 工程师：入驻接活',
+                              tr3(
+                                  '我是工人 / 包工头 / 工程师：入驻接活',
                                   'Шеберсіз бе? Жұмыс алу',
                                   'Вы мастер? Получать заказы'),
                               style: TextStyle(color: t.muted)))),
@@ -116,7 +122,8 @@ class _OptionCard extends StatelessWidget {
       this.recommended = false,
       this.row = false});
   final IconData icon;
-  final String title, body;
+  final String title;
+  final String body;
   final VoidCallback onTap;
   final bool recommended;
 
@@ -126,14 +133,15 @@ class _OptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
-    final text = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    final text =
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Wrap(
           spacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(title,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w700, fontSize: YFont.body)),
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700, fontSize: YFont.body)),
             if (recommended)
               Container(
                   padding:
@@ -153,23 +161,27 @@ class _OptionCard extends StatelessWidget {
     final icon = Icon(this.icon, color: t.accent, size: 28);
     return Pressable(
         child: Material(
-        color: recommended ? t.accentSoft : t.surface,
-        borderRadius: BorderRadius.circular(yRadius),
-        child: InkWell(
+            color: recommended ? t.accentSoft : t.surface,
             borderRadius: BorderRadius.circular(yRadius),
-            splashFactory: NoSplash.splashFactory,
-            onTap: onTap,
-            child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: row
-                    ? Row(children: [
-                        icon,
-                        const SizedBox(width: 14),
-                        Expanded(child: text),
-                        Icon(Icons.chevron_right, color: t.faint),
-                      ])
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [icon, const SizedBox(height: 10), text])))));
+            child: InkWell(
+                borderRadius: BorderRadius.circular(yRadius),
+                splashFactory: NoSplash.splashFactory,
+                onTap: onTap,
+                child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: row
+                        ? Row(children: [
+                            icon,
+                            const SizedBox(width: 14),
+                            Expanded(child: text),
+                            Icon(Icons.chevron_right, color: t.faint),
+                          ])
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                icon,
+                                const SizedBox(height: 10),
+                                text
+                              ])))));
   }
 }

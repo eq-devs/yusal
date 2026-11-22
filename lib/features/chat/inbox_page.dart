@@ -1,22 +1,22 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../data/repositories.dart';
-import '../../domain/models.dart';
-import '../coop/coop_page.dart';
-import '../demand/demand_detail_page.dart';
-import '../home/post_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/widgets.dart';
-import 'chat_page.dart';
-import '../../shared/motion/motion.dart';
-import '../me/trust_pages.dart';
-import '../profile/profile_page.dart';
-import '../../shared/brand/yicon.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/coop/coop_page.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/features/home/post_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/chat/chat_page.dart';
+import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/features/me/trust_pages.dart';
+import 'package:yusal/features/profile/profile_page.dart';
+import 'package:yusal/shared/brand/yicon.dart';
 
 /// Unread chats and notices together, asked for at the same time.
 Future<int> _unread(PlatformRepositories r) async {
@@ -37,8 +37,9 @@ class InboxButton extends StatelessWidget {
         builder: (context, unread) => IconButton(
             tooltip: tr3('消息', 'Хабарлар', 'Сообщения'),
             onPressed: () async {
-              if (await requireLogin(context) && context.mounted)
+              if (await requireLogin(context) && context.mounted) {
                 await pushPage<void>(context, (_) => const InboxPage());
+              }
             },
             icon: Badge(
                 isLabelVisible: unread > 0,
@@ -81,7 +82,7 @@ class InboxPage extends StatelessWidget {
     AppScope.watch(context);
     final title = Text(tr3('消息', 'Хабарлар', 'Сообщения'));
     return OnChange(builder: (context) {
-      if (context.repos.currentAccount == null)
+      if (context.repos.currentAccount == null) {
         return Scaffold(
             appBar: AppBar(title: title),
             body: SignInPrompt(
@@ -92,6 +93,7 @@ class InboxPage extends StatelessWidget {
                     '和房主、师傅的聊天，以及报价、验收等通知都在这里。',
                     'Үй иелері мен шеберлермен чаттар, ұсыныстар мен қабылдау туралы хабарламалар осында.',
                     'Здесь чаты с владельцами и мастерами, уведомления о предложениях и приёмке.')));
+      }
       return DefaultTabController(
           length: 2,
           child: Scaffold(
@@ -151,48 +153,52 @@ class _ConversationsState extends State<_Conversations> {
             : RefreshIndicator(
                 onRefresh: _refresh.call,
                 child: ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                itemCount: list.length,
-                separatorBuilder: (_, __) => const Divider(),
-                itemBuilder: (context, i) {
-                  final (c, other) = list[i];
-                  final last = c.lastMessage;
-                  return ListTile(
-                      leading: Avatar(deletedName(other), size: 48),
-                      title: Text(deletedName(other),
-                          style: TextStyle(
-                              fontWeight: c.unread > 0
-                                  ? FontWeight.w800
-                                  : FontWeight.w600)),
-                      subtitle: Text(last == null ? '' : messagePreview(last),
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
-                      trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            if (last != null)
-                              Text(ago(last.sentAt, context.now),
-                                  style:
-                                      TextStyle(color: t.muted, fontSize: YFont.caption)),
-                            if (c.unread > 0)
-                              Container(
-                                  margin: const EdgeInsets.only(top: 4),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 2),
-                                  decoration: BoxDecoration(
-                                      color: t.accent,
-                                      borderRadius: BorderRadius.circular(YRadius.pill)),
-                                  child: Text('${c.unread}',
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    itemCount: list.length,
+                    separatorBuilder: (_, __) => const Divider(),
+                    itemBuilder: (context, i) {
+                      final (c, other) = list[i];
+                      final last = c.lastMessage;
+                      return ListTile(
+                          leading: Avatar(deletedName(other), size: 48),
+                          title: Text(deletedName(other),
+                              style: TextStyle(
+                                  fontWeight: c.unread > 0
+                                      ? FontWeight.w800
+                                      : FontWeight.w600)),
+                          subtitle: Text(
+                              last == null ? '' : messagePreview(last),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                          trailing: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                if (last != null)
+                                  Text(ago(last.sentAt, context.now),
                                       style: TextStyle(
-                                          color: t.accentInk,
-                                          fontSize: YFont.caption,
-                                          fontWeight: FontWeight.w700))),
-                          ]),
-                      onTap: () => pushPage<void>(
-                          context, (_) => ChatPage(conversationId: c.id)));
-                })));
+                                          color: t.muted,
+                                          fontSize: YFont.caption)),
+                                if (c.unread > 0)
+                                  Container(
+                                      margin: const EdgeInsets.only(top: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 7, vertical: 2),
+                                      decoration: BoxDecoration(
+                                          color: t.accent,
+                                          borderRadius: BorderRadius.circular(
+                                              YRadius.pill)),
+                                      child: Text('${c.unread}',
+                                          style: TextStyle(
+                                              color: t.accentInk,
+                                              fontSize: YFont.caption,
+                                              fontWeight: FontWeight.w700))),
+                              ]),
+                          onTap: () => pushPage<void>(
+                              context, (_) => ChatPage(conversationId: c.id)));
+                    })));
   }
 }
 
@@ -231,32 +237,33 @@ class _NoticesState extends State<_Notices> {
             : RefreshIndicator(
                 onRefresh: _refresh.call,
                 child: ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                itemCount: list.length,
-                separatorBuilder: (_, __) => const Divider(),
-                itemBuilder: (context, i) {
-                  final n = list[i];
-                  return ListTile(
-                      leading: Icon(noticeIcon(n.kind),
-                          color: n.read ? t.muted : t.accent),
-                      title: Text(noticeText(n),
-                          style: TextStyle(
-                              fontWeight:
-                                  n.read ? FontWeight.w400 : FontWeight.w700)),
-                      subtitle: Text(ago(n.createdAt, context.now)),
-                      onTap: () {
-                        // Open at once; the read mark follows in the
-                        // background instead of holding the tap.
-                        if (!n.read) {
-                          unawaited(context.repos
-                              .markRead(n.id)
-                              .catchError((Object _) {}));
-                        }
-                        openNotice(context, n);
-                      });
-                })));
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    itemCount: list.length,
+                    separatorBuilder: (_, __) => const Divider(),
+                    itemBuilder: (context, i) {
+                      final n = list[i];
+                      return ListTile(
+                          leading: Icon(noticeIcon(n.kind),
+                              color: n.read ? t.muted : t.accent),
+                          title: Text(noticeText(n),
+                              style: TextStyle(
+                                  fontWeight: n.read
+                                      ? FontWeight.w400
+                                      : FontWeight.w700)),
+                          subtitle: Text(ago(n.createdAt, context.now)),
+                          onTap: () {
+                            // Open at once; the read mark follows in the
+                            // background instead of holding the tap.
+                            if (!n.read) {
+                              unawaited(context.repos
+                                  .markRead(n.id)
+                                  .catchError((Object _) {}));
+                            }
+                            openNotice(context, n);
+                          });
+                    })));
   }
 }
 
@@ -288,7 +295,9 @@ IconData noticeIcon(NoticeKind k) => switch (k) {
       NoticeKind.accountRestricted =>
         Icons.gpp_maybe_outlined,
       NoticeKind.reportResolved => Icons.flag_outlined,
-      NoticeKind.accountRestored || NoticeKind.appealAnswered => Icons.gavel_outlined,
+      NoticeKind.accountRestored ||
+      NoticeKind.appealAnswered =>
+        Icons.gavel_outlined,
       NoticeKind.verificationApproved ||
       NoticeKind.verificationRejected =>
         Icons.verified_outlined,
@@ -302,7 +311,8 @@ Future<void> openNotice(BuildContext context, AppNotification n) async {
   if (n.kind == NoticeKind.contentRemoved ||
       n.kind == NoticeKind.accountRestricted) {
     // A moderator's decision about my own record: say so and offer an appeal.
-    final target = n.kind == NoticeKind.accountRestricted ? 'account' : n.refType.name;
+    final target =
+        n.kind == NoticeKind.accountRestricted ? 'account' : n.refType.name;
     final restricted = n.kind == NoticeKind.accountRestricted;
     final v = await showDialog<String>(
         context: context,
@@ -310,7 +320,8 @@ Future<void> openNotice(BuildContext context, AppNotification n) async {
                 child: AlertDialog(
                     title: Text(noticeText(n)),
                     content: restricted && n.title.isNotEmpty
-                        ? Text('${tr3('原因', 'Себебі', 'Причина')}: ${reasonText(n.title)}')
+                        ? Text(
+                            '${tr3('原因', 'Себебі', 'Причина')}: ${reasonText(n.title)}')
                         : null,
                     actions: [
                   if (!restricted)
@@ -337,7 +348,8 @@ Future<void> openRef(BuildContext context, RefType type, String id) =>
       RefType.conversation =>
         pushPage<void>(context, (_) => ChatPage(conversationId: id)),
       RefType.post => pushPage<void>(context, (_) => PostPage(postId: id)),
-      RefType.profile => pushPage<void>(context, (_) => ProfilePage(profileId: id)),
+      RefType.profile =>
+        pushPage<void>(context, (_) => ProfilePage(profileId: id)),
       RefType.appeal ||
       RefType.account =>
         pushPage<void>(context, (_) => const MyAppealsPage()),

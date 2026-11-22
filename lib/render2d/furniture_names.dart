@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../app/settings.dart';
-import '../core/commands/room_commands.dart';
-import '../core/document/house_document.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/core/commands/room_commands.dart';
+import 'package:yusal/core/document/house_document.dart';
 
 /// Chinese / Kazakh names of furniture kinds, sleeves and layer materials.
 const furnitureNames = <FurnitureKind, (String, String)>{
@@ -190,7 +190,8 @@ String roomTypeName(RoomType type) => switch (type) {
 /// A room's name as shown: the name its owner gave it, or, for a name the
 /// tool gave automatically, the room type in the current language.
 String shownRoomName(Room r) {
-  for (final e in roomNames.entries)
+  for (final e in roomNames.entries) {
     if (r.name == e.value) return roomTypeName(e.key);
+  }
   return r.name;
 }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../core/commands/house_wish.dart';
-import '../../core/document/house_document.dart';
-import '../../core/number_input.dart';
-import '../../render2d/furniture_names.dart';
-import '../../shared/motion/motion.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/core/commands/house_wish.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/number_input.dart';
+import 'package:yusal/render2d/furniture_names.dart';
+import 'package:yusal/shared/motion/motion.dart';
 
 /// What the questions collect before a house is asked for.
 class HouseWish {
@@ -21,8 +21,13 @@ class HouseWish {
 
   /// Metres.
   final double width, depth;
-  final int floors, bedrooms, bathrooms;
-  final bool hall, boiler, storage, dining;
+  final int floors;
+  final int bedrooms;
+  final int bathrooms;
+  final bool hall;
+  final bool boiler;
+  final bool storage;
+  final bool dining;
 
   /// The wish as a house spec drawn without the assistant: two rows of
   /// rooms along a corridor, named in the app's language.
@@ -70,12 +75,16 @@ class HouseWish {
 ///
 /// With [draft] the first version is drawn on the spot, so a wish the
 /// house is too small for is turned down here, where it can be changed.
-Future<HouseWish?> showHouseWizard(BuildContext context,
-    {bool draft = false}) {
-  final width = TextEditingController(text: '12'),
-      depth = TextEditingController(text: '10');
-  var floors = 1, bedrooms = 3, bathrooms = 1;
-  var hall = true, boiler = true, storage = false, dining = false;
+Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
+  final width = TextEditingController(text: '12');
+  final depth = TextEditingController(text: '10');
+  var floors = 1;
+  var bedrooms = 3;
+  var bathrooms = 1;
+  var hall = true;
+  var boiler = true;
+  var storage = false;
+  var dining = false;
   String? error;
   return showMotionSheet<HouseWish>(
       context: context,
@@ -122,18 +131,23 @@ Future<HouseWish?> showHouseWizard(BuildContext context,
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(tr3('想要什么样的房子？', 'Қандай үй керек?', 'Какой дом нужен?'),
+                          Text(
+                              tr3('想要什么样的房子？', 'Қандай үй керек?',
+                                  'Какой дом нужен?'),
                               style: const TextStyle(
                                   fontSize: 20, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
                           Text(draft
-                              ? tr3('回答几项，马上画出第一版，之后都能改。',
+                              ? tr3(
+                                  '回答几项，马上画出第一版，之后都能改。',
                                   'Бірнеше сұраққа жауап беріңіз, алғашқы нұсқасы бірден сызылады. Кейін бәрін өзгертуге болады.',
                                   'Ответьте на несколько вопросов — первый вариант будет начерчен сразу. Потом всё можно изменить.')
-                              : tr3('回答几项，助手画出第一版，之后都能改。',
-                              'Бірнеше сұраққа жауап беріңіз, көмекші алғашқы нұсқасын сызады. Кейін бәрін өзгертуге болады.',
-                              'Ответьте на несколько вопросов — помощник начертит первый вариант. Потом всё можно изменить.')),
-                          title(tr3('房子外形（米）', 'Үйдің өлшемі (м)', 'Размер дома (м)')),
+                              : tr3(
+                                  '回答几项，助手画出第一版，之后都能改。',
+                                  'Бірнеше сұраққа жауап беріңіз, көмекші алғашқы нұсқасын сызады. Кейін бәрін өзгертуге болады.',
+                                  'Ответьте на несколько вопросов — помощник начертит первый вариант. Потом всё можно изменить.')),
+                          title(tr3('房子外形（米）', 'Үйдің өлшемі (м)',
+                              'Размер дома (м)')),
                           Row(children: [
                             size(width, tr3('宽', 'Ені', 'Ширина')),
                             const SizedBox(width: 12),
@@ -144,7 +158,8 @@ Future<HouseWish?> showHouseWizard(BuildContext context,
                           title(tr3('几间卧室', 'Жатын бөлме саны', 'Спален')),
                           pick('bedrooms', [1, 2, 3, 4, 5], bedrooms,
                               (v) => bedrooms = v),
-                          title(tr3('几个卫生间', 'Жуынатын бөлме саны', 'Санузлов')),
+                          title(
+                              tr3('几个卫生间', 'Жуынатын бөлме саны', 'Санузлов')),
                           pick('bathrooms', [1, 2], bathrooms,
                               (v) => bathrooms = v),
                           title(tr3('还要', 'Тағы не керек', 'Что ещё нужно')),
@@ -170,15 +185,18 @@ Future<HouseWish?> showHouseWizard(BuildContext context,
                           FilledButton(
                               key: const Key('wizard-go'),
                               onPressed: () {
-                                final w = parseNumber(width.text),
-                                    d = parseNumber(depth.text);
+                                final w = parseNumber(width.text);
+                                final d = parseNumber(depth.text);
                                 if (w == null ||
                                     d == null ||
                                     w < 3 ||
                                     d < 3 ||
                                     w > 100 ||
                                     d > 100) {
-                                  update(() => error = tr3('长宽需在 3–100 米之间', 'Өлшем 3–100 м аралығында болуы керек', 'Размер должен быть в пределах 3–100 м'));
+                                  update(() => error = tr3(
+                                      '长宽需在 3–100 米之间',
+                                      'Өлшем 3–100 м аралығында болуы керек',
+                                      'Размер должен быть в пределах 3–100 м'));
                                   return;
                                 }
                                 final wish = HouseWish(
@@ -211,7 +229,8 @@ Future<HouseWish?> showHouseWizard(BuildContext context,
                                         storage: storage,
                                         dining: dining));
                               },
-                              child: Text(tr3('画出第一版', 'Алғашқы нұсқасын сызу', 'Начертить первый вариант'))),
+                              child: Text(tr3('画出第一版', 'Алғашқы нұсқасын сызу',
+                                  'Начертить первый вариант'))),
                         ])));
           }));
 }

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../app/settings.dart';
-import '../../data/repositories.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/plan_viewer.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import 'demand_detail_page.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/plan_viewer.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
 
 /// Base address of public share pages (to be served by the web host).
 const shareBase = 'https://yusal.app/d/';
@@ -50,9 +50,10 @@ class SharePage extends StatelessWidget {
                           icon: const Icon(Icons.copy),
                           onPressed: () async {
                             await Clipboard.setData(ClipboardData(text: link));
-                            if (context.mounted)
+                            if (context.mounted) {
                               toast(context,
                                   tr3('已复制', 'Көшірілді', 'Скопировано'));
+                            }
                           }),
                     ])),
                     const SizedBox(height: 12),
@@ -65,11 +66,12 @@ class SharePage extends StatelessWidget {
                             await SharePlus.instance.share(ShareParams(
                                 text: '${demand.current.title}\n$link'));
                           } catch (_) {
-                            if (context.mounted)
+                            if (context.mounted) {
                               toast(
                                   context,
                                   tr3('此设备不支持系统分享，请复制链接', 'Сілтемені көшіріңіз',
                                       'Скопируйте ссылку'));
+                            }
                           }
                         }),
                     const SizedBox(height: 8),
@@ -78,7 +80,8 @@ class SharePage extends StatelessWidget {
                             '分享到 WhatsApp、Telegram 等应用时，对方未安装 Yusal 也能先在网页查看公开信息，登录后再报名或报价。',
                             'Yusal жоқ адам да ашық ақпаратты вебте көре алады.',
                             'Без приложения откроется веб-страница с публичными данными.'),
-                        style: TextStyle(color: t.muted, fontSize: YFont.caption)),
+                        style:
+                            TextStyle(color: t.muted, fontSize: YFont.caption)),
                     if (mine) ...[
                       const SizedBox(height: 8),
                       SwitchListTile(
@@ -115,7 +118,7 @@ class _PublicPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(yRadius),
         boxShadow: t.softShadow,
         color: t.bg);
-    if (v == null || !v.available)
+    if (v == null || !v.available) {
       return Container(
           decoration: frame,
           padding: const EdgeInsets.all(24),
@@ -125,6 +128,7 @@ class _PublicPreview extends StatelessWidget {
                   '此链接已撤销，或需求已关闭／下架',
                   'Сілтеме өшірілген не тапсырыс жабылған',
                   'Ссылка отключена или заявка закрыта')));
+    }
     return Container(
         decoration: frame,
         padding: const EdgeInsets.all(18),
@@ -140,8 +144,8 @@ class _PublicPreview extends StatelessWidget {
           ]),
           const SizedBox(height: 12),
           Text(v.title,
-              style:
-                  const TextStyle(fontSize: YFont.section, fontWeight: FontWeight.w700)),
+              style: const TextStyle(
+                  fontSize: YFont.section, fontWeight: FontWeight.w700)),
           Text(placeText(v.region, v.locality),
               style: TextStyle(color: t.muted)),
           const SizedBox(height: 8),
@@ -154,7 +158,9 @@ class _PublicPreview extends StatelessWidget {
           ],
           if (v.snapshot != null) ...[
             PlanAttachment(
-                snapshot: v.snapshot, hidden: v.snapshot?.planJson == null && v.snapshot?.preview == null),
+                snapshot: v.snapshot,
+                hidden: v.snapshot?.planJson == null &&
+                    v.snapshot?.preview == null),
             const SizedBox(height: 12),
             if (v.snapshot!.preview != null)
               ClipRRect(

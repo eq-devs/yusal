@@ -75,10 +75,14 @@ void _horn(Canvas x, double cx, double cy, double s, Color col, double lw) {
     final p = Path()
       ..moveTo(cx, cy + s * .45)
       ..quadraticBezierTo(cx, cy - s * .05, cx + d * s * .25, cy - s * .35);
-    final ox = cx + d * s * .38, oy = cy - s * .18;
-    final a0 = math.atan2(-.17, -d * .13), r0 = math.sqrt(.13 * .13 + .17 * .17) * s;
+    final ox = cx + d * s * .38;
+    final oy = cy - s * .18;
+    final a0 = math.atan2(-.17, -d * .13);
+    final r0 = math.sqrt(.13 * .13 + .17 * .17) * s;
     for (var i = 1; i <= 46; i++) {
-      final t = i / 46, a = a0 + d * t * math.pi * 2.3, r = r0 * (1 - .72 * t);
+      final t = i / 46;
+      final a = a0 + d * t * math.pi * 2.3;
+      final r = r0 * (1 - .72 * t);
       p.lineTo(ox + math.cos(a) * r, oy + math.sin(a) * r);
     }
     x.drawPath(p, pen);
@@ -108,7 +112,8 @@ void _hornRing(Canvas x, double cx, double cy, double s, Color col, double lw) {
 void _kilem(Canvas x, Color base, Color border, Color orn, Color acc) {
   const w = 512.0;
   x.drawRect(const Rect.fromLTWH(0, 0, w, w), Paint()..color = border);
-  x.drawRect(const Rect.fromLTWH(48, 48, w - 96, w - 96), Paint()..color = base);
+  x.drawRect(
+      const Rect.fromLTWH(48, 48, w - 96, w - 96), Paint()..color = base);
   for (var i = 0; i < 8; i++) {
     final p = 32.0 + i * 64;
     for (final (px, py, rot) in [
@@ -129,21 +134,34 @@ void _kilem(Canvas x, Color base, Color border, Color orn, Color acc) {
     ..style = PaintingStyle.stroke
     ..strokeWidth = 4;
   x.drawRect(const Rect.fromLTWH(56, 56, w - 112, w - 112), frame);
-  x.drawRect(const Rect.fromLTWH(66, 66, w - 132, w - 132), frame..strokeWidth = 2);
+  x.drawRect(
+      const Rect.fromLTWH(66, 66, w - 132, w - 132), frame..strokeWidth = 2);
   _dia(x, w / 2, w / 2, 150, 150, border);
   _dia(x, w / 2, w / 2, 128, 128, acc);
   _dia(x, w / 2, w / 2, 70, 70, border);
   _hornRing(x, w / 2, w / 2, 64, orn, 5);
-  for (final (cx, cy) in [(66.0, 66.0), (w - 66, 66.0), (66.0, w - 66), (w - 66, w - 66)]) {
+  for (final (cx, cy) in [
+    (66.0, 66.0),
+    (w - 66, 66.0),
+    (66.0, w - 66),
+    (w - 66, w - 66)
+  ]) {
     _dia(x, cx, cy, 60, 60, acc);
     _horn(x, cx, cy, 34, orn, 3);
   }
-  for (final (cx, cy) in [(w / 2, 100.0), (w / 2, w - 100), (100.0, w / 2), (w - 100, w / 2)])
+  for (final (cx, cy) in [
+    (w / 2, 100.0),
+    (w / 2, w - 100),
+    (100.0, w / 2),
+    (w - 100, w / 2)
+  ]) {
     _dia(x, cx, cy, 18, 18, orn);
+  }
 }
 
 void _tus(Canvas x, Color base, List<Color> cols) {
-  const w = 512.0, h = 340.0;
+  const w = 512.0;
+  const h = 340.0;
   x.drawRect(const Rect.fromLTWH(0, 0, w, h), Paint()..color = base);
   x.drawRect(
       const Rect.fromLTWH(14, 14, w - 28, h - 28),
@@ -180,11 +198,13 @@ void _tus(Canvas x, Color base, List<Color> cols) {
 }
 
 void _kurak(Canvas x, List<Color> cols) {
-  const w = 256.0, n = 8, s = w / n;
+  const w = 256.0;
+  const n = 8;
+  const s = w / n;
   for (var i = 0; i < n; i++)
     for (var j = 0; j < n; j++) {
-      final a = cols[(i * 3 + j) % cols.length],
-          b = cols[(i + j * 2 + 1) % cols.length];
+      final a = cols[(i * 3 + j) % cols.length];
+      final b = cols[(i + j * 2 + 1) % cols.length];
       x.drawRect(Rect.fromLTWH(i * s, j * s, s, s), Paint()..color = a);
       final p = Path();
       if ((i + j) % 2 == 1) {
@@ -210,26 +230,47 @@ void _kurak(Canvas x, List<Color> cols) {
 }
 
 void _sandyq(Canvas x, Color base, Color metal) {
-  const w = 512.0, h = 256.0;
+  const w = 512.0;
+  const h = 256.0;
   x.drawRect(const Rect.fromLTWH(0, 0, w, h), Paint()..color = base);
   final m = Paint()..color = metal;
-  for (final y in [18.0, h - 30]) x.drawRect(Rect.fromLTWH(0, y, w, 12), m);
-  for (final xx in [24.0, w - 36]) x.drawRect(Rect.fromLTWH(xx, 0, 12, h), m);
-  for (var i = 0; i < 3; i++) _hornRing(x, w * (i + 1) / 4, h / 2, 40, metal, 4);
-  for (var i = 0; i < 24; i++) x.drawCircle(Offset(10 + i * 21.5, 24), 3, m);
-  x.drawRect(Rect.fromLTWH(w / 2 - 16, h / 2 - 24, 32, 40), m);
-  x.drawCircle(Offset(w / 2, h / 2 - 6), 6, Paint()..color = base);
+  for (final y in [18.0, h - 30]) {
+    x.drawRect(Rect.fromLTWH(0, y, w, 12), m);
+  }
+  for (final xx in [24.0, w - 36]) {
+    x.drawRect(Rect.fromLTWH(xx, 0, 12, h), m);
+  }
+  for (var i = 0; i < 3; i++) {
+    _hornRing(x, w * (i + 1) / 4, h / 2, 40, metal, 4);
+  }
+  for (var i = 0; i < 24; i++) {
+    x.drawCircle(Offset(10 + i * 21.5, 24), 3, m);
+  }
+  x.drawRect(const Rect.fromLTWH(w / 2 - 16, h / 2 - 24, 32, 40), m);
+  x.drawCircle(const Offset(w / 2, h / 2 - 6), 6, Paint()..color = base);
 }
 
 void _alasha(Canvas x) {
-  const w = 256.0, h = 256.0;
-  const cs = [0xff7E1E1E, 0xffE8DCC4, 0xff1E2A3A, 0xffC98A2B, 0xff7E1E1E, 0xff2F5C4A];
+  const w = 256.0;
+  const h = 256.0;
+  const cs = [
+    0xff7E1E1E,
+    0xffE8DCC4,
+    0xff1E2A3A,
+    0xffC98A2B,
+    0xff7E1E1E,
+    0xff2F5C4A
+  ];
   const hs = [22.0, 8.0, 14.0, 6.0, 26.0, 8.0];
-  var y = 0.0, i = 0;
+  var y = 0.0;
+  var i = 0;
   while (y < h) {
-    x.drawRect(Rect.fromLTWH(0, y, w, hs[i % 6]), Paint()..color = _c(cs[i % cs.length]));
+    x.drawRect(Rect.fromLTWH(0, y, w, hs[i % 6]),
+        Paint()..color = _c(cs[i % cs.length]));
     y += hs[i % 6];
     i++;
   }
-  for (var k = 0; k < 8; k++) _dia(x, 16.0 + k * 32, 92, 10, 6, _c(0xffE8DCC4));
+  for (var k = 0; k < 8; k++) {
+    _dia(x, 16.0 + k * 32, 92, 10, 6, _c(0xffE8DCC4));
+  }
 }

@@ -43,8 +43,12 @@ class _Spec {
       this.upperName = '2 этаж',
       this.outer = 380,
       this.days = 10});
-  final String key, name, roof, upperName;
-  final List<int> xs, ys; // inner axis positions, mm
+  final String key;
+  final String name;
+  final String roof;
+  final String upperName;
+  final List<int> xs;
+  final List<int> ys; // inner axis positions, mm
   final List<_Room> rooms;
 
   /// Rooms of the upper floor (same grid); null for one storey.
@@ -355,7 +359,9 @@ HouseDocument _build(
     ('innerWallThickness', 200),
     ('slabThickness', 220),
     ('doorWidth', 900),
-  ]) run('SetDefault', {'field': field, 'value': value});
+  ]) {
+    run('SetDefault', {'field': field, 'value': value});
+  }
   run('SetRoof', {
     'roof': switch (s.roof) {
       'flat' => {'type': 'flat', 'parapetHeight': 1000},
@@ -368,8 +374,12 @@ HouseDocument _build(
         },
     }
   });
-  for (final x in s.xs) run('AddAxis', {'dir': AxisDir.V, 'pos': x});
-  for (final y in s.ys) run('AddAxis', {'dir': AxisDir.H, 'pos': y});
+  for (final x in s.xs) {
+    run('AddAxis', {'dir': AxisDir.V, 'pos': x});
+  }
+  for (final y in s.ys) {
+    run('AddAxis', {'dir': AxisDir.H, 'pos': y});
+  }
   final first = doc.floors.first.id;
   run('RenameFloor', {'floorId': first, 'value': '1 этаж'});
 
@@ -382,8 +392,9 @@ HouseDocument _build(
           .firstWhere((f) => f.id == floorId)
           .rooms
           .where((x) => !before.contains(x.id));
-      for (final m in made)
+      for (final m in made) {
         run('RenameRoom', {'roomId': m.id, 'value': r.name});
+      }
     }
   }
 
@@ -467,7 +478,9 @@ HouseDocument _build(
         'kind': kind,
         'centerAtTap': true,
         'tapT': center - w.start.pos
-      })) return false;
+      })) {
+        return false;
+      }
       final id = doc.floors
           .firstWhere((f) => f.id == floor.id)
           .openings
@@ -502,9 +515,10 @@ HouseDocument _build(
         for (final e in edges) {
           if (e.kind != 'exterior') continue;
           final owner = base.owners[e.negative] ?? base.owners[e.positive];
-          if (owner == null || !(rooms[owner]?.name.startsWith(pref) ?? false))
+          if (owner == null || !(rooms[owner]?.name.startsWith(pref) ?? false)) {
             continue;
-          if (add(e, OpeningKind.door, 1000, 2100, 0, at: 0.5)) {
+          }
+          if (add(e, OpeningKind.door, 1000, 2100, 0)) {
             seen.add('$owner:${e.axis.id}');
             break;
           }
@@ -512,7 +526,8 @@ HouseDocument _build(
       }
     }
     for (final e in edges) {
-      final a = base.owners[e.negative], b = base.owners[e.positive];
+      final a = base.owners[e.negative];
+      final b = base.owners[e.positive];
       if (e.kind == 'exterior') {
         final owner = a ?? b;
         final room = rooms[owner];
@@ -547,8 +562,8 @@ HouseDocument _build(
 /// the image codec plugin is not available outside the app).
 Future<List<int>> _preview(HouseDocument document) async {
   final derived = deriveHouse(document).floors.first;
-  final width = document.footprint.width.toDouble(),
-      depth = document.footprint.depth.toDouble();
+  final width = document.footprint.width.toDouble();
+  final depth = document.footprint.depth.toDouble();
   final size = width >= depth
       ? Size(512, 96 + 416 * depth / width)
       : Size(96 + 416 * width / depth, 512);

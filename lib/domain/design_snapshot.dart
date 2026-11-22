@@ -1,8 +1,8 @@
-import '../core/analysis/cost_estimate.dart';
-import '../core/document/house_document.dart';
-import '../core/serialization/house_codec.dart';
-import '../core/geometry/derived_house.dart';
-import 'models.dart';
+import 'package:yusal/core/analysis/cost_estimate.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/serialization/house_codec.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/domain/models.dart';
 
 /// Builds the frozen design extract attached to a contract demand. It only
 /// reads the design core (geometry and the takeoff behind the budget); the

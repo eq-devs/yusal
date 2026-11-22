@@ -32,16 +32,16 @@ void main() {
     expect(find.text('怎么开始？'), findsOneWidget);
     expect(find.text('按长宽新建'), findsOneWidget);
     expect(find.text('在画布上拖出外形'), findsOneWidget);
-    for (final name in ['哈萨克乡村住宅', '一层三间', '一层五间', '两层住宅'])
+    for (final name in ['哈萨克乡村住宅', '一层三间', '一层五间', '两层住宅']) {
       expect(find.text(name), findsOneWidget);
+    }
     await t.tap(find.text('按长宽新建'));
     await t.pumpAndSettle();
     expect(find.text('新建设计'), findsWidgets, reason: 'the size dialog');
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('a size preset fills both fields and shows the area',
-      (t) async {
+  testWidgets('a size preset fills both fields and shows the area', (t) async {
     final store = await mount(t);
     await t.tap(find.text('新建设计'));
     await t.pumpAndSettle();

@@ -85,7 +85,8 @@ void main() {
   testWidgets(
       'wall mode shows fixed attachments and ignores unrelated blank taps',
       (t) async {
-    final doc = initial(), session = await mount(t, doc);
+    final doc = initial();
+    final session = await mount(t, doc);
     await t.tap(find.byTooltip('墙体'));
     await t.pumpAndSettle();
     FloorPlanPainter painter() =>
@@ -126,7 +127,8 @@ void main() {
   testWidgets(
       'holding a wall opens context actions without saving or creating a wall',
       (t) async {
-    final doc = initial(), session = await mount(t, doc);
+    final doc = initial();
+    final session = await mount(t, doc);
     final g = await t.startGesture(point(t, 6000, 0));
     await t.pump(const Duration(milliseconds: 600));
     await g.up();
@@ -266,7 +268,8 @@ void main() {
   testWidgets(
       'second pointer cancels wall preview without converting or saving the document',
       (t) async {
-    final doc = initial(), session = await mount(t, doc);
+    final doc = initial();
+    final session = await mount(t, doc);
     await t.tap(find.byTooltip('墙体'));
     await t.pumpAndSettle();
     await t.tap(find.byTooltip('独立墙'));
@@ -285,7 +288,8 @@ void main() {
   });
   testWidgets('switching page during a stroke cancels the interrupted preview',
       (t) async {
-    final doc = initial(), session = await mount(t, doc);
+    final doc = initial();
+    final session = await mount(t, doc);
     await t.tap(find.byTooltip('墙体'));
     await t.pumpAndSettle();
     await t.tap(find.byTooltip('独立墙'));
@@ -321,8 +325,8 @@ void main() {
     expect(find.byTooltip('删除墙体'), findsOneWidget);
     await drag(t, 6000, 3000, 7000, 3000);
     await saved(t);
-    var persisted = await session.store.openProject(session.id),
-        axes = resolveFloorAxes(persisted, persisted.floors.first.id)!;
+    var persisted = await session.store.openProject(session.id);
+    var axes = resolveFloorAxes(persisted, persisted.floors.first.id)!;
     var wall =
         persisted.floors.first.wallOverrides.whereType<SolidWall>().single;
     expect(resolveAnchor(axes, wall.anchor).chain!.endPos, 7000);
@@ -458,10 +462,10 @@ void main() {
     await t.tap(find.text('向上'));
     await t.tap(find.text('增加墙'));
     await saved(t);
-    final doc = await session.store.openProject(session.id),
-        axes = resolveFloorAxes(doc, doc.floors.first.id)!;
-    final wall = doc.floors.first.wallOverrides.whereType<SolidWall>().single,
-        chain = resolveAnchor(axes, wall.anchor).chain!;
+    final doc = await session.store.openProject(session.id);
+    final axes = resolveFloorAxes(doc, doc.floors.first.id)!;
+    final wall = doc.floors.first.wallOverrides.whereType<SolidWall>().single;
+    final chain = resolveAnchor(axes, wall.anchor).chain!;
     expect(chain.carrier.dir, AxisDir.V);
     expect(chain.nominalLength, 1250);
     expect(chain.startPos, 5000);
@@ -506,8 +510,8 @@ void main() {
     expect(find.byTooltip('删除墙体'), findsOneWidget);
     await drag(t, 7000, 5000, 7000, 4500);
     await saved(t);
-    final persisted = await session.store.openProject(session.id),
-        axes = resolveFloorAxes(persisted, persisted.floors.first.id)!;
+    final persisted = await session.store.openProject(session.id);
+    final axes = resolveFloorAxes(persisted, persisted.floors.first.id)!;
     final wall =
         persisted.floors.first.wallOverrides.whereType<SolidWall>().single;
     final chain = resolveAnchor(axes, wall.anchor).chain!;

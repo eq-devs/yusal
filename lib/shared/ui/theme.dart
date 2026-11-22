@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../app/settings.dart';
-import '../../app/tokens.dart';
-import '../motion/motion.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/app/tokens.dart';
+import 'package:yusal/shared/motion/motion.dart';
 
 /// Platform look, after the ANT Community app's design system (one accent
 /// used sparingly, selection in ink, flat hairline cards, one shadow tier
@@ -31,21 +31,21 @@ class YTokens extends ThemeExtension<YTokens> {
     required this.scrim,
     required this.dark,
   });
-  final Color bg,
-      surface,
-      card,
-      ink,
-      muted,
-      faint,
-      line,
-      accent,
-      accentInk,
-      accentSoft,
-      ok,
-      warn,
-      crit,
-      info,
-      shadow;
+  final Color bg;
+  final Color surface;
+  final Color card;
+  final Color ink;
+  final Color muted;
+  final Color faint;
+  final Color line;
+  final Color accent;
+  final Color accentInk;
+  final Color accentSoft;
+  final Color ok;
+  final Color warn;
+  final Color crit;
+  final Color info;
+  final Color shadow;
 
   /// Sheets, dialogs, menus and toasts: what floats above the page. A drop
   /// shadow is invisible at night, so there it is a lighter surface.
@@ -115,7 +115,8 @@ class YTokens extends ThemeExtension<YTokens> {
   /// default; only floating things (menus, the tab bar, a photo's control)
   /// take it. Cards never do.
   List<BoxShadow> get softShadow => [
-        BoxShadow(color: shadow.withValues(alpha: shadow.a / 2), spreadRadius: 1),
+        BoxShadow(
+            color: shadow.withValues(alpha: shadow.a / 2), spreadRadius: 1),
         BoxShadow(color: shadow, blurRadius: 6, offset: const Offset(0, 2)),
         BoxShadow(
             color: shadow.withValues(alpha: shadow.a * 1.6),
@@ -129,8 +130,14 @@ const yRadius = YRadius.card;
 /// Spacing on a 4 px grid. Pages use [gutter] at their sides and
 /// [section] between two unrelated blocks.
 abstract final class YSpace {
-  static const xs = 4.0, sm = 8.0, md = 12.0, lg = 16.0, xl = 20.0;
-  static const xxl = 24.0, xxxl = 32.0, huge = 40.0;
+  static const xs = 4.0;
+  static const sm = 8.0;
+  static const md = 12.0;
+  static const lg = 16.0;
+  static const xl = 20.0;
+  static const xxl = 24.0;
+  static const xxxl = 32.0;
+  static const huge = 40.0;
   static const gutter = xl;
   static const section = 28.0;
 }
@@ -138,7 +145,10 @@ abstract final class YSpace {
 /// Corner radii, ANT's five steps: tags and dense rows, inputs and
 /// thumbnails, cards and photos, sheets and dialogs, pills.
 abstract final class YRadius {
-  static const row = 8.0, control = 12.0, card = 20.0, sheet = 24.0;
+  static const row = 8.0;
+  static const control = 12.0;
+  static const card = 20.0;
+  static const sheet = 24.0;
 
   /// A chat bubble.
   static const bubble = 18.0;
@@ -159,11 +169,16 @@ const yWide = 840.0;
 abstract final class YFont {
   /// Bar labels under the tab icons.
   static const tab = 11.0;
-  static const caption = 12.0, small = 13.0, label = 14.0;
+  static const caption = 12.0;
+  static const small = 13.0;
+  static const label = 14.0;
 
   /// Text on buttons.
   static const button = 15.0;
-  static const body = 16.0, heading = 18.0, section = 20.0, title = 22.0;
+  static const body = 16.0;
+  static const heading = 18.0;
+  static const section = 20.0;
+  static const title = 22.0;
 
   /// Smallest size of the display face (page titles go up to 28).
   static const display = 24.0;
@@ -172,16 +187,16 @@ abstract final class YFont {
 /// The type scale. Sizes only come from here; colour comes from the theme
 /// unless a page asks for muted text.
 abstract final class YText {
-  static const title =
-      TextStyle(fontSize: YFont.title, fontWeight: FontWeight.w700, height: 1.2);
-  static const heading =
-      TextStyle(fontSize: YFont.heading, fontWeight: FontWeight.w700, height: 1.25);
+  static const title = TextStyle(
+      fontSize: YFont.title, fontWeight: FontWeight.w700, height: 1.2);
+  static const heading = TextStyle(
+      fontSize: YFont.heading, fontWeight: FontWeight.w700, height: 1.25);
   static const body = TextStyle(fontSize: YFont.body, height: 1.45);
   static const bodyStrong =
       TextStyle(fontSize: YFont.body, fontWeight: FontWeight.w600, height: 1.3);
   static const label = TextStyle(fontSize: YFont.label, height: 1.35);
-  static const labelStrong =
-      TextStyle(fontSize: YFont.label, fontWeight: FontWeight.w600, height: 1.3);
+  static const labelStrong = TextStyle(
+      fontSize: YFont.label, fontWeight: FontWeight.w600, height: 1.3);
   static const caption = TextStyle(fontSize: YFont.caption, height: 1.35);
 
   /// Money, sizes and counts: digits of equal width, so columns line up.
@@ -281,9 +296,8 @@ ThemeData buildPlatformTheme(YTokens t) {
           // Frosted bars are transparent, from which the app bar would
           // guess a dark background and paint white status-bar text on
           // the light page. The icons follow the page's own brightness.
-          systemOverlayStyle: t.dark
-              ? SystemUiOverlayStyle.light
-              : SystemUiOverlayStyle.dark,
+          systemOverlayStyle:
+              t.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
           // Detail pages: a back chevron and a plain left-aligned title;
           // the page's own headline carries the weight.
           titleTextStyle: TextStyle(
@@ -373,64 +387,21 @@ ThemeData buildPlatformTheme(YTokens t) {
               fontWeight: FontWeight.w500,
               color: t.muted)),
       // A toast floats like a sheet: the elevated surface with ink text.
-      snackBarTheme: SnackBarThemeData(
-          backgroundColor: t.elevated,
-          elevation: t.dark ? 0 : 4,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(YRadius.control),
-              side: BorderSide(color: t.line)),
-          contentTextStyle: TextStyle(
-              color: t.ink, fontFamily: fontBody, fontSize: YFont.label),
-          actionTextColor: t.accent),
-      filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-              backgroundColor: t.accent,
-              foregroundColor: t.accentInk,
-              disabledBackgroundColor: t.line,
-              disabledForegroundColor: t.muted,
-              minimumSize: const Size(64, yButton),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              textStyle: const TextStyle(
-                  fontFamily: fontBody,
-                  fontSize: YFont.button,
-                  fontWeight: FontWeight.w700),
-              shape: pill)),
+      snackBarTheme:
+          SnackBarThemeData(backgroundColor: t.elevated, elevation: t.dark ? 0 : 4, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(YRadius.control), side: BorderSide(color: t.line)), contentTextStyle: TextStyle(color: t.ink, fontFamily: fontBody, fontSize: YFont.label), actionTextColor: t.accent),
+      filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(backgroundColor: t.accent, foregroundColor: t.accentInk, disabledBackgroundColor: t.line, disabledForegroundColor: t.muted, minimumSize: const Size(64, yButton), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), textStyle: const TextStyle(fontFamily: fontBody, fontSize: YFont.button, fontWeight: FontWeight.w700), shape: pill)),
       outlinedButtonTheme: OutlinedButtonThemeData(
           // The quiet second action: a card-coloured pill with a hairline.
-          style: OutlinedButton.styleFrom(
-              foregroundColor: t.ink,
-              backgroundColor: t.card,
-              minimumSize: const Size(48, yTouch),
-              side: BorderSide(color: t.line),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              textStyle: const TextStyle(
-                  fontFamily: fontBody,
-                  fontSize: YFont.label,
-                  fontWeight: FontWeight.w600),
-              shape: pill)),
+          style: OutlinedButton.styleFrom(foregroundColor: t.ink, backgroundColor: t.card, minimumSize: const Size(48, yTouch), side: BorderSide(color: t.line), padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8), textStyle: const TextStyle(fontFamily: fontBody, fontSize: YFont.label, fontWeight: FontWeight.w600), shape: pill)),
       // Plain buttons are ink with no underline: the accent is kept for
       // the screen's one main action, and on a phone an underline reads as
       // a web link, not as something to press.
-      textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-              foregroundColor: t.ink,
-              minimumSize: const Size(yTouch, yTouch),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              textStyle: const TextStyle(
-                  fontFamily: fontBody,
-                  fontSize: YFont.label,
-                  fontWeight: FontWeight.w600),
-              shape: pill)),
-      iconButtonTheme: IconButtonThemeData(
-          style: IconButton.styleFrom(
-              foregroundColor: t.ink,
-              minimumSize: const Size(yTouch, yTouch))),
+      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: t.ink, minimumSize: const Size(yTouch, yTouch), padding: const EdgeInsets.symmetric(horizontal: 12), textStyle: const TextStyle(fontFamily: fontBody, fontSize: YFont.label, fontWeight: FontWeight.w600), shape: pill)),
+      iconButtonTheme: IconButtonThemeData(style: IconButton.styleFrom(foregroundColor: t.ink, minimumSize: const Size(yTouch, yTouch))),
       inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: t.card,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           labelStyle: TextStyle(color: t.muted),
           hintStyle: TextStyle(color: t.muted),
           helperStyle: TextStyle(color: t.muted),
@@ -439,78 +410,24 @@ ThemeData buildPlatformTheme(YTokens t) {
           // with no glow.
           border: hairline,
           enabledBorder: hairline,
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(YRadius.control),
-              borderSide: BorderSide(color: t.ink, width: 1.5)),
-          errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(YRadius.control),
-              borderSide: BorderSide(color: t.crit)),
-          focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(YRadius.control),
-              borderSide: BorderSide(color: t.crit, width: 1.5))),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(YRadius.control), borderSide: BorderSide(color: t.ink, width: 1.5)),
+          errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(YRadius.control), borderSide: BorderSide(color: t.crit)),
+          focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(YRadius.control), borderSide: BorderSide(color: t.crit, width: 1.5))),
       // Chips are a soft fill, never a border; a selected one is ink.
-      chipTheme: ChipThemeData(
-          backgroundColor: t.surface,
-          selectedColor: t.ink,
-          checkmarkColor: t.bg,
-          secondarySelectedColor: t.ink,
-          side: BorderSide.none,
-          shape: const StadiumBorder(),
-          labelStyle: TextStyle(
-              color: WidgetStateColor.resolveWith((s) =>
-                  s.contains(WidgetState.selected) ? t.bg : t.ink),
-              fontSize: YFont.small,
-              fontWeight: FontWeight.w600),
-          secondaryLabelStyle: TextStyle(
-              color: t.bg, fontSize: YFont.small, fontWeight: FontWeight.w600)),
-      segmentedButtonTheme: SegmentedButtonThemeData(
-          style: ButtonStyle(
-              backgroundColor: WidgetStateProperty.resolveWith((s) =>
-                  s.contains(WidgetState.selected) ? t.ink : t.surface),
-              foregroundColor: WidgetStateProperty.resolveWith((s) =>
-                  s.contains(WidgetState.selected) ? t.bg : t.ink),
-              iconColor: WidgetStateProperty.resolveWith((s) =>
-                  s.contains(WidgetState.selected) ? t.bg : t.ink),
-              side: WidgetStatePropertyAll(BorderSide(color: t.line)))),
+      chipTheme: ChipThemeData(backgroundColor: t.surface, selectedColor: t.ink, checkmarkColor: t.bg, secondarySelectedColor: t.ink, side: BorderSide.none, shape: const StadiumBorder(), labelStyle: TextStyle(color: WidgetStateColor.resolveWith((s) => s.contains(WidgetState.selected) ? t.bg : t.ink), fontSize: YFont.small, fontWeight: FontWeight.w600), secondaryLabelStyle: TextStyle(color: t.bg, fontSize: YFont.small, fontWeight: FontWeight.w600)),
+      segmentedButtonTheme: SegmentedButtonThemeData(style: ButtonStyle(backgroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.ink : t.surface), foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.bg : t.ink), iconColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.bg : t.ink), side: WidgetStatePropertyAll(BorderSide(color: t.line)))),
       switchTheme: SwitchThemeData(
-          thumbColor: WidgetStateProperty.resolveWith((s) =>
-              s.contains(WidgetState.selected) ? t.bg : t.card),
+          thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.bg : t.card),
           // On is ink, like every other selection.
-          trackColor: WidgetStateProperty.resolveWith((s) =>
-              s.contains(WidgetState.selected) ? t.ink : t.line),
+          trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.ink : t.line),
           trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent)),
-      checkboxTheme: CheckboxThemeData(
-          fillColor: WidgetStateProperty.resolveWith((s) =>
-              s.contains(WidgetState.selected) ? t.ink : Colors.transparent),
-          checkColor: WidgetStatePropertyAll(t.bg)),
-      radioTheme: RadioThemeData(
-          fillColor: WidgetStateProperty.resolveWith((s) =>
-              s.contains(WidgetState.selected) ? t.ink : t.muted)),
+      checkboxTheme: CheckboxThemeData(fillColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.ink : Colors.transparent), checkColor: WidgetStatePropertyAll(t.bg)),
+      radioTheme: RadioThemeData(fillColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.ink : t.muted)),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: t.accent),
       dividerTheme: DividerThemeData(color: t.line, space: 1, thickness: 1),
-      listTileTheme: ListTileThemeData(
-          iconColor: t.ink,
-          textColor: t.ink,
-          contentPadding: EdgeInsets.zero),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: t.accent,
-          foregroundColor: t.accentInk,
-          elevation: 0,
-          highlightElevation: 0,
-          extendedTextStyle:
-              const TextStyle(fontFamily: fontBody, fontWeight: FontWeight.w700),
-          shape: const StadiumBorder()),
-      tabBarTheme: TabBarThemeData(
-          labelColor: t.ink,
-          unselectedLabelColor: t.muted,
-          indicatorColor: t.ink,
-          dividerColor: t.line,
-          labelStyle: const TextStyle(
-              fontFamily: fontBody, fontWeight: FontWeight.w700, fontSize: YFont.label),
-          unselectedLabelStyle: const TextStyle(
-              fontFamily: fontBody,
-              fontWeight: FontWeight.w500,
-              fontSize: YFont.label)));
+      listTileTheme: ListTileThemeData(iconColor: t.ink, textColor: t.ink, contentPadding: EdgeInsets.zero),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(backgroundColor: t.accent, foregroundColor: t.accentInk, elevation: 0, highlightElevation: 0, extendedTextStyle: const TextStyle(fontFamily: fontBody, fontWeight: FontWeight.w700), shape: const StadiumBorder()),
+      tabBarTheme: TabBarThemeData(labelColor: t.ink, unselectedLabelColor: t.muted, indicatorColor: t.ink, dividerColor: t.line, labelStyle: const TextStyle(fontFamily: fontBody, fontWeight: FontWeight.w700, fontSize: YFont.label), unselectedLabelStyle: const TextStyle(fontFamily: fontBody, fontWeight: FontWeight.w500, fontSize: YFont.label)));
 }
 
 /// Applies the platform theme below it, following the day / night choice.

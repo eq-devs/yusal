@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../chat/chat_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import 'profile_edit_page.dart';
-import '../me/trust_pages.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/chat/chat_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/profile/profile_edit_page.dart';
+import 'package:yusal/features/me/trust_pages.dart';
 
 class _ProfileData {
   _ProfileData(this.profile, this.stats, this.owner, this.reviews,
@@ -70,8 +70,9 @@ class _ProfileView extends StatelessWidget {
       if (!await requireLogin(context) || !context.mounted) return;
       final conv = await attempt(
           context, () => context.repos.openConversation(p.ownerId));
-      if (conv != null && context.mounted)
+      if (conv != null && context.mounted) {
         await pushPage<void>(context, (_) => ChatPage(conversationId: conv.id));
+      }
     }
 
     Widget fact(String value, String label) => Expanded(
@@ -112,14 +113,16 @@ class _ProfileView extends StatelessWidget {
                 }),
             PopupMenuButton<String>(
                 onSelected: (v) async {
-                  if (v == 'report')
+                  if (v == 'report') {
                     await reportContent(context, ReportTarget.profile, p.id);
+                  }
                   if (v == 'block' &&
                       context.mounted &&
                       await requireLogin(context) &&
-                      context.mounted)
+                      context.mounted) {
                     await attempt(context, () => context.repos.block(p.ownerId),
                         success: tr3('已拉黑', 'Бұғатталды', 'Заблокировано'));
+                  }
                 },
                 itemBuilder: (context) => [
                       PopupMenuItem(
@@ -247,7 +250,8 @@ class _ProfileView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(fmtDay(r.createdAt),
-                            style: TextStyle(color: t.muted, fontSize: YFont.caption)),
+                            style: TextStyle(
+                                color: t.muted, fontSize: YFont.caption)),
                         if (r.text.isNotEmpty) Text(r.text),
                       ])),
           ],

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import '../../shared/brand/yicon.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/shared/brand/yicon.dart';
 
 /// Create or edit an individual or team service profile. Only the name,
 /// trades, regions, kind and availability are required.
@@ -21,18 +21,20 @@ class ProfileEditPage extends StatefulWidget {
 
 class _PriceRow {
   _PriceRow(this.amount, this.unit, this.scope);
-  final TextEditingController amount, scope;
+  final TextEditingController amount;
+  final TextEditingController scope;
   String unit;
 }
 
 class _ProfileEditPageState extends State<ProfileEditPage> {
   ProfileKind kind = ProfileKind.individual;
   late ProRole role = widget.role ?? ProRole.worker;
-  final name = TextEditingController(),
-      experience = TextEditingController(),
-      teamSize = TextEditingController(),
-      bio = TextEditingController();
-  List<String> trades = [], regions = [];
+  final name = TextEditingController();
+  final experience = TextEditingController();
+  final teamSize = TextEditingController();
+  final bio = TextEditingController();
+  List<String> trades = [];
+  List<String> regions = [];
   Availability availability = Availability.now;
   DateTime? availableFrom;
   final prices = <_PriceRow>[];
@@ -182,9 +184,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 trades);
             if (v != null) setState(() => trades = v);
           }),
-          picker(
-              tr3('服务地区', 'Аймақ', 'Районы'), regions.map(regionName).join(listSep),
-              () async {
+          picker(tr3('服务地区', 'Аймақ', 'Районы'),
+              regions.map(regionName).join(listSep), () async {
             final v = await pickMany<String>(
                 context,
                 tr3('服务地区', 'Аймақ', 'Районы'),
@@ -280,12 +281,13 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     final title = await askText(
                         context, tr3('作品标题', 'Атауы', 'Название'),
                         lines: 1);
-                    if (title != null)
+                    if (title != null) {
                       setState(() => works.add(Work(
                           id: 'w${DateTime.now().microsecondsSinceEpoch}',
                           title: title,
                           source: WorkSource.uploaded,
                           photoCount: 1)));
+                    }
                   },
                   child: Text(tr3('上传', 'Жүктеу', 'Загрузить')))),
           for (final w in works)

@@ -16,13 +16,16 @@ class Account {
       this.deleted = false,
       this.restricted = false,
       this.role});
-  final String id, phone, displayName;
+  final String id;
+  final String phone;
+  final String displayName;
 
   /// The account's email; '' when it has none (or it is someone else's
   /// account, whose email is not shared).
   final String email;
   final DateTime createdAt;
-  final bool deleted, restricted;
+  final bool deleted;
+  final bool restricted;
 
   /// Back-office role (superadmin, moderator, operator, viewer), or null.
   final String? role;
@@ -62,10 +65,10 @@ class Account {
 
 /// Back-office roles, held on the account like the backend.
 abstract final class AdminRoles {
-  static const superadmin = 'superadmin',
-      moderator = 'moderator',
-      operator = 'operator',
-      viewer = 'viewer';
+  static const superadmin = 'superadmin';
+  static const moderator = 'moderator';
+  static const operator = 'operator';
+  static const viewer = 'viewer';
   static const all = [superadmin, moderator, operator, viewer];
   static const perms = <String?, List<String>>{
     superadmin: [
@@ -81,10 +84,10 @@ abstract final class AdminRoles {
 }
 
 abstract final class AdminPerms {
-  static const read = 'read',
-      moderate = 'moderate',
-      operate = 'operate',
-      team = 'team';
+  static const read = 'read';
+  static const moderate = 'moderate';
+  static const operate = 'operate';
+  static const team = 'team';
 }
 
 enum ProfileKind { individual, team }
@@ -121,7 +124,8 @@ class Work {
       required this.source,
       this.cooperationId,
       this.photoCount = 0});
-  final String id, title;
+  final String id;
+  final String title;
   final WorkSource source;
   final String? cooperationId;
   final int photoCount;
@@ -147,17 +151,22 @@ class ServiceProfile {
       this.showPhone = false,
       this.role = ProRole.worker,
       this.verified = false});
-  final String id, ownerId, name, bio;
+  final String id;
+  final String ownerId;
+  final String name;
+  final String bio;
 
   /// A moderator checked the phone and site photos (identity, not quality).
   final bool verified;
   final ProfileKind kind;
   final ProRole role;
-  final List<String> trades, regions;
+  final List<String> trades;
+  final List<String> regions;
   final Availability availability;
   final DateTime? availableFrom;
   final DateTime availabilityConfirmedAt;
-  final int? experienceYears, teamSize;
+  final int? experienceYears;
+  final int? teamSize;
   final List<RefPrice> refPrices;
   final List<Work> works;
   final ProfileStatus status;
@@ -218,7 +227,8 @@ class ProfileStats {
       {required this.confirmedCooperations,
       required this.reviewCount,
       required this.dimensionAverages});
-  final int confirmedCooperations, reviewCount;
+  final int confirmedCooperations;
+  final int reviewCount;
 
   /// Average per review dimension, only when there are reviews.
   final Map<String, double> dimensionAverages;
@@ -266,7 +276,9 @@ class Budget {
       this.basis = 'total',
       this.materials = MaterialMode.undecided});
   final BudgetMode mode;
-  final int? min, max, amount;
+  final int? min;
+  final int? max;
+  final int? amount;
 
   /// Price unit code the numbers refer to, see [priceUnits].
   final String basis;
@@ -293,7 +305,9 @@ class QtyItem {
 class AttachmentVisibility {
   const AttachmentVisibility(
       {this.quantities = true, this.plan = true, this.render = false});
-  final bool quantities, plan, render;
+  final bool quantities;
+  final bool plan;
+  final bool render;
 }
 
 class HireTerms {
@@ -313,7 +327,8 @@ class HireTerms {
   final int? wage;
   final String wageUnit;
   final int? days;
-  final bool foodLodging, toolsByEmployer;
+  final bool foodLodging;
+  final bool toolsByEmployer;
 
   /// daily, weekly, monthly, onFinish.
   final String settleCycle;
@@ -370,7 +385,8 @@ class DemandVersion {
   /// Null means to be agreed.
   final DateTime? startDate;
   final int? durationDays;
-  final String description, siteNotes;
+  final String description;
+  final String siteNotes;
   final int photoCount;
   final Budget budget;
   final HireTerms? hire;
@@ -408,14 +424,18 @@ class Demand {
       this.shareRevoked = false,
       this.followUpsSent = 0,
       this.designProjectId});
-  final String id, ownerId, shareToken;
+  final String id;
+  final String ownerId;
+  final String shareToken;
   final DemandType type;
   final DemandStatus status;
   final List<DemandVersion> versions;
   final DateTime createdAt;
-  final DateTime? publishedAt, expiresAt;
+  final DateTime? publishedAt;
+  final DateTime? expiresAt;
   final PublisherRole publisherRole;
-  final String? closeReason, rejectReason;
+  final String? closeReason;
+  final String? rejectReason;
   final OutcomeKind? outcome;
   final DateTime? outcomeAt;
   final bool shareRevoked;
@@ -466,7 +486,8 @@ class DemandFilter {
       this.query = '',
       this.includeInactive = false});
   final DemandType? type;
-  final String? trade, region;
+  final String? trade;
+  final String? region;
   final String query;
   final bool includeInactive;
 }
@@ -480,7 +501,8 @@ class ProfileFilter {
       this.availableNow = false,
       this.query = ''});
   final ProfileKind? kind;
-  final String? trade, region;
+  final String? trade;
+  final String? region;
   final bool availableNow;
   final String query;
 }
@@ -503,7 +525,8 @@ class QuoteLine {
       required this.quantity,
       required this.unit,
       required this.unitPrice});
-  final String name, unit;
+  final String name;
+  final String unit;
   final double quantity;
   final int unitPrice;
   double get total => quantity * unitPrice;
@@ -529,7 +552,8 @@ class ApplicationVersion {
       this.includes = '',
       this.excludes = '',
       this.validUntil});
-  final int no, demandVersionNo;
+  final int no;
+  final int demandVersionNo;
   final DateTime createdAt;
   final String note;
 
@@ -546,7 +570,8 @@ class ApplicationVersion {
   final List<QuoteLine> lines;
   final int? lumpSum;
   final int? durationDays;
-  final String includes, excludes;
+  final String includes;
+  final String excludes;
   final DateTime? validUntil;
 
   /// Quantity × unit price for line quotes, the lump sum otherwise; null
@@ -570,7 +595,10 @@ class Application {
       this.needsReconfirm = false,
       this.readByOwner = false,
       this.requestId});
-  final String id, demandId, profileId, applicantId;
+  final String id;
+  final String demandId;
+  final String profileId;
+  final String applicantId;
   final ApplicationStatus status;
   final List<ApplicationVersion> versions;
   final DateTime createdAt;
@@ -637,16 +665,22 @@ class Agreement {
       this.materialsResponsibility = '',
       this.openItems = '',
       this.shareExactAddress = false});
-  final int version, demandVersionNo;
-  final String scope, proposedBy;
+  final int version;
+  final int demandVersionNo;
+  final String scope;
+  final String proposedBy;
   final Set<String> confirmedBy;
   final AgreementStatus status;
   final DateTime createdAt;
-  final int? headcount, amount;
+  final int? headcount;
+  final int? amount;
   final PricingMode pricing;
   final String amountUnit;
-  final DateTime? startDate, endDate;
-  final String paymentTerms, materialsResponsibility, openItems;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final String paymentTerms;
+  final String materialsResponsibility;
+  final String openItems;
 
   /// The publisher grants the partner the exact address.
   final bool shareExactAddress;
@@ -686,7 +720,8 @@ class EndRequest {
 class ProgressUpdate {
   const ProgressUpdate(
       {required this.by, required this.at, required this.text});
-  final String by, text;
+  final String by;
+  final String text;
   final DateTime at;
 }
 
@@ -710,12 +745,15 @@ class Milestone {
   /// A built-in point ("foundation", "walls", "roof", "finish") or a
   /// custom one written as "c:<name>".
   final String key;
-  final String criteria, note;
+  final String criteria;
+  final String note;
   final int percent;
 
   /// Photos attached to the latest inspection request (compressed JPEG/WebP).
   final List<List<int>> photos;
-  final DateTime? due, requestedAt, answeredAt;
+  final DateTime? due;
+  final DateTime? requestedAt;
+  final DateTime? answeredAt;
   final MilestoneStatus status;
   int get photoCount => photos.length;
 
@@ -762,7 +800,9 @@ class WorkLog {
       this.note = '',
       this.photos = const [],
       this.confirmed = false});
-  final String id, by, note;
+  final String id;
+  final String by;
+  final String note;
   final DateTime day;
   final int headcount;
   final List<List<int>> photos;
@@ -803,7 +843,12 @@ class Cooperation {
       this.updates = const [],
       this.milestones = const [],
       this.workLogs = const []});
-  final String id, demandId, applicationId, ownerId, providerId, profileId;
+  final String id;
+  final String demandId;
+  final String applicationId;
+  final String ownerId;
+  final String providerId;
+  final String profileId;
   final CooperationStatus status;
   final List<Agreement> agreements;
   final DateTime createdAt;
@@ -900,7 +945,11 @@ class Review {
       required this.scores,
       required this.createdAt,
       this.text = ''});
-  final String id, cooperationId, authorId, targetId, text;
+  final String id;
+  final String cooperationId;
+  final String authorId;
+  final String targetId;
+  final String text;
   final Map<String, int> scores;
   final DateTime createdAt;
 }
@@ -921,7 +970,10 @@ class ChatMessage {
       this.text = '',
       this.refId,
       this.state = SendState.sent});
-  final String id, conversationId, senderId, text;
+  final String id;
+  final String conversationId;
+  final String senderId;
+  final String text;
   final MessageKind kind;
   final String? refId;
   final DateTime sentAt;
@@ -1017,7 +1069,9 @@ class AppNotification {
       required this.createdAt,
       this.title = '',
       this.read = false});
-  final String id, accountId, refId;
+  final String id;
+  final String accountId;
+  final String refId;
 
   /// Short subject, e.g. the demand title.
   final String title;
@@ -1054,7 +1108,10 @@ class DesignSnapshot {
       required this.summary,
       this.preview,
       this.planJson});
-  final String id, ownerId, projectId, projectName;
+  final String id;
+  final String ownerId;
+  final String projectId;
+  final String projectName;
   final String designUpdatedAt;
   final DateTime extractedAt;
   final List<String> stages;
@@ -1077,7 +1134,9 @@ class BackupRecord {
       required this.houseText,
       required this.backedUpAt,
       required this.designUpdatedAt});
-  final String projectId, name, houseText;
+  final String projectId;
+  final String name;
+  final String houseText;
   final DateTime backedUpAt;
 
   /// The design's own updatedAt when it was backed up.
@@ -1102,7 +1161,10 @@ class Report {
       this.handledBy,
       this.handledAt,
       this.resolution = ''});
-  final String id, reporterId, targetId, reason;
+  final String id;
+  final String reporterId;
+  final String targetId;
+  final String reason;
   final ReportTarget target;
   final DateTime createdAt;
   final ReportStatus status;
@@ -1135,7 +1197,10 @@ class AuditEntry {
       this.target = '',
       this.title = '',
       this.byName = ''});
-  final String by, action, targetId, reason;
+  final String by;
+  final String action;
+  final String targetId;
+  final String reason;
   final DateTime at;
 
   /// What kind of record (demand, post, account…) and its title then.
@@ -1179,12 +1244,20 @@ class HousePost {
       this.featured = false,
       this.focus = const [],
       this.preview});
-  final String id, ownerId, projectId, snapshotId, title, story, region;
-  final DateTime createdAt, updatedAt;
+  final String id;
+  final String ownerId;
+  final String projectId;
+  final String snapshotId;
+  final String title;
+  final String story;
+  final String region;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   /// m² over all floors, number of floors and rooms, measured from the design.
   final double area;
-  final int floors, rooms;
+  final int floors;
+  final int rooms;
 
   /// Estimated building cost in tenge, from the design's estimate.
   final int? estimatedCost;
@@ -1197,7 +1270,10 @@ class HousePost {
   /// Up to three [feedbackTopics] the author most wants opinions on.
   final List<String> focus;
   final PostStatus status;
-  final int likeCount, commentCount, ratingSum, ratingCount;
+  final int likeCount;
+  final int commentCount;
+  final int ratingSum;
+  final int ratingCount;
 
   /// How many people started their own house from this design.
   final int reuseCount;
@@ -1287,7 +1363,10 @@ class PostComment {
       this.topic,
       this.parentId,
       this.helpful = false});
-  final String id, postId, authorId, text;
+  final String id;
+  final String postId;
+  final String authorId;
+  final String text;
   final DateTime createdAt;
   final int? rating;
 

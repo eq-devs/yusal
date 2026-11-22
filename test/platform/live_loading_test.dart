@@ -67,7 +67,8 @@ void main() {
   testWidgets('old request cannot overwrite new query', (t) async {
     final backend = MockBackend(latency: Duration.zero);
     final store = ProjectStore(fileSystem: MemoryFiles());
-    final first = Completer<String>(), second = Completer<String>();
+    final first = Completer<String>();
+    final second = Completer<String>();
     Widget page(int key) => MaterialApp(
         home: PlatformScope(
             repos: backend,

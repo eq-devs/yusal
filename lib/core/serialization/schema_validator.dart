@@ -1,4 +1,4 @@
-import 'house_codec.dart' show LoadError;
+import 'package:yusal/core/serialization/house_codec.dart' show LoadError;
 
 List<LoadError> validateSchemaV1(Object? value) {
   final errors = <LoadError>[];
@@ -165,18 +165,26 @@ List<LoadError> validateSchemaV1(Object? value) {
   bool time(String v) {
     if (!RegExp(
             r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,9})?(?:Z|[+-]\d\d:\d\d)$')
-        .hasMatch(v)) return false;
+        .hasMatch(v)) {
+      return false;
+    }
     try {
       if (DateTime.parse(v.substring(0, 10))
               .toIso8601String()
               .substring(0, 10) !=
-          v.substring(0, 10)) return false;
+          v.substring(0, 10)) {
+        return false;
+      }
       if (int.parse(v.substring(11, 13)) > 23 ||
           int.parse(v.substring(14, 16)) > 59 ||
-          int.parse(v.substring(17, 19)) > 59) return false;
+          int.parse(v.substring(17, 19)) > 59) {
+        return false;
+      }
       if (!v.endsWith('Z')) {
         if (int.parse(v.substring(v.length - 5, v.length - 3)) > 23 ||
-            int.parse(v.substring(v.length - 2)) > 59) return false;
+            int.parse(v.substring(v.length - 2)) > 59) {
+          return false;
+        }
       }
       DateTime.parse(v);
       return true;
@@ -196,8 +204,9 @@ List<LoadError> validateSchemaV1(Object? value) {
         error('WRONG_TYPE', path, '应为数组');
         return;
       }
-      for (var i = 0; i < v.length && errors.length < 100; i++)
+      for (var i = 0; i < v.length && errors.length < 100; i++) {
         node(v[i], type.substring(2), '$path/$i');
+      }
       return;
     }
     // Checked by its own typed decoder.
@@ -208,10 +217,12 @@ List<LoadError> validateSchemaV1(Object? value) {
     }
     if (type == 'int') {
       if (v is int) {
-        if (v.abs() > 2147483647)
+        if (v.abs() > 2147483647) {
           error('INT_OUT_OF_RANGE', path, '整数超出 32 位范围');
-      } else
+        }
+      } else {
         error(v is double ? 'NOT_INTEGER' : 'WRONG_TYPE', path, '必须是整数字面量');
+      }
       return;
     }
     if (['string', 'id', 'timestamp'].contains(type) ||
@@ -221,10 +232,12 @@ List<LoadError> validateSchemaV1(Object? value) {
         return;
       }
       if (type == 'id' && v.isEmpty) error('EMPTY_ID', path, 'id 不可为空');
-      if (type == 'timestamp' && !time(v))
+      if (type == 'timestamp' && !time(v)) {
         error('INVALID_TIMESTAMP', path, '带时区的时间无效');
-      if (enums.containsKey(type) && !enums[type]!.contains(v))
+      }
+      if (enums.containsKey(type) && !enums[type]!.contains(v)) {
         error('UNKNOWN_ENUM', path, '未知枚举值');
+      }
       return;
     }
     if (v is! Map) {
@@ -256,10 +269,9 @@ List<LoadError> validateSchemaV1(Object? value) {
     final schema = fields[shape]!;
     final accepted = <String>{};
     for (final field in schema.entries) {
-      final optional = field.key.endsWith('?'),
-          key = optional
-              ? field.key.substring(0, field.key.length - 1)
-              : field.key;
+      final optional = field.key.endsWith('?');
+      final key =
+          optional ? field.key.substring(0, field.key.length - 1) : field.key;
       accepted.add(key);
       if (!v.containsKey(key)) {
         if (!optional) error('MISSING_FIELD', child(path, key), '缺少字段 $key');
@@ -272,13 +284,14 @@ List<LoadError> validateSchemaV1(Object? value) {
         ? <String>{}
         : {for (final variant in union) ...fields['$type.$variant']!.keys};
     for (final key in v.keys) {
-      if (!accepted.contains(key))
+      if (!accepted.contains(key)) {
         error(
             otherShapeKeys.contains(key)
                 ? 'FIELD_NOT_ALLOWED'
                 : 'UNKNOWN_FIELD',
             child(path, key as String),
             '此对象不允许字段 $key');
+      }
       if (errors.length >= 100) return;
     }
   }

@@ -1,4 +1,4 @@
-import 'action.dart';
+import 'package:yusal/voice/action.dart';
 
 /// Every action the app offers, by id.
 class ActionRegistry {

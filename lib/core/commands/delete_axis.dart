@@ -1,7 +1,7 @@
-import '../document/house_document.dart';
-import '../axis/axis_resolver.dart';
-import '../canonicalization/room_canonicalizer.dart';
-import '../validation/document_validator.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/canonicalization/room_canonicalizer.dart';
+import 'package:yusal/core/validation/document_validator.dart';
 
 class AxisDeletion {
   const AxisDeletion(this.document, this.message,
@@ -10,7 +10,9 @@ class AxisDeletion {
       this.hasHosted = false});
   final HouseDocument? document;
   final String? message;
-  final bool needsResolution, hasStairs, hasHosted;
+  final bool needsResolution;
+  final bool hasStairs;
+  final bool hasHosted;
 }
 
 AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
@@ -19,40 +21,47 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
     bool deleteStairs = false}) {
   if (id.startsWith('@')) return const AxisDeletion(null, '外轮廓边界不能删除');
   if (doc.floors.any(
-      (f) => f.outside.any((r) => [r.x0, r.x1, r.y0, r.y1].contains(id))))
+      (f) => f.outside.any((r) => [r.x0, r.x1, r.y0, r.y1].contains(id)))) {
     return const AxisDeletion(null, '这条线是缺角的边，请先恢复矩形外形');
+  }
   final affected = <String, ResolvedAxes>{};
   for (final floor in doc.floors) {
     final axes = resolveFloorAxes(doc, floor.id)!;
     if (lookupAxis(axes, id).axis != null) affected[floor.id] = axes;
   }
   if (affected.isEmpty) return const AxisDeletion(null, '没有找到这条分隔线');
-  final roomCells = <String, Set<Cell>>{},
-      ownerMaps = <String, Map<Cell, String?>>{};
+  final roomCells = <String, Set<Cell>>{};
+  final ownerMaps = <String, Map<Cell, String?>>{};
   final stairIds = {
     for (final f in doc.floors)
       for (final s in f.stairs) s.id
   };
   final removeStairs = <String>{};
-  var conflict = false, hosted = false;
+  var conflict = false;
+  var hosted = false;
   for (final floor in doc.floors.where((f) => affected.containsKey(f.id))) {
-    final axes = affected[floor.id]!, a = lookupAxis(axes, id).axis!;
+    final axes = affected[floor.id]!;
+    final a = lookupAxis(axes, id).axis!;
     final owners = <Cell, String?>{};
     for (final r in floor.rooms) {
       final cells = regionCells(axes, r.regions).cells;
       roomCells[r.id] = cells;
-      for (final c in cells) owners[c] = r.id;
+      for (final c in cells) {
+        owners[c] = r.id;
+      }
     }
     for (final s in floor.stairs)
-      for (final c in cellsOfRect(resolveRect(axes, s.region).rect!))
+      for (final c in cellsOfRect(resolveRect(axes, s.region).rect!)) {
         owners[c] = s.id;
+      }
     ownerMaps[floor.id] = owners;
     final count = a.dir == AxisDir.V ? axes.ny : axes.nx;
     for (var n = 0; n < count; n++) {
       final low =
-              a.dir == AxisDir.V ? Cell(a.index - 1, n) : Cell(n, a.index - 1),
-          high = a.dir == AxisDir.V ? Cell(a.index, n) : Cell(n, a.index);
-      final l = owners[low], h = owners[high];
+          a.dir == AxisDir.V ? Cell(a.index - 1, n) : Cell(n, a.index - 1);
+      final high = a.dir == AxisDir.V ? Cell(a.index, n) : Cell(n, a.index);
+      final l = owners[low];
+      final h = owners[high];
       if (l != h) {
         conflict = true;
         if (stairIds.contains(l)) removeStairs.add(l!);
@@ -60,18 +69,22 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
       }
     }
     if (floor.openings.any((o) => o.anchor.axisId == id) ||
-        floor.wallOverrides.any((w) => w.anchor.axisId == id)) hosted = true;
+        floor.wallOverrides.any((w) => w.anchor.axisId == id)) {
+      hosted = true;
+    }
   }
   if ((conflict && resolution == null) ||
       (hosted && !deleteHostedObjects) ||
-      (removeStairs.isNotEmpty && !deleteStairs))
+      (removeStairs.isNotEmpty && !deleteStairs)) {
     return AxisDeletion(null, '删除分隔线将合并相邻格子，并影响房间、楼梯或门窗。',
         needsResolution: true,
         hasStairs: removeStairs.isNotEmpty,
         hasHosted: hosted);
+  }
   if (resolution != null &&
-      !['mergeRooms', 'keepLowSide', 'keepHighSide'].contains(resolution))
+      !['mergeRooms', 'keepLowSide', 'keepHighSide'].contains(resolution)) {
     return const AxisDeletion(null, '冲突处理选项无效');
+  }
   final axesSystem = AxisSystem(
       global: doc.axes.global.where((a) => a.id != id).toList(),
       floor: doc.axes.floor.where((a) => a.id != id).toList());
@@ -92,10 +105,10 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
       floors.add(floor);
       continue;
     }
-    final a = lookupAxis(oldAxes, id).axis!,
-        line = a.dir == AxisDir.V ? oldAxes.v : oldAxes.h,
-        lowId = line[a.index - 1].id,
-        highId = line[a.index + 1].id;
+    final a = lookupAxis(oldAxes, id).axis!;
+    final line = a.dir == AxisDir.V ? oldAxes.v : oldAxes.h;
+    final lowId = line[a.index - 1].id;
+    final highId = line[a.index + 1].id;
     final axes = resolveFloorAxes(provisional, floor.id)!;
     AxisRectangle rect(AxisRectangle r) => AxisRectangle(
         x0: r.x0 == id ? lowId : r.x0,
@@ -112,23 +125,27 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
     };
     String root(String id) {
       var value = id;
-      while (representatives[value] != value) value = representatives[value]!;
+      while (representatives[value] != value) {
+        value = representatives[value]!;
+      }
       return value;
     }
 
     if (resolution == 'mergeRooms') {
       final count = a.dir == AxisDir.V ? oldAxes.ny : oldAxes.nx;
       for (var n = 0; n < count; n++) {
-        final l = oldOwners[a.dir == AxisDir.V
-                ? Cell(a.index - 1, n)
-                : Cell(n, a.index - 1)],
-            h = oldOwners[
-                a.dir == AxisDir.V ? Cell(a.index, n) : Cell(n, a.index)];
+        final l = oldOwners[
+            a.dir == AxisDir.V ? Cell(a.index - 1, n) : Cell(n, a.index - 1)];
+        final h =
+            oldOwners[a.dir == AxisDir.V ? Cell(a.index, n) : Cell(n, a.index)];
         if (l == null ||
             h == null ||
             !representatives.containsKey(l) ||
-            !representatives.containsKey(h)) continue;
-        final rl = root(l), rh = root(h);
+            !representatives.containsKey(h)) {
+          continue;
+        }
+        final rl = root(l);
+        final rh = root(h);
         if (rl == rh) continue;
         final keep =
             compareComponentPriority(oldAxes, roomCells[rl]!, roomCells[rh]!) <=
@@ -165,8 +182,8 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
             : value != null && representatives.containsKey(value)
                 ? root(value)
                 : value;
-        final low = clean(oldOwners[oldCell(false)]),
-            high = clean(oldOwners[oldCell(true)]);
+        final low = clean(oldOwners[oldCell(false)]);
+        final high = clean(oldOwners[oldCell(true)]);
         newOwner[Cell(i, j)] = !collapsed
             ? low
             : resolution == 'keepHighSide'
@@ -183,12 +200,13 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
           .map((e) => e.key)
           .toSet();
       final parts = components(axes, cells).cells;
-      for (var k = 0; k < parts.length; k++)
+      for (var k = 0; k < parts.length; k++) {
         rooms.add(Room(
             id: k == 0 ? room.id : newId(),
             type: room.type,
             name: room.name,
             regions: canonicalizeCells(axes, parts[k]).regions));
+      }
     }
     final openings = <Opening>[];
     for (final o in floor.openings) {
@@ -273,7 +291,8 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
       floors: floors,
       roof: doc.roof);
   final errors = validateHouse(result);
-  if (errors.isNotEmpty)
+  if (errors.isNotEmpty) {
     return AxisDeletion(null, '删除后有冲突：${errors.first.message}');
+  }
   return AxisDeletion(result, null);
 }

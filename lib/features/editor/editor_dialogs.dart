@@ -42,10 +42,11 @@ extension _EditorDialogs on _HouseEditorState {
       final height = await length(
           tr3('女儿墙高度', 'Парапет биіктігі', 'Высота парапета'),
           history.present.roof.parapetHeight ?? 900);
-      if (height != null)
+      if (height != null) {
         action('SetRoof', {
           'roof': {'type': 'flat', 'parapetHeight': height}
         });
+      }
     }
     if (choice == 'hip') {
       final pitchText = await ask(
@@ -87,7 +88,7 @@ extension _EditorDialogs on _HouseEditorState {
                         '屋脊沿宽度方向', 'Жота ені бойымен', 'Конёк вдоль ширины')),
                     onTap: () => Navigator.pop(context, 'H')),
               ])));
-      if (direction != null)
+      if (direction != null) {
         action('SetRoof', {
           'roof': {
             'type': 'gable',
@@ -96,6 +97,7 @@ extension _EditorDialogs on _HouseEditorState {
             'overhang': overhang
           }
         });
+      }
     }
     if (choice == 'defaults') {
       final raw =
@@ -139,8 +141,9 @@ extension _EditorDialogs on _HouseEditorState {
               ])));
       if (field != null) {
         final value = await length(labels[field]!, defaults[field] as int);
-        if (value != null)
+        if (value != null) {
           action('SetDefault', {'field': field, 'value': value});
+        }
       }
     }
     if (choice == 'north') {
@@ -206,12 +209,13 @@ extension _EditorDialogs on _HouseEditorState {
                           Text(tr3('仅本层', 'Тек осы қабат', 'Только этот этаж')),
                       onTap: () => Navigator.pop(context, 'floor')),
                 ])));
-        if (scope != null)
+        if (scope != null) {
           action('AddAxis', {
             'dir': selected,
             'pos': value,
             if (scope == 'floor') 'floorId': floor.id
           });
+        }
       }
     }
     if (selected is ResolvedAxis) {
@@ -235,11 +239,13 @@ extension _EditorDialogs on _HouseEditorState {
       if (operation == 'move') {
         final value = await length(
             tr3('分隔线位置', 'Сызықтың орны', 'Положение линии'), selected.pos);
-        if (value != null)
+        if (value != null) {
           action('MoveAxis', {'axisId': selected.id, 'pos': value});
+        }
       }
-      if (operation == 'promote')
+      if (operation == 'promote') {
         action('PromoteFloorAxis', {'axisId': selected.id});
+      }
       if (operation == 'delete') {
         var result =
             deleteAxis(history.present, selected.id, () => const Uuid().v4());
@@ -282,8 +288,9 @@ extension _EditorDialogs on _HouseEditorState {
         if (result.document != null) {
           update(() {
             if (history
-                .commit(withExtras(result.document!, history.present.extras)))
+                .commit(withExtras(result.document!, history.present.extras))) {
               changed();
+            }
           });
         } else {
           notify(result.message ??
@@ -316,11 +323,12 @@ extension _EditorDialogs on _HouseEditorState {
                               Text(
                                   tr3('房屋长宽', 'Үйдің ені мен ұзындығы',
                                       'Ширина и длина дома'),
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w600)),
                               Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   child: Text(tr3(
                                       '外形尺寸用于全部楼层。内部房间位置保持不变。',
                                       'Сыртқы өлшем барлық қабатқа қолданылады. Ішкі бөлмелердің орны сақталады.',
@@ -356,8 +364,8 @@ extension _EditorDialogs on _HouseEditorState {
                               const SizedBox(height: 16),
                               FilledButton(
                                   onPressed: () {
-                                    final w = parseNumber(width.text),
-                                        d = parseNumber(depth.text);
+                                    final w = parseNumber(width.text);
+                                    final d = parseNumber(depth.text);
                                     if (w == null ||
                                         d == null ||
                                         !w.isFinite ||
@@ -464,10 +472,10 @@ extension _EditorDialogs on _HouseEditorState {
                 height: math.min(MediaQuery.sizeOf(context).height * 0.7, 500),
                 child: ListView(children: [
                   Padding(
-                      padding: EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
                       child: Text(
                           tr3('更多工具', 'Басқа құралдар', 'Другие инструменты'),
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w600))),
                   if (phoneTools)
                     Padding(
@@ -477,8 +485,9 @@ extension _EditorDialogs on _HouseEditorState {
                           for (final w in secondaryToolButtons())
                             Listener(
                                 onPointerUp: (_) => Future.microtask(() {
-                                      if (context.mounted)
+                                      if (context.mounted) {
                                         Navigator.maybePop(context);
+                                      }
                                     }),
                                 child: w)
                         ])),
@@ -508,9 +517,9 @@ extension _EditorDialogs on _HouseEditorState {
     update(() {
       erase = choice == 'erase';
       placementHint = null;
-      if (['grid', 'opening', 'stair'].contains(choice))
+      if (['grid', 'opening', 'stair'].contains(choice)) {
         tool = EditorTool.values.byName(choice);
-      else {
+      } else {
         tool = EditorTool.room;
         if (!erase) brush = RoomType.values.firstWhere((t) => t.name == choice);
       }
@@ -566,7 +575,8 @@ extension _EditorDialogs on _HouseEditorState {
                     ]));
         if (yes != true) return;
       }
-      final before = history.present, index = floorIndex;
+      final before = history.present;
+      final index = floorIndex;
       action(choice, {
         'floorId': floor.id,
         if (choice == 'DeleteFloor') 'deleteStairs': true
@@ -596,8 +606,10 @@ extension _EditorDialogs on _HouseEditorState {
   /// A room from its use, its size and the corner of the house it goes
   /// in, for those who would rather type than draw.
   Future<void> addRoomBySize() async {
-    var type = RoomType.bedroom, corner = 'bl';
-    final width = TextEditingController(), depth = TextEditingController();
+    var type = RoomType.bedroom;
+    var corner = 'bl';
+    final width = TextEditingController();
+    final depth = TextEditingController();
     void fill() {
       width.text = dec('${_HouseEditorState.roomSizes[type]!.$1}');
       depth.text = dec('${_HouseEditorState.roomSizes[type]!.$2}');
@@ -687,9 +699,10 @@ extension _EditorDialogs on _HouseEditorState {
                               onPressed: () {
                                 final fp = history.present.footprint;
                                 final w =
-                                        ((parseNumber(width.text) ?? 0) * 1000)
-                                            .round(),
-                                    d = ((parseNumber(depth.text) ?? 0) * 1000)
+                                    ((parseNumber(width.text) ?? 0) * 1000)
+                                        .round();
+                                final d =
+                                    ((parseNumber(depth.text) ?? 0) * 1000)
                                         .round();
                                 if (w < 300 ||
                                     d < 300 ||
@@ -702,10 +715,9 @@ extension _EditorDialogs on _HouseEditorState {
                                   return;
                                 }
                                 final left =
-                                        corner.endsWith('l') ? 0 : fp.width - w,
-                                    bottom = corner.startsWith('b')
-                                        ? 0
-                                        : fp.depth - d;
+                                    corner.endsWith('l') ? 0 : fp.width - w;
+                                final bottom =
+                                    corner.startsWith('b') ? 0 : fp.depth - d;
                                 Navigator.pop(context, <String, dynamic>{
                                   'w': w,
                                   'd': d,
@@ -718,9 +730,10 @@ extension _EditorDialogs on _HouseEditorState {
                               child: Text(tr3(
                                   '放到图上', 'Сызбаға қою', 'Поставить на план'))),
                         ])))));
-    if (args != null && mounted)
+    if (args != null && mounted) {
       startStamp(args['roomType'] as RoomType, args['w'] as int,
           args['d'] as int, args['corner'] as String);
+    }
   }
 
   Future<void> wallSettings({bool directThickness = false}) async {
@@ -757,15 +770,17 @@ extension _EditorDialogs on _HouseEditorState {
           builder: (_) => WallThicknessDialog(initial: thickness));
       if (value == null || !mounted) return;
     }
-    final start = editStart, end = editEnd;
+    final start = editStart;
+    final end = editEnd;
     action('SetWallOverride', {
       'floorId': floor.id,
       'anchor': selectedDrawnAnchor,
       'type': choice,
       if (value != null) 'value': value
     });
-    if (start != null && end != null)
+    if (start != null && end != null) {
       update(() => refreshWallSelection(start, end));
+    }
   }
 
   /// A figure on the plan was tapped: type the size wanted and say which
@@ -781,9 +796,10 @@ extension _EditorDialogs on _HouseEditorState {
               : tr3('房屋总深', 'Үйдің жалпы тереңдігі', 'Общая глубина дома'),
           span.length.round());
       if (mounted) update(() => editingDimension = null);
-      if (value != null && mounted)
+      if (value != null && mounted) {
         action(
             'SetFootprintSize', {span.horizontal ? 'width' : 'depth': value});
+      }
       return;
     }
     final walls = wallsOf(base, const FoundationSpec()).where((w) =>
@@ -806,19 +822,17 @@ extension _EditorDialogs on _HouseEditorState {
       return;
     }
     bool inner(WallInfo w) => w.segment.axis.kind != 'boundary';
-    final low = walls
-            .where((w) => (hi(w) - span.a).abs() < 2 && inner(w))
-            .firstOrNull,
-        high = walls
-            .where((w) => (lo(w) - span.b).abs() < 2 && inner(w))
-            .firstOrNull;
+    final low =
+        walls.where((w) => (hi(w) - span.a).abs() < 2 && inner(w)).firstOrNull;
+    final high =
+        walls.where((w) => (lo(w) - span.b).abs() < 2 && inner(w)).firstOrNull;
     update(() => editingDimension = span);
     final lowName = span.horizontal
-            ? tr3('动左边的墙', 'Сол қабырға жылжиды', 'Двигать левую стену')
-            : tr3('动下边的墙', 'Төменгі қабырға жылжиды', 'Двигать нижнюю стену'),
-        highName = span.horizontal
-            ? tr3('动右边的墙', 'Оң қабырға жылжиды', 'Двигать правую стену')
-            : tr3('动上边的墙', 'Жоғарғы қабырға жылжиды', 'Двигать верхнюю стену');
+        ? tr3('动左边的墙', 'Сол қабырға жылжиды', 'Двигать левую стену')
+        : tr3('动下边的墙', 'Төменгі қабырға жылжиды', 'Двигать нижнюю стену');
+    final highName = span.horizontal
+        ? tr3('动右边的墙', 'Оң қабырға жылжиды', 'Двигать правую стену')
+        : tr3('动上边的墙', 'Жоғарғы қабырға жылжиды', 'Двигать верхнюю стену');
     final field =
         TextEditingController(text: (span.length / 1000).toStringAsFixed(2));
     field.selection =

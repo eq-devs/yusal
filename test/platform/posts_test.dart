@@ -26,7 +26,6 @@ HousePost draft(String snapshotId,
         createdAt: DateTime.utc(2026),
         updatedAt: DateTime.utc(2026),
         area: 120,
-        floors: 1,
         rooms: 4);
 
 void main() {
@@ -56,7 +55,7 @@ void main() {
     expect(await b.demandsForPost('post_dinara'), isEmpty);
   });
 
-  test('publishing needs the owner\'s own snapshot and clean text', () async {
+  test("publishing needs the owner's own snapshot and clean text", () async {
     final b = backend();
     b.signInAs(SeedIds.mason);
     expect(
@@ -120,7 +119,7 @@ void main() {
         throwsA(isA<ApiFailure>()
             .having((f) => f.code, 'code', ApiCodes.invalidInput)));
     expect(
-        () => b.comment('post_aigerim', '', rating: null),
+        () => b.comment('post_aigerim', ''),
         throwsA(isA<ApiFailure>()
             .having((f) => f.code, 'code', ApiCodes.invalidInput)));
   });
@@ -146,7 +145,9 @@ void main() {
   test('comments are rate limited', () async {
     final b = backend();
     b.signInAs(SeedIds.mason);
-    for (var i = 0; i < 10; i++) await b.comment('post_dinara', '评论 $i');
+    for (var i = 0; i < 10; i++) {
+      await b.comment('post_dinara', '评论 $i');
+    }
     expect(
         () => b.comment('post_dinara', '再来'),
         throwsA(isA<ApiFailure>()
@@ -155,7 +156,7 @@ void main() {
     await b.comment('post_dinara', '现在可以了');
   });
 
-  test('a blocked person\'s house and comments disappear', () async {
+  test("a blocked person's house and comments disappear", () async {
     final b = backend();
     b.signInAs(SeedIds.owner2);
     await b.block(SeedIds.electrician);

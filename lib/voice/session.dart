@@ -1,17 +1,18 @@
 import 'package:flutter/foundation.dart';
 
-import '../app/settings.dart';
-import '../data/repositories.dart';
-import 'action.dart';
-import 'actions_design.dart';
-import 'executor.dart';
-import 'form.dart';
-import 'screen.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/actions_design.dart';
+import 'package:yusal/voice/executor.dart';
+import 'package:yusal/voice/form.dart';
+import 'package:yusal/voice/screen.dart';
 
 /// One action the language model asked the app to run.
 class ActionCall {
   const ActionCall(this.id, this.action, this.args);
-  final String id, action;
+  final String id;
+  final String action;
   final Map<String, Object?> args;
 }
 
@@ -161,7 +162,8 @@ class VoiceSession extends ChangeNotifier {
   static const maxSteps = 6;
 
   VoicePhase phase = VoicePhase.idle;
-  String heard = '', reply = '';
+  String heard = '';
+  String reply = '';
   String? error;
   List<VoiceStep> steps = const [];
   List<String> options = const [];

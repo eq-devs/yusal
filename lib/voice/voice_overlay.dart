@@ -6,18 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-import '../app/settings.dart';
-import '../data/repositories.dart';
-import '../services/voice/read_aloud.dart';
-import 'action.dart';
-import 'actions.dart';
-import 'executor.dart';
-import 'read_aloud_button.dart';
-import 'actions_design.dart';
-import 'screen.dart';
-import 'session.dart';
-import 'speech.dart';
-import '../shared/brand/yicon.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/services/voice/read_aloud.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/actions.dart';
+import 'package:yusal/voice/executor.dart';
+import 'package:yusal/voice/read_aloud_button.dart';
+import 'package:yusal/voice/actions_design.dart';
+import 'package:yusal/voice/screen.dart';
+import 'package:yusal/voice/session.dart';
+import 'package:yusal/voice/speech.dart';
+import 'package:yusal/shared/brand/yicon.dart';
 
 /// Voice control is built into every build.
 const voiceBuiltIn = true;
@@ -97,8 +97,7 @@ const _suggestionOrder = [
 /// Tapping the orb starts listening and tapping it again sends; without
 /// speech, or on a long press, it opens a text field instead.
 class VoiceBar extends StatefulWidget {
-  const VoiceBar(
-      {super.key, required this.session, this.speech, this.reader});
+  const VoiceBar({super.key, required this.session, this.speech, this.reader});
   final VoiceSession session;
 
   /// Reads replies aloud; null leaves the speaker button out.
@@ -115,8 +114,7 @@ class VoiceBar extends StatefulWidget {
   State<VoiceBar> createState() => _VoiceBarState();
 }
 
-class _VoiceBarState extends State<VoiceBar>
-    with TickerProviderStateMixin {
+class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
   final input = TextEditingController();
   final focus = FocusNode();
   bool typing = false;
@@ -125,7 +123,8 @@ class _VoiceBarState extends State<VoiceBar>
   _Mic mic = _Mic.off;
   bool get listening => mic == _Mic.listening;
   bool get transcribing => mic == _Mic.transcribing;
-  bool bannerShown = false, expanded = false;
+  bool bannerShown = false;
+  bool expanded = false;
 
   /// The card that says what the orb is, until the orb is first used.
   bool intro = false;
@@ -409,10 +408,11 @@ class _VoiceBarState extends State<VoiceBar>
             child: InkWell(
                 onTap: () => setState(() => expanded = !expanded),
                 // A long answer scrolls inside its bubble.
-                child: SingleChildScrollView(child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                child: SingleChildScrollView(
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                       // Only as wide as its text: a short answer is a
                       // small bubble.
                       Row(mainAxisSize: MainAxisSize.min, children: [
@@ -586,8 +586,7 @@ class _VoiceBarState extends State<VoiceBar>
                     Icon(Icons.auto_awesome, size: 18, color: colors.primary),
                     const SizedBox(width: 6),
                     Flexible(
-                        child: Text(
-                            tr3('AI 助手', 'AI көмекші', 'AI-помощник'),
+                        child: Text(tr3('AI 助手', 'AI көмекші', 'AI-помощник'),
                             style: theme.textTheme.titleSmall)),
                     IconButton(
                         key: const Key('voice-intro-close'),
@@ -629,77 +628,69 @@ class _VoiceBarState extends State<VoiceBar>
     final orbSize = slot?.shortestSide.clamp(36.0, 52.0) ?? 52.0;
     final down = slot != null && slot.center.dy < screen.height / 2;
     final parts = [
-                      if (tips.isNotEmpty)
-                        Padding(
-                            padding: EdgeInsets.only(
-                                top: down ? 8 : 0, bottom: down ? 0 : 8),
-                            child: Wrap(
-                                alignment: WrapAlignment.end,
-                                spacing: 8,
-                                runSpacing: 6,
-                                children: [
-                                  for (final tip in tips)
-                                    ActionChip(
-                                        avatar: const Icon(
-                                            Icons.lightbulb_outline,
-                                            size: 16),
-                                        label: Text(tip,
-                                            style: theme.textTheme.bodyMedium),
-                                        onPressed: () => send(tip)),
-                                ])),
-                      if (welcome != null)
-                        ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 420),
-                            child: welcome),
-                      if (banner != null)
-                        Container(
-                            constraints: BoxConstraints(
-                                minHeight: orbSize,
-                                maxWidth: 420,
-                                maxHeight: screen.height * 0.45),
-                            margin: EdgeInsets.only(
-                                top: pill != null && down ? 8 : 0,
-                                bottom: pill != null && !down ? 8 : 0),
-                            child: Align(
-                                alignment: Alignment.centerRight,
-                                heightFactor: 1,
-                                child: banner)),
-                      // As tall as the orb, so the two share a centre line.
-                      if (pill != null)
-                        Container(
-                            constraints: BoxConstraints(minHeight: orbSize),
-                            alignment: Alignment.centerRight,
-                            child: ConstrainedBox(
-                                constraints:
-                                    const BoxConstraints(maxWidth: 420),
-                                child: pill)),
+      if (tips.isNotEmpty)
+        Padding(
+            padding: EdgeInsets.only(top: down ? 8 : 0, bottom: down ? 0 : 8),
+            child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  for (final tip in tips)
+                    ActionChip(
+                        avatar: const Icon(Icons.lightbulb_outline, size: 16),
+                        label: Text(tip, style: theme.textTheme.bodyMedium),
+                        onPressed: () => send(tip)),
+                ])),
+      if (welcome != null)
+        ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420), child: welcome),
+      if (banner != null)
+        Container(
+            constraints: BoxConstraints(
+                minHeight: orbSize,
+                maxWidth: 420,
+                maxHeight: screen.height * 0.45),
+            margin: EdgeInsets.only(
+                top: pill != null && down ? 8 : 0,
+                bottom: pill != null && !down ? 8 : 0),
+            child: Align(
+                alignment: Alignment.centerRight,
+                heightFactor: 1,
+                child: banner)),
+      // As tall as the orb, so the two share a centre line.
+      if (pill != null)
+        Container(
+            constraints: BoxConstraints(minHeight: orbSize),
+            alignment: Alignment.centerRight,
+            child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420), child: pill)),
     ];
 
     final orbButton = Semantics(
-    button: true,
-    label: listening
-        ? tr3('说完了', 'Айтып болдым', 'Готово')
-        : tr3(
-            '语音操作', 'Дауыспен басқару', 'Голосовое управление'),
-    child: GestureDetector(
-        key: const Key('voice-button'),
-        onTap: orb,
-        onLongPress: toggleTyping,
-        child: _Orb(
-            size: orbSize,
-            glow: glow,
-            level: level,
-            mood: mood,
-            icon: listening
-                ? Icons.stop_rounded
-                : typing && widget.speech == null
-                    ? Icons.close
-                    // At rest it says what a tap does.
-                    : !active
-                        ? (widget.speech != null
-                            ? Icons.mic
-                            : Icons.auto_awesome)
-                        : null)));
+        button: true,
+        label: listening
+            ? tr3('说完了', 'Айтып болдым', 'Готово')
+            : tr3('语音操作', 'Дауыспен басқару', 'Голосовое управление'),
+        child: GestureDetector(
+            key: const Key('voice-button'),
+            onTap: orb,
+            onLongPress: toggleTyping,
+            child: _Orb(
+                size: orbSize,
+                glow: glow,
+                level: level,
+                mood: mood,
+                icon: listening
+                    ? Icons.stop_rounded
+                    : typing && widget.speech == null
+                        ? Icons.close
+                        // At rest it says what a tap does.
+                        : !active
+                            ? (widget.speech != null
+                                ? Icons.mic
+                                : Icons.auto_awesome)
+                            : null)));
     final bubbles = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -838,12 +829,12 @@ class _Orb extends StatelessWidget {
   final Animation<double>? level;
   final IconData? icon;
 
-  static const _amber = Color(0xffF0A63C),
-      _clay = Color(0xffC8552D),
-      _wood = Color(0xff9A6232),
-      _moss = Color(0xff5F9B72),
-      _stone = Color(0xffB9C4C6),
-      _red = Color(0xffE0483C);
+  static const _amber = Color(0xffF0A63C);
+  static const _clay = Color(0xffC8552D);
+  static const _wood = Color(0xff9A6232);
+  static const _moss = Color(0xff5F9B72);
+  static const _stone = Color(0xffB9C4C6);
+  static const _red = Color(0xffE0483C);
 
   static const _lights = {
     _Mood.idle: [_amber, _clay, _stone],
@@ -922,13 +913,9 @@ class _Orb extends StatelessWidget {
                 child: RepaintBoundary(
                     child: SizedBox.square(
                         dimension: size,
-                        child: _disc(RadialGradient(colors: [
-                          _amber,
-                          _amber.withValues(alpha: 0)
-                        ], stops: const [
-                          0.55,
-                          1
-                        ])))))),
+                        child: _disc(RadialGradient(
+                            colors: [_amber, _amber.withValues(alpha: 0)],
+                            stops: const [0.55, 1])))))),
         ScaleTransition(
             scale: level.drive(Tween(begin: 1, end: 1.22)), child: orb),
       ]);
@@ -1018,8 +1005,10 @@ class _VoiceHostState extends State<VoiceHost> {
 /// What the assistant has noted of the house it is asking about, in one
 /// line: "12 × 13 м · 2 қабат · 3 жатын бөлме". Empty when nothing is.
 String briefLine(Map<String, Object?> brief) {
-  String n(Object? v) => v is num && v == v.roundToDouble() ? '${v.round()}' : '$v';
-  final width = brief['width_m'], depth = brief['depth_m'];
+  String n(Object? v) =>
+      v is num && v == v.roundToDouble() ? '${v.round()}' : '$v';
+  final width = brief['width_m'];
+  final depth = brief['depth_m'];
   final entrance = switch (brief['entrance']) {
     'north' => tr3('北', 'солтүстік', 'север'),
     'east' => tr3('东', 'шығыс', 'восток'),

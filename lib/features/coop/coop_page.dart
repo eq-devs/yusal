@@ -1,27 +1,28 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../domain/rules.dart';
-import '../chat/chat_page.dart';
-import '../demand/demand_detail_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import '../houses/site_tab.dart';
-import 'milestone_editor.dart';
-import 'agreement_form.dart';
-import 'review_page.dart';
-import '../../voice/actions_coop.dart';
-import '../../voice/screen.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/rules.dart';
+import 'package:yusal/features/chat/chat_page.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/houses/site_tab.dart';
+import 'package:yusal/features/coop/milestone_editor.dart';
+import 'package:yusal/features/coop/agreement_form.dart';
+import 'package:yusal/features/coop/review_page.dart';
+import 'package:yusal/voice/actions_coop.dart';
+import 'package:yusal/voice/screen.dart';
 
 class _CoopData {
   _CoopData(this.coop, this.demand, this.owner, this.provider, this.profile,
       this.reviews);
   final Cooperation? coop;
   final Demand? demand;
-  final Account? owner, provider;
+  final Account? owner;
+  final Account? provider;
   final ServiceProfile? profile;
   final List<Review> reviews;
 }
@@ -38,8 +39,9 @@ class CooperationPage extends StatelessWidget {
     return Live<_CoopData>(
         load: (r) async {
           final c = await r.cooperation(cooperationId);
-          if (c == null)
+          if (c == null) {
             return _CoopData(null, null, null, null, null, const []);
+          }
           final (demand, owner, provider, profile, reviews) = await (
             r.demand(c.demandId),
             r.account(c.ownerId),
@@ -106,8 +108,8 @@ class _CoopViewState extends State<_CoopView>
     final g = c.agreement;
     final change = c.pendingChange;
     final title = data.demand?.current.title ?? '';
-    final ownerName = deletedName(data.owner),
-        providerName = data.profile?.name ?? deletedName(data.provider);
+    final ownerName = deletedName(data.owner);
+    final providerName = data.profile?.name ?? deletedName(data.provider);
     String nameOf(String id) => id == c.ownerId ? ownerName : providerName;
     final myReview = data.reviews.where((r) => r.authorId == me).firstOrNull;
     final otherReview = data.reviews.where((r) => r.authorId != me).firstOrNull;
@@ -180,9 +182,10 @@ class _CoopViewState extends State<_CoopView>
                   onPressed: () async {
                     final note = await askText(
                         context, tr3('异议说明', 'Қарсылық', 'Причина'));
-                    if (note != null && context.mounted)
+                    if (note != null && context.mounted) {
                       await run(() => repos.disputeEnd(c.id, note),
                           tr3('已提交异议', 'Жіберілді', 'Отправлено'));
+                    }
                   },
                   child: Text(tr3('提出异议', 'Қарсылық', 'Оспорить')))),
         ]);
@@ -192,7 +195,7 @@ class _CoopViewState extends State<_CoopView>
             'Аяқтау сұралды. 7 күн жауап болмаса, бір жақты аяқталды деп белгіленеді.',
             'Запрос отправлен. Без ответа 7 дней — «завершено одной стороной».')));
       } else {
-        if (c.endPhase == EndPhase.disputed)
+        if (c.endPhase == EndPhase.disputed) {
           actions.addAll([
             Hint(
                 tr3('结束有异议：${r!.dispute}', 'Қарсылық: ${r.dispute}',
@@ -200,6 +203,7 @@ class _CoopViewState extends State<_CoopView>
                 warn: true),
             const SizedBox(height: 8),
           ]);
+        }
         if (change != null) {
           actions.addAll([
             _AgreementCard(
@@ -242,9 +246,10 @@ class _CoopViewState extends State<_CoopView>
                 onPressed: () async {
                   final terms = await pushPage<Agreement>(context,
                       (_) => AgreementForm(demand: data.demand!, current: g));
-                  if (terms != null && context.mounted)
+                  if (terms != null && context.mounted) {
                     await run(() => repos.proposeChange(c.id, terms),
                         tr3('变更已发送', 'Жіберілді', 'Отправлено'));
+                  }
                 },
                 child: Text(tr3('提出变更', 'Өзгеріс ұсыну', 'Изменить условия'))),
           if (me != c.providerId)
@@ -252,9 +257,10 @@ class _CoopViewState extends State<_CoopView>
                 onPressed: () async {
                   final text = await askText(
                       context, tr3('记录施工进度（可选）', 'Барыс', 'Ход работ'));
-                  if (text != null && context.mounted)
+                  if (text != null && context.mounted) {
                     await run(() => repos.addUpdate(c.id, text),
                         tr3('已记录', 'Жазылды', 'Записано'));
+                  }
                 },
                 child: Text(tr3('记录进度', 'Барысты жазу', 'Отметить ход работ'))),
           TextButton(
@@ -264,9 +270,10 @@ class _CoopViewState extends State<_CoopView>
                     required: false,
                     hint: tr3(
                         '例如：已完工', 'Мысалы: бітті', 'Напр.: работы выполнены'));
-                if (note != null && context.mounted)
+                if (note != null && context.mounted) {
                   await run(() => repos.requestEnd(c.id, note),
                       tr3('已发送，等待对方确认', 'Жіберілді', 'Отправлено'));
+                }
               },
               child: Text(tr3('请求结束', 'Аяқтау', 'Завершить'))),
         ]));
@@ -310,9 +317,10 @@ class _CoopViewState extends State<_CoopView>
                     context,
                     () => repos.openConversation(c.otherSide(me),
                         demandId: c.demandId));
-                if (conv != null && context.mounted)
+                if (conv != null && context.mounted) {
                   await pushPage<void>(
                       context, (_) => ChatPage(conversationId: conv.id));
+                }
               }),
         ],
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -433,7 +441,9 @@ class _AgreementCard extends StatelessWidget {
   final Agreement agreement;
   final String Function(String id) nameOf;
   final String title;
-  final String? ownerId, providerId, exactAddress;
+  final String? ownerId;
+  final String? providerId;
+  final String? exactAddress;
   final Agreement? previous;
 
   @override
@@ -445,8 +455,8 @@ class _AgreementCard extends StatelessWidget {
         shadow: true,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title,
-              style:
-                  const TextStyle(fontSize: YFont.heading, fontWeight: FontWeight.w700)),
+              style: const TextStyle(
+                  fontSize: YFont.heading, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           InfoRow(tr3('范围', 'Көлемі', 'Объём') + mark(g.scope, previous?.scope),
               g.scope),

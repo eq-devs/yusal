@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show Listenable;
 import 'dart:typed_data';
 
-import '../domain/admin_models.dart';
-import '../domain/models.dart';
+import 'package:yusal/domain/admin_models.dart';
+import 'package:yusal/domain/models.dart';
 
 export '../domain/admin_models.dart';
 
@@ -137,7 +137,10 @@ class PublicDemandView {
       this.status});
   final bool available;
   final DemandType type;
-  final String title, region, locality, description;
+  final String title;
+  final String region;
+  final String locality;
+  final String description;
   final List<String> trades;
   final Budget budget;
   final HireTerms? hire;
@@ -293,6 +296,7 @@ abstract interface class PostRepository {
   Future<List<String>> likedPosts();
 
   Future<List<PostComment>> comments(String postId);
+
   /// A critique (optionally rated and about one [feedbackTopics] entry) or,
   /// with [parentId], a reply to one. Replies carry no rating or topic.
   Future<PostComment> comment(String postId, String text,
@@ -341,12 +345,16 @@ abstract interface class AdminRepository {
   Future<AdminDashboard> dashboard();
   Future<Paged<Demand>> reviewQueue({int page = 1, int pageSize = 20});
   Future<Paged<Demand>> adminDemands(
-      {DemandStatus? status, String query = '', int page = 1, int pageSize = 20});
+      {DemandStatus? status,
+      String query = '',
+      int page = 1,
+      int pageSize = 20});
   Future<void> approve(String demandId);
 
   /// [reason] is free text or a preset code (`code:<name>`).
   Future<void> reject(String demandId, String reason);
-  Future<BatchResult> decideMany(List<String> ids, bool approve, {String reason = ''});
+  Future<BatchResult> decideMany(List<String> ids, bool approve,
+      {String reason = ''});
   Future<Paged<ReportView>> reports(
       {ReportStatus? status, int page = 1, int pageSize = 20});
   Future<void> resolveReport(String reportId, bool upheld, String note);

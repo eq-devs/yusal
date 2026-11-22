@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/cards.dart';
-import '../coop/coop_page.dart';
-import '../demand/applications_page.dart';
-import '../demand/demand_detail_page.dart';
-import '../demand/publish_page.dart';
-import '../home/post_page.dart';
-import '../../shared/ui/house_progress.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import 'my_houses_data.dart';
-import 'site_tab.dart';
-import '../../shared/motion/motion.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/cards.dart';
+import 'package:yusal/features/coop/coop_page.dart';
+import 'package:yusal/features/demand/applications_page.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/features/demand/publish_page.dart';
+import 'package:yusal/features/home/post_page.dart';
+import 'package:yusal/shared/ui/house_progress.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/houses/my_houses_data.dart';
+import 'package:yusal/features/houses/site_tab.dart';
+import 'package:yusal/shared/motion/motion.dart';
 
 /// One house's workspace: where it stands, and every demand, quote and
 /// cooperation for it in one place. Tabs: find people, quotes, cooperation,
@@ -48,18 +48,21 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
         reloadKey: widget.houseKey,
         load: (r) async {
           final all = await loadMyHouses(r, store);
-          for (final h in all) if (h.key == widget.houseKey) return h;
+          for (final h in all) {
+            if (h.key == widget.houseKey) return h;
+          }
           return null;
         },
         loading: const SkeletonPage(),
         builder: (context, h) {
-          if (h == null)
+          if (h == null) {
             return PageScaffold(
                 title: '',
                 body: EmptyState(
                     icon: Icons.home_outlined,
                     title:
                         tr3('这栋房子还没有需求', 'Тапсырыс жоқ', 'Заявок пока нет')));
+          }
           final t = YTokens.of(context);
           final me = context.repos.currentAccount?.id ?? '';
           return Scaffold(
@@ -159,12 +162,13 @@ class _QuotesTab extends StatelessWidget {
       for (final d in house.demands)
         if ((house.quotes[d.id]?.total ?? 0) > 0) d
     ];
-    if (rows.isEmpty)
+    if (rows.isEmpty) {
       return EmptyState(
           icon: Icons.request_quote_outlined,
           title: tr3('还没有报名或报价', 'Әзірге өтінім жоқ', 'Откликов пока нет'),
           body: tr3('需求发布后，师傅的报价会按同一张工程量清单出现在这里。', 'Ұсыныстар осында шығады.',
               'Предложения появятся здесь.'));
+    }
     return ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
         children: [
@@ -200,12 +204,13 @@ class _CoopTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     final me = context.repos.currentAccount?.id ?? '';
-    if (house.cooperations.isEmpty)
+    if (house.cooperations.isEmpty) {
       return EmptyState(
           icon: Icons.handshake_outlined,
           title: tr3('还没有合作', 'Келісім жоқ', 'Пока нет соглашений'),
           body: tr3('在报价里邀请一位师傅，双方确认合作约定后会出现在这里。', 'Шеберді шақырыңыз.',
               'Пригласите мастера из предложений.'));
+    }
     String demandTitle(String id) =>
         house.demands.where((d) => d.id == id).firstOrNull?.current.title ?? '';
     return ListView(

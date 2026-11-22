@@ -48,8 +48,8 @@ void main() {
   Future<({ProjectStore store, String id, MemoryFiles files})> mount(
       WidgetTester t, HouseDocument doc) async {
     final files = MemoryFiles();
-    final store = ProjectStore(fileSystem: files),
-        id = await store.createProject(doc);
+    final store = ProjectStore(fileSystem: files);
+    final id = await store.createProject(doc);
     await t.pumpWidget(MaterialApp(
         home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
     await t.pumpAndSettle();
@@ -84,7 +84,8 @@ void main() {
     ];
   }
 
-  testWidgets('the tool in hand is one mode, told to the assistant, and Esc goes back to browsing',
+  testWidgets(
+      'the tool in hand is one mode, told to the assistant, and Esc goes back to browsing',
       (t) async {
     await mount(t, initial());
     expect(VoiceScreens.current?.summary, '');
@@ -120,7 +121,8 @@ void main() {
 
   testWidgets('dragging empty space in the wall tool pans and builds nothing',
       (t) async {
-    final doc = initial(), session = await mount(t, doc);
+    final doc = initial();
+    final session = await mount(t, doc);
     await wallTool(t);
     final before = t
         .widget<InteractiveViewer>(find.byType(InteractiveViewer))
@@ -243,7 +245,8 @@ void main() {
 
   testWidgets('keyboard: Ctrl+Z undoes and Esc leaves the wall tool',
       (t) async {
-    final doc = initial(), session = await mount(t, doc);
+    final doc = initial();
+    final session = await mount(t, doc);
     await wallTool(t);
     final g = await t.startGesture(point(t, 6000, 10000));
     await g.moveTo(point(t, 6000, 6000));

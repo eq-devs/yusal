@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../coop/coop_page.dart';
-import '../demand/demand_detail_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import 'site_tab.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/coop/coop_page.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/houses/site_tab.dart';
 
 /// "我接的活": everything I signed up for or quoted, and the work I'm doing,
 /// grouped by what needs me now.
@@ -58,12 +58,13 @@ class MyJobsView extends StatelessWidget {
         for (final c in j.coops)
           if (c.status == CooperationStatus.ended) _Item.coop(c)
       ];
-      if (waiting.isEmpty && working.isEmpty && sent.isEmpty && ended.isEmpty)
+      if (waiting.isEmpty && working.isEmpty && sent.isEmpty && ended.isEmpty) {
         return EmptyState(
             icon: Icons.work_outline,
             title: tr3('还没有接活', 'Әзірге жұмыс жоқ', 'Пока нет работы'),
             body: tr3('去“发现 · 找活”看看附近在招的房子。', '«Шолу · Жұмыс» бөлімін қараңыз.',
                 'Загляните в «Обзор · Работа».'));
+      }
       Widget group(String title, List<_Item> items, {bool hot = false}) => items
               .isEmpty
           ? const SizedBox.shrink()
@@ -111,7 +112,8 @@ class _JobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
-    final c = item.coop, a = item.app;
+    final c = item.coop;
+    final a = item.app;
     final title = jobs.titles[item.demandId] ?? '';
     final String status;
     if (c != null) {
@@ -143,9 +145,9 @@ class _JobCard extends StatelessWidget {
                     'Цена ${money(a.current.total!.round())}')
               else if (a.current.expectedWage != null)
                 tr3(
-                    '期望 ${money(a.current.expectedWage!)} / 天',
-                    '${money(a.current.expectedWage!)} / күн',
-                    '${money(a.current.expectedWage!)} / день'),
+                    '期望 ${money(a.current.expectedWage)} / 天',
+                    '${money(a.current.expectedWage)} / күн',
+                    '${money(a.current.expectedWage)} / день'),
               if (a.status == ApplicationStatus.submitted)
                 a.readByOwner
                     ? tr3('业主已看', 'Көрді', 'Просмотрено')
@@ -172,7 +174,8 @@ class _JobCard extends StatelessWidget {
                                   '需求已不可见', 'Қолжетімсіз', 'Заявка недоступна')
                               : title,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: YFont.body)),
+                              fontWeight: FontWeight.w700,
+                              fontSize: YFont.body)),
                       const SizedBox(height: 2),
                       Text(status, style: TextStyle(color: t.muted)),
                       if (c != null && c.status == CooperationStatus.confirmed)

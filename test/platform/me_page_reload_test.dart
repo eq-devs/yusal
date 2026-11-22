@@ -56,8 +56,7 @@ void main() {
     AppSettings.instance.lang = AppLang.zh;
     SharedPreferences.setMockInitialValues({});
     final api = NoPreviewApi();
-    final b = HttpBackend('https://api.test',
-        client: MockClient(api.handle));
+    final b = HttpBackend('https://api.test', client: MockClient(api.handle));
     await t.runAsync(() => b.signInWithProvider('google', 'id-token'));
     await t.pumpWidget(PlatformScope(
         repos: b,
@@ -68,12 +67,14 @@ void main() {
     int calls() =>
         api.requests.where((r) => r.url.path == '/client/me/posts').length;
     for (var i = 0; i < 10; i++) {
-      await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await t.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
       await t.pump(const Duration(milliseconds: 100));
     }
     final settled = calls();
     for (var i = 0; i < 20; i++) {
-      await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await t.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
       await t.pump(const Duration(milliseconds: 100));
     }
     expect(calls(), settled, reason: 'no reloads without changes');
@@ -88,12 +89,11 @@ void main() {
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
     final api = NoPreviewApi();
-    final b = HttpBackend('https://api.test',
-        client: MockClient((r) async {
-          // A real network takes a while; the fake answers at once.
-          await Future<void>.delayed(const Duration(milliseconds: 200));
-          return api.handle(r);
-        }));
+    final b = HttpBackend('https://api.test', client: MockClient((r) async {
+      // A real network takes a while; the fake answers at once.
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      return api.handle(r);
+    }));
     await t.runAsync(() => b.signInWithProvider('google', 'id-token'));
     await t.pumpWidget(PlatformScope(
         repos: b,

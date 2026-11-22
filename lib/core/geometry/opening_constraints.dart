@@ -1,6 +1,6 @@
-import '../document/house_document.dart';
-import 'derived_house.dart';
-import 'floor_base.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
 
 /// Editing checks need 2D hosts and opening bounds, not a full 3D mesh.
 List<OpeningPlacement> documentOpenings(HouseDocument doc, {String? floorId}) =>

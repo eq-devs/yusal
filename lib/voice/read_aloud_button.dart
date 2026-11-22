@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../app/settings.dart';
-import '../services/voice/read_aloud.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/services/voice/read_aloud.dart';
 
 String _mb(int bytes) => '${(bytes / 1000000).round()} MB';
 

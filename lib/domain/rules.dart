@@ -1,4 +1,4 @@
-import 'models.dart';
+import 'package:yusal/domain/models.dart';
 
 /// Business rules shared by the in-memory test backend and the interface. A real
 /// backend enforces the same rules on the server. Pure Dart.
@@ -299,8 +299,11 @@ bool acceptsApplications(Demand d, DateTime now) =>
 DateTime expiryFor(DemandVersion v, DateTime now) {
   final standard = now.add(demandLifetime);
   final deadline = v.contract?.quoteDeadline;
-  if (deadline != null && deadline.isBefore(standard) && deadline.isAfter(now))
+  if (deadline != null &&
+      deadline.isBefore(standard) &&
+      deadline.isAfter(now)) {
     return deadline;
+  }
   return standard;
 }
 
@@ -413,8 +416,9 @@ Set<CompareIssue> compareIssues(Iterable<Application> quotes) {
       unitsByName.putIfAbsent(_norm(l.name), () => {}).add(l.unit);
     }
   }
-  if (unitsByName.values.any((u) => u.length > 1))
+  if (unitsByName.values.any((u) => u.length > 1)) {
     issues.add(CompareIssue.units);
+  }
   if (list.any((a) => a.needsReconfirm)) issues.add(CompareIssue.outdated);
   return issues;
 }
@@ -425,8 +429,9 @@ String _norm(String s) => s.trim().toLowerCase();
 /// review window after the end has passed.
 bool reviewsVisible(Cooperation c, List<Review> reviews, DateTime now) {
   final authors = reviews.map((r) => r.authorId).toSet();
-  if (authors.contains(c.ownerId) && authors.contains(c.providerId))
+  if (authors.contains(c.ownerId) && authors.contains(c.providerId)) {
     return true;
+  }
   final ended = c.endedAt;
   return ended != null && now.isAfter(ended.add(reviewWindow));
 }

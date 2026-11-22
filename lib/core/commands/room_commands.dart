@@ -1,16 +1,18 @@
-import '../axis/axis_resolver.dart';
-import '../canonicalization/room_canonicalizer.dart';
-import '../document/house_document.dart';
-import '../validation/document_validator.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/canonicalization/room_canonicalizer.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/validation/document_validator.dart';
 
 HouseDocument paintCells(HouseDocument doc, String floorId, List<Cell> stroke,
     RoomType type, String Function() newId,
     {bool erase = false}) {
   if (stroke.isEmpty) return doc;
-  final floor = doc.floors.firstWhere((f) => f.id == floorId),
-      axes = resolveFloorAxes(doc, floorId)!;
-  if (stroke.any((c) => c.i < 0 || c.j < 0 || c.i >= axes.nx || c.j >= axes.ny))
+  final floor = doc.floors.firstWhere((f) => f.id == floorId);
+  final axes = resolveFloorAxes(doc, floorId)!;
+  if (stroke
+      .any((c) => c.i < 0 || c.j < 0 || c.i >= axes.nx || c.j >= axes.ny)) {
     return doc;
+  }
   final stairCells = {
     for (final s in floor.stairs)
       ...cellsOfRect(resolveRect(axes, s.region).rect!)
@@ -21,8 +23,9 @@ HouseDocument paintCells(HouseDocument doc, String floorId, List<Cell> stroke,
   final start =
       floor.rooms.where((r) => sets[r.id]!.contains(stroke.first)).firstOrNull;
   final selected = stroke.where((c) => !stairCells.contains(c)).toSet();
-  if (selected.isEmpty || (!erase && stairCells.contains(stroke.first)))
+  if (selected.isEmpty || (!erase && stairCells.contains(stroke.first))) {
     return doc;
+  }
   final target = erase ? '' : start?.id ?? newId();
   for (final entry in sets.entries) {
     if (erase || entry.key != target) entry.value.removeAll(selected);
@@ -31,18 +34,22 @@ HouseDocument paintCells(HouseDocument doc, String floorId, List<Cell> stroke,
   final rooms = <Room>[];
   void append(Room room, Set<Cell> cells) {
     final parts = components(axes, cells).cells;
-    for (var i = 0; i < parts.length; i++)
+    for (var i = 0; i < parts.length; i++) {
       rooms.add(Room(
           id: i == 0 ? room.id : newId(),
           type: room.type,
           name: room.name,
           regions: canonicalizeCells(axes, parts[i]).regions));
+    }
   }
 
-  if (start == null && !erase)
+  if (start == null && !erase) {
     append(Room(id: target, type: type, name: roomNames[type]!, regions: []),
         sets[target]!);
-  for (final room in floor.rooms) append(room, sets[room.id]!);
+  }
+  for (final room in floor.rooms) {
+    append(room, sets[room.id]!);
+  }
   final replacement = Floor(
       explicitWalls: floor.explicitWalls,
       id: floor.id,

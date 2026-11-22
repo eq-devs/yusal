@@ -1,5 +1,5 @@
-import '../core/document/house_document.dart';
-import 'action.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/voice/action.dart';
 
 /// Implemented by the "My houses" list so voice can start and open
 /// designs from any page.
@@ -62,8 +62,8 @@ final houseActions = [
     risk: Risk.undoable,
     run: (ctx, args) async {
       final library = HouseLibrary.instance!;
-      final width = args.has('width_mm') ? args.integer('width_mm') : null,
-          depth = args.has('depth_mm') ? args.integer('depth_mm') : null;
+      final width = args.has('width_mm') ? args.integer('width_mm') : null;
+      final depth = args.has('depth_mm') ? args.integer('depth_mm') : null;
       for (final v in [width, depth]) {
         if (v != null && (v < 4000 || v > 30000)) {
           return const ActionResult.fail(ActionCodes.badArgs,

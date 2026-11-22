@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../core/document/house_document.dart';
-import '../../core/serialization/house_codec.dart';
-import '../editor/house_editor.dart';
-import '../../storage/project_store.dart';
-import '../../domain/models.dart';
-import '../backup/backup_page.dart';
-import '../../shared/ui/scope.dart';
-import '../shell/shell.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/serialization/house_codec.dart';
+import 'package:yusal/features/editor/house_editor.dart';
+import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/backup/backup_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/features/shell/shell.dart';
 
 /// "Start from this one": copies a public design into my houses, opens it
 /// in the design tool and tells the author. No sign-in needed; only the

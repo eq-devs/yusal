@@ -12,7 +12,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:yusal/app/tokens.dart';
 import 'package:yusal/core/commands/kz_template.dart';
 import 'package:yusal/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/house_editor.dart';
@@ -27,8 +26,8 @@ void main() {
   testWidgets('editor frame cost', (t) async {
     var n = 0;
     final doc = createKazakhTemplate('2026-10-14T00:00:00Z', () => 'p${n++}');
-    final store = ProjectStore(fileSystem: MemoryFiles()),
-        id = await store.createProject(doc);
+    final store = ProjectStore(fileSystem: MemoryFiles());
+    final id = await store.createProject(doc);
     await t.pumpWidget(MaterialApp(
         home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
     await t.pumpAndSettle();
@@ -49,16 +48,20 @@ void main() {
 
     Future<void> scenario(String name, Future<void> Function(int i) step,
         {int count = 120}) async {
-      for (var i = 0; i < 20; i++) await step(i);
+      for (var i = 0; i < 20; i++) {
+        await step(i);
+      }
       await flush();
       frames.clear();
-      for (var i = 0; i < count; i++) await step(i);
+      for (var i = 0; i < count; i++) {
+        await step(i);
+      }
       await flush();
       double ms(Duration d) => d.inMicroseconds / 1000;
       List<double> sorted(double Function(FrameTiming) f) =>
           frames.map(f).toList()..sort();
-      final ui = sorted((f) => ms(f.buildDuration)),
-          raster = sorted((f) => ms(f.rasterDuration));
+      final ui = sorted((f) => ms(f.buildDuration));
+      final raster = sorted((f) => ms(f.rasterDuration));
       double at(List<double> v, double q) =>
           v.isEmpty ? 0 : v[((v.length - 1) * q).round()];
       report[name] = {
@@ -116,7 +119,6 @@ void main() {
             g.base, {for (final r in floor.rooms) r.id: r.name}, const {},
             openings: g.openings,
             stairs: g.stairs,
-            tokens: Tokens.light,
             furniture: [
               for (final i in doc.extras.furniture)
                 if (i.floorId == floor.id) i
@@ -130,9 +132,13 @@ void main() {
           r.endRecording().dispose();
         }
 
-        for (var i = 0; i < 30; i++) once();
+        for (var i = 0; i < 30; i++) {
+          once();
+        }
         final sw = Stopwatch()..start();
-        for (var i = 0; i < 200; i++) once();
+        for (var i = 0; i < 200; i++) {
+          once();
+        }
         return sw.elapsedMicroseconds / 200 / 1000;
       }
 

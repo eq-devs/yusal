@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/cards.dart';
-import '../chat/inbox_page.dart';
-import '../demand/demand_detail_page.dart';
-import '../demand/publish_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../profile/profile_page.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/widgets.dart';
-import '../../shared/brand/brand.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/cards.dart';
+import 'package:yusal/features/chat/inbox_page.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/features/demand/publish_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/features/profile/profile_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/shared/brand/brand.dart';
 
 /// First tab: "find work / find people" with search and filters.
 class DiscoverPage extends StatefulWidget {
@@ -34,7 +34,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
   late bool people = widget.people ?? false;
   final query = TextEditingController();
   DemandType? type;
-  String? trade, region;
+  String? trade;
+  String? region;
   ProfileKind? kind;
   bool availableNow = false;
   final _refresh = LiveRefresh();
@@ -202,13 +203,14 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 ),
             builder: (context, data) {
               final (list, favs) = data;
-              if (list.isEmpty)
+              if (list.isEmpty) {
                 return EmptyState(
                     icon: Icons.search_off,
                     title: tr3('暂时没有符合条件的需求', 'Сәйкес тапсырыс жоқ',
                         'Нет подходящих заявок'),
                     body: tr3('换个地区或工种看看', 'Аймақ не мамандықты өзгертіңіз',
                         'Измените район или специальность'));
+              }
               return LayoutBuilder(builder: (context, c) {
                 final columns = c.maxWidth > 900
                     ? 3
@@ -250,34 +252,40 @@ class _DiscoverPageState extends State<DiscoverPage> {
                         child: CustomScrollView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             slivers: [
-                      if (!widget.embedded)
-                        SliverToBoxAdapter(
-                            child: Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(20, 12, 8, 12),
-                                child: Row(children: [
-                                  Expanded(
-                                      child: const Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: YusalLogo(height: 26))),
-                                  const InboxButton(),
-                                ]))),
-                      if (widget.embedded)
-                        const SliverToBoxAdapter(child: SizedBox(height: 14)),
-                      SliverToBoxAdapter(child: search),
-                      const SliverToBoxAdapter(child: SizedBox(height: 12)),
-                      if (!widget.embedded) ...[
-                        SliverToBoxAdapter(
-                            child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 20),
-                                child: toggle)),
-                        const SliverToBoxAdapter(child: SizedBox(height: 14)),
-                      ],
-                      SliverToBoxAdapter(child: filters),
-                      SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(20, 18, 20, 96),
-                          sliver: SliverToBoxAdapter(child: list)),
-                    ]))))));
+                              if (!widget.embedded)
+                                const SliverToBoxAdapter(
+                                    child: Padding(
+                                        padding:
+                                            EdgeInsets.fromLTRB(20, 12, 8, 12),
+                                        child: Row(children: [
+                                          Expanded(
+                                              child: Align(
+                                                  alignment:
+                                                      Alignment.centerLeft,
+                                                  child:
+                                                      YusalLogo(height: 26))),
+                                          InboxButton(),
+                                        ]))),
+                              if (widget.embedded)
+                                const SliverToBoxAdapter(
+                                    child: SizedBox(height: 14)),
+                              SliverToBoxAdapter(child: search),
+                              const SliverToBoxAdapter(
+                                  child: SizedBox(height: 12)),
+                              if (!widget.embedded) ...[
+                                SliverToBoxAdapter(
+                                    child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 20),
+                                        child: toggle)),
+                                const SliverToBoxAdapter(
+                                    child: SizedBox(height: 14)),
+                              ],
+                              SliverToBoxAdapter(child: filters),
+                              SliverPadding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(20, 18, 20, 96),
+                                  sliver: SliverToBoxAdapter(child: list)),
+                            ]))))));
   }
 }

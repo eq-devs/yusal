@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import '../core/document/house_document.dart';
-import '../core/serialization/house_codec.dart';
-import 'project_file_system.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/serialization/house_codec.dart';
+import 'package:yusal/storage/project_file_system.dart';
 export 'project_file_system.dart';
-import 'project_files_web.dart' if (dart.library.io) 'project_files_io.dart';
+import 'package:yusal/storage/project_files_web.dart'
+    if (dart.library.io) 'project_files_io.dart';
 
 class ProjectEntry {
   const ProjectEntry(this.id, this.document, {this.preview});
@@ -47,12 +48,11 @@ class PrefsProjectOwners implements ProjectOwners {
 
 class ProjectStore {
   ProjectStore(
-      {ProjectFileSystem? fileSystem,
-      this.previewRenderer,
-      this.owners})
+      {ProjectFileSystem? fileSystem, this.previewRenderer, this.owners})
       : files = fileSystem ?? ProjectFiles();
   final ProjectFileSystem files;
   final Future<List<int>?> Function(HouseDocument)? previewRenderer;
+
   /// Null keeps no owners: every design is listed (tests, tools).
   final ProjectOwners? owners;
 
@@ -94,11 +94,13 @@ class ProjectStore {
 
   Future<HouseDocument> openProject(String id) async {
     final text = await files.read(id);
-    if (text == null)
+    if (text == null) {
       throw const StorageFailure('NOT_FOUND', 'Project document is missing');
+    }
     final result = loadHouse(utf8.encode(text));
-    if (!result.isSuccess)
+    if (!result.isSuccess) {
       throw const StorageFailure('IO_ERROR', 'Project document is invalid');
+    }
     return result.document!;
   }
 
@@ -157,9 +159,11 @@ class ProjectStore {
       id = const Uuid().v4();
     }
     await files.write(id, encodeHouse(doc));
-    final me = currentOwner?.call(), owners = this.owners;
-    if (me != null && owners != null)
+    final me = currentOwner?.call();
+    final owners = this.owners;
+    if (me != null && owners != null) {
       await owners.save({...await owners.load(), id: me});
+    }
     final preview = await _preview(id, doc);
     _entries.add(ProjectEntry(id, doc, preview: preview));
     await _index();

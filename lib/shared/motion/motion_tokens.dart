@@ -96,8 +96,8 @@ abstract final class Motion {
   static const double switchScale = 0.94;
 
   /// Toasts: settle in, leave quicker.
-  static const toastStyle = AnimationStyle(
-      duration: base, reverseDuration: fast, curve: settle);
+  static const toastStyle =
+      AnimationStyle(duration: base, reverseDuration: fast, curve: settle);
 
   /// Bottom sheets: settle in, leave quicker.
   static const sheetStyle = AnimationStyle(

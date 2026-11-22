@@ -113,7 +113,8 @@ void main() {
       'reviews, chat, notifications, report', (t) async {
     requireBackend();
     final run = DateTime.now().millisecondsSinceEpoch.toString();
-    final worker = 'Wang $run', owner = 'Olga $run';
+    final worker = 'Wang $run';
+    final owner = 'Olga $run';
     final demandTitle = '砌墙 130 平米 $run';
 
     final prefs = await SharedPreferences.getInstance();
@@ -146,7 +147,7 @@ void main() {
       await shot(t, 'm01-profile-form');
       await tapIt(t, find.widgetWithText(FilledButton, '保存'));
       await idle(t, 1000);
-      final profiles = await io(t, () => repos.myProfiles());
+      final profiles = await io(t, repos.myProfiles);
       expect(profiles, hasLength(1));
       expect(profiles.single.trades, ['mason']);
 
@@ -172,7 +173,7 @@ void main() {
       await shot(t, 'm02-demand-preview');
       await tapIt(t, find.text('提交发布'));
       await waitFor(t, find.byType(DemandDetailPage));
-      final demands = await io(t, () => repos.myDemands());
+      final demands = await io(t, repos.myDemands);
       final demand = demands.singleWhere((d) => d.current.title == demandTitle);
       expect(demand.status, DemandStatus.open);
       await shot(t, 'm03-demand-open');
@@ -200,7 +201,7 @@ void main() {
       await shot(t, 'm05-quote-form');
       await tapIt(t, find.text('发送报价'));
       await idle(t, 1000);
-      final mine = await io(t, () => repos.myApplications());
+      final mine = await io(t, repos.myApplications);
       final application = mine.singleWhere((a) => a.demandId == demand.id);
       expect(application.applicantId, workerId);
 
@@ -220,14 +221,14 @@ void main() {
       // ── 4. Owner: unread badge, notifications, quote, invite ──
       await signOut(t, repos);
       await signIn(t, repos, owner);
-      expect(await io(t, () => repos.unreadMessages()), greaterThan(0));
+      expect(await io(t, repos.unreadMessages), greaterThan(0));
       await home(t);
       await tab(t, '消息');
       await waitFor(t, find.textContaining('你好，我明天可以去现场看看'));
       await shot(t, 'm07-inbox-owner');
       await tapIt(t, find.text('通知'));
       await idle(t, 1000);
-      final notes = await io(t, () => repos.notifications());
+      final notes = await io(t, repos.notifications);
       expect(notes, isNotEmpty);
       expect(notes.any((n) => n.refId == demand.id || n.title == demandTitle),
           isTrue,

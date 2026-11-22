@@ -1,9 +1,9 @@
 import 'dart:math' as math;
-import '../document/house_document.dart';
-import '../geometry/derived_house.dart';
-import '../geometry/floor_base.dart';
-import '../checks/construction_checks.dart';
-import 'house_analysis.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/checks/construction_checks.dart';
+import 'package:yusal/core/analysis/house_analysis.dart';
 
 /// Steady-state heat loss at the design temperature, after the usual
 /// hand method: U·A·ΔT through each part of the envelope plus air change,
@@ -43,8 +43,8 @@ double roofU(List<Layer> layers) =>
     1 / (rsiRoof + layersResistance(layers) + rse);
 
 /// Ground floor slab: [area] m², exposed [perimeter] m, walls [wall] m.
-double groundFloorU(List<Layer> layers, double area, double perimeter,
-    double wall) {
+double groundFloorU(
+    List<Layer> layers, double area, double perimeter, double wall) {
   if (area <= 0 || perimeter <= 0) return 0;
   final b = area / (0.5 * perimeter);
   final dt = wall + groundLambda * (rsiFloor + layersResistance(layers) + rse);
@@ -72,7 +72,12 @@ class SpaceHeat {
 
   /// Floor area, m².
   final double area;
-  final double walls, windows, doors, roof, floor, air;
+  final double walls;
+  final double windows;
+  final double doors;
+  final double roof;
+  final double floor;
+  final double air;
   double get total => walls + windows + doors + roof + floor + air;
 
   /// Aluminium radiator sections to cover the loss.
@@ -93,7 +98,9 @@ class HeatLoss {
       required this.floorArea,
       required this.volume});
   final HeatSpec spec;
-  final double wallU, roofU, floorU;
+  final double wallU;
+  final double roofU;
+  final double floorU;
   final List<SpaceHeat> spaces;
 
   /// Envelope areas, m², and the heated volume, m³.
@@ -154,23 +161,34 @@ Map<String, double> _ownerAreas(FloorBase base) {
 }
 
 HeatLoss heatLoss(HouseDocument doc, DerivedHouse derived) {
-  final x = doc.extras, spec = x.heat;
+  final x = doc.extras;
+  final spec = x.heat;
   final dT = (spec.indoor - spec.outdoor).toDouble();
-  final uw = wallU(x.wallLayers), ur = roofU(x.roofLayers);
+  final uw = wallU(x.wallLayers);
+  final ur = roofU(x.roofLayers);
   final ground = derived.floors.first.base;
-  var groundArea = 0.0, perimeter = 0.0;
-  for (final a in _ownerAreas(ground).values) groundArea += a;
-  for (final e in ground.edges.where((e) => e.kind == 'exterior'))
+  var groundArea = 0.0;
+  var perimeter = 0.0;
+  for (final a in _ownerAreas(ground).values) {
+    groundArea += a;
+  }
+  for (final e in ground.edges.where((e) => e.kind == 'exterior')) {
     perimeter += (e.end.pos - e.start.pos) / 1000;
+  }
   final uf = groundFloorU(x.floorLayers, groundArea, perimeter,
       doc.defaults.outerWallThickness / 1000);
-  final uWin = spec.windowU / 100, uDoor = spec.doorU / 100;
+  final uWin = spec.windowU / 100;
+  final uDoor = spec.doorU / 100;
   final airFactor = 0.34 * spec.airChange / 100;
   final spaces = <SpaceHeat>[];
-  var wallArea = 0.0, windowArea = 0.0, doorArea = 0.0, volume = 0.0;
+  var wallArea = 0.0;
+  var windowArea = 0.0;
+  var doorArea = 0.0;
+  var volume = 0.0;
   final top = doc.floors.length - 1;
   for (var f = 0; f < doc.floors.length; f++) {
-    final g = derived.floors[f], base = g.base;
+    final g = derived.floors[f];
+    final base = g.base;
     final h = doc.floors[f].height / 1000;
     final clear = (doc.floors[f].height - doc.defaults.slabThickness) / 1000;
     final areas = _ownerAreas(base);
@@ -183,20 +201,23 @@ HeatLoss heatLoss(HouseDocument doc, DerivedHouse derived) {
       final owner = base.owners[cell] ?? '';
       outside[owner] = (outside[owner] ?? 0) + (e.end.pos - e.start.pos) / 1000;
     }
-    final glass = <String, double>{}, doors = <String, double>{};
+    final glass = <String, double>{};
+    final doors = <String, double>{};
     for (final p in g.openings) {
       if (p.status != 'ok' || p.host?.kind != 'exterior') continue;
       final (neg, pos) = roomsBeside(p, base);
       final owner = neg ?? pos ?? '';
       final a = p.opening.width * p.opening.height / 1e6;
-      if (p.opening.kind == OpeningKind.door)
+      if (p.opening.kind == OpeningKind.door) {
         doors[owner] = (doors[owner] ?? 0) + a;
-      else
+      } else {
         glass[owner] = (glass[owner] ?? 0) + a;
+      }
     }
     for (final id in {...areas.keys, ...outside.keys}) {
       final area = areas[id] ?? 0;
-      final win = glass[id] ?? 0, door = doors[id] ?? 0;
+      final win = glass[id] ?? 0;
+      final door = doors[id] ?? 0;
       final wall = math.max(0.0, (outside[id] ?? 0) * h - win - door);
       wallArea += wall;
       windowArea += win;
@@ -214,9 +235,8 @@ HeatLoss heatLoss(HouseDocument doc, DerivedHouse derived) {
           air: airFactor * area * clear * dT));
     }
   }
-  final topArea = _ownerAreas(derived.floors.last.base)
-      .values
-      .fold(0.0, (s, a) => s + a);
+  final topArea =
+      _ownerAreas(derived.floors.last.base).values.fold(0.0, (s, a) => s + a);
   return HeatLoss(
       spec: spec,
       wallU: uw,
@@ -235,46 +255,61 @@ HeatLoss heatLoss(HouseDocument doc, DerivedHouse derived) {
 List<ConstructionIssue> heatChecks(HouseDocument doc, HeatLoss loss) {
   final out = <ConstructionIssue>[];
   String u(double v) => v.toStringAsFixed(2);
-  if (loss.wallU > 0.40)
-    out.add(ConstructionIssue(
-        'H01',
-        IssueLevel.warn,
-        ('外墙保温偏弱', 'Сыртқы қабырға жылуы әлсіз', 'Слабое утепление наружных стен'),
-        (
-          '外墙传热系数 U = ${u(loss.wallU)} W/(m²·K)，寒冷地区宜不大于 0.40，严寒地区 0.30 左右。加厚保温层（如岩棉 100 → 150 mm）最划算。',
-          'Сыртқы қабырға U = ${u(loss.wallU).replaceAll('.', ',')} Вт/(м²·К); суық аймақта 0,40-тан аспағаны жөн, қатты суықта шамамен 0,30. Жылытқышты қалыңдату (мысалы, 100 → 150 мм) ең тиімді.', 'Наружная стена: U = ${u(loss.wallU).replaceAll('.', ',')} Вт/(м²·К); в холодном климате лучше не выше 0,40, в суровом — около 0,30. Эффективнее всего утолстить утеплитель (например, 100 → 150 мм).')));
-  if (loss.roofU > 0.30)
-    out.add(ConstructionIssue(
-        'H02',
-        IssueLevel.warn,
-        ('屋顶保温偏弱', 'Шатыр жылуы әлсіз', 'Слабое утепление крыши'),
-        (
-          '屋顶传热系数 U = ${u(loss.roofU)} W/(m²·K)，宜不大于 0.25。热空气往上走，屋顶保温不足时冬天最费燃料。',
-          'Шатыр U = ${u(loss.roofU).replaceAll('.', ',')} Вт/(м²·К), 0,25-тен аспағаны жөн. Жылы ауа жоғары көтеріледі, шатыр жылуы аз болса отын көп жұмсалады.', 'Крыша: U = ${u(loss.roofU).replaceAll('.', ',')} Вт/(м²·К), лучше не выше 0,25. Тёплый воздух поднимается вверх: при слабом утеплении крыши уходит много топлива.')));
-  if (loss.floorU > 0.40)
-    out.add(ConstructionIssue(
-        'H03',
-        IssueLevel.chk,
-        ('地面保温偏弱', 'Еден жылуы әлсіз', 'Слабое утепление пола'),
-        (
-          '首层地面传热系数 U = ${u(loss.floorU)} W/(m²·K)。全家席地而坐，地面温度很重要，建议地坪下 XPS 不少于 100 mm 并连续铺设。',
-          'Бірінші қабат едені U = ${u(loss.floorU).replaceAll('.', ',')} Вт/(м²·К). Еденде отыратын болғандықтан еден жылуы маңызды, астына кемінде 100 мм XPS үзіліссіз төсеңіз.', 'Пол первого этажа: U = ${u(loss.floorU).replaceAll('.', ',')} Вт/(м²·К). На полу сидят, поэтому его утепление важно: уложите под него сплошной слой XPS не тоньше 100 мм.')));
-  if (loss.windowU > 1.6)
-    out.add(ConstructionIssue(
-        'H04',
-        IssueLevel.chk,
-        ('窗户保温偏弱', 'Терезе жылуы әлсіз', 'Слабая теплозащита окон'),
-        (
-          '窗传热系数 U = ${u(loss.windowU)} W/(m²·K)。三玻两腔 PVC 窗约 1.0–1.2，单层中空玻璃窗约 2.7，冬天窗边会结露。',
-          'Терезе U = ${u(loss.windowU).replaceAll('.', ',')} Вт/(м²·К). Үш әйнекті ПВХ терезе шамамен 1,0–1,2, бір камералы шамамен 2,7 — қыста терезе жиегі терлейді.', 'Окна: U = ${u(loss.windowU).replaceAll('.', ',')} Вт/(м²·К). У трёхстекольного ПВХ-окна около 1,0–1,2, у однокамерного около 2,7 — зимой по краям окна будет конденсат.')));
+  if (loss.wallU > 0.40) {
+    out.add(ConstructionIssue('H01', IssueLevel.warn, (
+      '外墙保温偏弱',
+      'Сыртқы қабырға жылуы әлсіз',
+      'Слабое утепление наружных стен'
+    ), (
+      '外墙传热系数 U = ${u(loss.wallU)} W/(m²·K)，寒冷地区宜不大于 0.40，严寒地区 0.30 左右。加厚保温层（如岩棉 100 → 150 mm）最划算。',
+      'Сыртқы қабырға U = ${u(loss.wallU).replaceAll('.', ',')} Вт/(м²·К); суық аймақта 0,40-тан аспағаны жөн, қатты суықта шамамен 0,30. Жылытқышты қалыңдату (мысалы, 100 → 150 мм) ең тиімді.',
+      'Наружная стена: U = ${u(loss.wallU).replaceAll('.', ',')} Вт/(м²·К); в холодном климате лучше не выше 0,40, в суровом — около 0,30. Эффективнее всего утолстить утеплитель (например, 100 → 150 мм).'
+    )));
+  }
+  if (loss.roofU > 0.30) {
+    out.add(ConstructionIssue('H02', IssueLevel.warn, (
+      '屋顶保温偏弱',
+      'Шатыр жылуы әлсіз',
+      'Слабое утепление крыши'
+    ), (
+      '屋顶传热系数 U = ${u(loss.roofU)} W/(m²·K)，宜不大于 0.25。热空气往上走，屋顶保温不足时冬天最费燃料。',
+      'Шатыр U = ${u(loss.roofU).replaceAll('.', ',')} Вт/(м²·К), 0,25-тен аспағаны жөн. Жылы ауа жоғары көтеріледі, шатыр жылуы аз болса отын көп жұмсалады.',
+      'Крыша: U = ${u(loss.roofU).replaceAll('.', ',')} Вт/(м²·К), лучше не выше 0,25. Тёплый воздух поднимается вверх: при слабом утеплении крыши уходит много топлива.'
+    )));
+  }
+  if (loss.floorU > 0.40) {
+    out.add(ConstructionIssue('H03', IssueLevel.chk, (
+      '地面保温偏弱',
+      'Еден жылуы әлсіз',
+      'Слабое утепление пола'
+    ), (
+      '首层地面传热系数 U = ${u(loss.floorU)} W/(m²·K)。全家席地而坐，地面温度很重要，建议地坪下 XPS 不少于 100 mm 并连续铺设。',
+      'Бірінші қабат едені U = ${u(loss.floorU).replaceAll('.', ',')} Вт/(м²·К). Еденде отыратын болғандықтан еден жылуы маңызды, астына кемінде 100 мм XPS үзіліссіз төсеңіз.',
+      'Пол первого этажа: U = ${u(loss.floorU).replaceAll('.', ',')} Вт/(м²·К). На полу сидят, поэтому его утепление важно: уложите под него сплошной слой XPS не тоньше 100 мм.'
+    )));
+  }
+  if (loss.windowU > 1.6) {
+    out.add(ConstructionIssue('H04', IssueLevel.chk, (
+      '窗户保温偏弱',
+      'Терезе жылуы әлсіз',
+      'Слабая теплозащита окон'
+    ), (
+      '窗传热系数 U = ${u(loss.windowU)} W/(m²·K)。三玻两腔 PVC 窗约 1.0–1.2，单层中空玻璃窗约 2.7，冬天窗边会结露。',
+      'Терезе U = ${u(loss.windowU).replaceAll('.', ',')} Вт/(м²·К). Үш әйнекті ПВХ терезе шамамен 1,0–1,2, бір камералы шамамен 2,7 — қыста терезе жиегі терлейді.',
+      'Окна: U = ${u(loss.windowU).replaceAll('.', ',')} Вт/(м²·К). У трёхстекольного ПВХ-окна около 1,0–1,2, у однокамерного около 2,7 — зимой по краям окна будет конденсат.'
+    )));
+  }
   final share = loss.total <= 0 ? 0.0 : loss.windows / loss.total;
-  if (share > 0.35)
-    out.add(ConstructionIssue(
-        'H05',
-        IssueLevel.chk,
-        ('窗户失热占比大', 'Терезеден жылу көп кетеді', 'Через окна уходит много тепла'),
-        (
-          '窗户失热占全屋的 ${(share * 100).round()}%。北面的大窗可以缩小，或换用保温更好的窗。',
-          'Үйдің жылу шығынының ${(share * 100).round()}%-ы терезеден. Солтүстіктегі үлкен терезені кішірейтіңіз не жылырақ терезе қойыңыз.', '${(share * 100).round()} % теплопотерь дома приходится на окна. Уменьшите большое окно на северной стороне или поставьте более тёплые окна.')));
+  if (share > 0.35) {
+    out.add(ConstructionIssue('H05', IssueLevel.chk, (
+      '窗户失热占比大',
+      'Терезеден жылу көп кетеді',
+      'Через окна уходит много тепла'
+    ), (
+      '窗户失热占全屋的 ${(share * 100).round()}%。北面的大窗可以缩小，或换用保温更好的窗。',
+      'Үйдің жылу шығынының ${(share * 100).round()}%-ы терезеден. Солтүстіктегі үлкен терезені кішірейтіңіз не жылырақ терезе қойыңыз.',
+      '${(share * 100).round()} % теплопотерь дома приходится на окна. Уменьшите большое окно на северной стороне или поставьте более тёплые окна.'
+    )));
+  }
   return out;
 }

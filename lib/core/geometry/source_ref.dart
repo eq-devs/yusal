@@ -1,4 +1,4 @@
-import 'floor_base.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
 
 sealed class SourceRef {
   const SourceRef();

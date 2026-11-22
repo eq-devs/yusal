@@ -49,10 +49,10 @@ void main() {
 
     await chip('Test Owner', 'Test Owner');
     await shot(t, 't01-login-chips-owner');
-    expect(await io(t, () => repos.myProfiles()), isEmpty);
+    expect(await io(t, repos.myProfiles), isEmpty);
 
     await chip('seed:aigerim', 'Айгерім Сейтқали');
-    expect(await io(t, () => repos.myProfiles()), isEmpty);
+    expect(await io(t, repos.myProfiles), isEmpty);
 
     for (final (key, name) in [
       ('seed:bolat', 'Болат Жұмабеков'),
@@ -60,7 +60,7 @@ void main() {
       ('seed:gulnar', 'Гүлнар Омарова'),
     ]) {
       await chip(key, name);
-      expect(await io(t, () => repos.myProfiles()), isNotEmpty,
+      expect(await io(t, repos.myProfiles), isNotEmpty,
           reason: '$name has a service profile');
     }
 

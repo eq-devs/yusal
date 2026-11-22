@@ -26,7 +26,7 @@ extension _StairTool on _HouseEditorState {
                     final before = history.present;
                     action('AddFloor', {'floorId': floorId});
                     if (history.present == before || !mounted) return;
-                    update(() => derive());
+                    update(derive);
                     startStairStamp();
                   })),
           snackBarAnimationStyle: Motion.toastStyle);
@@ -100,7 +100,7 @@ extension _StairTool on _HouseEditorState {
                     final before = history.present;
                     action('AddFloor', {'floorId': floorId});
                     if (history.present == before || !mounted) return;
-                    update(() => derive());
+                    update(derive);
                     placeStair(region);
                   })),
           snackBarAnimationStyle: Motion.toastStyle);
@@ -148,7 +148,9 @@ extension _StairTool on _HouseEditorState {
       if (added != null && !added.fits) {
         tight ??= added;
         if (added.requiredA * added.requiredB <
-            tight.requiredA * tight.requiredB) tight = added;
+            tight.requiredA * tight.requiredB) {
+          tight = added;
+        }
         continue;
       }
       update(() {

@@ -1,12 +1,12 @@
 import 'dart:math' as math;
 
-import '../analysis/house_analysis.dart';
-import '../axis/axis_resolver.dart';
-import '../document/house_document.dart';
-import '../geometry/floor_base.dart';
-import 'command_contract.dart';
-import 'extras_commands.dart';
-import 'room_commands.dart';
+import 'package:yusal/core/analysis/house_analysis.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/commands/command_contract.dart';
+import 'package:yusal/core/commands/extras_commands.dart';
+import 'package:yusal/core/commands/room_commands.dart';
 
 /// A whole house described as data, as a language model writes it:
 /// footprint, floors, rooms as rectangles, doors, windows and furniture by
@@ -49,8 +49,8 @@ Map<String, Object?> houseSpecSchema() {
   Map<String, Object?> mm(String what) =>
       {'type': 'integer', 'description': '$what, millimetres'};
   final rect = {
-    'x_mm': mm('west edge from the house\'s west wall'),
-    'y_mm': mm('south edge from the house\'s south wall'),
+    'x_mm': mm("west edge from the house's west wall"),
+    'y_mm': mm("south edge from the house's south wall"),
     'w_mm': mm('size west to east'),
     'd_mm': mm('size south to north'),
   };
@@ -179,18 +179,20 @@ Map<String, Object?> houseSpecSchema() {
   final a = northAngleDeg * math.pi / 180;
   ({WallSegment wall, double from, double to})? best;
   for (final wall in base.wallSegments) {
-    double? from, to;
+    double? from;
+    double? to;
     for (final e in wall.edges) {
       if (exterior && e.kind != 'exterior') continue;
       final inNegative =
-              e.negative != null && base.owners[e.negative] == roomId,
-          inPositive = e.positive != null && base.owners[e.positive] == roomId;
+          e.negative != null && base.owners[e.negative] == roomId;
+      final inPositive =
+          e.positive != null && base.owners[e.positive] == roomId;
       if (inNegative == inPositive) continue;
       // Out of the room, in plan coordinates; north is (sin a, cos a).
       final sign = inNegative ? 1.0 : -1.0;
       final (dx, dy) = e.axis.dir == AxisDir.V ? (sign, 0.0) : (0.0, sign);
-      final dn = dx * math.sin(a) + dy * math.cos(a),
-          de = dx * math.cos(a) - dy * math.sin(a);
+      final dn = dx * math.sin(a) + dy * math.cos(a);
+      final de = dx * math.cos(a) - dy * math.sin(a);
       final facing = dn.abs() >= de.abs()
           ? (dn >= 0 ? Facing.north : Facing.south)
           : (de >= 0 ? Facing.east : Facing.west);
@@ -225,8 +227,8 @@ Map<String, Object?> houseSpecSchema() {
           e
     ];
     if (shared.isEmpty) continue;
-    final from = shared.map((e) => e.start.pos).reduce(math.min).toDouble(),
-        to = shared.map((e) => e.end.pos).reduce(math.max).toDouble();
+    final from = shared.map((e) => e.start.pos).reduce(math.min).toDouble();
+    final to = shared.map((e) => e.end.pos).reduce(math.max).toDouble();
     if (best == null || to - from > best.to - best.from) {
       best = (wall: wall, from: from, to: to, edges: shared);
     }
@@ -238,7 +240,8 @@ typedef _Rect = ({int x0, int y0, int x1, int y1});
 
 HouseSpecResult buildHouseFromSpec(
     Map<String, Object?> spec, String timestamp, String Function() newId) {
-  final errors = <String>[], notes = <String>[];
+  final errors = <String>[];
+  final notes = <String>[];
   HouseSpecResult fail(String why) =>
       HouseSpecResult(null, [...errors, why], notes);
 
@@ -252,9 +255,11 @@ HouseSpecResult buildHouseFromSpec(
   T? choice<T extends Enum>(List<T> values, Object? v) =>
       values.where((e) => e.name == v).firstOrNull;
 
-  final width = integer(spec['width_mm']), depth = integer(spec['depth_mm']);
-  if (width == null || depth == null)
+  final width = integer(spec['width_mm']);
+  final depth = integer(spec['depth_mm']);
+  if (width == null || depth == null) {
     return fail('width_mm and depth_mm are required');
+  }
   if (width < 4000 || width > 30000 || depth < 4000 || depth > 30000) {
     return fail('width_mm and depth_mm must be 4000-30000');
   }
@@ -264,10 +269,13 @@ HouseSpecResult buildHouseFromSpec(
 
   // Every edge of every room and stair, merged into wall lines.
   final stairs = list(spec['stairs']);
-  final xs = <int>{0, width}, ys = <int>{0, depth};
+  final xs = <int>{0, width};
+  final ys = <int>{0, depth};
   _Rect? rectOf(Map<String, Object?> m, String what) {
-    final x = integer(m['x_mm']), y = integer(m['y_mm']);
-    final w = integer(m['w_mm']), d = integer(m['d_mm']);
+    final x = integer(m['x_mm']);
+    final y = integer(m['y_mm']);
+    final w = integer(m['w_mm']);
+    final d = integer(m['d_mm']);
     if (x == null || y == null || w == null || d == null) {
       errors.add('$what: x_mm, y_mm, w_mm and d_mm are required');
       return null;
@@ -310,7 +318,7 @@ HouseSpecResult buildHouseFromSpec(
   }
   final stairRects = <(int, StairType, _Rect)>[];
   for (final (i, s) in stairs.indexed) {
-    final on = s['floor'] is num ? (s['floor'] as num).toInt() : 0;
+    final on = s['floor'] is num ? (s['floor']! as num).toInt() : 0;
     if (on < 1 || on >= floors.length) {
       errors.add('stair ${i + 1}: floor must have a floor above it');
       continue;
@@ -338,7 +346,8 @@ HouseSpecResult buildHouseFromSpec(
     return {for (final v in values) v: nearest(v)};
   }
 
-  final sx = snap(xs, width), sy = snap(ys, depth);
+  final sx = snap(xs, width);
+  final sy = snap(ys, depth);
   _Rect snapped(_Rect r) =>
       (x0: sx[r.x0]!, y0: sy[r.y0]!, x1: sx[r.x1]!, y1: sy[r.y1]!);
   bool overlap(_Rect a, _Rect b) =>
@@ -438,7 +447,7 @@ HouseSpecResult buildHouseFromSpec(
       final why = run('PaintCells', {
         'floorId': floorId,
         'cells': cells(floorId, snapped(rect)),
-        'roomType': choice(RoomType.values, room['type'])!,
+        'roomType': choice(RoomType.values, room['type']),
       });
       final added =
           doc.floors[f].rooms.where((r) => !before.contains(r.id)).firstOrNull;
@@ -449,8 +458,9 @@ HouseSpecResult buildHouseFromSpec(
       }
       byKey[key] = added.id;
       final name = '${room['name'] ?? ''}'.trim();
-      if (name.isNotEmpty)
+      if (name.isNotEmpty) {
         run('RenameRoom', {'roomId': added.id, 'value': name});
+      }
     }
     ids.add(byKey);
   }
@@ -469,7 +479,9 @@ HouseSpecResult buildHouseFromSpec(
           'top': r.y1,
           'type': type == StairType.straight ? null : type,
         }) ==
-        null) continue;
+        null) {
+      continue;
+    }
     final why = run('AddStair', {
       'floorId': doc.floors[f].id,
       'type': type,
@@ -486,7 +498,7 @@ HouseSpecResult buildHouseFromSpec(
   for (final (f, floor) in floors.indexed) {
     final floorId = doc.floors[f].id;
     for (final pair
-        in floor['open'] is List ? floor['open'] as List : const []) {
+        in floor['open'] is List ? floor['open']! as List : const []) {
       final keys =
           pair is List ? [for (final k in pair) '$k'] : const <String>[];
       final a = keys.isNotEmpty ? ids[f][keys.first] : null;
@@ -499,7 +511,8 @@ HouseSpecResult buildHouseFromSpec(
             .add('floor ${f + 1}: ${keys.join(' and ')} share no wall to open');
         continue;
       }
-      final first = wall.edges.first, last = wall.edges.last;
+      final first = wall.edges.first;
+      final last = wall.edges.last;
       final why = run('SetWallOverride', {
         'floorId': floorId,
         'anchor': BoundaryAnchor(
@@ -508,8 +521,9 @@ HouseSpecResult buildHouseFromSpec(
             endAxisId: last.end.id),
         'type': 'open',
       });
-      if (why != null)
+      if (why != null) {
         notes.add('floor ${f + 1}: ${keys.join(' and ')} not opened: $why');
+      }
     }
   }
 
@@ -543,7 +557,8 @@ HouseSpecResult buildHouseFromSpec(
     return added.id;
   }
 
-  String? main, firstOuterDoor;
+  String? main;
+  String? firstOuterDoor;
   final north = doc.footprint.northAngleDeg;
   for (final (f, floor) in floors.indexed) {
     final floorId = doc.floors[f].id;
@@ -601,7 +616,7 @@ HouseSpecResult buildHouseFromSpec(
         continue;
       }
       final count = window['count'] is num
-          ? (window['count'] as num).toInt().clamp(1, 4)
+          ? (window['count']! as num).toInt().clamp(1, 4)
           : 1;
       final share = (spot.to - spot.from) / count;
       final width = math.min(

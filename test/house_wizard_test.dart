@@ -14,8 +14,8 @@ import 'voice/session_test.dart' show ScriptedBackend;
 
 void main() {
   test('the wish reads as one sentence with a comma for decimals', () {
-    const wish = HouseWish(
-        width: 10.5, depth: 8, floors: 2, bedrooms: 4, bathrooms: 2);
+    const wish =
+        HouseWish(width: 10.5, depth: 8, floors: 2, bedrooms: 4, bathrooms: 2);
     expect(wish.sentence(),
         '帮我设计一栋 10.5×8 米的 2 层房子：4 间卧室、2 个卫生间、客厅和厨房，还要门厅。每个房间都要有门，卧室、客厅和厨房要有窗。');
     AppSettings.instance.lang = AppLang.ru;
@@ -36,7 +36,6 @@ void main() {
         builder: (context, child) => VoiceHost(
             navigator: navigator,
             repos: VoiceMock(backend),
-            enabled: true,
             child: AppScope(child: child!)),
         home: HouseHome(store: ProjectStore(fileSystem: MemoryFiles()))));
     await t.pumpAndSettle();
@@ -120,13 +119,11 @@ void main() {
     final doc = await store.openProject(projects.single.id);
     expect(doc.floors, hasLength(2));
     expect(doc.floors.first.stairs, hasLength(1));
-    expect(
-        [
-          for (final f in doc.floors)
-            for (final r in f.rooms)
-              if (r.type == RoomType.bedroom) r
-        ],
-        hasLength(4));
+    expect([
+      for (final f in doc.floors)
+        for (final r in f.rooms)
+          if (r.type == RoomType.bedroom) r
+    ], hasLength(4));
     expect(doc.floors.first.rooms.map((r) => r.name), contains('门厅'));
     expect(t.takeException(), isNull);
   });

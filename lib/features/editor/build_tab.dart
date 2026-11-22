@@ -5,14 +5,19 @@ part of 'house_editor.dart';
 extension _BuildTab on _HouseEditorState {
   Future<void> editStageStart(BuildStage s, DateTime? planned) async {
     final text = await promptText(context,
-        title: '${stageName(s)} · ${tr3('开工日期 (年-月-日，留空跟随上一阶段)', 'Басталу күні (жыл-ай-күн, бос қалса алдыңғы кезеңнен кейін)', 'Дата начала (год-месяц-день, если пусто — после предыдущего этапа)')}',
-        initial: s.start ?? (planned == null ? formatDay(DateTime.now()) : formatDay(planned)),
+        title:
+            '${stageName(s)} · ${tr3('开工日期 (年-月-日，留空跟随上一阶段)', 'Басталу күні (жыл-ай-күн, бос қалса алдыңғы кезеңнен кейін)', 'Дата начала (год-месяц-день, если пусто — после предыдущего этапа)')}',
+        initial: s.start ??
+            (planned == null ? formatDay(DateTime.now()) : formatDay(planned)),
         cancel: tr3('取消', 'Болдырмау', 'Отмена'),
         ok: tr3('确定', 'Жарайды', 'ОК'));
     if (text == null) return;
     final trimmed = text.trim();
     if (trimmed.isNotEmpty && parseDay(trimmed) == null) {
-      notify(tr3('日期格式应为 2027-04-01', 'Күн пішімі 2027-04-01 сияқты болуы керек', 'Дата должна быть в формате 2027-04-01'));
+      notify(tr3(
+          '日期格式应为 2027-04-01',
+          'Күн пішімі 2027-04-01 сияқты болуы керек',
+          'Дата должна быть в формате 2027-04-01'));
       return;
     }
     action('SetStage', {
@@ -56,13 +61,17 @@ extension _BuildTab on _HouseEditorState {
           StageStatus.todo => Tokens.mix(t.muted, 0.45, t.panel),
         };
     final summary = InfoCard(
-        title: '${tr3('施工进度', 'Құрылыс кестесі', 'График строительства')} · ${(done * 100).round()}%',
+        title:
+            '${tr3('施工进度', 'Құрылыс кестесі', 'График строительства')} · ${(done * 100).round()}%',
         subtitle: first == null
-            ? tr3('给第一个阶段填开工日期后，会排出每个阶段的日期。',
-                'Бірінші кезеңге басталу күнін жазсаңыз, әр кезеңнің күні есептеледі.', 'Укажите дату начала первого этапа, и даты всех этапов будут рассчитаны.')
+            ? tr3(
+                '给第一个阶段填开工日期后，会排出每个阶段的日期。',
+                'Бірінші кезеңге басталу күнін жазсаңыз, әр кезеңнің күні есептеледі.',
+                'Укажите дату начала первого этапа, и даты всех этапов будут рассчитаны.')
             : '${formatDay(first)} → ${last == null ? '?' : formatDay(last)}',
         trailing: IconButton(
-            tooltip: tr3('恢复默认阶段', 'Әдепкі кезеңдер', 'Вернуть этапы по умолчанию'),
+            tooltip:
+                tr3('恢复默认阶段', 'Әдепкі кезеңдер', 'Вернуть этапы по умолчанию'),
             visualDensity: VisualDensity.compact,
             onPressed: doc.extras.schedule.isEmpty
                 ? null
@@ -86,21 +95,31 @@ extension _BuildTab on _HouseEditorState {
                             child: ColoredBox(color: t.ok)),
                       ])))),
           KvGrid([
-            Kv('$days ${tr3('天', 'күн', 'дн.')}', tr3('总工期 (各阶段相加)', 'Жалпы мерзім (кезеңдер қосындысы)', 'Общий срок (сумма этапов)')),
+            Kv(
+                '$days ${tr3('天', 'күн', 'дн.')}',
+                tr3('总工期 (各阶段相加)', 'Жалпы мерзім (кезеңдер қосындысы)',
+                    'Общий срок (сумма этапов)')),
             Kv('${stages.where((s) => s.status == StageStatus.done).length} / ${stages.length}',
                 tr3('完成阶段', 'Аяқталған кезең', 'Завершено этапов')),
             Kv('$sym ${money(spent)}', tr3('已花费', 'Жұмсалды', 'Потрачено'),
                 color: spent > budget ? t.crit : null),
-            Kv('$sym ${money(budget)}', tr3('预算 (见“预算”页)', 'Смета («Смета» беті)', 'Смета (см. раздел «Смета»)')),
+            Kv(
+                '$sym ${money(budget)}',
+                tr3('预算 (见“预算”页)', 'Смета («Смета» беті)',
+                    'Смета (см. раздел «Смета»)')),
           ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
             Btn(
                 label: tr3('添加阶段', 'Кезең қосу', 'Добавить этап'),
                 icon: Icons.add,
                 onPressed: () async {
-                  final name = await askText(tr3('阶段名称 (如：打井)', 'Кезең атауы (мысалы: құдық қазу)', 'Название этапа (например: копка колодца)'), '');
+                  final name = await askText(
+                      tr3('阶段名称 (如：打井)', 'Кезең атауы (мысалы: құдық қазу)',
+                          'Название этапа (например: копка колодца)'),
+                      '');
                   if (name == null || name.trim().isEmpty || !mounted) return;
-                  final d = await askNumber(tr3('工期 (天)', 'Мерзімі (күн)', 'Длительность (дней)'), 7);
+                  final d = await askNumber(
+                      tr3('工期 (天)', 'Мерзімі (күн)', 'Длительность (дней)'), 7);
                   if (d == null) return;
                   action('AddStage', {'name': name.trim(), 'days': d.round()});
                 }),
@@ -118,61 +137,71 @@ extension _BuildTab on _HouseEditorState {
       final open = expandedStage == s.key;
       return Sheet(
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             InkWell(
                 onTap: () => update(() => expandedStage = open ? null : s.key),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Row(children: [
-                    Text('${index + 1}', style: mono(size: 12, color: t.muted)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                        child: Text(stageName(s),
-                            style: const TextStyle(
-                                fontSize: 15, fontWeight: FontWeight.w700))),
-                    TagPill(statusName(s.status), switch (s.status) {
-                      StageStatus.done => t.ok,
-                      StageStatus.doing => t.accent,
-                      StageStatus.todo => t.muted,
-                    }),
-                    Icon(open ? Icons.expand_less : Icons.expand_more,
-                        size: 20, color: t.muted),
-                  ]),
-                  const SizedBox(height: 6),
-                  // Timeline bar, positioned on the whole schedule.
-                  Tooltip(
-                      message:
-                          '${stageName(s)} · ${s.days} ${tr3('天', 'күн', 'дн.')}${p.start == null ? '' : ' · ${formatDay(p.start!)} → ${formatDay(p.end!)}'}',
-                      child: LayoutBuilder(
-                          builder: (context, c) => SizedBox(
-                              height: 10,
-                              child: Stack(children: [
-                                Positioned(
-                                    left: c.maxWidth * o.$1 / span,
-                                    width: math.max(
-                                        3.0, c.maxWidth * o.$2 / span),
-                                    top: 0,
-                                    bottom: 0,
-                                    child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                            color: statusColor(s.status),
-                                            borderRadius:
-                                                BorderRadius.circular(4)))),
-                              ])))),
-                  const SizedBox(height: 4),
-                  Text(
-                      [
-                        '${s.days} ${tr3('天', 'күн', 'дн.')}',
-                        if (p.start != null)
-                          '${formatDay(p.start!)} → ${formatDay(p.end!)}',
-                        if (b != null) '${tr3('预算', 'смета', 'смета')} $sym ${money(b)}',
-                        if (s.spent > 0) '${tr3('已花', 'жұмсалды', 'потрачено')} $sym ${money(s.spent)}',
-                        if (checks.isNotEmpty)
-                          '✓ ${s.checks.where((c) => c < checks.length).length}/${checks.length}',
-                      ].join(' · '),
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: b != null && s.spent > b ? t.crit : t.muted)),
-                ])),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(children: [
+                        Text('${index + 1}',
+                            style: mono(size: 12, color: t.muted)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                            child: Text(stageName(s),
+                                style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700))),
+                        TagPill(
+                            statusName(s.status),
+                            switch (s.status) {
+                              StageStatus.done => t.ok,
+                              StageStatus.doing => t.accent,
+                              StageStatus.todo => t.muted,
+                            }),
+                        Icon(open ? Icons.expand_less : Icons.expand_more,
+                            size: 20, color: t.muted),
+                      ]),
+                      const SizedBox(height: 6),
+                      // Timeline bar, positioned on the whole schedule.
+                      Tooltip(
+                          message:
+                              '${stageName(s)} · ${s.days} ${tr3('天', 'күн', 'дн.')}${p.start == null ? '' : ' · ${formatDay(p.start!)} → ${formatDay(p.end!)}'}',
+                          child: LayoutBuilder(
+                              builder: (context, c) => SizedBox(
+                                  height: 10,
+                                  child: Stack(children: [
+                                    Positioned(
+                                        left: c.maxWidth * o.$1 / span,
+                                        width: math.max(
+                                            3.0, c.maxWidth * o.$2 / span),
+                                        top: 0,
+                                        bottom: 0,
+                                        child: DecoratedBox(
+                                            decoration: BoxDecoration(
+                                                color: statusColor(s.status),
+                                                borderRadius:
+                                                    BorderRadius.circular(4)))),
+                                  ])))),
+                      const SizedBox(height: 4),
+                      Text(
+                          [
+                            '${s.days} ${tr3('天', 'күн', 'дн.')}',
+                            if (p.start != null)
+                              '${formatDay(p.start!)} → ${formatDay(p.end!)}',
+                            if (b != null)
+                              '${tr3('预算', 'смета', 'смета')} $sym ${money(b)}',
+                            if (s.spent > 0)
+                              '${tr3('已花', 'жұмсалды', 'потрачено')} $sym ${money(s.spent)}',
+                            if (checks.isNotEmpty)
+                              '✓ ${s.checks.where((c) => c < checks.length).length}/${checks.length}',
+                          ].join(' · '),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  b != null && s.spent > b ? t.crit : t.muted)),
+                    ])),
             if (open) ...[
               const SizedBox(height: 8),
               Wrap(spacing: 8, runSpacing: 8, children: [
@@ -181,8 +210,8 @@ extension _BuildTab on _HouseEditorState {
                       label: statusName(st),
                       checkbox: false,
                       selected: s.status == st,
-                      onChanged: (_) =>
-                          action('SetStage', {'stageKey': s.key, 'status': st})),
+                      onChanged: (_) => action(
+                          'SetStage', {'stageKey': s.key, 'status': st})),
               ]),
               for (var i = 0; i < checks.length; i++)
                 // Its own Material so the tile's ink shows over the sheet.
@@ -198,30 +227,49 @@ extension _BuildTab on _HouseEditorState {
                         onChanged: (_) => action('SetStage',
                             {'stageKey': s.key, 'toggleCheck': i}))),
               KvGrid([
-                Kv(s.start ?? (p.start == null ? '—' : formatDay(p.start!)),
-                    s.start == null ? tr3('开工 (跟随上一阶段)', 'Басталуы (алдыңғыдан кейін)', 'Начало (после предыдущего)') : tr3('开工日期', 'Басталу күні', 'Дата начала'),
+                Kv(
+                    s.start ?? (p.start == null ? '—' : formatDay(p.start!)),
+                    s.start == null
+                        ? tr3('开工 (跟随上一阶段)', 'Басталуы (алдыңғыдан кейін)',
+                            'Начало (после предыдущего)')
+                        : tr3('开工日期', 'Басталу күні', 'Дата начала'),
                     onTap: () => editStageStart(s, p.start)),
-                Kv('${s.days}', tr3('工期 (天)', 'Мерзімі (күн)', 'Длительность (дней)'), onTap: () async {
-                  final v = await askNumber(tr3('工期 (天)', 'Мерзімі (күн)', 'Длительность (дней)'), s.days);
-                  if (v != null)
+                Kv('${s.days}',
+                    tr3('工期 (天)', 'Мерзімі (күн)', 'Длительность (дней)'),
+                    onTap: () async {
+                  final v = await askNumber(
+                      tr3('工期 (天)', 'Мерзімі (күн)', 'Длительность (дней)'),
+                      s.days);
+                  if (v != null) {
                     action('SetStage', {'stageKey': s.key, 'days': v.round()});
+                  }
                 }),
-                Kv('$sym ${money(s.spent)}', tr3('已花费', 'Жұмсалды', 'Потрачено'), onTap: () async {
-                  final v = await askNumber('${tr3('已花费', 'Жұмсалды', 'Потрачено')} ($sym)', s.spent);
-                  if (v != null)
+                Kv('$sym ${money(s.spent)}',
+                    tr3('已花费', 'Жұмсалды', 'Потрачено'), onTap: () async {
+                  final v = await askNumber(
+                      '${tr3('已花费', 'Жұмсалды', 'Потрачено')} ($sym)', s.spent);
+                  if (v != null) {
                     action('SetStage', {'stageKey': s.key, 'spent': v.round()});
+                  }
                 }),
               ]),
               Wrap(spacing: 8, runSpacing: 8, children: [
                 Btn(
-                    label: s.note.isEmpty ? tr3('写备注', 'Жазба қосу', 'Добавить заметку') : tr3('改备注', 'Жазбаны өзгерту', 'Изменить заметку'),
+                    label: s.note.isEmpty
+                        ? tr3('写备注', 'Жазба қосу', 'Добавить заметку')
+                        : tr3('改备注', 'Жазбаны өзгерту', 'Изменить заметку'),
                     icon: Icons.edit_note,
                     onPressed: () async {
-                      final v = await askText(tr3('备注 (施工队、电话、问题…)', 'Жазба (құрылысшы, телефон, мәселе…)', 'Заметка (бригада, телефон, проблема…)'),
+                      final v = await askText(
+                          tr3(
+                              '备注 (施工队、电话、问题…)',
+                              'Жазба (құрылысшы, телефон, мәселе…)',
+                              'Заметка (бригада, телефон, проблема…)'),
                           s.note,
                           multiline: true);
-                      if (v != null)
+                      if (v != null) {
                         action('SetStage', {'stageKey': s.key, 'note': v});
+                      }
                     }),
                 if (s.custom)
                   Btn(
@@ -239,8 +287,10 @@ extension _BuildTab on _HouseEditorState {
     return page([
       summary,
       for (var i = 0; i < plan.length; i++) stageCard(plan[i], i),
-      Note(tr3('每个阶段的预算 = “预算”页对应部分 (含人工) + 预备费。点阶段展开检查清单；隐蔽工程 (钢筋、水管、电线) 封闭前一定拍照留底。',
-          'Әр кезеңнің сметасы = «Смета» бетіндегі сәйкес бөлік (жұмыспен) + резерв. Кезеңді басып тексеру тізімін ашыңыз; жасырын жұмыстарды (арматура, құбыр, сым) жаппас бұрын міндетті түрде суретке түсіріңіз.', 'Смета каждого этапа = соответствующая часть страницы «Смета» (с работой) + резерв. Нажмите на этап, чтобы открыть список проверки; скрытые работы (арматура, трубы, проводка) обязательно сфотографируйте до закрытия.')),
+      Note(tr3(
+          '每个阶段的预算 = “预算”页对应部分 (含人工) + 预备费。点阶段展开检查清单；隐蔽工程 (钢筋、水管、电线) 封闭前一定拍照留底。',
+          'Әр кезеңнің сметасы = «Смета» бетіндегі сәйкес бөлік (жұмыспен) + резерв. Кезеңді басып тексеру тізімін ашыңыз; жасырын жұмыстарды (арматура, құбыр, сым) жаппас бұрын міндетті түрде суретке түсіріңіз.',
+          'Смета каждого этапа = соответствующая часть страницы «Смета» (с работой) + резерв. Нажмите на этап, чтобы открыть список проверки; скрытые работы (арматура, трубы, проводка) обязательно сфотографируйте до закрытия.')),
     ]);
   }
 }

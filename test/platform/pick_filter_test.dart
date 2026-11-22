@@ -11,10 +11,9 @@ void main() {
         home: Scaffold(
             body: Builder(
                 builder: (context) => TextButton(
-                    onPressed: () async => results.add(
-                        await pickFilter<String>(
-                            context, 'Region', 'All', [('ala', 'Almaty')],
-                            selected: 'ala')),
+                    onPressed: () async => results.add(await pickFilter<String>(
+                        context, 'Region', 'All', [('ala', 'Almaty')],
+                        selected: 'ala')),
                     child: const Text('open'))))));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();

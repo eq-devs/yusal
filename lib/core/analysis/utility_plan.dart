@@ -1,8 +1,8 @@
 import 'dart:math' as math;
-import '../document/house_document.dart';
-import '../geometry/derived_house.dart';
-import '../geometry/floor_base.dart';
-import 'house_analysis.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/analysis/house_analysis.dart';
 
 /// Electrical, water and heating points: a first layout room by room, and
 /// the cable and pipe they need. Lengths follow the walls (right-angled
@@ -44,11 +44,13 @@ PlanRect? _largest(SpaceGeometry g) => g.clearRects.isEmpty
 ({double x, double y}) _inside(OpeningPlacement p, FloorBase base,
     String roomId, double along, double inset) {
   final (neg, pos) = roomsBeside(p, base);
-  final sign = pos == roomId ? 1.0 : neg == roomId ? -1.0 : 1.0;
+  final sign = pos == roomId
+      ? 1.0
+      : neg == roomId
+          ? -1.0
+          : 1.0;
   final cross = p.axis.pos + sign * ((p.host?.thickness ?? 240) / 2 + inset);
-  return p.axis.dir == AxisDir.H
-      ? (x: along, y: cross)
-      : (x: cross, y: along);
+  return p.axis.dir == AxisDir.H ? (x: along, y: cross) : (x: cross, y: along);
 }
 
 /// A first layout for floor [floorIndex]: lights, switches by the doors,
@@ -57,7 +59,8 @@ PlanRect? _largest(SpaceGeometry g) => g.clearRects.isEmpty
 /// entrance. Points close to existing ones of the same kind are left out.
 List<UtilitySpot> suggestUtilities(
     HouseDocument doc, DerivedHouse derived, int floorIndex) {
-  final floor = doc.floors[floorIndex], g = derived.floors[floorIndex];
+  final floor = doc.floors[floorIndex];
+  final g = derived.floors[floorIndex];
   final base = g.base;
   final out = <UtilitySpot>[];
   void add(UtilityKind kind, double x, double y) =>
@@ -66,17 +69,20 @@ List<UtilitySpot> suggestUtilities(
     final geometry = base.roomGeometry.firstWhere((r) => r.id == room.id);
     final r = _largest(geometry);
     if (r == null) continue;
-    final w = r.right - r.left, d = r.top - r.bottom;
-    final cx = (r.left + r.right) / 2, cy = (r.bottom + r.top) / 2;
+    final w = r.right - r.left;
+    final d = r.top - r.bottom;
+    final cx = (r.left + r.right) / 2;
+    final cy = (r.bottom + r.top) / 2;
     // Lights: two along a large room's long side; a little up from the
     // middle, where the room's name is written on the plan.
     final lift = math.min(600.0, d * 0.2);
     if (geometry.clearArea > 25e6 && math.max(w, d) > 5000) {
-      for (final f in [0.25, 0.75])
+      for (final f in [0.25, 0.75]) {
         w >= d
             ? add(UtilityKind.light, r.left + w * f, cy + lift)
             : add(UtilityKind.light, cx + math.min(600.0, w * 0.2),
                 r.bottom + d * f);
+      }
     } else {
       add(UtilityKind.light, cx, cy + lift);
     }
@@ -87,20 +93,24 @@ List<UtilitySpot> suggestUtilities(
         touching.where((p) => p.opening.kind != OpeningKind.window).toList();
     // Switch on the latch side of the first door, inside the room.
     if (doors.isNotEmpty) {
-      final p = doors.first, o = p.opening;
+      final p = doors.first;
+      final o = p.opening;
       final latchAtEnd = o is! DoorOpening || o.hinge == Hinge.start;
-      final low = p.axis.dir == AxisDir.H ? r.left : r.bottom,
-          high = p.axis.dir == AxisDir.H ? r.right : r.top;
+      final low = p.axis.dir == AxisDir.H ? r.left : r.bottom;
+      final high = p.axis.dir == AxisDir.H ? r.right : r.top;
       var along = latchAtEnd ? p.end + 150 : p.start - 150;
-      if (along < low + 50 || along > high - 50)
+      if (along < low + 50 || along > high - 50) {
         along = latchAtEnd ? p.start - 150 : p.end + 150;
-      final at = _inside(p, base, room.id, along.clamp(low + 50, high - 50), 80);
+      }
+      final at =
+          _inside(p, base, room.id, along.clamp(low + 50, high - 50), 80);
       add(UtilityKind.lightSwitch, at.x, at.y);
     }
     // Sockets spread round the walls, clear of corners and door swings.
     var sockets = socketsPerRoom[room.type]!;
     if (geometry.clearArea < 4e6) sockets = math.min(sockets, 1);
-    const inset = 100.0, step = 300.0;
+    const inset = 100.0;
+    const step = 300.0;
     final candidates = <({double x, double y})>[];
     final edges = [
       (r.left, r.bottom + inset, r.right, r.bottom + inset),
@@ -111,10 +121,11 @@ List<UtilitySpot> suggestUtilities(
     for (final (x0, y0, x1, y1) in edges) {
       final length = (x1 - x0).abs() + (y1 - y0).abs();
       for (var s = 400.0; s <= length - 400; s += step) {
-        final x = x0 + (x1 - x0) * s / length, y = y0 + (y1 - y0) * s / length;
+        final x = x0 + (x1 - x0) * s / length;
+        final y = y0 + (y1 - y0) * s / length;
         final blocked = doors.any((p) {
-          final along = p.axis.dir == AxisDir.H ? x : y,
-              cross = p.axis.dir == AxisDir.H ? y : x;
+          final along = p.axis.dir == AxisDir.H ? x : y;
+          final cross = p.axis.dir == AxisDir.H ? y : x;
           return along > p.start - 300 &&
               along < p.end + 300 &&
               (cross - p.axis.pos).abs() < 600;
@@ -134,10 +145,11 @@ List<UtilitySpot> suggestUtilities(
     final fixtures = doc.extras.furniture.where((f) =>
         f.floorId == floor.id &&
         wetFurniture.contains(f.kind) &&
-        geometry.clearRects.any(
-            (c) => c.contains(f.x + f.width / 2, f.y + f.depth / 2)));
+        geometry.clearRects
+            .any((c) => c.contains(f.x + f.width / 2, f.y + f.depth / 2)));
     for (final f in fixtures) {
-      final fx = f.x + f.width / 2, fy = f.y + f.depth / 2;
+      final fx = f.x + f.width / 2;
+      final fy = f.y + f.depth / 2;
       add(UtilityKind.water, fx - 100, fy);
       add(UtilityKind.drain, fx + 100, fy);
     }
@@ -157,8 +169,9 @@ List<UtilitySpot> suggestUtilities(
       final at = _inside(p, base, room.id, (p.start + p.end) / 2, 120);
       add(UtilityKind.radiator, at.x, at.y);
     }
-    if (windows.isEmpty && room.type == RoomType.bathroom)
+    if (windows.isEmpty && room.type == RoomType.bathroom) {
       add(UtilityKind.radiator, r.left + 300, cy);
+    }
   }
   // The panel inside the main entrance on the ground floor.
   if (floorIndex == 0 &&
@@ -187,8 +200,7 @@ List<UtilitySpot> suggestUtilities(
   return [
     for (final s in out)
       if (!existing.any((u) =>
-          u.kind == s.kind &&
-          (u.x - s.x).abs() + (u.y - s.y).abs() < 300))
+          u.kind == s.kind && (u.x - s.x).abs() + (u.y - s.y).abs() < 300))
         s
   ];
 }
@@ -232,25 +244,23 @@ UtilityTakeoff utilityTakeoff(HouseDocument doc) {
   final panelAt = panel == null
       ? at(firstFloor, t + 300, t + 300)
       : at(panel.floorId, panel.x, panel.y);
-  final water = doc.extras.sleeves
-      .where((s) => s.kind == SleeveKind.water)
-      .firstOrNull;
-  final sewer = doc.extras.sleeves
-      .where((s) => s.kind == SleeveKind.sewer)
-      .firstOrNull;
+  final water =
+      doc.extras.sleeves.where((s) => s.kind == SleeveKind.water).firstOrNull;
+  final sewer =
+      doc.extras.sleeves.where((s) => s.kind == SleeveKind.sewer).firstOrNull;
   final boiler = doc.extras.furniture
       .where((f) => f.kind == FurnitureKind.boiler)
       .firstOrNull;
-  final waterAt = water == null ? panelAt : at(firstFloor, water.x, water.y),
-      sewerAt = sewer == null
-          ? at(firstFloor, doc.footprint.width / 2, 0)
-          : at(firstFloor, sewer.x, sewer.y),
-      boilerAt = boiler == null
-          ? panelAt
-          : at(boiler.floorId, boiler.x + boiler.width / 2,
-              boiler.y + boiler.depth / 2);
-  double run(({double x, double y, double z}) from, UtilityPoint u,
-          double drop) =>
+  final waterAt = water == null ? panelAt : at(firstFloor, water.x, water.y);
+  final sewerAt = sewer == null
+      ? at(firstFloor, doc.footprint.width / 2, 0)
+      : at(firstFloor, sewer.x, sewer.y);
+  final boilerAt = boiler == null
+      ? panelAt
+      : at(boiler.floorId, boiler.x + boiler.width / 2,
+          boiler.y + boiler.depth / 2);
+  double run(
+          ({double x, double y, double z}) from, UtilityPoint u, double drop) =>
       (((from.x - u.x).abs() +
                   (from.y - u.y).abs() +
                   ((elevation[u.floorId] ?? 0) - from.z).abs()) *
@@ -258,7 +268,11 @@ UtilityTakeoff utilityTakeoff(HouseDocument doc) {
           drop) /
       1000;
   final counts = <UtilityKind, int>{};
-  var light = 0.0, power = 0.0, cold = 0.0, drain = 0.0, heat = 0.0;
+  var light = 0.0;
+  var power = 0.0;
+  var cold = 0.0;
+  var drain = 0.0;
+  var heat = 0.0;
   for (final u in points) {
     counts[u.kind] = (counts[u.kind] ?? 0) + 1;
     final h = height[u.floorId] ?? 3000;

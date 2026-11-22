@@ -46,7 +46,7 @@ void main() {
 
   testWidgets(
       'voice is offered what the status allows, the same as the buttons, '
-      'and nothing on someone else\'s demand', (t) async {
+      "and nothing on someone else's demand", (t) async {
     b.signInAs(SeedIds.owner);
     final d = b.demands['dem_wall']!;
     expect(d.status, DemandStatus.open);

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'extras_planning.dart';
+import 'package:yusal/core/document/extras_planning.dart';
 export 'extras_planning.dart';
 
 /// Content beyond walls, rooms and openings: furniture, room notes,
@@ -44,7 +44,18 @@ enum FurnitureKind {
   custom
 }
 
-enum LayerMaterial { conc, block, ins, earth, sand, plaster, metal, wood, film, gyp }
+enum LayerMaterial {
+  conc,
+  block,
+  ins,
+  earth,
+  sand,
+  plaster,
+  metal,
+  wood,
+  film,
+  gyp
+}
 
 enum IssueLevel { crit, warn, chk, ok }
 
@@ -84,8 +95,7 @@ class JsonReader {
     return fallback;
   }
 
-  String? optionalText(Object? v, String p) =>
-      v == null ? null : text(v, p);
+  String? optionalText(Object? v, String p) => v == null ? null : text(v, p);
 
   bool flag(Object? v, String p, bool fallback) {
     if (v == null) return fallback;
@@ -96,7 +106,9 @@ class JsonReader {
 
   T en<T extends Enum>(Object? v, String p, List<T> values, T fallback) {
     if (v == null) return fallback;
-    for (final x in values) if (x.name == v) return x;
+    for (final x in values) {
+      if (x.name == v) return x;
+    }
     err('UNKNOWN_ENUM', p, '未知枚举值');
     return fallback;
   }
@@ -119,7 +131,8 @@ class FurnitureItem {
 
   /// Lower-left corner in plan millimetres (y grows to the top of the plan).
   final int x, y, width, depth, height, elevation, variant;
-  final String id, floorId;
+  final String id;
+  final String floorId;
   final FurnitureKind kind;
   final String? label;
   int get right => x + width;
@@ -169,8 +182,8 @@ class FurnitureItem {
     return FurnitureItem(
         id: r.text(m['id'], '$p/id'),
         floorId: r.text(m['floorId'], '$p/floorId'),
-        kind: r.en(m['kind'], '$p/kind', FurnitureKind.values,
-            FurnitureKind.custom),
+        kind: r.en(
+            m['kind'], '$p/kind', FurnitureKind.values, FurnitureKind.custom),
         x: r.integer(m['x'], '$p/x', 0),
         y: r.integer(m['y'], '$p/y', 0),
         width: r.integer(m['width'], '$p/width', 0),
@@ -226,23 +239,23 @@ class FoundationSpec {
     this.bearingMin = 240,
     this.concrete = 'B20 (M250) · W6 · F150',
   });
-  final int width,
-      height,
-      plinth,
-      cushion,
-      cushionExtra,
-      cover,
-      topBars,
-      bottomBars,
-      barDia,
-      stirrupDia,
-      stirrupStep,
-      partitionWidth,
-      partitionHeight,
-      partitionBars,
-      partitionBarDia,
-      partitionStirrupDia,
-      bearingMin;
+  final int width;
+  final int height;
+  final int plinth;
+  final int cushion;
+  final int cushionExtra;
+  final int cover;
+  final int topBars;
+  final int bottomBars;
+  final int barDia;
+  final int stirrupDia;
+  final int stirrupStep;
+  final int partitionWidth;
+  final int partitionHeight;
+  final int partitionBars;
+  final int partitionBarDia;
+  final int partitionStirrupDia;
+  final int bearingMin;
 
   /// Whether partition walls also get (smaller) strips.
   final bool partitions;
@@ -345,8 +358,9 @@ class FoundationSpec {
   static FoundationSpec fromJson(Object? v, String p, JsonReader r) {
     final m = r.obj(v, p);
     var spec = const FoundationSpec();
-    for (final f in fieldsInt)
+    for (final f in fieldsInt) {
       spec = spec.withInt(f, r.integer(m[f], '$p/$f', spec.ints[f]!));
+    }
     return spec.copyWith(
         partitions: r.flag(m['partitions'], '$p/partitions', false),
         concrete: r.text(m['concrete'], '$p/concrete', spec.concrete));
@@ -379,7 +393,8 @@ const materialLambda = {
 class Layer {
   const Layer(this.name, this.nameKk, this.thickness, this.material,
       {this.lambda});
-  final String name, nameKk;
+  final String name;
+  final String nameKk;
   final int thickness;
   final LayerMaterial material;
 
@@ -416,12 +431,16 @@ const defaultWallLayers = [
 ];
 
 const defaultRoofLayers = [
-  Layer('防水卷材 2 层 (SBS 改性沥青) 或 PVC 膜',
-      'Гидрооқшау: 2 қабат битумды мембрана немесе ПВХ', 8, LayerMaterial.metal),
-  Layer('水泥砂浆找平 (配筋网)', 'Цемент тегістеу (тормен)', 40,
-      LayerMaterial.plaster),
-  Layer('找坡保温 (楔形 XPS / 陶粒) 30–150',
-      'Еңіс жасайтын жылытқыш (сына XPS / керамзит) 30–150', 60,
+  Layer(
+      '防水卷材 2 层 (SBS 改性沥青) 或 PVC 膜',
+      'Гидрооқшау: 2 қабат битумды мембрана немесе ПВХ',
+      8,
+      LayerMaterial.metal),
+  Layer('水泥砂浆找平 (配筋网)', 'Цемент тегістеу (тормен)', 40, LayerMaterial.plaster),
+  Layer(
+      '找坡保温 (楔形 XPS / 陶粒) 30–150',
+      'Еңіс жасайтын жылытқыш (сына XPS / керамзит) 30–150',
+      60,
       LayerMaterial.sand),
   Layer('高密度岩棉板', 'Тығыз минералды мақта плита', 150, LayerMaterial.ins),
   Layer('隔汽层', 'Бу оқшаулағыш', 2, LayerMaterial.film),
@@ -451,7 +470,9 @@ class UserIssue {
       this.text = '',
       this.floorId,
       this.areas = const []});
-  final String id, title, text;
+  final String id;
+  final String title;
+  final String text;
   final IssueLevel level;
   final String? floorId;
   final List<(int, int, int, int)> areas;
@@ -489,7 +510,9 @@ class UserIssue {
         r.err('WRONG_SHAPE', '$p/areas/$i', '区域应为 4 个整数');
         continue;
       }
-      final n = [for (var k = 0; k < 4; k++) r.integer(a[k], '$p/areas/$i/$k', 0)];
+      final n = [
+        for (var k = 0; k < 4; k++) r.integer(a[k], '$p/areas/$i/$k', 0)
+      ];
       areas.add((n[0], n[1], n[2], n[3]));
     }
     return UserIssue(
@@ -511,7 +534,9 @@ class Sleeve {
       required this.diameter,
       required this.kind});
   final String id;
-  final int x, y, diameter;
+  final int x;
+  final int y;
+  final int diameter;
   final SleeveKind kind;
   Json toJson() =>
       {'id': id, 'x': x, 'y': y, 'diameter': diameter, 'kind': kind.name};
@@ -562,7 +587,9 @@ class HouseExtras {
   final Map<String, RoomInfo> rooms;
   final Map<String, String> openingLabels;
   final FoundationSpec foundation;
-  final List<Layer> wallLayers, roofLayers, floorLayers;
+  final List<Layer> wallLayers;
+  final List<Layer> roofLayers;
+  final List<Layer> floorLayers;
   final List<UserIssue> issues;
   final List<Sleeve> sleeves;
 
@@ -580,7 +607,8 @@ class HouseExtras {
   final List<BuildStage> schedule;
 
   /// The stages shown and edited: the saved ones or the defaults.
-  List<BuildStage> get stages => schedule.isEmpty ? defaultSchedule() : schedule;
+  List<BuildStage> get stages =>
+      schedule.isEmpty ? defaultSchedule() : schedule;
 
   HouseExtras copyWith({
     List<FurnitureItem>? furniture,
@@ -620,39 +648,42 @@ class HouseExtras {
   /// Drop references to floors, rooms and openings that no longer exist.
   HouseExtras pruned(
       Set<String> floorIds, Set<String> roomIds, Set<String> openingIds) {
-    final f = furniture.where((i) => floorIds.contains(i.floorId)).toList(),
-        u = utilities.where((i) => floorIds.contains(i.floorId)).toList(),
-        r = {
-          for (final e in rooms.entries)
-            if (roomIds.contains(e.key) && !e.value.isEmpty) e.key: e.value
-        },
-        o = {
-          for (final e in openingLabels.entries)
-            if (openingIds.contains(e.key) && e.value.isNotEmpty) e.key: e.value
-        },
-        i = [
-          for (final x in issues)
-            x.floorId == null || floorIds.contains(x.floorId)
-                ? x
-                : UserIssue(
-                    id: x.id,
-                    level: x.level,
-                    title: x.title,
-                    text: x.text,
-                    areas: x.areas)
-        ];
+    final f = furniture.where((i) => floorIds.contains(i.floorId)).toList();
+    final u = utilities.where((i) => floorIds.contains(i.floorId)).toList();
+    final r = {
+      for (final e in rooms.entries)
+        if (roomIds.contains(e.key) && !e.value.isEmpty) e.key: e.value
+    };
+    final o = {
+      for (final e in openingLabels.entries)
+        if (openingIds.contains(e.key) && e.value.isNotEmpty) e.key: e.value
+    };
+    final i = [
+      for (final x in issues)
+        x.floorId == null || floorIds.contains(x.floorId)
+            ? x
+            : UserIssue(
+                id: x.id,
+                level: x.level,
+                title: x.title,
+                text: x.text,
+                areas: x.areas)
+    ];
     if (f.length == furniture.length &&
         u.length == utilities.length &&
         r.length == rooms.length &&
         o.length == openingLabels.length &&
-        !issues.any((x) => x.floorId != null && !floorIds.contains(x.floorId)))
+        !issues
+            .any((x) => x.floorId != null && !floorIds.contains(x.floorId))) {
       return this;
+    }
     return copyWith(
         furniture: f, utilities: u, rooms: r, openingLabels: o, issues: i);
   }
 
   Json toJson() {
-    String layersKey(List<Layer> l) => jsonEncode([for (final x in l) x.toJson()]);
+    String layersKey(List<Layer> l) =>
+        jsonEncode([for (final x in l) x.toJson()]);
     return {
       if (furniture.isNotEmpty)
         'furniture': [for (final f in furniture) f.toJson()],
@@ -676,15 +707,14 @@ class HouseExtras {
       if (issues.isNotEmpty) 'issues': [for (final i in issues) i.toJson()],
       if (sleeves.isNotEmpty) 'sleeves': [for (final s in sleeves) s.toJson()],
       if (notes.isNotEmpty)
-        'notes': {
-          for (final k in (notes.keys.toList()..sort())) k: notes[k]
-        },
+        'notes': {for (final k in (notes.keys.toList()..sort())) k: notes[k]},
       if (!cost.isDefault) 'cost': cost.toJson(),
       if (!heat.isDefault) 'heat': heat.toJson(),
       if (utilities.isNotEmpty)
         'utilities': [for (final u in utilities) u.toJson()],
       if (site != null) 'site': site!.toJson(),
-      if (schedule.isNotEmpty) 'schedule': [for (final s in schedule) s.toJson()],
+      if (schedule.isNotEmpty)
+        'schedule': [for (final s in schedule) s.toJson()],
     };
   }
 
@@ -722,8 +752,9 @@ class HouseExtras {
       'site',
       'schedule'
     };
-    for (final k in m.keys)
+    for (final k in m.keys) {
       if (!known.contains(k)) r.err('UNKNOWN_FIELD', '$p/$k', '未知字段 $k');
+    }
     List<T> items<T>(String key, T Function(Object?, String, JsonReader) f) {
       final raw = r.list(m[key], '$p/$key');
       return [for (var i = 0; i < raw.length; i++) f(raw[i], '$p/$key/$i', r)];
@@ -732,7 +763,9 @@ class HouseExtras {
     Map<String, T> keyed<T>(String key, T Function(Object?, String) f) {
       if (m[key] == null) return const {};
       final raw = r.obj(m[key], '$p/$key');
-      return {for (final e in raw.entries) e.key: f(e.value, '$p/$key/${e.key}')};
+      return {
+        for (final e in raw.entries) e.key: f(e.value, '$p/$key/${e.key}')
+      };
     }
 
     return HouseExtras(
@@ -773,52 +806,69 @@ class HouseExtras {
     final ids = <String>{};
     for (var i = 0; i < furniture.length; i++) {
       final f = furniture[i];
-      if (f.id.isEmpty || !ids.add(f.id))
+      if (f.id.isEmpty || !ids.add(f.id)) {
         out.add(('/extras/furniture/$i/id', '家具 id 无效或重复'));
-      if (f.width <= 0 || f.depth <= 0 || f.height <= 0)
+      }
+      if (f.width <= 0 || f.depth <= 0 || f.height <= 0) {
         out.add(('/extras/furniture/$i', '家具尺寸必须大于零'));
-      if (f.width > 50000 || f.depth > 50000 || f.height > 20000)
+      }
+      if (f.width > 50000 || f.depth > 50000 || f.height > 20000) {
         out.add(('/extras/furniture/$i', '家具尺寸过大'));
-      if (f.x.abs() > 200000 || f.y.abs() > 200000)
+      }
+      if (f.x.abs() > 200000 || f.y.abs() > 200000) {
         out.add(('/extras/furniture/$i', '家具位置超出范围'));
-      if (f.elevation < 0 || f.elevation > 10000)
+      }
+      if (f.elevation < 0 || f.elevation > 10000) {
         out.add(('/extras/furniture/$i/elevation', '离地高度超出范围'));
+      }
     }
-    for (final e in rooms.entries)
-      if ((e.value.labelArea ?? 0) < 0)
+    for (final e in rooms.entries) {
+      if ((e.value.labelArea ?? 0) < 0) {
         out.add(('/extras/rooms/${e.key}/labelArea', '标注面积不得为负'));
+      }
+    }
     final f = foundation;
-    for (final e in f.ints.entries)
-      if (e.value < 0 || e.value > 5000)
+    for (final e in f.ints.entries) {
+      if (e.value < 0 || e.value > 5000) {
         out.add(('/extras/foundation/${e.key}', '基础参数超出范围'));
-    if (f.width <= 0 || f.height <= 0 || f.stirrupStep <= 0)
+      }
+    }
+    if (f.width <= 0 || f.height <= 0 || f.stirrupStep <= 0) {
       out.add(('/extras/foundation', '基础宽、高和箍筋间距必须大于零'));
+    }
     for (final (key, layers) in [
       ('wallLayers', wallLayers),
       ('roofLayers', roofLayers),
       ('floorLayers', floorLayers)
     ])
       for (var i = 0; i < layers.length; i++) {
-        if (layers[i].thickness < 0 || layers[i].thickness > 5000)
+        if (layers[i].thickness < 0 || layers[i].thickness > 5000) {
           out.add(('/extras/$key/$i/thickness', '层厚超出范围'));
+        }
         if (layers[i].lambda != null &&
-            (layers[i].lambda! <= 0 || layers[i].lambda! > 100000))
+            (layers[i].lambda! <= 0 || layers[i].lambda! > 100000)) {
           out.add(('/extras/$key/$i/lambda', '导热系数超出范围'));
+        }
       }
     final issueIds = <String>{};
     for (var i = 0; i < issues.length; i++) {
-      if (issues[i].id.isEmpty || !issueIds.add(issues[i].id))
+      if (issues[i].id.isEmpty || !issueIds.add(issues[i].id)) {
         out.add(('/extras/issues/$i/id', '问题 id 无效或重复'));
-      for (final a in issues[i].areas)
-        if (a.$1 > a.$3 || a.$2 > a.$4)
+      }
+      for (final a in issues[i].areas) {
+        if (a.$1 > a.$3 || a.$2 > a.$4) {
           out.add(('/extras/issues/$i/areas', '区域坐标顺序错误'));
+        }
+      }
     }
     final sleeveIds = <String>{};
     for (var i = 0; i < sleeves.length; i++) {
-      if (sleeves[i].id.isEmpty || !sleeveIds.add(sleeves[i].id))
+      if (sleeves[i].id.isEmpty || !sleeveIds.add(sleeves[i].id)) {
         out.add(('/extras/sleeves/$i/id', '套管 id 无效或重复'));
-      if (sleeves[i].diameter <= 0 || sleeves[i].diameter > 1000)
+      }
+      if (sleeves[i].diameter <= 0 || sleeves[i].diameter > 1000) {
         out.add(('/extras/sleeves/$i/diameter', '套管直径超出范围'));
+      }
     }
     out.addAll(planningProblems(
         cost: cost,

@@ -1,8 +1,8 @@
 import 'dart:math' as math;
-import '../document/house_document.dart';
-import '../axis/axis_resolver.dart';
-import 'floor_base.dart';
-import 'source_ref.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/geometry/source_ref.dart';
 export 'source_ref.dart';
 
 typedef Point3 = ({double x, double y, double z});
@@ -10,7 +10,8 @@ typedef Point3 = ({double x, double y, double z});
 class SceneElement {
   const SceneElement(this.kind, this.floorIndex, this.source, this.materialRole,
       this.vertices, this.faces);
-  final String kind, materialRole;
+  final String kind;
+  final String materialRole;
   final int floorIndex;
   final SourceRef? source;
   final List<Point3> vertices;
@@ -23,7 +24,8 @@ class OpeningPlacement {
   final Opening opening;
   final String status;
   final ResolvedAxis axis;
-  final double start, end;
+  final double start;
+  final double end;
   final WallSegment? host;
 }
 
@@ -33,8 +35,10 @@ class StairGeometry {
   final String stairId;
   final bool fits;
   final PlanRect opening;
-  final List<({PlanRect rect, double height})> steps, landings;
-  final double requiredA, requiredB;
+  final List<({PlanRect rect, double height})> steps;
+  final List<({PlanRect rect, double height})> landings;
+  final double requiredA;
+  final double requiredB;
 }
 
 class DerivedFloor {
@@ -50,7 +54,9 @@ class DerivedHouse {
       this.floors, this.scene3d, this.width, this.depth, this.height);
   final List<DerivedFloor> floors;
   final List<SceneElement> scene3d;
-  final double width, depth, height;
+  final double width;
+  final double depth;
+  final double height;
 }
 
 List<OpeningPlacement> deriveOpenings(
@@ -58,7 +64,8 @@ List<OpeningPlacement> deriveOpenings(
   final floor = doc.floors.firstWhere((f) => f.id == floorId);
   return List.unmodifiable(floor.openings.map((o) {
     final chain = resolveAnchor(base.axes, o.anchor).chain!;
-    final length = chain.nominalLength.toDouble(), w = o.width.toDouble();
+    final length = chain.nominalLength.toDouble();
+    final w = o.width.toDouble();
     final start = chain.startPos +
         switch (o.position) {
           CenterPosition() => length / 2 - w / 2,
@@ -100,10 +107,11 @@ DerivedHouse deriveHouse(HouseDocument doc) =>
     _houses.get(doc, 0, () => _deriveHouse(doc));
 
 DerivedHouse _deriveHouse(HouseDocument doc) {
-  final elements = <SceneElement>[], floors = <DerivedFloor>[];
-  final width = doc.footprint.width.toDouble(),
-      depth = doc.footprint.depth.toDouble(),
-      slab = doc.defaults.slabThickness.toDouble();
+  final elements = <SceneElement>[];
+  final floors = <DerivedFloor>[];
+  final width = doc.footprint.width.toDouble();
+  final depth = doc.footprint.depth.toDouble();
+  final slab = doc.defaults.slabThickness.toDouble();
   void mesh(String kind, int index, SourceRef? source, String material,
       List<Point3> points, List<List<int>> faces) {
     elements.add(SceneElement(
@@ -112,7 +120,7 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
         source,
         material,
         List.unmodifiable(points),
-        List.unmodifiable(faces.map((f) => List<int>.unmodifiable(f)))));
+        List.unmodifiable(faces.map(List<int>.unmodifiable))));
   }
 
   void box(String kind, int index, SourceRef? source, String material,
@@ -140,17 +148,19 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
   final groundBase = deriveFloorBase(doc, doc.floors.first.id);
   for (final r in groundBase.outside.isEmpty
       ? [PlanRect(0, 0, width, depth)]
-      : insideRects(groundBase)) box('Slab', 0, null, 'slab', r, -slab, 0);
+      : insideRects(groundBase)) {
+    box('Slab', 0, null, 'slab', r, -slab, 0);
+  }
   var elevation = 0.0;
   for (var f = 0; f < doc.floors.length; f++) {
-    final floor = doc.floors[f],
-        height = floor.height.toDouble(),
-        base = deriveFloorBase(doc, floor.id);
+    final floor = doc.floors[f];
+    final height = floor.height.toDouble();
+    final base = deriveFloorBase(doc, floor.id);
     final openings = deriveOpenings(doc, base, floor.id);
     for (var k = 0; k < base.wallSegments.length; k++) {
-      final wall = base.wallSegments[k],
-          r = base.wallRects[k],
-          horizontal = wall.axis.dir == AxisDir.H;
+      final wall = base.wallSegments[k];
+      final r = base.wallRects[k];
+      final horizontal = wall.axis.dir == AxisDir.H;
       final holes = openings
           .where((p) => p.host?.ref == wall.ref && p.status == 'ok')
           .toList();
@@ -175,12 +185,15 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
         ..sort();
       for (var j = 0; j < zs.length - 1; j++)
         for (var i = 0; i < us.length - 1; i++) {
-          final u = (us[i] + us[i + 1]) / 2, z = (zs[j] + zs[j + 1]) / 2;
+          final u = (us[i] + us[i + 1]) / 2;
+          final z = (zs[j] + zs[j + 1]) / 2;
           if (holes.any((h) =>
               u > h.start &&
               u < h.end &&
               z > h.opening.sill &&
-              z < h.opening.sill + h.opening.height)) continue;
+              z < h.opening.sill + h.opening.height)) {
+            continue;
+          }
           box(
               'WallPiece',
               f,
@@ -194,12 +207,13 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
         }
     }
     for (final p in openings.where((p) => p.status == 'ok')) {
-      final o = p.opening,
-          horizontal = p.axis.dir == AxisDir.H,
-          pos = p.axis.pos.toDouble();
+      final o = p.opening;
+      final horizontal = p.axis.dir == AxisDir.H;
+      final pos = p.axis.pos.toDouble();
       var center = pos;
-      if (p.axis.id == '@left' || p.axis.id == '@bottom')
+      if (p.axis.id == '@left' || p.axis.id == '@bottom') {
         center = p.host!.thickness / 2;
+      }
       if (p.axis.id == '@right') center = width - p.host!.thickness / 2;
       if (p.axis.id == '@top') center = depth - p.host!.thickness / 2;
       if (p.axis.kind != 'boundary' && p.host!.kind == 'exterior') {
@@ -214,7 +228,8 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
           : PlanRect(
               center - thickness / 2, p.start, center + thickness / 2, p.end);
       if (o is! DoorOpening) {
-        final z0 = elevation + o.sill, z1 = z0 + o.height;
+        final z0 = elevation + o.sill;
+        final z1 = z0 + o.height;
         Point3 point(double u, double z) =>
             horizontal ? (x: u, y: center, z: z) : (x: center, y: u, z: z);
         mesh('Glass', f, OpeningSource(o.id), 'glass', [
@@ -233,10 +248,10 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
     final stairs = <StairGeometry>[];
     for (final stair in floor.stairs) {
       final resolved = resolveRect(base.axes, stair.region).rect!;
-      var left = resolved.left.toDouble(),
-          right = resolved.right.toDouble(),
-          bottom = resolved.bottom.toDouble(),
-          top = resolved.top.toDouble();
+      var left = resolved.left.toDouble();
+      var right = resolved.right.toDouble();
+      var bottom = resolved.bottom.toDouble();
+      var top = resolved.top.toDouble();
       double invasion(AxisDir dir, int pos, int start, int end) {
         var value = 0.0;
         for (final edge in base.edges) {
@@ -244,9 +259,10 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
               edge.axis.pos == pos &&
               edge.start.pos < end &&
               start < edge.end.pos &&
-              edge.hasWall)
+              edge.hasWall) {
             value = math.max(value,
                 edge.kind == 'exterior' ? edge.thickness : edge.thickness / 2);
+          }
         }
         return value;
       }
@@ -262,13 +278,13 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
       final r = PlanRect(left, bottom, right, top);
       final alongY = stair.startEdge == StairEdge.bottom ||
           stair.startEdge == StairEdge.top;
-      final a = alongY ? r.top - r.bottom : r.right - r.left,
-          b = alongY ? r.right - r.left : r.top - r.bottom;
-      final n = math.max(2, (height / doc.defaults.stairRiserMax).ceil()),
-          k = (n / 2).ceil(),
-          t = doc.defaults.stairTread.toDouble(),
-          riser = height / n,
-          minWidth = doc.defaults.stairWidthMin.toDouble();
+      final a = alongY ? r.top - r.bottom : r.right - r.left;
+      final b = alongY ? r.right - r.left : r.top - r.bottom;
+      final n = math.max(2, (height / doc.defaults.stairRiserMax).ceil());
+      final k = (n / 2).ceil();
+      final t = doc.defaults.stairTread.toDouble();
+      final riser = height / n;
+      final minWidth = doc.defaults.stairWidthMin.toDouble();
       final w = math.max(
           0.0,
           switch (stair.type) {
@@ -287,8 +303,8 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
               ? 2 * minWidth
               : minWidth;
       final fits = w >= minWidth && a >= requiredA && b >= requiredB;
-      final steps = <({PlanRect rect, double height})>[],
-          landings = <({PlanRect rect, double height})>[];
+      final steps = <({PlanRect rect, double height})>[];
+      final landings = <({PlanRect rect, double height})>[];
       // Local coordinates: u runs across the start edge, v goes upstairs.
       PlanRect local(double u0, double v0, double u1, double v1) {
         Point3 p(double u, double v) => switch (stair.startEdge) {
@@ -297,25 +313,28 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
               StairEdge.left => (x: left + v, y: top - u, z: 0),
               StairEdge.right => (x: right - v, y: bottom + u, z: 0)
             };
-        final p0 = p(u0, v0), p1 = p(u1, v1);
+        final p0 = p(u0, v0);
+        final p1 = p(u1, v1);
         return PlanRect(math.min(p0.x, p1.x), math.min(p0.y, p1.y),
             math.max(p0.x, p1.x), math.max(p0.y, p1.y));
       }
 
       if (w > 0) {
         if (stair.type == StairType.straight) {
-          for (var i = 1; i < n; i++)
+          for (var i = 1; i < n; i++) {
             steps.add(
                 (rect: local(0, (i - 1) * t, w, i * t), height: i * riser));
+          }
         } else {
-          final turn = (stair as TurnStair).turn,
-              leftTurn = turn == StairTurn.left;
+          final turn = (stair as TurnStair).turn;
+          final leftTurn = turn == StairTurn.left;
           final startU = leftTurn ? b - w : 0.0;
-          for (var i = 1; i < k; i++)
+          for (var i = 1; i < k; i++) {
             steps.add((
               rect: local(startU, (i - 1) * t, startU + w, i * t),
               height: i * riser
             ));
+          }
           final v = (k - 1) * t;
           if (stair.type == StairType.U) {
             landings.add((rect: local(0, v, b, v + w), height: k * riser));
@@ -351,7 +370,8 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
           s.opening.left.clamp(0, width),
           s.opening.right.clamp(0, width)
         ],
-        if (cut) for (final a in base.axes.v) a.pos.toDouble()
+        if (cut)
+          for (final a in base.axes.v) a.pos.toDouble()
       }
     }.first.toList()
       ..sort();
@@ -363,13 +383,15 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
           s.opening.bottom.clamp(0, depth),
           s.opening.top.clamp(0, depth)
         ],
-        if (cut) for (final a in base.axes.h) a.pos.toDouble()
+        if (cut)
+          for (final a in base.axes.h) a.pos.toDouble()
       }
     }.first.toList()
       ..sort();
     for (var j = 0; j < ys.length - 1; j++)
       for (var i = 0; i < xs.length - 1; i++) {
-        final x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2;
+        final x = (xs[i] + xs[i + 1]) / 2;
+        final y = (ys[j] + ys[j + 1]) / 2;
         if (stairs.any((s) => s.opening.contains(x, y))) continue;
         if (cut && !base.inside(x, y)) continue;
         box(
@@ -382,12 +404,14 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
             elevation + height);
       }
     for (final stair in stairs) {
-      for (final step in stair.steps)
+      for (final step in stair.steps) {
         box('StairStep', f, StairSource(stair.stairId), 'stair', step.rect,
             elevation, elevation + step.height);
-      for (final platform in stair.landings)
+      }
+      for (final platform in stair.landings) {
         box('Landing', f, StairSource(stair.stairId), 'stair', platform.rect,
             elevation, elevation + platform.height);
+      }
     }
     floors.add(
         DerivedFloor(base, openings, List.unmodifiable(stairs), elevation));
@@ -395,8 +419,8 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
   }
   final roof = doc.roof;
   if (roof.type == RoofType.flat) {
-    final t = doc.defaults.outerWallThickness.toDouble(),
-        z = elevation + roof.parapetHeight!;
+    final t = doc.defaults.outerWallThickness.toDouble();
+    final z = elevation + roof.parapetHeight!;
     final topBase = floors.last.base;
     for (final r in topBase.outside.isEmpty
         ? [
@@ -410,22 +434,26 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
             for (var k = 0; k < topBase.wallSegments.length; k++)
               if (topBase.wallSegments[k].kind == 'exterior')
                 topBase.wallRects[k]
-          ]) box('Parapet', -1, null, 'wall', r, elevation, z);
+          ]) {
+      box('Parapet', -1, null, 'wall', r, elevation, z);
+    }
   } else if (roof.type == RoofType.hip) {
     // Four planes at one pitch: height grows with the distance from the
     // nearest wall line, so the ridge runs along the longer side (a point
     // on a square house) and the eaves droop by the overhang.
     final o = roof.overhang!.toDouble(),
         slope = math.tan(roof.pitchDeg! * math.pi / 180);
-    final half = math.min(width, depth) / 2,
-        eave = elevation - o * slope,
-        ridge = elevation + half * slope;
-    final a = (x: half, y: half),
-        b = width >= depth
-            ? (x: width - half, y: half)
-            : (x: half, y: depth - half);
-    final c00 = (x: -o, y: -o), c10 = (x: width + o, y: -o),
-        c11 = (x: width + o, y: depth + o), c01 = (x: -o, y: depth + o);
+    final half = math.min(width, depth) / 2;
+    final eave = elevation - o * slope;
+    final ridge = elevation + half * slope;
+    final a = (x: half, y: half);
+    final b = width >= depth
+        ? (x: width - half, y: half)
+        : (x: half, y: depth - half);
+    final c00 = (x: -o, y: -o);
+    final c10 = (x: width + o, y: -o);
+    final c11 = (x: width + o, y: depth + o);
+    final c01 = (x: -o, y: depth + o);
     final planes = width >= depth
         ? [
             [c00, c10, b, a],
@@ -441,14 +469,18 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
           ];
     for (final plane in planes) {
       final top = <({double x, double y})>[];
-      for (final p in plane)
+      for (final p in plane) {
         if (top.isEmpty ||
-            (top.last.x - p.x).abs() + (top.last.y - p.y).abs() > 1) top.add(p);
+            (top.last.x - p.x).abs() + (top.last.y - p.y).abs() > 1) {
+          top.add(p);
+        }
+      }
       if ((top.first.x - top.last.x).abs() + (top.first.y - top.last.y).abs() <=
-          1) top.removeLast();
+          1) {
+        top.removeLast();
+      }
       if (top.length < 3) continue;
-      double z(({double x, double y}) p) =>
-          p == a || p == b ? ridge : eave;
+      double z(({double x, double y}) p) => p == a || p == b ? ridge : eave;
       final n = top.length;
       mesh('RoofPlane', -1, null, 'roof', [
         for (final p in top) (x: p.x, y: p.y, z: z(p)),
@@ -460,9 +492,10 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
       ]);
     }
   } else {
-    final overhang = roof.overhang!.toDouble(),
-        vertical = roof.ridgeDir == AxisDir.V;
-    final span = vertical ? width : depth, run = vertical ? depth : width;
+    final overhang = roof.overhang!.toDouble();
+    final vertical = roof.ridgeDir == AxisDir.V;
+    final span = vertical ? width : depth;
+    final run = vertical ? depth : width;
     final slope = math.tan(roof.pitchDeg! * math.pi / 180);
     Point3 point(double u, double v, double z) =>
         vertical ? (x: u, y: v, z: z) : (x: v, y: u, z: z);
@@ -491,7 +524,7 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
       ]);
     }
     final thickness = doc.defaults.outerWallThickness.toDouble();
-    for (final (v0, v1) in [(0.0, thickness), (run - thickness, run)])
+    for (final (v0, v1) in [(0.0, thickness), (run - thickness, run)]) {
       mesh('GableWall', -1, null, 'wall', [
         point(0, v0, elevation),
         point(span, v0, elevation),
@@ -506,6 +539,7 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
         [1, 4, 5, 2],
         [2, 5, 3, 0]
       ]);
+    }
   }
   const ranks = {
     'WallPiece': 0,

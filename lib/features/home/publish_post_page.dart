@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../storage/project_store.dart';
-import '../../domain/models.dart';
-import '../../domain/design_snapshot.dart';
-import '../../render2d/planning_names.dart' show costLineName;
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import '../../shared/ui/unsaved_changes_guard.dart';
-import 'post_page.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/design_snapshot.dart';
+import 'package:yusal/render2d/planning_names.dart' show costLineName;
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/shared/ui/unsaved_changes_guard.dart';
+import 'package:yusal/features/home/post_page.dart';
 
 /// Shares a local design to the feed: a title, a few words, the region,
 /// whether builders are welcome. Area, floors, rooms and the cost estimate
@@ -206,7 +206,8 @@ class _PublishPostPageState extends State<PublishPostPage> {
                             '最想请大家看哪些方面？（最多 3 个，可不选）',
                             'Нені көрсін? (3-ке дейін)',
                             'На что обратить внимание? (до 3)'),
-                        style: TextStyle(color: t.muted, fontSize: YFont.small)),
+                        style:
+                            TextStyle(color: t.muted, fontSize: YFont.small)),
                     const SizedBox(height: 6),
                     Wrap(spacing: 8, runSpacing: 8, children: [
                       for (final k in feedbackTopics)
@@ -215,9 +216,9 @@ class _PublishPostPageState extends State<PublishPostPage> {
                             label: feedbackTopicName(k),
                             selected: focus.contains(k),
                             onTap: () => setState(() {
-                                  if (focus.contains(k))
+                                  if (focus.contains(k)) {
                                     focus.remove(k);
-                                  else if (focus.length < 3)
+                                  } else if (focus.length < 3)
                                     focus.add(k);
                                   else
                                     toast(
@@ -232,7 +233,8 @@ class _PublishPostPageState extends State<PublishPostPage> {
                             '想盖的时候，在房子页点“准备开建？”就能找人，点评都会保留。',
                             'Кейін «Салуға дайынсыз ба?» басыңыз.',
                             'Когда решите строить — нажмите «Готовы строить?».'),
-                        style: TextStyle(color: t.muted, fontSize: YFont.caption)),
+                        style:
+                            TextStyle(color: t.muted, fontSize: YFont.caption)),
                   ],
                   const SizedBox(height: 18),
                   TextField(
@@ -287,7 +289,8 @@ class _IntentCard extends StatelessWidget {
       required this.onTap});
   final bool selected;
   final IconData icon;
-  final String title, body;
+  final String title;
+  final String body;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
@@ -312,7 +315,8 @@ class _IntentCard extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w700)),
                       const SizedBox(height: 2),
                       Text(body,
-                          style: TextStyle(color: t.muted, fontSize: YFont.caption)),
+                          style: TextStyle(
+                              color: t.muted, fontSize: YFont.caption)),
                     ]))));
   }
 }

@@ -266,7 +266,7 @@ void main() {
       await t.pumpWidget(MaterialApp(
           navigatorKey: navigator,
           builder: (context, child) => VoiceHost(
-              navigator: navigator, repos: repos, enabled: true, child: child!),
+              navigator: navigator, repos: repos, child: child!),
           home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
       await t.pumpAndSettle();
       expect(VoiceScreens.current!.screenId, 'editor.plan');

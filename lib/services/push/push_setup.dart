@@ -4,10 +4,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../app/settings.dart';
-import '../../data/http/http_backend.dart';
-import '../../domain/models.dart';
-import '../firebase_setup.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/services/firebase_setup.dart';
 
 /// What the app needs from a push service; Firebase in the app, a fake in
 /// tests.
@@ -72,8 +72,7 @@ class FirebasePushMessaging implements PushMessaging {
 /// Registers this device for pushes with the API and opens what a tapped
 /// push points to. Only for the real backend, and not on the web.
 class PushSetup {
-  PushSetup(this.api, this.navigator,
-      {PushMessaging? messaging, this.opener})
+  PushSetup(this.api, this.navigator, {PushMessaging? messaging, this.opener})
       : messaging = messaging ?? FirebasePushMessaging();
   final HttpBackend api;
   final GlobalKey<NavigatorState> navigator;

@@ -1,20 +1,22 @@
 import 'dart:math' as math;
 import 'dart:ui' show Color, Offset;
-import '../core/analysis/house_analysis.dart';
-import '../core/analysis/site_analysis.dart';
-import '../core/document/house_document.dart';
-import '../core/geometry/derived_house.dart';
-import '../core/geometry/floor_base.dart';
-import 'bsp.dart';
-import 'scene_cleanup.dart';
-import 'textures.dart';
+import 'package:yusal/core/analysis/house_analysis.dart';
+import 'package:yusal/core/analysis/site_analysis.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/render3d/bsp.dart';
+import 'package:yusal/render3d/scene_cleanup.dart';
+import 'package:yusal/render3d/textures.dart';
 
 /// World space for the 3D views, in metres: x to the right of the plan,
 /// y up (0 = top of the ground-floor slab), z toward the bottom of the plan
 /// (so the top of the drawing is −z).
 class Vec3 {
   const Vec3(this.x, this.y, this.z);
-  final double x, y, z;
+  final double x;
+  final double y;
+  final double z;
   Vec3 operator +(Vec3 o) => Vec3(x + o.x, y + o.y, z + o.z);
   Vec3 operator -(Vec3 o) => Vec3(x - o.x, y - o.y, z - o.z);
   Vec3 operator *(double s) => Vec3(x * s, y * s, z * s);
@@ -79,7 +81,11 @@ class Face3 {
   final double alpha;
   final Layer3 layer;
   final SourceRef? source;
-  final bool doubleSided, glow, roof, furniture, castsShadow;
+  final bool doubleSided;
+  final bool glow;
+  final bool roof;
+  final bool furniture;
+  final bool castsShadow;
 
   /// Inside the shell (inner walls, furniture, stairs, upper slabs): hidden
   /// by the outer walls and roof unless the roof is off or the house is cut.
@@ -108,7 +114,8 @@ class Face3 {
   static Vec3 _normal(List<Vec3> p) {
     var n = const Vec3(0, 0, 0);
     for (var i = 0; i < p.length; i++) {
-      final a = p[i], b = p[(i + 1) % p.length];
+      final a = p[i];
+      final b = p[(i + 1) % p.length];
       n = n +
           Vec3((a.y - b.y) * (a.z + b.z), (a.z - b.z) * (a.x + b.x),
               (a.x - b.x) * (a.y + b.y));
@@ -126,9 +133,11 @@ class SolidBox {
       required this.furniture,
       required this.layer,
       this.source});
-  final Vec3 lo, hi;
+  final Vec3 lo;
+  final Vec3 hi;
   final int floor;
-  final bool roof, furniture;
+  final bool roof;
+  final bool furniture;
   final Layer3 layer;
   final SourceRef? source;
 }
@@ -136,14 +145,16 @@ class SolidBox {
 /// A window or doorway hole in the outer walls, corner to corner.
 class Portal {
   const Portal(this.lo, this.hi, this.floorIndex);
-  final Vec3 lo, hi;
+  final Vec3 lo;
+  final Vec3 hi;
   final int floorIndex;
 }
 
 class Line3 {
   const Line3(this.a, this.b, this.color, this.width,
       {this.layer = Layer3.buried});
-  final Vec3 a, b;
+  final Vec3 a;
+  final Vec3 b;
   final Color color;
   final double width;
   final Layer3 layer;
@@ -152,21 +163,27 @@ class Line3 {
 class Label3 {
   const Label3(this.at, this.title, this.subtitle, this.floorIndex);
   final Vec3 at;
-  final String title, subtitle;
+  final String title;
+  final String subtitle;
   final int floorIndex;
 }
 
 /// A 2D obstacle for walking, in world x / z.
 class Collider {
   const Collider(this.x0, this.z0, this.x1, this.z1, this.floorIndex);
-  final double x0, z0, x1, z1;
+  final double x0;
+  final double z0;
+  final double x1;
+  final double z1;
   final int floorIndex;
 }
 
 class WalkSpot {
   const WalkSpot(this.name, this.x, this.z, this.yaw, this.floorIndex);
   final String name;
-  final double x, z, yaw;
+  final double x;
+  final double z;
+  final double yaw;
   final int floorIndex;
 }
 
@@ -178,7 +195,11 @@ class SceneOptions {
       this.walk = false,
       this.site = true,
       this.maxFloor = 999});
-  final bool roof, furniture, foundation, walk, site;
+  final bool roof;
+  final bool furniture;
+  final bool foundation;
+  final bool walk;
+  final bool site;
   final int maxFloor;
 }
 
@@ -209,7 +230,10 @@ class SceneModel {
 
   /// Base elevation of each floor, metres.
   final List<double> elevations;
-  final double width, depth, height, groundLevel;
+  final double width;
+  final double depth;
+  final double height;
+  final double groundLevel;
 
   /// +1 when the main entrance is on the bottom edge of the plan (+z side),
   /// −1 on the top edge; the "front" view looks at that side.
@@ -243,39 +267,39 @@ class SceneModel {
 
 /// Palette after the drafting page's three.js materials.
 class Mat {
-  static const wall = Color(0xffEAE6DF),
-      bear = Color(0xffE3DED5),
-      part = Color(0xffF5F3EF),
-      plinth = Color(0xff6E7472),
-      roof = Color(0xff394247),
-      glass = Color(0xff9EC3D2),
-      frame = Color(0xffF1F1EF),
-      door = Color(0xff8E6E4C),
-      found = Color(0xffA9ABA7),
-      cushion = Color(0xffC9B48A),
-      rebar = Color(0xffB0502C),
-      foundMiss = Color(0xffD9483E),
-      ground = Color(0xff8E9C7F),
-      wood = Color(0xffC4A177),
-      tile = Color(0xffD3D6D4),
-      deck = Color(0xff8A6A48),
-      ceil = Color(0xffFAFAF8),
-      slab = Color(0xff9C9F9A),
-      coping = Color(0xff5B6468),
-      membrane = Color(0xff4A5054),
-      pipe = Color(0xff7A8287),
-      stair = Color(0xffBABEB8),
-      bed = Color(0xffDCD3C4),
-      woodF = Color(0xff9F7F5A),
-      sofa = Color(0xff5F7179),
-      counter = Color(0xffCCC7BE),
-      white = Color(0xffF4F4F2),
-      table = Color(0xff7C5E40),
-      appl = Color(0xffB8BEC1),
-      dastTop = Color(0xff8A5A34),
-      garden = Color(0xff6E8B4E),
-      paving = Color(0xffB9B6AE),
-      fence = Color(0xff7B6A55);
+  static const wall = Color(0xffEAE6DF);
+  static const bear = Color(0xffE3DED5);
+  static const part = Color(0xffF5F3EF);
+  static const plinth = Color(0xff6E7472);
+  static const roof = Color(0xff394247);
+  static const glass = Color(0xff9EC3D2);
+  static const frame = Color(0xffF1F1EF);
+  static const door = Color(0xff8E6E4C);
+  static const found = Color(0xffA9ABA7);
+  static const cushion = Color(0xffC9B48A);
+  static const rebar = Color(0xffB0502C);
+  static const foundMiss = Color(0xffD9483E);
+  static const ground = Color(0xff8E9C7F);
+  static const wood = Color(0xffC4A177);
+  static const tile = Color(0xffD3D6D4);
+  static const deck = Color(0xff8A6A48);
+  static const ceil = Color(0xffFAFAF8);
+  static const slab = Color(0xff9C9F9A);
+  static const coping = Color(0xff5B6468);
+  static const membrane = Color(0xff4A5054);
+  static const pipe = Color(0xff7A8287);
+  static const stair = Color(0xffBABEB8);
+  static const bed = Color(0xffDCD3C4);
+  static const woodF = Color(0xff9F7F5A);
+  static const sofa = Color(0xff5F7179);
+  static const counter = Color(0xffCCC7BE);
+  static const white = Color(0xffF4F4F2);
+  static const table = Color(0xff7C5E40);
+  static const appl = Color(0xffB8BEC1);
+  static const dastTop = Color(0xff8A5A34);
+  static const garden = Color(0xff6E8B4E);
+  static const paving = Color(0xffB9B6AE);
+  static const fence = Color(0xff7B6A55);
   static const rugs = [Color(0xff8E1C1C), Color(0xff6E1630), Color(0xff1F3B5A)];
   static const rugBorders = [
     Color(0xff1D2A48),
@@ -311,7 +335,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
   final sections = <SolidBox>[];
   // Inside of each floor (world x / z), for telling enclosed faces.
   final insides = <int, List<(double, double, double, double)>>{};
-  final w = doc.footprint.width / 1000, d = doc.footprint.depth / 1000;
+  final w = doc.footprint.width / 1000;
+  final d = doc.footprint.depth / 1000;
   final spec = doc.extras.foundation;
   final gl = -spec.plinth / 1000;
   double px(num v) => v / 1000;
@@ -345,16 +370,18 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
     };
     List<Offset>? uvFor(List<Vec3> pts) {
       if (textile == null) return null;
-      if (tile == null)
+      if (tile == null) {
         return const [Offset(0, 0), Offset(0, 1), Offset(1, 1), Offset(1, 0)];
-      final v = (pts[1] - pts[0]).length / tile,
-          u = (pts[3] - pts[0]).length / tile;
+      }
+      final v = (pts[1] - pts[0]).length / tile;
+      final u = (pts[3] - pts[0]).length / tile;
       return [Offset.zero, Offset(0, v), Offset(u, v), Offset(u, 0)];
     }
 
-    if (alpha >= 1 && !glow)
+    if (alpha >= 1 && !glow) {
       solids.add(SolidBox(Vec3(x0, y0, z0), Vec3(x1, y1, z1),
           floor: floor, roof: roof, furniture: furniture, layer: layer));
+    }
     void f(List<Vec3> pts, {Layer3? l, bool cap = false}) =>
         faces.add(Face3(pts, color,
             capOnly: cap,
@@ -372,9 +399,10 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
             interior: interior || furniture,
             covering: covering));
     // Counter-clockwise seen from outside.
-    if (top)
+    if (top) {
       f([p(x0, y1, z0), p(x0, y1, z1), p(x1, y1, z1), p(x1, y1, z0)],
           cap: capTop);
+    }
     if (bottom) f([p(x0, y0, z0), p(x1, y0, z0), p(x1, y0, z1), p(x0, y0, z1)]);
     f([p(x0, y0, z1), p(x1, y0, z1), p(x1, y1, z1), p(x0, y1, z1)]); // +z
     f([p(x1, y0, z0), p(x0, y0, z0), p(x0, y1, z0), p(x1, y1, z0)]); // −z
@@ -416,7 +444,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
   var elevation = 0.0;
   final visibleFloors = math.min(options.maxFloor, doc.floors.length - 1);
   for (var f = 0; f < doc.floors.length; f++) {
-    final floor = doc.floors[f], g = derived.floors[f];
+    final floor = doc.floors[f];
+    final g = derived.floors[f];
     final h = floor.height / 1000;
     elevations.add(elevation);
     if (f > visibleFloors) {
@@ -441,19 +470,20 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       for (final w in wallsOf(g.base, spec))
         if (w.role == WallRole.exterior) w.rect
     ];
-    for (final r in f == 0 ? outline : _subtract(outline, outerRects))
+    for (final r in f == 0 ? outline : _subtract(outline, outerRects)) {
       planBox(r, elevation - slab, elevation, Mat.slab,
           layer: f == 0 ? Layer3.floorSurface : Layer3.sorted,
           floor: f,
           top: f != 0,
           interior: f != 0);
+    }
     // Room floors: wood in living spaces, tiles in wet rooms.
     for (final room in floor.rooms) {
       final s = g.base.roomGeometry.firstWhere((r) => r.id == room.id);
       final wet = room.type == RoomType.kitchen ||
           room.type == RoomType.bathroom ||
           room.type == RoomType.custom;
-      for (final r in s.clearRects)
+      for (final r in s.clearRects) {
         faces.add(Face3([
           Vec3(px(r.left), elevation + 0.002, pz(r.top)),
           Vec3(px(r.left), elevation + 0.002, pz(r.bottom)),
@@ -465,6 +495,7 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
             floorIndex: f,
             castsShadow: false,
             interior: f != 0));
+      }
       if (s.clearRects.isNotEmpty) {
         final l = s.labelAnchor;
         labels.add(Label3(
@@ -497,9 +528,9 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
     ];
     for (final e in derived.scene3d
         .where((e) => e.floorIndex == f && e.kind == 'WallPiece')) {
-      final xs = e.vertices.map((v) => v.x),
-          ys = e.vertices.map((v) => v.y),
-          zs = e.vertices.map((v) => v.z);
+      final xs = e.vertices.map((v) => v.x);
+      final ys = e.vertices.map((v) => v.y);
+      final zs = e.vertices.map((v) => v.z);
       final whole = PlanRect(xs.reduce(math.min), ys.reduce(math.min),
           xs.reduce(math.max), ys.reduce(math.max));
       final source = e.source as WallSource?;
@@ -520,7 +551,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
                   o
             ];
       for (final r in cut.isEmpty ? [whole] : _subtract([whole], cut)) {
-        final z0 = zs.reduce(math.min) / 1000, z1 = zs.reduce(math.max) / 1000;
+        final z0 = zs.reduce(math.min) / 1000;
+        final z1 = zs.reduce(math.max) / 1000;
         final color = e.materialRole == 'wallTemporary'
             ? Mat.part
             : switch (info?.role) {
@@ -535,10 +567,11 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
             a.$1.bottom <= r.bottom + 1 &&
             a.$1.top >= r.top - 1);
         if (e.materialRole == 'wallTemporary' &&
-            info?.role == WallRole.exterior)
+            info?.role == WallRole.exterior) {
           portals.add(Portal(Vec3(px(r.left), z0, pz(r.top)),
               Vec3(px(r.right), z1, pz(r.bottom)), f));
-        if (e.materialRole != 'wallTemporary')
+        }
+        if (e.materialRole != 'wallTemporary') {
           sections.add(SolidBox(Vec3(px(r.left), z0, pz(r.top)),
               Vec3(px(r.right), z1, pz(r.bottom)),
               floor: f,
@@ -546,15 +579,17 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
               furniture: false,
               layer: Layer3.sorted,
               source: source));
+        }
         planBox(r, z0, z1, color,
             alpha: e.materialRole == 'wallTemporary' ? 0.45 : 1,
             source: source,
             floor: f,
             capTop: covered,
             interior: info?.role != WallRole.exterior);
-        if (z0 - elevation < 0.3 && z1 - elevation > 0.3)
+        if (z0 - elevation < 0.3 && z1 - elevation > 0.3) {
           colliders.add(
               Collider(px(r.left), pz(r.top), px(r.right), pz(r.bottom), f));
+        }
       }
     }
     // Plinth under the exterior walls of the ground floor.
@@ -567,14 +602,16 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       }
     // Windows (glass + frame) and doors (leaf swung open).
     for (final p in g.openings.where((p) => p.status == 'ok')) {
-      final o = p.opening, horizontal = p.axis.dir == AxisDir.H;
+      final o = p.opening;
+      final horizontal = p.axis.dir == AxisDir.H;
       final hostIndex =
           g.base.wallSegments.indexWhere((s) => s.ref == p.host!.ref);
       final host = g.base.wallRects[hostIndex];
-      final c0 = horizontal ? host.bottom : host.left,
-          c1 = horizontal ? host.top : host.right;
+      final c0 = horizontal ? host.bottom : host.left;
+      final c1 = horizontal ? host.top : host.right;
       final c = (c0 + c1) / 2;
-      final y0 = elevation + o.sill / 1000, y1 = y0 + o.height / 1000;
+      final y0 = elevation + o.sill / 1000;
+      final y1 = y0 + o.height / 1000;
       final source = OpeningSource(o.id);
       final inner = p.host?.kind != 'exterior';
       if (!inner) {
@@ -614,19 +651,22 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
             source: source, floor: f, interior: true);
         continue;
       }
-      const ft = 70.0, fd = 100.0;
+      const ft = 70.0;
+      const fd = 100.0;
       final sliding = o is SlidingOpening;
       final mid = (p.start + p.end) / 2;
       along(p.start, sliding ? mid + 50 : p.end, y0, y1, 20, Mat.glass,
           alpha: 0.32, glow: true);
-      if (sliding)
+      if (sliding) {
         along(mid - 50, p.end, y0, y1, 20, Mat.glass, alpha: 0.32, glow: true);
+      }
       along(p.start, p.end, y0, y0 + ft / 1000, fd, Mat.frame);
       along(p.start, p.end, y1 - ft / 1000, y1, fd, Mat.frame);
       along(p.start, p.start + ft, y0, y1, fd, Mat.frame);
       along(p.end - ft, p.end, y0, y1, fd, Mat.frame);
-      if (!sliding && p.end - p.start > 1300)
+      if (!sliding && p.end - p.start > 1300) {
         along(mid - ft / 2, mid + ft / 2, y0, y1, fd, Mat.frame);
+      }
       if (sliding) along(mid - ft, mid + ft, y0, y1, fd, Mat.frame);
       if (p.host?.kind == 'exterior' && o.sill > 0) {
         // Sill board on the outside face.
@@ -647,24 +687,27 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
     }
     // Stairs.
     for (final s in g.stairs) {
-      for (final step in [...s.steps, ...s.landings])
+      for (final step in [...s.steps, ...s.landings]) {
         planBox(step.rect, elevation, elevation + step.height / 1000, Mat.stair,
             source: StairSource(s.stairId), floor: f, interior: true);
+      }
     }
     // Ceiling of this floor for the walk-through.
     if (options.walk)
-      for (final r in outline)
+      for (final r in outline) {
         faces.add(Face3([
           Vec3(px(r.left), elevation + h - slab - 0.005, pz(r.top)),
           Vec3(px(r.right), elevation + h - slab - 0.005, pz(r.top)),
           Vec3(px(r.right), elevation + h - slab - 0.005, pz(r.bottom)),
           Vec3(px(r.left), elevation + h - slab - 0.005, pz(r.bottom)),
         ], Mat.ceil, layer: Layer3.ceiling, floorIndex: f, castsShadow: false));
+      }
     // Furniture.
     if (options.furniture || options.walk)
       for (final item
-          in doc.extras.furniture.where((i) => i.floorId == floor.id))
+          in doc.extras.furniture.where((i) => i.floorId == floor.id)) {
         furnitureFaces(item, elevation, f, box, faces, d);
+      }
     elevation += h;
   }
 
@@ -681,7 +724,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       final slab = doc.defaults.slabThickness / 1000;
       final parT = doc.defaults.outerWallThickness / 1000;
       final parH = roof.parapetHeight! / 1000;
-      final rs = top + slab, rt = rs + 0.25;
+      final rs = top + slab;
+      final rt = rs + 0.25;
       final topBase = derived.floors.last.base;
       if (topBase.outside.isNotEmpty) {
         // An outline with cut-outs: slab and membrane over the building,
@@ -691,12 +735,14 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
           for (final x in wallsOf(topBase, spec))
             if (x.role == WallRole.exterior) x.rect
         ];
-        for (final r in rects)
+        for (final r in rects) {
           planBox(r, top, rs, Mat.wall, roof: true, floor: -1, covering: true);
+        }
         // The membrane stops at the parapets' inner faces.
-        for (final r in _subtract(rects, outer))
+        for (final r in _subtract(rects, outer)) {
           planBox(r, rs, rt, Mat.membrane,
               roof: true, floor: -1, covering: true);
+        }
         // One parapet per wall line, as on a rectangular roof, so each
         // long face sorts against the membrane as a whole.
         if (parH > slab)
@@ -713,8 +759,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
                 covering: true);
           }
         final hatch = rects.reduce((a, b) => a.area >= b.area ? a : b);
-        final cx = (hatch.left + hatch.right) / 2,
-            cy = (hatch.bottom + hatch.top) / 2;
+        final cx = (hatch.left + hatch.right) / 2;
+        final cy = (hatch.bottom + hatch.top) / 2;
         planBox(PlanRect(cx - 400, cy - 400, cx + 400, cy + 400), rt, rt + 0.35,
             Mat.coping,
             roof: true, floor: -1, covering: true);
@@ -752,13 +798,14 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
         final pts = [
           for (final v in e.vertices) Vec3(px(v.x), v.z / 1000, pz(v.y))
         ];
-        for (final face in e.faces)
+        for (final face in e.faces) {
           faces.add(Face3([for (final i in face) pts[i]],
               e.kind == 'RoofPlane' ? Mat.roof : Mat.bear,
               roof: true,
               floorIndex: -1,
               doubleSided: e.kind == 'RoofPlane',
               covering: e.kind == 'RoofPlane'));
+        }
       }
     }
   }
@@ -783,8 +830,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       final cover = spec.cover / 1000 + 0.01;
       final r = s.rect;
       final horizontal = s.wall.horizontal;
-      final a0 = horizontal ? px(r.left) : pz(r.top),
-          a1 = horizontal ? px(r.right) : pz(r.bottom);
+      final a0 = horizontal ? px(r.left) : pz(r.top);
+      final a1 = horizontal ? px(r.right) : pz(r.bottom);
       final cc =
           horizontal ? pz((r.bottom + r.top) / 2) : px((r.left + r.right) / 2);
       final half = s.width / 2000 - cover;
@@ -799,13 +846,16 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       final step = spec.stirrupStep / 1000;
       for (var a = a0 + 0.1; a < a1 - 0.05 && stirrups < 500; a += step) {
         stirrups++;
-        final y0 = -hh + spec.cover / 1000, y1 = -spec.cover / 1000;
-        final h0 = cc - half - 0.01, h1 = cc + half + 0.01;
+        final y0 = -hh + spec.cover / 1000;
+        final y1 = -spec.cover / 1000;
+        final h0 = cc - half - 0.01;
+        final h1 = cc + half + 0.01;
         Vec3 v(double across, double y) =>
             horizontal ? Vec3(a, y, across) : Vec3(across, y, a);
         final loop = [v(h0, y0), v(h1, y0), v(h1, y1), v(h0, y1)];
-        for (var k = 0; k < 4; k++)
+        for (var k = 0; k < 4; k++) {
           lines.add(Line3(loop[k], loop[(k + 1) % 4], Mat.rebar, 1));
+        }
       }
     }
   }
@@ -817,8 +867,10 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
     double sx(num x) => px(x - site.houseX);
     double sz(num y) => pz(y - site.houseY);
     for (final item in site.items) {
-      final x0 = sx(item.x), x1 = sx(item.right);
-      final z0 = sz(item.top), z1 = sz(item.y);
+      final x0 = sx(item.x);
+      final x1 = sx(item.right);
+      final z0 = sz(item.top);
+      final z1 = sz(item.y);
       final h = siteHeights[item.kind]! / 1000;
       switch (item.kind) {
         case SiteKind.garden || SiteKind.yard || SiteKind.septic:
@@ -841,10 +893,11 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
         case SiteKind.gate:
           final across = x1 - x0 >= z1 - z0;
           final c = across ? (z0 + z1) / 2 : (x0 + x1) / 2;
-          if (across)
+          if (across) {
             box(x0, gl, c - 0.04, x1, gl + h, c + 0.04, Mat.door);
-          else
+          } else {
             box(c - 0.04, gl, z0, c + 0.04, gl + h, z1, Mat.door);
+          }
         default:
           final color = switch (item.kind) {
             SiteKind.barn || SiteKind.shed => Mat.woodF,
@@ -863,10 +916,13 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
           final top = gl + h;
           Vec3 p(double along, double across, double y) =>
               alongX ? Vec3(along, y, across) : Vec3(across, y, along);
-          final a0 = (alongX ? x0 : z0) - o, a1 = (alongX ? x1 : z1) + o;
-          final c0 = (alongX ? z0 : x0) - o, c1 = (alongX ? z1 : x1) + o;
-          final mid = (c0 + c1) / 2, eave = top - o * rise / (span / 2);
-          for (final side in [c0, c1])
+          final a0 = (alongX ? x0 : z0) - o;
+          final a1 = (alongX ? x1 : z1) + o;
+          final c0 = (alongX ? z0 : x0) - o;
+          final c1 = (alongX ? z1 : x1) + o;
+          final mid = (c0 + c1) / 2;
+          final eave = top - o * rise / (span / 2);
+          for (final side in [c0, c1]) {
             faces.add(Face3([
               p(a0, side, eave),
               p(a1, side, eave),
@@ -874,16 +930,19 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
               p(a0, mid, top + rise)
             ], glass ? Mat.glass : Mat.roof,
                 alpha: glass ? 0.6 : 1, doubleSided: true));
-          for (final end in [alongX ? x0 : z0, alongX ? x1 : z1])
+          }
+          for (final end in [alongX ? x0 : z0, alongX ? x1 : z1]) {
             faces.add(Face3([
               p(end, c0 + o, top),
               p(end, c1 - o, top),
               p(end, mid, top + rise)
             ], color, alpha: glass ? 0.55 : 1, doubleSided: true));
+          }
       }
     }
     if (site.fence) {
-      const t = 0.06, h = 1.6;
+      const t = 0.06;
+      const h = 1.6;
       final gates = site.items.where((i) => i.kind == SiteKind.gate);
       for (final (ax, ay, bx, by) in [
         (0, 0, site.width, 0),
@@ -892,7 +951,8 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
         (0, 0, 0, site.depth)
       ]) {
         final horizontal = ay == by;
-        final lo = horizontal ? ax : ay, hi = horizontal ? bx : by;
+        final lo = horizontal ? ax : ay;
+        final hi = horizontal ? bx : by;
         final cuts = [
           for (final g in gates)
             if (horizontal
@@ -978,7 +1038,8 @@ List<PlanRect> _subtract(List<PlanRect> area, List<PlanRect> holes) {
   }.toList()
     ..sort();
   bool keep(int i, int j) {
-    final x = (xs[i] + xs[i + 1]) / 2, y = (ys[j] + ys[j + 1]) / 2;
+    final x = (xs[i] + xs[i + 1]) / 2;
+    final y = (ys[j] + ys[j + 1]) / 2;
     return area.any((r) => r.contains(x, y)) &&
         !holes.any((r) => r.contains(x, y));
   }
@@ -995,16 +1056,21 @@ List<PlanRect> _subtract(List<PlanRect> area, List<PlanRect> holes) {
           continue;
         }
         final start = i;
-        while (i < xs.length - 1 && keep(i, j)) i++;
+        while (i < xs.length - 1 && keep(i, j)) {
+          i++;
+        }
         runs.add((start, i));
       }
     }
-    for (final run in open.keys.toList())
+    for (final run in open.keys.toList()) {
       if (!runs.contains(run)) {
         final j0 = open.remove(run)!;
         out.add(PlanRect(xs[run.$1], ys[j0], xs[run.$2], ys[j]));
       }
-    for (final run in runs) open.putIfAbsent(run, () => j);
+    }
+    for (final run in runs) {
+      open.putIfAbsent(run, () => j);
+    }
   }
   return out;
 }
@@ -1029,12 +1095,15 @@ typedef _BoxFn = void Function(double x0, double y0, double z0, double x1,
 /// page (Kazakh textiles keep their reds, blues and golds).
 void furnitureFaces(FurnitureItem item, double elevation, int floor, _BoxFn box,
     List<Face3> faces, double planDepth) {
-  final w = item.width / 1000, dp = item.depth / 1000, h = item.height / 1000;
+  final w = item.width / 1000;
+  final dp = item.depth / 1000;
+  final h = item.height / 1000;
   final x0 = item.x / 1000 + 0.01;
   // Plan y grows up the drawing, world z grows down it.
   final v = item.variant % 3;
   final y0 = elevation + item.elevation / 1000;
-  final z1 = planDepth - item.y / 1000 - 0.01, z0 = z1 - dp + 0.02;
+  final z1 = planDepth - item.y / 1000 - 0.01;
+  final z0 = z1 - dp + 0.02;
   final x1 = x0 + w - 0.02;
   final source = FurnitureSource(item.id);
   void b(double ax0, double ay0, double az0, double ax1, double ay1, double az1,
@@ -1066,16 +1135,19 @@ void furnitureFaces(FurnitureItem item, double elevation, int floor, _BoxFn box,
       b(x0, y0, z0, x1, y0 + h, z1, Mat.korpe[v],
           textile: Textile.kurak, variant: v);
     case FurnitureKind.dastarkhan:
-      final cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, r = math.min(w, dp) / 2;
+      final cx = (x0 + x1) / 2;
+      final cz = (z0 + z1) / 2;
+      final r = math.min(w, dp) / 2;
       const n = 16;
       List<Vec3> ring(double y, double rr) => [
             for (var k = 0; k < n; k++)
               Vec3(cx + rr * math.cos(k * 2 * math.pi / n), y,
                   cz + rr * math.sin(k * 2 * math.pi / n))
           ];
-      final topRing = ring(y0 + h, r), midRing = ring(y0 + h - 0.05, r);
-      final legTop = ring(y0 + h - 0.05, r * 0.75),
-          legBottom = ring(y0, r * 0.8);
+      final topRing = ring(y0 + h, r);
+      final midRing = ring(y0 + h - 0.05, r);
+      final legTop = ring(y0 + h - 0.05, r * 0.75);
+      final legBottom = ring(y0, r * 0.8);
       faces.add(Face3(topRing.reversed.toList(), Mat.dastTop,
           source: source, furniture: true, floorIndex: floor));
       for (var k = 0; k < n; k++) {
@@ -1127,7 +1199,9 @@ void furnitureFaces(FurnitureItem item, double elevation, int floor, _BoxFn box,
         (x1 - 0.05, z0),
         (x0, z1 - 0.05),
         (x1 - 0.05, z1 - 0.05)
-      ]) b(lx, y0, lz, lx + 0.05, y0 + h - 0.04, lz + 0.05, Mat.table);
+      ]) {
+        b(lx, y0, lz, lx + 0.05, y0 + h - 0.04, lz + 0.05, Mat.table);
+      }
     case FurnitureKind.terrace || FurnitureKind.porch:
       b(x0, y0 - 0.25, z0, x1, y0 + h - 0.25, z1, Mat.deck);
     default:

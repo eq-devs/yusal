@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
-import 'speech.dart';
+import 'package:yusal/voice/speech.dart';
 
 /// The device's microphone through the `record` plugin, by way of a file
 /// in the temp directory.

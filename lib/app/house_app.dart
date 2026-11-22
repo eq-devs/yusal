@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import '../data/http/http_backend.dart';
-import '../data/repositories.dart';
-import '../services/firebase_setup.dart';
-import '../features/auth/login_page.dart';
-import '../features/home/post_page.dart';
-import '../shared/ui/links.dart';
-import '../shared/ui/scope.dart';
-import '../features/shell/shell.dart';
-import '../render2d/project_preview.dart';
-import '../storage/project_store.dart';
-import '../voice/audio_device.dart';
-import '../voice/speech.dart';
-import '../voice/voice_overlay.dart';
-import 'settings.dart';
-import 'tokens.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/services/firebase_setup.dart';
+import 'package:yusal/features/auth/login_page.dart';
+import 'package:yusal/features/home/post_page.dart';
+import 'package:yusal/shared/ui/links.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/features/shell/shell.dart';
+import 'package:yusal/render2d/project_preview.dart';
+import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/voice/audio_device.dart';
+import 'package:yusal/voice/speech.dart';
+import 'package:yusal/voice/voice_overlay.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/app/tokens.dart';
 
 /// The app's navigator, for opening what a tapped push points to.
 final appNavigator = GlobalKey<NavigatorState>();
@@ -49,7 +49,8 @@ class _HouseAppState extends State<HouseApp> {
   // Themes are rebuilt only when the theme choice changes, not on every
   // settings change (a language switch keeps the same ThemeData objects).
   ThemeChoice? _themeFor;
-  late ThemeData _light, _dark;
+  late ThemeData _light;
+  late ThemeData _dark;
   void _themes(ThemeChoice choice) {
     if (choice == _themeFor) return;
     _themeFor = choice;

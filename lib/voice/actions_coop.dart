@@ -1,8 +1,8 @@
-import '../data/repositories.dart';
-import '../domain/models.dart';
-import '../domain/rules.dart';
-import 'action.dart';
-import 'screen.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/rules.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/screen.dart';
 
 /// Implemented by the cooperation page, so voice can answer and end a
 /// cooperation the way that page's buttons do.
@@ -19,7 +19,8 @@ Cooperation? _coop() {
 /// Offered only while [coopMoves] has [move] for the signed-in side,
 /// exactly when the page shows its button.
 bool Function(ActionContext) _allows(CoopMove move) => (ctx) {
-      final c = _coop(), me = ctx.repos.currentAccount?.id;
+      final c = _coop();
+      final me = ctx.repos.currentAccount?.id;
       return c != null && me != null && coopMoves(c, me).contains(move);
     };
 
@@ -139,7 +140,8 @@ AppAction _milestoneAction(
       examples: examples,
       params: params,
       when: (ctx) {
-        final c = _coop(), me = ctx.repos.currentAccount?.id;
+        final c = _coop();
+        final me = ctx.repos.currentAccount?.id;
         final i = c == null ? null : currentMilestone(c);
         return i != null && milestoneMoves(c!, me, i).contains(event);
       },

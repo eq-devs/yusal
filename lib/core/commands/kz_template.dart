@@ -1,8 +1,8 @@
-import '../document/house_document.dart';
-import '../axis/axis_resolver.dart';
-import '../geometry/floor_base.dart';
-import 'command_contract.dart';
-import 'room_commands.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/commands/command_contract.dart';
+import 'package:yusal/core/commands/room_commands.dart';
 
 /// The one-storey 10 × 13 m village house from the drafting page: a
 /// 400 mm load-bearing spine, bedrooms on the west, living room, kitchen,
@@ -11,8 +11,7 @@ import 'room_commands.dart';
 ///
 /// [names] gives room names in the user's language, keyed b1, b2, bath,
 /// liv, kit, cor, ent, boil.
-HouseDocument createKazakhTemplate(
-    String timestamp, String Function() newId,
+HouseDocument createKazakhTemplate(String timestamp, String Function() newId,
     {String name = '哈萨克乡村住宅', Map<String, String> names = const {}}) {
   var doc = createHouse(
       name: name,
@@ -26,8 +25,10 @@ HouseDocument createKazakhTemplate(
   void run(String kind, Map<String, dynamic> args) {
     final result = executeCommand(
         extractDesignState(doc), DesignCommand(kind, args), context);
-    if (result is! Applied)
-      throw StateError('kz template: $kind ${result is Rejected ? result.message : ''}');
+    if (result is! Applied) {
+      throw StateError(
+          'kz template: $kind ${result is Rejected ? result.message : ''}');
+    }
     doc = composeDocument(doc.meta, result.newState);
   }
 
@@ -36,12 +37,18 @@ HouseDocument createKazakhTemplate(
     ('innerWallThickness', 200),
     ('slabThickness', 220),
     ('doorWidth', 800),
-  ]) run('SetDefault', {'field': field, 'value': value});
+  ]) {
+    run('SetDefault', {'field': field, 'value': value});
+  }
   run('SetRoof', {
     'roof': {'type': 'flat', 'parapetHeight': 1000}
   });
-  for (final x in [4200, 5900, 7300]) run('AddAxis', {'dir': AxisDir.V, 'pos': x});
-  for (final y in [2300, 2700, 7700]) run('AddAxis', {'dir': AxisDir.H, 'pos': y});
+  for (final x in [4200, 5900, 7300]) {
+    run('AddAxis', {'dir': AxisDir.V, 'pos': x});
+  }
+  for (final y in [2300, 2700, 7700]) {
+    run('AddAxis', {'dir': AxisDir.H, 'pos': y});
+  }
   final floorId = doc.floors.first.id;
   String axis(AxisDir dir, int pos) =>
       doc.axes.global.firstWhere((a) => a.dir == dir && a.pos == pos).id;
@@ -65,24 +72,27 @@ HouseDocument createKazakhTemplate(
   for (final entry in rooms.entries) {
     final before = doc.floors.first.rooms.map((r) => r.id).toSet();
     doc = paintCells(doc, floorId, entry.value.$2, entry.value.$1, newId);
-    roomIds[entry.key] = doc.floors.first.rooms
-        .firstWhere((r) => !before.contains(r.id))
-        .id;
+    roomIds[entry.key] =
+        doc.floors.first.rooms.firstWhere((r) => !before.contains(r.id)).id;
   }
-  for (final entry in names.entries)
-    if (roomIds[entry.key] != null)
+  for (final entry in names.entries) {
+    if (roomIds[entry.key] != null) {
       run('RenameRoom', {'roomId': roomIds[entry.key], 'value': entry.value});
+    }
+  }
 
   // The spine wall is load-bearing: 400 mm on its whole length.
   run('SetWallOverride', {
     'floorId': floorId,
     'anchor': BoundaryAnchor(
-        axisId: axis(AxisDir.V, 4200), startAxisId: '@bottom', endAxisId: '@top'),
+        axisId: axis(AxisDir.V, 4200),
+        startAxisId: '@bottom',
+        endAxisId: '@top'),
     'type': 'thickness',
     'value': 400
   });
   // The corridor opens to the living room and to the entrance.
-  for (final y in [7700, 2300])
+  for (final y in [7700, 2300]) {
     run('SetWallOverride', {
       'floorId': floorId,
       'anchor': BoundaryAnchor(
@@ -91,6 +101,7 @@ HouseDocument createKazakhTemplate(
           endAxisId: axis(AxisDir.V, 5900)),
       'type': 'open',
     });
+  }
 
   // Openings: wall axis, from, to (mm along the wall), kind, sill, height.
   final openings = <(String, AxisDir?, int, int, int, OpeningKind, int, int)>[
@@ -114,8 +125,8 @@ HouseDocument createKazakhTemplate(
   for (final (boundary, dir, pos, a0, a1, kind, sill, height) in openings) {
     final base = deriveFloorBase(doc, floorId);
     final axisId = boundary.isNotEmpty ? boundary : axis(dir!, pos);
-    final wall = base.wallSegments.firstWhere((w) =>
-        w.axis.id == axisId && w.start.pos <= a0 && w.end.pos >= a1);
+    final wall = base.wallSegments.firstWhere(
+        (w) => w.axis.id == axisId && w.start.pos <= a0 && w.end.pos >= a1);
     final before = doc.floors.first.openings.map((o) => o.id).toSet();
     run('AddOpening', {
       'floorId': floorId,
@@ -124,9 +135,8 @@ HouseDocument createKazakhTemplate(
       'centerAtTap': true,
       'tapT': (a0 + a1) / 2 - wall.start.pos
     });
-    final id = doc.floors.first.openings
-        .firstWhere((o) => !before.contains(o.id))
-        .id;
+    final id =
+        doc.floors.first.openings.firstWhere((o) => !before.contains(o.id)).id;
     run('ResizeOpening',
         {'openingId': id, 'width': a1 - a0, 'height': height, 'sill': sill});
     run('MoveOpening', {
@@ -138,8 +148,8 @@ HouseDocument createKazakhTemplate(
   if (entrance != null) run('SetMainEntrance', {'openingId': entrance});
 
   // Furniture, in the drafting page's metres measured down the drawing.
-  void item(FurnitureKind kind, double x0, double z0, double x1, double z1,
-      double h,
+  void item(
+      FurnitureKind kind, double x0, double z0, double x1, double z1, double h,
       {double y0 = 0, int v = 0, String? label}) {
     run('AddFurniture', {
       'floorId': floorId,
@@ -171,7 +181,9 @@ HouseDocument createKazakhTemplate(
     (8.75, 1.5, 2),
     (8.75, 2.6, 0),
     (8.75, 3.6, 1),
-  ]) item(f('cushion'), x, z, x + 0.25, z + 0.5, 0.3, y0: 0.08, v: v);
+  ]) {
+    item(f('cushion'), x, z, x + 0.25, z + 0.5, 0.3, y0: 0.08, v: v);
+  }
   item(f('wallRug'), 9.56, 1.3, 9.6, 4.3, 1.8, y0: 0.5);
   item(f('sandyq'), 8.3, 4.6, 9.5, 5.18, 0.55);
   item(f('rug'), 0.8, 0.9, 3.6, 4.0, 0.015, v: 1);
@@ -202,14 +214,17 @@ HouseDocument createKazakhTemplate(
   item(f('boiler'), 8.5, 10.8, 9.3, 11.2, 0.8, y0: 1.0);
   item(f('wardrobe'), 5.9, 10.8, 7.2, 11.4, 2.2);
 
-  for (final entry in rooms.entries)
+  for (final entry in rooms.entries) {
     run('SetRoomInfo',
         {'roomId': roomIds[entry.key], 'labelArea': entry.value.$3 * 100});
+  }
   for (final (x, y, d, kind) in [
     (2600, 200, 110, SleeveKind.sewer),
     (9800, 5300, 110, SleeveKind.sewer),
     (7800, 200, 50, SleeveKind.water),
     (9800, 700, 50, SleeveKind.power),
-  ]) run('AddSleeve', {'x': x, 'y': y, 'diameter': d, 'kind': kind});
+  ]) {
+    run('AddSleeve', {'x': x, 'y': y, 'diameter': d, 'kind': kind});
+  }
   return doc;
 }

@@ -1,7 +1,7 @@
-import '../domain/models.dart';
-import '../domain/rules.dart';
-import 'action.dart';
-import 'screen.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/rules.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/screen.dart';
 
 /// Implemented by the demand page, so voice can manage the demand the way
 /// the owner's buttons do.

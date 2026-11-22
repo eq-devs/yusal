@@ -6,7 +6,7 @@ import 'package:yusal/app/settings.dart';
 /// layout checks) must read in Kazakh and Russian too, not fall back to the
 /// Chinese the core writes them in.
 void main() {
-  final chinese = RegExp(r'[一-鿿]');
+  final chinese = RegExp('[一-鿿]');
   const shown = [
     // Layout checks R11, R12, R13.
     '卫生间的门直接开向厨房，气味和卫生都不好。可以把门改到走廊或门厅一侧。',

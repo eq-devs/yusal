@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
-import '../../app/tokens.dart';
-import '../../storage/project_store.dart';
-import '../../app/settings.dart';
-import '../editor/house_editor.dart';
-import '../../domain/models.dart';
-import '../backup/backup_page.dart';
-import '../demand/demand_detail_page.dart';
-import '../home/post_page.dart';
-import '../home/publish_post_page.dart';
-import '../demand/from_design_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/widgets.dart';
-import '../../shared/ui/house_progress.dart';
-import '../houses/my_houses_data.dart';
-import '../houses/my_jobs.dart';
-import '../houses/workspace_page.dart';
-import '../../shared/motion/motion.dart';
+import 'package:yusal/app/tokens.dart';
+import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/features/editor/house_editor.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/features/backup/backup_page.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/features/home/post_page.dart';
+import 'package:yusal/features/home/publish_post_page.dart';
+import 'package:yusal/features/demand/from_design_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/shared/ui/house_progress.dart';
+import 'package:yusal/features/houses/my_houses_data.dart';
+import 'package:yusal/features/houses/my_jobs.dart';
+import 'package:yusal/features/houses/workspace_page.dart';
+import 'package:yusal/shared/motion/motion.dart';
 
 /// Second tab, "我的房子": where each of my houses stands. One title, then
 /// what needs me (to-dos and houses with platform activity), then my
@@ -41,8 +41,7 @@ class ProjectsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     AppScope.watch(context);
-    final title =
-        Text(tr3('我的房子', 'Үйлерім', 'Мои дома'), style: display(size: 24));
+    final title = Text(tr3('我的房子', 'Үйлерім', 'Мои дома'), style: display());
     // The design list owns storage, import, templates and export; this
     // page only draws it.
     return HouseHome(
@@ -54,8 +53,8 @@ class ProjectsPage extends StatelessWidget {
           final actions = [
             IconButton(
                 key: const Key('designs-import'),
-                tooltip: tr3('导入 .house 文件', '.house файлын ашу',
-                    'Открыть файл .house'),
+                tooltip: tr3(
+                    '导入 .house 文件', '.house файлын ашу', 'Открыть файл .house'),
                 icon: const Icon(Icons.file_open_outlined),
                 onPressed: list.import),
             const SizedBox(width: YSpace.xs),
@@ -81,8 +80,8 @@ class ProjectsPage extends StatelessWidget {
                                   actions: actions,
                                   bottom: TabBar(tabs: [
                                     Tab(
-                                        text: tr3(
-                                            '我的房子', 'Үйлерім', 'Мои дома')),
+                                        text:
+                                            tr3('我的房子', 'Үйлерім', 'Мои дома')),
                                     Tab(
                                         text: tr3('我接的活', 'Жұмыстарым',
                                             'Моя работа')),
@@ -114,7 +113,9 @@ class _HousesView extends StatelessWidget {
                 // floating tab bar by itself: add the bar's height, or the
                 // last row sits under the bar and the page cannot scroll
                 // to it.
-                padding: EdgeInsets.fromLTRB(YSpace.gutter, YSpace.sm,
+                padding: EdgeInsets.fromLTRB(
+                    YSpace.gutter,
+                    YSpace.sm,
                     YSpace.gutter,
                     YSpace.huge + MediaQuery.paddingOf(context).bottom),
                 children: [
@@ -190,8 +191,8 @@ class _HousesView extends StatelessWidget {
                   else ...[
                     LayoutBuilder(builder: (context, c) {
                       final columns = c.maxWidth >= 720 ? 2 : 1;
-                      final w = (c.maxWidth - YSpace.md * (columns - 1)) /
-                          columns;
+                      final w =
+                          (c.maxWidth - YSpace.md * (columns - 1)) / columns;
                       return Wrap(
                           spacing: YSpace.md,
                           runSpacing: YSpace.md,
@@ -199,8 +200,7 @@ class _HousesView extends StatelessWidget {
                             for (final entry in projects)
                               SizedBox(
                                   width: w,
-                                  child:
-                                      _DesignCard(entry: entry, list: list)),
+                                  child: _DesignCard(entry: entry, list: list)),
                           ]);
                     }),
                     const SizedBox(height: YSpace.lg),
@@ -270,8 +270,8 @@ class _DesignCard extends StatelessWidget {
                           await pushPage<void>(
                               context, (_) => PublishPostPage(entry: entry));
                         case 'backup':
-                          await pushPage<void>(context,
-                              (_) => BackupPage(highlight: entry.id));
+                          await pushPage<void>(
+                              context, (_) => BackupPage(highlight: entry.id));
                         case 'export':
                           await list.export(entry, anchor);
                         case 'delete':
@@ -286,11 +286,8 @@ class _DesignCard extends StatelessWidget {
                               Icons.download_outlined,
                               tr3('导出设计文件', 'Жоба файлын экспорттау',
                                   'Экспорт файла')),
-                          _item(
-                              'backup',
-                              Icons.cloud_outlined,
-                              tr3('备份', 'Сақтық көшірме',
-                                  'Резервная копия')),
+                          _item('backup', Icons.cloud_outlined,
+                              tr3('备份', 'Сақтық көшірме', 'Резервная копия')),
                           const PopupMenuDivider(),
                           _item('delete', Icons.delete_outline,
                               tr3('删除设计', 'Жобаны жою', 'Удалить проект'),
@@ -306,8 +303,8 @@ class _DesignCard extends StatelessWidget {
                         backgroundColor: t.accentSoft,
                         foregroundColor: t.dark ? t.ink : t.accent,
                         minimumSize: const Size(0, yTouch),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: YSpace.sm)),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: YSpace.sm)),
                     onPressed: () => list.open(entry),
                     child: Text(tr3('继续设计', 'Жалғастыру', 'Продолжить'),
                         maxLines: 1, overflow: TextOverflow.ellipsis))),
@@ -317,8 +314,8 @@ class _DesignCard extends StatelessWidget {
                     key: Key('design-builders-${entry.id}'),
                     style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, yTouch),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: YSpace.sm)),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: YSpace.sm)),
                     onPressed: () => pushPage<void>(
                         context, (_) => FromDesignPage(entry: entry)),
                     child: Text(tr3('找施工方', 'Шебер табу', 'Найти мастеров'),
@@ -376,7 +373,6 @@ class _FirstDesign extends StatelessWidget {
     final t = YTokens.of(context);
     return YCard(
         key: const Key('designs-empty'),
-        padding: const EdgeInsets.all(YSpace.lg),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(
               height: 180,
@@ -390,8 +386,7 @@ class _FirstDesign extends StatelessWidget {
                       extensions: [YTokens.of(context), Tokens.light]),
                   child: Builder(builder: list.examplePreview))),
           const SizedBox(height: YSpace.lg),
-          Text(
-              tr3('还没有设计', 'Әзірге жоба жоқ', 'Проектов пока нет'),
+          Text(tr3('还没有设计', 'Әзірге жоба жоқ', 'Проектов пока нет'),
               style: YText.heading),
           const SizedBox(height: YSpace.xs),
           Text(
@@ -430,12 +425,16 @@ class _ExampleRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                 Text(
-                    tr3('示例：哈萨克乡村住宅 10 × 13 米', 'Үлгі: қазақ ауыл үйі 10 × 13 м',
+                    tr3(
+                        '示例：哈萨克乡村住宅 10 × 13 米',
+                        'Үлгі: қазақ ауыл үйі 10 × 13 м',
                         'Пример: сельский дом 10 × 13 м'),
                     style: YText.labelStrong),
                 Text(
-                    tr3('8 个房间，带家具和构造，打开后随便改',
-                        '8 бөлме, жиһазы мен құрылымы бар', '8 комнат, с мебелью и конструкциями'),
+                    tr3(
+                        '8 个房间，带家具和构造，打开后随便改',
+                        '8 бөлме, жиһазы мен құрылымы бар',
+                        '8 комнат, с мебелью и конструкциями'),
                     style: YText.caption.copyWith(color: t.muted)),
               ])),
           Icon(Icons.chevron_right, color: t.faint),
@@ -454,25 +453,27 @@ class _ActiveHouses extends StatelessWidget {
     final me = context.repos.currentAccount?.id ?? '';
     final todos = <(String, MyHouse, int)>[];
     for (final h in houses) {
-      if (h.pendingConfirm(me) > 0)
+      if (h.pendingConfirm(me) > 0) {
         todos.add((
           tr3('「${h.name}」有合作约定待你确认', '«${h.name}»: келісімді растаңыз',
               '«${h.name}»: подтвердите соглашение'),
           h,
           2
         ));
-      if (h.endAsks(me) > 0)
+      }
+      if (h.endAsks(me) > 0) {
         todos.add((
           tr3('「${h.name}」对方请求结束合作', '«${h.name}»: аяқтауды растаңыз',
               '«${h.name}»: подтвердите завершение'),
           h,
           2
         ));
+      }
       final inspections = h.cooperations
           .expand((c) => c.milestones)
           .where((m) => m.status == MilestoneStatus.requested)
           .length;
-      if (inspections > 0)
+      if (inspections > 0) {
         todos.add((
           tr3(
               '「${h.name}」$inspections 个节点待验收',
@@ -481,17 +482,19 @@ class _ActiveHouses extends StatelessWidget {
           h,
           3
         ));
+      }
       final days = h.cooperations
           .expand((c) => c.workLogs)
           .where((w) => !w.confirmed)
           .length;
-      if (days > 0)
+      if (days > 0) {
         todos.add((
           tr3('「${h.name}」$days 天记工待确认', '«${h.name}»: $days күн расталмады',
               '«${h.name}»: дней к подтверждению $days'),
           h,
           3
         ));
+      }
     }
     void open(MyHouse h, int tab) => pushPage<void>(
         context,
@@ -501,106 +504,97 @@ class _ActiveHouses extends StatelessWidget {
     // Finished houses move out of the ongoing ones.
     final done = houses.where((h) => h.stage == HouseStage.done).toList();
     final ongoing = houses.where((h) => h.stage != HouseStage.done).toList();
-    Widget strip(List<MyHouse> list) =>
-        SizedBox(
-            height: 104,
-            child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: list.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, i) {
-                  final h = list[i];
-                  return SizedBox(
-                      width: 290,
-                      child: Card(
-                          margin: EdgeInsets.zero,
-                          child: InkWell(
-                              key: Key('house-card-${h.key}'),
-                              borderRadius: BorderRadius.circular(yRadius),
-                              onTap: () => open(h, 0),
-                              child: Padding(
-                                  padding: const EdgeInsets.all(10),
-                                  child: Row(children: [
-                                    HouseThumb(house: h, size: 80),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                        child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                          Text(h.name,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                  fontWeight:
-                                                      FontWeight.w700)),
-                                          const SizedBox(height: 4),
-                                          StatusPill(
-                                              h.shareOnly
-                                                  ? tr3('已分享', 'Бөлісілді',
-                                                      'Опубликован')
-                                                  : houseStageName(h.stage),
-                                              color: t.accent),
-                                          const SizedBox(height: 4),
-                                          Text(h.nextStep(me),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                  color: h.needsMe(me)
-                                                      ? t.accent
-                                                      : t.muted,
-                                                  fontWeight: h.newQuotes > 0
-                                                      ? FontWeight.w600
-                                                      : null,
-                                                  fontSize: YFont.caption)),
-                                        ])),
-                                  ])))));
-                }));
-    return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (todos.isNotEmpty) ...[
-            SectionTitle(tr3('等你处理', 'Сізді күтуде', 'Ждут вас')),
-            Material(
-                key: const Key('todo-strip'),
-                color: t.accentSoft,
-                clipBehavior: Clip.antiAlias,
-                borderRadius: BorderRadius.circular(YRadius.card),
-                child: Column(children: [
-                  for (final (text, h, tab) in todos.take(4))
-                    InkWell(
-                        onTap: () => open(h, tab),
-                        child: ConstrainedBox(
-                            constraints:
-                                const BoxConstraints(minHeight: yTouch),
-                            child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: YSpace.lg,
-                                    vertical: YSpace.sm),
-                                child: Row(children: [
-                                  Icon(Icons.circle,
-                                      size: 8, color: t.accent),
-                                  const SizedBox(width: YSpace.md),
-                                  Expanded(
-                                      child: Text(text,
-                                          style: YText.labelStrong)),
-                                  Icon(Icons.chevron_right,
-                                      size: 20, color: t.muted),
-                                ])))),
-                ])),
-          ],
-          if (ongoing.isNotEmpty) ...[
-            SectionTitle(
-                tr3('进行中的房子', 'Жүріп жатқан үйлер', 'Дома в работе')),
-            strip(ongoing),
-          ],
-          if (done.isNotEmpty) ...[
-            SectionTitle(tr3('已完工', 'Аяқталған', 'Готовые')),
-            strip(done),
-          ],
-        ]);
+    Widget strip(List<MyHouse> list) => SizedBox(
+        height: 104,
+        child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: list.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) {
+              final h = list[i];
+              return SizedBox(
+                  width: 290,
+                  child: Card(
+                      margin: EdgeInsets.zero,
+                      child: InkWell(
+                          key: Key('house-card-${h.key}'),
+                          borderRadius: BorderRadius.circular(yRadius),
+                          onTap: () => open(h, 0),
+                          child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Row(children: [
+                                HouseThumb(house: h, size: 80),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                    child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                      Text(h.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w700)),
+                                      const SizedBox(height: 4),
+                                      StatusPill(
+                                          h.shareOnly
+                                              ? tr3('已分享', 'Бөлісілді',
+                                                  'Опубликован')
+                                              : houseStageName(h.stage),
+                                          color: t.accent),
+                                      const SizedBox(height: 4),
+                                      Text(h.nextStep(me),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                              color: h.needsMe(me)
+                                                  ? t.accent
+                                                  : t.muted,
+                                              fontWeight: h.newQuotes > 0
+                                                  ? FontWeight.w600
+                                                  : null,
+                                              fontSize: YFont.caption)),
+                                    ])),
+                              ])))));
+            }));
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (todos.isNotEmpty) ...[
+        SectionTitle(tr3('等你处理', 'Сізді күтуде', 'Ждут вас')),
+        Material(
+            key: const Key('todo-strip'),
+            color: t.accentSoft,
+            clipBehavior: Clip.antiAlias,
+            borderRadius: BorderRadius.circular(YRadius.card),
+            child: Column(children: [
+              for (final (text, h, tab) in todos.take(4))
+                InkWell(
+                    onTap: () => open(h, tab),
+                    child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: yTouch),
+                        child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: YSpace.lg, vertical: YSpace.sm),
+                            child: Row(children: [
+                              Icon(Icons.circle, size: 8, color: t.accent),
+                              const SizedBox(width: YSpace.md),
+                              Expanded(
+                                  child: Text(text, style: YText.labelStrong)),
+                              Icon(Icons.chevron_right,
+                                  size: 20, color: t.muted),
+                            ])))),
+            ])),
+      ],
+      if (ongoing.isNotEmpty) ...[
+        SectionTitle(tr3('进行中的房子', 'Жүріп жатқан үйлер', 'Дома в работе')),
+        strip(ongoing),
+      ],
+      if (done.isNotEmpty) ...[
+        SectionTitle(tr3('已完工', 'Аяқталған', 'Готовые')),
+        strip(done),
+      ],
+    ]);
   }
 }
 

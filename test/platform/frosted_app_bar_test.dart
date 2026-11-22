@@ -13,7 +13,6 @@ void main() {
             body: SizedBox.expand())));
     final frost = find.descendant(
         of: find.byType(FrostedAppBar), matching: find.byType(ColoredBox));
-    expect(t.getSize(frost.first).height,
-        greaterThanOrEqualTo(kToolbarHeight));
+    expect(t.getSize(frost.first).height, greaterThanOrEqualTo(kToolbarHeight));
   });
 }

@@ -30,8 +30,8 @@ void main() {
         builder: (context, child) => AppScope(
             child: VoiceHost(
                 navigator: navigator,
-                repos: VoiceMock(ScriptedBackend([...script]), signedIn: signedIn),
-                enabled: true,
+                repos:
+                    VoiceMock(ScriptedBackend([...script]), signedIn: signedIn),
                 child: child!)),
         home: home));
     await t.pumpAndSettle();
@@ -46,8 +46,7 @@ void main() {
     final navigator = await pump(
         t,
         const VoicePage(
-            child: Align(
-                alignment: Alignment(0.5, -0.8), child: VoiceSlot(size: 44))),
+            child: Align(alignment: Alignment(0.5, -0.8), child: VoiceSlot())),
         script: [const VoiceTurn(reply: '好的。')],
         introSeen: false);
     final slot = t.getRect(find.byType(VoiceSlot));
@@ -69,8 +68,8 @@ void main() {
     await t.pumpAndSettle();
 
     // Under another page of its own the slot does not count: the corner.
-    navigator.currentState!.push(
-        MaterialPageRoute<void>(builder: (_) => const VoicePage()));
+    navigator.currentState!
+        .push(MaterialPageRoute<void>(builder: (_) => const VoicePage()));
     await t.pumpAndSettle();
     final corner = t.getRect(orb);
     expect(corner.size, const Size(52, 52));
@@ -125,7 +124,7 @@ void main() {
     expect(orb, findsOneWidget);
   });
 
-  testWidgets('the orb is away while the page\'s keyboard is up', (t) async {
+  testWidgets("the orb is away while the page's keyboard is up", (t) async {
     await pump(t, const VoicePage());
     addTearDown(t.view.reset);
     t.view.viewInsets = const FakeViewPadding(bottom: 300);
@@ -179,7 +178,8 @@ void main() {
             entry: ProjectEntry('project', doc),
             store: ProjectStore(fileSystem: MemoryFiles())));
     for (final tab in ['ext', 'walk']) {
-      await t.tap(find.byKey(ValueKey(tab == 'ext' ? 'group-view' : 'tab-walk')));
+      await t
+          .tap(find.byKey(ValueKey(tab == 'ext' ? 'group-view' : 'tab-walk')));
       await t.pump(const Duration(seconds: 1));
       await t.pump(const Duration(seconds: 1));
       await t.pump();
@@ -211,7 +211,7 @@ void main() {
     const Size(844, 390),
     const Size(820, 1180),
     const Size(1180, 820)
-  ])
+  ]) {
     testWidgets('in the editor at $size the orb covers no tool', (t) async {
       t.view.physicalSize = size;
       t.view.devicePixelRatio = 1;
@@ -237,9 +237,12 @@ void main() {
       ])
         for (final e in finder.evaluate()) {
           if (find
-              .ancestor(of: find.byWidget(e.widget), matching: find.byType(VoiceBar))
+              .ancestor(
+                  of: find.byWidget(e.widget), matching: find.byType(VoiceBar))
               .evaluate()
-              .isNotEmpty) continue;
+              .isNotEmpty) {
+            continue;
+          }
           final box = e.renderObject! as RenderBox;
           if (!box.hasSize || box.size.isEmpty) continue;
           final rect = box.localToGlobal(Offset.zero) & box.size;
@@ -248,4 +251,5 @@ void main() {
         }
       expect(t.takeException(), isNull);
     });
+  }
 }

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../domain/rules.dart';
-import '../chat/chat_page.dart';
-import '../coop/agreement_form.dart';
-import '../../shared/ui/l10n.dart';
-import '../profile/profile_page.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import 'compare_page.dart';
-import 'demand_detail_page.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/domain/rules.dart';
+import 'package:yusal/features/chat/chat_page.dart';
+import 'package:yusal/features/coop/agreement_form.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/features/profile/profile_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/demand/compare_page.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
 
 class _AppsData {
   _AppsData(this.demand, this.apps, this.profiles, this.coops);
@@ -71,7 +71,8 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
                   children: [
                     Text(d.current.title,
                         style: const TextStyle(
-                            fontSize: YFont.title, fontWeight: FontWeight.w700)),
+                            fontSize: YFont.title,
+                            fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
                     Text(
                         '${demandStatusName(d.status)} · ${tr3('第 ${d.current.no} 版', '${d.current.no}-нұсқа', 'версия ${d.current.no}')}',
@@ -189,8 +190,9 @@ class ApplicationCard extends StatelessWidget {
     Future<void> chat() async {
       final conv = await attempt(context,
           () => repos.openConversation(a.applicantId, demandId: demand.id));
-      if (conv != null && context.mounted)
+      if (conv != null && context.mounted) {
         await pushPage<void>(context, (_) => ChatPage(conversationId: conv.id));
+      }
     }
 
     Future<void> invite() async {
@@ -210,7 +212,7 @@ class ApplicationCard extends StatelessWidget {
               : () => pushPage<void>(
                   context, (_) => ProfilePage(profileId: profile!.id)),
           child: Row(children: [
-            Avatar(name, size: 40, team: profile?.kind == ProfileKind.team),
+            Avatar(name, team: profile?.kind == ProfileKind.team),
             const SizedBox(width: 12),
             Expanded(
                 child: Column(
@@ -221,7 +223,8 @@ class ApplicationCard extends StatelessWidget {
                           fontWeight: FontWeight.w700, fontSize: YFont.body)),
                   Text(
                       '${ago(v.createdAt, context.now)} · ${tr3('基于第 ${v.demandVersionNo} 版', '${v.demandVersionNo}-нұсқа', 'к версии ${v.demandVersionNo}')}${a.versions.length > 1 ? ' · ${tr3('已修改 ${a.versions.length - 1} 次', 'өзгертілді', 'изменено')}' : ''}',
-                      style: TextStyle(color: t.muted, fontSize: YFont.caption)),
+                      style:
+                          TextStyle(color: t.muted, fontSize: YFont.caption)),
                 ])),
             StatusPill(applicationStatusName(a.status),
                 color: a.status == ApplicationStatus.cooperating ? t.ok : null),

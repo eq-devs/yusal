@@ -23,7 +23,8 @@ void main() {
     expect(pages.length, greaterThan(40));
   });
 
-  Map<String, List<String>> offenders(RegExp pattern, {Set<String> allow = const {}}) {
+  Map<String, List<String>> offenders(RegExp pattern,
+      {Set<String> allow = const {}}) {
     final out = <String, List<String>>{};
     for (final f in pages) {
       final name = f.path.split('/').last;
@@ -39,12 +40,13 @@ void main() {
   }
 
   test('no literal font size in a page', () {
-    expect(offenders(RegExp(r'fontSize:\s*\d'), allow: {'theme.dart'}),
-        isEmpty);
+    expect(
+        offenders(RegExp(r'fontSize:\s*\d'), allow: {'theme.dart'}), isEmpty);
   });
 
   test('no literal corner radius in a page', () {
-    expect(offenders(RegExp(r'[Rr]adius\.circular\(\s*\d'), allow: {'theme.dart'}),
+    expect(
+        offenders(RegExp(r'[Rr]adius\.circular\(\s*\d'), allow: {'theme.dart'}),
         isEmpty);
   });
 

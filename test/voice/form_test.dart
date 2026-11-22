@@ -21,7 +21,8 @@ class _Form extends StatefulWidget {
 }
 
 class _FormState extends State<_Form> with VoiceScreen {
-  final wage = TextEditingController(), note = TextEditingController();
+  final wage = TextEditingController();
+  final note = TextEditingController();
   String unit = 'day';
   int sent = 0;
 

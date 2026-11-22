@@ -21,7 +21,7 @@ void main() {
     final result = executeCommand(s, DesignCommand(kind, args),
         CommandContext(newId: next, now: () => '2026-10-01T00:00:00Z'));
     expect(result, isA<Applied>(),
-        reason: result is Rejected ? result.message : '$kind');
+        reason: result is Rejected ? result.message : kind);
     return (result as Applied).newState;
   }
 
@@ -75,7 +75,8 @@ void main() {
 
   test('geometry commands keep extras; removed rooms drop their notes', () {
     var s = extractDesignState(initial());
-    final floor = s.floors.first.id, room = s.floors.first.rooms.first.id;
+    final floor = s.floors.first.id;
+    final room = s.floors.first.rooms.first.id;
     s = run(s, 'AddFurniture',
         {'floorId': floor, 'kind': FurnitureKind.sofa, 'x': 500, 'y': 500});
     s = run(s, 'SetRoomInfo', {'roomId': room, 'note': '客厅'});

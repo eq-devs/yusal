@@ -124,9 +124,10 @@ void main() {
       (tester) async {
     var doc = house(columns: 2, rows: 2);
     for (var j = 0; j < 2; j++) {
-      for (var i = 0; i < 2; i++)
+      for (var i = 0; i < 2; i++) {
         doc = paintCells(
             doc, doc.floors.first.id, [Cell(i, j)], RoomType.custom, next);
+      }
     }
     final session = await mount(tester, doc);
     await tester.tapAt(point(tester, 6000, 7500));

@@ -16,7 +16,7 @@ import 'tabs.dart';
 /// Letters that exist in Kazakh but not in Russian, and Chinese characters:
 /// neither belongs on a Russian screen.
 final _kazakh = RegExp('[ӘәҒғҚқҢңӨөҰұҮүҺһІі]');
-final _chinese = RegExp(r'[一-鿿]');
+final _chinese = RegExp('[一-鿿]');
 
 /// The language switch names each language in itself.
 const _allowed = {
@@ -81,7 +81,7 @@ void main() {
     expect(missing, isEmpty);
   });
 
-  for (final size in [const Size(1280, 900), const Size(390, 844)])
+  for (final size in [const Size(1280, 900), const Size(390, 844)]) {
     testWidgets(
         'in Russian every page of the design tool is Russian at ${size.width}',
         (t) async {
@@ -147,4 +147,5 @@ void main() {
               .map((e) => '${e.key}: ${e.value.take(12).join(' | ')}')
               .join('\n'));
     });
+  }
 }

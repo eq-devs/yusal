@@ -56,7 +56,8 @@ void main() {
     final sent = b.feedback.values.single;
     expect(sent.text, '门窗不好拖');
     expect(sent.context?['device'], 'Google Pixel 8 Pro');
-    expect(find.byType(FeedbackPage), findsNothing, reason: 'closed after send');
+    expect(find.byType(FeedbackPage), findsNothing,
+        reason: 'closed after send');
   });
 
   testWidgets('switched off, nothing about the device is sent', (t) async {
@@ -71,8 +72,7 @@ void main() {
   });
 
   testWidgets('offline keeps the text and retries with the same id', (t) async {
-    final b = MockBackend(latency: Duration.zero)
-      ..simulateOffline = true;
+    final b = MockBackend(latency: Duration.zero)..simulateOffline = true;
     await _open(t, b);
     await t.enterText(find.byKey(const Key('feedback-text')), '保存很慢');
     await t.pump();
@@ -90,12 +90,11 @@ void main() {
 
   test('the API gets the text, context and request id', () async {
     Map<String, dynamic>? body;
-    final b = HttpBackend('https://api.test',
-        client: MockClient((r) async {
-          expect(r.url.path, '/client/feedback');
-          body = jsonDecode(r.body) as Map<String, dynamic>;
-          return http.Response('{"success":true,"data":{"id":"f1"}}', 200);
-        }));
+    final b = HttpBackend('https://api.test', client: MockClient((r) async {
+      expect(r.url.path, '/client/feedback');
+      body = jsonDecode(r.body) as Map<String, dynamic>;
+      return http.Response('{"success":true,"data":{"id":"f1"}}', 200);
+    }));
     await b.sendFeedback(
         requestId: 'r1', text: 'hi', context: {'device': 'iPhone16,2'});
     expect(body, {

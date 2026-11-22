@@ -73,8 +73,7 @@ void main() {
       await t.pumpAndSettle();
       final name = tokens.dark ? 'night' : 'light';
       Future<void> snap(String label) async {
-        final boundary =
-            t.renderObject<RenderRepaintBoundary>(find.byKey(key));
+        final boundary = t.renderObject<RenderRepaintBoundary>(find.byKey(key));
         await t.runAsync(() async {
           final image = await boundary.toImage(pixelRatio: 2);
           final data = await image.toByteData(format: ui.ImageByteFormat.png);

@@ -77,8 +77,7 @@ void main() {
             isA<ApiFailure>().having((e) => e.code, 'code', 'RATE_LIMITED')));
   });
 
-  test('a recording goes up as raw bytes and its text comes back',
-      () async {
+  test('a recording goes up as raw bytes and its text comes back', () async {
     final api = HttpBackend('https://api.test', client: MockClient((r) async {
       if (r.url.path == '/client/voice/transcribe') {
         expect(r.headers['Content-Type'], 'application/octet-stream');

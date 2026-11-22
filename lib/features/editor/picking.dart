@@ -18,8 +18,8 @@ extension _Picking on _HouseEditorState {
         y = painter.worldPoint(point, size).y,
         tolerance = 14 / (painter.scale(size) * canvasZoom);
     final placements = derived.floors[floorIndex].openings.where((p) {
-      final along = p.axis.dir == AxisDir.H ? x : y,
-          cross = p.axis.dir == AxisDir.H ? y : x;
+      final along = p.axis.dir == AxisDir.H ? x : y;
+      final cross = p.axis.dir == AxisDir.H ? y : x;
       return along >= p.start - tolerance &&
           along <= p.end + tolerance &&
           (cross - p.axis.pos).abs() < tolerance;
@@ -43,8 +43,8 @@ extension _Picking on _HouseEditorState {
       selectOpening(opening.opening);
       return;
     }
-    final cellI = base.axes.v.indexWhere((a) => a.pos > x) - 1,
-        cellJ = base.axes.h.indexWhere((a) => a.pos > y) - 1;
+    final cellI = base.axes.v.indexWhere((a) => a.pos > x) - 1;
+    final cellJ = base.axes.h.indexWhere((a) => a.pos > y) - 1;
     final roomHere = base.owners[Cell(cellI, cellJ)];
     final piece = furnitureAtWorld(Offset(x, y));
     // Rugs cover rooms: the first tap picks the room, the next the rug.
@@ -134,9 +134,10 @@ extension _Picking on _HouseEditorState {
                 : tr3('距下侧外墙', 'Төменгі сыртқы қабырғадан',
                     'От нижней наружной стены'),
             wall.axis.pos);
-        if (value != null)
+        if (value != null) {
           action('MoveLocalWall',
               {'floorId': floor.id, 'anchor': wall.ref.anchor, 'pos': value});
+        }
         return;
       }
       if (['door', 'window', 'sliding'].contains(choice)) {
@@ -156,17 +157,19 @@ extension _Picking on _HouseEditorState {
         if (added != null) selectOpening(added);
       } else {
         int? thickness;
-        if (choice == 'thickness')
+        if (choice == 'thickness') {
           thickness = await length(
               tr3('墙厚', 'Қабырға қалыңдығы', 'Толщина стены'),
               wall.thickness.round());
-        if (choice != 'thickness' || thickness != null)
+        }
+        if (choice != 'thickness' || thickness != null) {
           action('SetWallOverride', {
             'floorId': floor.id,
             'anchor': wall.ref.anchor,
             'type': choice,
             'value': thickness
           });
+        }
       }
       return;
     }
@@ -181,8 +184,8 @@ extension _Picking on _HouseEditorState {
       });
       return;
     }
-    final i = base.axes.v.indexWhere((a) => a.pos > x) - 1,
-        j = base.axes.h.indexWhere((a) => a.pos > y) - 1;
+    final i = base.axes.v.indexWhere((a) => a.pos > x) - 1;
+    final j = base.axes.h.indexWhere((a) => a.pos > y) - 1;
     final id = base.owners[Cell(i, j)];
     final room = floor.rooms.where((r) => r.id == id).firstOrNull;
     if (room != null) {
@@ -196,11 +199,12 @@ extension _Picking on _HouseEditorState {
       revealRoom(room.id);
       return;
     }
-    if (id == null)
+    if (id == null) {
       update(() {
         clearSelection();
         if (highlights.isNotEmpty) flash(const []);
       });
+    }
     final stair = floor.stairs.where((s) => s.id == id).firstOrNull;
     if (stair != null) {
       final choice = await showMotionSheet<String>(
@@ -227,9 +231,9 @@ extension _Picking on _HouseEditorState {
                       onTap: () => Navigator.pop(context, e.key))
               ])));
       if (choice == null || !mounted) return;
-      if (choice == 'move')
+      if (choice == 'move') {
         startStairStamp(moving: stair);
-      else if (choice == 'size')
+      } else if (choice == 'size')
         await resizeStair(stair);
       else if (choice == 'delete')
         action('RemoveStair', {'stairId': stair.id});
@@ -285,7 +289,7 @@ extension _Picking on _HouseEditorState {
         }
       }
     }
-    if (selected != null && index != null && index >= 0)
+    if (selected != null && index != null && index >= 0) {
       update(() {
         floorIndex = index!;
         view3d = false;
@@ -293,5 +297,6 @@ extension _Picking on _HouseEditorState {
         derive();
         focus = selected;
       });
+    }
   }
 }

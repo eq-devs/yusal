@@ -1,4 +1,4 @@
-import 'scene_model.dart';
+import 'package:yusal/render3d/scene_model.dart';
 
 /// Hidden-surface removal done once, when the scene is built.
 ///
@@ -35,7 +35,10 @@ class _Rect {
   final Face3 face;
   final int axis;
   final double c;
-  double u0, u1, v0, v1;
+  double u0;
+  double u1;
+  double v0;
+  double v1;
 
   static double get(Vec3 p, int a) => a == 0 ? p.x : (a == 1 ? p.y : p.z);
   static int uAxis(int a) => a == 0 ? 1 : 0;
@@ -52,8 +55,10 @@ class _Rect {
                 ? 2
                 : -1;
     if (axis < 0) return null;
-    final ua = uAxis(axis), va = vAxis(axis);
-    final us = <double>{}, vs = <double>{};
+    final ua = uAxis(axis);
+    final va = vAxis(axis);
+    final us = <double>{};
+    final vs = <double>{};
     final c = get(f.points.first, axis);
     for (final p in f.points) {
       if ((get(p, axis) - c).abs() > 1e-6) return null;
@@ -61,14 +66,16 @@ class _Rect {
       vs.add(get(p, va));
     }
     if (us.length != 2 || vs.length != 2) return null;
-    final ul = us.toList()..sort(), vl = vs.toList()..sort();
+    final ul = us.toList()..sort();
+    final vl = vs.toList()..sort();
     return _Rect(f, axis, c, ul[0], ul[1], vl[0], vl[1]);
   }
 
   /// The face over the current extent, keeping the original winding.
   Face3 build() {
     final f = face;
-    final ua = uAxis(axis), va = vAxis(axis);
+    final ua = uAxis(axis);
+    final va = vAxis(axis);
     final ou0 = f.points.map((p) => get(p, ua)).reduce((a, b) => a < b ? a : b);
     final ov0 = f.points.map((p) => get(p, va)).reduce((a, b) => a < b ? a : b);
     final pts = <Vec3>[];
@@ -92,17 +99,22 @@ bool _covered(_Rect r, Face3 f, List<SolidBox> solids) {
   final out = r.face.normal.dot(
           Vec3(r.axis == 0 ? 1 : 0, r.axis == 1 ? 1 : 0, r.axis == 2 ? 1 : 0)) >
       0;
-  final ua = _Rect.uAxis(r.axis), va = _Rect.vAxis(r.axis);
+  final ua = _Rect.uAxis(r.axis);
+  final va = _Rect.vAxis(r.axis);
   final cover = <(double, double, double, double)>[];
   for (final s in solids) {
     if (s.floor != f.floorIndex ||
         s.roof != f.roof ||
         s.furniture != f.furniture ||
-        s.layer != f.layer) continue;
+        s.layer != f.layer) {
+      continue;
+    }
     final touch = out ? _Rect.get(s.lo, r.axis) : _Rect.get(s.hi, r.axis);
     if ((touch - r.c).abs() > _eps) continue;
-    final su0 = _Rect.get(s.lo, ua), su1 = _Rect.get(s.hi, ua);
-    final sv0 = _Rect.get(s.lo, va), sv1 = _Rect.get(s.hi, va);
+    final su0 = _Rect.get(s.lo, ua);
+    final su1 = _Rect.get(s.hi, ua);
+    final sv0 = _Rect.get(s.lo, va);
+    final sv1 = _Rect.get(s.hi, va);
     if (su1 <= r.u0 + _eps || su0 >= r.u1 - _eps) continue;
     if (sv1 <= r.v0 + _eps || sv0 >= r.v1 - _eps) continue;
     cover.add((su0, su1, sv0, sv1));
@@ -116,16 +128,20 @@ bool _covered(_Rect r, Face3 f, List<SolidBox> solids) {
     if (b.$3 > r.v0 && b.$3 < r.v1) vs.add(b.$3);
     if (b.$4 > r.v0 && b.$4 < r.v1) vs.add(b.$4);
   }
-  final ul = us.toList()..sort(), vl = vs.toList()..sort();
+  final ul = us.toList()..sort();
+  final vl = vs.toList()..sort();
   for (var i = 0; i < ul.length - 1; i++)
     for (var j = 0; j < vl.length - 1; j++) {
       if (ul[i + 1] - ul[i] < _eps || vl[j + 1] - vl[j] < _eps) continue;
-      final u = (ul[i] + ul[i + 1]) / 2, v = (vl[j] + vl[j + 1]) / 2;
+      final u = (ul[i] + ul[i + 1]) / 2;
+      final v = (vl[j] + vl[j + 1]) / 2;
       if (!cover.any((b) =>
           u >= b.$1 - _eps &&
           u <= b.$2 + _eps &&
           v >= b.$3 - _eps &&
-          v <= b.$4 + _eps)) return false;
+          v <= b.$4 + _eps)) {
+        return false;
+      }
     }
   return true;
 }
@@ -164,7 +180,8 @@ List<Face3> _merge(List<_Rect> rects) {
       changed = false;
       for (var i = 0; i < g.length && !changed; i++)
         for (var j = i + 1; j < g.length; j++) {
-          final a = g[i], b = g[j];
+          final a = g[i];
+          final b = g[j];
           if (near(a.v0, b.v0) &&
               near(a.v1, b.v1) &&
               (near(a.u1, b.u0) || near(b.u1, a.u0))) {
@@ -183,7 +200,9 @@ List<Face3> _merge(List<_Rect> rects) {
           break;
         }
     }
-    for (final r in g) out.add(r.build());
+    for (final r in g) {
+      out.add(r.build());
+    }
   }
   return out;
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-import '../ui/theme.dart';
-import 'brand.dart';
-import 'path_ops.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/brand/brand.dart';
+import 'package:yusal/shared/brand/path_ops.dart';
 
 part 'yicon_data.dart';
 
@@ -60,7 +60,8 @@ final Map<YIcon, List<(_S, Path)>> _cache = {};
 class _YIconPainter extends CustomPainter {
   _YIconPainter(this.icon, this.ink, this.accent);
   final YIcon icon;
-  final Color ink, accent;
+  final Color ink;
+  final Color accent;
 
   @override
   void paint(Canvas canvas, Size size) {

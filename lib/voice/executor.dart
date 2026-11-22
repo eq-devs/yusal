@@ -1,5 +1,5 @@
-import 'action.dart';
-import 'registry.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/registry.dart';
 
 /// Asks the user to approve an outbound action. True means go ahead.
 typedef Confirm = Future<bool> Function(AppAction action, Args args);

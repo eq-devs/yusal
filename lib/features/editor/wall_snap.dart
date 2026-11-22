@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
-import '../../core/document/house_document.dart';
-import '../../core/geometry/floor_base.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
 
 /// Result of snapping the free end of a wall that is being drawn or resized.
 /// [connected] is true when the end lands on another physical wall, so the
@@ -29,7 +29,8 @@ bool endJoinsWall(FloorBase base, Offset p,
     {required bool horizontal, bool Function(WallSegment)? ignore}) {
   for (final w in base.wallSegments) {
     if (ignore?.call(w) ?? false) continue;
-    final along = _along(w, p), cross = _cross(w, p);
+    final along = _along(w, p);
+    final cross = _cross(w, p);
     if (cross != w.axis.pos) continue;
     final perpendicular = (w.axis.dir == AxisDir.H) != horizontal;
     if (perpendicular) {
@@ -60,7 +61,7 @@ WallEndSnap snapWallEnd(FloorBase base, Offset origin, Offset raw,
   final start = horizontal ? origin.dx : origin.dy;
   final limit =
       (horizontal ? base.axes.v.last.pos : base.axes.h.last.pos).toDouble();
-  final along = (horizontal ? raw.dx : raw.dy).clamp(0.0, limit).toDouble();
+  final along = (horizontal ? raw.dx : raw.dy).clamp(0.0, limit);
   Offset at(double value) =>
       horizontal ? Offset(value, carrier) : Offset(carrier, value);
 
@@ -102,7 +103,7 @@ WallEndSnap snapWallEnd(FloorBase base, Offset origin, Offset raw,
     }
   }
   final value = aligned ?? ((along / 100).round() * 100.0).clamp(0.0, limit);
-  final end = at(value.toDouble());
+  final end = at(value);
   return WallEndSnap(end,
       horizontal: horizontal,
       connected:
@@ -129,8 +130,9 @@ Offset? wallAhead(FloorBase base, Offset from, Offset heading) {
   for (final w in base.wallSegments) {
     final perpendicular = (w.axis.dir == AxisDir.H) != horizontal;
     if (perpendicular) {
-      if (carrier >= w.start.pos && carrier <= w.end.pos)
+      if (carrier >= w.start.pos && carrier <= w.end.pos) {
         consider(w.axis.pos.toDouble());
+      }
     } else if (w.axis.pos == carrier) {
       consider(w.start.pos.toDouble());
       consider(w.end.pos.toDouble());
@@ -150,7 +152,8 @@ WallSegment? nearestWall(FloorBase base, Offset p, double tolerance,
   var bestScore = double.infinity;
   for (final w in base.wallSegments) {
     if (innerOnly && w.axis.kind == 'boundary') continue;
-    final along = _along(w, p), cross = _cross(w, p);
+    final along = _along(w, p);
+    final cross = _cross(w, p);
     final outside = along < w.start.pos
         ? w.start.pos - along
         : along > w.end.pos

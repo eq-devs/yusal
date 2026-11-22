@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:qazvoice/qazvoice.dart';
 
-import 'read_aloud.dart';
+import 'package:yusal/services/voice/read_aloud.dart';
 
 /// qazvoice runs on Android and iOS phones only.
 ReadAloud? create() => !kIsWeb &&

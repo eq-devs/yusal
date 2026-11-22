@@ -51,17 +51,20 @@ extension _PlanTab on _HouseEditorState {
                         children: [
                       Row(children: [
                         IconButton(
-                            tooltip: '楼层操作'.trKey('Қабат әрекеттері', 'Действия с этажом'),
+                            tooltip: '楼层操作'
+                                .trKey('Қабат әрекеттері', 'Действия с этажом'),
                             visualDensity: VisualDensity.compact,
                             onPressed: floorOptions,
                             icon: const Icon(Icons.layers_outlined, size: 20)),
                         IconButton(
-                            tooltip: '房屋长宽'.trKey('Үйдің ені мен ұзындығы', 'Ширина и длина дома'),
+                            tooltip: '房屋长宽'.trKey('Үйдің ені мен ұзындығы',
+                                'Ширина и длина дома'),
                             visualDensity: VisualDensity.compact,
                             onPressed: footprintOptions,
                             icon: const Icon(Icons.aspect_ratio, size: 20)),
                         IconButton(
-                            tooltip: '立即保存'.trKey('Қазір сақтау', 'Сохранить сейчас'),
+                            tooltip: '立即保存'
+                                .trKey('Қазір сақтау', 'Сохранить сейчас'),
                             visualDensity: VisualDensity.compact,
                             onPressed: save,
                             icon: const Icon(Icons.save_outlined, size: 20)),
@@ -78,7 +81,11 @@ extension _PlanTab on _HouseEditorState {
                                       for (var i = 0;
                                           i < history.present.floors.length;
                                           i++)
-                                        (i, displayFloorName(history.present.floors[i].name))
+                                        (
+                                          i,
+                                          displayFloorName(
+                                              history.present.floors[i].name)
+                                        )
                                     ],
                                     onChanged: selectFloor))),
                       Wrap(spacing: 6, runSpacing: 6, children: toolButtons()),
@@ -92,7 +99,8 @@ extension _PlanTab on _HouseEditorState {
     }
     final plan = Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Expanded(child: surface),
           bars,
         ]));
@@ -128,8 +136,8 @@ extension _PlanTab on _HouseEditorState {
             furnitureGrip != null ||
             utilityDown != null ||
             (spatialTool && spatialStart != null));
-    final moved = gestureScreen == null ||
-        (e.position - gestureScreen!).distance > 8;
+    final moved =
+        gestureScreen == null || (e.position - gestureScreen!).distance > 8;
     final next = dragging && moved ? e.position : null;
     if (next != loupeAt) update(() => loupeAt = next);
   }
@@ -142,15 +150,18 @@ extension _PlanTab on _HouseEditorState {
     final box = planSheetKey.currentContext?.findRenderObject() as RenderBox?;
     if (at == null || box == null || !box.hasSize) return null;
     final local = box.globalToLocal(at);
-    const size = 118.0, lift = 96.0;
+    const size = 118.0;
+    const lift = 96.0;
     // Above the finger; beside it when the finger is near the top edge.
     var centre = local - const Offset(0, lift);
-    if (centre.dy < size / 2 + 4)
-      centre = local +
-          Offset(local.dx > box.size.width / 2 ? -lift : lift, 0);
+    if (centre.dy < size / 2 + 4) {
+      centre = local + Offset(local.dx > box.size.width / 2 ? -lift : lift, 0);
+    }
     centre = Offset(
-        centre.dx.clamp(size / 2 + 4, math.max(size / 2 + 4, box.size.width - size / 2 - 4)),
-        centre.dy.clamp(size / 2 + 4, math.max(size / 2 + 4, box.size.height - size / 2 - 4)));
+        centre.dx.clamp(size / 2 + 4,
+            math.max(size / 2 + 4, box.size.width - size / 2 - 4)),
+        centre.dy.clamp(size / 2 + 4,
+            math.max(size / 2 + 4, box.size.height - size / 2 - 4)));
     final t = Tokens.of(context);
     return Positioned(
         left: centre.dx - size / 2,
@@ -195,29 +206,29 @@ extension _PlanTab on _HouseEditorState {
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
       button(Icons.add, tr3('放大', 'Үлкейту', 'Увеличить'), () => zoom(1.3)),
-      button(Icons.remove, tr3('缩小', 'Кішірейту', 'Уменьшить'), () => zoom(1 / 1.3)),
-      button(Icons.fit_screen_outlined, tr3('恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид'),
+      button(Icons.remove, tr3('缩小', 'Кішірейту', 'Уменьшить'),
+          () => zoom(1 / 1.3)),
+      button(
+          Icons.fit_screen_outlined,
+          tr3('恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид'),
           () => canvasTransform.value = Matrix4.identity()),
     ]);
   }
 
   Widget legend() {
     final t = Tokens.of(context);
-    Widget swatch(Widget mark, String text) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              mark,
-              const SizedBox(width: 4),
-              Text(text, style: TextStyle(fontSize: 11.5, color: t.ink))
-            ]);
+    Widget swatch(Widget mark, String text) =>
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          mark,
+          const SizedBox(width: 4),
+          Text(text, style: TextStyle(fontSize: 11.5, color: t.ink))
+        ]);
     Widget bar(Color c, {double h = 8, bool hatch = false}) => Container(
         width: 14,
         height: h,
-        decoration: BoxDecoration(
-            color: c, borderRadius: BorderRadius.circular(2)),
-        child: hatch
-            ? CustomPaint(painter: _HatchPainter(t.bg))
-            : null);
+        decoration:
+            BoxDecoration(color: c, borderRadius: BorderRadius.circular(2)),
+        child: hatch ? CustomPaint(painter: _HatchPainter(t.bg)) : null);
     Widget dashed(Color c, {bool fill = false}) => Container(
         width: 14,
         height: 8,
@@ -230,15 +241,19 @@ extension _PlanTab on _HouseEditorState {
         alignment: Alignment.bottomLeft,
         child: IgnorePointer(
             child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                     color: t.panel.withValues(alpha: 0.9),
                     border: Border.all(color: t.line),
                     borderRadius: BorderRadius.circular(8)),
                 child: Wrap(spacing: 12, runSpacing: 4, children: [
-                  swatch(bar(t.wall, hatch: true),
-                      tr3('承重墙 ≥$bearing', 'Көтергіш ≥$bearing', 'Несущая ≥$bearing')),
-                  swatch(bar(t.wall, h: 4), tr3('隔墙', 'Қалқа қабырға', 'Перегородка')),
+                  swatch(
+                      bar(t.wall, hatch: true),
+                      tr3('承重墙 ≥$bearing', 'Көтергіш ≥$bearing',
+                          'Несущая ≥$bearing')),
+                  swatch(bar(t.wall, h: 4),
+                      tr3('隔墙', 'Қалқа қабырға', 'Перегородка')),
                   swatch(bar(t.chk), tr3('窗', 'Терезе', 'Окно')),
                   if (showFoundation) ...[
                     swatch(dashed(t.ok),
@@ -294,51 +309,91 @@ extension _PlanTab on _HouseEditorState {
 
   List<(String, Widget)> keyedTools() {
     return [
-      ('browse', basicTool(Icons.pan_tool_outlined, tr3('浏览', 'Шолу', 'Просмотр'), browse, () {
-        tool = EditorTool.browse;
-      })),
+      (
+        'browse',
+        basicTool(
+            Icons.pan_tool_outlined, tr3('浏览', 'Шолу', 'Просмотр'), browse, () {
+          tool = EditorTool.browse;
+        })
+      ),
       // A room with a use and a size, slid into place: the way most
       // people think of a house, so it comes before drawing walls.
-      ('room', basicTool(Icons.add_home_outlined, '加房间', stamping && !stampStair, addRoomBySize)),
-      ('wall', basicTool(Icons.add_outlined, '墙体', tool == EditorTool.drawWall, startWallDrawing)),
+      (
+        'room',
+        basicTool(Icons.add_home_outlined, '加房间', stamping && !stampStair,
+            addRoomBySize)
+      ),
+      (
+        'wall',
+        basicTool(Icons.add_outlined, '墙体', tool == EditorTool.drawWall,
+            startWallDrawing)
+      ),
       if (tool == EditorTool.drawWall)
-        ('freeWall', basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
-          drawingOrigin = null;
-          placingWallStart = true;
-          placementHint = tr3('在空白处拖出独立墙，或点一下选起点',
-              'Бос жерден қабырға тартыңыз немесе бастауды басыңыз', 'Протяните стену на свободном месте или нажмите, чтобы задать начало');
-        })),
-      ('split', basicTool(Icons.vertical_split_outlined, '拉线分房', tool == EditorTool.split, () {
-        view3d = false;
-        tool = EditorTool.split;
-      })),
-      ('box', basicTool(Icons.crop_square, '拖动划房', tool == EditorTool.box && !stamping, () {
-        view3d = false;
-        tool = EditorTool.box;
-        roomStamp = null;
-        brush = RoomType.custom;
-      })),
-      ('door', openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门')),
+        (
+          'freeWall',
+          basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
+            drawingOrigin = null;
+            placingWallStart = true;
+            placementHint = tr3(
+                '在空白处拖出独立墙，或点一下选起点',
+                'Бос жерден қабырға тартыңыз немесе бастауды басыңыз',
+                'Протяните стену на свободном месте или нажмите, чтобы задать начало');
+          })
+        ),
+      (
+        'split',
+        basicTool(
+            Icons.vertical_split_outlined, '拉线分房', tool == EditorTool.split,
+            () {
+          view3d = false;
+          tool = EditorTool.split;
+        })
+      ),
+      (
+        'box',
+        basicTool(
+            Icons.crop_square, '拖动划房', tool == EditorTool.box && !stamping, () {
+          view3d = false;
+          tool = EditorTool.box;
+          roomStamp = null;
+          brush = RoomType.custom;
+        })
+      ),
+      (
+        'door',
+        openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门')
+      ),
       ('window', openingTool(OpeningKind.window, Icons.window_outlined, '拖入窗')),
-      ('furniture', basicTool(Icons.chair_outlined, '家具', tool == EditorTool.placeFurniture,
-          chooseFurniture)),
-      ('utility', basicTool(Icons.electrical_services_outlined, '水电',
-          tool == EditorTool.placeUtility, chooseUtility)),
-      ('selectWall', basicTool(Icons.view_week_outlined, '墙体调整',
-          tool == EditorTool.selectWall || tool == EditorTool.editWall, () {
-        view3d = false;
-        tool = EditorTool.selectWall;
-      })),
-      ('resize', basicTool(Icons.open_in_full, '房屋尺寸', tool == EditorTool.resize, () {
-        view3d = false;
-        tool = EditorTool.resize;
-      })),
+      (
+        'furniture',
+        basicTool(Icons.chair_outlined, '家具', tool == EditorTool.placeFurniture,
+            chooseFurniture)
+      ),
+      (
+        'utility',
+        basicTool(Icons.electrical_services_outlined, '水电',
+            tool == EditorTool.placeUtility, chooseUtility)
+      ),
+      (
+        'selectWall',
+        basicTool(Icons.view_week_outlined, '墙体调整',
+            tool == EditorTool.selectWall || tool == EditorTool.editWall, () {
+          view3d = false;
+          tool = EditorTool.selectWall;
+        })
+      ),
+      (
+        'resize',
+        basicTool(Icons.open_in_full, '房屋尺寸', tool == EditorTool.resize, () {
+          view3d = false;
+          tool = EditorTool.resize;
+        })
+      ),
       ('more', basicTool(Icons.more_horiz, '更多工具', false, moreTools)),
     ];
   }
 
-  Widget layerRow() =>
-      Wrap(spacing: 8, runSpacing: 6, children: layerChips());
+  Widget layerRow() => Wrap(spacing: 8, runSpacing: 6, children: layerChips());
 
   List<Widget> layerChips() => [
         PillToggle(
@@ -390,13 +445,12 @@ extension _PlanTab on _HouseEditorState {
     final t = Tokens.of(context);
     final coach = !view3d && coachText != null && placementHint == null;
     final children = hintChildren(t, coach);
-    if (compact)
-      return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final c in children)
-              if (c is Expanded) c.child else c
-          ]);
+    if (compact) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        for (final c in children)
+          if (c is Expanded) c.child else c
+      ]);
+    }
     // The assistant's orb has its place at the end of this line, in the
     // corner it has on other pages and off the tools.
     return Padding(
@@ -421,20 +475,26 @@ extension _PlanTab on _HouseEditorState {
   ({int crit, int warn}) get openIssues {
     if (!identical(issueCountFor, history.present)) {
       final doc = history.present;
-      var crit = 0, warn = 0;
+      var crit = 0;
+      var warn = 0;
       void count(Level l) {
         if (l == Level.crit) crit++;
         if (l == Level.warn) warn++;
       }
 
-      for (final i in doc.extras.issues) count(Level.values[i.level.index]);
-      for (final r in runChecks(doc, derived))
+      for (final i in doc.extras.issues) {
+        count(Level.values[i.level.index]);
+      }
+      for (final r in runChecks(doc, derived)) {
         count(r.level == 'important' ? Level.crit : Level.warn);
+      }
       for (final c in [
         ...constructionChecks(doc, derived, nameOf: displayRoomName),
         ...heatChecks(doc, heatLoss(doc, derived)),
         ...siteChecks(doc, nameOf: siteItemName),
-      ]) count(Level.values[c.level.index]);
+      ]) {
+        count(Level.values[c.level.index]);
+      }
       issueCountFor = doc;
       issueCount = (crit: crit, warn: warn);
     }
@@ -443,99 +503,100 @@ extension _PlanTab on _HouseEditorState {
 
   List<Widget> hintChildren(Tokens t, bool coach) {
     return [
-          if (coach) ...[
-            Icon(Icons.touch_app_outlined, size: 18, color: t.accent),
-            const SizedBox(width: 6),
-          ],
-          Expanded(
-              child: Text(coach ? coachText! : interactionHint,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: coach ? 13 : 12,
-                      fontWeight: coach ? FontWeight.w600 : FontWeight.w400,
-                      color: coach ? t.accent : t.muted))),
-          if (tool == EditorTool.resize)
-            TextButton.icon(
-                onPressed: footprintOptions,
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: Text(tr3('输入长宽', 'Өлшем енгізу', 'Ввести размеры'))),
-          if (reachAcrossPoint != null)
-            TextButton(
-                key: const Key('wall-reach-across'),
-                style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8)),
-                onPressed: reachAcross,
-                child: Text(tr3('接到对面', 'Қарсы қабырғаға дейін', 'До стены напротив'))),
-          if (stamping) ...[
-            TextButton(
-                key: const Key('stamp-cancel'),
-                style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8)),
-                onPressed: cancelStamp,
-                child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
-            FilledButton(
-                key: const Key('stamp-place'),
-                style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 14)),
-                onPressed: spatialError == null ? placeStamp : null,
-                child: Text(tr3('放下', 'Қою', 'Поставить'))),
-          ],
-          if (tool == EditorTool.drawWall)
-            IconButton(
-                tooltip: '输入墙长',
-                onPressed: drawingOrigin == null ? null : addWallByLength,
-                icon: const YusalIcon(YIcon.measure, size: 18)),
-          if (tool == EditorTool.drawWall ||
-              tool == EditorTool.stair ||
-              tool == EditorTool.placeFurniture ||
-              tool == EditorTool.placeUtility ||
-              tool == EditorTool.measure)
-            TextButton(
-                onPressed: () => update(() {
-                      cancelDrag();
-                      tool = EditorTool.browse;
-                      drawingOrigin = null;
-                      drawingEnd = null;
-                      placementHint = null;
-                      placingFurniture = null;
-                      placingUtility = null;
-                      measurePoints = [];
-                    }),
-                child: Text(tr3('结束', 'Аяқтау', 'Завершить'))),
-          // While just looking at the plan: how much the checks found,
-          // so nobody has to reach the last tab to learn of it.
-          if (!coach && browse && openIssues.crit + openIssues.warn > 0)
-            TextButton.icon(
-                key: const Key('plan-issues'),
-                style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    foregroundColor:
-                        openIssues.crit > 0 ? t.crit : t.warn,
-                    padding: const EdgeInsets.symmetric(horizontal: 8)),
-                onPressed: () => showTab('iss'),
-                icon: const Icon(Icons.error_outline, size: 16),
-                label: Text(
-                    tr3('问题 ${openIssues.crit + openIssues.warn}',
-                        'Ескерту ${openIssues.crit + openIssues.warn}',
-                        'Замечания: ${openIssues.crit + openIssues.warn}'),
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600))),
-          // While just looking at the plan: what it would cost to build.
-          if (!coach && browse && costChipText.isNotEmpty)
-            TextButton(
-                key: const Key('plan-cost'),
-                style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8)),
-                onPressed: () => showTab('cost'),
-                child: Text(costChipText,
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600))),
-        ];
+      if (coach) ...[
+        Icon(Icons.touch_app_outlined, size: 18, color: t.accent),
+        const SizedBox(width: 6),
+      ],
+      Expanded(
+          child: Text(coach ? coachText! : interactionHint,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: coach ? 13 : 12,
+                  fontWeight: coach ? FontWeight.w600 : FontWeight.w400,
+                  color: coach ? t.accent : t.muted))),
+      if (tool == EditorTool.resize)
+        TextButton.icon(
+            onPressed: footprintOptions,
+            icon: const Icon(Icons.edit_outlined, size: 18),
+            label: Text(tr3('输入长宽', 'Өлшем енгізу', 'Ввести размеры'))),
+      if (reachAcrossPoint != null)
+        TextButton(
+            key: const Key('wall-reach-across'),
+            style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8)),
+            onPressed: reachAcross,
+            child: Text(
+                tr3('接到对面', 'Қарсы қабырғаға дейін', 'До стены напротив'))),
+      if (stamping) ...[
+        TextButton(
+            key: const Key('stamp-cancel'),
+            style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8)),
+            onPressed: cancelStamp,
+            child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
+        FilledButton(
+            key: const Key('stamp-place'),
+            style: FilledButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 14)),
+            onPressed: spatialError == null ? placeStamp : null,
+            child: Text(tr3('放下', 'Қою', 'Поставить'))),
+      ],
+      if (tool == EditorTool.drawWall)
+        IconButton(
+            tooltip: '输入墙长',
+            onPressed: drawingOrigin == null ? null : addWallByLength,
+            icon: const YusalIcon(YIcon.measure, size: 18)),
+      if (tool == EditorTool.drawWall ||
+          tool == EditorTool.stair ||
+          tool == EditorTool.placeFurniture ||
+          tool == EditorTool.placeUtility ||
+          tool == EditorTool.measure)
+        TextButton(
+            onPressed: () => update(() {
+                  cancelDrag();
+                  tool = EditorTool.browse;
+                  drawingOrigin = null;
+                  drawingEnd = null;
+                  placementHint = null;
+                  placingFurniture = null;
+                  placingUtility = null;
+                  measurePoints = [];
+                }),
+            child: Text(tr3('结束', 'Аяқтау', 'Завершить'))),
+      // While just looking at the plan: how much the checks found,
+      // so nobody has to reach the last tab to learn of it.
+      if (!coach && browse && openIssues.crit + openIssues.warn > 0)
+        TextButton.icon(
+            key: const Key('plan-issues'),
+            style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                foregroundColor: openIssues.crit > 0 ? t.crit : t.warn,
+                padding: const EdgeInsets.symmetric(horizontal: 8)),
+            onPressed: () => showTab('iss'),
+            icon: const Icon(Icons.error_outline, size: 16),
+            label: Text(
+                tr3(
+                    '问题 ${openIssues.crit + openIssues.warn}',
+                    'Ескерту ${openIssues.crit + openIssues.warn}',
+                    'Замечания: ${openIssues.crit + openIssues.warn}'),
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w600))),
+      // While just looking at the plan: what it would cost to build.
+      if (!coach && browse && costChipText.isNotEmpty)
+        TextButton(
+            key: const Key('plan-cost'),
+            style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8)),
+            onPressed: () => showTab('cost'),
+            child: Text(costChipText,
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w600))),
+    ];
   }
 }
 
@@ -548,8 +609,9 @@ class _HatchPainter extends CustomPainter {
       ..color = color
       ..strokeWidth = 1;
     canvas.clipRect(Offset.zero & size);
-    for (var d = -size.height; d < size.width; d += 4)
+    for (var d = -size.height; d < size.width; d += 4) {
       canvas.drawLine(Offset(d, size.height), Offset(d + size.height, 0), p);
+    }
   }
 
   @override

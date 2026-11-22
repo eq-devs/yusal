@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-import 'action.dart';
-import 'screen.dart';
+import 'package:yusal/voice/action.dart';
+import 'package:yusal/voice/screen.dart';
 
 enum FieldType { text, number, choice }
 

@@ -39,7 +39,6 @@ ApplicationVersion lumpQuote(int amount,
         createdAt: DateTime.utc(2026),
         scopeText: '全部砌墙',
         materials: materials,
-        pricing: PricingMode.lumpSum,
         lumpSum: amount,
         durationDays: 10);
 
@@ -62,8 +61,7 @@ Future<Demand> publishAsOwner(MockBackend b, {String text = ''}) async {
 }
 
 void main() {
-  test('confirming a builder fills the demand and tells the others',
-      () async {
+  test('confirming a builder fills the demand and tells the others', () async {
     final b = backend();
     final d = await publishAsOwner(b);
     b.signInAs(SeedIds.mason);
@@ -100,7 +98,8 @@ void main() {
             scopeKind: ScopeKind.stages, stages: ['found', 'walls'])),
         [('foundation', 33), ('walls', 67)]);
     expect(
-        plan(const ContractTerms(scopeKind: ScopeKind.stages, stages: ['roof'])),
+        plan(
+            const ContractTerms(scopeKind: ScopeKind.stages, stages: ['roof'])),
         [('roof', 100)]);
   });
 
@@ -131,7 +130,7 @@ void main() {
       await expectLater(
           b.myDemands(),
           throwsA(predicate(
-              (e) => (e as ApiFailure).code == ApiCodes.notSignedIn)));
+              (e) => (e! as ApiFailure).code == ApiCodes.notSignedIn)));
     });
 
     test('the chat phone can be changed, cleared and must look like one',
@@ -144,7 +143,7 @@ void main() {
       await expectLater(
           b.updatePhone('12345'),
           throwsA(predicate(
-              (e) => (e as ApiFailure).code == ApiCodes.invalidInput)));
+              (e) => (e! as ApiFailure).code == ApiCodes.invalidInput)));
       expect((await b.updatePhone('')).phone, '');
     });
 
@@ -231,7 +230,7 @@ void main() {
               version: lumpQuote(700000),
               requestId: 'r2'),
           throwsA(predicate(
-              (e) => (e as ApiFailure).code == ApiCodes.notAccepting)));
+              (e) => (e! as ApiFailure).code == ApiCodes.notAccepting)));
       b.signInAs(SeedIds.owner);
       final renewed = await b.renew(d.id);
       expect(renewed.status, DemandStatus.open);
@@ -310,7 +309,7 @@ void main() {
                   no: 0, demandVersionNo: 0, createdAt: DateTime.utc(2026)),
               requestId: 'x'),
           throwsA(
-              predicate((e) => (e as ApiFailure).code == ApiCodes.ownDemand)));
+              predicate((e) => (e! as ApiFailure).code == ApiCodes.ownDemand)));
     });
 
     test('cooperation needs both sides; one side cannot confirm twice',
@@ -424,7 +423,7 @@ void main() {
       await expectLater(
           b.send(conv.id, MessageKind.text, text: 'x'),
           throwsA(
-              predicate((e) => (e as ApiFailure).code == ApiCodes.blocked)));
+              predicate((e) => (e! as ApiFailure).code == ApiCodes.blocked)));
     });
 
     test('rate limit per minute', () async {
@@ -437,7 +436,7 @@ void main() {
       await expectLater(
           b.send(conv.id, MessageKind.text, text: 'more'),
           throwsA(predicate(
-              (e) => (e as ApiFailure).code == ApiCodes.rateLimited)));
+              (e) => (e! as ApiFailure).code == ApiCodes.rateLimited)));
     });
 
     test('unread counts follow reading', () async {
@@ -465,7 +464,7 @@ void main() {
               designUpdatedAt: 't2',
               expectedPreviousUpdatedAt: 't1'),
           throwsA(
-              predicate((e) => (e as ApiFailure).code == ApiCodes.conflict)));
+              predicate((e) => (e! as ApiFailure).code == ApiCodes.conflict)));
       b.simulateOffline = true;
       await expectLater(
           b.upload(
@@ -474,7 +473,7 @@ void main() {
               houseText: '{}',
               designUpdatedAt: 't'),
           throwsA(
-              predicate((e) => (e as ApiFailure).code == ApiCodes.network)));
+              predicate((e) => (e! as ApiFailure).code == ApiCodes.network)));
     });
   });
 
@@ -497,18 +496,20 @@ void main() {
       expect(last.title, isNotEmpty);
     });
 
-    test('roles: viewers read, only superadmins grant, nobody changes their own',
+    test(
+        'roles: viewers read, only superadmins grant, nobody changes their own',
         () async {
       final b = backend();
       b.signInAs(SeedIds.admin);
       expect(b.currentAccount!.role, AdminRoles.superadmin);
       await b.setRole(SeedIds.owner2, AdminRoles.viewer);
-      await expectLater(b.setRole(SeedIds.admin, null), throwsA(isA<ApiFailure>()));
+      await expectLater(
+          b.setRole(SeedIds.admin, null), throwsA(isA<ApiFailure>()));
       b.signInAs(SeedIds.owner2);
       expect((await b.todo()).total, greaterThanOrEqualTo(0));
       await expectLater(b.approve('dem_rebar'), throwsA(isA<ApiFailure>()));
-      await expectLater(
-          b.setRole(SeedIds.owner, AdminRoles.viewer), throwsA(isA<ApiFailure>()));
+      await expectLater(b.setRole(SeedIds.owner, AdminRoles.viewer),
+          throwsA(isA<ApiFailure>()));
       b.signInAs(SeedIds.admin);
       await b.setRole(SeedIds.owner2, null);
       expect(b.accounts[SeedIds.owner2]!.role, isNull);
@@ -521,25 +522,28 @@ void main() {
       await b.report(ReportTarget.post, 'post_aigerim', 'code:fake');
       b.signInAs(SeedIds.admin);
       final open = await b.reports(status: ReportStatus.open);
-      final v = open.items.singleWhere((r) => r.report.targetId == 'post_aigerim');
+      final v =
+          open.items.singleWhere((r) => r.report.targetId == 'post_aigerim');
       expect(v.targetOwnerId, SeedIds.owner);
       expect(v.targetTitle, isNotEmpty);
       await b.resolveReport(v.report.id, true, 'code:fake');
       expect(b.posts['post_aigerim']!.status, PostStatus.hidden);
       expect(
           b.notices.values.where((n) =>
-              n.accountId == SeedIds.owner && n.kind == NoticeKind.contentRemoved),
+              n.accountId == SeedIds.owner &&
+              n.kind == NoticeKind.contentRemoved),
           isNotEmpty);
       expect(
           b.notices.values.where((n) =>
-              n.accountId == SeedIds.owner2 && n.kind == NoticeKind.reportResolved),
+              n.accountId == SeedIds.owner2 &&
+              n.kind == NoticeKind.reportResolved),
           isNotEmpty);
 
       b.signInAs(SeedIds.owner);
       final appeal = await b.fileAppeal('post', 'post_aigerim', '是我自己的房子');
       b.signInAs(SeedIds.owner2);
-      await expectLater(
-          b.fileAppeal('post', 'post_aigerim', 'x'), throwsA(isA<ApiFailure>()));
+      await expectLater(b.fileAppeal('post', 'post_aigerim', 'x'),
+          throwsA(isA<ApiFailure>()));
       b.signInAs(SeedIds.admin);
       expect((await b.todo()).appeals.count, 1);
       await b.resolveAppeal(appeal.id, true, '误判');
@@ -555,7 +559,9 @@ void main() {
       b.signInAs(c.authorId == SeedIds.owner2 ? SeedIds.mason : SeedIds.owner2);
       await b.report(ReportTarget.comment, c.id, 'code:abuse');
       b.signInAs(SeedIds.admin);
-      final v = (await b.reports()).items.singleWhere((r) => r.report.targetId == c.id);
+      final v = (await b.reports())
+          .items
+          .singleWhere((r) => r.report.targetId == c.id);
       expect(v.postId, c.postId);
       await b.resolveReport(v.report.id, true, 'code:abuse');
       expect(b.commentsById.containsKey(c.id), isFalse);
@@ -567,11 +573,14 @@ void main() {
       b.signInAs(SeedIds.owner);
       await b.report(ReportTarget.profile, 'prof_mason', 'code:fake');
       b.signInAs(SeedIds.admin);
-      final v = (await b.reports()).items.singleWhere((r) => r.report.targetId == 'prof_mason');
+      final v = (await b.reports())
+          .items
+          .singleWhere((r) => r.report.targetId == 'prof_mason');
       await b.resolveReport(v.report.id, true, 'code:fake');
       b.signInAs(SeedIds.mason);
       final p = b.profiles['prof_mason']!;
-      final saved = await b.saveProfile(p.copyWith(status: ProfileStatus.active));
+      final saved =
+          await b.saveProfile(p.copyWith(status: ProfileStatus.active));
       expect(saved.status, ProfileStatus.hidden);
     });
 
@@ -580,14 +589,16 @@ void main() {
       b.signInAs(SeedIds.admin);
       await b.setRestriction(SeedIds.mason, true, 'code:spam');
       expect(b.accounts[SeedIds.mason]!.restricted, isTrue);
-      expect((await b.users(restricted: true)).items.map((u) => u.id), [SeedIds.mason]);
+      expect((await b.users(restricted: true)).items.map((u) => u.id),
+          [SeedIds.mason]);
       await b.setRestriction(SeedIds.mason, false, '已核实');
       expect(b.accounts[SeedIds.mason]!.restricted, isFalse);
       await b.setRole(SeedIds.owner2, AdminRoles.moderator);
-      await expectLater(
-          b.setRestriction(SeedIds.owner2, true, 'x'), throwsA(isA<ApiFailure>()));
+      await expectLater(b.setRestriction(SeedIds.owner2, true, 'x'),
+          throwsA(isA<ApiFailure>()));
       final detail = await b.accountDetail(SeedIds.mason);
-      expect(detail.audit.map((e) => e.action), containsAll(['restrict', 'unrestrict']));
+      expect(detail.audit.map((e) => e.action),
+          containsAll(['restrict', 'unrestrict']));
     });
 
     test('a restricted owner cannot show a paused listing again', () async {
@@ -606,7 +617,7 @@ void main() {
         await expectLater(
             f(d.id),
             throwsA(predicate(
-                (e) => (e as ApiFailure).code == ApiCodes.restricted)));
+                (e) => (e! as ApiFailure).code == ApiCodes.restricted)));
       }
       expect(b.demands[d.id]!.status, DemandStatus.paused);
     });
@@ -621,7 +632,7 @@ void main() {
       await expectLater(
           b.sharePhone(c.id),
           throwsA(predicate(
-              (e) => (e as ApiFailure).code == ApiCodes.restricted)));
+              (e) => (e! as ApiFailure).code == ApiCodes.restricted)));
     });
 
     test('batch decisions report what changed meanwhile', () async {
@@ -641,8 +652,9 @@ void main() {
     test('verification by a moderator marks the profile verified', () async {
       final b = backend();
       b.signInAs(SeedIds.mason);
-      final v = await b.requestVerification(
-          'prof_mason', '+77010000000', [Uint8List.fromList([1, 2, 3])]);
+      final v = await b.requestVerification('prof_mason', '+77010000000', [
+        Uint8List.fromList([1, 2, 3])
+      ]);
       expect((await b.myVerification('prof_mason'))!.id, v.id);
       b.signInAs(SeedIds.admin);
       final pending = await b.verifications(status: VerificationStatus.pending);
@@ -657,13 +669,17 @@ void main() {
     test('alerts notify matching workers when a demand opens', () async {
       final b = backend();
       b.signInAs(SeedIds.mason);
-      await b.saveDemandAlert(const DemandAlert(on: true, types: [DemandType.contract]));
+      await b.saveDemandAlert(
+          const DemandAlert(on: true, types: [DemandType.contract]));
       b.signInAs(SeedIds.electrician);
-      await b.saveDemandAlert(const DemandAlert(on: true, types: [DemandType.hire]));
+      await b.saveDemandAlert(
+          const DemandAlert(on: true, types: [DemandType.hire]));
       final d = await publishAsOwner(b);
       expect(b.demands[d.id]!.status, DemandStatus.open);
       bool told(String who) => b.notices.values.any((n) =>
-          n.accountId == who && n.kind == NoticeKind.newDemandMatch && n.refId == d.id);
+          n.accountId == who &&
+          n.kind == NoticeKind.newDemandMatch &&
+          n.refId == d.id);
       expect(told(SeedIds.mason), isTrue);
       expect(told(SeedIds.electrician), isFalse);
     });
@@ -675,7 +691,8 @@ void main() {
           const NotificationSettings(muted: [PushCategory.community]));
       expect((await b.notificationSettings()).muted, [PushCategory.community]);
       await expectLater(
-          b.saveNotificationSettings(const NotificationSettings(muted: ['deals'])),
+          b.saveNotificationSettings(
+              const NotificationSettings(muted: ['deals'])),
           throwsA(isA<ApiFailure>()));
     });
   });

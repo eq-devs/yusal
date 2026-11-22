@@ -83,9 +83,9 @@ void main() {
   testWidgets('roles: guest, owner, worker, contractor, restricted', (t) async {
     requireBackend();
     final run = DateTime.now().millisecondsSinceEpoch.toString().substring(6);
-    final owner = 'QA-Owner $run',
-        worker = 'QA-Worker $run',
-        contractor = 'QA-Contractor $run';
+    final owner = 'QA-Owner $run';
+    final worker = 'QA-Worker $run';
+    final contractor = 'QA-Contractor $run';
     final title = 'QA-roles 砌墙 $run';
 
     final prefs = await SharedPreferences.getInstance();
@@ -97,7 +97,10 @@ void main() {
 
     final repos = HttpBackend(api);
     await repos.restore();
-    String? demandId, coopId, ownerId, providerName;
+    String? demandId;
+    String? coopId;
+    String? ownerId;
+    String? providerName;
     try {
       await t.pumpWidget(RepaintBoundary(
           key: shotKey,
@@ -109,7 +112,7 @@ void main() {
       await signIn(t, repos, owner);
       ownerId = repos.currentAccount!.id;
       await publishDemand(t, title);
-      final mine = await io(t, () => repos.myDemands());
+      final mine = await io(t, repos.myDemands);
       final demand = mine.singleWhere((d) => d.current.title == title);
       demandId = demand.id;
       row('D-owner-1', 'owner publishes a demand', 'open (auto review)',
@@ -162,12 +165,12 @@ void main() {
       final workerOwnerActions = ['暂停', '关闭'].where(shown).toList();
       row(
           'D-worker-1',
-          'worker sees no owner actions on others\' demand',
+          "worker sees no owner actions on others' demand",
           'none',
           workerOwnerActions.isEmpty ? 'none' : workerOwnerActions.join(','),
           workerOwnerActions.isEmpty);
       await quote(t, demandId, '1800000');
-      final apps = await io(t, () => repos.myApplications());
+      final apps = await io(t, repos.myApplications);
       final workerApp = apps.where((a) => a.demandId == demandId).firstOrNull;
       row(
           'D-worker-2',
@@ -177,14 +180,14 @@ void main() {
           workerApp?.status == ApplicationStatus.submitted);
       await shot(t, 'd03-worker-quoted');
       final pause = await attempt(t, () => repos.pause(demandId!));
-      row('D-worker-3', 'API: worker pauses owner\'s demand', 'FORBIDDEN',
+      row('D-worker-3', "API: worker pauses owner's demand", 'FORBIDDEN',
           pause, pause.startsWith('FORBIDDEN'));
 
       // ── Contractor (team profile via the form's defaults) quotes too ──
       await signIn(t, repos, contractor);
       await createProfile(t, contractor);
       await quote(t, demandId, '2100000');
-      final capps = await io(t, () => repos.myApplications());
+      final capps = await io(t, repos.myApplications);
       final contractorApp =
           capps.where((a) => a.demandId == demandId).firstOrNull;
       row(
@@ -205,7 +208,7 @@ void main() {
                   status: AgreementStatus.proposed,
                   createdAt: DateTime.now(),
                   confirmedBy: const {})));
-      row('D-contractor-2', 'API: a provider invites on someone else\'s demand',
+      row('D-contractor-2', "API: a provider invites on someone else's demand",
           'FORBIDDEN', invite, invite.startsWith('FORBIDDEN'));
 
       // ── Owner invites the worker; worker confirms ──
@@ -231,7 +234,7 @@ void main() {
           coops.firstOrNull?.status.name ?? 'none',
           coops.firstOrNull?.status == CooperationStatus.pending);
       final ownerConfirm = await attempt(t, () => repos.confirm(coopId!));
-      row('D-owner-5', 'API: owner confirms on the provider\'s behalf',
+      row('D-owner-5', "API: owner confirms on the provider's behalf",
           'refused', ownerConfirm, ownerConfirm != 'OK');
 
       providerName = coops.first.providerId == workerId ? worker : contractor;
@@ -261,7 +264,6 @@ void main() {
                 trades: const ['mason'],
                 region: 'almaty',
                 locality: 'QA',
-                exactAddress: '',
                 budget: const Budget(mode: BudgetMode.askQuote),
                 createdAt: DateTime.now(),
                 contract: const ContractTerms(scopeKind: ScopeKind.custom)));
@@ -280,8 +282,6 @@ void main() {
                   demandVersionNo: 0,
                   createdAt: DateTime.now(),
                   scopeText: 'QA',
-                  materials: MaterialMode.labourOnly,
-                  pricing: PricingMode.lumpSum,
                   lumpSum: 1,
                   durationDays: 1),
               requestId: 'qa-$run'));
@@ -303,7 +303,7 @@ void main() {
         row('D-restricted-5', 'API: restricted shares phone in chat',
             'RESTRICTED', phone, phone.startsWith('RESTRICTED'));
       }
-      final posts = await io(t, () => repos.myPosts());
+      final posts = await io(t, repos.myPosts);
       if (posts.isNotEmpty) {
         // Saves the post unchanged: nothing differs if it is allowed.
         final edit = await attempt(t, () => repos.updatePost(posts.first));
@@ -313,7 +313,7 @@ void main() {
         row('D-restricted-6', 'API: restricted edits own house post',
             'RESTRICTED', 'no post to try', false);
       }
-      final coopsR = await io(t, () => repos.myCooperations());
+      final coopsR = await io(t, repos.myCooperations);
       if (coopsR.isNotEmpty) {
         // Index 999 does not exist: the answer shows which check runs first.
         final ms = await attempt(
@@ -386,7 +386,7 @@ void main() {
                 await attempt(t, () => repos.close(demandId!, 'QA cleanup'));
             row('D-cleanup-2', 'QA demand closed', 'OK', c, c == 'OK');
           }
-          final del = await attempt(t, () => repos.deleteAccount());
+          final del = await attempt(t, repos.deleteAccount);
           row('D-cleanup-3', 'QA account $name deleted', 'OK', del,
               del == 'OK');
         } catch (e) {

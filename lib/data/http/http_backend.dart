@@ -7,12 +7,12 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../voice/session.dart';
-import '../../voice/speech.dart';
-import '../../domain/models.dart';
-import '../repositories.dart';
-import 'codec.dart';
-import 'session_store.dart';
+import 'package:yusal/voice/session.dart';
+import 'package:yusal/voice/speech.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/data/http/codec.dart';
+import 'package:yusal/data/http/session_store.dart';
 
 /// Talks to the real Go backend (`eq-devs/yusal-api`) for every repository:
 /// accounts, snapshots, posts, backups, profiles, demands, quotes,
@@ -23,7 +23,8 @@ import 'session_store.dart';
 /// the address it uses ('' when unknown).
 class SignInMethod {
   const SignInMethod(this.provider, this.email);
-  final String provider, email;
+  final String provider;
+  final String email;
 }
 
 class HttpBackend implements PlatformRepositories, VoiceBackend, SpeechBackend {

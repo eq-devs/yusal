@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
-import '../core/analysis/house_analysis.dart';
-import '../core/axis/axis_resolver.dart';
-import '../core/checks/check_engine.dart';
-import '../core/document/house_document.dart';
-import '../core/geometry/derived_house.dart';
+import 'package:yusal/core/analysis/house_analysis.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/checks/check_engine.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
 
 /// The open design as a few lines of text for the language model: the
 /// house, then the floor being edited with one line per room (where it
@@ -42,10 +42,11 @@ String designScene({
     ..writeln('floor ${aliases[floor.id]} "${floor.name}" '
         'height ${floor.height}');
 
-  final v = base.axes.v, h = base.axes.h;
+  final v = base.axes.v;
+  final h = base.axes.h;
   String? roomAt(double x, double y) {
-    final i = v.indexWhere((a) => a.pos > x) - 1,
-        j = h.indexWhere((a) => a.pos > y) - 1;
+    final i = v.indexWhere((a) => a.pos > x) - 1;
+    final j = h.indexWhere((a) => a.pos > y) - 1;
     return i < 0 || j < 0 ? null : base.owners[Cell(i, j)];
   }
 
@@ -53,15 +54,16 @@ String designScene({
   final beside = <String>{};
   final outer = <String, Set<Facing>>{};
   for (final e in base.edges) {
-    final a = e.negative == null ? null : base.owners[e.negative],
-        b = e.positive == null ? null : base.owners[e.positive];
+    final a = e.negative == null ? null : base.owners[e.negative];
+    final b = e.positive == null ? null : base.owners[e.positive];
     // From the negative side to the positive one, in plan coordinates.
     final (dx, dy) = e.axis.dir == AxisDir.V ? (1.0, 0.0) : (0.0, 1.0);
     if (e.kind == 'exterior') {
       if (a != null) (outer[a] ??= {}).add(_facing(dx, dy, north));
       if (b != null) (outer[b] ??= {}).add(_facing(-dx, -dy, north));
     } else if (a != null && b != null && a != b) {
-      final x = aliases[a], y = aliases[b];
+      final x = aliases[a];
+      final y = aliases[b];
       if (x != null && y != null) {
         beside.add('$x-$y ${_facing(dx, dy, north).name}');
       }
@@ -75,17 +77,17 @@ String designScene({
         if (e.value == room.id) e.key
     ];
     if (name == null || cells.isEmpty) continue;
-    final x0 = cells.map((c) => v[c.i].pos).reduce(math.min),
-        y0 = cells.map((c) => h[c.j].pos).reduce(math.min),
-        x1 = cells.map((c) => v[c.i + 1].pos).reduce(math.max),
-        y1 = cells.map((c) => h[c.j + 1].pos).reduce(math.max);
+    final x0 = cells.map((c) => v[c.i].pos).reduce(math.min);
+    final y0 = cells.map((c) => h[c.j].pos).reduce(math.min);
+    final x1 = cells.map((c) => v[c.i + 1].pos).reduce(math.max);
+    final y1 = cells.map((c) => h[c.j + 1].pos).reduce(math.max);
     var area = 0.0;
     for (final c in cells) {
       area += (v[c.i + 1].pos - v[c.i].pos) * (h[c.j + 1].pos - h[c.j].pos);
     }
     final box = (x1 - x0) * (y1 - y0);
     out.write(' $name ${room.type.name} "${room.name}" '
-        'x${x0.round()} y${y0.round()} ${(x1 - x0).round()}x${(y1 - y0).round()} '
+        'x$x0 y$y0 ${x1 - x0}x${y1 - y0} '
         '${(area / 1e6).toStringAsFixed(1)}m2');
     // The numbers are the box around a room that is not a rectangle.
     if (area < box * 0.99) out.write(' (L-shaped, box given)');
@@ -95,7 +97,8 @@ String designScene({
     ];
     out.write(' | outer ${sides.isEmpty ? 'none' : sides.join(',')}');
 
-    final doors = <String>[], windows = <String>[];
+    final doors = <String>[];
+    final windows = <String>[];
     for (final p in level.openings) {
       final o = aliases[p.opening.id];
       if (o == null || !openingTouches(p, base, room.id)) continue;
@@ -120,7 +123,9 @@ String designScene({
       final u = aliases[f.id];
       if (u == null ||
           f.floorId != floor.id ||
-          roomAt(f.x + f.width / 2, f.y + f.depth / 2) != room.id) continue;
+          roomAt(f.x + f.width / 2, f.y + f.depth / 2) != room.id) {
+        continue;
+      }
       (kinds[f.kind.name] ??= []).add(u);
     }
     if (kinds.isNotEmpty) {
@@ -178,8 +183,8 @@ String designScene({
 /// the plan is (sin a, cos a), a = [northAngleDeg].
 Facing _facing(double dx, double dy, int northAngleDeg) {
   final a = northAngleDeg * math.pi / 180;
-  final dn = dx * math.sin(a) + dy * math.cos(a),
-      de = dx * math.cos(a) - dy * math.sin(a);
+  final dn = dx * math.sin(a) + dy * math.cos(a);
+  final de = dx * math.cos(a) - dy * math.sin(a);
   return dn.abs() >= de.abs()
       ? (dn >= 0 ? Facing.north : Facing.south)
       : (de >= 0 ? Facing.east : Facing.west);

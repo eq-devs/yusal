@@ -114,11 +114,5 @@ Future<void> main() async {
       (_) => navigator.currentState!.push(MaterialPageRoute<void>(
           builder: (_) => HouseEditor(
               entry: ProjectEntry(id, doc),
-              store: store,
-              initialView3d: const bool.fromEnvironment('PREVIEW_3D'),
-              initialTool: const bool.fromEnvironment('PREVIEW_CONTEXT')
-                  ? 'wallContext'
-                  : const bool.fromEnvironment('PREVIEW_WALL')
-                      ? 'drawWall'
-                      : null))));
+              store: store))));
 }

@@ -1,4 +1,4 @@
-import '../core/serialization/house_codec.dart';
+import 'package:yusal/core/serialization/house_codec.dart';
 
 Future<LoadResult> loadHouseStream(Stream<List<int>> source,
     {int? length}) async {

@@ -46,8 +46,10 @@ ScenePainter paint(SceneModel model, Camera cam, SceneSettings s,
 
 void main() {
   test('faces between stacked wall pieces are dropped, the rest merged', () {
-    const a0 = Vec3(0, 0, 0), a1 = Vec3(2, 1, 0.3);
-    const b0 = Vec3(0, 1, 0), b1 = Vec3(2, 2, 0.3);
+    const a0 = Vec3(0, 0, 0);
+    const a1 = Vec3(2, 1, 0.3);
+    const b0 = Vec3(0, 1, 0);
+    const b1 = Vec3(2, 2, 0.3);
     final faces = [...boxFaces(a0, a1), ...boxFaces(b0, b1)];
     final out = cleanFaces(faces, [solid(a0, a1), solid(b0, b1)]);
     // Bottom, top, and four sides each 2 m tall: the lower top and the
@@ -66,8 +68,10 @@ void main() {
   });
 
   test('a box that can be hidden on its own does not hide its neighbour', () {
-    const a0 = Vec3(0, 0, 0), a1 = Vec3(1, 1, 1);
-    const b0 = Vec3(0, 1, 0), b1 = Vec3(1, 2, 1);
+    const a0 = Vec3(0, 0, 0);
+    const a1 = Vec3(1, 1, 1);
+    const b0 = Vec3(0, 1, 0);
+    const b1 = Vec3(1, 2, 1);
     final faces = boxFaces(a0, a1);
     // The upper box is on the floor above: hiding that floor shows the
     // top of the lower one.

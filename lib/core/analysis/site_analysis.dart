@@ -1,7 +1,7 @@
 import 'dart:math' as math;
-import '../document/house_document.dart';
-import '../geometry/floor_base.dart';
-import '../checks/construction_checks.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/core/checks/construction_checks.dart';
 
 /// The plot around the house: what is built on it and how far apart.
 /// Distances are common advice for village plots (sanitary gaps between
@@ -60,13 +60,16 @@ PlanRect itemRect(SiteItem i) => PlanRect(
 
 /// Shortest distance between two rectangles, 0 when they touch.
 double rectGap(PlanRect a, PlanRect b) {
-  final dx = math.max(0.0, math.max(a.left - b.right, b.left - a.right)),
-      dy = math.max(0.0, math.max(a.bottom - b.top, b.bottom - a.top));
+  final dx = math.max(0.0, math.max(a.left - b.right, b.left - a.right));
+  final dy = math.max(0.0, math.max(a.bottom - b.top, b.bottom - a.top));
   return math.sqrt(dx * dx + dy * dy);
 }
 
 bool _overlaps(PlanRect a, PlanRect b) =>
-    a.left < b.right && b.left < a.right && a.bottom < b.top && b.bottom < a.top;
+    a.left < b.right &&
+    b.left < a.right &&
+    a.bottom < b.top &&
+    b.bottom < a.top;
 
 bool _inside(PlanRect r, SitePlan s) =>
     r.left >= 0 && r.bottom >= 0 && r.right <= s.width && r.top <= s.depth;
@@ -74,8 +77,9 @@ bool _inside(PlanRect r, SitePlan s) =>
 /// Area of each kind of plot item, m².
 Map<SiteKind, double> siteAreas(SitePlan site) {
   final out = <SiteKind, double>{};
-  for (final i in site.items)
+  for (final i in site.items) {
     out[i.kind] = (out[i.kind] ?? 0) + i.width * i.depth / 1e6;
+  }
   return out;
 }
 
@@ -89,121 +93,178 @@ List<ConstructionIssue> siteChecks(HouseDocument doc,
   String name(SiteItem i) => nameOf?.call(i) ?? i.label ?? i.kind.name;
   final out = <ConstructionIssue>[];
   final house = houseOnPlot(doc, site);
-  if (!_inside(house, site))
+  if (!_inside(house, site)) {
     out.add(ConstructionIssue(
         'S01',
         IssueLevel.crit,
-        ('房子超出了宅基地', 'Үй учаскеден шығып тұр', 'Дом выходит за пределы участка'),
+        (
+          '房子超出了宅基地',
+          'Үй учаскеден шығып тұр',
+          'Дом выходит за пределы участка'
+        ),
         (
           '房子 ${_m(house.right - house.left)} × ${_m(house.top - house.bottom)} m 有一部分在宅基地外面。挪动房子或修改宅基地尺寸。',
-          'Үйдің ${_m(house.right - house.left).replaceAll('.', ',')} × ${_m(house.top - house.bottom).replaceAll('.', ',')} м бір бөлігі учаскеден тыс. Үйді жылжытыңыз не учаске өлшемін өзгертіңіз.', 'Часть дома ${_m(house.right - house.left).replaceAll('.', ',')} × ${_m(house.top - house.bottom).replaceAll('.', ',')} м выходит за пределы участка. Передвиньте дом или измените размер участка.'),
+          'Үйдің ${_m(house.right - house.left).replaceAll('.', ',')} × ${_m(house.top - house.bottom).replaceAll('.', ',')} м бір бөлігі учаскеден тыс. Үйді жылжытыңыз не учаске өлшемін өзгертіңіз.',
+          'Часть дома ${_m(house.right - house.left).replaceAll('.', ',')} × ${_m(house.top - house.bottom).replaceAll('.', ',')} м выходит за пределы участка. Передвиньте дом или измените размер участка.'
+        ),
         areas: [house],
         site: true));
+  }
   for (final item in site.items) {
     final r = itemRect(item);
-    if (!_inside(r, site) && item.kind != SiteKind.gate)
+    if (!_inside(r, site) && item.kind != SiteKind.gate) {
       out.add(ConstructionIssue(
           'S02',
           IssueLevel.warn,
-          ('${name(item)}超出了宅基地', '${name(item)} учаскеден шығып тұр', '${name(item)} выходит за пределы участка'),
+          (
+            '${name(item)}超出了宅基地',
+            '${name(item)} учаскеден шығып тұр',
+            '${name(item)} выходит за пределы участка'
+          ),
           (
             '把它挪回宅基地以内，或者修改宅基地尺寸。',
-            'Оны учаске ішіне жылжытыңыз не учаске өлшемін өзгертіңіз.', 'Перенесите объект внутрь участка или измените размер участка.'),
+            'Оны учаске ішіне жылжытыңыз не учаске өлшемін өзгертіңіз.',
+            'Перенесите объект внутрь участка или измените размер участка.'
+          ),
           areas: [r],
           site: true));
-    if (siteBuildings.contains(item.kind) && _overlaps(r, house))
+    }
+    if (siteBuildings.contains(item.kind) && _overlaps(r, house)) {
       out.add(ConstructionIssue(
           'S03',
           IssueLevel.crit,
-          ('${name(item)}和房子重叠', '${name(item)} үймен қабаттасады', '${name(item)} накладывается на дом'),
-          ('附属建筑不能压在房子上，请挪开。', 'Қосалқы құрылыс үйдің үстінде тұрмауы керек, жылжытыңыз.', 'Хозпостройка не должна стоять на месте дома, сдвиньте её.'),
+          (
+            '${name(item)}和房子重叠',
+            '${name(item)} үймен қабаттасады',
+            '${name(item)} накладывается на дом'
+          ),
+          (
+            '附属建筑不能压在房子上，请挪开。',
+            'Қосалқы құрылыс үйдің үстінде тұрмауы керек, жылжытыңыз.',
+            'Хозпостройка не должна стоять на месте дома, сдвиньте её.'
+          ),
           areas: [r, house],
           site: true));
+    }
   }
   final buildings =
       site.items.where((i) => siteBuildings.contains(i.kind)).toList();
   for (var a = 0; a < buildings.length; a++)
     for (var b = a + 1; b < buildings.length; b++) {
-      final ra = itemRect(buildings[a]), rb = itemRect(buildings[b]);
-      if (_overlaps(ra, rb))
+      final ra = itemRect(buildings[a]);
+      final rb = itemRect(buildings[b]);
+      if (_overlaps(ra, rb)) {
         out.add(ConstructionIssue(
             'S03',
             IssueLevel.warn,
             (
               '${name(buildings[a])}和${name(buildings[b])}重叠',
-              '${name(buildings[a])} мен ${name(buildings[b])} қабаттасады', '${name(buildings[a])} и ${name(buildings[b])} накладываются друг на друга'),
+              '${name(buildings[a])} мен ${name(buildings[b])} қабаттасады',
+              '${name(buildings[a])} и ${name(buildings[b])} накладываются друг на друга'
+            ),
             ('请把其中一个挪开。', 'Біреуін жылжытыңыз.', 'Сдвиньте одну из построек.'),
             areas: [ra, rb],
             site: true));
+      }
     }
   // Room to the street and the neighbours.
   final front = house.bottom,
       side = math.min(house.left, site.width - house.right),
       back = site.depth - house.top;
-  if (_inside(house, site) && (front < 5000 || side < 3000 || back < 3000))
+  if (_inside(house, site) && (front < 5000 || side < 3000 || back < 3000)) {
     out.add(ConstructionIssue(
         'S04',
         IssueLevel.chk,
         ('房子离边界较近', 'Үй шекараға жақын', 'Дом близко к границе'),
         (
           '房子离街道 ${_m(front)} m、离邻居 ${_m(side)} m、离后边界 ${_m(back)} m。常见要求是离街道不少于 5 m、离邻居不少于 3 m，方便防火、采光和屋檐滴水不落到邻家。请以当地审批要求为准。',
-          'Үй көшеден ${_m(front).replaceAll('.', ',')} м, көршіден ${_m(side).replaceAll('.', ',')} м, артқы шекарадан ${_m(back).replaceAll('.', ',')} м. Әдетте көшеден кемінде 5 м, көршіден кемінде 3 м талап етіледі — өрт қауіпсіздігі, жарық және шатыр суы көршіге ақпауы үшін. Жергілікті рұқсат талабын нақтылаңыз.', 'От дома до улицы ${_m(front).replaceAll('.', ',')} м, до соседа ${_m(side).replaceAll('.', ',')} м, до задней границы ${_m(back).replaceAll('.', ',')} м. Обычно требуется не меньше 5 м от улицы и 3 м от соседа — ради пожарной безопасности, света и чтобы вода с крыши не стекала к соседу. Уточните местные требования к разрешению.'),
+          'Үй көшеден ${_m(front).replaceAll('.', ',')} м, көршіден ${_m(side).replaceAll('.', ',')} м, артқы шекарадан ${_m(back).replaceAll('.', ',')} м. Әдетте көшеден кемінде 5 м, көршіден кемінде 3 м талап етіледі — өрт қауіпсіздігі, жарық және шатыр суы көршіге ақпауы үшін. Жергілікті рұқсат талабын нақтылаңыз.',
+          'От дома до улицы ${_m(front).replaceAll('.', ',')} м, до соседа ${_m(side).replaceAll('.', ',')} м, до задней границы ${_m(back).replaceAll('.', ',')} м. Обычно требуется не меньше 5 м от улицы и 3 м от соседа — ради пожарной безопасности, света и чтобы вода с крыши не стекала к соседу. Уточните местные требования к разрешению.'
+        ),
         areas: [house],
         site: true));
+  }
   for (final item in site.items) {
     final gap = houseGaps[item.kind];
     if (gap == null) continue;
-    final r = itemRect(item), d = rectGap(r, house);
-    if (d < gap && !_overlaps(r, house))
+    final r = itemRect(item);
+    final d = rectGap(r, house);
+    if (d < gap && !_overlaps(r, house)) {
       out.add(ConstructionIssue(
           'S05',
           IssueLevel.warn,
-          ('${name(item)}离房子太近', '${name(item)} үйге тым жақын', '${name(item)} слишком близко к дому'),
+          (
+            '${name(item)}离房子太近',
+            '${name(item)} үйге тым жақын',
+            '${name(item)} слишком близко к дому'
+          ),
           (
             '现在相距 ${_m(d)} m，建议不少于 ${_m(gap.toDouble())} m，避免气味、潮气和火灾影响住房。',
-            'Қазір ${_m(d).replaceAll('.', ',')} м, кемінде ${_m(gap.toDouble()).replaceAll('.', ',')} м болғаны жөн — иіс, ылғал және өрт үйге әсер етпеуі үшін.', 'Сейчас ${_m(d).replaceAll('.', ',')} м, лучше не меньше ${_m(gap.toDouble()).replaceAll('.', ',')} м — чтобы запах, сырость и огонь не доходили до дома.'),
+            'Қазір ${_m(d).replaceAll('.', ',')} м, кемінде ${_m(gap.toDouble()).replaceAll('.', ',')} м болғаны жөн — иіс, ылғал және өрт үйге әсер етпеуі үшін.',
+            'Сейчас ${_m(d).replaceAll('.', ',')} м, лучше не меньше ${_m(gap.toDouble()).replaceAll('.', ',')} м — чтобы запах, сырость и огонь не доходили до дома.'
+          ),
           areas: [r, house],
           site: true));
+    }
   }
   for (final well in site.items.where((i) => i.kind == SiteKind.well)) {
     for (final dirty in site.items.where((i) => siteDirty.contains(i.kind))) {
-      final a = itemRect(well), b = itemRect(dirty), d = rectGap(a, b);
-      if (d < wellGap)
+      final a = itemRect(well);
+      final b = itemRect(dirty);
+      final d = rectGap(a, b);
+      if (d < wellGap) {
         out.add(ConstructionIssue(
             'S06',
             IssueLevel.crit,
-            ('水井离${name(dirty)}太近', 'Құдық ${name(dirty)} жанында тым жақын', 'Колодец слишком близко: ${name(dirty)}'),
+            (
+              '水井离${name(dirty)}太近',
+              'Құдық ${name(dirty)} жанында тым жақын',
+              'Колодец слишком близко: ${name(dirty)}'
+            ),
             (
               '相距 ${_m(d)} m。污水会渗到井里，建议不少于 ${_m(wellGap.toDouble())} m，井要在地势较高的一侧。',
-              'Арасы ${_m(d).replaceAll('.', ',')} м. Лас су құдыққа сіңеді, кемінде ${_m(wellGap.toDouble()).replaceAll('.', ',')} м керек, құдық биік жақта болсын.', 'Между ними ${_m(d).replaceAll('.', ',')} м. Грязная вода просачивается в колодец: нужно не меньше ${_m(wellGap.toDouble()).replaceAll('.', ',')} м, и колодец должен стоять выше по уклону.'),
+              'Арасы ${_m(d).replaceAll('.', ',')} м. Лас су құдыққа сіңеді, кемінде ${_m(wellGap.toDouble()).replaceAll('.', ',')} м керек, құдық биік жақта болсын.',
+              'Между ними ${_m(d).replaceAll('.', ',')} м. Грязная вода просачивается в колодец: нужно не меньше ${_m(wellGap.toDouble()).replaceAll('.', ',')} м, и колодец должен стоять выше по уклону.'
+            ),
             areas: [a, b],
             site: true));
+      }
     }
   }
   for (final barn in site.items.where((i) => i.kind == SiteKind.barn)) {
     final r = itemRect(barn);
     final edge = [r.left, r.bottom, site.width - r.right, site.depth - r.top]
         .reduce(math.min);
-    if (_inside(r, site) && edge < 4000)
+    if (_inside(r, site) && edge < 4000) {
       out.add(ConstructionIssue(
           'S07',
           IssueLevel.chk,
-          ('${name(barn)}离邻居较近', '${name(barn)} көршіге жақын', '${name(barn)} близко к соседу'),
+          (
+            '${name(barn)}离邻居较近',
+            '${name(barn)} көршіге жақын',
+            '${name(barn)} близко к соседу'
+          ),
           (
             '离边界 ${_m(edge)} m。牲畜棚常见要求离邻居边界不少于 4 m。',
-            'Шекарадан ${_m(edge).replaceAll('.', ',')} м. Мал қорасы көрші шекарасынан кемінде 4 м болуы әдеттегі талап.', 'До границы ${_m(edge).replaceAll('.', ',')} м. Обычно сарай для скота ставят не ближе 4 м от границы с соседом.'),
+            'Шекарадан ${_m(edge).replaceAll('.', ',')} м. Мал қорасы көрші шекарасынан кемінде 4 м болуы әдеттегі талап.',
+            'До границы ${_m(edge).replaceAll('.', ',')} м. Обычно сарай для скота ставят не ближе 4 м от границы с соседом.'
+          ),
           areas: [r],
           site: true));
+    }
   }
-  if (site.fence && !site.items.any((i) => i.kind == SiteKind.gate))
+  if (site.fence && !site.items.any((i) => i.kind == SiteKind.gate)) {
     out.add(ConstructionIssue(
         'S08',
         IssueLevel.chk,
         ('院墙还没有大门', 'Қоршауда қақпа жоқ', 'В заборе нет ворот'),
         (
           '在临街一侧加一个大门，车能开进院子时宽度不少于 3.5 m。',
-          'Көше жақтан қақпа қосыңыз; көлік кіретін болса ені кемінде 3,5 м.', 'Добавьте ворота со стороны улицы; если будет заезжать машина, ширина не менее 3,5 м.'),
+          'Көше жақтан қақпа қосыңыз; көлік кіретін болса ені кемінде 3,5 м.',
+          'Добавьте ворота со стороны улицы; если будет заезжать машина, ширина не менее 3,5 м.'
+        ),
         areas: [PlanRect(0, 0, site.width.toDouble(), 300)],
         site: true));
+  }
   return out;
 }

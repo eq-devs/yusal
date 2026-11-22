@@ -3,28 +3,28 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../app/settings.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/cards.dart';
-import '../../shared/ui/components.dart';
-import '../../shared/ui/plan_viewer.dart';
-import '../chat/chat_page.dart';
-import '../demand/demand_detail_page.dart';
-import '../demand/publish_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/links.dart';
-import '../profile/profile_page.dart';
-import '../../shared/ui/scope.dart';
-import '../shell/shell.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
-import 'critiques.dart';
-import 'house_card.dart';
-import 'reuse.dart';
-import '../../shared/ui/house_progress.dart';
-import '../../shared/motion/motion.dart';
-import '../me/trust_pages.dart';
-import '../../shared/brand/yicon.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/cards.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/shared/ui/plan_viewer.dart';
+import 'package:yusal/features/chat/chat_page.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/features/demand/publish_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/links.dart';
+import 'package:yusal/features/profile/profile_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/features/shell/shell.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
+import 'package:yusal/features/home/critiques.dart';
+import 'package:yusal/features/home/house_card.dart';
+import 'package:yusal/features/home/reuse.dart';
+import 'package:yusal/shared/ui/house_progress.dart';
+import 'package:yusal/shared/motion/motion.dart';
+import 'package:yusal/features/me/trust_pages.dart';
+import 'package:yusal/shared/brand/yicon.dart';
 
 /// One house: the plan, the facts, the story, the people recruiting for
 /// it, and what others think. The owner recruits from here; a
@@ -73,7 +73,8 @@ class _PostPageState extends State<PostPage> {
   Widget build(BuildContext context) {
     AppScope.watch(context);
     final t = YTokens.of(context);
-    final postId = widget.postId, preview = widget.preview;
+    final postId = widget.postId;
+    final preview = widget.preview;
     final route = ModalRoute.of(context);
     return Live<
             (
@@ -95,7 +96,7 @@ class _PostPageState extends State<PostPage> {
           // in the middle of the slide and the cover's flight.
           final settled = _settled(route);
           final p = await r.post(postId);
-          if (p == null)
+          if (p == null) {
             return (
               null,
               false,
@@ -105,6 +106,7 @@ class _PostPageState extends State<PostPage> {
               false,
               null
             );
+          }
           // Independent of each other: asked together, not one by one.
           final (liked, demands, comments, snap, isPro, build) = await (
             r.liked(postId),
@@ -121,7 +123,7 @@ class _PostPageState extends State<PostPage> {
         },
         builder: (context, data) {
           final (p, liked, demands, comments, snap, isPro, build) = data;
-          if (p == null)
+          if (p == null) {
             return PageScaffold(
                 title: '',
                 body: EmptyState(
@@ -132,6 +134,7 @@ class _PostPageState extends State<PostPage> {
                         onPressed: () => Navigator.of(context)
                             .pushNamedAndRemoveUntil('/', (_) => false),
                         child: Text(tr3('首页', 'Басты', 'Главная')))));
+          }
           final me = context.repos.currentAccount;
           final mine = me?.id == p.ownerId;
           final image =
@@ -148,9 +151,10 @@ class _PostPageState extends State<PostPage> {
             if (!await requireLogin(context) || !context.mounted) return;
             final conv = await attempt(
                 context, () => context.repos.openConversation(p.ownerId));
-            if (conv != null && context.mounted)
+            if (conv != null && context.mounted) {
               await pushPage<void>(
                   context, (_) => ChatPage(conversationId: conv.id));
+            }
           }
 
           Future<void> recruit() async {
@@ -174,24 +178,24 @@ class _PostPageState extends State<PostPage> {
             if (c == null || !context.mounted) return;
             if (c == 'copy') {
               await Clipboard.setData(ClipboardData(text: link));
-              if (context.mounted)
+              if (context.mounted) {
                 toast(
                     context,
-                    tr3(
-                        '已复制，任何人打开都能看',
-                        'Көшірілді, кез келген адам аша алады',
+                    tr3('已复制，任何人打开都能看', 'Көшірілді, кез келген адам аша алады',
                         'Скопировано, откроется у любого'));
+              }
             } else {
               try {
                 await SharePlus.instance
                     .share(ShareParams(text: '${p.title}\n$link'));
               } catch (_) {
                 await Clipboard.setData(ClipboardData(text: link));
-                if (context.mounted)
+                if (context.mounted) {
                   toast(
                       context,
                       tr3('此设备不支持系统分享，已复制链接', 'Сілтеме көшірілді',
                           'Ссылка скопирована'));
+                }
               }
             }
           }
@@ -305,22 +309,22 @@ class _PostPageState extends State<PostPage> {
                           onPressed: share),
                       if (!visitorBar)
                         OptimisticLike(
-                          liked: liked,
-                          toggle: () => attempt(
-                              context, () => context.repos.toggleLike(p.id)),
-                          builder: (context, liked, toggle) => IconAction(
-                              label: liked
-                                  ? tr3('取消喜欢', 'Ұнатуды алу', 'Убрать лайк')
-                                  : tr3('喜欢', 'Ұнайды', 'Нравится'),
-                              color: liked ? t.accent : null,
-                              icon: PopOnActive(
-                                  active: liked,
-                                  child: Icon(
-                                      liked
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      size: 20)),
-                              onPressed: toggle)),
+                            liked: liked,
+                            toggle: () => attempt(
+                                context, () => context.repos.toggleLike(p.id)),
+                            builder: (context, liked, toggle) => IconAction(
+                                label: liked
+                                    ? tr3('取消喜欢', 'Ұнатуды алу', 'Убрать лайк')
+                                    : tr3('喜欢', 'Ұнайды', 'Нравится'),
+                                color: liked ? t.accent : null,
+                                icon: PopOnActive(
+                                    active: liked,
+                                    child: Icon(
+                                        liked
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        size: 20)),
+                                onPressed: toggle)),
                       IconAction(
                           label: tr3('更多', 'Тағы', 'Ещё'),
                           icon: const Icon(Icons.more_horiz, size: 20),
@@ -343,7 +347,7 @@ class _PostPageState extends State<PostPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(p.title, style: display(size: 24)),
+                                      Text(p.title, style: display()),
                                       const SizedBox(height: 8),
                                       _MetaLine(post: p),
                                       if (shownTags.isNotEmpty ||
@@ -515,8 +519,9 @@ class _PostPageState extends State<PostPage> {
               context,
               tr3('选一个阶段', 'Кезеңді таңдаңыз', 'Выберите этап'),
               [for (final d in open) (d, d.current.title)]);
-      if (d != null && context.mounted)
+      if (d != null && context.mounted) {
         await pushPage<void>(context, (_) => DemandDetailPage(demandId: d.id));
+      }
     }
 
     final String summary;
@@ -639,8 +644,8 @@ class _PostPageState extends State<PostPage> {
       // The button takes the width its words need (up to most of the
       // bar) rather than half of it, where a long label broke in two.
       ConstrainedBox(
-          constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width * 0.62),
+          constraints:
+              BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.62),
           child: main),
     ]));
   }
@@ -651,7 +656,8 @@ class _BuildSection extends StatelessWidget {
   const _BuildSection(
       {required this.info, required this.mine, required this.shown});
   final PostBuild info;
-  final bool mine, shown;
+  final bool mine;
+  final bool shown;
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
@@ -679,7 +685,7 @@ class _BuildSection extends StatelessWidget {
       for (final x in b.builders)
         ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Avatar(x.profile.name, size: 40),
+            leading: Avatar(x.profile.name),
             title: Text(x.profile.name,
                 style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: Text(
@@ -885,7 +891,7 @@ class _PostSkeleton extends StatelessWidget {
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(post.title, style: display(size: 24)),
+                            Text(post.title, style: display()),
                             const SizedBox(height: YSpace.xl),
                             const SkeletonList(count: 4),
                           ]))))),

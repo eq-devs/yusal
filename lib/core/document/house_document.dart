@@ -1,4 +1,4 @@
-import 'house_extras.dart';
+import 'package:yusal/core/document/house_extras.dart';
 export 'house_extras.dart';
 
 enum AxisDir { V, H }
@@ -49,7 +49,9 @@ class Meta {
     required this.createdAt,
     required this.updatedAt,
   });
-  final String name, createdAt, updatedAt;
+  final String name;
+  final String createdAt;
+  final String updatedAt;
   @override
   bool operator ==(Object other) =>
       other is Meta &&
@@ -75,18 +77,18 @@ class Defaults {
     required this.windowHeight,
     required this.windowSill,
   });
-  final int outerWallThickness,
-      innerWallThickness,
-      slabThickness,
-      stairRiserMax,
-      stairTread,
-      stairWidthMin,
-      floorHeight,
-      doorWidth,
-      doorHeight,
-      windowWidth,
-      windowHeight,
-      windowSill;
+  final int outerWallThickness;
+  final int innerWallThickness;
+  final int slabThickness;
+  final int stairRiserMax;
+  final int stairTread;
+  final int stairWidthMin;
+  final int floorHeight;
+  final int doorWidth;
+  final int doorHeight;
+  final int windowWidth;
+  final int windowHeight;
+  final int windowSill;
   @override
   bool operator ==(Object other) =>
       other is Defaults &&
@@ -125,7 +127,9 @@ class BuildingFootprint {
     required this.depth,
     required this.northAngleDeg,
   });
-  final int width, depth, northAngleDeg;
+  final int width;
+  final int depth;
+  final int northAngleDeg;
   @override
   bool operator ==(Object other) =>
       other is BuildingFootprint &&
@@ -158,7 +162,8 @@ class FloorAxis {
     required this.dir,
     required this.pos,
   });
-  final String id, floorId;
+  final String id;
+  final String floorId;
   final AxisDir dir;
   final int pos;
   @override
@@ -195,7 +200,10 @@ class AxisRectangle {
     required this.y0,
     required this.y1,
   });
-  final String x0, x1, y0, y1;
+  final String x0;
+  final String x1;
+  final String y0;
+  final String y1;
   @override
   bool operator ==(Object other) =>
       other is AxisRectangle &&
@@ -213,7 +221,9 @@ class BoundaryAnchor {
     required this.startAxisId,
     required this.endAxisId,
   });
-  final String axisId, startAxisId, endAxisId;
+  final String axisId;
+  final String startAxisId;
+  final String endAxisId;
   @override
   bool operator ==(Object other) =>
       other is BoundaryAnchor &&
@@ -313,7 +323,9 @@ sealed class Opening {
   final String id;
   final BoundaryAnchor anchor;
   final OpeningPosition position;
-  final int width, height, sill;
+  final int width;
+  final int height;
+  final int sill;
   OpeningKind get kind;
 }
 
@@ -471,7 +483,8 @@ class Roof {
   bool get pitched => type != RoofType.flat;
   final int? parapetHeight;
   final AxisDir? ridgeDir;
-  final int? pitchDeg, overhang;
+  final int? pitchDeg;
+  final int? overhang;
   @override
   bool operator ==(Object other) =>
       other is Roof &&
@@ -523,7 +536,8 @@ class Floor {
         openings = List.unmodifiable(openings),
         stairs = List.unmodifiable(stairs),
         outside = List.unmodifiable(outside);
-  final String id, name;
+  final String id;
+  final String name;
   final bool explicitWalls;
   final int height;
   final List<Room> rooms;
@@ -689,11 +703,12 @@ HouseDocument composeDocument(Meta meta, UndoableDesignState state) {
     schemaVersion: needsVersion4(state.roof, extras, state.floors)
         ? 4
         : !extras.isEmpty
-        ? 3
-        : state.floors.any((f) =>
-                f.explicitWalls || f.wallOverrides.any((w) => w is SolidWall))
-            ? 2
-            : 1,
+            ? 3
+            : state.floors.any((f) =>
+                    f.explicitWalls ||
+                    f.wallOverrides.any((w) => w is SolidWall))
+                ? 2
+                : 1,
     meta: meta,
     mainEntranceOpeningId: state.mainEntranceOpeningId,
     defaults: state.defaults,

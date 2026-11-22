@@ -4,18 +4,18 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
-import '../../app/settings.dart';
-import '../../data/http/http_backend.dart';
-import '../../data/repositories.dart';
-import '../../domain/models.dart';
-import '../../shared/ui/components.dart';
-import '../demand/demand_detail_page.dart';
-import '../home/post_page.dart';
-import '../../shared/ui/l10n.dart';
-import '../profile/profile_page.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/http/http_backend.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/domain/models.dart';
+import 'package:yusal/shared/ui/components.dart';
+import 'package:yusal/features/demand/demand_detail_page.dart';
+import 'package:yusal/features/home/post_page.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/features/profile/profile_page.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 
 part 'admin_console.dart';
 
@@ -73,22 +73,22 @@ class _AdminPageState extends State<AdminPage> {
           const _MoreTab(),
         ];
         return Scaffold(
-            appBar: AppBar(
-                title: Text(tabs[_tab]),
-                actions: [
-                  Padding(
-                      padding: const EdgeInsets.only(right: YSpace.lg),
-                      child: Center(child: StatusPill(roleName(me.role)))),
-                ]),
+            appBar: AppBar(title: Text(tabs[_tab]), actions: [
+              Padding(
+                  padding: const EdgeInsets.only(right: YSpace.lg),
+                  child: Center(child: StatusPill(roleName(me.role)))),
+            ]),
             body: IndexedStack(index: _tab, children: pages),
             bottomNavigationBar: NavigationBar(
                 selectedIndex: _tab,
                 onDestinationSelected: (i) => setState(() => _tab = i),
                 destinations: [
                   NavigationDestination(
-                      icon: const Icon(Icons.dashboard_outlined), label: tabs[0]),
+                      icon: const Icon(Icons.dashboard_outlined),
+                      label: tabs[0]),
                   NavigationDestination(
-                      icon: const Icon(Icons.fact_check_outlined), label: tabs[1]),
+                      icon: const Icon(Icons.fact_check_outlined),
+                      label: tabs[1]),
                   NavigationDestination(
                       icon: const Icon(Icons.people_outline), label: tabs[2]),
                   NavigationDestination(
@@ -130,8 +130,8 @@ String _reportStatusName(ReportStatus s) => switch (s) {
     };
 
 String get _all => tr3('全部', 'Барлығы', 'Все');
-String get _userSees => tr3('用户会看到这段说明',
-    'Бұл түсініктемені пайдаланушы көреді', 'Это пояснение увидит пользователь');
+String get _userSees => tr3('用户会看到这段说明', 'Бұл түсініктемені пайдаланушы көреді',
+    'Это пояснение увидит пользователь');
 String get _restrictedPill => tr3('受限', 'Шектелген', 'Ограничен');
 String get _unnamed => tr3('（未命名）', '(атаусыз)', '(без имени)');
 String get _approveWord => tr3('通过', 'Мақұлдау', 'Одобрить');
@@ -139,8 +139,8 @@ String get _dismissWord => tr3('驳回', 'Қабылдамау', 'Отклони
 String get _teamTitle => tr3('后台成员', 'Команда', 'Команда');
 String get _pushTitle =>
     tr3('推送节制', 'Хабарландыру шектеулері', 'Ограничения уведомлений');
-String _registered(DateTime t) => tr3('注册 ${_date(t)}',
-    'Тіркелген: ${_date(t)}', 'Регистрация: ${_date(t)}');
+String _registered(DateTime t) =>
+    tr3('注册 ${_date(t)}', 'Тіркелген: ${_date(t)}', 'Регистрация: ${_date(t)}');
 
 String _targetName(String t) => switch (t) {
       'demand' => tr3('需求', 'Тапсырыс', 'Заявка'),
@@ -155,21 +155,17 @@ String _targetName(String t) => switch (t) {
 
 /// A reason as moderators read it: preset codes as short labels.
 String _reasonLabel(String r) => switch (r) {
-      'code:contact' =>
-        tr3('含联系方式', 'Байланыс деректері бар', 'Есть контакты'),
-      'code:fake' =>
-        tr3('虚假信息', 'Жалған ақпарат', 'Недостоверные сведения'),
+      'code:contact' => tr3('含联系方式', 'Байланыс деректері бар', 'Есть контакты'),
+      'code:fake' => tr3('虚假信息', 'Жалған ақпарат', 'Недостоверные сведения'),
       'code:illegal' =>
         tr3('违规内容', 'Ережеге қайшы мазмұн', 'Запрещённое содержание'),
-      'code:incomplete' =>
-        tr3('信息不全', 'Ақпарат толық емес', 'Неполные данные'),
+      'code:incomplete' => tr3('信息不全', 'Ақпарат толық емес', 'Неполные данные'),
       'code:duplicate' =>
         tr3('重复发布', 'Қайталанған жарияланым', 'Повторная публикация'),
       'code:abuse' =>
         tr3('辱骂骚扰', 'Балағат не қудалау', 'Оскорбления, преследование'),
       'code:spam' => tr3('广告引流', 'Жарнама не спам', 'Реклама или спам'),
-      'code:ok' =>
-        tr3('未发现问题', 'Бұзушылық табылмады', 'Нарушений не найдено'),
+      'code:ok' => tr3('未发现问题', 'Бұзушылық табылмады', 'Нарушений не найдено'),
       _ when r.startsWith('banned:') => tr3(
           '命中禁用词：${r.substring(7)}',
           'Тыйым салынған сөз: ${r.substring(7)}',
@@ -186,7 +182,8 @@ String _actionName(String a) => switch (a) {
       'unrestrict' => tr3('解除限制', 'Шектеу алынды', 'Ограничение снято'),
       'post_hide' => tr3('隐藏房子', 'Үй жасырылды', 'Дом скрыт'),
       'post_show' => tr3('恢复房子', 'Үй қайтарылды', 'Дом восстановлен'),
-      'appeal_accept' => tr3('申诉成立', 'Апелляция қанағаттандырылды', 'Апелляция удовлетворена'),
+      'appeal_accept' =>
+        tr3('申诉成立', 'Апелляция қанағаттандырылды', 'Апелляция удовлетворена'),
       'appeal_reject' =>
         tr3('申诉驳回', 'Апелляция қабылданбады', 'Апелляция отклонена'),
       'verify_approve' =>
@@ -206,7 +203,13 @@ String _actionName(String a) => switch (a) {
 /// Picks a preset reason or takes the moderator's own words.
 Future<String?> _pickReason(BuildContext context, String title,
     {List<String> codes = const [
-      'contact', 'fake', 'illegal', 'incomplete', 'duplicate', 'abuse', 'spam'
+      'contact',
+      'fake',
+      'illegal',
+      'incomplete',
+      'duplicate',
+      'abuse',
+      'spam'
     ]}) async {
   final v = await pickOne<String>(context, title, [
     for (final c in codes) ('code:$c', _reasonLabel('code:$c')),
@@ -277,13 +280,15 @@ class _PagedListState<T> extends State<_PagedList<T>> {
                     children: [
                       if (widget.header != null) widget.header!,
                       if (items.isEmpty)
-                        EmptyState(icon: Icons.inbox_outlined, title: widget.empty),
+                        EmptyState(
+                            icon: Icons.inbox_outlined, title: widget.empty),
                       for (final x in items) widget.item(context, x),
                       if (more)
                         Center(
                             child: TextButton(
                                 onPressed: () => setState(() => _pages++),
-                                child: Text(tr3('加载更多', 'Тағы жүктеу', 'Показать ещё')))),
+                                child: Text(tr3(
+                                    '加载更多', 'Тағы жүктеу', 'Показать ещё')))),
                     ]));
           }));
 }
@@ -297,13 +302,16 @@ class _Chips<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: YSpace.gutter, vertical: YSpace.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: YSpace.gutter, vertical: YSpace.sm),
       child: Row(children: [
         for (final (v, label) in options)
           Padding(
               padding: const EdgeInsets.only(right: YSpace.sm),
               child: FilterPill(
-                  label: label, selected: v == selected, onTap: () => onSelect(v))),
+                  label: label,
+                  selected: v == selected,
+                  onTap: () => onSelect(v))),
       ]));
 }
 
@@ -348,17 +356,24 @@ class _Workbench extends StatelessWidget {
                               warn: h != 'manual_review_on')),
                     Text(
                         todo.total == 0
-                            ? tr3('没有待办，一切正常', 'Күтіп тұрған іс жоқ, бәрі дұрыс',
+                            ? tr3(
+                                '没有待办，一切正常',
+                                'Күтіп тұрған іс жоқ, бәрі дұрыс',
                                 'Задач нет, всё в порядке')
-                            : tr3('待办 ${todo.total} 项', 'Күтіп тұрған іс: ${todo.total}',
+                            : tr3(
+                                '待办 ${todo.total} 项',
+                                'Күтіп тұрған іс: ${todo.total}',
                                 'Задач: ${todo.total}'),
                         style: display(size: 22)),
                     const SizedBox(height: YSpace.md),
                     _TodoTile(
                         icon: Icons.fact_check_outlined,
-                        title: tr3('需求审核', 'Тапсырыстарды тексеру', 'Проверка заявок'),
+                        title: tr3(
+                            '需求审核', 'Тапсырыстарды тексеру', 'Проверка заявок'),
                         count: todo.review.count,
-                        lines: [for (final x in todo.review.items) x.current.title],
+                        lines: [
+                          for (final x in todo.review.items) x.current.title
+                        ],
                         onTap: () => open(_Review.demands)),
                     _TodoTile(
                         icon: Icons.flag_outlined,
@@ -377,42 +392,71 @@ class _Workbench extends StatelessWidget {
                         onTap: () => open(_Review.appeals)),
                     _TodoTile(
                         icon: Icons.verified_outlined,
-                        title: tr3('工人认证', 'Шеберлерді растау', 'Верификация мастеров'),
+                        title: tr3('工人认证', 'Шеберлерді растау',
+                            'Верификация мастеров'),
                         count: todo.verifications.count,
-                        lines: [for (final x in todo.verifications.items) x.name],
+                        lines: [
+                          for (final x in todo.verifications.items) x.name
+                        ],
                         onTap: () => open(_Review.verifications)),
                     _TodoTile(
                         icon: Icons.report_problem_outlined,
-                        title: tr3('超过 3 天未解决的争议', '3 күннен астам шешілмеген даулар',
+                        title: tr3(
+                            '超过 3 天未解决的争议',
+                            '3 күннен астам шешілмеген даулар',
                             'Споры без решения дольше 3 дней'),
                         count: todo.disputes.count,
                         lines: [
                           for (final c in todo.disputes.items)
                             c.endRequest?.dispute ??
-                                tr3('节点验收有异议', 'Кезеңді қабылдауға қарсылық бар',
+                                tr3(
+                                    '节点验收有异议',
+                                    'Кезеңді қабылдауға қарсылық бар',
                                     'Спор о приёмке этапа')
                         ]),
                     const SizedBox(height: YSpace.xl),
-                    Text(tr3('今天', 'Бүгін', 'Сегодня'), style: YText.bodyStrong),
+                    Text(tr3('今天', 'Бүгін', 'Сегодня'),
+                        style: YText.bodyStrong),
                     const SizedBox(height: YSpace.sm),
                     Wrap(spacing: YSpace.sm, runSpacing: YSpace.sm, children: [
                       for (final (k, label) in [
-                        ('active', tr3('活跃设备', 'Белсенді құрылғы', 'Активные устройства')),
-                        ('new_users', tr3('新用户', 'Жаңа аккаунт', 'Новые аккаунты')),
+                        (
+                          'active',
+                          tr3('活跃设备', 'Белсенді құрылғы', 'Активные устройства')
+                        ),
+                        (
+                          'new_users',
+                          tr3('新用户', 'Жаңа аккаунт', 'Новые аккаунты')
+                        ),
                         ('new_posts', tr3('新房子', 'Жаңа үй', 'Новые дома')),
-                        ('new_demands', tr3('新需求', 'Жаңа тапсырыс', 'Новые заявки')),
-                        ('new_quotes', tr3('新报价', 'Жаңа ұсыныс', 'Новые отклики')),
-                        ('new_cooperations', tr3('新合作', 'Жаңа келісім', 'Новые сделки')),
-                        ('inspections', tr3('节点验收', 'Кезең қабылдау', 'Приёмка этапов')),
+                        (
+                          'new_demands',
+                          tr3('新需求', 'Жаңа тапсырыс', 'Новые заявки')
+                        ),
+                        (
+                          'new_quotes',
+                          tr3('新报价', 'Жаңа ұсыныс', 'Новые отклики')
+                        ),
+                        (
+                          'new_cooperations',
+                          tr3('新合作', 'Жаңа келісім', 'Новые сделки')
+                        ),
+                        (
+                          'inspections',
+                          tr3('节点验收', 'Кезең қабылдау', 'Приёмка этапов')
+                        ),
                       ])
                         _Stat(label, d.today[k] ?? 0),
                     ]),
                     const SizedBox(height: YSpace.xl),
-                    Text(tr3('近 7 天', 'Соңғы 7 күн', 'За 7 дней'), style: YText.bodyStrong),
+                    Text(tr3('近 7 天', 'Соңғы 7 күн', 'За 7 дней'),
+                        style: YText.bodyStrong),
                     const SizedBox(height: YSpace.sm),
                     _Bars(days: d.daily),
                     const SizedBox(height: YSpace.xl),
-                    Text(tr3('从房子到验收', 'Үйден қабылдауға дейін', 'От дома до приёмки'),
+                    Text(
+                        tr3('从房子到验收', 'Үйден қабылдауға дейін',
+                            'От дома до приёмки'),
                         style: YText.bodyStrong),
                     const SizedBox(height: YSpace.sm),
                     _Funnel(steps: d.funnel),
@@ -439,7 +483,8 @@ class _Workbench extends StatelessWidget {
                           if (d.regions.isEmpty)
                             Padding(
                                 padding: const EdgeInsets.all(YSpace.lg),
-                                child: Text(tr3('暂无数据', 'Дерек жоқ', 'Нет данных'))),
+                                child: Text(
+                                    tr3('暂无数据', 'Дерек жоқ', 'Нет данных'))),
                           for (final r in d.regions)
                             ListTile(
                                 dense: true,
@@ -542,22 +587,25 @@ class _Bars extends StatelessWidget {
             Expanded(
                 child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-                      Text('${d.demands}', style: YText.caption),
-                      const SizedBox(height: 2),
-                      Container(
-                          height: 80 * d.demands / top + 2,
-                          decoration: BoxDecoration(
-                              color: t.accent,
-                              borderRadius: BorderRadius.circular(YRadius.row))),
-                      const SizedBox(height: 4),
-                      Text(d.day.length >= 10 ? d.day.substring(5) : d.day,
-                          style: YText.caption.copyWith(color: t.muted)),
-                      Text(
-                          tr3('活跃 ${d.active}', 'Белс. ${d.active}',
-                              'Акт. ${d.active}'),
-                          style: YText.caption.copyWith(color: t.muted)),
-                    ]))),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text('${d.demands}', style: YText.caption),
+                          const SizedBox(height: 2),
+                          Container(
+                              height: 80 * d.demands / top + 2,
+                              decoration: BoxDecoration(
+                                  color: t.accent,
+                                  borderRadius:
+                                      BorderRadius.circular(YRadius.row))),
+                          const SizedBox(height: 4),
+                          Text(d.day.length >= 10 ? d.day.substring(5) : d.day,
+                              style: YText.caption.copyWith(color: t.muted)),
+                          Text(
+                              tr3('活跃 ${d.active}', 'Белс. ${d.active}',
+                                  'Акт. ${d.active}'),
+                              style: YText.caption.copyWith(color: t.muted)),
+                        ]))),
         ]));
   }
 }
@@ -599,10 +647,12 @@ class _Funnel extends StatelessWidget {
                               width: c.maxWidth * n / top + 2,
                               decoration: BoxDecoration(
                                   color: t.accentSoft,
-                                  borderRadius: BorderRadius.circular(YRadius.row)))))),
+                                  borderRadius:
+                                      BorderRadius.circular(YRadius.row)))))),
               SizedBox(
                   width: 44,
-                  child: Text('$n', textAlign: TextAlign.end, style: YText.caption)),
+                  child: Text('$n',
+                      textAlign: TextAlign.end, style: YText.caption)),
             ])),
     ]);
   }
@@ -619,15 +669,12 @@ class _ReviewTab extends StatelessWidget {
   Widget build(BuildContext context) => ValueListenableBuilder(
       valueListenable: kind,
       builder: (context, k, _) => Column(children: [
-            _Chips<_Review>(
-                options: [
-                  (_Review.demands, tr3('需求', 'Тапсырыстар', 'Заявки')),
-                  (_Review.reports, tr3('举报', 'Шағымдар', 'Жалобы')),
-                  (_Review.appeals, tr3('申诉', 'Апелляциялар', 'Апелляции')),
-                  (_Review.verifications, tr3('认证', 'Растау', 'Верификация')),
-                ],
-                selected: k,
-                onSelect: (v) => kind.value = v),
+            _Chips<_Review>(options: [
+              (_Review.demands, tr3('需求', 'Тапсырыстар', 'Заявки')),
+              (_Review.reports, tr3('举报', 'Шағымдар', 'Жалобы')),
+              (_Review.appeals, tr3('申诉', 'Апелляциялар', 'Апелляции')),
+              (_Review.verifications, tr3('认证', 'Растау', 'Верификация')),
+            ], selected: k, onSelect: (v) => kind.value = v),
             Expanded(
                 child: switch (k) {
               _Review.demands => const _DemandQueue(),
@@ -654,18 +701,23 @@ class _DemandQueueState extends State<_DemandQueue> {
     if (!approve) {
       final r = await _pickReason(
           context,
-          tr3('拒绝 ${_selected.length} 个需求的原因',
+          tr3(
+              '拒绝 ${_selected.length} 个需求的原因',
               'Қабылдамау себебі (тапсырыс: ${_selected.length})',
               'Причина отклонения (заявок: ${_selected.length})'));
       if (r == null || !mounted) return;
       reason = r;
     }
-    final res = await attempt(context,
-        () => context.repos.decideMany(_selected.toList(), approve, reason: reason));
+    final res = await attempt(
+        context,
+        () => context.repos
+            .decideMany(_selected.toList(), approve, reason: reason));
     if (res == null || !mounted) return;
-    toast(context,
+    toast(
+        context,
         res.failed.isEmpty
-            ? tr3('已处理 ${res.done} 个', 'Өңделді: ${res.done}', 'Обработано: ${res.done}')
+            ? tr3('已处理 ${res.done} 个', 'Өңделді: ${res.done}',
+                'Обработано: ${res.done}')
             : tr3(
                 '已处理 ${res.done} 个，${res.failed.length} 个状态已变化未处理',
                 'Өңделді: ${res.done}; күйі өзгергендіктен өткізілді: ${res.failed.length}',
@@ -693,17 +745,26 @@ class _DemandQueueState extends State<_DemandQueue> {
         Material(
             color: t.surface,
             child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: YSpace.gutter, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: YSpace.gutter, vertical: 4),
                 child: Row(children: [
                   Expanded(
                       child: Text(
-                          tr3('已选 ${_selected.length}', 'Таңдалды: ${_selected.length}',
+                          tr3(
+                              '已选 ${_selected.length}',
+                              'Таңдалды: ${_selected.length}',
                               'Выбрано: ${_selected.length}'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis)),
-                  TextButton(onPressed: () => setState(_selected.clear), child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
-                  TextButton(onPressed: () => _batch(false), child: Text(tr3('批量拒绝', 'Қабылдамау', 'Отклонить'))),
-                  FilledButton(onPressed: () => _batch(true), child: Text(tr3('批量通过', 'Мақұлдау', 'Одобрить'))),
+                  TextButton(
+                      onPressed: () => setState(_selected.clear),
+                      child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
+                  TextButton(
+                      onPressed: () => _batch(false),
+                      child: Text(tr3('批量拒绝', 'Қабылдамау', 'Отклонить'))),
+                  FilledButton(
+                      onPressed: () => _batch(true),
+                      child: Text(tr3('批量通过', 'Мақұлдау', 'Одобрить'))),
                 ]))),
       Expanded(
           child: _PagedList<Demand>(
@@ -738,9 +799,11 @@ class _DemandQueueState extends State<_DemandQueue> {
                 return Dismissible(
                     key: ValueKey('q-${d.id}'),
                     background: _SwipeBg(
-                        color: t.ok, icon: Icons.check, label: _approveWord, left: true),
-                    secondaryBackground:
-                        _SwipeBg(
+                        color: t.ok,
+                        icon: Icons.check,
+                        label: _approveWord,
+                        left: true),
+                    secondaryBackground: _SwipeBg(
                         color: t.crit,
                         icon: Icons.close,
                         label: tr3('拒绝', 'Қабылдамау', 'Отклонить'),
@@ -763,7 +826,10 @@ class _DemandQueueState extends State<_DemandQueue> {
 
 class _SwipeBg extends StatelessWidget {
   const _SwipeBg(
-      {required this.color, required this.icon, required this.label, required this.left});
+      {required this.color,
+      required this.icon,
+      required this.label,
+      required this.left});
   final Color color;
   final IconData icon;
   final String label;
@@ -773,7 +839,8 @@ class _SwipeBg extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: YSpace.sm),
       padding: const EdgeInsets.symmetric(horizontal: YSpace.xl),
       alignment: left ? Alignment.centerLeft : Alignment.centerRight,
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(YRadius.card)),
+      decoration: BoxDecoration(
+          color: color, borderRadius: BorderRadius.circular(YRadius.card)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, color: onFill(color)),
         const SizedBox(width: 6),
@@ -783,10 +850,14 @@ class _SwipeBg extends StatelessWidget {
 
 class _DemandCard extends StatelessWidget {
   const _DemandCard(
-      {required this.demand, this.selected = false, this.onTap, this.onLongPress});
+      {required this.demand,
+      this.selected = false,
+      this.onTap,
+      this.onLongPress});
   final Demand demand;
   final bool selected;
-  final VoidCallback? onTap, onLongPress;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
@@ -798,29 +869,33 @@ class _DemandCard extends StatelessWidget {
             child: YCard(
                 onTap: onTap,
                 color: selected ? t.accentSoft : null,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    if (selected) ...[
-                      Icon(Icons.check_circle, color: t.accent, size: 20),
-                      const SizedBox(width: 6),
-                    ],
-                    Expanded(child: Text(v.title, style: YText.bodyStrong)),
-                    StatusPill(demandStatusName(demand.status)),
-                  ]),
-                  const SizedBox(height: 4),
-                  Text(v.description, maxLines: 3, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Text(
-                      '${regionName(v.region)} · ${demandTypeName(demand.type)} · ${tr3('第 ${v.no} 版', '${v.no}-нұсқа', 'версия ${v.no}')} · ${_date(demand.createdAt)}',
-                      style: YText.caption.copyWith(color: t.muted)),
-                  if (demand.rejectReason != null && demand.status == DemandStatus.rejected)
-                    Text(
-                        tr3(
-                            '拒绝原因：${_reasonLabel(demand.rejectReason!)}',
-                            'Қабылдамау себебі: ${_reasonLabel(demand.rejectReason!)}',
-                            'Причина отклонения: ${_reasonLabel(demand.rejectReason!)}'),
-                        style: YText.caption.copyWith(color: t.crit)),
-                ]))));
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        if (selected) ...[
+                          Icon(Icons.check_circle, color: t.accent, size: 20),
+                          const SizedBox(width: 6),
+                        ],
+                        Expanded(child: Text(v.title, style: YText.bodyStrong)),
+                        StatusPill(demandStatusName(demand.status)),
+                      ]),
+                      const SizedBox(height: 4),
+                      Text(v.description,
+                          maxLines: 3, overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 4),
+                      Text(
+                          '${regionName(v.region)} · ${demandTypeName(demand.type)} · ${tr3('第 ${v.no} 版', '${v.no}-нұсқа', 'версия ${v.no}')} · ${_date(demand.createdAt)}',
+                          style: YText.caption.copyWith(color: t.muted)),
+                      if (demand.rejectReason != null &&
+                          demand.status == DemandStatus.rejected)
+                        Text(
+                            tr3(
+                                '拒绝原因：${_reasonLabel(demand.rejectReason!)}',
+                                'Қабылдамау себебі: ${_reasonLabel(demand.rejectReason!)}',
+                                'Причина отклонения: ${_reasonLabel(demand.rejectReason!)}'),
+                            style: YText.caption.copyWith(color: t.crit)),
+                    ]))));
   }
 }
 
@@ -845,7 +920,8 @@ class _ReportsState extends State<_Reports> {
                 'Жалоба отклонена: пояснение заявителю'),
             codes: const ['ok']);
     if (note == null || !mounted) return;
-    await attempt(context, () => context.repos.resolveReport(v.report.id, upheld, note),
+    await attempt(
+        context, () => context.repos.resolveReport(v.report.id, upheld, note),
         success: upheld
             ? tr3(
                 '已处理，内容已下架/账号已限制，双方已通知',
@@ -865,12 +941,16 @@ class _ReportsState extends State<_Reports> {
       case ReportTarget.post:
         pushPage<void>(context, (_) => PostPage(postId: r.targetId));
       case ReportTarget.comment:
-        if (v.postId != null) pushPage<void>(context, (_) => PostPage(postId: v.postId!));
+        if (v.postId != null)
+          pushPage<void>(context, (_) => PostPage(postId: v.postId!));
       case ReportTarget.account:
-        pushPage<void>(context, (_) => AccountDetailPage(accountId: r.targetId));
+        pushPage<void>(
+            context, (_) => AccountDetailPage(accountId: r.targetId));
       case ReportTarget.message:
-        if (v.targetOwnerId.isNotEmpty)
-          pushPage<void>(context, (_) => AccountDetailPage(accountId: v.targetOwnerId));
+        if (v.targetOwnerId.isNotEmpty) {
+          pushPage<void>(
+              context, (_) => AccountDetailPage(accountId: v.targetOwnerId));
+        }
     }
   }
 
@@ -879,15 +959,12 @@ class _ReportsState extends State<_Reports> {
     final t = YTokens.of(context);
     final canModerate = _may(context, AdminPerms.moderate);
     return Column(children: [
-      _Chips<ReportStatus?>(
-          options: [
-            (ReportStatus.open, tr3('待处理', 'Күтуде', 'Ожидают')),
-            (ReportStatus.upheld, tr3('已成立', 'Расталған', 'Подтверждённые')),
-            (ReportStatus.dismissed, tr3('已驳回', 'Қабылданбаған', 'Отклонённые')),
-            (null, _all),
-          ],
-          selected: _status,
-          onSelect: (v) => setState(() => _status = v)),
+      _Chips<ReportStatus?>(options: [
+        (ReportStatus.open, tr3('待处理', 'Күтуде', 'Ожидают')),
+        (ReportStatus.upheld, tr3('已成立', 'Расталған', 'Подтверждённые')),
+        (ReportStatus.dismissed, tr3('已驳回', 'Қабылданбаған', 'Отклонённые')),
+        (null, _all),
+      ], selected: _status, onSelect: (v) => setState(() => _status = v)),
       Expanded(
           child: _PagedList<ReportView>(
               key: ValueKey('reports-$_status'),
@@ -896,59 +973,75 @@ class _ReportsState extends State<_Reports> {
               item: (context, v) {
                 final r = v.report;
                 final reporter = v.reporterName.isEmpty ? '—' : v.reporterName;
-                final accused = v.targetOwnerName.isEmpty ? '—' : v.targetOwnerName;
+                final accused =
+                    v.targetOwnerName.isEmpty ? '—' : v.targetOwnerName;
                 return Padding(
                     padding: const EdgeInsets.only(bottom: YSpace.sm),
                     child: YCard(
                         onTap: () => _openTarget(v),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Row(children: [
-                            StatusPill(_reportTargetName(r.target)),
-                            const SizedBox(width: YSpace.sm),
-                            Expanded(
-                                child: Text(v.targetTitle.isEmpty ? r.targetId : v.targetTitle,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: YText.bodyStrong)),
-                          ]),
-                          const SizedBox(height: 4),
-                          Text(tr3('原因：${_reasonLabel(r.reason)}', 'Себебі: ${_reasonLabel(r.reason)}',
-                              'Причина: ${_reasonLabel(r.reason)}')),
-                          Text(
-                              tr3(
-                                  '举报人 $reporter · 被举报 $accused · ${_date(r.createdAt)}',
-                                  'Шағымданушы: $reporter · Кімге: $accused · ${_date(r.createdAt)}',
-                                  'Заявитель: $reporter · На кого: $accused · ${_date(r.createdAt)}'),
-                              style: YText.caption.copyWith(color: t.muted)),
-                          if (r.status != ReportStatus.open)
-                            Text(
-                                '${_reportStatusName(r.status)}${tr3('：', ': ', ': ')}${_reasonLabel(r.resolution)}',
-                                style: YText.caption.copyWith(color: t.muted)),
-                          if (r.status == ReportStatus.open && canModerate) ...[
-                            const SizedBox(height: YSpace.sm),
-                            Row(children: [
-                              if (v.targetOwnerId.isNotEmpty)
-                                TextButton(
-                                    onPressed: () => pushPage<void>(context,
-                                        (_) => AccountDetailPage(accountId: v.targetOwnerId)),
-                                    child: Text(tr3('看此人', 'Аккаунт', 'Аккаунт'))),
-                              const Spacer(),
-                              OutlinedButton(
-                                  onPressed: () => _resolve(v, false), child: Text(_dismissWord)),
-                              const SizedBox(width: YSpace.sm),
-                              FilledButton(
-                                  onPressed: () => _resolve(v, true),
-                                  child: Text(switch (r.target) {
-                                    ReportTarget.account ||
-                                    ReportTarget.message =>
-                                      tr3('成立并限制', 'Шектеу', 'Ограничить'),
-                                    ReportTarget.comment =>
-                                      tr3('成立并删除', 'Жою', 'Удалить'),
-                                    _ => tr3('成立并下架', 'Алып тастау', 'Снять'),
-                                  })),
-                            ]),
-                          ],
-                        ])));
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(children: [
+                                StatusPill(_reportTargetName(r.target)),
+                                const SizedBox(width: YSpace.sm),
+                                Expanded(
+                                    child: Text(
+                                        v.targetTitle.isEmpty
+                                            ? r.targetId
+                                            : v.targetTitle,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: YText.bodyStrong)),
+                              ]),
+                              const SizedBox(height: 4),
+                              Text(tr3(
+                                  '原因：${_reasonLabel(r.reason)}',
+                                  'Себебі: ${_reasonLabel(r.reason)}',
+                                  'Причина: ${_reasonLabel(r.reason)}')),
+                              Text(
+                                  tr3(
+                                      '举报人 $reporter · 被举报 $accused · ${_date(r.createdAt)}',
+                                      'Шағымданушы: $reporter · Кімге: $accused · ${_date(r.createdAt)}',
+                                      'Заявитель: $reporter · На кого: $accused · ${_date(r.createdAt)}'),
+                                  style:
+                                      YText.caption.copyWith(color: t.muted)),
+                              if (r.status != ReportStatus.open)
+                                Text(
+                                    '${_reportStatusName(r.status)}${tr3('：', ': ', ': ')}${_reasonLabel(r.resolution)}',
+                                    style:
+                                        YText.caption.copyWith(color: t.muted)),
+                              if (r.status == ReportStatus.open &&
+                                  canModerate) ...[
+                                const SizedBox(height: YSpace.sm),
+                                Row(children: [
+                                  if (v.targetOwnerId.isNotEmpty)
+                                    TextButton(
+                                        onPressed: () => pushPage<void>(
+                                            context,
+                                            (_) => AccountDetailPage(
+                                                accountId: v.targetOwnerId)),
+                                        child: Text(
+                                            tr3('看此人', 'Аккаунт', 'Аккаунт'))),
+                                  const Spacer(),
+                                  OutlinedButton(
+                                      onPressed: () => _resolve(v, false),
+                                      child: Text(_dismissWord)),
+                                  const SizedBox(width: YSpace.sm),
+                                  FilledButton(
+                                      onPressed: () => _resolve(v, true),
+                                      child: Text(switch (r.target) {
+                                        ReportTarget.account ||
+                                        ReportTarget.message =>
+                                          tr3('成立并限制', 'Шектеу', 'Ограничить'),
+                                        ReportTarget.comment =>
+                                          tr3('成立并删除', 'Жою', 'Удалить'),
+                                        _ =>
+                                          tr3('成立并下架', 'Алып тастау', 'Снять'),
+                                      })),
+                                ]),
+                              ],
+                            ])));
               })),
     ]);
   }
@@ -973,7 +1066,8 @@ class _AppealsState extends State<_Appeals> {
                 'Решение оставлено в силе: пояснение'),
         hint: _userSees);
     if (note == null || !mounted) return;
-    await attempt(context, () => context.repos.resolveAppeal(a.id, accept, note),
+    await attempt(
+        context, () => context.repos.resolveAppeal(a.id, accept, note),
         success: accept
             ? tr3('已恢复并通知用户', 'Қалпына келтірілді, пайдаланушыға хабарланды',
                 'Восстановлено, пользователь уведомлён')
@@ -986,15 +1080,15 @@ class _AppealsState extends State<_Appeals> {
     final t = YTokens.of(context);
     final canModerate = _may(context, AdminPerms.moderate);
     return Column(children: [
-      _Chips<AppealStatus?>(
-          options: [
-            (AppealStatus.open, tr3('待处理', 'Күтуде', 'Ожидают')),
-            (AppealStatus.accepted, tr3('已成立', 'Қанағаттандырылған', 'Удовлетворённые')),
-            (AppealStatus.rejected, tr3('已驳回', 'Қабылданбаған', 'Отклонённые')),
-            (null, _all),
-          ],
-          selected: _status,
-          onSelect: (v) => setState(() => _status = v)),
+      _Chips<AppealStatus?>(options: [
+        (AppealStatus.open, tr3('待处理', 'Күтуде', 'Ожидают')),
+        (
+          AppealStatus.accepted,
+          tr3('已成立', 'Қанағаттандырылған', 'Удовлетворённые')
+        ),
+        (AppealStatus.rejected, tr3('已驳回', 'Қабылданбаған', 'Отклонённые')),
+        (null, _all),
+      ], selected: _status, onSelect: (v) => setState(() => _status = v)),
       Expanded(
           child: _PagedList<Appeal>(
               key: ValueKey('appeals-$_status'),
@@ -1003,38 +1097,50 @@ class _AppealsState extends State<_Appeals> {
               item: (context, a) => Padding(
                   padding: const EdgeInsets.only(bottom: YSpace.sm),
                   child: YCard(
-                      onTap: () => pushPage<void>(
-                          context, (_) => AccountDetailPage(accountId: a.accountId)),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [
-                          StatusPill(_targetName(a.target)),
-                          const SizedBox(width: YSpace.sm),
-                          Expanded(
-                              child: Text(a.targetTitle.isEmpty ? a.accountName : a.targetTitle,
-                                  style: YText.bodyStrong)),
-                        ]),
-                        const SizedBox(height: 4),
-                        Text(a.text),
-                        Text('${a.accountName} · ${_date(a.createdAt)}',
-                            style: YText.caption.copyWith(color: t.muted)),
-                        if (a.resolution.isNotEmpty)
-                          Text(
-                              tr3(
-                                  '回复：${_reasonLabel(a.resolution)}',
-                                  'Жауап: ${_reasonLabel(a.resolution)}',
-                                  'Ответ: ${_reasonLabel(a.resolution)}'),
-                              style: YText.caption.copyWith(color: t.muted)),
-                        if (a.status == AppealStatus.open && canModerate)
-                          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                            OutlinedButton(
-                                onPressed: () => _resolve(a, false),
-                                child: Text(tr3('维持', 'Қабылдамау', 'Отклонить'))),
-                            const SizedBox(width: YSpace.sm),
-                            FilledButton(
-                                onPressed: () => _resolve(a, true),
-                                child: Text(tr3('成立并恢复', 'Қалпына келтіру', 'Восстановить'))),
-                          ]),
-                      ])))))
+                      onTap: () => pushPage<void>(context,
+                          (_) => AccountDetailPage(accountId: a.accountId)),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(children: [
+                              StatusPill(_targetName(a.target)),
+                              const SizedBox(width: YSpace.sm),
+                              Expanded(
+                                  child: Text(
+                                      a.targetTitle.isEmpty
+                                          ? a.accountName
+                                          : a.targetTitle,
+                                      style: YText.bodyStrong)),
+                            ]),
+                            const SizedBox(height: 4),
+                            Text(a.text),
+                            Text('${a.accountName} · ${_date(a.createdAt)}',
+                                style: YText.caption.copyWith(color: t.muted)),
+                            if (a.resolution.isNotEmpty)
+                              Text(
+                                  tr3(
+                                      '回复：${_reasonLabel(a.resolution)}',
+                                      'Жауап: ${_reasonLabel(a.resolution)}',
+                                      'Ответ: ${_reasonLabel(a.resolution)}'),
+                                  style:
+                                      YText.caption.copyWith(color: t.muted)),
+                            if (a.status == AppealStatus.open && canModerate)
+                              Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    OutlinedButton(
+                                        onPressed: () => _resolve(a, false),
+                                        child: Text(tr3(
+                                            '维持', 'Қабылдамау', 'Отклонить'))),
+                                    const SizedBox(width: YSpace.sm),
+                                    FilledButton(
+                                        onPressed: () => _resolve(a, true),
+                                        child: Text(tr3(
+                                            '成立并恢复',
+                                            'Қалпына келтіру',
+                                            'Восстановить'))),
+                                  ]),
+                          ])))))
     ]);
   }
 }
@@ -1048,7 +1154,8 @@ class _Photo extends StatelessWidget {
   Widget build(BuildContext context) {
     final Widget img;
     if (src.startsWith('data:')) {
-      img = Image.memory(base64Decode(src.substring(src.indexOf(',') + 1)), fit: BoxFit.cover);
+      img = Image.memory(base64Decode(src.substring(src.indexOf(',') + 1)),
+          fit: BoxFit.cover);
     } else {
       final r = context.repos;
       final base = r is HttpBackend ? r.baseUrl : '';
@@ -1083,9 +1190,12 @@ class _VerificationsState extends State<_Verifications> {
                 'Мысалы: фотодан жұмысты өзі істегені көрінбейді',
                 'Например: по фото не видно, что работу выполнял сам мастер'));
     if (note == null || !mounted) return;
-    await attempt(context, () => context.repos.resolveVerification(v.id, approve, note),
+    await attempt(
+        context, () => context.repos.resolveVerification(v.id, approve, note),
         success: approve
-            ? tr3('已通过，名片显示“已核验”', 'Мақұлданды, профильде «Расталған» белгісі шығады',
+            ? tr3(
+                '已通过，名片显示“已核验”',
+                'Мақұлданды, профильде «Расталған» белгісі шығады',
                 'Одобрено, в профиле появится отметка «Проверен»')
             : tr3('已驳回并通知', 'Қабылданбады, пайдаланушыға хабарланды',
                 'Отклонено, пользователь уведомлён'));
@@ -1096,51 +1206,61 @@ class _VerificationsState extends State<_Verifications> {
     final t = YTokens.of(context);
     final canModerate = _may(context, AdminPerms.moderate);
     return Column(children: [
-      _Chips<VerificationStatus?>(
-          options: [
-            (VerificationStatus.pending, tr3('待审核', 'Күтуде', 'Ожидают')),
-            (VerificationStatus.approved, tr3('已通过', 'Мақұлданған', 'Одобренные')),
-            (VerificationStatus.rejected, tr3('已驳回', 'Қабылданбаған', 'Отклонённые')),
-            (null, _all),
-          ],
-          selected: _status,
-          onSelect: (v) => setState(() => _status = v)),
+      _Chips<VerificationStatus?>(options: [
+        (VerificationStatus.pending, tr3('待审核', 'Күтуде', 'Ожидают')),
+        (VerificationStatus.approved, tr3('已通过', 'Мақұлданған', 'Одобренные')),
+        (
+          VerificationStatus.rejected,
+          tr3('已驳回', 'Қабылданбаған', 'Отклонённые')
+        ),
+        (null, _all),
+      ], selected: _status, onSelect: (v) => setState(() => _status = v)),
       Expanded(
           child: _PagedList<Verification>(
               key: ValueKey('verif-$_status'),
-              load: (p) => context.repos.verifications(status: _status, page: p),
-              empty: tr3('没有认证申请', 'Растау өтінімі жоқ',
-                  'Заявок на верификацию нет'),
+              load: (p) =>
+                  context.repos.verifications(status: _status, page: p),
+              empty: tr3(
+                  '没有认证申请', 'Растау өтінімі жоқ', 'Заявок на верификацию нет'),
               item: (context, v) => Padding(
                   padding: const EdgeInsets.only(bottom: YSpace.sm),
                   child: YCard(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    InkWell(
-                        onTap: () =>
-                            pushPage<void>(context, (_) => ProfilePage(profileId: v.profileId)),
-                        child: Text(v.name, style: YText.bodyStrong)),
-                    Text(
-                        '${v.ownerName} · ${tr3('电话 ${v.phone}', 'тел. ${v.phone}', 'тел. ${v.phone}')} · ${_date(v.createdAt)}',
-                        style: YText.caption.copyWith(color: t.muted)),
-                    if (v.note.isNotEmpty) Text(v.note),
-                    const SizedBox(height: YSpace.sm),
-                    Wrap(spacing: 6, runSpacing: 6, children: [
-                      for (final p in v.photos) _Photo(p),
-                    ]),
-                    if (v.resolution.isNotEmpty)
-                      Text(
-                          tr3('说明：${v.resolution}', 'Түсініктеме: ${v.resolution}',
-                              'Пояснение: ${v.resolution}'),
-                          style: YText.caption.copyWith(color: t.muted)),
-                    if (v.status == VerificationStatus.pending && canModerate)
-                      Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                        OutlinedButton(
-                            onPressed: () => _resolve(v, false), child: Text(_dismissWord)),
-                        const SizedBox(width: YSpace.sm),
-                        FilledButton(
-                            onPressed: () => _resolve(v, true), child: Text(_approveWord)),
-                      ]),
-                  ])))))
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                        InkWell(
+                            onTap: () => pushPage<void>(context,
+                                (_) => ProfilePage(profileId: v.profileId)),
+                            child: Text(v.name, style: YText.bodyStrong)),
+                        Text(
+                            '${v.ownerName} · ${tr3('电话 ${v.phone}', 'тел. ${v.phone}', 'тел. ${v.phone}')} · ${_date(v.createdAt)}',
+                            style: YText.caption.copyWith(color: t.muted)),
+                        if (v.note.isNotEmpty) Text(v.note),
+                        const SizedBox(height: YSpace.sm),
+                        Wrap(spacing: 6, runSpacing: 6, children: [
+                          for (final p in v.photos) _Photo(p),
+                        ]),
+                        if (v.resolution.isNotEmpty)
+                          Text(
+                              tr3(
+                                  '说明：${v.resolution}',
+                                  'Түсініктеме: ${v.resolution}',
+                                  'Пояснение: ${v.resolution}'),
+                              style: YText.caption.copyWith(color: t.muted)),
+                        if (v.status == VerificationStatus.pending &&
+                            canModerate)
+                          Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                OutlinedButton(
+                                    onPressed: () => _resolve(v, false),
+                                    child: Text(_dismissWord)),
+                                const SizedBox(width: YSpace.sm),
+                                FilledButton(
+                                    onPressed: () => _resolve(v, true),
+                                    child: Text(_approveWord)),
+                              ]),
+                      ])))))
     ]);
   }
 }
@@ -1184,20 +1304,18 @@ class _UsersTabState extends State<_UsersTab> with _Search {
     final t = YTokens.of(context);
     return Column(children: [
       Padding(
-          padding: const EdgeInsets.fromLTRB(YSpace.gutter, YSpace.sm, YSpace.gutter, 0),
+          padding: const EdgeInsets.fromLTRB(
+              YSpace.gutter, YSpace.sm, YSpace.gutter, 0),
           child: SearchField(
               controller: search,
               hint: tr3('名字、邮箱或账号 ID', 'Аты, email не аккаунт ID',
                   'Имя, email или ID аккаунта'),
               onChanged: typed)),
-      _Chips<_UserFilter>(
-          options: [
-            (_UserFilter.all, _all),
-            (_UserFilter.restricted, tr3('受限', 'Шектелген', 'Ограниченные')),
-            (_UserFilter.team, _teamTitle),
-          ],
-          selected: _filter,
-          onSelect: (v) => setState(() => _filter = v)),
+      _Chips<_UserFilter>(options: [
+        (_UserFilter.all, _all),
+        (_UserFilter.restricted, tr3('受限', 'Шектелген', 'Ограниченные')),
+        (_UserFilter.team, _teamTitle),
+      ], selected: _filter, onSelect: (v) => setState(() => _filter = v)),
       Expanded(
           child: _PagedList<AdminUserRow>(
               key: ValueKey('users-$_q-$_filter'),
@@ -1206,10 +1324,11 @@ class _UsersTabState extends State<_UsersTab> with _Search {
                   restricted: _filter == _UserFilter.restricted,
                   admins: _filter == _UserFilter.team,
                   page: p),
-              empty: tr3('没有找到用户', 'Пайдаланушы табылмады', 'Пользователи не найдены'),
+              empty: tr3(
+                  '没有找到用户', 'Пайдаланушы табылмады', 'Пользователи не найдены'),
               item: (context, u) => ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Avatar(u.name.isEmpty ? '?' : u.name, size: 40),
+                  leading: Avatar(u.name.isEmpty ? '?' : u.name),
                   title: Text(u.name.isEmpty ? _unnamed : u.name),
                   subtitle: Text([
                     if (u.email.isNotEmpty) u.email,
@@ -1217,10 +1336,11 @@ class _UsersTabState extends State<_UsersTab> with _Search {
                   ].join(' · ')),
                   trailing: Wrap(spacing: 4, children: [
                     if (u.role != null) StatusPill(roleName(u.role)),
-                    if (u.restricted) StatusPill(_restrictedPill, color: t.crit),
+                    if (u.restricted)
+                      StatusPill(_restrictedPill, color: t.crit),
                   ]),
-                  onTap: () =>
-                      pushPage<void>(context, (_) => AccountDetailPage(accountId: u.id))))),
+                  onTap: () => pushPage<void>(
+                      context, (_) => AccountDetailPage(accountId: u.id))))),
     ]);
   }
 }
@@ -1241,7 +1361,8 @@ class AccountDetailPage extends StatelessWidget {
             context, tr3('限制原因', 'Шектеу себебі', 'Причина ограничения'),
             codes: const ['fake', 'abuse', 'spam', 'illegal']);
     if (note == null || !context.mounted) return;
-    await attempt(context, () => context.repos.setRestriction(a.id, !a.restricted, note),
+    await attempt(
+        context, () => context.repos.setRestriction(a.id, !a.restricted, note),
         success: a.restricted
             ? tr3('已解除限制', 'Шектеу алынды', 'Ограничение снято')
             : tr3(
@@ -1254,8 +1375,10 @@ class AccountDetailPage extends StatelessWidget {
     final api = _http(context);
     if (api == null) return;
     final note = banned
-        ? await askText(context, tr3('解封：说明', 'Бұғаттан шығару: түсініктеме',
-            'Разблокировка: пояснение'))
+        ? await askText(
+            context,
+            tr3('解封：说明', 'Бұғаттан шығару: түсініктеме',
+                'Разблокировка: пояснение'))
         : await _pickReason(
             context, tr3('封禁原因', 'Бұғаттау себебі', 'Причина блокировки'),
             codes: const ['fake', 'abuse', 'spam', 'illegal']);
@@ -1272,14 +1395,17 @@ class AccountDetailPage extends StatelessWidget {
     if (api == null) return;
     final note = await askText(
         context, tr3('注销原因', 'Жою себебі', 'Причина удаления'),
-        hint: tr3('名片和需求会下架，云端备份删除，不能恢复。',
+        hint: tr3(
+            '名片和需求会下架，云端备份删除，不能恢复。',
             'Профильдер мен тапсырыстар алынады, қалпына келмейді.',
             'Профили и заявки снимаются, восстановить нельзя.'));
     if (note == null || !context.mounted) return;
     if (!await confirmDialog(context,
             tr3('注销这个账号？', 'Аккаунтты жою керек пе?', 'Удалить аккаунт?'),
             ok: tr3('注销', 'Жою', 'Удалить'), danger: true) ||
-        !context.mounted) return;
+        !context.mounted) {
+      return;
+    }
     await attempt(context, () => api.deleteAccountFor(a.id, note),
         success: tr3('已注销', 'Жойылды', 'Удалён'));
   }
@@ -1303,12 +1429,16 @@ class AccountDetailPage extends StatelessWidget {
 
   Future<void> _role(BuildContext context, Account a) async {
     final v = await pickOne<String>(
-        context, tr3('后台角色', 'Әкімшіліктегі рөл', 'Роль в админке'), [
-      for (final r in AdminRoles.all) (r, roleName(r)),
-      ('', tr3('无（撤销）', 'Жоқ (рөлді алу)', 'Нет (снять роль)')),
-    ], selected: a.role ?? '');
+        context,
+        tr3('后台角色', 'Әкімшіліктегі рөл', 'Роль в админке'),
+        [
+          for (final r in AdminRoles.all) (r, roleName(r)),
+          ('', tr3('无（撤销）', 'Жоқ (рөлді алу)', 'Нет (снять роль)')),
+        ],
+        selected: a.role ?? '');
     if (v == null || !context.mounted) return;
-    await attempt(context, () => context.repos.setRole(a.id, v.isEmpty ? null : v),
+    await attempt(
+        context, () => context.repos.setRole(a.id, v.isEmpty ? null : v),
         success: tr3('已更新角色', 'Рөл жаңартылды', 'Роль обновлена'));
   }
 
@@ -1318,193 +1448,239 @@ class AccountDetailPage extends StatelessWidget {
     final me = context.repos.currentAccount;
     return Scaffold(
         appBar: AppBar(
-            title: Text(tr3('账号详情', 'Аккаунт мәліметі', 'Сведения об аккаунте'))),
+            title:
+                Text(tr3('账号详情', 'Аккаунт мәліметі', 'Сведения об аккаунте'))),
         body: Live<AccountDetail>(
             load: (r) => r.accountDetail(accountId),
             builder: (context, d) {
               final a = d.account;
               final self = me?.id == a.id;
-              return ListView(padding: const EdgeInsets.all(YSpace.gutter), children: [
-                Row(children: [
-                  Avatar(a.displayName.isEmpty ? '?' : a.displayName, size: 56),
-                  const SizedBox(width: YSpace.md),
-                  Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(a.displayName.isEmpty ? _unnamed : a.displayName,
-                        style: display(size: 22)),
+              return ListView(
+                  padding: const EdgeInsets.all(YSpace.gutter),
+                  children: [
+                    Row(children: [
+                      Avatar(a.displayName.isEmpty ? '?' : a.displayName,
+                          size: 56),
+                      const SizedBox(width: YSpace.md),
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Text(
+                                a.displayName.isEmpty
+                                    ? _unnamed
+                                    : a.displayName,
+                                style: display(size: 22)),
+                            Text(
+                                [
+                                  if (d.email.isNotEmpty) d.email,
+                                  if (a.phone.isNotEmpty) a.phone,
+                                  _registered(a.createdAt),
+                                  if (d.methods.isNotEmpty)
+                                    d.methods.map(_methodName).join('/'),
+                                  if (d.lastLogin != null)
+                                    tr3(
+                                        '最近登录 ${_date(d.lastLogin!)}',
+                                        'Соңғы кіру: ${_date(d.lastLogin!)}',
+                                        'Последний вход: ${_date(d.lastLogin!)}'),
+                                ].join(' · '),
+                                style: YText.caption.copyWith(color: t.muted)),
+                          ])),
+                    ]),
+                    const SizedBox(height: YSpace.sm),
+                    Wrap(spacing: 6, children: [
+                      if (a.role != null) StatusPill(roleName(a.role)),
+                      if (a.restricted)
+                        StatusPill(_restrictedPill, color: t.crit),
+                      if (d.banned)
+                        StatusPill(tr3('已封禁', 'Бұғатталған', 'Заблокирован'),
+                            color: t.crit),
+                      if (a.deleted)
+                        StatusPill(tr3('已注销', 'Жойылған', 'Удалён')),
+                    ]),
+                    if (!self && !a.deleted) ...[
+                      const SizedBox(height: YSpace.md),
+                      Wrap(spacing: YSpace.sm, children: [
+                        if (_may(context, AdminPerms.moderate) &&
+                            a.role == null)
+                          OutlinedButton(
+                              onPressed: () => _restrict(context, a),
+                              child: Text(a.restricted
+                                  ? tr3('解除限制', 'Шектеуді алу',
+                                      'Снять ограничение')
+                                  : tr3('限制账号', 'Аккаунтты шектеу',
+                                      'Ограничить аккаунт'))),
+                        if (_may(context, AdminPerms.team) && !a.restricted)
+                          OutlinedButton(
+                              onPressed: () => _role(context, a),
+                              child: Text(tr3('设置后台角色', 'Рөл тағайындау',
+                                  'Назначить роль'))),
+                        if (_may(context, AdminPerms.moderate) &&
+                            a.role == null)
+                          OutlinedButton(
+                              onPressed: () => _ban(context, a, d.banned),
+                              child: Text(d.banned
+                                  ? tr3(
+                                      '解封', 'Бұғаттан шығару', 'Разблокировать')
+                                  : tr3('封禁', 'Бұғаттау', 'Заблокировать'))),
+                        if (_may(context, AdminPerms.team) && a.role == null)
+                          OutlinedButton(
+                              onPressed: () => _delete(context, a),
+                              child: Text(
+                                  tr3('注销账号', 'Аккаунтты жою',
+                                      'Удалить аккаунт'),
+                                  style: TextStyle(color: t.crit))),
+                      ]),
+                    ],
+                    const SizedBox(height: YSpace.lg),
                     Text(
-                        [
-                          if (d.email.isNotEmpty) d.email,
-                          if (a.phone.isNotEmpty) a.phone,
-                          _registered(a.createdAt),
-                          if (d.methods.isNotEmpty)
-                            d.methods.map(_methodName).join('/'),
-                          if (d.lastLogin != null)
-                            tr3(
-                                '最近登录 ${_date(d.lastLogin!)}',
-                                'Соңғы кіру: ${_date(d.lastLogin!)}',
-                                'Последний вход: ${_date(d.lastLogin!)}'),
-                        ].join(' · '),
+                        tr3(
+                            '报价/报名 ${d.applications} 次 · 举报他人 ${d.reportsFiled} 次',
+                            'Өтінім: ${d.applications} · Берген шағымы: ${d.reportsFiled}',
+                            'Откликов: ${d.applications} · Подано жалоб: ${d.reportsFiled}'),
                         style: YText.caption.copyWith(color: t.muted)),
-                  ])),
-                ]),
-                const SizedBox(height: YSpace.sm),
-                Wrap(spacing: 6, children: [
-                  if (a.role != null) StatusPill(roleName(a.role)),
-                  if (a.restricted) StatusPill(_restrictedPill, color: t.crit),
-                  if (d.banned)
-                    StatusPill(tr3('已封禁', 'Бұғатталған', 'Заблокирован'), color: t.crit),
-                  if (a.deleted) StatusPill(tr3('已注销', 'Жойылған', 'Удалён')),
-                ]),
-                if (!self && !a.deleted) ...[
-                  const SizedBox(height: YSpace.md),
-                  Wrap(spacing: YSpace.sm, children: [
-                    if (_may(context, AdminPerms.moderate) && a.role == null)
-                      OutlinedButton(
-                          onPressed: () => _restrict(context, a),
-                          child: Text(a.restricted
-                              ? tr3('解除限制', 'Шектеуді алу', 'Снять ограничение')
-                              : tr3('限制账号', 'Аккаунтты шектеу', 'Ограничить аккаунт'))),
-                    if (_may(context, AdminPerms.team) && !a.restricted)
-                      OutlinedButton(
-                          onPressed: () => _role(context, a),
-                          child: Text(tr3('设置后台角色', 'Рөл тағайындау', 'Назначить роль'))),
-                    if (_may(context, AdminPerms.moderate) && a.role == null)
-                      OutlinedButton(
-                          onPressed: () => _ban(context, a, d.banned),
-                          child: Text(d.banned
-                              ? tr3('解封', 'Бұғаттан шығару', 'Разблокировать')
-                              : tr3('封禁', 'Бұғаттау', 'Заблокировать'))),
-                    if (_may(context, AdminPerms.team) && a.role == null)
-                      OutlinedButton(
-                          onPressed: () => _delete(context, a),
-                          child: Text(tr3('注销账号', 'Аккаунтты жою', 'Удалить аккаунт'),
-                              style: TextStyle(color: t.crit))),
-                  ]),
-                ],
-                const SizedBox(height: YSpace.lg),
-                Text(
-                    tr3(
-                        '报价/报名 ${d.applications} 次 · 举报他人 ${d.reportsFiled} 次',
-                        'Өтінім: ${d.applications} · Берген шағымы: ${d.reportsFiled}',
-                        'Откликов: ${d.applications} · Подано жалоб: ${d.reportsFiled}'),
-                    style: YText.caption.copyWith(color: t.muted)),
-                if (d.profiles.isNotEmpty) ...[
-                  SectionTitle(tr3('名片', 'Профильдер', 'Профили')),
-                  for (final p in d.profiles)
-                    ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(p.name),
-                        subtitle: Text([
-                          p.status == ProfileStatus.hidden
-                              ? tr3('隐藏', 'Жасырын', 'Скрыт')
-                              : tr3('公开', 'Жария', 'Опубликован'),
-                          if (p.verified) tr3('已核验', 'расталған', 'проверен'),
-                        ].join(' · ')),
-                        onTap: () =>
-                            pushPage<void>(context, (_) => ProfilePage(profileId: p.id)),
-                        trailing: _may(context, AdminPerms.moderate) &&
-                                p.status != ProfileStatus.hidden
-                            ? TextButton(
-                                onPressed: () => _takeDown(context, 'profile', p.id),
-                                child: Text(tr3('下架', 'Алу', 'Снять')))
-                            : null),
-                ],
-                if (d.posts.isNotEmpty) ...[
-                  SectionTitle(tr3('房子', 'Үйлер', 'Дома')),
-                  for (final p in d.posts)
-                    ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(p.title),
-                        subtitle: Text([
-                          p.hidden
-                              ? tr3('已隐藏', 'Жасырылған', 'Скрыт')
-                              : tr3('公开', 'Жария', 'Опубликован'),
-                          if (p.featured) tr3('精选', 'Таңдаулы', 'В подборке'),
-                          if (_may(context, AdminPerms.operate) && !p.hidden)
-                            tr3('长按设精选', 'Ұзақ басып таңдау', 'Удерживайте для подборки'),
-                        ].join(' · ')),
-                        onLongPress: _may(context, AdminPerms.operate) &&
-                                !p.hidden &&
-                                _http(context) != null
-                            ? () => attempt(
-                                context, () => _http(context)!.setFeatured(p.id, !p.featured),
-                                success: p.featured
-                                    ? tr3('已取消精选', 'Таңдаулыдан алынды', 'Убрано из подборки')
-                                    : tr3('已设为精选，排在首页最前', 'Басты бетте бірінші тұрады',
-                                        'В подборке: первым на главной'))
-                            : null,
-                        onTap: () => pushPage<void>(context, (_) => PostPage(postId: p.id)),
-                        trailing: _may(context, AdminPerms.moderate)
-                            ? TextButton(
-                                onPressed: () async {
-                                  final note = p.hidden
-                                      ? await askText(
+                    if (d.profiles.isNotEmpty) ...[
+                      SectionTitle(tr3('名片', 'Профильдер', 'Профили')),
+                      for (final p in d.profiles)
+                        ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(p.name),
+                            subtitle: Text([
+                              p.status == ProfileStatus.hidden
+                                  ? tr3('隐藏', 'Жасырын', 'Скрыт')
+                                  : tr3('公开', 'Жария', 'Опубликован'),
+                              if (p.verified)
+                                tr3('已核验', 'расталған', 'проверен'),
+                            ].join(' · ')),
+                            onTap: () => pushPage<void>(
+                                context, (_) => ProfilePage(profileId: p.id)),
+                            trailing: _may(context, AdminPerms.moderate) &&
+                                    p.status != ProfileStatus.hidden
+                                ? TextButton(
+                                    onPressed: () =>
+                                        _takeDown(context, 'profile', p.id),
+                                    child: Text(tr3('下架', 'Алу', 'Снять')))
+                                : null),
+                    ],
+                    if (d.posts.isNotEmpty) ...[
+                      SectionTitle(tr3('房子', 'Үйлер', 'Дома')),
+                      for (final p in d.posts)
+                        ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(p.title),
+                            subtitle: Text([
+                              p.hidden
+                                  ? tr3('已隐藏', 'Жасырылған', 'Скрыт')
+                                  : tr3('公开', 'Жария', 'Опубликован'),
+                              if (p.featured)
+                                tr3('精选', 'Таңдаулы', 'В подборке'),
+                              if (_may(context, AdminPerms.operate) &&
+                                  !p.hidden)
+                                tr3('长按设精选', 'Ұзақ басып таңдау',
+                                    'Удерживайте для подборки'),
+                            ].join(' · ')),
+                            onLongPress: _may(context, AdminPerms.operate) &&
+                                    !p.hidden &&
+                                    _http(context) != null
+                                ? () => attempt(
+                                    context,
+                                    () => _http(context)!.setFeatured(
+                                        p.id, !p.featured),
+                                    success: p.featured
+                                        ? tr3('已取消精选', 'Таңдаулыдан алынды',
+                                            'Убрано из подборки')
+                                        : tr3(
+                                            '已设为精选，排在首页最前',
+                                            'Басты бетте бірінші тұрады',
+                                            'В подборке: первым на главной'))
+                                : null,
+                            onTap: () =>
+                                pushPage<void>(context, (_) => PostPage(postId: p.id)),
+                            trailing: _may(context, AdminPerms.moderate)
+                                ? TextButton(
+                                    onPressed: () async {
+                                      final note = p.hidden
+                                          ? await askText(
+                                              context,
+                                              tr3(
+                                                  '恢复说明',
+                                                  'Қайтару түсініктемесі',
+                                                  'Пояснение к восстановлению'))
+                                          : await _pickReason(
+                                              context,
+                                              tr3('隐藏原因', 'Жасыру себебі',
+                                                  'Причина скрытия'));
+                                      if (note == null || !context.mounted)
+                                        return;
+                                      await attempt(
                                           context,
-                                          tr3('恢复说明', 'Қайтару түсініктемесі',
-                                              'Пояснение к восстановлению'))
-                                      : await _pickReason(context,
-                                          tr3('隐藏原因', 'Жасыру себебі', 'Причина скрытия'));
-                                  if (note == null || !context.mounted) return;
-                                  await attempt(context,
-                                      () => context.repos.setPostHidden(p.id, !p.hidden, note));
-                                },
-                                child: Text(p.hidden
-                                    ? tr3('恢复', 'Қайтару', 'Вернуть')
-                                    : tr3('隐藏', 'Жасыру', 'Скрыть')))
-                            : null),
-                ],
-                if (d.demands.isNotEmpty) ...[
-                  SectionTitle(tr3('需求', 'Тапсырыстар', 'Заявки')),
-                  for (final x in d.demands) ...[
-                    _DemandCard(
-                        demand: x,
-                        onTap: () =>
-                            pushPage<void>(context, (_) => DemandDetailPage(demandId: x.id))),
-                    if (_may(context, AdminPerms.moderate) &&
-                        const [DemandStatus.pendingReview, DemandStatus.open, DemandStatus.paused]
-                            .contains(x.status))
-                      Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                              onPressed: () => _takeDown(context, 'demand', x.id),
-                              child: Text(tr3('下架这个需求', 'Тапсырысты алу', 'Снять заявку')))),
-                  ],
-                ],
-                if (d.cooperations.isNotEmpty) ...[
-                  SectionTitle(tr3('合作 ${d.cooperations.length}',
-                      'Келісімдер: ${d.cooperations.length}', 'Сделки: ${d.cooperations.length}')),
-                  for (final c in d.cooperations)
-                    Text(
-                        [
-                          _date(c.createdAt),
-                          c.status.name,
-                          if (c.endRequest?.dispute != null)
-                            tr3(
-                                '争议：${c.endRequest!.dispute}',
-                                'Дау: ${c.endRequest!.dispute}',
-                                'Спор: ${c.endRequest!.dispute}'),
-                        ].join(' · '),
-                        style: YText.caption),
-                ],
-                if (d.reportsAbout.isNotEmpty) ...[
-                  SectionTitle(tr3('被举报', 'Үстінен түскен шағымдар', 'Жалобы на аккаунт')),
-                  for (final r in d.reportsAbout)
-                    Text(
-                        '${_date(r.createdAt)} · ${_reportTargetName(r.target)} · ${_reasonLabel(r.reason)} · ${_reportStatusName(r.status)}',
-                        style: YText.caption),
-                ],
-                if (d.appeals.isNotEmpty) ...[
-                  SectionTitle(tr3('申诉', 'Апелляциялар', 'Апелляции')),
-                  for (final x in d.appeals)
-                    Text('${_date(x.createdAt)} · ${_targetName(x.target)} · ${x.text}',
-                        style: YText.caption),
-                ],
-                if (d.audit.isNotEmpty) ...[
-                  SectionTitle(tr3('处理记录', 'Шешімдер тарихы', 'История решений')),
-                  for (final e in d.audit) _AuditRow(e),
-                ],
-              ]);
+                                          () => context.repos.setPostHidden(
+                                              p.id, !p.hidden, note));
+                                    },
+                                    child: Text(p.hidden ? tr3('恢复', 'Қайтару', 'Вернуть') : tr3('隐藏', 'Жасыру', 'Скрыть')))
+                                : null),
+                    ],
+                    if (d.demands.isNotEmpty) ...[
+                      SectionTitle(tr3('需求', 'Тапсырыстар', 'Заявки')),
+                      for (final x in d.demands) ...[
+                        _DemandCard(
+                            demand: x,
+                            onTap: () => pushPage<void>(context,
+                                (_) => DemandDetailPage(demandId: x.id))),
+                        if (_may(context, AdminPerms.moderate) &&
+                            const [
+                              DemandStatus.pendingReview,
+                              DemandStatus.open,
+                              DemandStatus.paused
+                            ].contains(x.status))
+                          Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                  onPressed: () =>
+                                      _takeDown(context, 'demand', x.id),
+                                  child: Text(tr3('下架这个需求', 'Тапсырысты алу',
+                                      'Снять заявку')))),
+                      ],
+                    ],
+                    if (d.cooperations.isNotEmpty) ...[
+                      SectionTitle(tr3(
+                          '合作 ${d.cooperations.length}',
+                          'Келісімдер: ${d.cooperations.length}',
+                          'Сделки: ${d.cooperations.length}')),
+                      for (final c in d.cooperations)
+                        Text(
+                            [
+                              _date(c.createdAt),
+                              c.status.name,
+                              if (c.endRequest?.dispute != null)
+                                tr3(
+                                    '争议：${c.endRequest!.dispute}',
+                                    'Дау: ${c.endRequest!.dispute}',
+                                    'Спор: ${c.endRequest!.dispute}'),
+                            ].join(' · '),
+                            style: YText.caption),
+                    ],
+                    if (d.reportsAbout.isNotEmpty) ...[
+                      SectionTitle(tr3('被举报', 'Үстінен түскен шағымдар',
+                          'Жалобы на аккаунт')),
+                      for (final r in d.reportsAbout)
+                        Text(
+                            '${_date(r.createdAt)} · ${_reportTargetName(r.target)} · ${_reasonLabel(r.reason)} · ${_reportStatusName(r.status)}',
+                            style: YText.caption),
+                    ],
+                    if (d.appeals.isNotEmpty) ...[
+                      SectionTitle(tr3('申诉', 'Апелляциялар', 'Апелляции')),
+                      for (final x in d.appeals)
+                        Text(
+                            '${_date(x.createdAt)} · ${_targetName(x.target)} · ${x.text}',
+                            style: YText.caption),
+                    ],
+                    if (d.audit.isNotEmpty) ...[
+                      SectionTitle(
+                          tr3('处理记录', 'Шешімдер тарихы', 'История решений')),
+                      for (final e in d.audit) _AuditRow(e),
+                    ],
+                  ]);
             }));
   }
 }
@@ -1525,67 +1701,90 @@ class _MoreTab extends StatelessWidget {
                       '按状态筛选、搜索标题，可下架已公开的需求',
                       'Күйі бойынша сүзу, атауынан іздеу, жарияланған тапсырысты алып тастау',
                       'Фильтр по статусу, поиск по названию, снятие опубликованных заявок'),
-                  onTap: () => pushPage<void>(context, (_) => const _AllDemandsPage())),
+                  onTap: () =>
+                      pushPage<void>(context, (_) => const _AllDemandsPage())),
             ]),
             SettingsGroup(
                 title: tr3('团队与记录', 'Команда және журнал', 'Команда и журнал'),
                 children: [
-              SettingsRow(
-                  icon: Icons.badge_outlined,
-                  title: _teamTitle,
-                  onTap: () => pushPage<void>(context, (_) => const _TeamPage())),
-              SettingsRow(
-                  icon: Icons.history,
-                  title: tr3('操作记录', 'Әрекеттер журналы', 'Журнал действий'),
-                  subtitle: tr3('每一个决定：谁、何时、为什么', 'Әр шешім: кім, қашан, не үшін',
-                      'Каждое решение: кто, когда и почему'),
-                  onTap: () => pushPage<void>(context, (_) => const AuditPage())),
-            ]),
-            SettingsGroup(title: tr3('用户与数据', 'Қолданушылар мен деректер', 'Пользователи и данные'), children: [
-              SettingsRow(
-                  key: const Key('admin-feedback'),
-                  icon: Icons.mark_email_unread_outlined,
-                  title: tr3('用户反馈', 'Пікірлер', 'Обратная связь'),
-                  onTap: () => pushPage<void>(context, (_) => const FeedbackInboxPage())),
-              SettingsRow(
-                  key: const Key('admin-trends'),
-                  icon: Icons.insights_outlined,
-                  title: tr3('近 30 天趋势', 'Соңғы 30 күн', 'Динамика за 30 дней'),
-                  onTap: () => pushPage<void>(context, (_) => const TrendsPage())),
-              if (_may(context, AdminPerms.team)) ...[
-                SettingsRow(
-                    icon: Icons.file_download_outlined,
-                    title: tr3('导出用户表', 'Қолданушыларды экспорттау', 'Экспорт пользователей'),
-                    onTap: () => _export(context, 'users')),
-                SettingsRow(
-                    icon: Icons.file_download_outlined,
-                    title: tr3('导出需求表', 'Тапсырыстарды экспорттау', 'Экспорт заявок'),
-                    onTap: () => _export(context, 'demands')),
-              ],
-            ]),
-            SettingsGroup(title: tr3('运营', 'Операциялар', 'Операции'), children: [
-              if (_may(context, AdminPerms.operate))
-                SettingsRow(
-                    key: const Key('admin-broadcast'),
-                    icon: Icons.campaign_outlined,
-                    title: tr3('群发通知', 'Жаппай хабарландыру', 'Рассылка'),
-                    subtitle: tr3('推送到所有用户的手机', 'Барлық телефонға', 'На все телефоны'),
-                    onTap: () => pushPage<void>(context, (_) => const BroadcastPage())),
-              SettingsRow(
-                  key: const Key('admin-banned-words'),
-                  icon: Icons.block_outlined,
-                  title: tr3('违禁词', 'Тыйым сөздер', 'Запрещённые слова'),
-                  onTap: () => pushPage<void>(context, (_) => const BannedWordsPage())),
-            ]),
-            SettingsGroup(title: tr3('推送', 'Хабарландырулар', 'Уведомления'), children: [
-              SettingsRow(
-                  icon: Icons.notifications_paused_outlined,
-                  title: _pushTitle,
-                  subtitle: tr3('平台免打扰时段与每人每日上限',
-                      '«Мазаламау» уақыты және бір адамға күндік шек',
-                      'Тихие часы и дневной лимит на человека'),
-                  onTap: () => pushPage<void>(context, (_) => const _PushPolicyPage())),
-            ]),
+                  SettingsRow(
+                      icon: Icons.badge_outlined,
+                      title: _teamTitle,
+                      onTap: () =>
+                          pushPage<void>(context, (_) => const _TeamPage())),
+                  SettingsRow(
+                      icon: Icons.history,
+                      title:
+                          tr3('操作记录', 'Әрекеттер журналы', 'Журнал действий'),
+                      subtitle: tr3(
+                          '每一个决定：谁、何时、为什么',
+                          'Әр шешім: кім, қашан, не үшін',
+                          'Каждое решение: кто, когда и почему'),
+                      onTap: () =>
+                          pushPage<void>(context, (_) => const AuditPage())),
+                ]),
+            SettingsGroup(
+                title: tr3('用户与数据', 'Қолданушылар мен деректер',
+                    'Пользователи и данные'),
+                children: [
+                  SettingsRow(
+                      key: const Key('admin-feedback'),
+                      icon: Icons.mark_email_unread_outlined,
+                      title: tr3('用户反馈', 'Пікірлер', 'Обратная связь'),
+                      onTap: () => pushPage<void>(
+                          context, (_) => const FeedbackInboxPage())),
+                  SettingsRow(
+                      key: const Key('admin-trends'),
+                      icon: Icons.insights_outlined,
+                      title: tr3(
+                          '近 30 天趋势', 'Соңғы 30 күн', 'Динамика за 30 дней'),
+                      onTap: () =>
+                          pushPage<void>(context, (_) => const TrendsPage())),
+                  if (_may(context, AdminPerms.team)) ...[
+                    SettingsRow(
+                        icon: Icons.file_download_outlined,
+                        title: tr3('导出用户表', 'Қолданушыларды экспорттау',
+                            'Экспорт пользователей'),
+                        onTap: () => _export(context, 'users')),
+                    SettingsRow(
+                        icon: Icons.file_download_outlined,
+                        title: tr3('导出需求表', 'Тапсырыстарды экспорттау',
+                            'Экспорт заявок'),
+                        onTap: () => _export(context, 'demands')),
+                  ],
+                ]),
+            SettingsGroup(
+                title: tr3('运营', 'Операциялар', 'Операции'),
+                children: [
+                  if (_may(context, AdminPerms.operate))
+                    SettingsRow(
+                        key: const Key('admin-broadcast'),
+                        icon: Icons.campaign_outlined,
+                        title: tr3('群发通知', 'Жаппай хабарландыру', 'Рассылка'),
+                        subtitle: tr3('推送到所有用户的手机', 'Барлық телефонға',
+                            'На все телефоны'),
+                        onTap: () => pushPage<void>(
+                            context, (_) => const BroadcastPage())),
+                  SettingsRow(
+                      key: const Key('admin-banned-words'),
+                      icon: Icons.block_outlined,
+                      title: tr3('违禁词', 'Тыйым сөздер', 'Запрещённые слова'),
+                      onTap: () => pushPage<void>(
+                          context, (_) => const BannedWordsPage())),
+                ]),
+            SettingsGroup(
+                title: tr3('推送', 'Хабарландырулар', 'Уведомления'),
+                children: [
+                  SettingsRow(
+                      icon: Icons.notifications_paused_outlined,
+                      title: _pushTitle,
+                      subtitle: tr3(
+                          '平台免打扰时段与每人每日上限',
+                          '«Мазаламау» уақыты және бір адамға күндік шек',
+                          'Тихие часы и дневной лимит на человека'),
+                      onTap: () => pushPage<void>(
+                          context, (_) => const _PushPolicyPage())),
+                ]),
           ]);
 }
 
@@ -1606,44 +1805,48 @@ class _AllDemandsPageState extends State<_AllDemandsPage> with _Search {
             title: Text(tr3('全部需求', 'Барлық тапсырыстар', 'Все заявки'))),
         body: Column(children: [
           Padding(
-              padding: const EdgeInsets.fromLTRB(YSpace.gutter, YSpace.sm, YSpace.gutter, 0),
+              padding: const EdgeInsets.fromLTRB(
+                  YSpace.gutter, YSpace.sm, YSpace.gutter, 0),
               child: SearchField(
                   controller: search,
                   hint: tr3('搜索标题', 'Атауы бойынша іздеу', 'Поиск по названию'),
                   onChanged: typed)),
-          _Chips<DemandStatus?>(
-              options: [
-                for (final s in const [
-                  DemandStatus.open,
-                  DemandStatus.pendingReview,
-                  DemandStatus.paused,
-                  DemandStatus.rejected,
-                  DemandStatus.found,
-                  DemandStatus.expired,
-                  DemandStatus.closed,
-                ])
-                  (s, demandStatusName(s)),
-                (null, _all),
-              ],
-              selected: _status,
-              onSelect: (v) => setState(() => _status = v)),
+          _Chips<DemandStatus?>(options: [
+            for (final s in const [
+              DemandStatus.open,
+              DemandStatus.pendingReview,
+              DemandStatus.paused,
+              DemandStatus.rejected,
+              DemandStatus.found,
+              DemandStatus.expired,
+              DemandStatus.closed,
+            ])
+              (s, demandStatusName(s)),
+            (null, _all),
+          ], selected: _status, onSelect: (v) => setState(() => _status = v)),
           Expanded(
               child: _PagedList<Demand>(
                   key: ValueKey('all-$_status-$_q'),
-                  load: (p) => context.repos.adminDemands(status: _status, query: _q, page: p),
+                  load: (p) => context.repos
+                      .adminDemands(status: _status, query: _q, page: p),
                   empty: tr3('没有需求', 'Тапсырыс жоқ', 'Заявок нет'),
                   item: (context, d) => _DemandCard(
                       demand: d,
-                      onTap: () =>
-                          pushPage<void>(context, (_) => DemandDetailPage(demandId: d.id)),
+                      onTap: () => pushPage<void>(
+                          context, (_) => DemandDetailPage(demandId: d.id)),
                       onLongPress: canModerate &&
-                              (d.status == DemandStatus.open || d.status == DemandStatus.paused)
+                              (d.status == DemandStatus.open ||
+                                  d.status == DemandStatus.paused)
                           ? () async {
-                              final r = await _pickReason(context,
-                                  tr3('下架原因', 'Алып тастау себебі', 'Причина снятия'));
+                              final r = await _pickReason(
+                                  context,
+                                  tr3('下架原因', 'Алып тастау себебі',
+                                      'Причина снятия'));
                               if (r == null || !context.mounted) return;
-                              await attempt(context, () => context.repos.reject(d.id, r),
-                                  success: tr3('已下架', 'Алып тасталды', 'Снято'));
+                              await attempt(
+                                  context, () => context.repos.reject(d.id, r),
+                                  success:
+                                      tr3('已下架', 'Алып тасталды', 'Снято'));
                             }
                           : null))),
         ]));
@@ -1657,18 +1860,20 @@ class _TeamPage extends StatelessWidget {
       appBar: AppBar(title: Text(_teamTitle)),
       body: Live<List<AdminUserRow>>(
           load: (r) => r.team(),
-          builder: (context, list) => ListView(padding: const EdgeInsets.all(YSpace.gutter), children: [
+          builder: (context, list) =>
+              ListView(padding: const EdgeInsets.all(YSpace.gutter), children: [
                 Text(
                     tr3(
                         '超级管理员：全部权限，管理团队；审核员：审核需求、处理举报申诉与认证、限制账号；运营：推送节制；只读：只能查看。角色在“用户”里点开账号设置，不能改自己的角色。',
                         'Бас әкімші: барлық құқық, команданы басқарады. Модератор: тапсырыстарды тексереді, шағымдарды, апелляцияларды және растауды қарайды, аккаунттарды шектейді. Оператор: хабарландыру шектеулері. Тек оқу: тек қарай алады. Рөл «Қолданушылар» қойындысында аккаунтты ашып тағайындалады; өз рөліңізді өзгерте алмайсыз.',
                         'Суперадмин: все права, управляет командой. Модератор: проверяет заявки, разбирает жалобы, апелляции и верификацию, ограничивает аккаунты. Оператор: ограничения уведомлений. Только чтение: только просмотр. Роль назначается на вкладке «Пользователи» в карточке аккаунта; свою роль изменить нельзя.'),
-                    style: YText.caption.copyWith(color: YTokens.of(context).muted)),
+                    style: YText.caption
+                        .copyWith(color: YTokens.of(context).muted)),
                 const SizedBox(height: YSpace.md),
                 for (final u in list)
                   ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: Avatar(u.name.isEmpty ? '?' : u.name, size: 40),
+                      leading: Avatar(u.name.isEmpty ? '?' : u.name),
                       title: Text(u.name),
                       subtitle: Text(u.email),
                       trailing: StatusPill(roleName(u.role)),
@@ -1743,23 +1948,35 @@ class _PushPolicyPageState extends State<_PushPolicyPage> {
         body: Live<PushPolicy>(
             load: (r) => r.pushPolicy(),
             builder: (context, p) => ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: YSpace.gutter),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: YSpace.gutter),
                     children: [
                       SettingsGroup(children: [
                         SettingsRow(
                             icon: Icons.bedtime_outlined,
                             title: quietStart,
-                            value: p.quietStart.isEmpty ? _noQuiet : p.quietStart,
+                            value:
+                                p.quietStart.isEmpty ? _noQuiet : p.quietStart,
                             onTap: canOperate
                                 ? () async {
-                                    final v = await pickOne<String>(context, quietStart,
-                                        [for (final h in _hours) (h, h.isEmpty ? _noQuiet : h)],
+                                    final v = await pickOne<String>(
+                                        context,
+                                        quietStart,
+                                        [
+                                          for (final h in _hours)
+                                            (h, h.isEmpty ? _noQuiet : h)
+                                        ],
                                         selected: p.quietStart);
-                                    if (v != null)
+                                    if (v != null) {
                                       await _save(PushPolicy(
                                           quietStart: v,
-                                          quietEnd: v.isEmpty ? '' : (p.quietEnd.isEmpty ? '08:00' : p.quietEnd),
+                                          quietEnd: v.isEmpty
+                                              ? ''
+                                              : (p.quietEnd.isEmpty
+                                                  ? '08:00'
+                                                  : p.quietEnd),
                                           dailyCap: p.dailyCap));
+                                    }
                                   }
                                 : null),
                         SettingsRow(
@@ -1768,12 +1985,17 @@ class _PushPolicyPageState extends State<_PushPolicyPage> {
                             value: p.quietEnd.isEmpty ? _noQuiet : p.quietEnd,
                             onTap: canOperate && p.quietStart.isNotEmpty
                                 ? () async {
-                                    final v = await pickOne<String>(context, quietEnd,
+                                    final v = await pickOne<String>(
+                                        context,
+                                        quietEnd,
                                         [for (final h in _ends.skip(1)) (h, h)],
                                         selected: p.quietEnd);
-                                    if (v != null)
+                                    if (v != null) {
                                       await _save(PushPolicy(
-                                          quietStart: p.quietStart, quietEnd: v, dailyCap: p.dailyCap));
+                                          quietStart: p.quietStart,
+                                          quietEnd: v,
+                                          dailyCap: p.dailyCap));
+                                    }
                                   }
                                 : null),
                         SettingsRow(
@@ -1782,20 +2004,34 @@ class _PushPolicyPageState extends State<_PushPolicyPage> {
                             value: _cap(p.dailyCap),
                             onTap: canOperate
                                 ? () async {
-                                    final v = await pickOne<int>(context, dailyCap, [
-                                      for (final n in const [3, 5, 10, 20, 0])
-                                        (n, _cap(n)),
-                                    ], selected: p.dailyCap);
-                                    if (v != null)
+                                    final v = await pickOne<int>(
+                                        context,
+                                        dailyCap,
+                                        [
+                                          for (final n in const [
+                                            3,
+                                            5,
+                                            10,
+                                            20,
+                                            0
+                                          ])
+                                            (n, _cap(n)),
+                                        ],
+                                        selected: p.dailyCap);
+                                    if (v != null) {
                                       await _save(PushPolicy(
-                                          quietStart: p.quietStart, quietEnd: p.quietEnd, dailyCap: v));
+                                          quietStart: p.quietStart,
+                                          quietEnd: p.quietEnd,
+                                          dailyCap: v));
+                                    }
                                   }
                                 : null),
                       ]),
                       Padding(
                           padding: const EdgeInsets.all(YSpace.sm),
                           child: Text(
-                              tr3('只限制点赞、点评和新需求提醒；报名、合作、验收等交易通知总会推送。时间按 UTC+5。消息列表不受影响。',
+                              tr3(
+                                      '只限制点赞、点评和新需求提醒；报名、合作、验收等交易通知总会推送。时间按 UTC+5。消息列表不受影响。',
                                       'Тек ұнату, пікір және жаңа тапсырыс туралы хабарландырулар шектеледі; өтінім, келісім, қабылдау сияқты мәміле хабарландырулары әрдайым жіберіледі. Уақыт UTC+5 бойынша. Хабарлар тізіміне әсер етпейді.',
                                       'Ограничиваются только уведомления о лайках, отзывах и новых заявках; уведомления по сделкам (отклики, соглашения, приёмка) приходят всегда. Время по UTC+5. На список сообщений не влияет.') +
                                   (canOperate

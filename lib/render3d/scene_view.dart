@@ -4,11 +4,11 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import '../core/axis/axis_resolver.dart';
-import '../core/document/house_document.dart';
-import '../core/geometry/derived_house.dart';
-import 'scene_model.dart';
-import 'textures.dart';
+import 'package:yusal/core/axis/axis_resolver.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/render3d/scene_model.dart';
+import 'package:yusal/render3d/textures.dart';
 
 /// What the 3D page shows; kept by the editor so it survives page changes.
 class SceneSettings {
@@ -22,11 +22,16 @@ class SceneSettings {
       this.maxFloor = 999,
       this.dark = false,
       this.site = true});
-  final bool roof, furniture, foundation, cut, dark;
+  final bool roof;
+  final bool furniture;
+  final bool foundation;
+  final bool cut;
+  final bool dark;
 
   /// Outbuildings, fence and garden from the plot.
   final bool site;
-  final double cutHeight, hour;
+  final double cutHeight;
+  final double hour;
   final int maxFloor;
   SceneSettings copyWith(
           {bool? roof,
@@ -58,9 +63,11 @@ class Camera {
     right = forward.cross(up0).unit;
     up = right.cross(forward).unit;
   }
-  final Vec3 eye, forward;
+  final Vec3 eye;
+  final Vec3 forward;
   final double fov;
-  late final Vec3 right, up;
+  late final Vec3 right;
+  late final Vec3 up;
   Vec3 toCamera(Vec3 p) {
     final d = p - eye;
     return Vec3(d.dot(right), d.dot(up), d.dot(forward));
@@ -96,7 +103,7 @@ class Camera {
   final tanH = tanV * aspect.clamp(0.4, 3.0);
   var distance = 2.0;
   for (final cx in [lo.x, hi.x])
-    for (final cy in [lo.y, hi.y])
+    for (final cy in [lo.y, hi.y]) {
       for (final cz in [lo.z, hi.z]) {
         final d = Vec3(cx, cy, cz) - target;
         final along = d.dot(cam.forward);
@@ -106,6 +113,7 @@ class Camera {
                     d.dot(cam.right).abs() / tanH, d.dot(cam.up).abs() / tanV) -
                 along);
       }
+    }
   return (target: target, distance: distance, yaw: yaw, pitch: pitch);
 }
 
@@ -172,7 +180,8 @@ class ScenePainter extends CustomPainter {
   final Camera camera;
   final SceneSettings settings;
   final int northAngleDeg;
-  final bool walk, labels;
+  final bool walk;
+  final bool labels;
   final SourceRef? selected;
 
   /// While a finger turns or zooms the view: skip sun shadows and draw
@@ -191,15 +200,16 @@ class ScenePainter extends CustomPainter {
   Path? groundPath;
   Paint? groundPaint;
 
-  static const skyDay = Color(0xffDCE5E8), skyNight = Color(0xff0C1420);
-  static const sectionFill = Color(0xff4E4A45),
-      sectionSelected = Color(0xffB8742A);
+  static const skyDay = Color(0xffDCE5E8);
+  static const skyNight = Color(0xff0C1420);
+  static const sectionFill = Color(0xff4E4A45);
+  static const sectionSelected = Color(0xffB8742A);
   static const near = 0.05;
 
   Vec3 get sun {
     final a = northAngleDeg * math.pi / 180;
-    final n = Vec3(math.sin(a), 0, -math.cos(a)),
-        e = Vec3(math.cos(a), 0, math.sin(a));
+    final n = Vec3(math.sin(a), 0, -math.cos(a));
+    final e = Vec3(math.cos(a), 0, math.sin(a));
     final tp = (settings.hour - 12) * math.pi / 12;
     final h = n * -math.cos(tp) + e * -math.sin(tp);
     final el = math.max(0.06, (58 * math.pi / 180) * math.cos(tp * 0.92));
@@ -214,9 +224,11 @@ class ScenePainter extends CustomPainter {
       camera.eye.z < model.depth;
 
   SourceRef? pick(Offset p) {
-    for (final i in items.reversed)
-      if (i.stroke == 0 && i.source != null && i.path.contains(p))
+    for (final i in items.reversed) {
+      if (i.stroke == 0 && i.source != null && i.path.contains(p)) {
         return i.source;
+      }
+    }
     return null;
   }
 
@@ -233,8 +245,10 @@ class ScenePainter extends CustomPainter {
   static List<Vec3> clip(List<Vec3> poly, double Function(Vec3) inside) {
     final out = <Vec3>[];
     for (var i = 0; i < poly.length; i++) {
-      final a = poly[i], b = poly[(i + 1) % poly.length];
-      final da = inside(a), db = inside(b);
+      final a = poly[i];
+      final b = poly[(i + 1) % poly.length];
+      final da = inside(a);
+      final db = inside(b);
       if (da >= 0) out.add(a);
       if ((da >= 0) != (db >= 0)) out.add(Vec3.lerp(a, b, da / (da - db)));
     }
@@ -245,9 +259,13 @@ class ScenePainter extends CustomPainter {
     final night = settings.night;
     final sky = night ? skyNight : skyDay;
     if (f.glow && night) return const Color(0xffFFC46B);
-    double r = f.color.r, g = f.color.g, b = f.color.b;
+    double r = f.color.r;
+    double g = f.color.g;
+    double b = f.color.b;
     final up = n.y * 0.5 + 0.5;
-    double lr, lg, lb;
+    double lr;
+    double lg;
+    double lb;
     if (night) {
       // Moonlight outside; warm lamps inside when walking through (seen
       // only through the windows while standing outside).
@@ -312,7 +330,11 @@ class ScenePainter extends CustomPainter {
     final tanH = (size.width / 2 + 3) / focal,
         tanV = (size.height / 2 + 3) / focal;
     bool inView(Vec3 lo, Vec3 hi) {
-      var behind = true, left = true, right = true, below = true, above = true;
+      var behind = true;
+      var left = true;
+      var right = true;
+      var below = true;
+      var above = true;
       for (var i = 0; i < 8; i++) {
         final c = camera.toCamera(Vec3(i & 1 == 0 ? lo.x : hi.x,
             i & 2 == 0 ? lo.y : hi.y, i & 4 == 0 ? lo.z : hi.z));
@@ -340,8 +362,8 @@ class ScenePainter extends CustomPainter {
             e.y < model.height + 8)) {
       portals = [];
       for (final p in model.portals) {
-        var lo = const Offset(double.infinity, double.infinity),
-            hi = const Offset(-double.infinity, -double.infinity);
+        var lo = const Offset(double.infinity, double.infinity);
+        var hi = const Offset(-double.infinity, -double.infinity);
         for (var i = 0; i < 8 && portals != null; i++) {
           final c = camera.toCamera(Vec3(i & 1 == 0 ? p.lo.x : p.hi.x,
               i & 2 == 0 ? p.lo.y : p.hi.y, i & 4 == 0 ? p.lo.z : p.hi.z));
@@ -361,8 +383,10 @@ class ScenePainter extends CustomPainter {
 
     /// Whether a face drawn over [pts] (screen) would show at all.
     bool shows(List<Offset> pts, bool enclosed) {
-      var l = double.infinity, t = double.infinity;
-      var r = -double.infinity, b = -double.infinity;
+      var l = double.infinity;
+      var t = double.infinity;
+      var r = -double.infinity;
+      var b = -double.infinity;
       for (final p in pts) {
         if (p.dx < l) l = p.dx;
         if (p.dx > r) r = p.dx;
@@ -386,7 +410,9 @@ class ScenePainter extends CustomPainter {
       final pts = [for (final c in cam) project(c, size, focal)!];
       if (!shows(pts, enclosed)) return;
       var depth = 0.0;
-      for (final c in cam) depth += c.z;
+      for (final c in cam) {
+        depth += c.z;
+      }
       items.add(_Item(null, color.withValues(alpha: alpha), depth / cam.length,
           layer, source,
           points: pts));
@@ -423,7 +449,8 @@ class ScenePainter extends CustomPainter {
         return project(q, size, focal)?.dy ?? 0;
       }
 
-      final nearY = screenY(40), farY = screenY(110);
+      final nearY = screenY(40);
+      final farY = screenY(110);
       final paint = Paint();
       if (!walk && (nearY - farY).abs() > 1) {
         paint.shader = ui.Gradient.linear(Offset(0, farY), Offset(0, nearY), [
@@ -493,13 +520,15 @@ class ScenePainter extends CustomPainter {
       // would still draw a light line across the wall in front of it.
       if (facing.abs() < 0.012 * toEye.length) return;
       if (facing <= 0) {
-        if (!f.doubleSided && f.alpha >= 1 && !(cutY.isFinite)) return;
+        if (!f.doubleSided && f.alpha >= 1 && !cutY.isFinite) return;
         n = n * -1;
       }
       // Shade by the whole face, not the fragment, so the pieces a BSP
       // split leaves share one colour and no seams show between them.
       var centre = const Vec3(0, 0, 0);
-      for (final p in f.points) centre = centre + p;
+      for (final p in f.points) {
+        centre = centre + p;
+      }
       centre = centre * (1 / f.points.length);
       // With the roof on, the inside is only seen through glass: draw it
       // before the shell so walls and roof always cover it.
@@ -525,15 +554,18 @@ class ScenePainter extends CustomPainter {
           for (final p in clipNear([for (final p in pts) camera.toCamera(p)]))
             project(p, size, focal)!
         ];
-        if (outline.length >= 3 && shows(outline, enclosed))
+        if (outline.length >= 3 && shows(outline, enclosed)) {
           addTextured(f, pts, frag.uv!, n, (centre - camera.eye).length, light,
               layer, size, focal);
+        }
       } else {
         addPoly(pts, shade(f, n, (centre - camera.eye).length, light), alpha,
             layer, f.source,
             enclosed: enclosed);
       }
-      for (var i = before; i < items.length; i++) items[i].order = order++;
+      for (var i = before; i < items.length; i++) {
+        items[i].order = order++;
+      }
     });
     // Section fill: where the cut plane passes through a wall, its cut face
     // is filled solid (the poché of a CAD section) instead of leaving the
@@ -543,7 +575,9 @@ class ScenePainter extends CustomPainter {
       for (final b in model.sections) {
         if (b.floor > settings.maxFloor ||
             b.lo.y >= cutY - 1e-3 ||
-            b.hi.y <= cutY + 1e-3) continue;
+            b.hi.y <= cutY + 1e-3) {
+          continue;
+        }
         final before = items.length;
         addPoly(
             [
@@ -558,15 +592,19 @@ class ScenePainter extends CustomPainter {
             1,
             9,
             b.source);
-        for (var i = before; i < items.length; i++) items[i].order = order++;
+        for (var i = before; i < items.length; i++) {
+          items[i].order = order++;
+        }
       }
     if (foundation)
       for (final l in model.lines) {
-        var a = camera.toCamera(l.a), b = camera.toCamera(l.b);
+        var a = camera.toCamera(l.a);
+        var b = camera.toCamera(l.b);
         if (a.z <= near && b.z <= near) continue;
         if (a.z <= near) a = Vec3.lerp(a, b, (near - a.z) / (b.z - a.z) + 1e-6);
         if (b.z <= near) b = Vec3.lerp(b, a, (near - b.z) / (a.z - b.z) + 1e-6);
-        final p0 = project(a, size, focal), p1 = project(b, size, focal);
+        final p0 = project(a, size, focal);
+        final p1 = project(b, size, focal);
         if (p0 == null || p1 == null) continue;
         final path = Path()
           ..moveTo(p0.dx, p0.dy)
@@ -579,8 +617,9 @@ class ScenePainter extends CustomPainter {
       final l = a.layer.compareTo(b.layer);
       if (l != 0) return l;
       // The foundation layer mixes faces with rebar lines: by depth.
-      if (a.layer == 0 || a.order < 0 || b.order < 0)
+      if (a.layer == 0 || a.order < 0 || b.order < 0) {
         return b.depth.compareTo(a.depth);
+      }
       return a.order.compareTo(b.order);
     });
     final fill = Paint()..isAntiAlias = true;
@@ -668,8 +707,9 @@ class ScenePainter extends CustomPainter {
       // tries just above or below, and is left out if neither is free
       // (map labels thin out the same way).
       var tagFloor = math.min(settings.maxFloor, model.elevations.length - 1);
-      while (tagFloor > 0 && model.elevations[tagFloor] >= cutY - 0.05)
+      while (tagFloor > 0 && model.elevations[tagFloor] >= cutY - 0.05) {
         tagFloor--;
+      }
       final tags = <(Offset, double, Label3)>[];
       for (final l in model.labels) {
         // Only the rooms of the highest floor shown are open to view: the
@@ -686,7 +726,8 @@ class ScenePainter extends CustomPainter {
       final placed = <Rect>[];
       for (final (s, _, l) in tags) {
         final t = tagPainter(l.title, l.subtitle);
-        final w = t.width + 16, h = t.height + 8;
+        final w = t.width + 16;
+        final h = t.height + 8;
         for (final dy in [0.0, -h * 0.6, h * 0.6]) {
           final box =
               Rect.fromCenter(center: s.translate(0, dy), width: w, height: h);
@@ -717,22 +758,26 @@ class ScenePainter extends CustomPainter {
         n,
         distance,
         light);
-    final positions = <Offset>[], coords = <Offset>[];
+    final positions = <Offset>[];
+    final coords = <Offset>[];
     final outline = <Offset>[];
-    var depth = 0.0, count = 0;
+    var depth = 0.0;
+    var count = 0;
     (Vec3, Offset) at(double s, double t) {
       // Bilinear over the quad: s along p0→p3, t along p0→p1.
       final a = Vec3.lerp(pts[0], pts[3], s), b = Vec3.lerp(pts[1], pts[2], s);
-      final ua = Offset.lerp(uv[0], uv[3], s)!,
-          ub = Offset.lerp(uv[1], uv[2], s)!;
+      final ua = Offset.lerp(uv[0], uv[3], s)!;
+      final ub = Offset.lerp(uv[1], uv[2], s)!;
       return (camera.toCamera(Vec3.lerp(a, b, t)), Offset.lerp(ua, ub, t)!);
     }
 
     void cell(List<(Vec3, Offset)> poly) {
       final out = <(Vec3, Offset)>[];
       for (var i = 0; i < poly.length; i++) {
-        final a = poly[i], b = poly[(i + 1) % poly.length];
-        final da = a.$1.z - near, db = b.$1.z - near;
+        final a = poly[i];
+        final b = poly[(i + 1) % poly.length];
+        final da = a.$1.z - near;
+        final db = b.$1.z - near;
         if (da >= 0) out.add(a);
         if ((da >= 0) != (db >= 0)) {
           final t = da / (da - db);
@@ -747,17 +792,19 @@ class ScenePainter extends CustomPainter {
           coords.add(
               Offset(out[k].$2.dx * image.width, out[k].$2.dy * image.height));
         }
-      for (final p in out) depth += p.$1.z;
+      for (final p in out) {
+        depth += p.$1.z;
+      }
       count += out.length;
     }
 
     if (quad) {
       for (var i = 0; i < cells; i++)
         for (var j = 0; j < cells; j++) {
-          final s0 = i / cells,
-              s1 = (i + 1) / cells,
-              t0 = j / cells,
-              t1 = (j + 1) / cells;
+          final s0 = i / cells;
+          final s1 = (i + 1) / cells;
+          final t0 = j / cells;
+          final t1 = (j + 1) / cells;
           cell([at(s0, t0), at(s0, t1), at(s1, t1), at(s1, t0)]);
         }
     } else {
@@ -767,8 +814,9 @@ class ScenePainter extends CustomPainter {
     }
     if (positions.isEmpty) return;
     // Outline for picking: the clipped face as a whole.
-    for (final p in clipNear([for (final p in pts) camera.toCamera(p)]))
+    for (final p in clipNear([for (final p in pts) camera.toCamera(p)])) {
       outline.add(project(p, size, focal)!);
+    }
     final path = Path();
     if (outline.length >= 3) path.addPolygon(outline, true);
     items.add(_Item(path, tint, depth / count, layer, f.source,
@@ -864,7 +912,9 @@ class SceneView extends StatefulWidget {
   final int walkFloor;
   final ValueChanged<SourceRef?>? onPick;
   final SourceRef? selected;
-  final String outsideLabel, inWallLabel, areaUnit;
+  final String outsideLabel;
+  final String inWallLabel;
+  final String areaUnit;
   @override
   State<SceneView> createState() => SceneViewState();
 }
@@ -872,7 +922,9 @@ class SceneView extends StatefulWidget {
 class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   late SceneModel model;
   Object? modelKey;
-  double yaw = 0, pitch = 0, distance = 20;
+  double yaw = 0;
+  double pitch = 0;
+  double distance = 20;
   Vec3 target = const Vec3(0, 0, 0);
   double startDistance = 20;
 
@@ -907,10 +959,11 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
     rebuild();
     applyView(widget.view);
     placeWalker();
-    if (widget.walk)
+    if (widget.walk) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) focusNode.requestFocus();
       });
+    }
   }
 
   @override
@@ -925,10 +978,13 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   void didUpdateWidget(covariant SceneView old) {
     super.didUpdateWidget(old);
     rebuild();
-    if (old.viewToken != widget.viewToken || old.view != widget.view)
+    if (old.viewToken != widget.viewToken || old.view != widget.view) {
       applyView(widget.view);
+    }
     if (old.walkStart?.token != widget.walkStart?.token ||
-        old.walkFloor != widget.walkFloor) placeWalker();
+        old.walkFloor != widget.walkFloor) {
+      placeWalker();
+    }
     if (!widget.walk && ticker.isActive) ticker.stop();
   }
 
@@ -985,7 +1041,8 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
         if (o < a || o > b) return 3;
         continue;
       }
-      var t0 = (a - o) / v, t1 = (b - o) / v;
+      var t0 = (a - o) / v;
+      var t1 = (b - o) / v;
       if (t0 > t1) (t0, t1) = (t1, t0);
       tNear = math.max(tNear, t0);
       tFar = math.min(tFar, t1);
@@ -1044,7 +1101,8 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
     const r = 0.22;
     for (final c in model.colliders) {
       if (c.floorIndex != floor) continue;
-      final cx = x.clamp(c.x0, c.x1), cz = z.clamp(c.z0, c.z1);
+      final cx = x.clamp(c.x0, c.x1);
+      final cz = z.clamp(c.z0, c.z1);
       if ((x - cx) * (x - cx) + (z - cz) * (z - cz) < r * r) return true;
     }
     return false;
@@ -1060,12 +1118,15 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   void tick(Duration now) {
     final dt = math.min(0.05, (now - last).inMicroseconds / 1e6);
     last = now;
-    var forward = -joy.dy, strafe = joy.dx;
+    var forward = -joy.dy;
+    var strafe = joy.dx;
     bool k(LogicalKeyboardKey key) => keys.contains(key);
-    if (k(LogicalKeyboardKey.keyW) || k(LogicalKeyboardKey.arrowUp))
+    if (k(LogicalKeyboardKey.keyW) || k(LogicalKeyboardKey.arrowUp)) {
       forward += 1;
-    if (k(LogicalKeyboardKey.keyS) || k(LogicalKeyboardKey.arrowDown))
+    }
+    if (k(LogicalKeyboardKey.keyS) || k(LogicalKeyboardKey.arrowDown)) {
       forward -= 1;
+    }
     if (k(LogicalKeyboardKey.keyA)) strafe -= 1;
     if (k(LogicalKeyboardKey.keyD)) strafe += 1;
     var turn = 0.0;
@@ -1076,9 +1137,11 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
       if (joyPointer == null && keys.isEmpty) ticker.stop();
       return;
     }
-    final sp = 1.7 * dt, sy = math.sin(wYaw), cy = math.cos(wYaw);
-    final dx = (-sy * forward + cy * strafe) * sp,
-        dz = (-cy * forward - sy * strafe) * sp;
+    final sp = 1.7 * dt;
+    final sy = math.sin(wYaw);
+    final cy = math.cos(wYaw);
+    final dx = (-sy * forward + cy * strafe) * sp;
+    final dz = (-cy * forward - sy * strafe) * sp;
     setState(() {
       wYaw += turn;
       if (!blocked(wx + dx, wz)) wx += dx;
@@ -1105,8 +1168,8 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
     next = next.clamp(math.min(minDistance, 90.0), 90.0);
     final cam = orbitCamera(target, yaw, pitch, distance);
     final f = viewSize.height / 2 / math.tan(cam.fov / 2);
-    final dx = focal.dx - viewSize.width / 2,
-        dy = focal.dy - viewSize.height / 2;
+    final dx = focal.dx - viewSize.width / 2;
+    final dy = focal.dy - viewSize.height / 2;
     target = target + (cam.right * dx - cam.up * dy) * ((distance - next) / f);
     distance = next;
   }
@@ -1164,12 +1227,14 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
 
   /// Room name (or outside / in a wall) under the walker.
   String get whereAmI {
-    final px = wx * 1000, py = (model.depth - wz) * 1000;
-    if (px < 0 || py < 0 || wx > model.width || wz > model.depth || wz < 0)
+    final px = wx * 1000;
+    final py = (model.depth - wz) * 1000;
+    if (px < 0 || py < 0 || wx > model.width || wz > model.depth || wz < 0) {
       return widget.outsideLabel;
+    }
     final g = widget.derived.floors[floor].base;
-    final i = g.axes.v.indexWhere((a) => a.pos > px) - 1,
-        j = g.axes.h.indexWhere((a) => a.pos > py) - 1;
+    final i = g.axes.v.indexWhere((a) => a.pos > px) - 1;
+    final j = g.axes.h.indexWhere((a) => a.pos > py) - 1;
     final id = g.owners[Cell(i, j)];
     final room =
         widget.doc.floors[floor].rooms.where((r) => r.id == id).firstOrNull;
@@ -1293,7 +1358,8 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   }
 
   Widget joystick() {
-    const size = 116.0, reach = 44.0;
+    const size = 116.0;
+    const reach = 44.0;
     void set(Offset local) {
       var d = local - const Offset(size / 2, size / 2);
       if (d.distance > reach) d = d / d.distance * reach;

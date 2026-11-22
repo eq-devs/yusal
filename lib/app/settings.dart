@@ -1,7 +1,7 @@
 import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'messages_ru.dart';
+import 'package:yusal/app/messages_ru.dart';
 
 /// Chinese, Kazakh and Russian, everywhere in the app.
 enum AppLang { zh, kk, ru }
@@ -21,16 +21,17 @@ class AppSettings extends ChangeNotifier {
   Future<void> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedLang = prefs.getString('house-lang'),
-          savedTheme = prefs.getString('house-theme');
+      final savedLang = prefs.getString('house-lang');
+      final savedTheme = prefs.getString('house-theme');
       lang = AppLang.values.where((l) => l.name == savedLang).firstOrNull ??
           switch (PlatformDispatcher.instance.locale.languageCode) {
             'zh' => AppLang.zh,
             'ru' => AppLang.ru,
             _ => AppLang.kk,
           };
-      theme = ThemeChoice.values.where((t) => t.name == savedTheme).firstOrNull ??
-          ThemeChoice.auto;
+      theme =
+          ThemeChoice.values.where((t) => t.name == savedTheme).firstOrNull ??
+              ThemeChoice.auto;
     } catch (_) {
       /* Storage unavailable: keep the defaults. */
     }

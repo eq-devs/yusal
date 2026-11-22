@@ -19,7 +19,8 @@ void main() {
       Meta(name: '序列', createdAt: ctx.now(), updatedAt: ctx.now()), s);
 
   test('random wall and door edits keep the document consistent', () {
-    var accepted = 0, rejected = 0;
+    var accepted = 0;
+    var rejected = 0;
     final kinds = <String, int>{};
     for (var seed = 0; seed < 30; seed++) {
       final rng = Random(seed);
@@ -128,9 +129,11 @@ void main() {
             .where((o) => o.status == 'ok')
             .map((o) => o.opening.id)
             .toSet();
-        for (final o in documentOpenings(next))
-          if (healthyBefore.contains(o.opening.id))
+        for (final o in documentOpenings(next)) {
+          if (healthyBefore.contains(o.opening.id)) {
             expect(o.status, 'ok', reason: '$reason opening ${o.opening.id}');
+          }
+        }
         expect(result.newState.floors[1], other, reason: reason);
         final roomIds = result.newState.floors.first.rooms.map((r) => r.id);
         expect(roomIds.toSet().length, roomIds.length, reason: reason);
@@ -148,7 +151,9 @@ void main() {
       'UpdateDrawnWall',
       'DeleteDrawnWall',
       'AddOpening'
-    ]) expect(kinds[kind], greaterThan(10), reason: kind);
+    ]) {
+      expect(kinds[kind], greaterThan(10), reason: kind);
+    }
     expect(rejected, greaterThan(0));
   });
 }

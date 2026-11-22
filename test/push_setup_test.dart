@@ -14,8 +14,9 @@ import 'http_backend_test.dart' show FakeApi;
 
 class FakeMessaging implements PushMessaging {
   FakeMessaging({this.available = true, this.allowed = true});
-  final bool available, allowed;
-  var asked = 0;
+  final bool available;
+  final bool allowed;
+  int asked = 0;
   final refreshes = StreamController<String>();
   final taps = StreamController<Map<String, dynamic>>();
   Map<String, dynamic>? launch;
@@ -26,6 +27,7 @@ class FakeMessaging implements PushMessaging {
     asked++;
     return allowed;
   }
+
   @override
   Future<String?> token() async => 'tok-1';
   @override
@@ -44,8 +46,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     AppSettings.instance.lang = AppLang.kk;
     api = FakeApi();
-    backend = HttpBackend('https://api.test',
-        client: MockClient(api.handle));
+    backend = HttpBackend('https://api.test', client: MockClient(api.handle));
   });
 
   Future<void> signIn() => backend.signInWithProvider('google', 'id-token');
@@ -92,8 +93,7 @@ void main() {
     expect(registrations().single['token'], 'tok-1');
   });
 
-  test('without Firebase config or permission nothing is registered',
-      () async {
+  test('without Firebase config or permission nothing is registered', () async {
     await signIn();
     await PushSetup(backend, GlobalKey<NavigatorState>(),
             messaging: FakeMessaging(available: false))
@@ -107,8 +107,7 @@ void main() {
   testWidgets('tapping a push, or launching from one, opens its target',
       (t) async {
     final nav = GlobalKey<NavigatorState>();
-    await t.pumpWidget(
-        MaterialApp(navigatorKey: nav, home: const SizedBox()));
+    await t.pumpWidget(MaterialApp(navigatorKey: nav, home: const SizedBox()));
     final opened = <(RefType, String)>[];
     // Routing works whether or not pushes are allowed; no token here keeps
     // the network out of the widget test (registration is tested above).

@@ -85,7 +85,8 @@ void main() {
       (t) async {
     requireBackend();
     final run = DateTime.now().millisecondsSinceEpoch.toString();
-    final owner = 'Olga $run', worker = 'Wang $run';
+    final owner = 'Olga $run';
+    final worker = 'Wang $run';
     final title = '招两名瓦工 $run';
 
     final prefs = await SharedPreferences.getInstance();
@@ -110,8 +111,8 @@ void main() {
       await createProfile(t, worker);
       await signIn(t, repos, owner);
       final ownerId = repos.currentAccount!.id;
-      await publishDemand(t, title, hire: true, headcount: 2, wage: 15000);
-      final demand = (await io(t, () => repos.myDemands()))
+      await publishDemand(t, title, hire: true, headcount: 2);
+      final demand = (await io(t, repos.myDemands))
           .singleWhere((d) => d.current.title == title);
       expect(demand.type, DemandType.hire);
       expect(demand.status, DemandStatus.open);
@@ -128,7 +129,7 @@ void main() {
       await shot(t, 'w02-signup-form');
       await tapIt(t, find.text('发送报名'));
       await idle(t, 1000);
-      final application = (await io(t, () => repos.myApplications()))
+      final application = (await io(t, repos.myApplications))
           .singleWhere((a) => a.demandId == demand.id);
       expect(application.current.acceptsOffer, isTrue);
 
@@ -249,11 +250,8 @@ void main() {
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
               area: 120,
-              floors: 1,
               rooms: 3,
-              tags: const [],
-              openForBuilders: false,
-              focus: const [])));
+              openForBuilders: false)));
       await signIn(t, repos, worker);
       final critique = await io(t, () => repos.comment(post.id, '屋顶太平了 $run'));
       await signIn(t, repos, owner);
@@ -266,7 +264,7 @@ void main() {
       await open(t, ChatPage(conversationId: conv.id));
       await waitFor(t, find.byTooltip('更多'));
       await chatMenu(t, '拉黑');
-      expect(await io(t, () => repos.blocked()), contains(ownerId));
+      expect(await io(t, repos.blocked), contains(ownerId));
       await shot(t, 'w07-blocked');
 
       // The blocker no longer sees the blocked account's comments.
@@ -294,7 +292,7 @@ void main() {
       await waitFor(t, find.text('你已拉黑对方，无法发送消息。'));
       await chatMenu(t, '取消拉黑');
       await waitFor(t, find.byTooltip('更多'));
-      expect(await io(t, () => repos.blocked()), isNot(contains(ownerId)));
+      expect(await io(t, repos.blocked), isNot(contains(ownerId)));
       expect((await io(t, () => repos.comments(post.id))).map((c) => c.text),
           contains('谢谢建议 $run'));
       await sendChat(t, '解除了 $run');

@@ -3,12 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:uuid/uuid.dart';
-import '../../app/settings.dart';
-import '../../data/repositories.dart';
-import '../../shared/ui/l10n.dart';
-import '../../shared/ui/scope.dart';
-import '../../shared/ui/theme.dart';
-import '../../shared/ui/widgets.dart';
+import 'package:yusal/app/settings.dart';
+import 'package:yusal/data/repositories.dart';
+import 'package:yusal/shared/ui/l10n.dart';
+import 'package:yusal/shared/ui/scope.dart';
+import 'package:yusal/shared/ui/theme.dart';
+import 'package:yusal/shared/ui/widgets.dart';
 
 /// What the app attaches to feedback about itself, so nobody has to type
 /// their version or phone model. Each value is shown before sending.
@@ -109,7 +109,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
           if (error != null) ...[
             Hint(
                 key: const Key('feedback-error'),
-                tr3('没发出去：$error。你写的内容还在，可以再试一次。',
+                tr3(
+                    '没发出去：$error。你写的内容还在，可以再试一次。',
                     'Жіберілмеді: $error. Мәтін сақталды, қайталап көріңіз.',
                     'Не отправлено: $error. Текст сохранён, попробуйте ещё раз.'),
                 warn: true),
@@ -163,14 +164,16 @@ class _FeedbackPageState extends State<FeedbackPage> {
                         style: YText.bodyStrong),
                     subtitle: Text(
                         summary.isEmpty
-                            ? tr3('应用版本、设备型号、系统版本和语言',
+                            ? tr3(
+                                '应用版本、设备型号、系统版本和语言',
                                 'Нұсқа, құрылғы, жүйе және тіл',
                                 'Версия, устройство, система и язык')
                             : summary,
                         style: YText.caption.copyWith(color: t.muted)));
               }),
           Text(
-              tr3('帮我们更快找到问题。你的设计不会被附带。',
+              tr3(
+                  '帮我们更快找到问题。你的设计不会被附带。',
                   'Мәселені тез табуға көмектеседі. Жобаларыңыз жіберілмейді.',
                   'Помогает быстрее найти проблему. Ваши проекты не передаются.'),
               style: YText.caption.copyWith(color: t.muted)),

@@ -8,8 +8,9 @@ Face3 quad(List<Vec3> p, {List<Offset>? uv}) =>
 
 double area(List<Vec3> p) {
   var n = const Vec3(0, 0, 0);
-  for (var i = 1; i < p.length - 1; i++)
+  for (var i = 1; i < p.length - 1; i++) {
     n = n + (p[i] - p[0]).cross(p[i + 1] - p[0]);
+  }
   return n.length / 2;
 }
 

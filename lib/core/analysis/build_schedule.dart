@@ -1,5 +1,5 @@
-import '../document/house_document.dart';
-import 'cost_estimate.dart';
+import 'package:yusal/core/document/house_document.dart';
+import 'package:yusal/core/analysis/cost_estimate.dart';
 
 /// The building schedule: what each built-in stage covers, what to check
 /// before moving on, planned dates and the budget of each stage. Pure
@@ -22,8 +22,14 @@ const stageNames = {
 const stageChecks = <String, List<(String, String)>>{
   'prep': [
     ('办好宅基地和建房手续', 'Жер учаскесі мен құрылыс рұқсатын рәсімдеу'),
-    ('挖 1.5 m 探坑看土层和地下水', '1,5 м шұңқыр қазып, топырақ пен жер асты суын қарау'),
-    ('和施工队签书面合同，写清单价和工期', 'Құрылысшымен баға мен мерзімі жазылған жазбаша келісімшарт'),
+    (
+      '挖 1.5 m 探坑看土层和地下水',
+      '1,5 м шұңқыр қазып, топырақ пен жер асты суын қарау'
+    ),
+    (
+      '和施工队签书面合同，写清单价和工期',
+      'Құрылысшымен баға мен мерзімі жазылған жазбаша келісімшарт'
+    ),
     ('接通临时水电', 'Уақытша су мен электр қосу'),
     ('放线定位，复核长宽和对角线', 'Белгілеу, ұзындық, ен және диагональды тексеру'),
   ],
@@ -95,9 +101,9 @@ DateTime? parseDay(String? text) {
   if (text == null) return null;
   final parts = text.split('-');
   if (parts.length != 3) return null;
-  final y = int.tryParse(parts[0]),
-      m = int.tryParse(parts[1]),
-      d = int.tryParse(parts[2]);
+  final y = int.tryParse(parts[0]);
+  final m = int.tryParse(parts[1]);
+  final d = int.tryParse(parts[2]);
   if (y == null || m == null || d == null) return null;
   final day = DateTime.utc(y, m, d);
   return day.month == m && day.day == d ? day : null;

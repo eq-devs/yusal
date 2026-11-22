@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-import 'app/boot.dart';
+import 'package:yusal/app/boot.dart';
 
 export 'app/boot.dart' show apiBaseUrl;
 export 'app/house_app.dart';

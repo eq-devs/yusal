@@ -17,8 +17,8 @@ void main() {
                 child: const Text('open')))));
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
-    expect(t.widget<TextField>(find.byType(TextField)).controller!.text,
-        '3.00');
+    expect(
+        t.widget<TextField>(find.byType(TextField)).controller!.text, '3.00');
 
     await t.enterText(find.byType(TextField), '0,1');
     await t.tap(find.text('确定'));

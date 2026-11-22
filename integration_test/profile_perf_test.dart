@@ -61,16 +61,20 @@ void main() {
 
     Future<void> scenario(String name, Future<void> Function(int i) step,
         {int count = 160}) async {
-      for (var i = 0; i < 20; i++) await step(i);
+      for (var i = 0; i < 20; i++) {
+        await step(i);
+      }
       await flush();
       frames.clear();
-      for (var i = 0; i < count; i++) await step(i);
+      for (var i = 0; i < count; i++) {
+        await step(i);
+      }
       await flush();
       double ms(Duration d) => d.inMicroseconds / 1000;
       List<double> sorted(double Function(FrameTiming) f) =>
           frames.map(f).toList()..sort();
-      final ui = sorted((f) => ms(f.buildDuration)),
-          raster = sorted((f) => ms(f.rasterDuration));
+      final ui = sorted((f) => ms(f.buildDuration));
+      final raster = sorted((f) => ms(f.rasterDuration));
       double at(List<double> v, double q) =>
           v.isEmpty ? 0 : v[((v.length - 1) * q).round()];
       report[name] = {

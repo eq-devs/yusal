@@ -17,6 +17,7 @@ import 'actions_design.dart';
 import 'screen.dart';
 import 'session.dart';
 import 'speech.dart';
+import '../shared/brand/yicon.dart';
 
 /// Voice control is built into every build.
 const voiceBuiltIn = true;
@@ -536,7 +537,7 @@ class _VoiceBarState extends State<VoiceBar>
                     key: const Key('voice-mic'),
                     tooltip:
                         tr3('说话（哈萨克语）', 'Сөйлеу', 'Говорить (по-казахски)'),
-                    icon: const Icon(Icons.mic),
+                    icon: const YusalIcon(YIcon.voice),
                     onPressed: s.busy ? null : startListening),
               IconButton(
                   tooltip: tr3('发送', 'Жіберу', 'Отправить'),

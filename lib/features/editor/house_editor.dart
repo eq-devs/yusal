@@ -58,6 +58,7 @@ import '../../voice/screen.dart';
 import '../../voice/session.dart';
 import '../../voice/voice_overlay.dart';
 import 'house_wizard.dart';
+import '../../shared/brand/yicon.dart';
 
 part 'roof_picker.dart';
 part 'editor_header.dart';

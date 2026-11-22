@@ -16,6 +16,7 @@ import 'chat_page.dart';
 import '../../shared/motion/motion.dart';
 import '../me/trust_pages.dart';
 import '../profile/profile_page.dart';
+import '../../shared/brand/yicon.dart';
 
 /// Unread chats and notices together, asked for at the same time.
 Future<int> _unread(PlatformRepositories r) async {
@@ -54,7 +55,7 @@ class InboxNavIcon extends StatelessWidget {
   final bool selected;
   @override
   Widget build(BuildContext context) {
-    final icon = Icon(selected ? Icons.chat_bubble : Icons.chat_bubble_outline);
+    final icon = YusalIcon(YIcon.chat, mono: !selected);
     final t = YTokens.of(context);
     return OnChange(
         builder: (context) => context.repos.currentAccount == null

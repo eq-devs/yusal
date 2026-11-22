@@ -13,8 +13,8 @@ import 'editor_shots_test.dart' show loadFont;
 void main() {
   final out = Platform.environment['SHOTS_OUT'];
   setUpAll(() async {
-    await loadFont('Onest', [
-      for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Onest-$w.ttf'
+    await loadFont('Inter', [
+      for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Inter-$w.otf'
     ]);
     final flutter = Platform.environment['FLUTTER_ROOT']!;
     await loadFont('MaterialIcons', [

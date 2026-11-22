@@ -339,7 +339,7 @@ extension _SceneTab on _HouseEditorState {
             key: const ValueKey('scene-more'),
             tooltip: tr3('更多设置', 'Басқа баптаулар', 'Другие настройки'),
             onPressed: sceneMoreSheet,
-            icon: const Icon(Icons.tune, size: 20)),
+            icon: const YusalIcon(YIcon.settings, size: 20)),
         const VoiceSlot(),
       ]),
       if (s.cut) cutSlider(170),

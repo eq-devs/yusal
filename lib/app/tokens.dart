@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'settings.dart';
 import '../shared/motion/motion.dart';
 
-/// Drafting-table palette: a cool grey desk, white sheets, dark wall cuts
-/// and one amber accent. Every screen and painter reads colours from here.
+/// Drafting-table palette from the Yusal logo book: a warm stone desk,
+/// white sheets, ink wall cuts and one orange accent. Every screen and painter reads colours from here.
 @immutable
 class Tokens extends ThemeExtension<Tokens> {
   const Tokens({
@@ -50,18 +50,18 @@ class Tokens extends ThemeExtension<Tokens> {
   final bool dark;
 
   static const light = Tokens(
-      bg: Color(0xffE9ECEC),
+      bg: Color(0xffEFEBE5),
       panel: Color(0xffFFFFFF),
-      ink: Color(0xff1C2326),
-      muted: Color(0xff5B666B),
-      line: Color(0xffC8D0D2),
-      accent: Color(0xffC2771A),
-      accentInk: Color(0xffFFFFFF),
-      wall: Color(0xff2A3136),
+      ink: Color(0xff1E1C19),
+      muted: Color(0xff6F665D),
+      line: Color(0xffDCD5CA),
+      accent: Color(0xffD86A2B),
+      accentInk: Color(0xff1E1C19),
+      wall: Color(0xff2A2622),
       room: Color(0xffF7F8F7),
-      roomHi: Color(0xffFCEBD3),
-      furn: Color(0xffDDE3E3),
-      furnLine: Color(0xff8D989C),
+      roomHi: Color(0xffFBE3D2),
+      furn: Color(0xffE4DDD2),
+      furnLine: Color(0xff978D82),
       rug: Color(0xffA8392E),
       rebar: Color(0xffB0502C),
       dim: Color(0xff4D585D),
@@ -72,18 +72,18 @@ class Tokens extends ThemeExtension<Tokens> {
       dark: false);
 
   static const night = Tokens(
-      bg: Color(0xff13181A),
-      panel: Color(0xff1C2326),
-      ink: Color(0xffE4E9EA),
-      muted: Color(0xff97A3A8),
-      line: Color(0xff34404A),
-      accent: Color(0xffE5952F),
-      accentInk: Color(0xff1A1206),
-      wall: Color(0xffD7DDDF),
-      room: Color(0xff20282B),
-      roomHi: Color(0xff4A3418),
-      furn: Color(0xff2E383C),
-      furnLine: Color(0xff7E8B90),
+      bg: Color(0xff161411),
+      panel: Color(0xff1E1C19),
+      ink: Color(0xffF7F3EE),
+      muted: Color(0xffC2B8AB),
+      line: Color(0xff3A352F),
+      accent: Color(0xffD86A2B),
+      accentInk: Color(0xff1E1C19),
+      wall: Color(0xffE4DDD2),
+      room: Color(0xff24211D),
+      roomHi: Color(0xff4A2C1A),
+      furn: Color(0xff34302A),
+      furnLine: Color(0xff8A8076),
       rug: Color(0xffE07A62),
       rebar: Color(0xffE58A5E),
       dim: Color(0xffAEB9BD),
@@ -107,13 +107,16 @@ class Tokens extends ThemeExtension<Tokens> {
       other is Tokens && t >= 0.5 ? other : this;
 }
 
-/// UI text: Onest, a geometric sans with full Kazakh and Russian Cyrillic.
-const fontBody = 'Onest';
+/// UI text: Inter, the Yusal logo book's typeface, with full Kazakh and
+/// Russian Cyrillic.
+const fontBody = 'Inter';
 
-/// Page titles and house names: Lora, a warm serif in the spirit of
-/// architecture and interior editorials; also covers Kazakh Cyrillic.
-const fontDisplay = 'Lora';
-const fontMono = 'PlexMono';
+/// Page titles, house names and the wordmark: Inter Display, the tighter
+/// cut of Inter for large sizes.
+const fontDisplay = 'InterDisplay';
+
+/// Numbers, sizes and codes.
+const fontMono = 'JetBrainsMono';
 const bodyFallback = [
   'PingFang SC',
   'Noto Sans SC',

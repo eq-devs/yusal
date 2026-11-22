@@ -488,7 +488,7 @@ extension _PlanTab on _HouseEditorState {
             IconButton(
                 tooltip: '输入墙长',
                 onPressed: drawingOrigin == null ? null : addWallByLength,
-                icon: const Icon(Icons.straighten, size: 18)),
+                icon: const YusalIcon(YIcon.measure, size: 18)),
           if (tool == EditorTool.drawWall ||
               tool == EditorTool.stair ||
               tool == EditorTool.placeFurniture ||

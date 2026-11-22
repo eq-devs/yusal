@@ -239,13 +239,13 @@ void main() {
     // Real glyphs on the thumbnail (tests otherwise draw boxes).
     final fonts = FontLoader(fontBody);
     for (final w in [400, 500, 600, 700]) {
-      fonts.addFont(File('assets/fonts/Onest-$w.ttf')
+      fonts.addFont(File('assets/fonts/Inter-$w.otf')
           .readAsBytes()
           .then((b) => ByteData.view(b.buffer)));
     }
     await fonts.load();
-    final mono = FontLoader('PlexMono')
-      ..addFont(File('assets/fonts/IBMPlexMono-Regular.ttf')
+    final mono = FontLoader('JetBrainsMono')
+      ..addFont(File('assets/fonts/JetBrainsMono-Regular.ttf')
           .readAsBytes()
           .then((b) => ByteData.view(b.buffer)));
     await mono.load();

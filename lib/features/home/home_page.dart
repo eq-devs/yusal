@@ -12,6 +12,8 @@ import '../../shared/ui/widgets.dart';
 import 'house_card.dart';
 import 'post_page.dart';
 import 'reuse.dart';
+import '../../shared/brand/yicon.dart';
+import '../../shared/brand/brand.dart';
 
 /// First tab: houses people designed, newest first. Look, like, rate,
 /// comment; owners recruit from their house, professionals offer to build.
@@ -68,7 +70,6 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     AppScope.watch(context);
-    final t = YTokens.of(context);
     return Scaffold(
         body: SafeArea(
             top: !widget.embedded,
@@ -89,8 +90,9 @@ class _HomePageState extends State<HomePage> {
                                     if (!widget.embedded) ...[
                                       Row(children: [
                                         Expanded(
-                                            child: Text('Yusal',
-                                                style: wordmark(t.accent))),
+                                            child: const Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: YusalLogo(height: 26))),
                                         const InboxButton(),
                                       ]),
                                       const SizedBox(height: 4),
@@ -345,7 +347,7 @@ class _ProBanner extends StatelessWidget {
             decoration: BoxDecoration(
                 color: t.surface, borderRadius: BorderRadius.circular(yRadius)),
             child: Row(children: [
-              Icon(Icons.handyman_outlined, color: t.accent),
+              YusalIcon(YIcon.hire, color: t.accent),
               const SizedBox(width: 10),
               Expanded(
                   child: Text(

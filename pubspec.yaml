@@ -48,27 +48,27 @@ flutter:
   assets:
     - shorebird.yaml
   fonts:
-    - family: Onest
+    # Inter and Inter Display, per the Yusal logo book; full Kazakh and
+    # Russian Cyrillic.
+    - family: Inter
       fonts:
-        - asset: assets/fonts/Onest-400.ttf
-        - asset: assets/fonts/Onest-500.ttf
+        - asset: assets/fonts/Inter-400.otf
+        - asset: assets/fonts/Inter-500.otf
           weight: 500
-        - asset: assets/fonts/Onest-600.ttf
+        - asset: assets/fonts/Inter-600.otf
           weight: 600
-        - asset: assets/fonts/Onest-700.ttf
+        - asset: assets/fonts/Inter-700.otf
           weight: 700
-        - asset: assets/fonts/Onest-800.ttf
+        - asset: assets/fonts/Inter-800.otf
           weight: 800
-    - family: Lora
+    - family: InterDisplay
       fonts:
-        - asset: assets/fonts/Lora-500.ttf
-          weight: 500
-        - asset: assets/fonts/Lora-600.ttf
+        - asset: assets/fonts/InterDisplay-600.otf
           weight: 600
-        - asset: assets/fonts/Lora-700.ttf
+        - asset: assets/fonts/InterDisplay-700.otf
           weight: 700
-    - family: PlexMono
+    - family: JetBrainsMono
       fonts:
-        - asset: assets/fonts/IBMPlexMono-Regular.ttf
-        - asset: assets/fonts/IBMPlexMono-SemiBold.ttf
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+        - asset: assets/fonts/JetBrainsMono-SemiBold.ttf
           weight: 600

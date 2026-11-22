@@ -16,6 +16,7 @@ import '../../shared/ui/scope.dart';
 import '../../shared/motion/motion.dart';
 import '../../voice/actions_nav.dart';
 import '../../voice/screen.dart';
+import '../../shared/brand/yicon.dart';
 
 /// Tabs of the app shell, in order.
 abstract final class ShellTab {
@@ -135,13 +136,13 @@ class _PlatformShellState extends State<PlatformShell>
     final drafting = Theme.of(context);
     final destinations = [
       (
-        const Icon(Icons.explore_outlined),
-        const Icon(Icons.explore),
+        const YusalIcon(YIcon.community, mono: true),
+        const YusalIcon(YIcon.community),
         tr3('发现', 'Шолу', 'Обзор')
       ),
       (
-        const Icon(Icons.home_work_outlined),
-        const Icon(Icons.home_work),
+        const YusalIcon(YIcon.home, mono: true),
+        const YusalIcon(YIcon.home),
         tr3('我的房子', 'Үйлерім', 'Мои дома')
       ),
       (
@@ -150,8 +151,8 @@ class _PlatformShellState extends State<PlatformShell>
         tr3('消息', 'Хабар', 'Чаты')
       ),
       (
-        const Icon(Icons.person_outline),
-        const Icon(Icons.person),
+        const YusalIcon(YIcon.profile, mono: true),
+        const YusalIcon(YIcon.profile),
         tr3('我的', 'Менің', 'Профиль')
       ),
     ];

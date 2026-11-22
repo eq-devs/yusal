@@ -24,6 +24,7 @@ import 'reuse.dart';
 import '../../shared/ui/house_progress.dart';
 import '../../shared/motion/motion.dart';
 import '../me/trust_pages.dart';
+import '../../shared/brand/yicon.dart';
 
 /// One house: the plan, the facts, the story, the people recruiting for
 /// it, and what others think. The owner recruits from here; a
@@ -300,7 +301,7 @@ class _PostPageState extends State<PostPage> {
                     actions: [
                       IconAction(
                           label: tr3('分享', 'Бөлісу', 'Поделиться'),
-                          icon: const Icon(Icons.ios_share, size: 20),
+                          icon: const YusalIcon(YIcon.share, size: 20),
                           onPressed: share),
                       if (!visitorBar)
                         OptimisticLike(
@@ -743,7 +744,7 @@ class _FactSheet extends StatelessWidget {
                 color: t.accentSoft,
                 borderRadius: BorderRadius.circular(YRadius.control)),
             child: Row(children: [
-              Icon(Icons.payments_outlined, color: t.accent),
+              YusalIcon(YIcon.budget, color: t.accent),
               const SizedBox(width: 10),
               Expanded(
                   child: Text(tr3('预估造价', 'Болжамды құн', 'Оценка стоимости'),
@@ -931,7 +932,7 @@ class _MetaLine extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6),
         child: Text('·', style: muted));
     return Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
-      Icon(Icons.place_outlined, size: 15, color: t.muted),
+      YusalIcon(YIcon.nearby, size: 15, color: t.muted),
       const SizedBox(width: 2),
       Text(regionName(post.region), style: muted),
       if (post.rating != null) ...[

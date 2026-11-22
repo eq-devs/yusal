@@ -11,6 +11,7 @@ import '../../shared/ui/scope.dart';
 import '../../shared/ui/theme.dart';
 import '../../shared/ui/components.dart';
 import '../../shared/ui/widgets.dart';
+import '../../shared/brand/brand.dart';
 
 /// First tab: "find work / find people" with search and filters.
 class DiscoverPage extends StatefulWidget {
@@ -256,8 +257,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                     const EdgeInsets.fromLTRB(20, 12, 8, 12),
                                 child: Row(children: [
                                   Expanded(
-                                      child: Text('Yusal',
-                                          style: wordmark(t.accent))),
+                                      child: const Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: YusalLogo(height: 26))),
                                   const InboxButton(),
                                 ]))),
                       if (widget.embedded)

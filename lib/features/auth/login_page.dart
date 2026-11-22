@@ -8,6 +8,7 @@ import '../../shared/ui/scope.dart';
 import '../../shared/ui/theme.dart';
 import '../../shared/ui/widgets.dart';
 import 'social_sign_in.dart';
+import '../../shared/brand/brand.dart';
 
 /// Sign-in: Google / Apple or email and password, plus the one-tap test
 /// accounts while the app is in development. Pops `true` once signed in so the caller continues the
@@ -125,6 +126,9 @@ class _LoginPageState extends State<LoginPage> {
     final t = YTokens.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       const SizedBox(height: 8),
+      const Align(
+          alignment: Alignment.centerLeft, child: YusalMark(height: 56)),
+      const SizedBox(height: 16),
       Text(
           tr3('欢迎来到 Yusal', 'Yusal-ға қош келдіңіз',
               'Добро пожаловать в Yusal'),

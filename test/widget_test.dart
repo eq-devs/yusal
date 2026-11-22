@@ -11,6 +11,7 @@ import 'package:yusal/features/demand/demand_detail_page.dart';
 import 'package:yusal/features/home/post_page.dart';
 import 'package:yusal/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
+import 'package:yusal/shared/brand/yicon.dart';
 
 MockBackend mock() => MockBackend(
     clock: MockClock(DateTime.utc(2026, 11, 3, 9)),
@@ -66,7 +67,10 @@ void main() {
     expect(find.byType(PostPage), findsOneWidget);
     expect(find.text('给父母盖的一层砖房'), findsOneWidget);
     expect(find.text('120 m²'), findsOneWidget);
-    expect(find.byIcon(Icons.ios_share), findsOneWidget);
+    expect(
+        find.byWidgetPredicate(
+            (w) => w is YusalIcon && w.icon == YIcon.share),
+        findsOneWidget);
     // No page to go back to: a home button leads to the feed.
     await t.tap(find.byTooltip('首页'));
     await t.pumpAndSettle();

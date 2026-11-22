@@ -5,6 +5,7 @@ import '../../shared/ui/l10n.dart';
 import '../../shared/ui/scope.dart';
 import '../../shared/ui/theme.dart';
 import '../../shared/ui/widgets.dart';
+import '../../shared/brand/yicon.dart';
 
 /// Terms of a cooperation agreement ("合作约定"). Used to invite the chosen
 /// applicant and to propose a change; pops the [Agreement] to send.
@@ -197,12 +198,12 @@ class _AgreementFormState extends State<AgreementForm> {
           ListTile(
               title: Text(tr3('开始', 'Басталуы', 'Начало')),
               subtitle: Text(fmtDay(start)),
-              trailing: const Icon(Icons.event),
+              trailing: const YusalIcon(YIcon.calendar),
               onTap: () => pickDate(true)),
           ListTile(
               title: Text(tr3('预计结束', 'Аяқталуы', 'Окончание')),
               subtitle: Text(fmtDay(end)),
-              trailing: const Icon(Icons.event),
+              trailing: const YusalIcon(YIcon.calendar),
               onTap: () => pickDate(false)),
           const SizedBox(height: 8),
           _field(payment, tr3('付款约定（可空）', 'Төлем тәртібі', 'Порядок оплаты'),

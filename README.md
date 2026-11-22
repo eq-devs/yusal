@@ -2,14 +2,10 @@
 
 当前入口：**首页 · 项目 · 消息 · 我的**。以房屋项目为中心，保留离线设计；发布作品与找施工方是独立操作，询价不要求先公开作品。
 
-平台账号、聊天、作品、需求、报价与备份目前使用内存模拟后端，重启会重置；本地 `.house` 设计独立持久保存。真实后端尚未接入。
+平台账号、聊天、作品、需求、报价与备份都存在真实后端 yusal-api 上；本地 `.house` 设计保存在设备上。
 
 - 当前产品方向：[产品重定位](docs/PRODUCT_REPOSITION.md)
-- 本轮目标与验证状态：[优化 Goal](docs/superpowers/plans/2026-11-04-yusal-goal.md)
-- 本轮计划：[优化计划](docs/superpowers/plans/2026-11-04-yusal-optimization.md)
-- 验证记录：[优化报告](docs/OPTIMIZATION_RESULT_2026-11-04.md)
-
-以下是设计工具的功能说明与历史版本记录，不代表本轮已重新完成所有验收。
+- 代码结构：[architecture.md](docs/architecture.md)
 
 ## 自建房设计工具
 
@@ -83,7 +79,6 @@ Layout, the same as janapost (see `docs/architecture.md`):
 
 This is a runnable implementation candidate. Full acceptance of every matrix in the development specification has not been certified. The current 3D renderer uses software projection with CustomPainter; final engine selection, depth/transparency accuracy, performance and physical-device acceptance remain open. Storage failures currently use exceptions internally, and index listing rebuilds from source files. Grid lines and doors/windows support reversible drag previews, alongside precise property dialogs. Sharing/opening must still be tested in the target users' real chat/file apps on physical iOS/Android devices.
 
-See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conformance work.
 
 
 ## v0.7 预算、采暖、水电、宅基地与施工
@@ -134,7 +129,6 @@ See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conforman
 - 删除、放置、撤销、重做和保存失败都有提示；保存失败每 5 秒自动重试。刷新页面或重启后回到正在编辑的设计。
 - 键盘：Esc 逐级退出，Ctrl/⌘+Z 撤销，Ctrl/⌘+Shift+Z 或 Ctrl+Y 重做，Delete 删除选中墙。鼠标悬停时光标提示可拖、可点的位置。
 
-改动过程、浏览器检查与剩余问题见 [v0.5 优化记录](docs/OPTIMIZATION_LOG_v05.md)。
 
 ### 文件兼容
 
@@ -142,7 +136,6 @@ See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conforman
 
 独立墙段至少 0.30 米，精确坐标以整数毫米保存。当前支持矩形外形和正交墙，斜墙、任意外轮廓不在本轮交付范围。手机上的吸附以屏幕距离计算，细微调整可使用数字输入。
 
-研究、取舍、证据范围与代码自评见 [UX_IMPLEMENTATION_PLAN.md](docs/UX_IMPLEMENTATION_PLAN.md)。最终验证及构建记录见 [DELIVERY_REPORT.md](docs/DELIVERY_REPORT.md)。
 
 ## 连接真实后端（yusal-api）
 

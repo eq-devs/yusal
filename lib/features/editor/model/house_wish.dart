@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_layout.dart';
 import 'package:yusal/features/editor/engine/core/commands/house_wish.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/engine/core/number_input.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
 import 'package:yusal/features/editor/engine/render2d/furniture_names.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
+
+/// Room names by type in the app's language, for a house drawn from a
+/// wish.
+Map<String, String> wishRoomNames() => {
+      for (final t in RoomType.values)
+        if (t != RoomType.custom) t.name: roomTypeName(t),
+      'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл', 'Stair hall', ky: 'Тепкич холлу', uz: 'Zinapoya xolli'),
+      'family': tr3('起居室', 'Отбасы бөлмесі', 'Общая комната', 'Common room', ky: 'Жалпы бөлмө', uz: 'Umumiy xona'),
+    };
 
 /// What the questions collect before a house is asked for.
 class HouseWish {
@@ -33,22 +45,30 @@ class HouseWish {
   /// The wish as a house spec drawn without the assistant: two rows of
   /// rooms along a corridor, named in the app's language.
   Map<String, Object?> spec(String name) => wishSpec(
-          name: name,
-          width: (width * 1000).round(),
-          depth: (depth * 1000).round(),
-          floors: floors,
-          bedrooms: bedrooms,
-          bathrooms: bathrooms,
-          hall: hall,
-          boiler: boiler,
-          storage: storage,
-          dining: dining,
-          names: {
-            for (final t in RoomType.values)
-              if (t != RoomType.custom) t.name: roomTypeName(t),
-            'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл', 'Stair hall', ky: 'Тепкич холлу', uz: 'Zinapoya xolli'),
-            'family': tr3('起居室', 'Отбасы бөлмесі', 'Общая комната', 'Common room', ky: 'Жалпы бөлмө', uz: 'Umumiy xona'),
-          });
+      name: name,
+      width: (width * 1000).round(),
+      depth: (depth * 1000).round(),
+      floors: floors,
+      bedrooms: bedrooms,
+      bathrooms: bathrooms,
+      hall: hall,
+      boiler: boiler,
+      storage: storage,
+      dining: dining,
+      names: wishRoomNames());
+
+  /// The wish as a brief for [housePlans], which lays it out several
+  /// ways.
+  HouseBrief get brief => HouseBrief(
+      width: (width * 1000).round(),
+      depth: (depth * 1000).round(),
+      floors: floors,
+      bedrooms: bedrooms,
+      bathrooms: bathrooms,
+      hall: hall,
+      boiler: boiler,
+      storage: storage,
+      dining: dining);
 
   /// The wish as one sentence in the app's language, for the assistant
   /// that designs whole houses.
@@ -242,4 +262,67 @@ Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
                                   'Draw the first version', ky: 'Биринчи вариантты чийүү', uz: 'Birinchi variantni chizish'))),
                         ])));
           }));
+}
+
+/// The plans a wish can be laid out as, each drawn small, to pick one
+/// from; returns it, or null when the sheet is closed.
+Future<HousePlan?> showHousePlans(BuildContext context, List<HousePlan> plans) {
+  return showMotionSheet<HousePlan>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+          child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                        tr3('选一个方案', 'Бір нұсқасын таңдаңыз',
+                            'Выберите вариант'),
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text(tr3(
+                        '同样的要求，不同的排法。选了之后都能改。',
+                        'Талап бірдей, орналасуы әртүрлі. Кейін бәрін өзгертуге болады.',
+                        'Те же пожелания, разная планировка. Потом всё можно изменить.')),
+                    for (final (i, plan) in plans.indexed)
+                      Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: OutlinedButton(
+                              key: Key('plan-$i'),
+                              style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.all(12)),
+                              onPressed: () => Navigator.pop(context, plan),
+                              child: Column(children: [
+                                AspectRatio(
+                                    aspectRatio: plan.document.footprint.width /
+                                        plan.document.footprint.depth,
+                                    child: CustomPaint(
+                                        painter: _planPainter(plan))),
+                                const SizedBox(height: 8),
+                                Text(plan.layout.startsWith('hub')
+                                    ? tr3(
+                                        '不设走廊，房间围着客厅',
+                                        'Дәлізсіз, бөлмелер қонақ бөлмені айнала',
+                                        'Без коридора, комнаты вокруг гостиной')
+                                    : tr3(
+                                        '中间一条走廊，房间在两侧',
+                                        'Ортасында дәліз, бөлмелер екі жағында',
+                                        'Коридор посередине, комнаты по сторонам')),
+                              ])))
+                  ]))));
+}
+
+/// The ground floor of [plan], as the editor draws it.
+FloorPlanPainter _planPainter(HousePlan plan) {
+  final doc = plan.document;
+  final floor = deriveHouse(doc).floors.first;
+  final rooms = doc.floors.first.rooms;
+  return FloorPlanPainter(floor.base, {for (final r in rooms) r.id: r.name},
+      {for (final r in rooms) r.id: roomColors[r.type]!},
+      openings: floor.openings,
+      stairs: floor.stairs,
+      northAngleDeg: doc.footprint.northAngleDeg);
 }

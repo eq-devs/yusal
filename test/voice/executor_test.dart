@@ -64,7 +64,12 @@ void main() {
           seed: false)),
       loggedIn: false,
       entities: const [
-        Entity('room', 'room-uuid-1', alias: 'r1', title: '客厅'),
+        Entity('room', 'room-uuid-1',
+            alias: 'r1', title: '客厅', type: 'living', size: 20),
+        Entity('room', 'room-uuid-2',
+            alias: 'r2', title: '主卧', type: 'bedroom', size: 16),
+        Entity('room', 'room-uuid-3',
+            alias: 'r3', title: '次卧', type: 'bedroom', size: 12),
         Entity('wall', 'wall-uuid-3', alias: 'w3'),
       ]);
 
@@ -177,6 +182,42 @@ void main() {
         final result = await run('test.params', args: {...good, 'room': ref});
         expect(result.code, ActionCodes.unknownEntity);
         expect(result.say['param'], 'room');
+      }
+      expect(ran, isEmpty);
+    });
+
+    test('an entity can be named by its type when it is the only one',
+        () async {
+      await run('test.params', args: {...good, 'room': 'living'});
+      expect(ran.single.entity('room').alias, 'r1');
+    });
+
+    test('the largest or smallest of a type is picked by size', () async {
+      await run('test.params', args: {...good, 'room': 'bedroom:largest'});
+      await run('test.params', args: {...good, 'room': 'bedroom:smallest'});
+      expect([for (final a in ran) a.entity('room').alias], ['r2', 'r3']);
+    });
+
+    test('a type that several things share is ambiguous, with the choices',
+        () async {
+      final result =
+          await run('test.params', args: {...good, 'room': 'bedroom'});
+      expect(result.code, ActionCodes.ambiguous);
+      expect(result.say, {
+        'param': 'room',
+        'choices': [
+          {'id': 'r2', 'title': '主卧'},
+          {'id': 'r3', 'title': '次卧'},
+        ],
+      });
+      expect(ran, isEmpty);
+    });
+
+    test('a type nothing has, or a pick that means nothing, is unknown',
+        () async {
+      for (final ref in ['kitchen', 'bedroom:nicest', 'w3:largest']) {
+        final result = await run('test.params', args: {...good, 'room': ref});
+        expect(result.code, ActionCodes.unknownEntity, reason: ref);
       }
       expect(ran, isEmpty);
     });

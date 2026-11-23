@@ -1,15 +1,20 @@
+import 'dart:math' as math;
+
 import 'package:uuid/uuid.dart';
 
 import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
 import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
 import 'package:yusal/features/editor/engine/core/commands/extras_commands.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_layout.dart';
 import 'package:yusal/features/editor/engine/core/commands/house_spec.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/model/house_wish.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/houses.dart';
 import 'package:yusal/features/voice/state/screen.dart';
+import 'package:yusal/service/settings/settings.dart';
 
 export 'package:yusal/features/editor/engine/core/commands/house_spec.dart'
     show roomWall;
@@ -101,13 +106,7 @@ Future<ActionResult> designWholeHouse(Map<String, Object?> spec) async {
     for (final c in runChecks(doc, deriveHouse(doc)))
       if (c.level != 'info') '${c.ruleId} ${c.level}: ${c.message}'
   ];
-  final host = _host;
-  final library = HouseLibrary.instance;
-  if (host != null) {
-    host.replaceDesign(doc);
-  } else if (library != null) {
-    await library.addDesign(doc);
-  } else {
+  if (!await _show(doc)) {
     return const ActionResult.fail(ActionCodes.notAvailable);
   }
   return ActionResult.ok(say: {
@@ -115,6 +114,105 @@ Future<ActionResult> designWholeHouse(Map<String, Object?> spec) async {
     'rooms': doc.floors.fold<int>(0, (n, f) => n + f.rooms.length),
     if (built.notes.isNotEmpty) 'not_built': built.notes,
     if (issues.isNotEmpty) 'issues': issues,
+  });
+}
+
+/// Puts a whole house in the editor, or in a new design when no editor is
+/// open. False when there is neither.
+Future<bool> _show(HouseDocument doc) async {
+  final host = _host;
+  final library = HouseLibrary.instance;
+  if (host != null) {
+    host.replaceDesign(doc);
+  } else if (library != null) {
+    await library.addDesign(doc);
+  } else {
+    return false;
+  }
+  return true;
+}
+
+/// Failure code when no plan fits: the house is too small for the rooms
+/// asked for.
+const tooSmall = 'too_small';
+
+/// Lays a whole house out from what it must have ([housePlans]) and shows
+/// the plan asked for: the best one, or with `plan` one of the others.
+Future<ActionResult> planWholeHouse(Args args) async {
+  int whole(String name, int otherwise) =>
+      args.has(name) ? args.integer(name) : otherwise;
+  bool flag(String name, bool otherwise) =>
+      args.has(name) ? args.flag(name) : otherwise;
+  final floors = whole('floors', 1);
+  final int width;
+  final int depth;
+  if (args.has('width_mm') && args.has('depth_mm')) {
+    width = args.integer('width_mm');
+    depth = args.integer('depth_mm');
+  } else if (args.has('area_sqm') && floors > 0) {
+    // A little wider than deep, to the half metre.
+    final each = args.number('area_sqm') / floors;
+    width = (math.sqrt(each * 1.2) * 2).round() * 500;
+    depth = (each * 1e6 / width / 100).round() * 100;
+  } else {
+    return const ActionResult.fail(ActionCodes.badArgs,
+        say: {'hint': 'give width_mm and depth_mm, or area_sqm'});
+  }
+  final bedrooms = args.integer('bedrooms');
+  if (width < 4000 ||
+      width > 30000 ||
+      depth < 4000 ||
+      depth > 30000 ||
+      floors < 1 ||
+      floors > 2 ||
+      bedrooms < 1 ||
+      bedrooms > 8) {
+    return const ActionResult.fail(ActionCodes.badArgs, say: {
+      'hint': 'sides 4000-30000 mm, 1 or 2 floors, 1-8 bedrooms; '
+          'anything else needs design.create_house'
+    });
+  }
+  final plans = housePlans(
+      HouseBrief(
+          width: width,
+          depth: depth,
+          floors: floors,
+          bedrooms: bedrooms,
+          bathrooms: whole('bathrooms', 1).clamp(1, 2),
+          hall: flag('hall', true),
+          boiler: flag('boiler', true),
+          storage: flag('storage', false),
+          dining: flag('dining', false),
+          entrance: args.has('entrance') ? args.choice('entrance') : null),
+      name: args.has('name')
+          ? args.text('name')
+          : tr3('我的房屋', 'Менің үйім', 'Мой дом'),
+      timestamp: DateTime.now().toUtc().toIso8601String(),
+      newId: () => const Uuid().v4(),
+      names: wishRoomNames());
+  if (plans.isEmpty) {
+    return const ActionResult.fail(tooSmall, say: {
+      'hint': 'fewer rooms, another floor or a bigger house would fit'
+    });
+  }
+  final pick = whole('plan', 1);
+  if (pick < 1 || pick > plans.length) {
+    return ActionResult.fail(ActionCodes.badArgs,
+        say: {'param': 'plan', 'plans': plans.length});
+  }
+  final plan = plans[pick - 1];
+  if (!await _show(plan.document)) {
+    return const ActionResult.fail(ActionCodes.notAvailable);
+  }
+  return ActionResult.ok(say: {
+    'plan': pick,
+    'plans': plans.length,
+    'layout': plan.layout,
+    'entrance': plan.entrance,
+    'width_mm': width,
+    'depth_mm': depth,
+    'floors': plan.document.floors.length,
+    'rooms': plan.document.floors.fold<int>(0, (n, f) => n + f.rooms.length),
   });
 }
 
@@ -159,6 +257,20 @@ Set<String> _rooms() => {
         for (final r in f.rooms) r.id
     };
 
+/// Where a new room can be asked to go. The name starts with its north or
+/// south part and ends with its east or west part, when it has one.
+const _places = [
+  'southwest',
+  'south',
+  'southeast',
+  'west',
+  'center',
+  'east',
+  'northwest',
+  'north',
+  'northeast',
+];
+
 /// Design commands that map one to one onto a spoken request. Lengths
 /// are millimetres, as in the document.
 final designActions = [
@@ -176,6 +288,38 @@ final designActions = [
     run: (ctx, args) => designWholeHouse(args.object('spec')),
   ),
   AppAction(
+    id: 'design.plan_house',
+    title: const L3('按需求排出整栋房子', 'Талап бойынша үйді жоспарлау',
+        'Спланировать дом по пожеланиям'),
+    examples: const L3(
+        '设计一个三室、十二乘十米的平房，大门朝北',
+        'Үш жатын бөлмелі, он екіге он метр үй, есігі солтүстікке',
+        'Дом двенадцать на десять с тремя спальнями, вход с севера'),
+    params: {
+      // The size: both sides, or the total floor area.
+      'width_mm': const Param.integer(optional: true),
+      'depth_mm': const Param.integer(optional: true),
+      'area_sqm': const Param.number(optional: true),
+      'floors': const Param.integer(optional: true),
+      'bedrooms': const Param.integer(),
+      'bathrooms': const Param.integer(optional: true),
+      // The side the main entrance faces.
+      'entrance':
+          Param.choice([for (final f in Facing.values) f.name], optional: true),
+      // Rooms to have or leave out; a hall and a boiler room unless told.
+      'hall': const Param.flag(optional: true),
+      'boiler': const Param.flag(optional: true),
+      'storage': const Param.flag(optional: true),
+      'dining': const Param.flag(optional: true),
+      // Which of the plans found, 1 the best: 2 or 3 for another one.
+      'plan': const Param.integer(optional: true),
+      'name': const Param.text(optional: true),
+    },
+    when: (ctx) => _host != null || HouseLibrary.instance != null,
+    risk: Risk.undoable,
+    run: (ctx, args) => planWholeHouse(args),
+  ),
+  AppAction(
     id: 'design.add_room',
     title: const L3('画一个房间', 'Бөлме қосу', 'Добавить комнату', 'Add a room', ky: 'Бөлмө кошуу', uz: 'Xona qoʻshish'),
     examples: const L3(
@@ -186,8 +330,11 @@ final designActions = [
     params: {
       'type': Param.choice([for (final t in RoomType.values) t.name]),
       'name': const Param.text(optional: true),
-      'x_mm': const Param.integer(),
-      'y_mm': const Param.integer(),
+      // Where in the house: a corner, the middle of a side or the centre.
+      'where': const Param.choice(_places, optional: true),
+      // Or the south-west corner of the room exactly.
+      'x_mm': const Param.integer(optional: true),
+      'y_mm': const Param.integer(optional: true),
       'w_mm': const Param.integer(),
       'd_mm': const Param.integer(),
     },
@@ -196,8 +343,32 @@ final designActions = [
     run: (ctx, args) async {
       final host = _host!;
       final before = _rooms();
-      final x = args.integer('x_mm');
-      final y = args.integer('y_mm');
+      final int x;
+      final int y;
+      if (args.has('where')) {
+        final place = args.choice('where');
+        final footprint = host.document.footprint;
+        final free = (
+          footprint.width - args.integer('w_mm'),
+          footprint.depth - args.integer('d_mm')
+        );
+        x = place.endsWith('west')
+            ? 0
+            : place.endsWith('east')
+                ? free.$1
+                : (free.$1 / 2).round();
+        y = place.startsWith('south')
+            ? 0
+            : place.startsWith('north')
+                ? free.$2
+                : (free.$2 / 2).round();
+      } else if (args.has('x_mm') && args.has('y_mm')) {
+        x = args.integer('x_mm');
+        y = args.integer('y_mm');
+      } else {
+        return const ActionResult.fail(ActionCodes.badArgs,
+            say: {'hint': 'give where, or x_mm and y_mm'});
+      }
       final result = await _design('CarveRoom', {
         'floorId': host.currentFloorId,
         'left': x,
@@ -727,11 +898,17 @@ final designActions = [
       // moves, so the rooms on its other side change by as much.
       'side': Param.choice([for (final f in Facing.values) f.name]),
       // The room's new size across that wall.
-      'size_mm': const Param.integer(),
+      'size_mm': const Param.integer(optional: true),
+      // Or how much bigger it gets across that wall; negative for smaller.
+      'by_mm': const Param.integer(optional: true),
     },
     when: _inEditor,
     risk: Risk.undoable,
     run: (ctx, args) async {
+      if (args.has('size_mm') == args.has('by_mm')) {
+        return const ActionResult.fail(ActionCodes.badArgs,
+            say: {'hint': 'give size_mm or by_mm'});
+      }
       final host = _host!;
       final base = host.floorBase;
       final id = args.id('room');
@@ -746,7 +923,9 @@ final designActions = [
       final r = _bounds(base, id);
       final (low, high) =
           axis.dir == AxisDir.V ? (r.left, r.right) : (r.bottom, r.top);
-      final size = args.integer('size_mm');
+      final size = args.has('size_mm')
+          ? args.integer('size_mm')
+          : high - low + args.integer('by_mm');
       // Rooms the wall line bounds on either side change with it.
       final touched = {
         for (final e in base.edges)
@@ -807,6 +986,11 @@ final designActions = [
       // Along its wall: to the east or north when positive, to the west
       // or south when negative.
       'shift_mm': const Param.integer(optional: true),
+      // Or the same as a direction and a distance; the direction has to
+      // run along the wall.
+      'toward':
+          Param.choice([for (final f in Facing.values) f.name], optional: true),
+      'by_mm': const Param.integer(optional: true),
       // Or to the middle of another wall: the side of a room.
       'room': const Param.entity('room', optional: true),
       'side':
@@ -842,9 +1026,25 @@ final designActions = [
       } else if (args.has('shift_mm') && placed.host != null) {
         wall = placed.host!;
         start = placed.start + args.integer('shift_mm');
+      } else if (args.has('toward') &&
+          args.has('by_mm') &&
+          placed.host != null) {
+        wall = placed.host!;
+        // Along a wall, positions grow to the north or to the east.
+        final (forward, back) = wall.axis.dir == AxisDir.V
+            ? (Facing.north, Facing.south)
+            : (Facing.east, Facing.west);
+        final toward = Facing.values.byName(args.choice('toward'));
+        if (toward != forward && toward != back) {
+          return ActionResult.fail(ActionCodes.badArgs,
+              say: {'hint': 'this wall runs ${back.name} to ${forward.name}'});
+        }
+        final by = args.integer('by_mm');
+        start = placed.start + (toward == forward ? by : -by);
       } else {
-        return const ActionResult.fail(ActionCodes.badArgs,
-            say: {'hint': 'give shift_mm, or room and side'});
+        return const ActionResult.fail(ActionCodes.badArgs, say: {
+          'hint': 'give toward and by_mm, or shift_mm, or room and side'
+        });
       }
       if (start < wall.start.pos || start + width > wall.end.pos) {
         return ActionResult.fail(ActionCodes.badArgs, say: {
@@ -876,6 +1076,10 @@ final designActions = [
       // On the plan; negative is west or south.
       'east_mm': Param.integer(optional: true),
       'north_mm': Param.integer(optional: true),
+      // Or a direction and a distance.
+      'toward':
+          Param.choice(['north', 'east', 'south', 'west'], optional: true),
+      'by_mm': Param.integer(optional: true),
       // A quarter turn where it stands.
       'turn': Param.flag(optional: true),
     },
@@ -894,14 +1098,27 @@ final designActions = [
         final turned = await _design('RotateFurniture', {'furnitureId': id});
         if (!turned.ok) return turned;
       }
-      if (!args.has('east_mm') && !args.has('north_mm')) {
-        return ActionResult.ok(changed: [id]);
+      var east = args.has('east_mm') ? args.integer('east_mm') : 0;
+      var north = args.has('north_mm') ? args.integer('north_mm') : 0;
+      if (args.has('toward') && args.has('by_mm')) {
+        final by = args.integer('by_mm');
+        switch (args.choice('toward')) {
+          case 'north':
+            north += by;
+          case 'south':
+            north -= by;
+          case 'east':
+            east += by;
+          case 'west':
+            east -= by;
+        }
       }
+      if (east == 0 && north == 0) return ActionResult.ok(changed: [id]);
       final now = host.document.extras.furniture.firstWhere((f) => f.id == id);
       return _design('UpdateFurniture', {
         'furnitureId': id,
-        'x': now.x + (args.has('east_mm') ? args.integer('east_mm') : 0),
-        'y': now.y + (args.has('north_mm') ? args.integer('north_mm') : 0),
+        'x': now.x + east,
+        'y': now.y + north,
       }, changed: [
         id
       ]);

@@ -116,6 +116,13 @@ void main() {
     await t.tap(find.byKey(const Key('wizard-go')));
     await t.pumpAndSettle();
 
+    // The wish can be laid out more than one way: each is drawn, one is
+    // picked.
+    expect(find.text('选一个方案'), findsOneWidget);
+    expect(find.byKey(const Key('plan-1')), findsOneWidget);
+    await t.tap(find.byKey(const Key('plan-0')));
+    await t.pumpAndSettle();
+
     // The editor is open on a two-floor house with its rooms and stair.
     expect(find.byType(HouseEditor), findsOneWidget);
     final projects = await store.listProjects();

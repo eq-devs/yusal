@@ -779,6 +779,73 @@
     }
   },
   {
+    "name": "design.plan_house",
+    "title": {
+      "zh": "按需求排出整栋房子",
+      "kk": "Талап бойынша үйді жоспарлау",
+      "ru": "Спланировать дом по пожеланиям"
+    },
+    "examples": {
+      "zh": "设计一个三室、十二乘十米的平房，大门朝北",
+      "kk": "Үш жатын бөлмелі, он екіге он метр үй, есігі солтүстікке",
+      "ru": "Дом двенадцать на десять с тремя спальнями, вход с севера"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "width_mm": {
+          "type": "integer"
+        },
+        "depth_mm": {
+          "type": "integer"
+        },
+        "area_sqm": {
+          "type": "number"
+        },
+        "floors": {
+          "type": "integer"
+        },
+        "bedrooms": {
+          "type": "integer"
+        },
+        "bathrooms": {
+          "type": "integer"
+        },
+        "entrance": {
+          "type": "string",
+          "enum": [
+            "north",
+            "east",
+            "south",
+            "west"
+          ]
+        },
+        "hall": {
+          "type": "boolean"
+        },
+        "boiler": {
+          "type": "boolean"
+        },
+        "storage": {
+          "type": "boolean"
+        },
+        "dining": {
+          "type": "boolean"
+        },
+        "plan": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bedrooms"
+      ]
+    }
+  },
+  {
     "name": "design.add_room",
     "title": {
       "zh": "画一个房间",
@@ -812,6 +879,20 @@
         "name": {
           "type": "string"
         },
+        "where": {
+          "type": "string",
+          "enum": [
+            "southwest",
+            "south",
+            "southeast",
+            "west",
+            "center",
+            "east",
+            "northwest",
+            "north",
+            "northeast"
+          ]
+        },
         "x_mm": {
           "type": "integer"
         },
@@ -827,8 +908,6 @@
       },
       "required": [
         "type",
-        "x_mm",
-        "y_mm",
         "w_mm",
         "d_mm"
       ]
@@ -1567,12 +1646,14 @@
         },
         "size_mm": {
           "type": "integer"
+        },
+        "by_mm": {
+          "type": "integer"
         }
       },
       "required": [
         "room",
-        "side",
-        "size_mm"
+        "side"
       ]
     }
   },
@@ -1630,6 +1711,18 @@
         "shift_mm": {
           "type": "integer"
         },
+        "toward": {
+          "type": "string",
+          "enum": [
+            "north",
+            "east",
+            "south",
+            "west"
+          ]
+        },
+        "by_mm": {
+          "type": "integer"
+        },
         "room": {
           "type": "string",
           "entity": "room"
@@ -1673,6 +1766,18 @@
           "type": "integer"
         },
         "north_mm": {
+          "type": "integer"
+        },
+        "toward": {
+          "type": "string",
+          "enum": [
+            "north",
+            "east",
+            "south",
+            "west"
+          ]
+        },
+        "by_mm": {
           "type": "integer"
         },
         "turn": {

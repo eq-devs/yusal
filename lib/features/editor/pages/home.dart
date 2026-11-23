@@ -538,12 +538,12 @@ class _HouseHomeState extends ConsumerState<HouseHome>
         return;
       }
       // No assistant: the first version is drawn here, at once.
-      final built = buildHouseFromSpec(
-          wish.spec(tr3('我的房屋', 'Менің үйім', 'Мой дом', 'My house', ky: 'Менин үйүм', uz: 'Mening uyim')),
-          DateTime.now().toUtc().toIso8601String(),
-          () => const Uuid().v4());
-      final doc = built.document;
-      if (doc == null) {
+      final plans = housePlans(wish.brief,
+          name: tr3('我的房屋', 'Менің үйім', 'Мой дом', 'My house', ky: 'Менин үйүм', uz: 'Mening uyim'),
+          timestamp: DateTime.now().toUtc().toIso8601String(),
+          newId: () => const Uuid().v4(),
+          names: wishRoomNames());
+      if (plans.isEmpty) {
         message(tr3(
             '这套要求画不出来，换个大小或少几间试试',
             'Бұл талаппен сызу мүмкін болмады, өлшемін не бөлме санын өзгертіп көріңіз',
@@ -551,6 +551,13 @@ class _HouseHomeState extends ConsumerState<HouseHome>
             "Couldn't draw with these wishes; change the size or the number of rooms", ky: 'Бул каалоолор менен чийүү мүмкүн болбоду; өлчөмдү же бөлмөлөрдүн санын өзгөртүңүз', uz: 'Bu istaklar bilan chizib boʻlmadi; oʻlcham yoki xonalar sonini oʻzgartiring'));
         return;
       }
+      if (!mounted) return;
+      // Several ways to lay it out: the user picks.
+      final plan = plans.length == 1
+          ? plans.single
+          : await showHousePlans(context, plans);
+      if (plan == null) return;
+      final doc = plan.document;
       try {
         final id = await store.createProject(doc);
         if (mounted) await open(ProjectEntry(id, doc));

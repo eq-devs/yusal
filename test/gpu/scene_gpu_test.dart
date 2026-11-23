@@ -93,6 +93,22 @@ void main() {
       const SceneSettings(roof: false)
     ),
     'night': (lookingAt(model, 0.6, 0.5, 26), const SceneSettings(dark: true)),
+    'white': (
+      lookingAt(model, 0.6, 0.5, 26),
+      const SceneSettings(style: SceneStyle.white)
+    ),
+    'lines': (
+      lookingAt(model, 0.6, 0.5, 26),
+      const SceneSettings(style: SceneStyle.lines)
+    ),
+    'lines cut': (
+      lookingAt(model, 0.6, 0.9, 24),
+      const SceneSettings(cut: true, maxFloor: 0, style: SceneStyle.lines)
+    ),
+    'white no roof': (
+      lookingAt(model, 2.2, 0.8, 24),
+      const SceneSettings(roof: false, style: SceneStyle.white)
+    ),
   };
 
   testWidgets('the GPU draws what the canvas paints', (t) async {

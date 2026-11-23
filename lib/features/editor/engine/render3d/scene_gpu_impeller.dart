@@ -146,6 +146,10 @@ class _ImpellerScene extends SceneGpu {
         // Colours arrive with alpha multiplied in, which is what the
         // default equation blends: source + destination × (1 − alpha).
         ..setColorBlendEquation(gpu.ColorBlendEquation());
+      // The edges lie on the faces they outline: drawn after every solid
+      // face, so each is hidden only by what is truly in front of it.
+      final edges = frame.edges;
+      if (edges != null) batches([edges]);
       batches(frame.translucent);
       target.present(commands);
       commands.submit();

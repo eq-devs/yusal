@@ -28,7 +28,11 @@ class GpuBatch {
 /// the house's own coordinates, already lit, and the camera as a matrix.
 class GpuFrame {
   GpuFrame(this.mvp, this.opaque, this.translucent, this.faces,
-      [this.picks = const []]);
+      [this.picks = const [], this.edges]);
+
+  /// The form's edges as thin strips, drawn over the solid faces and
+  /// behind nothing that is nearer; null when the style draws none.
+  final GpuBatch? edges;
 
   /// Column-major, from house coordinates to clip space with depth 0 to 1.
   final Float32List mvp;
@@ -52,6 +56,9 @@ class GpuFrame {
 /// against it. The canvas painter gets the same from the order it draws in.
 const _lift = 0.02;
 const _roofLift = 1.2;
+
+/// Metres toward the eye for each [ScenePainter.liftRank].
+const _lifts = [0.0, _lift, _lift * 2, _roofLift];
 
 class _Writer {
   Float32List data = Float32List(gpuVertexFloats * 1024);
@@ -92,7 +99,6 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
   final camera = p.camera;
   final settings = p.settings;
   final model = p.model;
-  final night = settings.night;
   final light = p.sun;
   final cutY = settings.cut ? settings.cutHeight : double.infinity;
   final shell = p.roofOn && !cutY.isFinite;
@@ -140,25 +146,25 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
     }
     centre = centre * (1 / f.points.length);
     final distance = (centre - camera.eye).length;
-    final rank = switch (f.layer) {
-      Layer3.floorSurface => 1,
-      Layer3.covering => 2,
-      Layer3.sorted => f.covering && shell && facing > 0 ? 1 : 0,
-      _ => 0,
-    };
+    var rank = ScenePainter.liftRank(f, shell);
+    if (rank == 3 && facing <= 0) rank = 0;
     if (rank > 0) {
       // Brought toward the eye along the line of sight: it lands on the
       // same pixels, only nearer. A roof slope caps the wall tops that run
       // into it along its edges, so it needs more room than a finish.
-      final by = f.layer == Layer3.sorted ? _roofLift : _lift * rank;
+      final by = _lifts[rank];
       pts = [
         for (final q in pts) q + (camera.eye - q).unit * by,
       ];
     }
-    final alpha = f.glow && night ? 0.62 : f.alpha;
+    final alpha = p.faceAlpha(f);
     faces++;
     if (f.source != null) picks.add((pts, f.source));
-    if (f.textile != null && f.uv != null && !clipped && alpha >= 1) {
+    if (f.textile != null &&
+        f.uv != null &&
+        !clipped &&
+        alpha >= 1 &&
+        settings.style.materials) {
       final tint = p.shade(
           Face3(f.points, const ui.Color(0xffffffff),
               source: f.source, normal: f.normal),
@@ -188,7 +194,7 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
           b.hi.y <= cutY + 1e-3) {
         continue;
       }
-      final y = cutY + 0.05;
+      final y = cutY + _sectionLift;
       faces++;
       if (b.source != null) {
         picks.add((
@@ -215,6 +221,62 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
           1);
     }
   }
+  GpuBatch? edges;
+  if (p.drawsEdges) {
+    final w = _Writer();
+    final ink = p.edgeColor;
+    final focal = size.height / 2 / math.tan(camera.fov / 2);
+    final half = p.edgeWidth / 2 / focal;
+    final eye = camera.eye;
+    final forward = camera.forward;
+    for (final e in p.edges(cutY.isFinite ? cutY + _sectionLift : 0)) {
+      var a = e.a;
+      var b = e.b;
+      if (e.soft) {
+        // The outline of a round thing: one face toward the eye, one away.
+        final toEye = eye - a;
+        if ((e.n1!.dot(toEye) > 0) == (e.n2!.dot(toEye) > 0)) continue;
+      }
+      var da = (a - eye).dot(forward);
+      var db = (b - eye).dot(forward);
+      if (da < gpuNear && db < gpuNear) continue;
+      if (da < gpuNear) {
+        a = Vec3.lerp(a, b, (gpuNear - da) / (db - da));
+        da = gpuNear;
+      } else if (db < gpuNear) {
+        b = Vec3.lerp(b, a, (gpuNear - db) / (da - db));
+        db = gpuNear;
+      }
+      // Nearer than its faces by a little more than they are lifted, and
+      // by more the farther off it is, where depth is coarser.
+      final lift = _lifts[e.lift];
+      final toA = eye - a;
+      final toB = eye - b;
+      final la = toA.length;
+      final lb = toB.length;
+      final nearA = 0.012 + 0.0016 * la;
+      final nearB = 0.012 + 0.0016 * lb;
+      // An edge that runs on into a wall would show through its face as
+      // a dot, by as much as it is brought forward: the ends give that
+      // much up, which at this distance is under a pixel.
+      final run = b - a;
+      final length = run.length;
+      if (length <= (nearA + nearB) * 1.5) continue;
+      a = a + run * (nearA / length) + toA * ((lift + nearA) / la);
+      b = b - run * (nearB / length) + toB * ((lift + nearB) / lb);
+      var side = (b - a).cross(eye - (a + b) * 0.5);
+      final sl = side.length;
+      if (sl < 1e-9) continue;
+      side = side * (1 / sl);
+      final sa = side * (half * da);
+      final sb = side * (half * db);
+      final q = [a - sa, a + sa, b + sb, b - sb];
+      for (final i in const [0, 1, 2, 0, 2, 3]) {
+        w.add(q[i], ink.r, ink.g, ink.b, ink.a, 0.5, 0.5);
+      }
+    }
+    if (w.count > 0) edges = w.batch();
+  }
   see.sort((a, b) => b.$1.compareTo(a.$1));
   return GpuFrame(
       gpuCameraMatrix(camera, size),
@@ -227,8 +289,13 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
       ],
       [for (final (_, w) in see) w.batch()],
       faces,
-      picks);
+      picks,
+      edges);
 }
+
+/// How far above the cut its solid fill is drawn, to cover the open tops
+/// of the walls it closes.
+const _sectionLift = 0.05;
 
 /// Nearest and farthest the GPU draws, in metres from the eye.
 const gpuNear = 0.05;

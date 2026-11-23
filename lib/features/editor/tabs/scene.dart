@@ -196,6 +196,14 @@ extension _SceneTab on _HouseEditorState {
   /// Frame the current preset view again.
   void refitScene() => update(() => sceneViewToken++);
 
+  String sceneStyleName(SceneStyle style) => switch (style) {
+        SceneStyle.shaded ||
+        SceneStyle.plain =>
+          tr3('着色', 'Түрлі түсті', 'Цвет'),
+        SceneStyle.white => tr3('白模', 'Ақ макет', 'Белый макет'),
+        SceneStyle.lines => tr3('线稿', 'Сызба', 'Линии'),
+      };
+
   List<Widget> sceneToggles() {
     final s = sceneSettings;
     final set = setScene;
@@ -221,6 +229,24 @@ extension _SceneTab on _HouseEditorState {
           label: tr3('剖切', 'Кесу', 'Разрез'),
           selected: s.cut,
           onChanged: (v) => set(s.copyWith(cut: v))),
+      // The look of the model, as the visual styles of a CAD viewport:
+      // each tap moves on to the next.
+      ActionChip(
+          key: const ValueKey('scene-style'),
+          avatar: Icon(
+              switch (s.style) {
+                SceneStyle.white => Icons.view_in_ar_outlined,
+                SceneStyle.lines => Icons.draw_outlined,
+                _ => Icons.palette_outlined,
+              },
+              size: 16),
+          label: Text(sceneStyleName(s.style)),
+          onPressed: () => set(s.copyWith(
+                  style: switch (s.style) {
+                SceneStyle.shaded || SceneStyle.plain => SceneStyle.white,
+                SceneStyle.white => SceneStyle.lines,
+                SceneStyle.lines => SceneStyle.shaded,
+              }))),
       ActionChip(
           key: const ValueKey('scene-roof-style'),
           avatar: RoofIcon(roofStyle, size: 16),

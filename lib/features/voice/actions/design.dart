@@ -223,12 +223,12 @@ final designActions = [
         x = place.endsWith('west')
             ? 0
             : place.endsWith('east')
-                ? free.$1.round()
+                ? free.$1
                 : (free.$1 / 2).round();
         y = place.startsWith('south')
             ? 0
             : place.startsWith('north')
-                ? free.$2.round()
+                ? free.$2
                 : (free.$2 / 2).round();
       } else if (args.has('x_mm') && args.has('y_mm')) {
         x = args.integer('x_mm');

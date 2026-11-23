@@ -248,8 +248,11 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
       if (w.anchor.axisId == id) continue;
       overrides.add(switch (w) {
         OpenWall() => OpenWall(id: w.id, anchor: anchor(w.anchor)),
-        SolidWall() =>
-          SolidWall(id: w.id, anchor: anchor(w.anchor), value: w.value),
+        SolidWall() => SolidWall(
+            id: w.id,
+            anchor: anchor(w.anchor),
+            value: w.value,
+            height: w.height),
         ThicknessWall() =>
           ThicknessWall(id: w.id, anchor: anchor(w.anchor), value: w.value)
       });

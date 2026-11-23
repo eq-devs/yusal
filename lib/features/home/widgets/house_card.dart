@@ -95,7 +95,7 @@ class HouseCard extends StatelessWidget {
                               left: 10,
                               top: 10,
                               child: StatusPill(
-                                  tr3('精选', 'Таңдаулы', 'Выбор редакции'),
+                                  tr3('精选', 'Таңдаулы', 'Выбор редакции', "Editor's pick", ky: 'Редактордун тандоосу', uz: 'Muharrir tanlovi'),
                                   color: t.accent,
                                   filled: true))
                         else if (p.openForBuilders)
@@ -104,7 +104,8 @@ class HouseCard extends StatelessWidget {
                               top: 10,
                               child: StatusPill(
                                   tr3('正在找施工方', 'Құрылысшы іздейді',
-                                      'Ищет строителей'),
+                                      'Ищет строителей',
+                                      'Looking for builders', ky: 'Куруучуларды издейт', uz: 'Quruvchilarni qidirmoqda'),
                                   color: t.accent,
                                   filled: true))
                         else if (p.focus.isNotEmpty)
@@ -113,7 +114,7 @@ class HouseCard extends StatelessWidget {
                               top: 10,
                               child: StatusPill(
                                   tr3('求点评 · ${p.focus.map(feedbackTopicName).join(listSep)}',
-                                      'Пікір сұрайды', 'Просит отзывы'),
+                                      'Пікір сұрайды', 'Просит отзывы', 'Asking for feedback', ky: 'Пикир сурайт', uz: 'Fikr soʻramoqda'),
                                   color: t.ink,
                                   filled: true)),
                       ]),
@@ -139,11 +140,13 @@ class HouseCard extends StatelessWidget {
                                 ? tr3(
                                     '${p.commentCount} 条点评',
                                     '${p.commentCount} пікір',
-                                    'Отзывов: ${p.commentCount}')
+                                    'Отзывов: ${p.commentCount}',
+                                    'Reviews: ${p.commentCount}', ky: 'Пикирлер: ${p.commentCount}', uz: 'Sharhlar: ${p.commentCount}')
                                 : p.openForBuilders
-                                    ? tr3('暂无评价', 'Пікір жоқ', 'Нет оценок')
+                                    ? tr3('暂无评价', 'Пікір жоқ', 'Нет оценок', 'No ratings', ky: 'Баалар жок', uz: 'Baholar yoʻq')
                                     : tr3('等你来点评', 'Пікір қалдырыңыз',
-                                        'Оставьте отзыв'),
+                                        'Оставьте отзыв',
+                                        'Leave a review', ky: 'Пикир калтыруу', uz: 'Sharh qoldirish'),
                             style: TextStyle(
                                 fontSize: YFont.caption, color: t.muted)),
                       const SizedBox(height: 2),
@@ -167,7 +170,7 @@ class HouseCard extends StatelessWidget {
                                               ])),
                                       TextSpan(
                                           text:
-                                              ' ${tr3('预估造价', 'болжамды құн', 'оценка стоимости')}',
+                                              ' ${tr3('预估造价', 'болжамды құн', 'оценка стоимости', 'cost estimate', ky: 'баанын баасы', uz: 'narx hisobi')}',
                                           style: TextStyle(color: t.muted)),
                                     ]),
                                 // One line, so long labels (Russian) cannot push the
@@ -303,20 +306,20 @@ String houseFacts(HousePost p) => [
       regionName(p.region),
       '${p.area.round()} $sqm',
       switch (p.floors) {
-        1 => tr3('一层', 'Бір қабат', '1 этаж'),
-        2 => tr3('两层', 'Екі қабат', '2 этажа'),
-        final n => tr3('$n 层', '$n қабат', '$n этажа'),
+        1 => tr3('一层', 'Бір қабат', '1 этаж', '1 floor', ky: '1 кабат', uz: '1 qavat'),
+        2 => tr3('两层', 'Екі қабат', '2 этажа', '2 floors', ky: '2 кабат', uz: '2 qavat'),
+        final n => tr3('$n 层', '$n қабат', '$n этажа', '$n floors', ky: '$n кабат', uz: '$n qavat'),
       },
       if (p.rooms > 0)
-        tr3('${p.rooms} 个房间', '${p.rooms} бөлме', '${p.rooms} комн.'),
+        tr3('${p.rooms} 个房间', '${p.rooms} бөлме', '${p.rooms} комн.', '${p.rooms} rooms', ky: '${p.rooms} бөлмө', uz: '${p.rooms} xona'),
     ].join(' · ');
 
 /// The main action on a public design.
-String startFromThis() => tr3('用这套开始', 'Осыдан бастау', 'Начать с этого');
+String startFromThis() => tr3('用这套开始', 'Осыдан бастау', 'Начать с этого', 'Start from this', ky: 'Мындан баштоо', uz: 'Shundan boshlash');
 
 /// "已被复用 23 次"
 String reusedTimes(int n) =>
-    tr3('已被复用 $n 次', '$n рет қолданылды', 'Взяли за основу: $n');
+    tr3('已被复用 $n 次', '$n рет қолданылды', 'Взяли за основу: $n', 'Used as a base: $n', ky: 'Негиз катары колдонулду: $n', uz: 'Asos sifatida ishlatildi: $n');
 
 /// Shows a like at once and sends it after; goes back if the call fails,
 /// and follows [liked] again once the page reloads with the server's view.

@@ -47,7 +47,7 @@ class SearchField extends StatelessWidget {
                 const SizedBox(width: YSpace.lg)
               else
                 IconButton(
-                    tooltip: tr3('清除', 'Тазалау', 'Очистить'),
+                    tooltip: tr3('清除', 'Тазалау', 'Очистить', 'Clear', ky: 'Тазалоо', uz: 'Tozalash'),
                     icon: const Icon(Icons.close, size: 20),
                     onPressed: () {
                       controller.clear();
@@ -248,7 +248,7 @@ class SkeletonList extends StatelessWidget {
   final EdgeInsets padding;
   @override
   Widget build(BuildContext context) => Semantics(
-      label: tr3('加载中', 'Жүктелуде', 'Загрузка'),
+      label: tr3('加载中', 'Жүктелуде', 'Загрузка', 'Loading', ky: 'Жүктөлүүдө', uz: 'Yuklanmoqda'),
       child: ExcludeSemantics(
           child: Padding(
               padding: padding,
@@ -384,7 +384,7 @@ class SignInPrompt extends StatelessWidget {
               FilledButton(
                   key: const Key('sign-in-prompt'),
                   onPressed: () => requireLogin(context),
-                  child: Text(tr3('登录或注册', 'Кіру', 'Войти'))),
+                  child: Text(tr3('登录或注册', 'Кіру', 'Войти', 'Sign in', ky: 'Кирүү', uz: 'Kirish'))),
             ])));
   }
 }

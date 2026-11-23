@@ -40,7 +40,7 @@ class BackupPage extends StatelessWidget {
     final refresh = LiveRefresh();
     watchLang(context);
     return PageScaffold(
-        title: tr3('备份与恢复', 'Сақтық көшірме', 'Резервные копии'),
+        title: tr3('备份与恢复', 'Сақтық көшірме', 'Резервные копии', 'Backups', ky: 'Резервдик көчүрмөлөр', uz: 'Zaxira nusxalar'),
         body: OnChange(
             builder: (context) => context.session.currentAccount == null
                 ? EmptyState(
@@ -48,10 +48,11 @@ class BackupPage extends StatelessWidget {
                     title: tr3(
                         '登录后可以把设计备份到账号',
                         'Кіргеннен кейін сақтауға болады',
-                        'Войдите, чтобы сохранять проекты в аккаунт'),
+                        'Войдите, чтобы сохранять проекты в аккаунт',
+                        'Sign in to save designs to your account', ky: 'Долбоорлорду аккаунтка сактоо үчүн кириңиз', uz: 'Loyihalarni akkauntga saqlash uchun kiring'),
                     action: FilledButton(
                         onPressed: () => requireLogin(context),
-                        child: Text(tr3('登录', 'Кіру', 'Войти'))))
+                        child: Text(tr3('登录', 'Кіру', 'Войти', 'Sign in', ky: 'Кирүү', uz: 'Kirish'))))
                 : Live<List<BackupRow>>(
                     refresh: refresh,
                     provider: backupRowsProvider,
@@ -61,13 +62,14 @@ class BackupPage extends StatelessWidget {
                               Hint(tr3(
                                   '本地保存和自动保存照常工作，不登录也能离线编辑。备份是手动的，不是实时同步；两边都改过时会让你选择，不会静默覆盖。',
                                   'Жергілікті сақтау әрдайым жұмыс істейді. Көшірме қолмен жасалады.',
-                                  'Локальное сохранение работает всегда. Копия делается вручную, конфликты решаете вы.')),
+                                  'Локальное сохранение работает всегда. Копия делается вручную, конфликты решаете вы.',
+                                  'Saving on the device always works. Backups are made by hand, and you resolve conflicts.', ky: 'Түзмөккө сактоо ар дайым иштейт. Резервдик көчүрмөлөр кол менен жасалат, карама-каршылыктарды өзүңүз чечесиз.', uz: 'Qurilmaga saqlash har doim ishlaydi. Zaxira nusxalar qoʻlda yaratiladi, ziddiyatlarni oʻzingiz hal qilasiz.')),
                               const SizedBox(height: 16),
                               if (rows.isEmpty)
                                 EmptyState(
                                     icon: Icons.folder_open,
                                     title: tr3(
-                                        '还没有设计', 'Жоба жоқ', 'Нет проектов')),
+                                        '还没有设计', 'Жоба жоқ', 'Нет проектов', 'No designs', ky: 'Долбоорлор жок', uz: 'Loyihalar yoʻq')),
                               for (final row in rows)
                                 Padding(
                                     padding: const EdgeInsets.only(bottom: 12),
@@ -111,7 +113,7 @@ class _BackupTile extends StatelessWidget {
             expectedPreviousUpdatedAt: force ? null : row.mark);
         await BackupMarks.write(e.id, doc.meta.updatedAt);
         if (context.mounted) {
-          toast(context, tr3('已备份', 'Сақталды', 'Сохранено'));
+          toast(context, tr3('已备份', 'Сақталды', 'Сохранено', 'Saved', ky: 'Сакталды', uz: 'Saqlandi'));
         }
       } on ApiFailure catch (f) {
         if (!context.mounted) return;
@@ -119,7 +121,7 @@ class _BackupTile extends StatelessWidget {
           await resolveConflict();
         } else {
           toast(context,
-              '${failureText(f)} · ${tr3('本地设计未受影响，待重试', 'Жергілікті жоба сақталды', 'Локальный проект не затронут')}');
+              '${failureText(f)} · ${tr3('本地设计未受影响，待重试', 'Жергілікті жоба сақталды', 'Локальный проект не затронут', "The local design wasn't touched", ky: 'Түзмөктөгү долбоорго тийилген жок', uz: 'Qurilmadagi loyihaga tegilmadi')}');
         }
       }
     }
@@ -139,7 +141,8 @@ class _BackupTile extends StatelessWidget {
               tr3(
                   '此备份的文件版本不受支持，无法恢复；原文件未改动。',
                   'Бұл нұсқа қолдау көрсетілмейді.',
-                  'Версия файла не поддерживается; ничего не изменено.'));
+                  'Версия файла не поддерживается; ничего не изменено.',
+                  "This file version isn't supported; nothing changed.", ky: 'Файлдын бул версиясы колдоого алынбайт; эч нерсе өзгөргөн жок.', uz: 'Faylning bu versiyasi qoʻllab-quvvatlanmaydi; hech narsa oʻzgarmadi.'));
         }
         return;
       }
@@ -149,7 +152,7 @@ class _BackupTile extends StatelessWidget {
               ? composeDocument(
                   Meta(
                       name:
-                          '${doc.meta.name}（${tr3('云端副本', 'бұлт көшірмесі', 'копия из облака')}）',
+                          '${doc.meta.name}（${tr3('云端副本', 'бұлт көшірмесі', 'копия из облака', 'cloud copy', ky: 'булуттагы көчүрмө', uz: 'bulutdagi nusxa')}）',
                       createdAt: doc.meta.createdAt,
                       updatedAt: doc.meta.updatedAt),
                   extractDesignState(doc))
@@ -162,7 +165,7 @@ class _BackupTile extends StatelessWidget {
       reload?.bump();
       await onRestored();
       if (context.mounted) {
-        toast(context, tr3('已恢复到本设备', 'Қалпына келтірілді', 'Восстановлено'));
+        toast(context, tr3('已恢复到本设备', 'Қалпына келтірілді', 'Восстановлено', 'Restored', ky: 'Калыбына келтирилди', uz: 'Tiklandi'));
       }
     }
 
@@ -170,21 +173,24 @@ class _BackupTile extends StatelessWidget {
       final choice = await pickOne<String>(
           context,
           tr3('本地和云端都改过', 'Екі жақта да өзгерген',
-              'Изменено и здесь, и в облаке'),
+              'Изменено и здесь, и в облаке',
+              'Changed both here and in the cloud', ky: 'Бул жерде да, булутта да өзгөртүлгөн', uz: 'Bu yerda ham, bulutda ham oʻzgartirilgan'),
           [
             (
               'local',
               tr3(
                   '用本机版本覆盖云端（本机 ${e!.document.meta.updatedAt.substring(0, 16)}）',
                   'Бұлтқа осы құрылғыны жазу',
-                  'Записать в облако версию с этого устройства')
+                  'Записать в облако версию с этого устройства',
+                  "Write this device's version to the cloud", ky: 'Бул түзмөктүн версиясын булутка жазуу', uz: 'Bu qurilma versiyasini bulutga yozish')
             ),
             (
               'copy',
               tr3(
                   '把云端版本恢复为副本（云端 ${fmtDay(cloud?.backedUpAt)}）',
                   'Бұлт нұсқасын көшірме етіп алу',
-                  'Восстановить облачную версию как копию')
+                  'Восстановить облачную версию как копию',
+                  'Restore the cloud version as a copy', ky: 'Булуттагы версияны көчүрмө катары калыбына келтирүү', uz: 'Bulutdagi versiyani nusxa sifatida tiklash')
             ),
           ]);
       if (choice == 'local') await upload(force: true);
@@ -192,22 +198,22 @@ class _BackupTile extends StatelessWidget {
     };
 
     final (label, color) = switch (state) {
-      null => (tr3('仅在云端', 'Тек бұлтта', 'Только в облаке'), t.info),
-      BackupState.none => (tr3('未备份', 'Сақталмаған', 'Нет копии'), t.muted),
+      null => (tr3('仅在云端', 'Тек бұлтта', 'Только в облаке', 'Only in the cloud', ky: 'Булутта гана', uz: 'Faqat bulutda'), t.info),
+      BackupState.none => (tr3('未备份', 'Сақталмаған', 'Нет копии', 'No backup', ky: 'Резервдик көчүрмө жок', uz: 'Zaxira nusxa yoʻq'), t.muted),
       BackupState.inSync => (
-          tr3('已备份 · ${fmtDay(cloud?.backedUpAt)}', 'Сақталған', 'Сохранено'),
+          tr3('已备份 · ${fmtDay(cloud?.backedUpAt)}', 'Сақталған', 'Сохранено', 'Saved', ky: 'Сакталды', uz: 'Saqlandi'),
           t.ok
         ),
       BackupState.localNewer => (
-          tr3('本机有新修改', 'Жаңа өзгерістер', 'Есть новые изменения'),
+          tr3('本机有新修改', 'Жаңа өзгерістер', 'Есть новые изменения', 'New changes', ky: 'Жаңы өзгөртүүлөр', uz: 'Yangi oʻzgarishlar'),
           t.warn
         ),
       BackupState.cloudNewer => (
-          tr3('云端较新', 'Бұлттағысы жаңа', 'В облаке новее'),
+          tr3('云端较新', 'Бұлттағысы жаңа', 'В облаке новее', 'Newer in the cloud', ky: 'Булутта жаңыраак', uz: 'Bulutda yangiroq'),
           t.info
         ),
       BackupState.diverged => (
-          tr3('两边都改过', 'Екі жақта өзгерген', 'Конфликт версий'),
+          tr3('两边都改过', 'Екі жақта өзгерген', 'Конфликт версий', 'Version conflict', ky: 'Версиялардын карама-каршылыгы', uz: 'Versiyalar ziddiyati'),
           t.crit
         ),
     };
@@ -230,18 +236,19 @@ class _BackupTile extends StatelessWidget {
                   onPressed:
                       state == BackupState.diverged ? resolveConflict : upload,
                   child: Text(state == BackupState.diverged
-                      ? tr3('选择保留哪个', 'Таңдау', 'Выбрать версию')
-                      : tr3('备份', 'Сақтау', 'Сохранить копию'))),
+                      ? tr3('选择保留哪个', 'Таңдау', 'Выбрать версию', 'Choose a version', ky: 'Версия тандаңыз', uz: 'Versiya tanlang')
+                      : tr3('备份', 'Сақтау', 'Сохранить копию', 'Save a backup', ky: 'Резервдик көчүрмө сактоо', uz: 'Zaxira nusxa saqlash'))),
             if (cloud != null && e == null)
               OutlinedButton(
                   onPressed: () => restoreAsCopy(copy: false),
                   child: Text(
-                      tr3('恢复到本设备', 'Осы құрылғыға', 'Восстановить сюда'))),
+                      tr3('恢复到本设备', 'Осы құрылғыға', 'Восстановить сюда', 'Restore here', ky: 'Бул жерге калыбына келтирүү', uz: 'Shu yerga tiklash'))),
             if (cloud != null && e != null && state != BackupState.inSync)
               TextButton(
                   onPressed: () => restoreAsCopy(copy: true),
                   child: Text(tr3('恢复云端为副本', 'Көшірме ретінде',
-                      'Облачную копию — как новый проект'))),
+                      'Облачную копию — как новый проект',
+                      'Cloud copy as a new design', ky: 'Булуттагы көчүрмө жаңы долбоор катары', uz: 'Bulutdagi nusxa yangi loyiha sifatida'))),
           ]),
         ]));
   }

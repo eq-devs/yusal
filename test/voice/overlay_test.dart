@@ -354,8 +354,8 @@ void main() {
     final registry = ActionRegistry([
       AppAction(
           id: 'test.send',
-          title: const L3('发送消息', 'Хабар жіберу', 'Отправить сообщение'),
-          examples: const L3('发送', 'Жібер', 'Отправь'),
+          title: const L3('发送消息', 'Хабар жіберу', 'Отправить сообщение', 'Send a message'),
+          examples: const L3('发送', 'Жібер', 'Отправь', 'Send'),
           risk: Risk.outbound,
           run: (_, __) async {
             ran++;

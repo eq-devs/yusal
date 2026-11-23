@@ -779,6 +779,73 @@
     }
   },
   {
+    "name": "design.plan_house",
+    "title": {
+      "zh": "按需求排出整栋房子",
+      "kk": "Талап бойынша үйді жоспарлау",
+      "ru": "Спланировать дом по пожеланиям"
+    },
+    "examples": {
+      "zh": "设计一个三室、十二乘十米的平房，大门朝北",
+      "kk": "Үш жатын бөлмелі, он екіге он метр үй, есігі солтүстікке",
+      "ru": "Дом двенадцать на десять с тремя спальнями, вход с севера"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "width_mm": {
+          "type": "integer"
+        },
+        "depth_mm": {
+          "type": "integer"
+        },
+        "area_sqm": {
+          "type": "number"
+        },
+        "floors": {
+          "type": "integer"
+        },
+        "bedrooms": {
+          "type": "integer"
+        },
+        "bathrooms": {
+          "type": "integer"
+        },
+        "entrance": {
+          "type": "string",
+          "enum": [
+            "north",
+            "east",
+            "south",
+            "west"
+          ]
+        },
+        "hall": {
+          "type": "boolean"
+        },
+        "boiler": {
+          "type": "boolean"
+        },
+        "storage": {
+          "type": "boolean"
+        },
+        "dining": {
+          "type": "boolean"
+        },
+        "plan": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bedrooms"
+      ]
+    }
+  },
+  {
     "name": "design.add_room",
     "title": {
       "zh": "画一个房间",
@@ -812,6 +879,20 @@
         "name": {
           "type": "string"
         },
+        "where": {
+          "type": "string",
+          "enum": [
+            "southwest",
+            "south",
+            "southeast",
+            "west",
+            "center",
+            "east",
+            "northwest",
+            "north",
+            "northeast"
+          ]
+        },
         "x_mm": {
           "type": "integer"
         },
@@ -827,8 +908,6 @@
       },
       "required": [
         "type",
-        "x_mm",
-        "y_mm",
         "w_mm",
         "d_mm"
       ]
@@ -1567,12 +1646,14 @@
         },
         "size_mm": {
           "type": "integer"
+        },
+        "by_mm": {
+          "type": "integer"
         }
       },
       "required": [
         "room",
-        "side",
-        "size_mm"
+        "side"
       ]
     }
   },
@@ -1630,6 +1711,18 @@
         "shift_mm": {
           "type": "integer"
         },
+        "toward": {
+          "type": "string",
+          "enum": [
+            "north",
+            "east",
+            "south",
+            "west"
+          ]
+        },
+        "by_mm": {
+          "type": "integer"
+        },
         "room": {
           "type": "string",
           "entity": "room"
@@ -1673,6 +1766,18 @@
           "type": "integer"
         },
         "north_mm": {
+          "type": "integer"
+        },
+        "toward": {
+          "type": "string",
+          "enum": [
+            "north",
+            "east",
+            "south",
+            "west"
+          ]
+        },
+        "by_mm": {
           "type": "integer"
         },
         "turn": {
@@ -1802,6 +1907,149 @@
     "parameters": {
       "type": "object",
       "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "design.command",
+    "title": {
+      "zh": "执行设计引擎命令",
+      "kk": "Жоба қозғалтқышының пәрменін орындау",
+      "ru": "Выполнить команду движка проекта"
+    },
+    "examples": {
+      "zh": "在这层加一个插座",
+      "kk": "Осы қабатқа розетка қос",
+      "ru": "Добавь розетку на этом этаже"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "SetFootprintSize",
+            "SetNorthAngle",
+            "SetRoof",
+            "SetDefault",
+            "MirrorPlan",
+            "CutOutline",
+            "RestoreOutline",
+            "AddAxis",
+            "MoveAxis",
+            "PromoteFloorAxis",
+            "DeleteAxis",
+            "AddFloor",
+            "CopyFloor",
+            "DeleteFloor",
+            "SetFloorHeight",
+            "RenameFloor",
+            "RenameRoom",
+            "SetRoomType",
+            "MergeRooms",
+            "SplitSpace",
+            "CarveRoom",
+            "PaintCells",
+            "EraseCells",
+            "SetRoomInfo",
+            "AddOpening",
+            "SetOpeningKind",
+            "ResizeOpening",
+            "MoveOpening",
+            "FlipDoor",
+            "DeleteOpening",
+            "SetMainEntrance",
+            "SetOpeningLabel",
+            "PlaceStair",
+            "RemoveStair",
+            "AddStair",
+            "UpdateStair",
+            "DeleteStair",
+            "SetWallOverride",
+            "MoveLocalWall",
+            "EnableWallDrawing",
+            "AddDrawnWall",
+            "UpdateDrawnWall",
+            "SetDrawnWallHeight",
+            "MoveDrawnWall",
+            "DeleteDrawnWall",
+            "AddFurniture",
+            "UpdateFurniture",
+            "RotateFurniture",
+            "DeleteFurniture",
+            "SetNote",
+            "AddIssue",
+            "UpdateIssue",
+            "DeleteIssue",
+            "SetFoundation",
+            "SetLayers",
+            "AddSleeve",
+            "UpdateSleeve",
+            "DeleteSleeve",
+            "SetCost",
+            "AddCostItem",
+            "UpdateCostItem",
+            "DeleteCostItem",
+            "SetAreaBasis",
+            "SetHeat",
+            "AddUtility",
+            "AddUtilities",
+            "UpdateUtility",
+            "DeleteUtility",
+            "ClearUtilities",
+            "SetSite",
+            "ClearSite",
+            "AddSiteItem",
+            "UpdateSiteItem",
+            "RotateSiteItem",
+            "DeleteSiteItem",
+            "SetStage",
+            "AddStage",
+            "DeleteStage",
+            "ResetSchedule"
+          ]
+        },
+        "arguments": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "kind",
+        "arguments"
+      ]
+    }
+  },
+  {
+    "name": "design.describe",
+    "title": {
+      "zh": "读取房屋的结构和编号",
+      "kk": "Үйдің құрылымы мен нөмірлерін оқу",
+      "ru": "Прочитать состав дома"
+    },
+    "examples": {
+      "zh": "这层有哪些房间和门窗",
+      "kk": "Бұл қабатта қандай бөлмелер мен есік-терезелер бар",
+      "ru": "Какие комнаты и проёмы на этом этаже"
+    },
+    "risk": "read",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floor": {
+          "type": "string",
+          "entity": "floor"
+        },
+        "checks": {
+          "type": "boolean"
+        },
+        "cost": {
+          "type": "boolean"
+        },
+        "kinds": {
+          "type": "boolean"
+        }
+      },
       "required": []
     }
   }

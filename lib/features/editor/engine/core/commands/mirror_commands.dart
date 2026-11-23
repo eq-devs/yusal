@@ -77,8 +77,11 @@ EditResult mirrorPlan(HouseDocument doc, {required bool horizontal}) {
               OpenWall() => OpenWall(id: w.id, anchor: anchor(w.anchor)),
               ThicknessWall() => ThicknessWall(
                   id: w.id, anchor: anchor(w.anchor), value: w.value),
-              SolidWall() =>
-                SolidWall(id: w.id, anchor: anchor(w.anchor), value: w.value),
+              SolidWall() => SolidWall(
+                  id: w.id,
+                  anchor: anchor(w.anchor),
+                  value: w.value,
+                  height: w.height),
             }
         ],
         openings: [

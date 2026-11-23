@@ -1,3 +1,4 @@
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:meta/meta.dart';
 import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
@@ -69,7 +70,12 @@ List<ValidationError> validateDesignState(UndoableDesignState state) =>
 /// are immutable, so caching by identity is safe.
 final _validInputs = Expando<bool>('validInputs');
 
-CommandResult executeCommand(
+CommandResult executeCommand(UndoableDesignState state, DesignCommand command,
+        CommandContext context) =>
+    timed('command.${command.kind}',
+        () => _executeCommand(state, command, context));
+
+CommandResult _executeCommand(
     UndoableDesignState state, DesignCommand command, CommandContext context) {
   final doc = _document(state);
   final args = command.arguments;
@@ -152,6 +158,12 @@ CommandResult executeCommand(
     if (['AddDrawnWall', 'UpdateDrawnWall', 'DeleteDrawnWall']
         .contains(command.kind)) {
       final result = editDrawnWall(doc, command.kind, args, context.newId);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('WALL_CONFLICT', result.error!);
+    }
+    if (command.kind == 'SetDrawnWallHeight') {
+      final result = setDrawnWallHeight(doc, args, context.newId);
       return result.accepted
           ? apply(result.document!)
           : Rejected('WALL_CONFLICT', result.error!);
@@ -341,19 +353,7 @@ CommandResult executeCommand(
       return apply(document);
     }
 
-    final message = result.error!;
-    final reason = message.contains('间距') || message.contains('两条线')
-        ? 'SPACING'
-        : message.contains('相邻房间')
-            ? 'NOT_ADJACENT'
-            : message.contains('主入口需要') || message.contains('只有门')
-                ? 'NOT_A_DOOR'
-                : message.contains('上方还有')
-                    ? 'TOP_FLOOR'
-                    : message.contains('重叠')
-                        ? 'OVERLAP'
-                        : 'INVALID_VALUE';
-    return Rejected(reason, message);
+    return Rejected(result.code, result.error!);
   } on StateError {
     return const Rejected('NOT_FOUND', '找不到要编辑的对象');
   } catch (_) {

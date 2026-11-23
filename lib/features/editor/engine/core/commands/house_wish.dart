@@ -35,16 +35,7 @@ Map<String, Object?> wishSpec(
   const stairWidth = 2400;
   final inner = two ? width - stairWidth : width;
 
-  ({String type, int weight, int least}) kind(String type) => switch (type) {
-        'living' => (type: type, weight: 50, least: 3300),
-        'bedroom' => (type: type, weight: 34, least: 2700),
-        'kitchen' => (type: type, weight: 30, least: 2400),
-        'dining' => (type: type, weight: 30, least: 2400),
-        'hall' => (type: type, weight: 20, least: 1800),
-        'bathroom' => (type: type, weight: 19, least: 1600),
-        'boiler' => (type: type, weight: 17, least: 1500),
-        _ => (type: type, weight: 16, least: 1300),
-      };
+  const kind = wishRoom;
   int least(List<String> row) =>
       row.fold(0, (sum, type) => sum + kind(type).least);
 
@@ -226,6 +217,19 @@ Map<String, Object?> wishSpec(
       ]
   };
 }
+
+/// How a room of [type] shares a row with others: the least it needs
+/// along the row, and its share ([weight]) of what is left over.
+({String type, int weight, int least}) wishRoom(String type) => switch (type) {
+      'living' => (type: type, weight: 50, least: 3300),
+      'bedroom' => (type: type, weight: 34, least: 2700),
+      'kitchen' => (type: type, weight: 30, least: 2400),
+      'dining' => (type: type, weight: 30, least: 2400),
+      'hall' => (type: type, weight: 20, least: 1800),
+      'bathroom' => (type: type, weight: 19, least: 1600),
+      'boiler' => (type: type, weight: 17, least: 1500),
+      _ => (type: type, weight: 16, least: 1300),
+    };
 
 /// Whether a draft squeezes a room people live in below 2 m, or a small
 /// one below 1 m: the house is too small for what was asked.

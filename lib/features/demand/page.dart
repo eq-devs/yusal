@@ -43,7 +43,8 @@ class DemandDetailPage extends StatelessWidget {
                 body: EmptyState(
                     icon: Icons.visibility_off_outlined,
                     title: tr3('需求不存在、已下架或无权查看', 'Тапсырыс табылмады не жабық',
-                        'Заявка не найдена или недоступна')));
+                        'Заявка не найдена или недоступна',
+                        'Request not found or unavailable', ky: 'Суроо-талап табылган жок же жеткиликсиз', uz: 'Soʻrov topilmadi yoki mavjud emas')));
           }
           return _DemandDetail(data: data);
         });
@@ -142,7 +143,8 @@ class _DemandDetailState extends State<_DemandDetail>
                         Expanded(
                             child: Text(
                                 tr3('属于：${post.title}', 'Үй: ${post.title}',
-                                    'Дом: ${post.title}'),
+                                    'Дом: ${post.title}',
+                                    'House: ${post.title}', ky: 'Үй: ${post.title}', uz: 'Uy: ${post.title}'),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -155,7 +157,7 @@ class _DemandDetailState extends State<_DemandDetail>
         StatusPill(demandStatusName(d.status),
             color: demandStatusColor(t, d.status)),
         if (d.publisherRole == PublisherRole.contractor)
-          StatusPill(tr3('分包需求', 'Қосалқы мердігерлік', 'Субподряд')),
+          StatusPill(tr3('分包需求', 'Қосалқы мердігерлік', 'Субподряд', 'Subcontract', ky: 'Субподряд', uz: 'Subpudrat')),
       ]),
       const SizedBox(height: 10),
       Semantics(
@@ -163,21 +165,22 @@ class _DemandDetailState extends State<_DemandDetail>
           child: Text(v.title, style: display(size: 26, color: t.ink))),
       const SizedBox(height: 6),
       Text(
-          '${placeText(v.region, v.locality)} · ${tr3('第 ${v.no} 版', '${v.no}-нұсқа', 'версия ${v.no}')} · ${ago(v.createdAt, context.now)}',
+          '${placeText(v.region, v.locality)} · ${tr3('第 ${v.no} 版', '${v.no}-нұсқа', 'версия ${v.no}', 'version ${v.no}', ky: '${v.no}-версия', uz: '${v.no}-versiya')} · ${ago(v.createdAt, context.now)}',
           style: TextStyle(color: t.muted)),
       if (mine &&
           d.status == DemandStatus.rejected &&
           d.rejectReason != null) ...[
         const SizedBox(height: 14),
         Hint(
-            '${tr3('未通过原因', 'Себебі', 'Причина')}: ${d.rejectReason!.startsWith('banned:') ? tr3('包含不允许的内容（如收取押金）', 'Рұқсат етілмеген мазмұн (мысалы кепілақы)', 'Недопустимое содержание (например, залог)') : reasonText(d.rejectReason!)}. ${tr3('修改后可重新提交审核。', 'Түзетіп, қайта жіберіңіз.', 'Исправьте и отправьте снова.')}',
+            '${tr3('未通过原因', 'Себебі', 'Причина', 'Reason', ky: 'Себеби', uz: 'Sababi')}: ${d.rejectReason!.startsWith('banned:') ? tr3('包含不允许的内容（如收取押金）', 'Рұқсат етілмеген мазмұн (мысалы кепілақы)', 'Недопустимое содержание (например, залог)', 'Content not allowed (e.g. a deposit)', ky: 'Тыюу салынган мазмун (мис., алдын ала төлөм)', uz: 'Taqiqlangan kontent (masalan, oldindan toʻlov)') : reasonText(d.rejectReason!)}. ${tr3('修改后可重新提交审核。', 'Түзетіп, қайта жіберіңіз.', 'Исправьте и отправьте снова.', 'Fix it and send it again.', ky: 'Оңдоп, кайра жөнөтүңүз.', uz: 'Tuzatib, qayta yuboring.')}',
             warn: true),
         Align(
             alignment: AlignmentDirectional.centerStart,
             child: TextButton(
                 onPressed: () => appealDecision(context, 'demand', d.id),
                 child: Text(tr3('认为处理有误？申诉', 'Шешім қате ме? Шағымдану',
-                    'Не согласны? Обжаловать')))),
+                    'Не согласны? Обжаловать',
+                    'Disagree? Appeal', ky: 'Макул эмессизби? Даттаныңыз', uz: 'Rozi emasmisiz? Apellyatsiya bering')))),
       ],
       const Divider(height: 36),
       Row(children: [
@@ -190,14 +193,16 @@ class _DemandDetailState extends State<_DemandDetail>
               tr3(
                   '发布者：${deletedName(data.owner)}',
                   'Жариялаған: ${deletedName(data.owner)}',
-                  'Автор: ${deletedName(data.owner)}'),
+                  'Автор: ${deletedName(data.owner)}',
+                  'Author: ${deletedName(data.owner)}', ky: 'Автор: ${deletedName(data.owner)}', uz: 'Muallif: ${deletedName(data.owner)}'),
               style: const TextStyle(
                   fontWeight: FontWeight.w700, fontSize: YFont.body)),
           Text(
               [
                 if (d.publisherRole == PublisherRole.contractor)
                   tr3('施工方发布，非房屋所有人', 'Мердігер жариялаған',
-                      'Размещено подрядчиком'),
+                      'Размещено подрядчиком',
+                      'Posted by a contractor', ky: 'Подрядчы жарыялаган', uz: 'Pudratchi eʼlon qilgan'),
               ].join(' · '),
               style: TextStyle(color: t.muted, fontSize: YFont.small)),
         ])),
@@ -208,27 +213,28 @@ class _DemandDetailState extends State<_DemandDetail>
             style: const TextStyle(fontSize: YFont.body, height: 1.5)),
         const SizedBox(height: 12),
       ],
-      InfoRow(tr3('工种', 'Мамандық', 'Специальность'),
+      InfoRow(tr3('工种', 'Мамандық', 'Специальность', 'Trade', ky: 'Кесип', uz: 'Kasb'),
           v.trades.map(tradeName).join(listSep),
           icon: Icons.handyman_outlined),
-      InfoRow(tr3('开工', 'Басталуы', 'Начало'), fmtDay(v.startDate),
+      InfoRow(tr3('开工', 'Басталуы', 'Начало', 'Start', ky: 'Башталышы', uz: 'Boshlanishi'), fmtDay(v.startDate),
           icon: Icons.event_outlined),
       if (v.durationDays != null)
-        InfoRow(tr3('预计天数', 'Күн саны', 'Срок, дней'), '${v.durationDays}',
+        InfoRow(tr3('预计天数', 'Күн саны', 'Срок, дней', 'Duration, days', ky: 'Мөөнөтү, күн', uz: 'Muddati, kun'), '${v.durationDays}',
             icon: Icons.timelapse_outlined),
-      InfoRow(tr3('预算', 'Бюджет', 'Бюджет'),
+      InfoRow(tr3('预算', 'Бюджет', 'Бюджет', 'Budget', ky: 'Бюджет', uz: 'Byudjet'),
           '${budgetText(v.budget)} · ${materialName(v.budget.materials)}',
           icon: Icons.payments_outlined),
       if (v.photoCount > 0)
-        InfoRow(tr3('现场照片', 'Фото', 'Фото'), '${v.photoCount}',
+        InfoRow(tr3('现场照片', 'Фото', 'Фото', 'Photos', ky: 'Сүрөттөр', uz: 'Rasmlar'), '${v.photoCount}',
             icon: Icons.photo_library_outlined),
       if (v.siteNotes.isNotEmpty)
-        InfoRow(tr3('现场限制', 'Орын шектеулері', 'Ограничения'), v.siteNotes,
+        InfoRow(tr3('现场限制', 'Орын шектеулері', 'Ограничения', 'Restrictions', ky: 'Чектөөлөр', uz: 'Cheklovlar'), v.siteNotes,
             icon: Icons.warning_amber_outlined),
       if (mine && v.exactAddress.isNotEmpty)
         InfoRow(
             tr3('具体地址（仅自己可见）', 'Мекенжай (тек сізге)',
-                'Адрес (видите только вы)'),
+                'Адрес (видите только вы)',
+                'Address (only you see it)', ky: 'Дарек (сиз гана көрөсүз)', uz: 'Manzil (faqat siz koʻrasiz)'),
             v.exactAddress,
             icon: Icons.lock_outline),
       if (v.hire != null) ..._hire(context, v.hire!),
@@ -239,10 +245,11 @@ class _DemandDetailState extends State<_DemandDetail>
       Hint(tr3(
           '平台不要求、也不建议工人缴纳任何招工押金。平台目前没有资金托管，付款请按合作约定自行完成。',
           'Платформа жұмысшыдан ешқандай кепілақы талап етпейді. Төлем кепілдігі жоқ.',
-          'Платформа не требует залогов от рабочих. Гарантии оплаты нет — платите по соглашению.')),
+          'Платформа не требует залогов от рабочих. Гарантии оплаты нет — платите по соглашению.',
+          "The platform doesn't require deposits from workers. Payment isn't guaranteed; pay as agreed.", ky: 'Платформа жумушчулардан алдын ала төлөм талап кылбайт. Төлөмгө кепилдик жок; макулдашуу боюнча төлөңүз.', uz: 'Platforma ishchilardan oldindan toʻlov talab qilmaydi. Toʻlov kafolatlanmaydi; kelishuvga koʻra toʻlang.')),
       if (mine) ..._ownerPanel(context),
       if (!mine && data.coops.isNotEmpty) ...[
-        SectionTitle(tr3('我的合作', 'Менің келісімдерім', 'Моё сотрудничество')),
+        SectionTitle(tr3('我的合作', 'Менің келісімдерім', 'Моё сотрудничество', 'My cooperation', ky: 'Менин кызматташуум', uz: 'Mening hamkorligim')),
         for (final c in data.coops)
           ListTile(
               title: Text(cooperationStatusName(c)),
@@ -256,10 +263,10 @@ class _DemandDetailState extends State<_DemandDetail>
     if (!mine) {
       final label = myApp != null
           ? tr3('查看我的${d.type == DemandType.hire ? '报名' : '报价'}',
-              'Өтінімімді көру', 'Мой отклик')
+              'Өтінімімді көру', 'Мой отклик', 'My response', ky: 'Менин жообум', uz: 'Mening javobim')
           : d.type == DemandType.hire
-              ? tr3('报名', 'Өтінім беру', 'Откликнуться')
-              : tr3('报价', 'Баға ұсыну', 'Предложить цену');
+              ? tr3('报名', 'Өтінім беру', 'Откликнуться', 'Respond', ky: 'Жооп берүү', uz: 'Javob berish')
+              : tr3('报价', 'Баға ұсыну', 'Предложить цену', 'Quote a price', ky: 'Баа сунуштоо', uz: 'Narx taklif qilish');
       bottom = Row(children: [
         Expanded(
             child: Column(
@@ -283,13 +290,15 @@ class _DemandDetailState extends State<_DemandDetail>
                           : tr3(
                               '${fmtDay(d.expiresAt)} 截止',
                               '${fmtDay(d.expiresAt)} дейін',
-                              'до ${fmtDay(d.expiresAt)}'))
+                              'до ${fmtDay(d.expiresAt)}',
+                              'until ${fmtDay(d.expiresAt)}', ky: '${fmtDay(d.expiresAt)} чейин', uz: '${fmtDay(d.expiresAt)} gacha'))
                       : tr3('暂不接收新申请', 'Жаңа өтінім қабылданбайды',
-                          'Отклики не принимаются'),
+                          'Отклики не принимаются',
+                          'Not accepting responses', ky: 'Жооп кабыл алынбайт', uz: 'Javoblar qabul qilinmaydi'),
                   style: TextStyle(color: t.muted, fontSize: YFont.caption)),
             ])),
         IconButton(
-            tooltip: tr3('联系发布者', 'Жариялаушыға жазу', 'Написать автору'),
+            tooltip: tr3('联系发布者', 'Жариялаушыға жазу', 'Написать автору', 'Message the author', ky: 'Авторго жазуу', uz: 'Muallifga yozish'),
             onPressed: contact,
             icon: const Icon(Icons.chat_bubble_outline)),
         const SizedBox(width: 6),
@@ -305,7 +314,7 @@ class _DemandDetailState extends State<_DemandDetail>
     return Scaffold(
         appBar: AppBar(actions: [
           IconButton(
-              tooltip: tr3('分享', 'Бөлісу', 'Поделиться'),
+              tooltip: tr3('分享', 'Бөлісу', 'Поделиться', 'Share', ky: 'Бөлүшүү', uz: 'Ulashish'),
               icon: const YusalIcon(YIcon.share),
               onPressed: () =>
                   pushPage<void>(context, (_) => SharePage(demand: d))),
@@ -323,18 +332,19 @@ class _DemandDetailState extends State<_DemandDetail>
                               .read(chatRepositoryProvider)
                               .block(d.ownerId),
                           success: tr3('已拉黑，不再看到对方内容', 'Бұғатталды',
-                              'Пользователь заблокирован'));
+                              'Пользователь заблокирован',
+                              'User blocked', ky: 'Колдонуучу бөгөттөлгөн', uz: 'Foydalanuvchi bloklangan'));
                     }
                   }
                 },
                 itemBuilder: (context) => [
                       PopupMenuItem(
                           value: 'report',
-                          child: Text(tr3('举报', 'Шағым', 'Пожаловаться'))),
+                          child: Text(tr3('举报', 'Шағым', 'Пожаловаться', 'Report', ky: 'Арыз берүү', uz: 'Shikoyat qilish'))),
                       PopupMenuItem(
                           value: 'block',
                           child: Text(tr3(
-                              '拉黑发布者', 'Бұғаттау', 'Заблокировать автора'))),
+                              '拉黑发布者', 'Бұғаттау', 'Заблокировать автора', 'Block the author', ky: 'Авторду бөгөттөө', uz: 'Muallifni bloklash'))),
                     ]),
         ]),
         body: SafeArea(
@@ -350,41 +360,42 @@ class _DemandDetailState extends State<_DemandDetail>
   }
 
   List<Widget> _hire(BuildContext context, HireTerms h) => [
-        SectionTitle(tr3('招工条件', 'Жалдау шарттары', 'Условия найма')),
-        InfoRow(tr3('人数', 'Адам саны', 'Человек'), '${h.headcount}'),
-        InfoRow(tr3('计酬方式', 'Төлем түрі', 'Оплата'), payModeName(h.payMode)),
+        SectionTitle(tr3('招工条件', 'Жалдау шарттары', 'Условия найма', 'Hiring terms', ky: 'Жалдоо шарттары', uz: 'Yollash shartlari')),
+        InfoRow(tr3('人数', 'Адам саны', 'Человек', 'People', ky: 'Адамдар', uz: 'Odamlar'), '${h.headcount}'),
+        InfoRow(tr3('计酬方式', 'Төлем түрі', 'Оплата', 'Pay', ky: 'Акы', uz: 'Haq'), payModeName(h.payMode)),
         InfoRow(
-            tr3('工资', 'Жалақы', 'Ставка'),
+            tr3('工资', 'Жалақы', 'Ставка', 'Rate', ky: 'Акы', uz: 'Stavka'),
             h.wage == null
-                ? tr3('面议', 'Келісіледі', 'Договорная')
+                ? tr3('面议', 'Келісіледі', 'Договорная', 'Negotiable', ky: 'Келишим боюнча', uz: 'Kelishiladi')
                 : money(h.wage, unit: h.wageUnit)),
-        if (h.days != null) InfoRow(tr3('工作天数', 'Күн', 'Дней'), '${h.days}'),
+        if (h.days != null) InfoRow(tr3('工作天数', 'Күн', 'Дней', 'Days', ky: 'Күн', uz: 'Kun'), '${h.days}'),
         InfoRow(
-            tr3('食宿', 'Тамақ, жатын орын', 'Питание и жильё'),
+            tr3('食宿', 'Тамақ, жатын орын', 'Питание и жильё', 'Meals and lodging', ky: 'Тамак жана жатакана', uz: 'Ovqat va turar joy'),
             h.foodLodging
-                ? tr3('提供', 'Бар', 'Есть')
-                : tr3('不提供', 'Жоқ', 'Нет')),
+                ? tr3('提供', 'Бар', 'Есть', 'Yes', ky: 'Ооба', uz: 'Ha')
+                : tr3('不提供', 'Жоқ', 'Нет', 'No', ky: 'Жок', uz: 'Yoʻq')),
         InfoRow(
-            tr3('工具', 'Құрал', 'Инструмент'),
+            tr3('工具', 'Құрал', 'Инструмент', 'Tools', ky: 'Аспаптар', uz: 'Asboblar'),
             h.toolsByEmployer
-                ? tr3('雇主提供', 'Жұмыс беруші', 'Даёт работодатель')
-                : tr3('自带', 'Өзінікі', 'Свой')),
-        InfoRow(tr3('结算', 'Есеп айырысу', 'Расчёт'), settleName(h.settleCycle)),
+                ? tr3('雇主提供', 'Жұмыс беруші', 'Даёт работодатель', 'Provided by the employer', ky: 'Иш берүүчү берет', uz: 'Ish beruvchi beradi')
+                : tr3('自带', 'Өзінікі', 'Свой', 'Own', ky: 'Өзүнүкү', uz: 'Oʻziniki')),
+        InfoRow(tr3('结算', 'Есеп айырысу', 'Расчёт', 'Settlement', ky: 'Эсептешүү', uz: 'Hisob-kitob'), settleName(h.settleCycle)),
       ];
 
   List<Widget> _contract(BuildContext context, ContractTerms c) => [
-        SectionTitle(tr3('承包范围', 'Мердігерлік көлемі', 'Объём подряда')),
-        InfoRow(tr3('范围', 'Көлемі', 'Объём'),
+        SectionTitle(tr3('承包范围', 'Мердігерлік көлемі', 'Объём подряда', 'Contract scope', ky: 'Келишимдин көлөмү', uz: 'Shartnoma hajmi')),
+        InfoRow(tr3('范围', 'Көлемі', 'Объём', 'Scope', ky: 'Иштин көлөмү', uz: 'Ish hajmi'),
             '${scopeKindName(c.scopeKind)}${c.stages.isEmpty ? '' : ' · ${c.stages.map(stageLabel).join(listSep)}'}'),
-        InfoRow(tr3('人工／材料', 'Жұмыс / материал', 'Работа / материалы'),
+        InfoRow(tr3('人工／材料', 'Жұмыс / материал', 'Работа / материалы', 'Labour / materials', ky: 'Жумуш / материалдар', uz: 'Ish / materiallar'),
             materialName(c.materials)),
         if (c.targetDays != null)
           InfoRow(
-              tr3('目标工期', 'Мерзім', 'Срок'),
+              tr3('目标工期', 'Мерзім', 'Срок', 'Duration', ky: 'Мөөнөтү', uz: 'Muddati'),
               tr3('${c.targetDays} 天', '${c.targetDays} күн',
-                  '${c.targetDays} дн.')),
+                  '${c.targetDays} дн.',
+                  '${c.targetDays} d', ky: '${c.targetDays} к', uz: '${c.targetDays} k')),
         if (c.quoteDeadline != null)
-          InfoRow(tr3('报价截止', 'Ұсыныс мерзімі', 'Приём цен до'),
+          InfoRow(tr3('报价截止', 'Ұсыныс мерзімі', 'Приём цен до', 'Quotes accepted until', ky: 'Сунуштар кабыл алынат', uz: 'Takliflar qabul qilinadi'),
               fmtDay(c.quoteDeadline)),
         if (c.quantities.isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -397,7 +408,7 @@ class _DemandDetailState extends State<_DemandDetail>
     final t = YTokens.of(context);
     return [
       PlanAttachment(snapshot: s, hidden: !vis.plan && !mine),
-      SectionTitle(tr3('设计附件', 'Жоба тіркемесі', 'Проект')),
+      SectionTitle(tr3('设计附件', 'Жоба тіркемесі', 'Проект', 'Design', ky: 'Долбоор', uz: 'Loyiha')),
       YCard(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -411,7 +422,8 @@ class _DemandDetailState extends State<_DemandDetail>
             tr3(
                 '固定版本：提取于 ${fmtDay(s.extractedAt)}，设计后续修改不会改变此附件。',
                 'Бекітілген нұсқа: ${fmtDay(s.extractedAt)}. Кейінгі өзгерістер әсер етпейді.',
-                'Зафиксировано ${fmtDay(s.extractedAt)}; дальнейшие правки проекта не меняют вложение.'),
+                'Зафиксировано ${fmtDay(s.extractedAt)}; дальнейшие правки проекта не меняют вложение.',
+                "Captured ${fmtDay(s.extractedAt)}; later design edits don't change the attachment.", ky: '${fmtDay(s.extractedAt)} алынды; долбоордогу кийинки өзгөртүүлөр тиркемени өзгөртпөйт.', uz: '${fmtDay(s.extractedAt)} olindi; loyihadagi keyingi oʻzgarishlar ilovani oʻzgartirmaydi.'),
             style: TextStyle(color: t.muted, fontSize: YFont.caption)),
         if (s.stages.isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -427,17 +439,18 @@ class _DemandDetailState extends State<_DemandDetail>
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                   tr3('工程量未公开，可联系发布者', 'Көлем жарияланбаған',
-                      'Объёмы не опубликованы'),
+                      'Объёмы не опубликованы',
+                      'Quantities not published', ky: 'Көлөмдөр жарыяланган эмес', uz: 'Miqdorlar eʼlon qilinmagan'),
                   style: TextStyle(color: t.muted))),
         if (mine)
           Padding(
               padding: const EdgeInsets.only(top: 10),
               child: Text(
-                  '${tr3('公开', 'Жария', 'Публично')}: ${[
-                    if (vis.quantities) tr3('工程量', 'көлем', 'объёмы'),
-                    if (vis.plan) tr3('平面图', 'жоспар', 'план'),
-                    if (vis.render) tr3('效果图', 'көрініс', 'визуализация'),
-                  ].join(listSep)}. ${tr3('完整 .house 文件不公开。', '.house файлы жарияланбайды.', 'Файл .house не публикуется.')}',
+                  '${tr3('公开', 'Жария', 'Публично', 'Public', ky: 'Ачык', uz: 'Ommaviy')}: ${[
+                    if (vis.quantities) tr3('工程量', 'көлем', 'объёмы', 'quantities', ky: 'көлөмдөр', uz: 'miqdorlar'),
+                    if (vis.plan) tr3('平面图', 'жоспар', 'план', 'plan', ky: 'план', uz: 'reja'),
+                    if (vis.render) tr3('效果图', 'көрініс', 'визуализация', 'rendering', ky: 'сүрөт', uz: 'tasvir'),
+                  ].join(listSep)}. ${tr3('完整 .house 文件不公开。', '.house файлы жарияланбайды.', 'Файл .house не публикуется.', "The .house file isn't published.", ky: '.house файлы жарыяланбайт.', uz: '.house fayli eʼlon qilinmaydi.')}',
                   style: TextStyle(color: t.muted, fontSize: YFont.caption))),
       ])),
     ];
@@ -453,7 +466,7 @@ class _DemandDetailState extends State<_DemandDetail>
     // ones voice is offered.
     bool can(DemandEvent e) => demandButton(d.status, e);
     return [
-      SectionTitle(tr3('管理需求', 'Басқару', 'Управление')),
+      SectionTitle(tr3('管理需求', 'Басқару', 'Управление', 'Manage', ky: 'Башкаруу', uz: 'Boshqarish')),
       if (h != null)
         Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -461,7 +474,8 @@ class _DemandDetailState extends State<_DemandDetail>
                 tr3(
                     '已录用 $hired / 计划 ${h.headcount} 人。录用不会自动关闭需求，人数够了可以标记“已找到人”。',
                     'Жалданды $hired / ${h.headcount}. Тапсырыс өзі жабылмайды.',
-                    'Нанято $hired из ${h.headcount}. Заявка не закрывается сама.'),
+                    'Нанято $hired из ${h.headcount}. Заявка не закрывается сама.',
+                    "Hired $hired of ${h.headcount}. The request doesn't close by itself.", ky: '${h.headcount} ичинен $hired жалданды. Суроо-талап өзүнөн өзү жабылбайт.', uz: '${h.headcount} dan $hired yollandi. Soʻrov oʻz-oʻzidan yopilmaydi.'),
                 warn: hired >= h.headcount && d.status == DemandStatus.open)),
       if (d.expiresAt != null)
         Padding(
@@ -470,13 +484,14 @@ class _DemandDetailState extends State<_DemandDetail>
                 tr3(
                     '有效期至 ${fmtDay(d.expiresAt)}',
                     '${fmtDay(d.expiresAt)} дейін',
-                    'Действует до ${fmtDay(d.expiresAt)}'),
+                    'Действует до ${fmtDay(d.expiresAt)}',
+                    'Valid until ${fmtDay(d.expiresAt)}', ky: '${fmtDay(d.expiresAt)} чейин жарактуу', uz: '${fmtDay(d.expiresAt)} gacha amal qiladi'),
                 style: TextStyle(color: t.muted))),
       if (d.outcome != null)
         Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-                '${tr3('结果', 'Нәтиже', 'Итог')}: ${outcomeName(d.outcome!)}',
+                '${tr3('结果', 'Нәтиже', 'Итог', 'Outcome', ky: 'Жыйынтык', uz: 'Natija')}: ${outcomeName(d.outcome!)}',
                 style: TextStyle(color: t.muted))),
       YCard(
           onTap: () =>
@@ -490,11 +505,13 @@ class _DemandDetailState extends State<_DemandDetail>
                         ? tr3(
                             '报名管理（${data.applicationCount}）',
                             'Өтінімдер (${data.applicationCount})',
-                            'Отклики (${data.applicationCount})')
+                            'Отклики (${data.applicationCount})',
+                            'Responses (${data.applicationCount})', ky: 'Жооптор (${data.applicationCount})', uz: 'Javoblar (${data.applicationCount})')
                         : tr3(
                             '报价管理与对比（${data.applicationCount}）',
                             'Ұсыныстар (${data.applicationCount})',
-                            'Предложения (${data.applicationCount})'),
+                            'Предложения (${data.applicationCount})',
+                            'Quotes (${data.applicationCount})', ky: 'Сунуштар (${data.applicationCount})', uz: 'Takliflar (${data.applicationCount})'),
                     style: const TextStyle(fontWeight: FontWeight.w700))),
             const Icon(Icons.chevron_right),
           ])),
@@ -505,31 +522,32 @@ class _DemandDetailState extends State<_DemandDetail>
               onPressed: () => act(
                   () => context.read(demandRepositoryProvider).publish(d.id),
                   tr3('已提交审核', 'Тексеруге жіберілді',
-                      'Отправлено на проверку')),
-              child: Text(tr3('提交审核', 'Тексеруге жіберу', 'На проверку'))),
+                      'Отправлено на проверку',
+                      'Sent for review', ky: 'Текшерүүгө жөнөтүлдү', uz: 'Tekshiruvga yuborildi')),
+              child: Text(tr3('提交审核', 'Тексеруге жіберу', 'На проверку', 'Send for review', ky: 'Текшерүүгө жөнөтүү', uz: 'Tekshiruvga yuborish'))),
         if (d.status != DemandStatus.closed)
           OutlinedButton(
               onPressed: () =>
                   pushPage<void>(context, (_) => PublishPage(editing: d)),
-              child: Text(tr3('修改（生成新版本）', 'Өзгерту', 'Изменить'))),
+              child: Text(tr3('修改（生成新版本）', 'Өзгерту', 'Изменить', 'Edit', ky: 'Түзөтүү', uz: 'Tahrirlash'))),
         if (can(DemandEvent.pause))
           OutlinedButton(
               onPressed: () => act(
                   () => context.read(demandRepositoryProvider).pause(d.id),
-                  tr3('已暂停', 'Тоқтатылды', 'Приостановлено')),
-              child: Text(tr3('暂停', 'Тоқтату', 'Пауза'))),
+                  tr3('已暂停', 'Тоқтатылды', 'Приостановлено', 'Paused', ky: 'Тындырылды', uz: 'Toʻxtatildi')),
+              child: Text(tr3('暂停', 'Тоқтату', 'Пауза', 'Pause', ky: 'Тындыруу', uz: 'Toʻxtatish'))),
         if (can(DemandEvent.resume))
           OutlinedButton(
               onPressed: () => act(
                   () => context.read(demandRepositoryProvider).resume(d.id),
-                  tr3('继续招募', 'Жалғасты', 'Набор возобновлён')),
-              child: Text(tr3('继续招募', 'Жалғастыру', 'Возобновить'))),
+                  tr3('继续招募', 'Жалғасты', 'Набор возобновлён', 'Hiring resumed', ky: 'Жалдоо уланды', uz: 'Yollash davom ettirildi')),
+              child: Text(tr3('继续招募', 'Жалғастыру', 'Возобновить', 'Resume', ky: 'Улантуу', uz: 'Davom ettirish'))),
         if (can(DemandEvent.renew))
           OutlinedButton(
               onPressed: () => act(
                   () => context.read(demandRepositoryProvider).renew(d.id),
-                  tr3('已续期 30 天', '30 күнге ұзартылды', 'Продлено на 30 дней')),
-              child: Text(tr3('续期', 'Ұзарту', 'Продлить'))),
+                  tr3('已续期 30 天', '30 күнге ұзартылды', 'Продлено на 30 дней', 'Extended by 30 days', ky: '30 күнгө узартылды', uz: '30 kunga uzaytirildi')),
+              child: Text(tr3('续期', 'Ұзарту', 'Продлить', 'Extend', ky: 'Узартуу', uz: 'Uzaytirish'))),
         if (can(DemandEvent.markFound))
           OutlinedButton(
               onPressed: () async {
@@ -539,25 +557,25 @@ class _DemandDetailState extends State<_DemandDetail>
                       () => context
                           .read(demandRepositoryProvider)
                           .markFound(d.id, o),
-                      tr3('已标记找到人，停止接收新申请', 'Белгіленді', 'Отмечено'));
+                      tr3('已标记找到人，停止接收新申请', 'Белгіленді', 'Отмечено', 'Marked', ky: 'Белгиленди', uz: 'Belgilandi'));
                 }
               },
-              child: Text(tr3('已找到人', 'Адам табылды', 'Исполнитель найден'))),
+              child: Text(tr3('已找到人', 'Адам табылды', 'Исполнитель найден', 'Someone was found', ky: 'Адам табылды', uz: 'Odam topildi'))),
         if (can(DemandEvent.close))
           OutlinedButton(
               onPressed: () async {
                 final reason = await askText(
-                    context, tr3('关闭需求', 'Жабу', 'Закрыть заявку'),
-                    hint: tr3('原因，例如不再需要', 'Себебі', 'Причина'));
+                    context, tr3('关闭需求', 'Жабу', 'Закрыть заявку', 'Close the request', ky: 'Суроо-талапты жабуу', uz: 'Soʻrovni yopish'),
+                    hint: tr3('原因，例如不再需要', 'Себебі', 'Причина', 'Reason', ky: 'Себеби', uz: 'Sababi'));
                 if (reason != null && context.mounted) {
                   await act(
                       () => context
                           .read(demandRepositoryProvider)
                           .close(d.id, reason),
-                      tr3('已关闭', 'Жабылды', 'Закрыто'));
+                      tr3('已关闭', 'Жабылды', 'Закрыто', 'Closed', ky: 'Жабылды', uz: 'Yopildi'));
                 }
               },
-              child: Text(tr3('关闭', 'Жабу', 'Закрыть'))),
+              child: Text(tr3('关闭', 'Жабу', 'Закрыть', 'Close', ky: 'Жабуу', uz: 'Yopish'))),
         if (d.outcome == null && d.status != DemandStatus.draft)
           TextButton(
               onPressed: () async {
@@ -567,10 +585,10 @@ class _DemandDetailState extends State<_DemandDetail>
                       () => context
                           .read(demandRepositoryProvider)
                           .recordOutcome(d.id, o),
-                      tr3('谢谢反馈', 'Рақмет', 'Спасибо'));
+                      tr3('谢谢反馈', 'Рақмет', 'Спасибо', 'Thank you', ky: 'Рахмат', uz: 'Rahmat'));
                 }
               },
-              child: Text(tr3('回答结果回访', 'Нәтижені айту', 'Ответить на опрос'))),
+              child: Text(tr3('回答结果回访', 'Нәтижені айту', 'Ответить на опрос', 'Answer the survey', ky: 'Сурамжылоого жооп берүү', uz: 'Soʻrovnomaga javob berish'))),
       ]),
     ];
   }
@@ -578,7 +596,7 @@ class _DemandDetailState extends State<_DemandDetail>
 
 Future<OutcomeKind?> pickOutcome(BuildContext context, bool hasCoop) =>
     pickOne<OutcomeKind>(
-        context, tr3('找到合适的人了吗？', 'Адам таптыңыз ба?', 'Нашли исполнителя?'), [
+        context, tr3('找到合适的人了吗？', 'Адам таптыңыз ба?', 'Нашли исполнителя?', 'Did you find someone?', ky: 'Адам таптыңызбы?', uz: 'Odam topdingizmi?'), [
       if (hasCoop)
         (
           OutcomeKind.platformConfirmed,
@@ -621,7 +639,7 @@ class QtyTable extends StatelessWidget {
                       ])),
                   Text(
                       l.quantity == null
-                          ? tr3('现场测量', 'Орында', 'Замер')
+                          ? tr3('现场测量', 'Орында', 'Замер', 'Site measure', ky: 'Объектиде өлчөө', uz: 'Obyektda oʻlchash')
                           : '${numText(l.quantity!)} ${unitLabel(l.unit)}',
                       style: const TextStyle(fontWeight: FontWeight.w700)),
                 ])),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/constant/tokens.dart';
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/geometry/wall_gaps.dart';
 import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
@@ -110,7 +112,9 @@ class FloorPlanPainter extends CustomPainter {
       this.furnitureDraft,
       this.utilities = const [],
       this.selectedUtility,
-      this.showLabels = true})
+      this.showLabels = true,
+      this.showGaps = false,
+      this.areaBasis = AreaBasis.clear})
       : super(repaint: pulse);
   final FloorBase base;
   final PlanRect? focus;
@@ -158,6 +162,13 @@ class FloorPlanPainter extends CustomPainter {
   /// Foundation strips to overlay; null hides the layer.
   final FoundationTakeoff? foundation;
   final List<Sleeve> sleeves;
+
+  /// Marks where a drawn wall stops short of the next one (the room is
+  /// not enclosed): a dashed line across the gap with a warning sign.
+  final bool showGaps;
+
+  /// Where the area under a room's name is measured to.
+  final AreaBasis areaBasis;
 
   /// Plan areas to flash (issue locations), with [pulse] 0–1 for the beat.
   final List<PlanRect> highlights;
@@ -317,7 +328,10 @@ class FloorPlanPainter extends CustomPainter {
   }
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(Canvas canvas, Size size) =>
+      timed('paint.plan2d', () => _paint(canvas, size));
+
+  void _paint(Canvas canvas, Size size) {
     final t = tokens;
     final paint = Paint();
     final width = base.axes.v.last.pos.toDouble();
@@ -414,6 +428,22 @@ class FloorPlanPainter extends CustomPainter {
           Offset(bounds.left + d + bounds.height, bounds.top), hatch);
     }
     canvas.restore();
+
+    // Low walls: seen from above rather than cut, so an outline with a
+    // light fill instead of the solid of a wall to the ceiling.
+    if (base.lowWalls.isNotEmpty) {
+      final fill = Paint()..color = Tokens.mix(t.wall, 0.16, t.panel);
+      final line = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = math.max(0.8, px(1.2))
+        ..color = t.wall;
+      for (final w in base.lowWalls) {
+        final r = rectangle(w.rect, size);
+        canvas
+          ..drawRect(r, fill)
+          ..drawRect(r, line);
+      }
+    }
 
     // Open (wall-less) edges between rooms: dashed arch lines.
     final arch = Paint()
@@ -582,10 +612,10 @@ class FloorPlanPainter extends CustomPainter {
       final showSize = room.clearRects.length == 1 &&
           screenWidth >= 110 &&
           screenHeight >= 64;
-      final area = '${dec((room.clearArea / 1e6).toStringAsFixed(1))} $unitM2';
+      final area = '${dec((room.area(areaBasis) / 1e6).toStringAsFixed(1))} $unitM2';
       final net = largest == null
           ? ''
-          : '${tr3('净', 'таза', 'в свету')} ${m2dp(largest.right - largest.left)} × ${m2dp(largest.top - largest.bottom)} $unitM';
+          : '${tr3('净', 'таза', 'в свету', 'clear', ky: 'таза', uz: 'sof')} ${m2dp(largest.right - largest.left)} × ${m2dp(largest.top - largest.bottom)} $unitM';
       // Long names shrink to one line before they would break mid-word.
       final room_ = math.max(px(24), available - px(8));
       final nameWidth = textWidth(name, px(14), FontWeight.w700);
@@ -775,7 +805,7 @@ class FloorPlanPainter extends CustomPainter {
           center.dy - vector.dy * px(7) - normal.dy * px(5))
       ..close();
     canvas.drawPath(arrow, Paint()..color = t.wall);
-    label(canvas, tr3('北', 'С', 'С'), center + vector * px(20),
+    label(canvas, tr3('北', 'С', 'С', 'N', ky: 'Т', uz: 'Sh'), center + vector * px(20),
         font: 11, weight: FontWeight.w700);
   }
 
@@ -898,11 +928,58 @@ class FloorPlanPainter extends CustomPainter {
             draftLabel ??
                 (draftIsLine
                     ? tr3('松手分房', 'Жіберсеңіз бөлінеді',
-                        'Отпустите, чтобы разделить')
+                        'Отпустите, чтобы разделить',
+                        'Release to split', ky: 'Бөлүү үчүн коё бериңиз', uz: 'Boʻlish uchun qoʻyib yuboring')
                     : '${dec(((draft!.right - draft!.left) / 1000).toStringAsFixed(1))} × '
                         '${dec(((draft!.top - draft!.bottom) / 1000).toStringAsFixed(1))} $unitM'),
             Offset(rect.center.dx, rect.top - 18),
             color: tone);
+      }
+    }
+    if (showGaps) {
+      for (final g in findWallGaps(base)) {
+        final a = point(g.x0, g.y0, size);
+        final b = point(g.x1, g.y1, size);
+        final length = (b - a).distance;
+        if (length < 1) continue;
+        final dir = (b - a) / length;
+        final pen = Paint()
+          ..color = t.warn
+          ..strokeWidth = px(2)
+          ..strokeCap = StrokeCap.round;
+        final dash = px(5);
+        final gap = px(4);
+        for (var d = 0.0; d < length; d += dash + gap) {
+          canvas.drawLine(
+              a + dir * d, a + dir * math.min(length, d + dash), pen);
+        }
+        // A warning triangle at the middle, as CAD marks a wall that
+        // does not connect.
+        final c = (a + b) / 2;
+        final r = px(9);
+        final sign = Path()
+          ..moveTo(c.dx, c.dy - r)
+          ..lineTo(c.dx + r * 0.95, c.dy + r * 0.7)
+          ..lineTo(c.dx - r * 0.95, c.dy + r * 0.7)
+          ..close();
+        canvas
+          ..drawPath(sign, Paint()..color = t.warn)
+          ..drawPath(
+              sign,
+              Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = px(1.5)
+                ..strokeJoin = StrokeJoin.round
+                ..color = t.panel)
+          ..drawLine(
+              c.translate(0, -r * 0.35),
+              c.translate(0, r * 0.2),
+              Paint()
+                ..color = t.panel
+                ..strokeWidth = px(1.6)
+                ..strokeCap = StrokeCap.round)
+          ..drawCircle(
+              c.translate(0, r * 0.45), px(0.9), Paint()..color = t.panel);
       }
     }
     for (final (ga, gb) in guides) {

@@ -9,7 +9,7 @@ import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/actions.dart';
 import 'package:yusal/features/voice/state/registry.dart';
 
-const _name = L3('动作', 'Әрекет', 'Действие');
+const _name = L3('动作', 'Әрекет', 'Действие', 'Action');
 
 AppAction action(String id,
         {L3 title = _name,
@@ -47,8 +47,8 @@ void main() {
   test('problems names every malformed action', () {
     final registry = ActionRegistry([
       action('Pause'),
-      action('a.title', title: const L3('暂停', '', 'Пауза')),
-      action('a.examples', examples: const L3('暂停', 'Тоқтат', ' ')),
+      action('a.title', title: const L3('暂停', '', 'Пауза', 'Pause')),
+      action('a.examples', examples: const L3('暂停', 'Тоқтат', ' ', 'Pause')),
       action('a.param', params: const {'Wall Id': Param.text()}),
       action('a.choice', params: const {'side': Param.choice([])}),
     ]);

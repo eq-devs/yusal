@@ -44,7 +44,7 @@ class ProjectsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     watchLang(context);
-    final title = Text(tr3('我的房子', 'Үйлерім', 'Мои дома'), style: display());
+    final title = Text(tr3('我的房子', 'Үйлерім', 'Мои дома', 'My houses', ky: 'Үйлөрүм', uz: 'Uylarim'), style: display());
     // The design list owns storage, import, templates and export; this
     // page only draws it.
     return HouseHome(
@@ -57,7 +57,7 @@ class ProjectsPage extends StatelessWidget {
             IconButton(
                 key: const Key('designs-import'),
                 tooltip: tr3(
-                    '导入 .house 文件', '.house файлын ашу', 'Открыть файл .house'),
+                    '导入 .house 文件', '.house файлын ашу', 'Открыть файл .house', 'Open a .house file', ky: '.house файлын ачуу', uz: '.house faylini ochish'),
                 icon: const Icon(Icons.file_open_outlined),
                 onPressed: list.import),
             const SizedBox(width: YSpace.xs),
@@ -81,10 +81,11 @@ class ProjectsPage extends StatelessWidget {
                                   bottom: TabBar(tabs: [
                                     Tab(
                                         text:
-                                            tr3('我的房子', 'Үйлерім', 'Мои дома')),
+                                            tr3('我的房子', 'Үйлерім', 'Мои дома', 'My houses', ky: 'Үйлөрүм', uz: 'Uylarim')),
                                     Tab(
                                         text: tr3('我接的活', 'Жұмыстарым',
-                                            'Моя работа')),
+                                            'Моя работа',
+                                            'My work', ky: 'Менин ишим', uz: 'Mening ishim')),
                                   ])),
                               body: MotionTabView(
                                   children: [houses, const MyJobsView()])))));
@@ -124,7 +125,7 @@ class _HousesView extends StatelessWidget {
                         key: const Key('designs-new'),
                         onPressed: list.createFromTemplate,
                         icon: const Icon(Icons.add, size: 20),
-                        label: Text(tr3('新建设计', 'Жаңа жоба', 'Новый проект'))),
+                        label: Text(tr3('新建设计', 'Жаңа жоба', 'Новый проект', 'New design', ky: 'Жаңы долбоор', uz: 'Yangi loyiha'))),
                     OutlinedButton.icon(
                         key: const Key('designs-template'),
                         style: OutlinedButton.styleFrom(
@@ -133,7 +134,7 @@ class _HousesView extends StatelessWidget {
                         icon: const Icon(Icons.auto_awesome_mosaic_outlined,
                             size: 18),
                         label: Text(tr3(
-                            '也可以从示例开始', 'Үлгіден бастау', 'Начать с примера'))),
+                            '也可以从示例开始', 'Үлгіден бастау', 'Начать с примера', 'Start from an example', ky: 'Мисалдан баштоо', uz: 'Namunadan boshlash'))),
                   ]),
                   if (list.error != null) ...[
                     const SizedBox(height: YSpace.md),
@@ -150,7 +151,7 @@ class _HousesView extends StatelessWidget {
                             builder: (context, houses) => houses.isEmpty
                                 ? const SizedBox.shrink()
                                 : _ActiveHouses(houses: houses))),
-                  SectionTitle(tr3('我的设计', 'Жобаларым', 'Мои проекты'),
+                  SectionTitle(tr3('我的设计', 'Жобаларым', 'Мои проекты', 'My designs', ky: 'Менин долбоорлорум', uz: 'Mening loyihalarim'),
                       trailing: projects.isEmpty
                           ? null
                           : Text('${projects.length}',
@@ -179,7 +180,8 @@ class _HousesView extends StatelessWidget {
                                   ])),
                               IconButton(
                                   tooltip: tr3('删除损坏的设计', 'Бүлінген жобаны жою',
-                                      'Удалить повреждённый проект'),
+                                      'Удалить повреждённый проект',
+                                      'Delete the damaged design', ky: 'Бузулган долбоорду өчүрүү', uz: 'Buzilgan loyihani oʻchirish'),
                                   icon: const Icon(Icons.delete_outline),
                                   onPressed: () =>
                                       list.deleteCorrupt(entry.key)),
@@ -244,16 +246,16 @@ class _DesignCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                       '${m(doc.footprint.width)} × ${m(doc.footprint.depth)} $unitM · ${switch (floors) {
-                        1 => tr3('一层', 'бір қабат', '1 этаж'),
-                        2 => tr3('两层', 'екі қабат', '2 этажа'),
-                        final n => tr3('$n 层', '$n қабат', 'этажей: $n'),
+                        1 => tr3('一层', 'бір қабат', '1 этаж', '1 floor', ky: '1 кабат', uz: '1 qavat'),
+                        2 => tr3('两层', 'екі қабат', '2 этажа', '2 floors', ky: '2 кабат', uz: '2 qavat'),
+                        final n => tr3('$n 层', '$n қабат', 'этажей: $n', 'floors: $n', ky: 'кабаттар: $n', uz: 'qavatlar: $n'),
                       }}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: YText.label.copyWith(
                           color: t.muted, fontFeatures: YText.tabular)),
                   Text(
-                      '${tr3('更新于', 'Жаңартылды', 'Обновлён')} ${fmtDay(DateTime.tryParse(doc.meta.updatedAt))}',
+                      '${tr3('更新于', 'Жаңартылды', 'Обновлён', 'Updated', ky: 'Жаңыланды', uz: 'Yangilandi')} ${fmtDay(DateTime.tryParse(doc.meta.updatedAt))}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: YText.caption.copyWith(
@@ -262,7 +264,7 @@ class _DesignCard extends StatelessWidget {
             Builder(
                 builder: (anchor) => PopupMenuButton<String>(
                     tooltip:
-                        tr3('项目操作', 'Жоба әрекеттері', 'Действия с проектом'),
+                        tr3('项目操作', 'Жоба әрекеттері', 'Действия с проектом', 'Design actions', ky: 'Долбоор боюнча аракеттер', uz: 'Loyiha amallari'),
                     icon: Icon(Icons.more_horiz, color: t.muted),
                     onSelected: (action) async {
                       switch (action) {
@@ -280,17 +282,18 @@ class _DesignCard extends StatelessWidget {
                     },
                     itemBuilder: (_) => [
                           _item('post', Icons.ios_share,
-                              tr3('发布作品', 'Жобаны жариялау', 'Опубликовать')),
+                              tr3('发布作品', 'Жобаны жариялау', 'Опубликовать', 'Publish', ky: 'Жарыялоо', uz: 'Eʼlon qilish')),
                           _item(
                               'export',
                               Icons.download_outlined,
                               tr3('导出设计文件', 'Жоба файлын экспорттау',
-                                  'Экспорт файла')),
+                                  'Экспорт файла',
+                                  'Export file', ky: 'Файлды экспорттоо', uz: 'Faylni eksport qilish')),
                           _item('backup', Icons.cloud_outlined,
-                              tr3('备份', 'Сақтық көшірме', 'Резервная копия')),
+                              tr3('备份', 'Сақтық көшірме', 'Резервная копия', 'Backup', ky: 'Резервдик көчүрмө', uz: 'Zaxira nusxa')),
                           const PopupMenuDivider(),
                           _item('delete', Icons.delete_outline,
-                              tr3('删除设计', 'Жобаны жою', 'Удалить проект'),
+                              tr3('删除设计', 'Жобаны жою', 'Удалить проект', 'Delete the design', ky: 'Долбоорду өчүрүү', uz: 'Loyihani oʻchirish'),
                               color: t.crit),
                         ])),
           ]),
@@ -306,7 +309,7 @@ class _DesignCard extends StatelessWidget {
                         padding:
                             const EdgeInsets.symmetric(horizontal: YSpace.sm)),
                     onPressed: () => list.open(entry),
-                    child: Text(tr3('继续设计', 'Жалғастыру', 'Продолжить'),
+                    child: Text(tr3('继续设计', 'Жалғастыру', 'Продолжить', 'Continue', ky: 'Улантуу', uz: 'Davom etish'),
                         maxLines: 1, overflow: TextOverflow.ellipsis))),
             const SizedBox(width: YSpace.sm),
             Expanded(
@@ -318,7 +321,7 @@ class _DesignCard extends StatelessWidget {
                             const EdgeInsets.symmetric(horizontal: YSpace.sm)),
                     onPressed: () => pushPage<void>(
                         context, (_) => FromDesignPage(entry: entry)),
-                    child: Text(tr3('找施工方', 'Шебер табу', 'Найти мастеров'),
+                    child: Text(tr3('找施工方', 'Шебер табу', 'Найти мастеров', 'Find pros', ky: 'Адистерди табуу', uz: 'Mutaxassis topish'),
                         maxLines: 1, overflow: TextOverflow.ellipsis))),
           ]),
         ]));
@@ -386,21 +389,22 @@ class _FirstDesign extends StatelessWidget {
                       extensions: [YTokens.of(context), Tokens.light]),
                   child: Builder(builder: list.examplePreview))),
           const SizedBox(height: YSpace.lg),
-          Text(tr3('还没有设计', 'Әзірге жоба жоқ', 'Проектов пока нет'),
+          Text(tr3('还没有设计', 'Әзірге жоба жоқ', 'Проектов пока нет', 'No designs yet', ky: 'Азырынча долбоор жок', uz: 'Hozircha loyiha yoʻq'),
               style: YText.heading),
           const SizedBox(height: YSpace.xs),
           Text(
               tr3(
                   '输入长宽就能开始；或者打开这栋哈萨克乡村住宅 10 × 13 米，每一处都可以改。',
                   'Ені мен ұзындығын енгізіп бастаңыз немесе 10 × 13 м қазақ ауыл үйінің үлгісін ашып, кез келген жерін өзгертіңіз.',
-                  'Начните с ширины и длины — или откройте пример сельского дома 10 × 13 м и меняйте в нём что угодно.'),
+                  'Начните с ширины и длины — или откройте пример сельского дома 10 × 13 м и меняйте в нём что угодно.',
+                  'Start with width and length, or open the 10 × 13 m village house example and change anything in it.', ky: 'Туурасы менен узундугунан баштаңыз же 10 × 13 м айыл үйүнүн мисалын ачып, каалаганыңызды өзгөртүңүз.', uz: 'Eni va uzunligidan boshlang yoki 10 × 13 m qishloq uyi namunasini ochib, xohlaganingizni oʻzgartiring.'),
               style: YText.label.copyWith(color: t.muted)),
           const SizedBox(height: YSpace.lg),
           OutlinedButton.icon(
               key: const Key('designs-open-example'),
               onPressed: () => list.createFromTemplate('kz'),
               icon: const Icon(Icons.open_in_new, size: 18),
-              label: Text(tr3('打开这个示例', 'Үлгіні ашу', 'Открыть пример'))),
+              label: Text(tr3('打开这个示例', 'Үлгіні ашу', 'Открыть пример', 'Open the example', ky: 'Мисалды ачуу', uz: 'Namunani ochish'))),
         ]));
   }
 }
@@ -428,13 +432,15 @@ class _ExampleRow extends StatelessWidget {
                     tr3(
                         '示例：哈萨克乡村住宅 10 × 13 米',
                         'Үлгі: қазақ ауыл үйі 10 × 13 м',
-                        'Пример: сельский дом 10 × 13 м'),
+                        'Пример: сельский дом 10 × 13 м',
+                        'Example: 10 × 13 m village house', ky: 'Мисал: 10 × 13 м айыл үйү', uz: 'Namuna: 10 × 13 m qishloq uyi'),
                     style: YText.labelStrong),
                 Text(
                     tr3(
                         '8 个房间，带家具和构造，打开后随便改',
                         '8 бөлме, жиһазы мен құрылымы бар',
-                        '8 комнат, с мебелью и конструкциями'),
+                        '8 комнат, с мебелью и конструкциями',
+                        '8 rooms, with furniture and structure', ky: '8 бөлмө, эмерек жана конструкциясы менен', uz: '8 xona, mebel va konstruksiyasi bilan'),
                     style: YText.caption.copyWith(color: t.muted)),
               ])),
           Icon(Icons.chevron_right, color: t.faint),
@@ -456,7 +462,8 @@ class _ActiveHouses extends StatelessWidget {
       if (h.pendingConfirm(me) > 0) {
         todos.add((
           tr3('「${h.name}」有合作约定待你确认', '«${h.name}»: келісімді растаңыз',
-              '«${h.name}»: подтвердите соглашение'),
+              '«${h.name}»: подтвердите соглашение',
+              '“${h.name}”: confirm the agreement', ky: '«${h.name}»: макулдашууну ырастаңыз', uz: '“${h.name}”: kelishuvni tasdiqlang'),
           h,
           2
         ));
@@ -464,7 +471,8 @@ class _ActiveHouses extends StatelessWidget {
       if (h.endAsks(me) > 0) {
         todos.add((
           tr3('「${h.name}」对方请求结束合作', '«${h.name}»: аяқтауды растаңыз',
-              '«${h.name}»: подтвердите завершение'),
+              '«${h.name}»: подтвердите завершение',
+              '“${h.name}”: confirm completion', ky: '«${h.name}»: бүтүрүүнү ырастаңыз', uz: '“${h.name}”: yakunlashni tasdiqlang'),
           h,
           2
         ));
@@ -478,7 +486,8 @@ class _ActiveHouses extends StatelessWidget {
           tr3(
               '「${h.name}」$inspections 个节点待验收',
               '«${h.name}»: кезеңді қабылдаңыз',
-              '«${h.name}»: этапов к приёмке $inspections'),
+              '«${h.name}»: этапов к приёмке $inspections',
+              '“${h.name}”: stages to accept: $inspections', ky: '«${h.name}»: кабыл ала турган этаптар: $inspections', uz: '“${h.name}”: qabul qilinadigan bosqichlar: $inspections'),
           h,
           3
         ));
@@ -490,7 +499,8 @@ class _ActiveHouses extends StatelessWidget {
       if (days > 0) {
         todos.add((
           tr3('「${h.name}」$days 天记工待确认', '«${h.name}»: $days күн расталмады',
-              '«${h.name}»: дней к подтверждению $days'),
+              '«${h.name}»: дней к подтверждению $days',
+              '“${h.name}”: days to confirm: $days', ky: '«${h.name}»: ырастоого калган күндөр: $days', uz: '“${h.name}”: tasdiqlashga qolgan kunlar: $days'),
           h,
           3
         ));
@@ -541,7 +551,8 @@ class _ActiveHouses extends StatelessWidget {
                                       StatusPill(
                                           h.shareOnly
                                               ? tr3('已分享', 'Бөлісілді',
-                                                  'Опубликован')
+                                                  'Опубликован',
+                                                  'Published', ky: 'Жарыяланган', uz: 'Eʼlon qilingan')
                                               : houseStageName(h.stage),
                                           color: t.accent),
                                       const SizedBox(height: 4),
@@ -561,7 +572,7 @@ class _ActiveHouses extends StatelessWidget {
             }));
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       if (todos.isNotEmpty) ...[
-        SectionTitle(tr3('等你处理', 'Сізді күтуде', 'Ждут вас')),
+        SectionTitle(tr3('等你处理', 'Сізді күтуде', 'Ждут вас', 'Waiting for you', ky: 'Сизди күтүүдө', uz: 'Sizni kutmoqda')),
         Material(
             key: const Key('todo-strip'),
             color: t.accentSoft,
@@ -587,11 +598,11 @@ class _ActiveHouses extends StatelessWidget {
             ])),
       ],
       if (ongoing.isNotEmpty) ...[
-        SectionTitle(tr3('进行中的房子', 'Жүріп жатқан үйлер', 'Дома в работе')),
+        SectionTitle(tr3('进行中的房子', 'Жүріп жатқан үйлер', 'Дома в работе', 'Houses in progress', ky: 'Курулуп жаткан үйлөр', uz: 'Qurilayotgan uylar')),
         strip(ongoing),
       ],
       if (done.isNotEmpty) ...[
-        SectionTitle(tr3('已完工', 'Аяқталған', 'Готовые')),
+        SectionTitle(tr3('已完工', 'Аяқталған', 'Готовые', 'Finished', ky: 'Бүткөн', uz: 'Tugallangan')),
         strip(done),
       ],
     ]);
@@ -613,18 +624,20 @@ class _MyCooperationsState extends State<MyCooperations> {
         builder: (context) => context.session.currentAccount == null
             ? SignInPrompt(
                 text: tr3('登录后查看合作记录', 'Кіріңіз',
-                    'Войдите, чтобы видеть сотрудничество'))
+                    'Войдите, чтобы видеть сотрудничество',
+                    'Sign in to see cooperations', ky: 'Кызматташууларды көрүү үчүн кириңиз', uz: 'Hamkorliklarni koʻrish uchun kiring'))
             : Live<List<(Cooperation, String)>>(
                 provider: myCooperationsProvider(_retry),
                 builder: (context, list) => list.isEmpty
                     ? EmptyState(
                         icon: Icons.handshake_outlined,
                         title: tr3(
-                            '还没有合作', 'Келісім жоқ', 'Пока нет сотрудничества'),
+                            '还没有合作', 'Келісім жоқ', 'Пока нет сотрудничества', 'No cooperations yet', ky: 'Азырынча кызматташуу жок', uz: 'Hozircha hamkorlik yoʻq'),
                         body: tr3(
                             '在报名／报价中选定对方并双方确认后，会出现在这里。',
                             'Екі жақ растағаннан кейін осында болады.',
-                            'Появится после подтверждения обеими сторонами.'))
+                            'Появится после подтверждения обеими сторонами.',
+                            'They appear once both sides confirm.', ky: 'Эки тарап ырастагандан кийин пайда болот.', uz: 'Ikkala tomon tasdiqlagandan keyin paydo boʻladi.'))
                     : ListView(
                         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
                         children: [
@@ -634,7 +647,7 @@ class _MyCooperationsState extends State<MyCooperations> {
                                     onPressed: () => setState(() => _retry++),
                                     icon: const Icon(Icons.refresh),
                                     label: Text(
-                                        tr3('刷新', 'Жаңарту', 'Обновить')))),
+                                        tr3('刷新', 'Жаңарту', 'Обновить', 'Refresh', ky: 'Жаңылоо', uz: 'Yangilash')))),
                             for (final (c, title) in list)
                               Padding(
                                   padding: const EdgeInsets.only(bottom: 12),

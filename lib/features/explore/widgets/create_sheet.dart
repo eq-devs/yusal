@@ -5,7 +5,10 @@ import 'package:yusal/features/profile/pages/edit.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/features/shell/page.dart';
 import 'package:yusal/constant/theme.dart';
-import 'package:yusal/features/explore/page.dart';
+import 'package:yusal/features/home/page.dart';
+import 'package:yusal/features/home/util/reuse.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
 
 /// "＋": the four ways in. Draw from scratch, start from someone's plan,
@@ -22,7 +25,11 @@ Future<void> showCreateSheet(BuildContext context) async {
     case 0:
       nav?.newDesign();
     case 1:
-      nav?.go(ShellTab.explore, exploreSegment: ExploreSegment.houses);
+      // The library opens on its own page: picking a house there copies
+      // it into My houses and opens it in the design tool.
+      final post = await pushPage<HousePost>(
+          context, (_) => const PlanLibraryPage());
+      if (post != null && context.mounted) await startFromPost(context, post);
     case 2:
       if (await requireLogin(context) && context.mounted) {
         await pushPage<void>(context, (_) => const PublishPage());
@@ -44,21 +51,21 @@ class _CreateSheet extends StatelessWidget {
     final options = [
       (
         1,
-        Icons.collections_outlined,
-        tr3('从图纸库挑一套', 'Кітапханадан таңдау', 'Из библиотеки'),
-        tr3('用别人的房子改', 'Біреудің үйін өзгерту', 'Взять чужой дом за основу'),
+        YIcon.plan,
+        tr3('从图纸库挑一套', 'Кітапханадан таңдау', 'Из библиотеки', 'From the plan library', ky: 'Пландар китепканасынан', uz: 'Rejalar kutubxonasidan'),
+        tr3('用别人的房子改', 'Біреудің үйін өзгерту', 'Взять чужой дом за основу', "Start from someone else's house", ky: 'Башка бирөөнүн үйүнөн баштоо', uz: 'Boshqa birovning uyidan boshlash'),
       ),
       (
         0,
-        Icons.architecture,
-        tr3('从零画', 'Нөлден сызу', 'С нуля'),
-        tr3('输长宽、选屋顶就能开始', 'Өлшем мен шатырды таңдаңыз', 'Размеры и крыша'),
+        YIcon.design,
+        tr3('从零画', 'Нөлден сызу', 'С нуля', 'From scratch', ky: 'Нөлдөн', uz: 'Noldan'),
+        tr3('输长宽、选屋顶就能开始', 'Өлшем мен шатырды таңдаңыз', 'Размеры и крыша', 'Size and roof', ky: 'Өлчөм жана чатыр', uz: 'Oʻlcham va tom'),
       ),
       (
         2,
-        Icons.construction,
-        tr3('直接找人', 'Адам іздеу', 'Найти мастера'),
-        tr3('不用图纸，填需求', 'Сызбасыз тапсырыс', 'Без чертежа'),
+        YIcon.hire,
+        tr3('直接找人', 'Адам іздеу', 'Найти мастера', 'Find a pro', ky: 'Адис табуу', uz: 'Mutaxassis topish'),
+        tr3('不用图纸，填需求', 'Сызбасыз тапсырыс', 'Без чертежа', 'No drawing needed', ky: 'Чийме кереги жок', uz: 'Chizma shart emas'),
       ),
     ];
     final t = YTokens.of(context);
@@ -71,7 +78,8 @@ class _CreateSheet extends StatelessWidget {
                 children: [
                   Text(
                       tr3('你想做什么？', 'Не істегіңіз келеді?',
-                          'Что вы хотите сделать?'),
+                          'Что вы хотите сделать?',
+                          'What do you want to do?', ky: 'Эмне кылгыңыз келет?', uz: 'Nima qilmoqchisiz?'),
                       style: display(size: 22)),
                   const SizedBox(height: 14),
                   LayoutBuilder(builder: (context, c) {
@@ -106,7 +114,8 @@ class _CreateSheet extends StatelessWidget {
                               tr3(
                                   '我是工人 / 包工头 / 工程师：入驻接活',
                                   'Шеберсіз бе? Жұмыс алу',
-                                  'Вы мастер? Получать заказы'),
+                                  'Вы мастер? Получать заказы',
+                                  'Are you a pro? Get orders', ky: 'Адиссизби? Буйрутма алыңыз', uz: 'Mutaxassismisiz? Buyurtma oling'),
                               style: TextStyle(color: t.muted)))),
                 ])));
   }
@@ -121,7 +130,7 @@ class _OptionCard extends StatelessWidget {
       required this.onTap,
       this.recommended = false,
       this.row = false});
-  final IconData icon;
+  final YIcon icon;
   final String title;
   final String body;
   final VoidCallback onTap;
@@ -149,7 +158,7 @@ class _OptionCard extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: t.accent,
                       borderRadius: BorderRadius.circular(YRadius.pill)),
-                  child: Text(tr3('推荐', 'Ұсынамыз', 'Совет'),
+                  child: Text(tr3('推荐', 'Ұсынамыз', 'Совет', 'Tip', ky: 'Кеңеш', uz: 'Maslahat'),
                       style: TextStyle(
                           color: t.accentInk,
                           fontSize: YFont.caption,
@@ -158,7 +167,7 @@ class _OptionCard extends StatelessWidget {
       const SizedBox(height: 2),
       Text(body, style: TextStyle(color: t.muted, fontSize: YFont.small)),
     ]);
-    final icon = Icon(this.icon, color: t.accent, size: 28);
+    final icon = YusalIcon(this.icon, color: t.ink, size: 28);
     return Pressable(
         child: Material(
             color: recommended ? t.accentSoft : t.surface,
@@ -183,5 +192,22 @@ class _OptionCard extends StatelessWidget {
                                 const SizedBox(height: 10),
                                 text
                               ])))));
+  }
+}
+
+/// "Pick from the plan library": the published houses, each with "start
+/// from this one". The picked house is handed back to the caller.
+class PlanLibraryPage extends StatelessWidget {
+  const PlanLibraryPage({super.key});
+  @override
+  Widget build(BuildContext context) {
+    watchLang(context);
+    return Scaffold(
+        appBar: AppBar(
+            title: Text(tr3('图纸库', 'Жобалар кітапханасы', 'Библиотека проектов',
+                'Plan library', ky: 'Пландар китепканасы', uz: 'Rejalar kutubxonasi'))),
+        body: HomePage(
+            embedded: true,
+            onPick: (post) => Navigator.of(context).pop(post)));
   }
 }

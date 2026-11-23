@@ -30,13 +30,13 @@ class FeedbackAsk extends StatelessWidget {
           Row(children: [
             YusalIcon(YIcon.chat, size: 18, color: t.accent),
             const SizedBox(width: 6),
-            Text(tr3('作者在求点评', 'Автор пікір сұрайды', 'Автор просит отзывы'),
+            Text(tr3('作者在求点评', 'Автор пікір сұрайды', 'Автор просит отзывы', 'The author is asking for feedback', ky: 'Автор пикир сурап жатат', uz: 'Muallif fikr soʻramoqda'),
                 style: const TextStyle(fontWeight: FontWeight.w700)),
           ]),
           if (post.focus.isNotEmpty) ...[
             const SizedBox(height: 8),
             Wrap(spacing: 6, runSpacing: 6, children: [
-              Text(tr3('最想听听：', 'Ең алдымен:', 'Важнее всего:'),
+              Text(tr3('最想听听：', 'Ең алдымен:', 'Важнее всего:', 'Most important:', ky: 'Эң маанилүүсү:', uz: 'Eng muhimi:'),
                   style: TextStyle(color: t.muted, fontSize: YFont.small)),
               for (final f in post.focus)
                 StatusPill(feedbackTopicName(f), color: t.accent),
@@ -91,11 +91,12 @@ class _CritiqueSectionState extends State<CritiqueSection> {
     final asking = !widget.post.openForBuilders;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       SectionTitle(
-          '${asking ? tr3('点评', 'Пікірлер', 'Отзывы') : tr3('评价', 'Пікірлер', 'Отзывы')} · ${top.length}',
+          '${asking ? tr3('点评', 'Пікірлер', 'Отзывы', 'Reviews', ky: 'Пикирлер', uz: 'Sharhlar') : tr3('评价', 'Пікірлер', 'Отзывы', 'Reviews', ky: 'Пикирлер', uz: 'Sharhlar')} · ${top.length}',
           trailing: helpful > 0
               ? Text(
                   tr3('$helpful 条作者觉得有用', '$helpful пайдалы',
-                      'Полезных: $helpful'),
+                      'Полезных: $helpful',
+                      'Helpful: $helpful', ky: 'Пайдалуу: $helpful', uz: 'Foydali: $helpful'),
                   style: TextStyle(color: t.muted, fontSize: YFont.small))
               : null),
       if (!widget.mine) _ComposerEntry(post: widget.post),
@@ -106,7 +107,7 @@ class _CritiqueSectionState extends State<CritiqueSection> {
                 scrollDirection: Axis.horizontal,
                 child: Row(children: [
                   _Chip(
-                      label: tr3('全部', 'Барлығы', 'Все'),
+                      label: tr3('全部', 'Барлығы', 'Все', 'All', ky: 'Баары', uz: 'Hammasi'),
                       selected: topic == null,
                       onTap: () => setState(() => topic = null)),
                   for (final k in feedbackTopics)
@@ -125,9 +126,11 @@ class _CritiqueSectionState extends State<CritiqueSection> {
             child: Text(
                 widget.mine
                     ? tr3('还没有点评。分享给朋友或懂行的师傅看看。', 'Әлі пікір жоқ.',
-                        'Отзывов пока нет. Поделитесь с друзьями или мастерами.')
+                        'Отзывов пока нет. Поделитесь с друзьями или мастерами.',
+                        'No reviews yet. Share it with friends or pros.', ky: 'Азырынча пикир жок. Досторуңуз же адистер менен бөлүшүңүз.', uz: 'Hozircha sharh yoʻq. Doʻstlaringiz yoki mutaxassislar bilan ulashing.')
                     : tr3('还没有点评。第一个说说看法吧。', 'Әлі пікір жоқ.',
-                        'Отзывов пока нет. Будьте первым.'),
+                        'Отзывов пока нет. Будьте первым.',
+                        'No reviews yet. Be the first.', ky: 'Азырынча пикир жок. Биринчи болуңуз.', uz: 'Hozircha sharh yoʻq. Birinchi boʻling.'),
                 style: TextStyle(color: t.muted))),
       for (final c in shown) ...[
         _CritiqueTile(
@@ -180,7 +183,7 @@ class _ComposerEntry extends StatelessWidget {
     final me = context.session.currentAccount;
     return Semantics(
         button: true,
-        label: tr3('写点评', 'Пікір жазу', 'Написать отзыв'),
+        label: tr3('写点评', 'Пікір жазу', 'Написать отзыв', 'Write a review', ky: 'Пикир жазуу', uz: 'Sharh yozish'),
         excludeSemantics: true,
         child: InkWell(
             key: const Key('critique-open'),
@@ -203,11 +206,12 @@ class _ComposerEntry extends StatelessWidget {
                   Expanded(
                       child: Text(
                           post.focus.isEmpty
-                              ? tr3('说说你的看法…', 'Пікіріңіз…', 'Что думаете?')
+                              ? tr3('说说你的看法…', 'Пікіріңіз…', 'Что думаете?', 'What do you think?', ky: 'Эмне ойлойсуз?', uz: 'Nima deb oʻylaysiz?')
                               : tr3(
                                   '聊聊${post.focus.map(feedbackTopicName).join('、')}…',
                                   'Пікіріңіз…',
-                                  'Что думаете о: ${post.focus.map(feedbackTopicName).join(', ')}?'),
+                                  'Что думаете о: ${post.focus.map(feedbackTopicName).join(', ')}?',
+                                  'What do you think about: ${post.focus.map(feedbackTopicName).join(', ')}?', ky: 'Бул тууралуу эмне ойлойсуз: ${post.focus.map(feedbackTopicName).join(', ')}?', uz: 'Bu haqda nima deb oʻylaysiz: ${post.focus.map(feedbackTopicName).join(', ')}?'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(color: t.muted))),
@@ -288,7 +292,7 @@ class _CritiqueBoxState extends State<_CritiqueBox> {
     ];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
-          tr3('说说哪方面？（可选）', 'Қай жағы туралы?', 'О чём отзыв? (необязательно)'),
+          tr3('说说哪方面？（可选）', 'Қай жағы туралы?', 'О чём отзыв? (необязательно)', "What's the review about? (optional)", ky: 'Пикир эмне жөнүндө? (милдеттүү эмес)', uz: 'Sharh nima haqida? (ixtiyoriy)'),
           style: TextStyle(color: t.muted, fontSize: YFont.small)),
       const SizedBox(height: 6),
       Wrap(spacing: 6, runSpacing: 6, children: [
@@ -309,7 +313,7 @@ class _CritiqueBoxState extends State<_CritiqueBox> {
           Semantics(
               button: true,
               selected: i <= (rating ?? 0),
-              label: tr3('$i 星', '$i жұлдыз', 'Оценка $i из 5'),
+              label: tr3('$i 星', '$i жұлдыз', 'Оценка $i из 5', 'Rating $i of 5', ky: 'Баа: 5тен $i', uz: 'Baho: 5 dan $i'),
               child: InkWell(
                   borderRadius: BorderRadius.circular(YRadius.pill),
                   onTap: () => setState(() => rating = rating == i ? null : i),
@@ -324,14 +328,14 @@ class _CritiqueBoxState extends State<_CritiqueBox> {
         Expanded(
             child: Text(
                 rating == null
-                    ? tr3('整体打个分（可选）', 'Бағалаңыз', 'Общая оценка')
+                    ? tr3('整体打个分（可选）', 'Бағалаңыз', 'Общая оценка', 'Overall rating', ky: 'Жалпы баа', uz: 'Umumiy baho')
                     : [
                         '',
-                        tr3('不推荐', 'Ұсынбаймын', 'Не советую'),
-                        tr3('一般', 'Орташа', 'Так себе'),
-                        tr3('还行', 'Жақсы', 'Нормально'),
-                        tr3('不错', 'Өте жақсы', 'Хорошо'),
-                        tr3('很好', 'Керемет', 'Отлично'),
+                        tr3('不推荐', 'Ұсынбаймын', 'Не советую', "Wouldn't recommend", ky: 'Сунуштабайм', uz: 'Tavsiya qilmayman'),
+                        tr3('一般', 'Орташа', 'Так себе', 'So-so', ky: 'Анча эмес', uz: 'Unchalik emas'),
+                        tr3('还行', 'Жақсы', 'Нормально', 'OK', ky: 'Жаман эмес', uz: 'Yomon emas'),
+                        tr3('不错', 'Өте жақсы', 'Хорошо', 'Good', ky: 'Жакшы', uz: 'Yaxshi'),
+                        tr3('很好', 'Керемет', 'Отлично', 'Excellent', ky: 'Эң сонун', uz: 'Aʼlo'),
                       ][rating!],
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -350,16 +354,18 @@ class _CritiqueBoxState extends State<_CritiqueBox> {
           decoration: InputDecoration(
               hintText: topic == null
                   ? tr3('说说布局、造价、施工上的看法…', 'Пікіріңіз…',
-                      'Что думаете о планировке, цене, стройке…')
+                      'Что думаете о планировке, цене, стройке…',
+                      'What do you think about the layout, price, build…', ky: 'Пландоо, баа, курулуш жөнүндө эмне ойлойсуз…', uz: 'Rejalashtirish, narx, qurilish haqida nima deb oʻylaysiz…')
                   : tr3('关于${feedbackTopicName(topic!)}，你的建议是…', 'Ұсынысыңыз…',
-                      'Ваш совет…'))),
+                      'Ваш совет…',
+                      'Your advice…', ky: 'Кеңешиңиз…', uz: 'Maslahatingiz…'))),
       const SizedBox(height: YSpace.md),
       Align(
           alignment: Alignment.centerRight,
           child: FilledButton(
               key: const Key('critique-send'),
               onPressed: busy ? null : send,
-              child: Text(tr3('发布', 'Жіберу', 'Отправить')))),
+              child: Text(tr3('发布', 'Жіберу', 'Отправить', 'Send', ky: 'Жөнөтүү', uz: 'Yuborish')))),
     ]);
   }
 }
@@ -380,8 +386,8 @@ class _CritiqueTile extends StatelessWidget {
   final bool reply;
 
   Future<void> _reply(BuildContext context) async {
-    final text = await askText(context, tr3('回复', 'Жауап', 'Ответить'),
-        hint: tr3('补充或回答', 'Жауап', 'Ответ'));
+    final text = await askText(context, tr3('回复', 'Жауап', 'Ответить', 'Reply', ky: 'Жооп берүү', uz: 'Javob berish'),
+        hint: tr3('补充或回答', 'Жауап', 'Ответ', 'Reply', ky: 'Жооп берүү', uz: 'Javob berish'));
     if (text == null || !context.mounted) return;
     await attempt(
         context,
@@ -428,7 +434,7 @@ class _CritiqueTile extends StatelessWidget {
                                     style: const TextStyle(
                                         fontWeight: FontWeight.w700)),
                                 if (isAuthor)
-                                  StatusPill(tr3('作者', 'Автор', 'Автор'),
+                                  StatusPill(tr3('作者', 'Автор', 'Автор', 'Author', ky: 'Автор', uz: 'Muallif'),
                                       color: t.ink)
                                 else if (pro != null)
                                   StatusPill(proRoleName(pro.role),
@@ -445,7 +451,8 @@ class _CritiqueTile extends StatelessWidget {
                                   if (c.helpful)
                                     StatusPill(
                                         tr3('作者觉得有用', 'Автор: пайдалы',
-                                            'Автор: полезно'),
+                                            'Автор: полезно',
+                                            'Author: helpful', ky: 'Автор: пайдалуу', uz: 'Muallif: foydali'),
                                         color: t.ok,
                                         filled: true),
                                   if (c.topic != null)
@@ -472,7 +479,7 @@ class _CritiqueTile extends StatelessWidget {
                                         foregroundColor: t.muted),
                                     onPressed: () => _reply(context),
                                     child:
-                                        Text(tr3('回复', 'Жауап', 'Ответить'))),
+                                        Text(tr3('回复', 'Жауап', 'Ответить', 'Reply', ky: 'Жооп берүү', uz: 'Javob berish'))),
                               if (canMarkHelpful)
                                 TextButton.icon(
                                     key: Key('critique-helpful-${c.id}'),
@@ -491,14 +498,14 @@ class _CritiqueTile extends StatelessWidget {
                                             : Icons.thumb_up_alt_outlined,
                                         size: 16),
                                     label: Text(c.helpful
-                                        ? tr3('已标有用', 'Пайдалы', 'Полезно')
-                                        : tr3('有用', 'Пайдалы', 'Полезно'))),
+                                        ? tr3('已标有用', 'Пайдалы', 'Полезно', 'Helpful', ky: 'Пайдалуу', uz: 'Foydali')
+                                        : tr3('有用', 'Пайдалы', 'Полезно', 'Helpful', ky: 'Пайдалуу', uz: 'Foydali'))),
                             ]),
                         ])),
                     if (canDelete)
                       IconButton(
                           visualDensity: VisualDensity.compact,
-                          tooltip: tr3('删除', 'Жою', 'Удалить'),
+                          tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
                           icon: Icon(Icons.close, size: 16, color: t.faint),
                           onPressed: () => attempt(
                               context,
@@ -509,7 +516,7 @@ class _CritiqueTile extends StatelessWidget {
                       IconButton(
                           key: Key('critique-report-${c.id}'),
                           visualDensity: VisualDensity.compact,
-                          tooltip: tr3('举报', 'Шағым', 'Пожаловаться'),
+                          tooltip: tr3('举报', 'Шағым', 'Пожаловаться', 'Report', ky: 'Арыз берүү', uz: 'Shikoyat qilish'),
                           icon:
                               YusalIcon(YIcon.report, size: 16, color: t.faint),
                           onPressed: () => reportContent(

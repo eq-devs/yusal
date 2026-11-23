@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_layout.dart';
 import 'package:yusal/features/editor/engine/core/commands/house_wish.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/engine/core/number_input.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
 import 'package:yusal/features/editor/engine/render2d/furniture_names.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
+
+/// Room names by type in the app's language, for a house drawn from a
+/// wish.
+Map<String, String> wishRoomNames() => {
+      for (final t in RoomType.values)
+        if (t != RoomType.custom) t.name: roomTypeName(t),
+      'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл', 'Stair hall', ky: 'Тепкич холлу', uz: 'Zinapoya xolli'),
+      'family': tr3('起居室', 'Отбасы бөлмесі', 'Общая комната', 'Common room', ky: 'Жалпы бөлмө', uz: 'Umumiy xona'),
+    };
 
 /// What the questions collect before a house is asked for.
 class HouseWish {
@@ -33,22 +45,30 @@ class HouseWish {
   /// The wish as a house spec drawn without the assistant: two rows of
   /// rooms along a corridor, named in the app's language.
   Map<String, Object?> spec(String name) => wishSpec(
-          name: name,
-          width: (width * 1000).round(),
-          depth: (depth * 1000).round(),
-          floors: floors,
-          bedrooms: bedrooms,
-          bathrooms: bathrooms,
-          hall: hall,
-          boiler: boiler,
-          storage: storage,
-          dining: dining,
-          names: {
-            for (final t in RoomType.values)
-              if (t != RoomType.custom) t.name: roomTypeName(t),
-            'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл'),
-            'family': tr3('起居室', 'Отбасы бөлмесі', 'Общая комната'),
-          });
+      name: name,
+      width: (width * 1000).round(),
+      depth: (depth * 1000).round(),
+      floors: floors,
+      bedrooms: bedrooms,
+      bathrooms: bathrooms,
+      hall: hall,
+      boiler: boiler,
+      storage: storage,
+      dining: dining,
+      names: wishRoomNames());
+
+  /// The wish as a brief for [housePlans], which lays it out several
+  /// ways.
+  HouseBrief get brief => HouseBrief(
+      width: (width * 1000).round(),
+      depth: (depth * 1000).round(),
+      floors: floors,
+      bedrooms: bedrooms,
+      bathrooms: bathrooms,
+      hall: hall,
+      boiler: boiler,
+      storage: storage,
+      dining: dining);
 
   /// The wish as one sentence in the app's language, for the assistant
   /// that designs whole houses.
@@ -56,10 +76,10 @@ class HouseWish {
     String m(double v) =>
         dec(v == v.roundToDouble() ? '${v.round()}' : v.toStringAsFixed(1));
     final extras = [
-      if (hall) tr3('门厅', 'тамбур', 'тамбур'),
-      if (boiler) tr3('锅炉房', 'қазандық бөлмесі', 'котельная'),
-      if (storage) tr3('储藏间', 'қойма', 'кладовая'),
-      if (dining) tr3('餐厅', 'асхана', 'столовая'),
+      if (hall) tr3('门厅', 'тамбур', 'тамбур', 'vestibule', ky: 'тамбур', uz: 'tambur'),
+      if (boiler) tr3('锅炉房', 'қазандық бөлмесі', 'котельная', 'boiler room', ky: 'казандык', uz: 'qozonxona'),
+      if (storage) tr3('储藏间', 'қойма', 'кладовая', 'storeroom', ky: 'кампа', uz: 'omborxona'),
+      if (dining) tr3('餐厅', 'асхана', 'столовая', 'dining room', ky: 'ашкана-конок бөлмө', uz: 'ovqatlanish xonasi'),
     ];
     return tr3(
         '帮我设计一栋 ${m(width)}×${m(depth)} 米的 $floors 层房子：$bedrooms 间卧室、$bathrooms 个卫生间、客厅和厨房'
@@ -67,7 +87,8 @@ class HouseWish {
         '${m(width)}×${m(depth)} метр, $floors қабатты үй жобалап бер: $bedrooms жатын бөлме, $bathrooms жуынатын бөлме, қонақ бөлме және асүй'
             '${extras.isEmpty ? '' : ', сонымен қатар ${extras.join(', ')}'}. Әр бөлменің есігі болсын, жатын бөлмелерде, қонақ бөлмеде және асүйде терезе болсын.',
         'Спроектируй дом ${m(width)}×${m(depth)} метров, этажей: $floors. Спален: $bedrooms, санузлов: $bathrooms, гостиная и кухня'
-            '${extras.isEmpty ? '' : ', а ещё ${extras.join(', ')}'}. У каждой комнаты должна быть дверь, в спальнях, гостиной и кухне — окно.');
+            '${extras.isEmpty ? '' : ', а ещё ${extras.join(', ')}'}. У каждой комнаты должна быть дверь, в спальнях, гостиной и кухне — окно.',
+        'Design a ${m(width)}×${m(depth)} m house with $floors floors, $bedrooms bedrooms, $bathrooms bathrooms, a living room and a kitchen${extras.isEmpty ? '' : ', plus ${extras.join(', ')}'}. Every room needs a door; bedrooms, the living room and the kitchen need a window.', ky: '${m(width)}×${m(depth)} м үй долбоорлоп бериңиз: $floors кабат, $bedrooms уктоочу бөлмө, $bathrooms ванна бөлмө, мейманкана жана ашкана${extras.isEmpty ? '' : ', ошондой эле ${extras.join(', ')}'}. Ар бир бөлмөдө эшик болсун; уктоочу бөлмөлөрдө, мейманканада жана ашканада терезе болсун.', uz: '${m(width)}×${m(depth)} m uy loyihalang: $floors qavat, $bedrooms yotoqxona, $bathrooms hammom, mehmonxona va oshxona${extras.isEmpty ? '' : ', shuningdek ${extras.join(', ')}'}. Har bir xonada eshik boʻlsin; yotoqxonalar, mehmonxona va oshxonada deraza boʻlsin.');
   }
 }
 
@@ -134,7 +155,8 @@ Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
                         children: [
                           Text(
                               tr3('想要什么样的房子？', 'Қандай үй керек?',
-                                  'Какой дом нужен?'),
+                                  'Какой дом нужен?',
+                                  'What house do you need?', ky: 'Кандай үй керек?', uz: 'Qanday uy kerak?'),
                               style: const TextStyle(
                                   fontSize: 20, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
@@ -142,36 +164,39 @@ Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
                               ? tr3(
                                   '回答几项，马上画出第一版，之后都能改。',
                                   'Бірнеше сұраққа жауап беріңіз, алғашқы нұсқасы бірден сызылады. Кейін бәрін өзгертуге болады.',
-                                  'Ответьте на несколько вопросов — первый вариант будет начерчен сразу. Потом всё можно изменить.')
+                                  'Ответьте на несколько вопросов — первый вариант будет начерчен сразу. Потом всё можно изменить.',
+                                  'Answer a few questions and the first version is drawn right away. You can change everything later.', ky: 'Бир нече суроого жооп бериңиз, биринчи вариант дароо чийилет. Кийин баарын өзгөртсөңүз болот.', uz: 'Bir nechta savolga javob bering, birinchi variant darhol chiziladi. Keyin hammasini oʻzgartirishingiz mumkin.')
                               : tr3(
                                   '回答几项，助手画出第一版，之后都能改。',
                                   'Бірнеше сұраққа жауап беріңіз, көмекші алғашқы нұсқасын сызады. Кейін бәрін өзгертуге болады.',
-                                  'Ответьте на несколько вопросов — помощник начертит первый вариант. Потом всё можно изменить.')),
+                                  'Ответьте на несколько вопросов — помощник начертит первый вариант. Потом всё можно изменить.',
+                                  'Answer a few questions and the assistant draws the first version. You can change everything later.', ky: 'Бир нече суроого жооп бериңиз, жардамчы биринчи вариантты чийет. Кийин баарын өзгөртсөңүз болот.', uz: 'Bir nechta savolga javob bering, yordamchi birinchi variantni chizadi. Keyin hammasini oʻzgartirishingiz mumkin.')),
                           title(tr3('房子外形（米）', 'Үйдің өлшемі (м)',
-                              'Размер дома (м)')),
+                              'Размер дома (м)',
+                              'House size (m)', ky: 'Үйдүн өлчөмү (м)', uz: 'Uy oʻlchami (m)')),
                           Row(children: [
-                            size(width, tr3('宽', 'Ені', 'Ширина')),
+                            size(width, tr3('宽', 'Ені', 'Ширина', 'Width', ky: 'Туурасы', uz: 'Eni')),
                             const SizedBox(width: 12),
-                            size(depth, tr3('长', 'Ұзындығы', 'Длина')),
+                            size(depth, tr3('长', 'Ұзындығы', 'Длина', 'Length', ky: 'Узундугу', uz: 'Uzunligi')),
                           ]),
-                          title(tr3('几层', 'Қабат саны', 'Этажей')),
+                          title(tr3('几层', 'Қабат саны', 'Этажей', 'Floors', ky: 'Кабаттар', uz: 'Qavatlar')),
                           pick('floors', [1, 2], floors, (v) => floors = v),
-                          title(tr3('几间卧室', 'Жатын бөлме саны', 'Спален')),
+                          title(tr3('几间卧室', 'Жатын бөлме саны', 'Спален', 'Bedrooms', ky: 'Уктоочу бөлмөлөр', uz: 'Yotoqxonalar')),
                           pick('bedrooms', [1, 2, 3, 4, 5], bedrooms,
                               (v) => bedrooms = v),
                           title(
-                              tr3('几个卫生间', 'Жуынатын бөлме саны', 'Санузлов')),
+                              tr3('几个卫生间', 'Жуынатын бөлме саны', 'Санузлов', 'Bathrooms', ky: 'Ванна бөлмөлөр', uz: 'Hammomlar')),
                           pick('bathrooms', [1, 2], bathrooms,
                               (v) => bathrooms = v),
-                          title(tr3('还要', 'Тағы не керек', 'Что ещё нужно')),
+                          title(tr3('还要', 'Тағы не керек', 'Что ещё нужно', 'What else you need', ky: 'Дагы эмне керек', uz: 'Yana nima kerak')),
                           Wrap(spacing: 8, runSpacing: 4, children: [
-                            extra(tr3('门厅', 'Тамбур', 'Тамбур'), hall,
+                            extra(tr3('门厅', 'Тамбур', 'Тамбур', 'Vestibule', ky: 'Тамбур', uz: 'Tambur'), hall,
                                 (v) => hall = v),
-                            extra(tr3('锅炉房', 'Қазандық', 'Котельная'), boiler,
+                            extra(tr3('锅炉房', 'Қазандық', 'Котельная', 'Boiler room', ky: 'Казандык', uz: 'Qozonxona'), boiler,
                                 (v) => boiler = v),
-                            extra(tr3('储藏间', 'Қойма', 'Кладовая'), storage,
+                            extra(tr3('储藏间', 'Қойма', 'Кладовая', 'Storeroom', ky: 'Кампа', uz: 'Omborxona'), storage,
                                 (v) => storage = v),
-                            extra(tr3('餐厅', 'Асхана', 'Столовая'), dining,
+                            extra(tr3('餐厅', 'Асхана', 'Столовая', 'Dining room', ky: 'Ашкана-конок бөлмө', uz: 'Ovqatlanish xonasi'), dining,
                                 (v) => dining = v),
                           ]),
                           if (error != null)
@@ -197,7 +222,8 @@ Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
                                   update(() => error = tr3(
                                       '长宽需在 3–100 米之间',
                                       'Өлшем 3–100 м аралығында болуы керек',
-                                      'Размер должен быть в пределах 3–100 м'));
+                                      'Размер должен быть в пределах 3–100 м',
+                                      'Size must be 3–100 m', ky: 'Өлчөм 3–100 м болушу керек', uz: 'Oʻlcham 3–100 m boʻlishi kerak'));
                                   return;
                                 }
                                 final wish = HouseWish(
@@ -214,7 +240,8 @@ Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
                                   update(() => error = tr3(
                                       '这么大的房子放不下这么多房间。减几间，加一层，或者把房子加大。',
                                       'Мұндай үйге осынша бөлме сыймайды. Бөлмені азайтыңыз, қабат қосыңыз не үйді үлкейтіңіз.',
-                                      'В дом такого размера столько комнат не поместится. Уберите часть комнат, добавьте этаж или увеличьте дом.'));
+                                      'В дом такого размера столько комнат не поместится. Уберите часть комнат, добавьте этаж или увеличьте дом.',
+                                      "That many rooms won't fit in a house this size. Remove some rooms, add a floor or make the house bigger.", ky: 'Мынча бөлмө бул өлчөмдөгү үйгө батпайт. Айрым бөлмөлөрдү алып салыңыз, кабат кошуңуз же үйдү чоңойтуңуз.', uz: 'Buncha xona bu oʻlchamdagi uyga sigʻmaydi. Baʼzi xonalarni olib tashlang, qavat qoʻshing yoki uyni kattalashtiring.'));
                                   return;
                                 }
                                 Navigator.pop(
@@ -231,7 +258,71 @@ Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
                                         dining: dining));
                               },
                               child: Text(tr3('画出第一版', 'Алғашқы нұсқасын сызу',
-                                  'Начертить первый вариант'))),
+                                  'Начертить первый вариант',
+                                  'Draw the first version', ky: 'Биринчи вариантты чийүү', uz: 'Birinchi variantni chizish'))),
                         ])));
           }));
+}
+
+/// The plans a wish can be laid out as, each drawn small, to pick one
+/// from; returns it, or null when the sheet is closed.
+Future<HousePlan?> showHousePlans(BuildContext context, List<HousePlan> plans) {
+  return showMotionSheet<HousePlan>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+          child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                        tr3('选一个方案', 'Бір нұсқасын таңдаңыз',
+                            'Выберите вариант', 'Pick a layout', ky: 'Вариантты тандаңыз', uz: 'Variantni tanlang'),
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text(tr3(
+                        '同样的要求，不同的排法。选了之后都能改。',
+                        'Талап бірдей, орналасуы әртүрлі. Кейін бәрін өзгертуге болады.',
+                        'Те же пожелания, разная планировка. Потом всё можно изменить.', 'Same wishes, different layouts. You can change everything later.', ky: 'Каалоолор бирдей, жайгашуусу ар башка. Кийин баарын өзгөртсө болот.', uz: 'Istaklar bir xil, joylashuvi har xil. Keyin hammasini oʻzgartirish mumkin.')),
+                    for (final (i, plan) in plans.indexed)
+                      Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: OutlinedButton(
+                              key: Key('plan-$i'),
+                              style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.all(12)),
+                              onPressed: () => Navigator.pop(context, plan),
+                              child: Column(children: [
+                                AspectRatio(
+                                    aspectRatio: plan.document.footprint.width /
+                                        plan.document.footprint.depth,
+                                    child: CustomPaint(
+                                        painter: _planPainter(plan))),
+                                const SizedBox(height: 8),
+                                Text(plan.layout.startsWith('hub')
+                                    ? tr3(
+                                        '不设走廊，房间围着客厅',
+                                        'Дәлізсіз, бөлмелер қонақ бөлмені айнала',
+                                        'Без коридора, комнаты вокруг гостиной', 'No corridor; rooms around the living room', ky: 'Коридорсуз, бөлмөлөр конок бөлмөнү айланып', uz: 'Koridorsiz, xonalar mehmonxona atrofida')
+                                    : tr3(
+                                        '中间一条走廊，房间在两侧',
+                                        'Ортасында дәліз, бөлмелер екі жағында',
+                                        'Коридор посередине, комнаты по сторонам', 'A corridor down the middle, rooms on both sides', ky: 'Ортодо коридор, бөлмөлөр эки жагында', uz: 'Oʻrtada koridor, xonalar ikki tomonda')),
+                              ])))
+                  ]))));
+}
+
+/// The ground floor of [plan], as the editor draws it.
+FloorPlanPainter _planPainter(HousePlan plan) {
+  final doc = plan.document;
+  final floor = deriveHouse(doc).floors.first;
+  final rooms = doc.floors.first.rooms;
+  return FloorPlanPainter(floor.base, {for (final r in rooms) r.id: r.name},
+      {for (final r in rooms) r.id: roomColors[r.type]!},
+      openings: floor.openings,
+      stairs: floor.stairs,
+      northAngleDeg: doc.footprint.northAngleDeg);
 }

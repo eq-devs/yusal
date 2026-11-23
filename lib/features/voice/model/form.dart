@@ -49,9 +49,10 @@ const nothingToSubmit = 'nothing_to_submit';
 final formActions = [
   AppAction(
     id: 'form.fill',
-    title: const L3('填写表单', 'Пішінді толтыру', 'Заполнить форму'),
+    title: const L3('填写表单', 'Пішінді толтыру', 'Заполнить форму', 'Fill in the form', ky: 'Форманы толтуруу', uz: 'Formani toʻldirish'),
     examples: const L3('找两个瓦工，日薪一万五', 'Екі қалаушы керек, күніне он бес мың',
-        'Нужны два каменщика, пятнадцать тысяч в день'),
+        'Нужны два каменщика, пятнадцать тысяч в день',
+        'Need two masons, fifteen thousand a day', ky: 'Эки дубалчы керек, күнүнө он беш миң', uz: 'Ikki gʻishtchi kerak, kuniga oʻn besh ming'),
     params: const {'values': Param.fields()},
     when: (ctx) => VoiceScreens.current?.fields.isNotEmpty ?? false,
     risk: Risk.undoable,
@@ -75,8 +76,8 @@ final formActions = [
   ),
   AppAction(
     id: 'form.submit',
-    title: const L3('提交或发送', 'Жіберу', 'Отправить'),
-    examples: const L3('发送', 'Жібер', 'Отправь'),
+    title: const L3('提交或发送', 'Жіберу', 'Отправить', 'Send', ky: 'Жөнөтүү', uz: 'Yuborish'),
+    examples: const L3('发送', 'Жібер', 'Отправь', 'Send it', ky: 'Жөнөт', uz: 'Yubor'),
     when: (ctx) => VoiceScreens.current?.voiceSubmit != null,
     risk: Risk.outbound,
     run: (ctx, args) async {

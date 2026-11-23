@@ -100,6 +100,12 @@ List<ValidationError> validateHouse(HouseDocument d) {
       if (thickness != null && (thickness < 60 || thickness > 600)) {
         add(13, '/floors/$f/wallOverrides/$w/value', '墙厚必须在 60 到 600 毫米之间');
       }
+      if (x is SolidWall &&
+          x.height != null &&
+          (x.height! < lowWallMin || x.height! > lowWallMax)) {
+        add(13, '/floors/$f/wallOverrides/$w/height',
+            '矮墙高度必须在 0.30 到 2.10 米之间');
+      }
     }
     if (floor.height < 2400) add(15, '/floors/$f/height', '层高不得低于 2400 毫米');
     if (f == d.floors.length - 1) {

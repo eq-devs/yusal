@@ -1,15 +1,20 @@
+import 'dart:math' as math;
+
 import 'package:uuid/uuid.dart';
 
 import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
 import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
 import 'package:yusal/features/editor/engine/core/commands/extras_commands.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_layout.dart';
 import 'package:yusal/features/editor/engine/core/commands/house_spec.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/model/house_wish.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/houses.dart';
 import 'package:yusal/features/voice/state/screen.dart';
+import 'package:yusal/service/settings/settings.dart';
 
 export 'package:yusal/features/editor/engine/core/commands/house_spec.dart'
     show roomWall;
@@ -101,13 +106,7 @@ Future<ActionResult> designWholeHouse(Map<String, Object?> spec) async {
     for (final c in runChecks(doc, deriveHouse(doc)))
       if (c.level != 'info') '${c.ruleId} ${c.level}: ${c.message}'
   ];
-  final host = _host;
-  final library = HouseLibrary.instance;
-  if (host != null) {
-    host.replaceDesign(doc);
-  } else if (library != null) {
-    await library.addDesign(doc);
-  } else {
+  if (!await _show(doc)) {
     return const ActionResult.fail(ActionCodes.notAvailable);
   }
   return ActionResult.ok(say: {
@@ -115,6 +114,105 @@ Future<ActionResult> designWholeHouse(Map<String, Object?> spec) async {
     'rooms': doc.floors.fold<int>(0, (n, f) => n + f.rooms.length),
     if (built.notes.isNotEmpty) 'not_built': built.notes,
     if (issues.isNotEmpty) 'issues': issues,
+  });
+}
+
+/// Puts a whole house in the editor, or in a new design when no editor is
+/// open. False when there is neither.
+Future<bool> _show(HouseDocument doc) async {
+  final host = _host;
+  final library = HouseLibrary.instance;
+  if (host != null) {
+    host.replaceDesign(doc);
+  } else if (library != null) {
+    await library.addDesign(doc);
+  } else {
+    return false;
+  }
+  return true;
+}
+
+/// Failure code when no plan fits: the house is too small for the rooms
+/// asked for.
+const tooSmall = 'too_small';
+
+/// Lays a whole house out from what it must have ([housePlans]) and shows
+/// the plan asked for: the best one, or with `plan` one of the others.
+Future<ActionResult> planWholeHouse(Args args) async {
+  int whole(String name, int otherwise) =>
+      args.has(name) ? args.integer(name) : otherwise;
+  bool flag(String name, bool otherwise) =>
+      args.has(name) ? args.flag(name) : otherwise;
+  final floors = whole('floors', 1);
+  final int width;
+  final int depth;
+  if (args.has('width_mm') && args.has('depth_mm')) {
+    width = args.integer('width_mm');
+    depth = args.integer('depth_mm');
+  } else if (args.has('area_sqm') && floors > 0) {
+    // A little wider than deep, to the half metre.
+    final each = args.number('area_sqm') / floors;
+    width = (math.sqrt(each * 1.2) * 2).round() * 500;
+    depth = (each * 1e6 / width / 100).round() * 100;
+  } else {
+    return const ActionResult.fail(ActionCodes.badArgs,
+        say: {'hint': 'give width_mm and depth_mm, or area_sqm'});
+  }
+  final bedrooms = args.integer('bedrooms');
+  if (width < 4000 ||
+      width > 30000 ||
+      depth < 4000 ||
+      depth > 30000 ||
+      floors < 1 ||
+      floors > 2 ||
+      bedrooms < 1 ||
+      bedrooms > 8) {
+    return const ActionResult.fail(ActionCodes.badArgs, say: {
+      'hint': 'sides 4000-30000 mm, 1 or 2 floors, 1-8 bedrooms; '
+          'anything else needs design.create_house'
+    });
+  }
+  final plans = housePlans(
+      HouseBrief(
+          width: width,
+          depth: depth,
+          floors: floors,
+          bedrooms: bedrooms,
+          bathrooms: whole('bathrooms', 1).clamp(1, 2),
+          hall: flag('hall', true),
+          boiler: flag('boiler', true),
+          storage: flag('storage', false),
+          dining: flag('dining', false),
+          entrance: args.has('entrance') ? args.choice('entrance') : null),
+      name: args.has('name')
+          ? args.text('name')
+          : tr3('我的房屋', 'Менің үйім', 'Мой дом', 'My house', ky: 'Менин үйүм', uz: 'Mening uyim'),
+      timestamp: DateTime.now().toUtc().toIso8601String(),
+      newId: () => const Uuid().v4(),
+      names: wishRoomNames());
+  if (plans.isEmpty) {
+    return const ActionResult.fail(tooSmall, say: {
+      'hint': 'fewer rooms, another floor or a bigger house would fit'
+    });
+  }
+  final pick = whole('plan', 1);
+  if (pick < 1 || pick > plans.length) {
+    return ActionResult.fail(ActionCodes.badArgs,
+        say: {'param': 'plan', 'plans': plans.length});
+  }
+  final plan = plans[pick - 1];
+  if (!await _show(plan.document)) {
+    return const ActionResult.fail(ActionCodes.notAvailable);
+  }
+  return ActionResult.ok(say: {
+    'plan': pick,
+    'plans': plans.length,
+    'layout': plan.layout,
+    'entrance': plan.entrance,
+    'width_mm': width,
+    'depth_mm': depth,
+    'floors': plan.document.floors.length,
+    'rooms': plan.document.floors.fold<int>(0, (n, f) => n + f.rooms.length),
   });
 }
 
@@ -159,33 +257,84 @@ Set<String> _rooms() => {
         for (final r in f.rooms) r.id
     };
 
+/// Where a new room can be asked to go. The name starts with its north or
+/// south part and ends with its east or west part, when it has one.
+const _places = [
+  'southwest',
+  'south',
+  'southeast',
+  'west',
+  'center',
+  'east',
+  'northwest',
+  'north',
+  'northeast',
+];
+
 /// Design commands that map one to one onto a spoken request. Lengths
 /// are millimetres, as in the document.
 final designActions = [
   AppAction(
     id: 'design.create_house',
-    title: const L3('设计整栋房子', 'Бүкіл үйді жобалау', 'Спроектировать весь дом'),
+    title: const L3('设计整栋房子', 'Бүкіл үйді жобалау', 'Спроектировать весь дом', 'Design the whole house', ky: 'Бүт үйдү долбоорлоо', uz: 'Butun uyni loyihalash'),
     examples: const L3(
         '设计一个三室一厅、十二乘十米的平房',
         'Үш жатын бөлмелі, он екіге он метр бір қабатты үй жобала',
-        'Спроектируй одноэтажный дом двенадцать на десять с тремя спальнями'),
+        'Спроектируй одноэтажный дом двенадцать на десять с тремя спальнями',
+        'Design a one-storey house twelve by ten with three bedrooms', ky: 'Он экиге он, үч уктоочу бөлмөлүү бир кабаттуу үй долбоорлоп бер', uz: 'Oʻn ikkiga oʻn, uch yotoqxonali bir qavatli uy loyihalab ber'),
     params: {'spec': Param.object(houseSpecSchema())},
     when: (ctx) => _host != null || HouseLibrary.instance != null,
     risk: Risk.undoable,
     run: (ctx, args) => designWholeHouse(args.object('spec')),
   ),
   AppAction(
+    id: 'design.plan_house',
+    title: const L3('按需求排出整栋房子', 'Талап бойынша үйді жоспарлау',
+        'Спланировать дом по пожеланиям', 'Lay out a house from the wishes', ky: 'Каалоолор боюнча үйдү пландоо', uz: 'Istaklar boʻyicha uyni rejalash'),
+    examples: const L3(
+        '设计一个三室、十二乘十米的平房，大门朝北',
+        'Үш жатын бөлмелі, он екіге он метр үй, есігі солтүстікке',
+        'Дом двенадцать на десять с тремя спальнями, вход с севера', 'Design a three-bedroom bungalow, twelve by ten metres, front door facing north', ky: 'Үч уктоочу бөлмөлүү, он экиге он метр үй, эшиги түндүккө', uz: 'Uch yotoqxonali, oʻn ikkiga oʻn metr uy, eshigi shimolga'),
+    params: {
+      // The size: both sides, or the total floor area.
+      'width_mm': const Param.integer(optional: true),
+      'depth_mm': const Param.integer(optional: true),
+      'area_sqm': const Param.number(optional: true),
+      'floors': const Param.integer(optional: true),
+      'bedrooms': const Param.integer(),
+      'bathrooms': const Param.integer(optional: true),
+      // The side the main entrance faces.
+      'entrance':
+          Param.choice([for (final f in Facing.values) f.name], optional: true),
+      // Rooms to have or leave out; a hall and a boiler room unless told.
+      'hall': const Param.flag(optional: true),
+      'boiler': const Param.flag(optional: true),
+      'storage': const Param.flag(optional: true),
+      'dining': const Param.flag(optional: true),
+      // Which of the plans found, 1 the best: 2 or 3 for another one.
+      'plan': const Param.integer(optional: true),
+      'name': const Param.text(optional: true),
+    },
+    when: (ctx) => _host != null || HouseLibrary.instance != null,
+    risk: Risk.undoable,
+    run: (ctx, args) => planWholeHouse(args),
+  ),
+  AppAction(
     id: 'design.add_room',
-    title: const L3('画一个房间', 'Бөлме қосу', 'Добавить комнату'),
+    title: const L3('画一个房间', 'Бөлме қосу', 'Добавить комнату', 'Add a room', ky: 'Бөлмө кошуу', uz: 'Xona qoʻshish'),
     examples: const L3(
         '在西南角画一个三乘四米的卧室',
         'Оңтүстік-батыс бұрышқа үшке төрт метр жатын бөлме қос',
-        'Добавь спальню три на четыре метра в юго-западном углу'),
+        'Добавь спальню три на четыре метра в юго-западном углу',
+        'Add a three by four metre bedroom in the south-west corner', ky: 'Түштүк-батыш бурчка үчкө төрт метр уктоочу бөлмө кош', uz: 'Janubi-gʻarbiy burchakka uchga toʻrt metrlik yotoqxona qoʻsh'),
     params: {
       'type': Param.choice([for (final t in RoomType.values) t.name]),
       'name': const Param.text(optional: true),
-      'x_mm': const Param.integer(),
-      'y_mm': const Param.integer(),
+      // Where in the house: a corner, the middle of a side or the centre.
+      'where': const Param.choice(_places, optional: true),
+      // Or the south-west corner of the room exactly.
+      'x_mm': const Param.integer(optional: true),
+      'y_mm': const Param.integer(optional: true),
       'w_mm': const Param.integer(),
       'd_mm': const Param.integer(),
     },
@@ -194,8 +343,32 @@ final designActions = [
     run: (ctx, args) async {
       final host = _host!;
       final before = _rooms();
-      final x = args.integer('x_mm');
-      final y = args.integer('y_mm');
+      final int x;
+      final int y;
+      if (args.has('where')) {
+        final place = args.choice('where');
+        final footprint = host.document.footprint;
+        final free = (
+          footprint.width - args.integer('w_mm'),
+          footprint.depth - args.integer('d_mm')
+        );
+        x = place.endsWith('west')
+            ? 0
+            : place.endsWith('east')
+                ? free.$1
+                : (free.$1 / 2).round();
+        y = place.startsWith('south')
+            ? 0
+            : place.startsWith('north')
+                ? free.$2
+                : (free.$2 / 2).round();
+      } else if (args.has('x_mm') && args.has('y_mm')) {
+        x = args.integer('x_mm');
+        y = args.integer('y_mm');
+      } else {
+        return const ActionResult.fail(ActionCodes.badArgs,
+            say: {'hint': 'give where, or x_mm and y_mm'});
+      }
       final result = await _design('CarveRoom', {
         'floorId': host.currentFloorId,
         'left': x,
@@ -216,9 +389,9 @@ final designActions = [
   AppAction(
     id: 'design.split_room',
     title:
-        const L3('把房间分成两间', 'Бөлмені екіге бөлу', 'Разделить комнату на две'),
+        const L3('把房间分成两间', 'Бөлмені екіге бөлу', 'Разделить комнату на две', 'Split a room in two', ky: 'Бөлмөнү экиге бөлүү', uz: 'Xonani ikkiga boʻlish'),
     examples: const L3(
-        '把这间从中间隔开', 'Бұл бөлмені ортасынан бөл', 'Раздели эту комнату пополам'),
+        '把这间从中间隔开', 'Бұл бөлмені ортасынан бөл', 'Раздели эту комнату пополам', 'Split this room in half', ky: 'Бул бөлмөнү тең экиге бөл', uz: 'Bu xonani teng ikkiga boʻl'),
     params: {
       'room': const Param.entity('room'),
       // Which way the new wall runs.
@@ -263,8 +436,8 @@ final designActions = [
   ),
   AppAction(
     id: 'design.add_floor',
-    title: const L3('加一层楼', 'Қабат қосу', 'Добавить этаж'),
-    examples: const L3('加一层楼', 'Бір қабат қос', 'Добавь этаж'),
+    title: const L3('加一层楼', 'Қабат қосу', 'Добавить этаж', 'Add a floor', ky: 'Кабат кошуу', uz: 'Qavat qoʻshish'),
+    examples: const L3('加一层楼', 'Бір қабат қос', 'Добавь этаж', 'Add a floor', ky: 'Кабат кош', uz: 'Qavat qoʻsh'),
     params: const {'floor': Param.entity('floor', optional: true)},
     when: _inEditor,
     risk: Risk.undoable,
@@ -273,9 +446,10 @@ final designActions = [
   AppAction(
     id: 'design.copy_floor',
     title:
-        const L3('照这一层再盖一层', 'Қабатты көшіріп қосу', 'Добавить этаж как этот'),
+        const L3('照这一层再盖一层', 'Қабатты көшіріп қосу', 'Добавить этаж как этот', 'Add a floor like this one', ky: 'Ушундай кабат кошуу', uz: 'Shunday qavat qoʻshish'),
     examples: const L3('二楼和一楼一样', 'Екінші қабат біріншідей болсын',
-        'Сделай второй этаж таким же, как первый'),
+        'Сделай второй этаж таким же, как первый',
+        'Make the second floor the same as the first', ky: 'Экинчи кабатты биринчиси сыяктуу кыл', uz: 'Ikkinchi qavatni birinchisidek qil'),
     params: const {'floor': Param.entity('floor', optional: true)},
     when: _inEditor,
     risk: Risk.undoable,
@@ -283,9 +457,10 @@ final designActions = [
   ),
   AppAction(
     id: 'design.add_stair',
-    title: const L3('放一部楼梯', 'Баспалдақ қою', 'Поставить лестницу'),
+    title: const L3('放一部楼梯', 'Баспалдақ қою', 'Поставить лестницу', 'Place stairs', ky: 'Тепкич коюу', uz: 'Zinapoya qoʻyish'),
     examples: const L3('在西北角放一部楼梯', 'Солтүстік-батыс бұрышқа баспалдақ қой',
-        'Поставь лестницу в северо-западном углу'),
+        'Поставь лестницу в северо-западном углу',
+        'Put stairs in the north-west corner', ky: 'Тепкичти түндүк-батыш бурчка кой', uz: 'Zinapoyani shimoli-gʻarbiy burchakka qoʻy'),
     // The rectangle the stair takes up, south-west corner and size. Left
     // out, a two-flight stair goes in the first corner where it fits.
     params: {
@@ -343,9 +518,10 @@ final designActions = [
   ),
   AppAction(
     id: 'design.move_stair',
-    title: const L3('挪楼梯或改大小', 'Баспалдақты жылжыту', 'Передвинуть лестницу'),
+    title: const L3('挪楼梯或改大小', 'Баспалдақты жылжыту', 'Передвинуть лестницу', 'Move the stairs', ky: 'Тепкичти жылдыруу', uz: 'Zinapoyani surish'),
     examples: const L3('把楼梯挪到东北角', 'Баспалдақты солтүстік-шығыс бұрышқа жылжыт',
-        'Передвинь лестницу в северо-восточный угол'),
+        'Передвинь лестницу в северо-восточный угол',
+        'Move the stairs to the north-east corner', ky: 'Тепкичти түндүк-чыгыш бурчка жылдыр', uz: 'Zinapoyani shimoli-sharqiy burchakka sur'),
     params: const {
       'stair': Param.entity('stair', optional: true),
       'x_mm': Param.integer(),
@@ -377,9 +553,9 @@ final designActions = [
   ),
   AppAction(
     id: 'design.set_stair',
-    title: const L3('换楼梯样式', 'Баспалдақ түрін өзгерту', 'Сменить вид лестницы'),
+    title: const L3('换楼梯样式', 'Баспалдақ түрін өзгерту', 'Сменить вид лестницы', 'Change the stair type', ky: 'Тепкичтин түрүн өзгөртүү', uz: 'Zinapoya turini oʻzgartirish'),
     examples: const L3(
-        '楼梯换成 L 型', 'Баспалдақты L тәрізді қыл', 'Сделай лестницу Г-образной'),
+        '楼梯换成 L 型', 'Баспалдақты L тәрізді қыл', 'Сделай лестницу Г-образной', 'Make the stairs L-shaped', ky: 'Тепкичти L түрүндө кыл', uz: 'Zinapoyani L shaklida qil'),
     params: {
       'stair': const Param.entity('stair', optional: true),
       'type': Param.choice([for (final t in StairType.values) t.name],
@@ -407,8 +583,8 @@ final designActions = [
   ),
   AppAction(
     id: 'design.delete_stair',
-    title: const L3('拆掉楼梯', 'Баспалдақты алып тастау', 'Убрать лестницу'),
-    examples: const L3('把楼梯删掉', 'Баспалдақты алып таста', 'Убери лестницу'),
+    title: const L3('拆掉楼梯', 'Баспалдақты алып тастау', 'Убрать лестницу', 'Remove the stairs', ky: 'Тепкичти алып салуу', uz: 'Zinapoyani olib tashlash'),
+    examples: const L3('把楼梯删掉', 'Баспалдақты алып таста', 'Убери лестницу', 'Remove the stairs', ky: 'Тепкичти алып сал', uz: 'Zinapoyani olib tashla'),
     params: const {'stair': Param.entity('stair', optional: true)},
     when: _inEditor,
     risk: Risk.undoable,
@@ -420,9 +596,10 @@ final designActions = [
   ),
   AppAction(
     id: 'design.set_floor_height',
-    title: const L3('改层高', 'Қабат биіктігін өзгерту', 'Изменить высоту этажа'),
+    title: const L3('改层高', 'Қабат биіктігін өзгерту', 'Изменить высоту этажа', 'Change the floor height', ky: 'Кабаттын бийиктигин өзгөртүү', uz: 'Qavat balandligini oʻzgartirish'),
     examples: const L3('层高改成三米', 'Қабат биіктігін үш метр қыл',
-        'Сделай высоту этажа три метра'),
+        'Сделай высоту этажа три метра',
+        'Make the floor height three metres', ky: 'Кабаттын бийиктигин үч метр кыл', uz: 'Qavat balandligini uch metr qil'),
     params: const {
       'floor': Param.entity('floor', optional: true),
       'height_mm': Param.integer(),
@@ -438,9 +615,10 @@ final designActions = [
   ),
   AppAction(
     id: 'design.set_size',
-    title: const L3('改房屋尺寸', 'Үй өлшемін өзгерту', 'Изменить размер дома'),
+    title: const L3('改房屋尺寸', 'Үй өлшемін өзгерту', 'Изменить размер дома', 'Change the house size', ky: 'Үйдүн өлчөмүн өзгөртүү', uz: 'Uy oʻlchamini oʻzgartirish'),
     examples: const L3('房子改成十米乘十二米', 'Үйді он да он екі метр қыл',
-        'Сделай дом десять на двенадцать метров'),
+        'Сделай дом десять на двенадцать метров',
+        'Make the house ten by twelve metres', ky: 'Үйдү онго он эки метр кыл', uz: 'Uyni oʻnga oʻn ikki metr qil'),
     params: const {
       'width_mm': Param.integer(optional: true),
       'depth_mm': Param.integer(optional: true),
@@ -454,9 +632,10 @@ final designActions = [
   ),
   AppAction(
     id: 'design.mirror',
-    title: const L3('把房子翻过来', 'Үйді айнадай аудару', 'Отразить дом зеркально'),
+    title: const L3('把房子翻过来', 'Үйді айнадай аудару', 'Отразить дом зеркально', 'Mirror the house', ky: 'Үйдү күзгүдөй чагылдыруу', uz: 'Uyni oynadek aks ettirish'),
     examples: const L3('把整个房子左右翻过来', 'Бүкіл үйді оңнан солға аудар',
-        'Отрази весь дом слева направо'),
+        'Отрази весь дом слева направо',
+        'Mirror the whole house left to right', ky: 'Бүт үйдү солдон оңго күзгүдөй чагылдыр', uz: 'Butun uyni chapdan oʻngga oynadek aks ettir'),
     params: const {
       // left_right swaps west and east on the plan; top_bottom swaps
       // the front and the back.
@@ -471,9 +650,9 @@ final designActions = [
   ),
   AppAction(
     id: 'design.rename_room',
-    title: const L3('给房间改名', 'Бөлме атауын өзгерту', 'Переименовать комнату'),
+    title: const L3('给房间改名', 'Бөлме атауын өзгерту', 'Переименовать комнату', 'Rename a room', ky: 'Бөлмөнүн атын өзгөртүү', uz: 'Xona nomini oʻzgartirish'),
     examples: const L3(
-        '这间叫书房', 'Бұл бөлмені кабинет деп ата', 'Назови эту комнату кабинетом'),
+        '这间叫书房', 'Бұл бөлмені кабинет деп ата', 'Назови эту комнату кабинетом', 'Call this room the study', ky: 'Бул бөлмөнү иш бөлмөсү деп ата', uz: 'Bu xonani ish xonasi deb nomla'),
     params: const {'room': Param.entity('room'), 'name': Param.text()},
     when: _inEditor,
     risk: Risk.undoable,
@@ -483,9 +662,9 @@ final designActions = [
   ),
   AppAction(
     id: 'design.set_room_type',
-    title: const L3('改房间用途', 'Бөлме түрін өзгерту', 'Изменить тип комнаты'),
+    title: const L3('改房间用途', 'Бөлме түрін өзгерту', 'Изменить тип комнаты', 'Change the room type', ky: 'Бөлмөнүн түрүн өзгөртүү', uz: 'Xona turini oʻzgartirish'),
     examples: const L3(
-        '这间改成卧室', 'Бұл бөлмені жатын бөлме қыл', 'Сделай эту комнату спальней'),
+        '这间改成卧室', 'Бұл бөлмені жатын бөлме қыл', 'Сделай эту комнату спальней', 'Make this room a bedroom', ky: 'Бул бөлмөнү уктоочу бөлмө кыл', uz: 'Bu xonani yotoqxona qil'),
     params: {
       'room': const Param.entity('room'),
       'type': Param.choice([for (final t in RoomType.values) t.name]),
@@ -502,9 +681,10 @@ final designActions = [
   AppAction(
     id: 'design.merge_rooms',
     title:
-        const L3('合并两个房间', 'Екі бөлмені біріктіру', 'Объединить две комнаты'),
+        const L3('合并两个房间', 'Екі бөлмені біріктіру', 'Объединить две комнаты', 'Merge two rooms', ky: 'Эки бөлмөнү бириктирүү', uz: 'Ikki xonani birlashtirish'),
     examples: const L3('把客厅和餐厅合并', 'Қонақ бөлме мен асхананы біріктір',
-        'Объедини гостиную и столовую'),
+        'Объедини гостиную и столовую',
+        'Merge the living room and dining room', ky: 'Мейманкана менен ашкана-конок бөлмөнү бириктир', uz: 'Mehmonxona va ovqatlanish xonasini birlashtir'),
     params: const {'a': Param.entity('room'), 'b': Param.entity('room')},
     when: _inEditor,
     risk: Risk.undoable,
@@ -514,11 +694,12 @@ final designActions = [
   ),
   AppAction(
     id: 'design.add_opening',
-    title: const L3('加门或窗', 'Есік не терезе қосу', 'Добавить дверь или окно'),
+    title: const L3('加门或窗', 'Есік не терезе қосу', 'Добавить дверь или окно', 'Add a door or window', ky: 'Эшик же терезе кошуу', uz: 'Eshik yoki deraza qoʻshish'),
     examples: const L3(
         '客厅北墙加一扇窗',
         'Қонақ бөлменің солтүстік қабырғасына терезе қой',
-        'Добавь окно на северную стену гостиной'),
+        'Добавь окно на северную стену гостиной',
+        "Add a window on the living room's north wall", ky: 'Мейманкананын түндүк дубалына терезе кош', uz: 'Mehmonxonaning shimoliy devoriga deraza qoʻsh'),
     params: {
       'room': const Param.entity('room'),
       'side': Param.choice([for (final f in Facing.values) f.name]),
@@ -553,8 +734,8 @@ final designActions = [
   ),
   AppAction(
     id: 'design.delete_opening',
-    title: const L3('删除门窗', 'Есік-терезені жою', 'Удалить дверь или окно'),
-    examples: const L3('删掉这扇窗', 'Осы терезені алып таста', 'Удали это окно'),
+    title: const L3('删除门窗', 'Есік-терезені жою', 'Удалить дверь или окно', 'Delete a door or window', ky: 'Эшикти же терезени өчүрүү', uz: 'Eshik yoki derazani oʻchirish'),
+    examples: const L3('删掉这扇窗', 'Осы терезені алып таста', 'Удали это окно', 'Delete this window', ky: 'Бул терезени өчүр', uz: 'Bu derazani oʻchir'),
     params: const {'opening': Param.entity('opening')},
     when: _inEditor,
     risk: Risk.undoable,
@@ -564,9 +745,10 @@ final designActions = [
   AppAction(
     id: 'design.resize_opening',
     title: const L3(
-        '改门窗宽度', 'Есік-терезе енін өзгерту', 'Изменить ширину двери или окна'),
+        '改门窗宽度', 'Есік-терезе енін өзгерту', 'Изменить ширину двери или окна', 'Change a door or window width', ky: 'Эшиктин же терезенин туурасын өзгөртүү', uz: 'Eshik yoki deraza enini oʻzgartirish'),
     examples: const L3('这扇窗改成一米五宽', 'Осы терезенің енін бір жарым метр қыл',
-        'Сделай это окно шириной полтора метра'),
+        'Сделай это окно шириной полтора метра',
+        'Make this window one and a half metres wide', ky: 'Бул терезени бир жарым метр кенен кыл', uz: 'Bu derazani bir yarim metr keng qil'),
     params: const {
       'opening': Param.entity('opening'),
       'width_mm': Param.integer(),
@@ -580,9 +762,11 @@ final designActions = [
   AppAction(
     id: 'design.flip_door',
     title: const L3('门换个方向开', 'Есіктің ашылу жағын өзгерту',
-        'Открывать дверь в другую сторону'),
+        'Открывать дверь в другую сторону',
+        'Swing a door the other way', ky: 'Эшикти тескери ачылуучу кылуу', uz: 'Eshikni teskari ochiladigan qilish'),
     examples: const L3('这扇门朝另一边开', 'Осы есік екінші жаққа ашылсын',
-        'Пусть эта дверь открывается в другую сторону'),
+        'Пусть эта дверь открывается в другую сторону',
+        'Make this door open the other way', ky: 'Бул эшик тескери ачылсын', uz: 'Bu eshik teskari ochilsin'),
     params: const {'opening': Param.entity('opening')},
     when: _inEditor,
     risk: Risk.undoable,
@@ -606,9 +790,10 @@ final designActions = [
   ),
   AppAction(
     id: 'design.set_main_entrance',
-    title: const L3('设为主入口', 'Басты кіреберіс ету', 'Сделать главным входом'),
+    title: const L3('设为主入口', 'Басты кіреберіс ету', 'Сделать главным входом', 'Make it the main entrance', ky: 'Негизги кире бериш кылуу', uz: 'Asosiy kirish qilish'),
     examples: const L3('这扇门是大门', 'Осы есік басты кіреберіс болсын',
-        'Эта дверь — главный вход'),
+        'Эта дверь — главный вход',
+        'This door is the main entrance', ky: 'Бул эшик негизги кире бериш', uz: 'Bu eshik asosiy kirish'),
     params: const {'opening': Param.entity('opening')},
     when: _inEditor,
     risk: Risk.undoable,
@@ -618,9 +803,9 @@ final designActions = [
   ),
   AppAction(
     id: 'design.set_roof',
-    title: const L3('换屋顶样式', 'Шатыр түрін өзгерту', 'Изменить тип крыши'),
+    title: const L3('换屋顶样式', 'Шатыр түрін өзгерту', 'Изменить тип крыши', 'Change the roof type', ky: 'Чатырдын түрүн өзгөртүү', uz: 'Tom turini oʻzgartirish'),
     examples: const L3(
-        '屋顶改成四坡的', 'Шатырды төрт еңісті қыл', 'Сделай крышу четырёхскатной'),
+        '屋顶改成四坡的', 'Шатырды төрт еңісті қыл', 'Сделай крышу четырёхскатной', 'Make the roof a hip roof', ky: 'Чатырды төрт капталдуу кыл', uz: 'Tomni toʻrt nishabli qil'),
     params: {
       // flat, gable (two slopes) or hip (four slopes).
       'type': Param.choice([for (final t in RoofType.values) t.name]),
@@ -651,9 +836,10 @@ final designActions = [
   ),
   AppAction(
     id: 'design.add_furniture',
-    title: const L3('放家具', 'Жиһаз қою', 'Поставить мебель'),
+    title: const L3('放家具', 'Жиһаз қою', 'Поставить мебель', 'Place furniture', ky: 'Эмерек коюу', uz: 'Mebel qoʻyish'),
     examples: const L3('卧室放一张双人床', 'Жатын бөлмеге екі кісілік төсек қой',
-        'Поставь в спальню двуспальную кровать'),
+        'Поставь в спальню двуспальную кровать',
+        'Put a double bed in the bedroom', ky: 'Уктоочу бөлмөгө эки кишилик керебет кой', uz: 'Yotoqxonaga ikki kishilik karavot qoʻy'),
     params: {
       'room': const Param.entity('room'),
       'kind': Param.choice([for (final k in FurnitureKind.values) k.name]),
@@ -689,8 +875,8 @@ final designActions = [
   ),
   AppAction(
     id: 'design.delete_furniture',
-    title: const L3('删除家具', 'Жиһазды жою', 'Удалить мебель'),
-    examples: const L3('删掉这个柜子', 'Осы шкафты алып таста', 'Убери этот шкаф'),
+    title: const L3('删除家具', 'Жиһазды жою', 'Удалить мебель', 'Remove furniture', ky: 'Эмеректи алып салуу', uz: 'Mebelni olib tashlash'),
+    examples: const L3('删掉这个柜子', 'Осы шкафты алып таста', 'Убери этот шкаф', 'Remove this wardrobe', ky: 'Бул шкафты алып сал', uz: 'Bu shkafni olib tashla'),
     params: const {'furniture': Param.entity('furniture')},
     when: _inEditor,
     risk: Risk.undoable,
@@ -700,22 +886,29 @@ final designActions = [
   AppAction(
     id: 'design.resize_room',
     title:
-        const L3('改房间大小', 'Бөлме өлшемін өзгерту', 'Изменить размер комнаты'),
+        const L3('改房间大小', 'Бөлме өлшемін өзгерту', 'Изменить размер комнаты', 'Resize a room', ky: 'Бөлмөнүн өлчөмүн өзгөртүү', uz: 'Xona oʻlchamini oʻzgartirish'),
     examples: const L3(
         '把主卧往东加宽到四米',
         'Жатын бөлмені шығысқа қарай төрт метрге кеңейт',
-        'Расширь спальню на восток до четырёх метров'),
+        'Расширь спальню на восток до четырёх метров',
+        'Extend the bedroom east to four metres', ky: 'Уктоочу бөлмөнү чыгышка карай төрт метрге чейин узарт', uz: 'Yotoqxonani sharqqa qarab toʻrt metrgacha uzaytir'),
     params: {
       'room': const Param.entity('room'),
       // The wall that moves; the opposite one stays. The whole wall line
       // moves, so the rooms on its other side change by as much.
       'side': Param.choice([for (final f in Facing.values) f.name]),
       // The room's new size across that wall.
-      'size_mm': const Param.integer(),
+      'size_mm': const Param.integer(optional: true),
+      // Or how much bigger it gets across that wall; negative for smaller.
+      'by_mm': const Param.integer(optional: true),
     },
     when: _inEditor,
     risk: Risk.undoable,
     run: (ctx, args) async {
+      if (args.has('size_mm') == args.has('by_mm')) {
+        return const ActionResult.fail(ActionCodes.badArgs,
+            say: {'hint': 'give size_mm or by_mm'});
+      }
       final host = _host!;
       final base = host.floorBase;
       final id = args.id('room');
@@ -730,7 +923,9 @@ final designActions = [
       final r = _bounds(base, id);
       final (low, high) =
           axis.dir == AxisDir.V ? (r.left, r.right) : (r.bottom, r.top);
-      final size = args.integer('size_mm');
+      final size = args.has('size_mm')
+          ? args.integer('size_mm')
+          : high - low + args.integer('by_mm');
       // Rooms the wall line bounds on either side change with it.
       final touched = {
         for (final e in base.edges)
@@ -750,9 +945,10 @@ final designActions = [
   AppAction(
     id: 'design.swap_rooms',
     title: const L3(
-        '交换两个房间', 'Екі бөлмені ауыстыру', 'Поменять две комнаты местами'),
+        '交换两个房间', 'Екі бөлмені ауыстыру', 'Поменять две комнаты местами', 'Swap two rooms', ky: 'Эки бөлмөнүн ордун алмаштыруу', uz: 'Ikki xona joyini almashtirish'),
     examples: const L3('把厨房和书房对调', 'Асхана мен кабинетті ауыстыр',
-        'Поменяй местами кухню и кабинет'),
+        'Поменяй местами кухню и кабинет',
+        'Swap the kitchen and the study', ky: 'Ашкана менен иш бөлмөсүнүн ордун алмаштыр', uz: 'Oshxona va ish xonasining joyini almashtir'),
     // The two rooms trade their use and name; walls, doors and windows
     // stay where they are.
     params: const {'a': Param.entity('room'), 'b': Param.entity('room')},
@@ -781,14 +977,20 @@ final designActions = [
   AppAction(
     id: 'design.move_opening',
     title:
-        const L3('移动门窗', 'Есік-терезені жылжыту', 'Передвинуть дверь или окно'),
+        const L3('移动门窗', 'Есік-терезені жылжыту', 'Передвинуть дверь или окно', 'Move a door or window', ky: 'Эшикти же терезени жылдыруу', uz: 'Eshik yoki derazani surish'),
     examples: const L3('这扇窗往东移半米', 'Осы терезені шығысқа жарты метр жылжыт',
-        'Передвинь это окно на полметра к востоку'),
+        'Передвинь это окно на полметра к востоку',
+        'Move this window half a metre east', ky: 'Бул терезени жарым метр чыгышка жылдыр', uz: 'Bu derazani yarim metr sharqqa sur'),
     params: {
       'opening': const Param.entity('opening'),
       // Along its wall: to the east or north when positive, to the west
       // or south when negative.
       'shift_mm': const Param.integer(optional: true),
+      // Or the same as a direction and a distance; the direction has to
+      // run along the wall.
+      'toward':
+          Param.choice([for (final f in Facing.values) f.name], optional: true),
+      'by_mm': const Param.integer(optional: true),
       // Or to the middle of another wall: the side of a room.
       'room': const Param.entity('room', optional: true),
       'side':
@@ -824,9 +1026,25 @@ final designActions = [
       } else if (args.has('shift_mm') && placed.host != null) {
         wall = placed.host!;
         start = placed.start + args.integer('shift_mm');
+      } else if (args.has('toward') &&
+          args.has('by_mm') &&
+          placed.host != null) {
+        wall = placed.host!;
+        // Along a wall, positions grow to the north or to the east.
+        final (forward, back) = wall.axis.dir == AxisDir.V
+            ? (Facing.north, Facing.south)
+            : (Facing.east, Facing.west);
+        final toward = Facing.values.byName(args.choice('toward'));
+        if (toward != forward && toward != back) {
+          return ActionResult.fail(ActionCodes.badArgs,
+              say: {'hint': 'this wall runs ${back.name} to ${forward.name}'});
+        }
+        final by = args.integer('by_mm');
+        start = placed.start + (toward == forward ? by : -by);
       } else {
-        return const ActionResult.fail(ActionCodes.badArgs,
-            say: {'hint': 'give shift_mm, or room and side'});
+        return const ActionResult.fail(ActionCodes.badArgs, say: {
+          'hint': 'give toward and by_mm, or shift_mm, or room and side'
+        });
       }
       if (start < wall.start.pos || start + width > wall.end.pos) {
         return ActionResult.fail(ActionCodes.badArgs, say: {
@@ -849,14 +1067,19 @@ final designActions = [
   ),
   AppAction(
     id: 'design.move_furniture',
-    title: const L3('移动家具', 'Жиһазды жылжыту', 'Передвинуть мебель'),
+    title: const L3('移动家具', 'Жиһазды жылжыту', 'Передвинуть мебель', 'Move furniture', ky: 'Эмеректи жылдыруу', uz: 'Mebelni surish'),
     examples: const L3('把床往北挪一米', 'Төсекті солтүстікке бір метр жылжыт',
-        'Передвинь кровать на метр к северу'),
+        'Передвинь кровать на метр к северу',
+        'Move the bed a metre north', ky: 'Керебетти бир метр түндүккө жылдыр', uz: 'Karavotni bir metr shimolga sur'),
     params: const {
       'furniture': Param.entity('furniture'),
       // On the plan; negative is west or south.
       'east_mm': Param.integer(optional: true),
       'north_mm': Param.integer(optional: true),
+      // Or a direction and a distance.
+      'toward':
+          Param.choice(['north', 'east', 'south', 'west'], optional: true),
+      'by_mm': Param.integer(optional: true),
       // A quarter turn where it stands.
       'turn': Param.flag(optional: true),
     },
@@ -875,14 +1098,27 @@ final designActions = [
         final turned = await _design('RotateFurniture', {'furnitureId': id});
         if (!turned.ok) return turned;
       }
-      if (!args.has('east_mm') && !args.has('north_mm')) {
-        return ActionResult.ok(changed: [id]);
+      var east = args.has('east_mm') ? args.integer('east_mm') : 0;
+      var north = args.has('north_mm') ? args.integer('north_mm') : 0;
+      if (args.has('toward') && args.has('by_mm')) {
+        final by = args.integer('by_mm');
+        switch (args.choice('toward')) {
+          case 'north':
+            north += by;
+          case 'south':
+            north -= by;
+          case 'east':
+            east += by;
+          case 'west':
+            east -= by;
+        }
       }
+      if (east == 0 && north == 0) return ActionResult.ok(changed: [id]);
       final now = host.document.extras.furniture.firstWhere((f) => f.id == id);
       return _design('UpdateFurniture', {
         'furnitureId': id,
-        'x': now.x + (args.has('east_mm') ? args.integer('east_mm') : 0),
-        'y': now.y + (args.has('north_mm') ? args.integer('north_mm') : 0),
+        'x': now.x + east,
+        'y': now.y + north,
       }, changed: [
         id
       ]);
@@ -890,9 +1126,9 @@ final designActions = [
   ),
   AppAction(
     id: 'editor.select',
-    title: const L3('选中并显示', 'Таңдап көрсету', 'Выбрать и показать'),
+    title: const L3('选中并显示', 'Таңдап көрсету', 'Выбрать и показать', 'Select and show', ky: 'Тандап көрсөтүү', uz: 'Tanlab koʻrsatish'),
     examples: const L3(
-        '哪个是主卧，指给我看', 'Жатын бөлме қайсы, көрсет', 'Покажи, где спальня'),
+        '哪个是主卧，指给我看', 'Жатын бөлме қайсы, көрсет', 'Покажи, где спальня', 'Show me where the bedroom is', ky: 'Уктоочу бөлмө кайда экенин көрсөт', uz: 'Yotoqxona qayerdaligini koʻrsat'),
     // One of the three: what to select on the plan.
     params: const {
       'room': Param.entity('room', optional: true),
@@ -914,8 +1150,8 @@ final designActions = [
   ),
   AppAction(
     id: 'editor.show_floor',
-    title: const L3('切换楼层', 'Қабатты ауыстыру', 'Перейти на этаж'),
-    examples: const L3('看二楼', 'Екінші қабатты көрсет', 'Покажи второй этаж'),
+    title: const L3('切换楼层', 'Қабатты ауыстыру', 'Перейти на этаж', 'Go to a floor', ky: 'Кабатка өтүү', uz: 'Qavatga oʻtish'),
+    examples: const L3('看二楼', 'Екінші қабатты көрсет', 'Покажи второй этаж', 'Show the second floor', ky: 'Экинчи кабатты көрсөт', uz: 'Ikkinchi qavatni koʻrsat'),
     params: const {'floor': Param.entity('floor')},
     when: _inEditor,
     risk: Risk.read,
@@ -926,8 +1162,8 @@ final designActions = [
   ),
   AppAction(
     id: 'editor.undo',
-    title: const L3('撤销', 'Болдырмау', 'Отменить'),
-    examples: const L3('撤销', 'Соңғы әрекетті болдырма', 'Отмени'),
+    title: const L3('撤销', 'Болдырмау', 'Отменить', 'Undo', ky: 'Артка кайтаруу', uz: 'Bekor qilish'),
+    examples: const L3('撤销', 'Соңғы әрекетті болдырма', 'Отмени', 'Undo that', ky: 'Муну артка кайтар', uz: 'Buni bekor qil'),
     when: _inEditor,
     risk: Risk.undoable,
     run: (ctx, args) async {

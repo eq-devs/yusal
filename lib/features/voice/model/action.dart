@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart' show BuildContext;
 
 import 'package:yusal/service/settings/settings.dart';
@@ -5,17 +7,24 @@ import 'package:yusal/features/coop/repository/cooperation_repository.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
 import 'package:yusal/features/shared/state/session.dart';
 
-/// One piece of wording in the app's three languages.
+/// One piece of wording in the app's languages. English, Kyrgyz and Uzbek
+/// fall back to Russian where they are missing.
 class L3 {
-  const L3(this.zh, this.kk, this.ru);
+  const L3(this.zh, this.kk, this.ru, this.en, {this.ky, this.uz});
   final String zh;
   final String kk;
   final String ru;
+  final String? en;
+  final String? ky;
+  final String? uz;
 
   String of(AppLang lang) => switch (lang) {
         AppLang.zh => zh,
         AppLang.kk => kk,
         AppLang.ru => ru,
+        AppLang.en => en ?? ru,
+        AppLang.ky => ky ?? ru,
+        AppLang.uz => uz ?? ru,
       };
 
   bool get complete =>
@@ -104,11 +113,17 @@ class Param {
 /// Something the current screen shows that an action can act on. [alias]
 /// is the short name given to the language model ("r1", "w3").
 class Entity {
-  const Entity(this.kind, this.id, {required this.alias, this.title = ''});
+  const Entity(this.kind, this.id,
+      {required this.alias, this.title = '', this.type = '', this.size = 0});
   final String kind;
   final String id;
   final String alias;
   final String title;
+
+  /// What sort of [kind] it is ("bedroom"), and how big, for naming it
+  /// without its alias: "bedroom:largest". Empty when the page gives none.
+  final String type;
+  final num size;
 }
 
 /// The repositories the assistant's actions reach.
@@ -142,6 +157,31 @@ class ActionContext {
   Entity? find(String kind, String ref) => entities
       .where((e) => e.kind == kind && (e.alias == ref || e.id == ref))
       .firstOrNull;
+
+  /// The entities of [kind] that [ref] names: an alias or id, or a type
+  /// ("bedroom"), which may add ":largest" or ":smallest". More than one
+  /// means the caller has to ask which.
+  List<Entity> match(String kind, String ref) {
+    final exact = find(kind, ref);
+    if (exact != null) return [exact];
+    final parts = ref.split(':');
+    final same = [
+      for (final e in entities)
+        if (e.kind == kind && e.type.isNotEmpty && e.type == parts.first) e
+    ];
+    if (parts.length == 1 || same.isEmpty) return same;
+    if (parts.length > 2 || !const ['largest', 'smallest'].contains(parts[1])) {
+      return const [];
+    }
+    final sizes = same.map((e) => e.size);
+    final want = parts[1] == 'largest'
+        ? sizes.reduce(math.max)
+        : sizes.reduce(math.min);
+    return [
+      for (final e in same)
+        if (e.size == want) e
+    ];
+  }
 }
 
 /// Arguments after the executor has checked them against the action's
@@ -171,6 +211,9 @@ abstract final class ActionCodes {
   static const notAvailable = 'not_available';
   static const badArgs = 'bad_args';
   static const unknownEntity = 'unknown_entity';
+
+  /// An entity argument names several things; `say.choices` lists them.
+  static const ambiguous = 'ambiguous';
   static const declined = 'declined';
   static const failed = 'failed';
 }

@@ -74,11 +74,11 @@ class MyHouse {
   /// The single most useful next step, in plain words.
   String nextStep(String me) {
     if (pendingConfirm(me) > 0) {
-      return tr3('有合作约定待你确认', 'Келісімді растаңыз', 'Подтвердите соглашение');
+      return tr3('有合作约定待你确认', 'Келісімді растаңыз', 'Подтвердите соглашение', 'Confirm the agreement', ky: 'Макулдашууну ырастоо', uz: 'Kelishuvni tasdiqlash');
     }
     if (endAsks(me) > 0) {
       return tr3(
-          '对方请求结束合作，等你确认', 'Аяқтауды растаңыз', 'Подтвердите завершение');
+          '对方请求结束合作，等你确认', 'Аяқтауды растаңыз', 'Подтвердите завершение', 'Confirm completion', ky: 'Бүтүрүүнү ырастоо', uz: 'Yakunlashni tasdiqlash');
     }
     final inspections = cooperations
         .expand((c) => c.milestones)
@@ -86,7 +86,8 @@ class MyHouse {
         .length;
     if (inspections > 0) {
       return tr3('$inspections 个节点等你验收', 'Кезеңді қабылдаңыз',
-          'Этапов к приёмке: $inspections');
+          'Этапов к приёмке: $inspections',
+          'Stages to accept: $inspections', ky: 'Кабыл ала турган этаптар: $inspections', uz: 'Qabul qilinadigan bosqichlar: $inspections');
     }
     final days = cooperations
         .expand((c) => c.workLogs)
@@ -94,29 +95,33 @@ class MyHouse {
         .length;
     if (days > 0) {
       return tr3('$days 天记工等你确认', '$days күн расталмады',
-          'Дней к подтверждению: $days');
+          'Дней к подтверждению: $days',
+          'Days to confirm: $days', ky: 'Ырастоого калган күндөр: $days', uz: 'Tasdiqlashga qolgan kunlar: $days');
     }
     if (newQuotes > 0) {
       return tr3('$newQuotes 个新报价，去比较', '$newQuotes жаңа ұсыныс',
-          'Новых предложений: $newQuotes');
+          'Новых предложений: $newQuotes',
+          'New quotes: $newQuotes', ky: 'Жаңы сунуштар: $newQuotes', uz: 'Yangi takliflar: $newQuotes');
     }
     if (shareOnly) {
       return comments == 0
-          ? tr3('已分享，等大家点评', 'Пікір күтілуде', 'Ждём отзывов')
-          : tr3('$comments 条点评，去看看', '$comments пікір', 'Отзывов: $comments');
+          ? tr3('已分享，等大家点评', 'Пікір күтілуде', 'Ждём отзывов', 'Waiting for feedback', ky: 'Пикир күтүүдө', uz: 'Fikr kutilmoqda')
+          : tr3('$comments 条点评，去看看', '$comments пікір', 'Отзывов: $comments', 'Reviews: $comments', ky: 'Пикирлер: $comments', uz: 'Sharhlar: $comments');
     }
     return switch (stage) {
       HouseStage.design => hasDesign
           ? tr3('设计好了就为它找人', 'Дайын болса, адам іздеңіз',
-              'Когда проект готов, найдите мастеров')
-          : tr3('补一张设计，报价会更准', 'Жоба қосыңыз', 'Добавьте проект'),
+              'Когда проект готов, найдите мастеров',
+              'When the design is ready, find pros', ky: 'Долбоор даяр болгондо адистерди табыңыз', uz: 'Loyiha tayyor boʻlganda mutaxassislarni toping')
+          : tr3('补一张设计，报价会更准', 'Жоба қосыңыз', 'Добавьте проект', 'Add a design', ky: 'Долбоор кошуу', uz: 'Loyiha qoʻshish'),
       HouseStage.finding => quoteCount == 0
-          ? tr3('等师傅报名 / 报价', 'Өтінімдерді күтіңіз', 'Ждём откликов')
+          ? tr3('等师傅报名 / 报价', 'Өтінімдерді күтіңіз', 'Ждём откликов', 'Waiting for responses', ky: 'Жоопторду күтүүдө', uz: 'Javoblar kutilmoqda')
           : tr3('$quoteCount 个报名 / 报价', '$quoteCount өтінім',
-              'Откликов: $quoteCount'),
+              'Откликов: $quoteCount',
+              'Responses: $quoteCount', ky: 'Жооптор: $quoteCount', uz: 'Javoblar: $quoteCount'),
       HouseStage.building =>
-        tr3('施工中，记得验收节点', 'Құрылыс жүріп жатыр', 'Идёт стройка'),
-      HouseStage.done => tr3('已完工，可以评价', 'Аяқталды', 'Готово, оставьте отзыв'),
+        tr3('施工中，记得验收节点', 'Құрылыс жүріп жатыр', 'Идёт стройка', 'Under construction', ky: 'Курулуп жатат', uz: 'Qurilmoqda'),
+      HouseStage.done => tr3('已完工，可以评价', 'Аяқталды', 'Готово, оставьте отзыв', 'Done; leave a review', ky: 'Бүттү; пикир калтырыңыз', uz: 'Tugadi; sharh qoldiring'),
     };
   }
 }

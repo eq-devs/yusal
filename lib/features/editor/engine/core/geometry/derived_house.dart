@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
 import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
@@ -59,9 +60,42 @@ class DerivedHouse {
   final double height;
 }
 
+/// Where the openings of one geometry were last found to sit, and what
+/// that was worked out from.
+typedef _Placed = ({
+  List<Opening> openings,
+  int height,
+  int slab,
+  List<OpeningPlacement> placed
+});
+final _placed = Expando<_Placed>('openings');
+
+/// Where each opening of floor [floorId] sits on [base]. Kept for as long
+/// as the geometry, the list of openings and the two heights it reads stay
+/// the same, since a command asks for it several times over.
 List<OpeningPlacement> deriveOpenings(
     HouseDocument doc, FloorBase base, String floorId) {
   final floor = doc.floors.firstWhere((f) => f.id == floorId);
+  final slab = doc.defaults.slabThickness;
+  final kept = _placed[base];
+  if (kept != null &&
+      identical(kept.openings, floor.openings) &&
+      kept.height == floor.height &&
+      kept.slab == slab) {
+    return kept.placed;
+  }
+  final placed = _deriveOpenings(doc, base, floor);
+  _placed[base] = (
+    openings: floor.openings,
+    height: floor.height,
+    slab: slab,
+    placed: placed
+  );
+  return placed;
+}
+
+List<OpeningPlacement> _deriveOpenings(
+    HouseDocument doc, FloorBase base, Floor floor) {
   return List.unmodifiable(floor.openings.map((o) {
     final chain = resolveAnchor(base.axes, o.anchor).chain!;
     final length = chain.nominalLength.toDouble();
@@ -103,8 +137,15 @@ List<OpeningPlacement> deriveOpenings(
 
 final _houses = DerivedCache<int, DerivedHouse>(4);
 
+/// Forgets everything derived, so the next house is derived afresh; for
+/// measuring what derivation costs.
+void clearDerived() {
+  _houses.clear();
+  clearFloorBases();
+}
+
 DerivedHouse deriveHouse(HouseDocument doc) =>
-    _houses.get(doc, 0, () => _deriveHouse(doc));
+    _houses.get(doc, 0, () => timed('derive.house', () => _deriveHouse(doc)));
 
 DerivedHouse _deriveHouse(HouseDocument doc) {
   final elements = <SceneElement>[];

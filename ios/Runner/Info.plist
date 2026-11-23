@@ -130,5 +130,7 @@
 			</array>
 		</dict>
 	</array>
+	<key>FLTEnableFlutterGPU</key>
+	<true/>
 </dict>
 </plist>

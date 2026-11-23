@@ -1,0 +1,116 @@
+# Measuring the design engine
+
+The engine reports what its own work costs, under fixed names. The numbers
+are the baseline every later change to the engine is compared with.
+
+## What is measured
+
+| Name | What it is |
+| --- | --- |
+| `command.<Kind>` | one `executeCommand` call of that kind |
+| `derive.floorBase` | the plan geometry of one floor, when it is not cached |
+| `derive.house` | the geometry of the whole house, when it is not cached |
+| `scene3d.build` | turning the derived house into the faces of the 3D scene |
+| `scene3d.clean` | the part of `scene3d.build` that drops hidden faces and joins the ones that lie flush |
+| `scene3d.bsp` | ordering those faces for drawing |
+| `paint.plan2d` | one paint of the 2D plan |
+| `paint.scene3d` | one paint of the 3D view |
+| `scene3d.faces`, `.vertices`, `.bspFragments`, `.drawn`, `.culled` | the size of the scene, and how much of it the last frame drew |
+
+The code is `lib/features/editor/engine/core/perf/engine_perf.dart`. In an
+ordinary build measuring is off and `timed(name, work)` only calls `work`.
+
+## On a device
+
+```bash
+flutter run --profile --dart-define=YUSAL_PERF=true
+```
+
+The editor then shows a meter in the bottom left corner. Each row is the
+mean and the longest time in milliseconds and how many times it ran; the
+first row is the frame's build and raster time over the last 120 frames,
+and how many of them took longer than 16.7 ms. A tap copies the full report
+as JSON; a long press starts the numbers again. The same names appear on
+the DevTools timeline.
+
+To record a baseline: open a project, long press the meter, drag a wall
+for a few seconds, turn the 3D view, then tap the meter and keep the JSON
+with the device's name and the date.
+
+## On a computer
+
+```bash
+# The engine alone, compiled: closest to a release build.
+dart compile exe test/perf/engine_bench.dart -o build/engine_bench
+build/engine_bench build/engine.json
+
+# The same plans with the 2D plan and the 3D scene added (unoptimised code).
+YUSAL_BENCH_RUNS=100 YUSAL_BENCH_OUT=build/baseline.json \
+  flutter test test/perf/baseline_test.dart
+```
+
+Both measure a typical plan (12 × 10 m, two floors, 16 rooms) and a large
+one (30 × 24 m, two floors, 72 rooms). Read the two runs against earlier
+runs on the same machine, not against a phone.
+
+## The 3D view on the GPU
+
+The 3D view draws its faces with Flutter GPU (a depth buffer, 4x
+anti-aliasing where the device offers it) when the device can, and with the
+canvas painter otherwise. Nothing has to be chosen: `SceneGpu.prepare()`
+looks once at start-up, and the view paints on the canvas until it answers
+and for good where there is no renderer.
+
+Where the canvas painter still draws:
+
+- the web, and any phone without Impeller (Android 9 and older);
+- walking through the house, and the foundation view;
+- the sky, the ground, the house's shadow on the ground and labels, in
+  every view;
+- the rest of the run after the GPU fails once while drawing.
+
+### Shadows and corners
+
+On the GPU the house also casts its shadow on itself, and corners and the
+undersides of eaves are darker (ambient occlusion). The solids are drawn
+twice more: once from the sun, onto a 2048 pixel square that is redrawn
+only when the house, what is shown of it or the hour changes, and once
+from the eye at half size every frame. Each pixel of the view then reads
+the first nine times and the second twelve times, which is the cost to
+watch on a slow phone.
+
+The renderer tries a shadow on a small scene when it starts
+(`SceneGpu.shades`) and draws without both where that fails. They can also
+be switched off: `SceneGpu.effects = false`, or for a whole build
+
+```sh
+flutter run --dart-define=YUSAL_GPU_EFFECTS=false
+```
+
+A line drawing has neither; at night there are corners and no sun.
+
+### Still pictures
+
+`ScenePainter.still(size, longSide: 2400)` gives the view as a picture
+for saving: every face in full, on the GPU at twice the size and brought
+down. The camera button on the 3D view shares it.
+
+The switches that turn Flutter GPU on are in `AndroidManifest.xml`
+(`io.flutter.embedding.android.EnableFlutterGPU`) and both `Info.plist`
+files (`FLTEnableFlutterGPU`). The shaders in `shaders/gpu` are compiled by
+`hook/build.dart` during the build.
+
+```sh
+# The GPU tests need both flags; without them they check the canvas path.
+flutter test test/gpu --enable-impeller --enable-flutter-gpu
+
+# Pictures of each view from both painters, to look at side by side, and
+# larger ones of the shadows.
+YUSAL_GPU_SHOTS=/tmp/shots flutter test test/gpu --enable-impeller --enable-flutter-gpu
+
+# A build that never uses the GPU, to compare on the same phone.
+flutter run --dart-define=YUSAL_GPU=false
+```
+
+Flutter GPU is a preview API: it can change between Flutter releases, so
+run the GPU tests after every Flutter upgrade.

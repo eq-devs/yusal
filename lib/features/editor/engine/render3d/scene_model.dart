@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show Color, Offset;
+import 'package:meta/meta.dart';
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
 import 'package:yusal/features/editor/engine/core/analysis/site_analysis.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
@@ -319,7 +321,25 @@ class Mat {
   ];
 }
 
+/// What removes the hidden faces of a scene and joins the rest; a test
+/// puts the first, slower cleanup here to compare the two.
+@visibleForTesting
+List<Face3> Function(List<Face3> faces, List<SolidBox> solids) sceneCleanup =
+    cleanFaces;
+
 SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
+    SceneOptions options, String Function(Room) roomName,
+    {String areaUnit = 'm²'}) {
+  final scene = timed('scene3d.build',
+      () => _buildScene(doc, derived, options, roomName, areaUnit: areaUnit));
+  sized('scene3d.faces', () => scene.faces.length);
+  sized('scene3d.vertices',
+      () => scene.faces.fold(0, (n, f) => n + f.points.length));
+  sized('scene3d.lines', () => scene.lines.length);
+  return scene;
+}
+
+SceneModel _buildScene(HouseDocument doc, DerivedHouse derived,
     SceneOptions options, String Function(Room) roomName,
     {String areaUnit = 'm²'}) {
   final faces = <Face3>[];
@@ -497,7 +517,7 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
         labels.add(Label3(
             Vec3(px(l.x), elevation + 1.2, pz(l.y)),
             roomName(room),
-            '${(s.clearArea / 1e6).toStringAsFixed(1)} $areaUnit',
+            '${(s.area(doc.extras.areaBasis) / 1e6).toStringAsFixed(1)} $areaUnit',
             f));
       }
     }
@@ -588,6 +608,23 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
         }
       }
     }
+    // Low walls: knee walls, bars and balustrades, as high as they are.
+    for (final low in g.base.lowWalls) {
+      final top = elevation + low.height / 1000;
+      final source = WallSource(low.ref);
+      sections.add(SolidBox(
+          Vec3(px(low.rect.left), elevation, pz(low.rect.top)),
+          Vec3(px(low.rect.right), top, pz(low.rect.bottom)),
+          floor: f,
+          roof: false,
+          furniture: false,
+          layer: Layer3.sorted,
+          source: source));
+      planBox(low.rect, elevation, top, Mat.part,
+          source: source, floor: f, interior: true);
+      colliders.add(Collider(px(low.rect.left), pz(low.rect.top),
+          px(low.rect.right), pz(low.rect.bottom), f));
+    }
     // Plinth under the exterior walls of the ground floor.
     if (f == 0) {
       for (final wall in walls.where((w) => w.role == WallRole.exterior)) {
@@ -611,6 +648,36 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
       final y1 = y0 + o.height / 1000;
       final source = OpeningSource(o.id);
       final inner = p.host?.kind != 'exterior';
+      if (o is! WindowOpening && o.sill == 0) {
+        // The floor runs on under a door: each room's finish to the middle
+        // of the wall, and the room's own all the way under a door to the
+        // outside.
+        final (below, above) = roomsBeside(p, g.base);
+        void threshold(String? id, double from, double to) {
+          final room = floor.rooms.where((r) => r.id == id).firstOrNull;
+          if (room == null || to - from < 1) return;
+          final r = horizontal
+              ? PlanRect(p.start, from, p.end, to)
+              : PlanRect(from, p.start, to, p.end);
+          final wet = room.type == RoomType.kitchen ||
+              room.type == RoomType.bathroom ||
+              room.type == RoomType.custom;
+          faces.add(Face3([
+            Vec3(px(r.left), elevation + 0.002, pz(r.top)),
+            Vec3(px(r.left), elevation + 0.002, pz(r.bottom)),
+            Vec3(px(r.right), elevation + 0.002, pz(r.bottom)),
+            Vec3(px(r.right), elevation + 0.002, pz(r.top)),
+          ], wet ? Mat.tile : Mat.wood,
+              layer: f == 0 ? Layer3.floorSurface : Layer3.sorted,
+              source: RoomSource(room.id),
+              floorIndex: f,
+              castsShadow: false,
+              interior: f != 0));
+        }
+
+        threshold(below ?? above, c0, above == null || below == null ? c1 : c);
+        if (below != null && above != null) threshold(above, c, c1);
+      }
       if (!inner) {
         final hole = horizontal
             ? PlanRect(p.start, c0, p.end, c1)
@@ -997,8 +1064,11 @@ SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
         p.z >= r.$2 - 0.01 &&
         p.z <= r.$4 + 0.01));
   }
-  return SceneModel(cleanFaces(faces, solids), lines, labels, colliders,
-      elevations, w, d, math.max(top, 1), gl, frontZ)
+  sized('scene3d.rawFaces', () => faces.length);
+  sized('scene3d.solids', () => solids.length);
+  final clean = timed('scene3d.clean', () => sceneCleanup(faces, solids));
+  return SceneModel(clean, lines, labels, colliders, elevations, w, d,
+      math.max(top, 1), gl, frontZ)
     ..portals.addAll(portals)
     ..sections.addAll(sections);
 }

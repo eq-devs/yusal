@@ -41,12 +41,21 @@ class ActionExecutor {
         return _bad(name);
       }
       if (param.type == ParamType.entity) {
-        final entity = raw is String ? ctx.find(param.kind!, raw) : null;
-        if (entity == null) {
+        final found =
+            raw is String ? ctx.match(param.kind!, raw) : const <Entity>[];
+        if (found.isEmpty) {
           return ActionResult.fail(ActionCodes.unknownEntity,
               say: {'param': name});
         }
-        values[name] = entity;
+        if (found.length > 1) {
+          return ActionResult.fail(ActionCodes.ambiguous, say: {
+            'param': name,
+            'choices': [
+              for (final e in found) {'id': e.alias, 'title': e.title}
+            ],
+          });
+        }
+        values[name] = found.single;
         continue;
       }
       final value = _checked(param, raw);

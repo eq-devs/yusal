@@ -1,0 +1,2799 @@
+[
+  {
+    "name": "SetFootprintSize",
+    "group": "house",
+    "summary": "Set the width and depth of the house.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "integer"
+        },
+        "depth": {
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetNorthAngle",
+    "group": "house",
+    "summary": "Set which way north points on the plan.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "integer",
+          "enum": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "description": "Degrees."
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetRoof",
+    "group": "house",
+    "summary": "Replace the roof.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "roof": {
+          "type": "object",
+          "description": "flat with parapetHeight; gable with ridgeDir (V or H), pitchDeg and overhang; hip with pitchDeg and overhang.",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "flat",
+                "gable",
+                "hip"
+              ]
+            },
+            "parapetHeight": {
+              "type": "integer"
+            },
+            "ridgeDir": {
+              "type": "string",
+              "enum": [
+                "V",
+                "H"
+              ]
+            },
+            "pitchDeg": {
+              "type": "integer"
+            },
+            "overhang": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "roof"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetDefault",
+    "group": "house",
+    "summary": "Set one of the default sizes new walls, floors, doors and windows take.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "enum": [
+            "outerWallThickness",
+            "innerWallThickness",
+            "slabThickness",
+            "stairRiserMax",
+            "stairTread",
+            "stairWidthMin",
+            "floorHeight",
+            "doorWidth",
+            "doorHeight",
+            "windowWidth",
+            "windowHeight",
+            "windowSill"
+          ]
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "field",
+        "value"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "MirrorPlan",
+    "group": "house",
+    "summary": "Flip the whole plan left to right or top to bottom.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "CutOutline",
+    "group": "house",
+    "summary": "Cut a rectangular corner off the outline.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "corner": {
+          "type": "string",
+          "enum": [
+            "tl",
+            "tr",
+            "bl",
+            "br"
+          ],
+          "description": "tl, tr, bl or br."
+        },
+        "width": {
+          "type": "number"
+        },
+        "depth": {
+          "type": "number"
+        },
+        "floorIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "id of a floor"
+          },
+          "description": "Every floor when left out."
+        }
+      },
+      "required": [
+        "corner",
+        "width",
+        "depth"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "RestoreOutline",
+    "group": "house",
+    "summary": "Make the outline a full rectangle again.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "id of a floor"
+          },
+          "description": "Every floor when left out."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddAxis",
+    "group": "axes",
+    "summary": "Add a grid line.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "dir": {
+          "type": "string",
+          "enum": [
+            "V",
+            "H"
+          ],
+          "description": "V runs up the plan, H across it."
+        },
+        "pos": {
+          "type": "integer"
+        },
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor On this floor only; on every floor when left out."
+        }
+      },
+      "required": [
+        "dir",
+        "pos"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "MoveAxis",
+    "group": "axes",
+    "summary": "Move a grid line; walls and rooms on it follow.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "axisId": {
+          "type": "string",
+          "description": "id of an axis"
+        },
+        "pos": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "axisId",
+        "pos"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "PromoteFloorAxis",
+    "group": "axes",
+    "summary": "Make a grid line of one floor a line of every floor.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "axisId": {
+          "type": "string",
+          "description": "id of an axis"
+        }
+      },
+      "required": [
+        "axisId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteAxis",
+    "group": "axes",
+    "summary": "Remove a grid line.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "axisId": {
+          "type": "string",
+          "description": "id of an axis"
+        },
+        "resolution": {
+          "type": "string",
+          "enum": [
+            "mergeRooms",
+            "keepLowSide",
+            "keepHighSide"
+          ],
+          "description": "What becomes of the rooms on either side."
+        },
+        "deleteHostedObjects": {
+          "type": "boolean",
+          "description": "Confirms removing the doors and windows that lose their wall."
+        },
+        "deleteStairs": {
+          "type": "boolean",
+          "description": "Confirms removing the stairs that lose their floor."
+        }
+      },
+      "required": [
+        "axisId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddFloor",
+    "group": "floors",
+    "summary": "Add an empty floor above a floor.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor The floor it goes above."
+        }
+      },
+      "required": [
+        "floorId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "CopyFloor",
+    "group": "floors",
+    "summary": "Add a copy of a floor above it.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        }
+      },
+      "required": [
+        "floorId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteFloor",
+    "group": "floors",
+    "summary": "Remove a floor.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "deleteStairs": {
+          "type": "boolean",
+          "description": "Confirms removing the stairs that lose their floor."
+        }
+      },
+      "required": [
+        "floorId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetFloorHeight",
+    "group": "floors",
+    "summary": "Set the height of a floor.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "floorId",
+        "value"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "RenameFloor",
+    "group": "floors",
+    "summary": "Name a floor.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "floorId",
+        "value"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "RenameRoom",
+    "group": "rooms",
+    "summary": "Name a room.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "description": "id of a room"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "roomId",
+        "value"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetRoomType",
+    "group": "rooms",
+    "summary": "Set what a room is used as.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "description": "id of a room"
+        },
+        "value": {
+          "type": "string",
+          "enum": [
+            "living",
+            "bedroom",
+            "kitchen",
+            "bathroom",
+            "dining",
+            "hall",
+            "corridor",
+            "storage",
+            "boiler",
+            "custom"
+          ]
+        }
+      },
+      "required": [
+        "roomId",
+        "value"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "MergeRooms",
+    "group": "rooms",
+    "summary": "Join two rooms that share a side.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "roomIdA": {
+          "type": "string",
+          "description": "id of a room"
+        },
+        "roomIdB": {
+          "type": "string",
+          "description": "id of a room"
+        },
+        "deleteHostedObjects": {
+          "type": "boolean",
+          "description": "Confirms removing the doors and windows that lose their wall."
+        }
+      },
+      "required": [
+        "roomIdA",
+        "roomIdB"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SplitSpace",
+    "group": "rooms",
+    "summary": "Divide the room at a point with a line across it.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "dir": {
+          "type": "string",
+          "enum": [
+            "V",
+            "H"
+          ]
+        },
+        "pos": {
+          "type": "integer",
+          "description": "Where the line runs."
+        },
+        "x": {
+          "type": "integer",
+          "description": "A point in the room to divide."
+        },
+        "y": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "floorId",
+        "dir",
+        "pos",
+        "x",
+        "y"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "CarveRoom",
+    "group": "rooms",
+    "summary": "Make a room of a rectangle of the floor.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "left": {
+          "type": "integer"
+        },
+        "bottom": {
+          "type": "integer"
+        },
+        "right": {
+          "type": "integer"
+        },
+        "top": {
+          "type": "integer"
+        },
+        "roomType": {
+          "type": "string",
+          "enum": [
+            "living",
+            "bedroom",
+            "kitchen",
+            "bathroom",
+            "dining",
+            "hall",
+            "corridor",
+            "storage",
+            "boiler",
+            "custom"
+          ]
+        }
+      },
+      "required": [
+        "floorId",
+        "left",
+        "bottom",
+        "right",
+        "top"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "PaintCells",
+    "group": "rooms",
+    "summary": "Make a room of grid cells, or grow one.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "cells": {
+          "type": "array",
+          "description": "Grid cells as [column, row], counted from the bottom left.",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "roomType": {
+          "type": "string",
+          "enum": [
+            "living",
+            "bedroom",
+            "kitchen",
+            "bathroom",
+            "dining",
+            "hall",
+            "corridor",
+            "storage",
+            "boiler",
+            "custom"
+          ]
+        }
+      },
+      "required": [
+        "floorId",
+        "cells"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "EraseCells",
+    "group": "rooms",
+    "summary": "Take grid cells out of their rooms.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "cells": {
+          "type": "array",
+          "description": "Grid cells as [column, row], counted from the bottom left.",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "required": [
+        "floorId",
+        "cells"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetRoomInfo",
+    "group": "rooms",
+    "summary": "Set the note or the stated area of a room.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "description": "id of a room"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "labelArea": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "roomId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddOpening",
+    "group": "openings",
+    "summary": "Put a door or window on a wall.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "anchor": {
+          "type": "object",
+          "description": "A stretch of wall: the axis it lies on and the two crossing axes it runs between.",
+          "properties": {
+            "axisId": {
+              "type": "string"
+            },
+            "startAxisId": {
+              "type": "string"
+            },
+            "endAxisId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "axisId",
+            "startAxisId",
+            "endAxisId"
+          ],
+          "additionalProperties": false
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "door",
+            "window",
+            "sliding"
+          ]
+        },
+        "tapT": {
+          "type": "number",
+          "description": "Distance along the wall, millimetres from its start."
+        },
+        "centerAtTap": {
+          "type": "boolean",
+          "description": "Centre it there instead of at the usual place."
+        }
+      },
+      "required": [
+        "floorId",
+        "anchor",
+        "kind",
+        "tapT"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetOpeningKind",
+    "group": "openings",
+    "summary": "Turn an opening into a door or a window.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "openingId": {
+          "type": "string",
+          "description": "id of a opening"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "door",
+            "window",
+            "sliding"
+          ]
+        }
+      },
+      "required": [
+        "openingId",
+        "kind"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "ResizeOpening",
+    "group": "openings",
+    "summary": "Set the size or sill of an opening.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "openingId": {
+          "type": "string",
+          "description": "id of a opening"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "sill": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "openingId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "MoveOpening",
+    "group": "openings",
+    "summary": "Move an opening along its wall or to another.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "openingId": {
+          "type": "string",
+          "description": "id of a opening"
+        },
+        "position": {
+          "type": "object",
+          "description": "Centred on its wall, or a distance d in millimetres from the start or the end of the wall.",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "center",
+                "fromStart",
+                "fromEnd"
+              ]
+            },
+            "d": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        "anchor": {
+          "type": "object",
+          "description": "A stretch of wall: the axis it lies on and the two crossing axes it runs between. The wall to move it to.",
+          "properties": {
+            "axisId": {
+              "type": "string"
+            },
+            "startAxisId": {
+              "type": "string"
+            },
+            "endAxisId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "axisId",
+            "startAxisId",
+            "endAxisId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "openingId",
+        "position"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "FlipDoor",
+    "group": "openings",
+    "summary": "Change the side a door hangs on or opens to.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "openingId": {
+          "type": "string",
+          "description": "id of a opening"
+        },
+        "hinge": {
+          "type": "string",
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "opensTo": {
+          "type": "string",
+          "enum": [
+            "positiveSide",
+            "negativeSide"
+          ]
+        }
+      },
+      "required": [
+        "openingId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteOpening",
+    "group": "openings",
+    "summary": "Remove an opening.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "openingId": {
+          "type": "string",
+          "description": "id of a opening"
+        }
+      },
+      "required": [
+        "openingId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetMainEntrance",
+    "group": "openings",
+    "summary": "Choose the main entrance door.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "openingId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "id of a opening Null or left out for none."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetOpeningLabel",
+    "group": "openings",
+    "summary": "Label an opening.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "openingId": {
+          "type": "string",
+          "description": "id of a opening"
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "openingId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "PlaceStair",
+    "group": "stairs",
+    "summary": "Put a stair in a rectangle of a floor, or move one.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "left": {
+          "type": "integer"
+        },
+        "bottom": {
+          "type": "integer"
+        },
+        "right": {
+          "type": "integer"
+        },
+        "top": {
+          "type": "integer"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "straight",
+            "L",
+            "U"
+          ]
+        },
+        "stairId": {
+          "type": "string",
+          "description": "id of a stair The stair to move."
+        }
+      },
+      "required": [
+        "floorId",
+        "left",
+        "bottom",
+        "right",
+        "top"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "RemoveStair",
+    "group": "stairs",
+    "summary": "Remove a stair and give its place back to the room.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "stairId": {
+          "type": "string",
+          "description": "id of a stair"
+        }
+      },
+      "required": [
+        "stairId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddStair",
+    "group": "stairs",
+    "summary": "Add a stair over a rectangle of grid lines.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "region": {
+          "type": "object",
+          "description": "A rectangle between two vertical axes (x0, x1) and two horizontal ones (y0, y1).",
+          "properties": {
+            "x0": {
+              "type": "string"
+            },
+            "x1": {
+              "type": "string"
+            },
+            "y0": {
+              "type": "string"
+            },
+            "y1": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "x0",
+            "x1",
+            "y0",
+            "y1"
+          ],
+          "additionalProperties": false
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "straight",
+            "L",
+            "U"
+          ]
+        }
+      },
+      "required": [
+        "floorId",
+        "region",
+        "type"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "UpdateStair",
+    "group": "stairs",
+    "summary": "Change a stair.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "stairId": {
+          "type": "string",
+          "description": "id of a stair"
+        },
+        "region": {
+          "type": "object",
+          "description": "A rectangle between two vertical axes (x0, x1) and two horizontal ones (y0, y1).",
+          "properties": {
+            "x0": {
+              "type": "string"
+            },
+            "x1": {
+              "type": "string"
+            },
+            "y0": {
+              "type": "string"
+            },
+            "y1": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "x0",
+            "x1",
+            "y0",
+            "y1"
+          ],
+          "additionalProperties": false
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "straight",
+            "L",
+            "U"
+          ]
+        },
+        "startEdge": {
+          "type": "string",
+          "enum": [
+            "bottom",
+            "top",
+            "left",
+            "right"
+          ]
+        },
+        "turn": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right"
+          ]
+        }
+      },
+      "required": [
+        "stairId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteStair",
+    "group": "stairs",
+    "summary": "Remove a stair.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "stairId": {
+          "type": "string",
+          "description": "id of a stair"
+        }
+      },
+      "required": [
+        "stairId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetWallOverride",
+    "group": "walls",
+    "summary": "Open a stretch of wall, set its thickness, or make it usual again.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "anchor": {
+          "type": "object",
+          "description": "A stretch of wall: the axis it lies on and the two crossing axes it runs between.",
+          "properties": {
+            "axisId": {
+              "type": "string"
+            },
+            "startAxisId": {
+              "type": "string"
+            },
+            "endAxisId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "axisId",
+            "startAxisId",
+            "endAxisId"
+          ],
+          "additionalProperties": false
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "default",
+            "open",
+            "thickness"
+          ]
+        },
+        "value": {
+          "type": "integer",
+          "description": "The thickness, for type thickness."
+        }
+      },
+      "required": [
+        "floorId",
+        "anchor",
+        "type"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "MoveLocalWall",
+    "group": "walls",
+    "summary": "Move a wall between two rooms on one floor.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "anchor": {
+          "type": "object",
+          "description": "A stretch of wall: the axis it lies on and the two crossing axes it runs between.",
+          "properties": {
+            "axisId": {
+              "type": "string"
+            },
+            "startAxisId": {
+              "type": "string"
+            },
+            "endAxisId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "axisId",
+            "startAxisId",
+            "endAxisId"
+          ],
+          "additionalProperties": false
+        },
+        "pos": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "floorId",
+        "anchor",
+        "pos"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "EnableWallDrawing",
+    "group": "walls",
+    "summary": "Turn the walls of a floor into separate pieces that can be drawn and moved.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        }
+      },
+      "required": [
+        "floorId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddDrawnWall",
+    "group": "walls",
+    "summary": "Draw a straight wall between two points.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "x0": {
+          "type": "integer"
+        },
+        "y0": {
+          "type": "integer"
+        },
+        "x1": {
+          "type": "integer"
+        },
+        "y1": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer",
+          "description": "Millimetres the wall stands above the floor, 300 to 2100, for a low wall; 0 for a wall to the ceiling."
+        }
+      },
+      "required": [
+        "floorId",
+        "x0",
+        "y0",
+        "x1",
+        "y1"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "UpdateDrawnWall",
+    "group": "walls",
+    "summary": "Set the two ends of a drawn wall.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "wallId": {
+          "type": "string",
+          "description": "id of a drawn wall"
+        },
+        "anchor": {
+          "type": "object",
+          "description": "A stretch of wall: the axis it lies on and the two crossing axes it runs between. The wall by where it runs, when not by id.",
+          "properties": {
+            "axisId": {
+              "type": "string"
+            },
+            "startAxisId": {
+              "type": "string"
+            },
+            "endAxisId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "axisId",
+            "startAxisId",
+            "endAxisId"
+          ],
+          "additionalProperties": false
+        },
+        "x0": {
+          "type": "integer"
+        },
+        "y0": {
+          "type": "integer"
+        },
+        "x1": {
+          "type": "integer"
+        },
+        "y1": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer",
+          "description": "Millimetres the wall stands above the floor, 300 to 2100, for a low wall; 0 for a wall to the ceiling."
+        }
+      },
+      "required": [
+        "floorId",
+        "x0",
+        "y0",
+        "x1",
+        "y1"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetDrawnWallHeight",
+    "group": "walls",
+    "summary": "Make a drawn wall a low wall (a knee wall, a bar, a balustrade) or a wall to the ceiling again. A low wall divides no room and carries no door or window.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "wallId": {
+          "type": "string",
+          "description": "id of a drawn wall"
+        },
+        "anchor": {
+          "type": "object",
+          "description": "A stretch of wall: the axis it lies on and the two crossing axes it runs between. The wall by where it runs, when not by id.",
+          "properties": {
+            "axisId": {
+              "type": "string"
+            },
+            "startAxisId": {
+              "type": "string"
+            },
+            "endAxisId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "axisId",
+            "startAxisId",
+            "endAxisId"
+          ],
+          "additionalProperties": false
+        },
+        "height": {
+          "type": "integer",
+          "description": "Millimetres the wall stands above the floor, 300 to 2100, for a low wall; 0 for a wall to the ceiling."
+        }
+      },
+      "required": [
+        "floorId",
+        "height"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "MoveDrawnWall",
+    "group": "walls",
+    "summary": "Move a drawn wall sideways; the walls ending on it follow.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "wallId": {
+          "type": "string",
+          "description": "id of a drawn wall"
+        },
+        "anchor": {
+          "type": "object",
+          "description": "A stretch of wall: the axis it lies on and the two crossing axes it runs between. The wall by where it runs, when not by id.",
+          "properties": {
+            "axisId": {
+              "type": "string"
+            },
+            "startAxisId": {
+              "type": "string"
+            },
+            "endAxisId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "axisId",
+            "startAxisId",
+            "endAxisId"
+          ],
+          "additionalProperties": false
+        },
+        "pos": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "floorId",
+        "pos"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteDrawnWall",
+    "group": "walls",
+    "summary": "Remove a drawn wall.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "wallId": {
+          "type": "string",
+          "description": "id of a drawn wall"
+        },
+        "anchor": {
+          "type": "object",
+          "description": "A stretch of wall: the axis it lies on and the two crossing axes it runs between. The wall by where it runs, when not by id.",
+          "properties": {
+            "axisId": {
+              "type": "string"
+            },
+            "startAxisId": {
+              "type": "string"
+            },
+            "endAxisId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "axisId",
+            "startAxisId",
+            "endAxisId"
+          ],
+          "additionalProperties": false
+        },
+        "deleteHostedObjects": {
+          "type": "boolean",
+          "description": "Confirms removing the doors and windows that lose their wall."
+        }
+      },
+      "required": [
+        "floorId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddFurniture",
+    "group": "furniture",
+    "summary": "Put a piece of furniture on a floor.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "bed",
+            "singleBed",
+            "wardrobe",
+            "table",
+            "diningTable",
+            "chair",
+            "sofa",
+            "desk",
+            "tvStand",
+            "shelf",
+            "rug",
+            "alasha",
+            "wallRug",
+            "korpe",
+            "cushion",
+            "dastarkhan",
+            "sandyq",
+            "bench",
+            "hooks",
+            "counter",
+            "stove",
+            "sink",
+            "fridge",
+            "pantry",
+            "bathtub",
+            "shower",
+            "toilet",
+            "basin",
+            "washer",
+            "boiler",
+            "shoeCabinet",
+            "terrace",
+            "porch",
+            "custom"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "depth": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "elevation": {
+          "type": "number",
+          "description": "Height above the floor."
+        },
+        "variant": {
+          "type": "number"
+        },
+        "label": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "description": "Its id; one is made when left out."
+        }
+      },
+      "required": [
+        "floorId",
+        "kind"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "UpdateFurniture",
+    "group": "furniture",
+    "summary": "Move, resize or change a piece of furniture.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "furnitureId": {
+          "type": "string",
+          "description": "id of a piece of furniture"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "depth": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "elevation": {
+          "type": "number"
+        },
+        "variant": {
+          "type": "number"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "bed",
+            "singleBed",
+            "wardrobe",
+            "table",
+            "diningTable",
+            "chair",
+            "sofa",
+            "desk",
+            "tvStand",
+            "shelf",
+            "rug",
+            "alasha",
+            "wallRug",
+            "korpe",
+            "cushion",
+            "dastarkhan",
+            "sandyq",
+            "bench",
+            "hooks",
+            "counter",
+            "stove",
+            "sink",
+            "fridge",
+            "pantry",
+            "bathtub",
+            "shower",
+            "toilet",
+            "basin",
+            "washer",
+            "boiler",
+            "shoeCabinet",
+            "terrace",
+            "porch",
+            "custom"
+          ]
+        },
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Null or empty clears it."
+        }
+      },
+      "required": [
+        "furnitureId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "RotateFurniture",
+    "group": "furniture",
+    "summary": "Turn a piece of furniture a quarter turn.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "furnitureId": {
+          "type": "string",
+          "description": "id of a piece of furniture"
+        }
+      },
+      "required": [
+        "furnitureId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteFurniture",
+    "group": "furniture",
+    "summary": "Remove a piece of furniture.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "furnitureId": {
+          "type": "string",
+          "description": "id of a piece of furniture"
+        }
+      },
+      "required": [
+        "furnitureId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetNote",
+    "group": "notes",
+    "summary": "Set one of the notes kept with the design.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddIssue",
+    "group": "notes",
+    "summary": "Record something to fix or check.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "crit",
+            "warn",
+            "chk",
+            "ok"
+          ]
+        },
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "areas": {
+          "type": "array",
+          "description": "Plan rectangles as [left, bottom, right, top], millimetres.",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          }
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "UpdateIssue",
+    "group": "notes",
+    "summary": "Change a recorded issue.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "issueId": {
+          "type": "string",
+          "description": "id of a issue"
+        },
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "crit",
+            "warn",
+            "chk",
+            "ok"
+          ]
+        },
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "areas": {
+          "type": "array",
+          "description": "Plan rectangles as [left, bottom, right, top], millimetres.",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          }
+        }
+      },
+      "required": [
+        "issueId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteIssue",
+    "group": "notes",
+    "summary": "Remove a recorded issue.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "issueId": {
+          "type": "string",
+          "description": "id of a issue"
+        }
+      },
+      "required": [
+        "issueId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetFoundation",
+    "group": "structure",
+    "summary": "Change the foundation.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "A size to set with value: width, height, plinth, cushion and the reinforcement fields."
+        },
+        "value": {
+          "type": "number"
+        },
+        "partitions": {
+          "type": "boolean",
+          "description": "Whether partitions get a footing too."
+        },
+        "concrete": {
+          "type": "string",
+          "description": "The concrete grade."
+        },
+        "reset": {
+          "type": "boolean",
+          "description": "Back to the usual foundation."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetLayers",
+    "group": "structure",
+    "summary": "Set the build-up of the walls, floors or roof.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "string",
+          "enum": [
+            "wall",
+            "floor",
+            "roof"
+          ]
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "nameKk": {
+                "type": "string"
+              },
+              "thickness": {
+                "type": "integer"
+              },
+              "material": {
+                "type": "string",
+                "enum": [
+                  "conc",
+                  "block",
+                  "ins",
+                  "earth",
+                  "sand",
+                  "plaster",
+                  "metal",
+                  "wood",
+                  "film",
+                  "gyp"
+                ]
+              },
+              "lambda": {
+                "type": "integer",
+                "description": "thermal conductivity, thousandths of W/(m·K)"
+              }
+            },
+            "required": [
+              "name",
+              "thickness",
+              "material"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "group",
+        "layers"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddSleeve",
+    "group": "structure",
+    "summary": "Add a pipe sleeve through the foundation.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "diameter": {
+          "type": "number"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "sewer",
+            "water",
+            "power",
+            "gas"
+          ]
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "UpdateSleeve",
+    "group": "structure",
+    "summary": "Change a pipe sleeve.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "sleeveId": {
+          "type": "string",
+          "description": "id of a sleeve"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "diameter": {
+          "type": "number"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "sewer",
+            "water",
+            "power",
+            "gas"
+          ]
+        }
+      },
+      "required": [
+        "sleeveId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteSleeve",
+    "group": "structure",
+    "summary": "Remove a pipe sleeve.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "sleeveId": {
+          "type": "string",
+          "description": "id of a sleeve"
+        }
+      },
+      "required": [
+        "sleeveId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetCost",
+    "group": "cost",
+    "summary": "Change how the estimate is worked out.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "enum": [
+            "cny",
+            "kzt"
+          ],
+          "description": "Changing it drops the prices set."
+        },
+        "labourPct": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "contingencyPct": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "priceKey": {
+          "type": "string",
+          "description": "The price to set with price."
+        },
+        "price": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Null goes back to the example price."
+        },
+        "resetPrices": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddCostItem",
+    "group": "cost",
+    "summary": "Add a line of your own to the estimate.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "In hundredths."
+        },
+        "price": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "UpdateCostItem",
+    "group": "cost",
+    "summary": "Change a line of your own.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "itemId": {
+          "type": "string",
+          "description": "id of a estimate line"
+        },
+        "name": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "number"
+        },
+        "price": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "itemId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteCostItem",
+    "group": "cost",
+    "summary": "Remove a line of your own.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "itemId": {
+          "type": "string",
+          "description": "id of a estimate line"
+        }
+      },
+      "required": [
+        "itemId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetAreaBasis",
+    "group": "room",
+    "summary": "Choose where room areas are measured to: clear is between the finished wall faces, centre to the middle of the walls, outer to the outer face of outside walls.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "basis": {
+          "type": "string",
+          "enum": [
+            "clear",
+            "centre",
+            "outer"
+          ]
+        }
+      },
+      "required": [
+        "basis"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetHeat",
+    "group": "heat",
+    "summary": "Change what the heat loss is worked out from.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "enum": [
+            "outdoor",
+            "indoor",
+            "degreeDays",
+            "airChange",
+            "windowU",
+            "doorU",
+            "efficiency"
+          ],
+          "description": "A figure to set with value."
+        },
+        "value": {
+          "type": "number"
+        },
+        "fuel": {
+          "type": "string",
+          "enum": [
+            "coal",
+            "gas",
+            "electricity",
+            "wood"
+          ]
+        },
+        "reset": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddUtility",
+    "group": "utilities",
+    "summary": "Add a socket, light, tap or other point.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "panel",
+            "socket",
+            "lightSwitch",
+            "light",
+            "vent",
+            "water",
+            "drain",
+            "radiator"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "label": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "floorId",
+        "kind",
+        "x",
+        "y"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddUtilities",
+    "group": "utilities",
+    "summary": "Add several points in one step.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "panel",
+                  "socket",
+                  "lightSwitch",
+                  "light",
+                  "vent",
+                  "water",
+                  "drain",
+                  "radiator"
+                ]
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "floorId": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "x",
+              "y"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor For the points that name no floor."
+        }
+      },
+      "required": [
+        "points"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "UpdateUtility",
+    "group": "utilities",
+    "summary": "Move or change a point.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "utilityId": {
+          "type": "string",
+          "description": "id of a utility point"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "panel",
+            "socket",
+            "lightSwitch",
+            "light",
+            "vent",
+            "water",
+            "drain",
+            "radiator"
+          ]
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Null or empty clears it."
+        }
+      },
+      "required": [
+        "utilityId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteUtility",
+    "group": "utilities",
+    "summary": "Remove a point.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "utilityId": {
+          "type": "string",
+          "description": "id of a utility point"
+        }
+      },
+      "required": [
+        "utilityId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "ClearUtilities",
+    "group": "utilities",
+    "summary": "Remove the points of a floor, of some kinds, or all.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "kinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "panel",
+              "socket",
+              "lightSwitch",
+              "light",
+              "vent",
+              "water",
+              "drain",
+              "radiator"
+            ]
+          }
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetSite",
+    "group": "site",
+    "summary": "Set the plot and where the house stands on it.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "number"
+        },
+        "depth": {
+          "type": "number"
+        },
+        "houseX": {
+          "type": "number"
+        },
+        "houseY": {
+          "type": "number"
+        },
+        "fence": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "ClearSite",
+    "group": "site",
+    "summary": "Remove the plot.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddSiteItem",
+    "group": "site",
+    "summary": "Put an outbuilding or other item on the plot.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "barn",
+            "bathhouse",
+            "garage",
+            "toilet",
+            "shed",
+            "greenhouse",
+            "well",
+            "septic",
+            "garden",
+            "yard",
+            "gate",
+            "custom"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "depth": {
+          "type": "number"
+        },
+        "label": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "UpdateSiteItem",
+    "group": "site",
+    "summary": "Move, resize or change an item on the plot.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "siteItemId": {
+          "type": "string",
+          "description": "id of a plot item"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "depth": {
+          "type": "number"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "barn",
+            "bathhouse",
+            "garage",
+            "toilet",
+            "shed",
+            "greenhouse",
+            "well",
+            "septic",
+            "garden",
+            "yard",
+            "gate",
+            "custom"
+          ]
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Null or empty clears it."
+        }
+      },
+      "required": [
+        "siteItemId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "RotateSiteItem",
+    "group": "site",
+    "summary": "Turn an item on the plot a quarter turn.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "siteItemId": {
+          "type": "string",
+          "description": "id of a plot item"
+        }
+      },
+      "required": [
+        "siteItemId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteSiteItem",
+    "group": "site",
+    "summary": "Remove an item from the plot.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "siteItemId": {
+          "type": "string",
+          "description": "id of a plot item"
+        }
+      },
+      "required": [
+        "siteItemId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetStage",
+    "group": "schedule",
+    "summary": "Change a stage of the build.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "stageKey": {
+          "type": "string"
+        },
+        "start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "A date; null or empty clears it."
+        },
+        "toggleCheck": {
+          "type": "number",
+          "description": "The check to tick or untick."
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "todo",
+            "doing",
+            "done"
+          ]
+        },
+        "days": {
+          "type": "number"
+        },
+        "spent": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "stageKey"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "AddStage",
+    "group": "schedule",
+    "summary": "Add a stage of your own.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "after": {
+          "type": "string",
+          "description": "The stage it follows; last when left out."
+        },
+        "days": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "DeleteStage",
+    "group": "schedule",
+    "summary": "Remove a stage of your own.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "stageKey": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "stageKey"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "ResetSchedule",
+    "group": "schedule",
+    "summary": "Go back to the usual stages.",
+    "risk": "remove",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    }
+  }
+]

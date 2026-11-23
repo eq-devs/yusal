@@ -42,7 +42,7 @@ class _ChatPageState extends State<ChatPage>
 
   @override
   List<VoiceField> get fields => [
-        VoiceField.text('message', const L3('消息', 'Хабар', 'Сообщение'), input),
+        VoiceField.text('message', const L3('消息', 'Хабар', 'Сообщение', 'Message', ky: 'Билдирүү', uz: 'Xabar'), input),
       ];
 
   @override
@@ -124,16 +124,16 @@ class _ChatPageState extends State<ChatPage>
 
   Future<void> more(ChatData data) async {
     final choice =
-        await pickOne<String>(context, tr3('发送', 'Жіберу', 'Отправить'), [
-      ('image', tr3('图片', 'Сурет', 'Фото')),
-      ('demand', tr3('需求卡片', 'Тапсырыс картасы', 'Карточка заявки')),
+        await pickOne<String>(context, tr3('发送', 'Жіберу', 'Отправить', 'Send', ky: 'Жөнөтүү', uz: 'Yuborish'), [
+      ('image', tr3('图片', 'Сурет', 'Фото', 'Photo', ky: 'Сүрөт', uz: 'Rasm')),
+      ('demand', tr3('需求卡片', 'Тапсырыс картасы', 'Карточка заявки', 'Request card', ky: 'Суроо-талап карточкасы', uz: 'Soʻrov kartasi')),
       (
         'phone',
-        tr3('向对方展示我的电话', 'Телефонымды көрсету', 'Показать мой телефон')
+        tr3('向对方展示我的电话', 'Телефонымды көрсету', 'Показать мой телефон', 'Show my phone', ky: 'Телефонумду көрсөтүү', uz: 'Telefonimni koʻrsatish')
       ),
       (
         'whatsapp',
-        tr3('通过 WhatsApp 联系', 'WhatsApp арқылы', 'Связаться в WhatsApp')
+        tr3('通过 WhatsApp 联系', 'WhatsApp арқылы', 'Связаться в WhatsApp', 'Contact on WhatsApp', ky: 'WhatsApp аркылуу байланышуу', uz: 'WhatsApp orqali bogʻlanish')
       ),
     ]);
     if (!mounted || choice == null) return;
@@ -143,13 +143,13 @@ class _ChatPageState extends State<ChatPage>
             context,
             () => context.read(chatRepositoryProvider).send(
                 widget.conversationId, MessageKind.image,
-                text: tr3('现场照片', 'Фото', 'Фото объекта')));
+                text: tr3('现场照片', 'Фото', 'Фото объекта', 'Project photo', ky: 'Долбоордун сүрөтү', uz: 'Loyiha rasmi')));
       case 'demand':
         final mine = await attempt(
             context, context.read(demandRepositoryProvider).myDemands);
         if (mine == null || !mounted) return;
         final id =
-            await pickOne<String>(context, tr3('选择需求', 'Тапсырыс', 'Заявка'), [
+            await pickOne<String>(context, tr3('选择需求', 'Тапсырыс', 'Заявка', 'Request', ky: 'Суроо-талап', uz: 'Soʻrov'), [
           for (final d in mine.where((d) => d.status != DemandStatus.draft))
             (d.id, d.current.title)
         ]);
@@ -170,11 +170,12 @@ class _ChatPageState extends State<ChatPage>
         }
         if (!mounted) return;
         if (await confirmDialog(context,
-                tr3('展示电话号码？', 'Телефонды көрсету?', 'Показать телефон?'),
+                tr3('展示电话号码？', 'Телефонды көрсету?', 'Показать телефон?', 'Show your phone?', ky: 'Телефонуңузду көрсөтөсүзбү?', uz: 'Telefoningizni koʻrsatasizmi?'),
                 body: tr3(
                     '对方将看到你的完整手机号。你的手机号默认对其他人隐藏。',
                     'Екінші жақ нөміріңізді көреді.',
-                    'Собеседник увидит ваш номер.')) &&
+                    'Собеседник увидит ваш номер.',
+                    'The other person will see your number.', ky: 'Башка адам номериңизди көрөт.', uz: 'Boshqa odam raqamingizni koʻradi.')) &&
             mounted) {
           await attempt(
               context,
@@ -184,11 +185,12 @@ class _ChatPageState extends State<ChatPage>
         }
       case 'whatsapp':
         await confirmDialog(
-            context, tr3('通过 WhatsApp 联系', 'WhatsApp', 'WhatsApp'),
+            context, tr3('通过 WhatsApp 联系', 'WhatsApp', 'WhatsApp', 'WhatsApp', ky: 'WhatsApp', uz: 'WhatsApp'),
             body: tr3(
                 '打开 WhatsApp 会向对方暴露你的手机号。平台不把外部聊天当作成交证据，确认合作请回到 Yusal 操作。测试环境不会真正打开外部应用。',
                 'WhatsApp нөміріңізді көрсетеді. Келісімді Yusal-да растаңыз.',
-                'WhatsApp раскроет ваш номер. Подтверждайте сотрудничество в Yusal.'));
+                'WhatsApp раскроет ваш номер. Подтверждайте сотрудничество в Yusal.',
+                'WhatsApp will reveal your number. Confirm cooperations in Yusal.', ky: "WhatsApp номериңизди көрсөтөт. Кызматташууларды Yusal'да ырастаңыз.", uz: 'WhatsApp raqamingizni koʻrsatadi. Hamkorliklarni Yusal da tasdiqlang.'));
     }
   }
 
@@ -208,7 +210,7 @@ class _ChatPageState extends State<ChatPage>
                     title: failureText(e),
                     action: OutlinedButton(
                         onPressed: _refresh.call,
-                        child: Text(tr3('重试', 'Қайталау', 'Повторить')))))),
+                        child: Text(tr3('重试', 'Қайталау', 'Повторить', 'Retry', ky: 'Кайталоо', uz: 'Qayta urinish')))))),
         builder: (context, data) {
           final me = context.session.currentAccount?.id;
           final name = deletedName(data.other);
@@ -231,7 +233,7 @@ class _ChatPageState extends State<ChatPage>
                                     .read(chatRepositoryProvider)
                                     .block(other),
                                 success:
-                                    tr3('已拉黑', 'Бұғатталды', 'Заблокировано'));
+                                    tr3('已拉黑', 'Бұғатталды', 'Заблокировано', 'Blocked', ky: 'Бөгөттөлгөн', uz: 'Bloklangan'));
                           } else if (v == 'unblock') {
                             await attempt(
                                 context,
@@ -249,13 +251,14 @@ class _ChatPageState extends State<ChatPage>
                                   value: data.blocked ? 'unblock' : 'block',
                                   child: Text(data.blocked
                                       ? tr3('取消拉黑', 'Бұғаттан шығару',
-                                          'Разблокировать')
+                                          'Разблокировать',
+                                          'Unblock', ky: 'Бөгөттөн чыгаруу', uz: 'Blokdan chiqarish')
                                       : tr3(
-                                          '拉黑', 'Бұғаттау', 'Заблокировать'))),
+                                          '拉黑', 'Бұғаттау', 'Заблокировать', 'Block', ky: 'Бөгөттөө', uz: 'Bloklash'))),
                               PopupMenuItem(
                                   value: 'report',
                                   child:
-                                      Text(tr3('举报', 'Шағым', 'Пожаловаться'))),
+                                      Text(tr3('举报', 'Шағым', 'Пожаловаться', 'Report', ky: 'Арыз берүү', uz: 'Shikoyat qilish'))),
                             ]),
                   ]),
               body: Column(children: [
@@ -268,7 +271,7 @@ class _ChatPageState extends State<ChatPage>
                               const EdgeInsets.symmetric(horizontal: 16),
                           leading: const Icon(Icons.description_outlined),
                           title: Text(
-                              tr3('关于一个需求', 'Тапсырыс туралы', 'По заявке')),
+                              tr3('关于一个需求', 'Тапсырыс туралы', 'По заявке', 'About the request', ky: 'Суроо-талап жөнүндө', uz: 'Soʻrov haqida')),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => pushPage<void>(
                               context,
@@ -318,7 +321,8 @@ class _ChatPageState extends State<ChatPage>
                   Padding(
                       padding: const EdgeInsets.all(16),
                       child: Hint(tr3('你已拉黑对方，无法发送消息。', 'Сіз бұғаттадыңыз.',
-                          'Вы заблокировали собеседника.'))),
+                          'Вы заблокировали собеседника.',
+                          'You blocked this person.', ky: 'Сиз бул адамды бөгөттөгөнсүз.', uz: 'Siz bu odamni bloklagansiz.'))),
                 if (!data.blocked)
                   SafeArea(
                       top: false,
@@ -328,7 +332,7 @@ class _ChatPageState extends State<ChatPage>
                           padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
                           child: Row(children: [
                             IconButton(
-                                tooltip: tr3('更多', 'Тағы', 'Ещё'),
+                                tooltip: tr3('更多', 'Тағы', 'Ещё', 'More', ky: 'Дагы', uz: 'Yana'),
                                 onPressed: () => more(data),
                                 icon: const Icon(Icons.add_circle_outline)),
                             Expanded(
@@ -340,7 +344,7 @@ class _ChatPageState extends State<ChatPage>
                                     onSubmitted: (_) => send(),
                                     decoration: InputDecoration(
                                         hintText: tr3(
-                                            '输入消息', 'Хабар жазыңыз', 'Сообщение'),
+                                            '输入消息', 'Хабар жазыңыз', 'Сообщение', 'Message', ky: 'Билдирүү', uz: 'Xabar'),
                                         contentPadding:
                                             const EdgeInsets.symmetric(
                                                 horizontal: 16, vertical: 10),
@@ -358,7 +362,7 @@ class _ChatPageState extends State<ChatPage>
                                             borderSide: BorderSide(color: t.ink))))),
                             const SizedBox(width: 6),
                             IconButton.filled(
-                                tooltip: tr3('发送', 'Жіберу', 'Отправить'),
+                                tooltip: tr3('发送', 'Жіберу', 'Отправить', 'Send', ky: 'Жөнөтүү', uz: 'Yuborish'),
                                 style: IconButton.styleFrom(
                                     backgroundColor: t.accent),
                                 onPressed: send,
@@ -374,9 +378,9 @@ bool _sameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
 String _dayLabel(DateTime day, DateTime now) {
-  if (_sameDay(day, now)) return tr3('今天', 'Бүгін', 'Сегодня');
+  if (_sameDay(day, now)) return tr3('今天', 'Бүгін', 'Сегодня', 'Today', ky: 'Бүгүн', uz: 'Bugun');
   if (_sameDay(day, now.subtract(const Duration(days: 1)))) {
-    return tr3('昨天', 'Кеше', 'Вчера');
+    return tr3('昨天', 'Кеше', 'Вчера', 'Yesterday', ky: 'Кечээ', uz: 'Kecha');
   }
   return fmtDay(day);
 }
@@ -438,15 +442,15 @@ class _Bubble extends StatelessWidget {
                     children: [
                       Text(
                           m.kind == MessageKind.demandCard
-                              ? tr3('需求', 'Тапсырыс', 'Заявка')
-                              : tr3('报价', 'Ұсыныс', 'Предложение'),
+                              ? tr3('需求', 'Тапсырыс', 'Заявка', 'Request', ky: 'Суроо-талап', uz: 'Soʻrov')
+                              : tr3('报价', 'Ұсыныс', 'Предложение', 'Quote', ky: 'Сунуш', uz: 'Taklif'),
                           style: TextStyle(
                               color: t.accent,
                               fontSize: YFont.caption,
                               fontWeight: FontWeight.w700)),
                       Text(
                           info.first.isEmpty
-                              ? tr3('已不可见', 'Қолжетімсіз', 'Недоступно')
+                              ? tr3('已不可见', 'Қолжетімсіз', 'Недоступно', 'Unavailable', ky: 'Жеткиликсиз', uz: 'Mavjud emas')
                               : info.first,
                           style: const TextStyle(fontWeight: FontWeight.w700)),
                       if (info.length > 2) Text(info[2]),
@@ -457,9 +461,11 @@ class _Bubble extends StatelessWidget {
           Text(
               mine
                   ? tr3('你向对方展示了电话', 'Телефоныңызды көрсеттіңіз',
-                      'Вы показали свой номер')
+                      'Вы показали свой номер',
+                      'You shared your number', ky: 'Сиз номериңизди бөлүштүңүз', uz: 'Siz raqamingizni ulashdingiz')
                   : tr3('对方向你展示了电话', 'Телефонын көрсетті',
-                      'Собеседник показал номер'),
+                      'Собеседник показал номер',
+                      'They shared their number', ky: 'Ал номерин бөлүштү', uz: 'U raqamini ulashdi'),
               style: TextStyle(
                   color: mine ? t.bg.withValues(alpha: 0.75) : t.muted,
                   fontSize: YFont.caption)),
@@ -499,7 +505,8 @@ class _Bubble extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(
                                 tr3('发送失败，点击重试', 'Жіберілмеді, қайталау',
-                                    'Не отправлено, повторить'),
+                                    'Не отправлено, повторить',
+                                    'Not sent; retry', ky: 'Жөнөтүлгөн жок; кайталаңыз', uz: 'Yuborilmadi; qayta urining'),
                                 style: TextStyle(
                                     color: t.crit, fontSize: YFont.caption)),
                           ]))

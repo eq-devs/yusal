@@ -143,13 +143,111 @@ class DerivedCache<K extends Object, V> {
     _entries.add((doc, key, value));
     return value;
   }
+
+  void clear() => _entries.clear();
 }
 
 final _floorBases = DerivedCache<String, FloorBase>(8);
 
 FloorBase deriveFloorBase(HouseDocument doc, String floorId) =>
-    _floorBases.get(doc, floorId,
-        () => timed('derive.floorBase', () => _deriveFloorBase(doc, floorId)));
+    _floorBases.get(doc, floorId, () {
+      final floor = doc.floors.firstWhere((f) => f.id == floorId);
+      final kept = _floorShapes.find(doc, floor);
+      if (kept != null) return kept;
+      final base =
+          timed('derive.floorBase', () => _deriveFloorBase(doc, floorId));
+      _floorShapes.keep(doc, floor, base);
+      return base;
+    });
+
+final _floorShapes = _FloorShapeCache(16);
+
+/// Forgets every floor geometry kept, so the next one is derived afresh;
+/// for measuring what derivation costs.
+void clearFloorBases() {
+  _floorBases.clear();
+  _floorShapes._entries.clear();
+}
+
+/// The plan geometry of floors lately derived, found again by what the
+/// geometry is made from rather than by the document it came from.
+///
+/// A floor's geometry reads only its rooms' and stairs' places, its wall
+/// pieces and cut-outs, the axes, the footprint's size and the two default
+/// wall thicknesses. An edit that leaves those alone on a floor (a rename,
+/// a door moved, anything on another floor) makes a new document whose
+/// floor has the same geometry, and this finds it instead of deriving it
+/// again.
+class _FloorShapeCache {
+  _FloorShapeCache(this.capacity);
+  final int capacity;
+  final _entries = <(_FloorShape, FloorBase)>[];
+
+  FloorBase? find(HouseDocument doc, Floor floor) {
+    for (var i = _entries.length - 1; i >= 0; i--) {
+      final e = _entries[i];
+      if (!e.$1.matches(doc, floor)) continue;
+      if (i != _entries.length - 1) {
+        _entries
+          ..removeAt(i)
+          ..add(e);
+      }
+      return e.$2;
+    }
+    return null;
+  }
+
+  void keep(HouseDocument doc, Floor floor, FloorBase base) {
+    if (_entries.length >= capacity) _entries.removeAt(0);
+    _entries.add((_FloorShape(doc, floor), base));
+  }
+}
+
+/// Everything [_deriveFloorBase] reads of a document for one floor.
+class _FloorShape {
+  _FloorShape(HouseDocument doc, this.floor)
+      : axes = doc.axes,
+        width = doc.footprint.width,
+        depth = doc.footprint.depth,
+        outerWall = doc.defaults.outerWallThickness,
+        innerWall = doc.defaults.innerWallThickness;
+  final Floor floor;
+  final AxisSystem axes;
+  final int width;
+  final int depth;
+  final int outerWall;
+  final int innerWall;
+
+  bool matches(HouseDocument doc, Floor other) {
+    if (width != doc.footprint.width ||
+        depth != doc.footprint.depth ||
+        outerWall != doc.defaults.outerWallThickness ||
+        innerWall != doc.defaults.innerWallThickness ||
+        floor.id != other.id ||
+        floor.explicitWalls != other.explicitWalls) {
+      return false;
+    }
+    if (!identical(axes, doc.axes) && axes != doc.axes) return false;
+    if (identical(floor, other)) return true;
+    return _same<Room>(floor.rooms, other.rooms,
+            (a, b) => a.id == b.id && _same(a.regions, b.regions)) &&
+        _same<Stair>(floor.stairs, other.stairs,
+            (a, b) => a.id == b.id && a.region == b.region) &&
+        _same(floor.wallOverrides, other.wallOverrides) &&
+        _same(floor.outside, other.outside);
+  }
+
+  static bool _same<T>(List<T> a, List<T> b, [bool Function(T, T)? equal]) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      final x = a[i];
+      final y = b[i];
+      if (identical(x, y)) continue;
+      if (equal == null ? x != y : !equal(x, y)) return false;
+    }
+    return true;
+  }
+}
 
 FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
   final floor = doc.floors.firstWhere((f) => f.id == floorId);
@@ -177,6 +275,11 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
     }
   }
   final edges = <UnitEdge>[];
+  // Where each wall piece runs, worked out once: every unit edge below asks.
+  final overrides = [
+    for (final override in floor.wallOverrides)
+      (override, resolveAnchor(axes, override.anchor).chain!)
+  ];
   void edge(
       ResolvedAxis a, ResolvedAxis s, ResolvedAxis e, Cell? neg, Cell? pos) {
     final n = owners[neg];
@@ -208,8 +311,7 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
                     ? 0
                     : doc.defaults.innerWallThickness)
             .toDouble());
-    for (final override in floor.wallOverrides) {
-      final chain = resolveAnchor(axes, override.anchor).chain!;
+    for (final (override, chain) in overrides) {
       if (chain.carrier.id == a.id &&
           s.pos >= chain.startPos &&
           e.pos <= chain.endPos) {

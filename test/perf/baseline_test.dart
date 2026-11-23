@@ -31,8 +31,8 @@ Map<String, Map<String, num>> measureRender(UndoableDesignState s,
   const size = Size(780, 520);
   final doc = composeDocument(benchMeta, s);
   final derived = deriveHouse(doc);
-  double ms(void Function() body) =>
-      double.parse(meanMs(body, runs: runs, warmUp: warmUp).toStringAsFixed(3));
+  double ms(void Function() body) => double.parse(
+      meanMs((_) => body(), runs: runs, warmUp: warmUp).toStringAsFixed(3));
   SceneModel build() =>
       buildScene(doc, derived, const SceneOptions(), (r) => r.name);
   final model = build();

@@ -104,6 +104,13 @@ List<OpeningPlacement> deriveOpenings(
 
 final _houses = DerivedCache<int, DerivedHouse>(4);
 
+/// Forgets everything derived, so the next house is derived afresh; for
+/// measuring what derivation costs.
+void clearDerived() {
+  _houses.clear();
+  clearFloorBases();
+}
+
 DerivedHouse deriveHouse(HouseDocument doc) =>
     _houses.get(doc, 0, () => timed('derive.house', () => _deriveHouse(doc)));
 

@@ -27,14 +27,16 @@ const benchMeta = Meta(
     createdAt: '2026-10-09T00:00:00Z',
     updatedAt: '2026-10-09T00:00:00Z');
 
-/// Mean milliseconds of [body] over [runs], after a warm-up.
-double meanMs(void Function() body, {int runs = 100, int warmUp = 20}) {
+/// Mean milliseconds of [body] over [runs], after a warm-up. [body] is told
+/// which run it is, so a benchmark of a drag can move a little further each
+/// time, as a finger does, instead of asking for the same result again.
+double meanMs(void Function(int run) body, {int runs = 100, int warmUp = 20}) {
   for (var i = 0; i < warmUp; i++) {
-    body();
+    body(i);
   }
   final watch = Stopwatch()..start();
   for (var i = 0; i < runs; i++) {
-    body();
+    body(warmUp + i);
   }
   return watch.elapsedMicroseconds / runs / 1000;
 }
@@ -117,25 +119,34 @@ Map<String, Object> measurePlan(UndoableDesignState s,
   final doc = composeDocument(benchMeta, s);
   final floor = s.floors.first;
   final bytes = utf8.encode(encodeHouse(doc));
-  // A new document each time, so the derived caches do not answer.
-  HouseDocument fresh() => composeDocument(benchMeta, s);
-  double ms(void Function() body) =>
+  double ms(void Function(int run) body) =>
       double.parse(meanMs(body, runs: runs, warmUp: warmUp).toStringAsFixed(3));
-  double command(String kind, Map<String, dynamic> args) {
-    final result = executeCommand(s, DesignCommand(kind, args), ctx);
+  CommandResult run(String kind, Map<String, dynamic> args) =>
+      executeCommand(s, DesignCommand(kind, args), ctx);
+  // Each run asks for a slightly different result, as each pointer move of
+  // a drag does.
+  double command(String kind, Map<String, dynamic> Function(int run) args) {
+    final result = run(kind, args(0));
     if (result is! Applied) {
       throw StateError('$kind was not applied: $result');
     }
-    return ms(() => executeCommand(s, DesignCommand(kind, args), ctx));
+    return ms((i) => run(kind, args(i)));
   }
+
+  double dragFrame(String kind, Map<String, dynamic> Function(int run) args) =>
+      ms((i) => deriveHouse(composeDocument(
+          benchMeta, (run(kind, args(i)) as Applied).newState)));
 
   final derived = deriveHouse(doc);
   final opening = floor.openings.first;
-  final axes = [
+  final axis = [
     ...s.axes.global.map((a) => (a.id, a.pos)),
     ...s.axes.floor.map((a) => (a.id, a.pos))
-  ];
-  final resize = {'openingId': opening.id, 'width': opening.width - 100};
+  ].firstOrNull;
+  Map<String, dynamic> resize(int i) =>
+      {'openingId': opening.id, 'width': opening.width - 1 - i % 100};
+  Map<String, dynamic> moveAxis(int i) =>
+      {'axisId': axis!.$1, 'pos': axis.$2 + 1 + i % 200};
   return {
     'size': {
       'floors': s.floors.length,
@@ -145,38 +156,44 @@ Map<String, Object> measurePlan(UndoableDesignState s,
       'sceneElements': derived.scene3d.length,
     },
     'ms': {
-      'validateHouse': ms(() => validateHouse(doc)),
-      'encodeHouse': ms(() => encodeHouse(doc)),
-      'loadHouse': ms(() => loadHouse(bytes)),
-      'deriveFloorBase': ms(() => deriveFloorBase(fresh(), floor.id)),
-      'deriveHouse': ms(() => deriveHouse(fresh())),
-      'runChecks': ms(() => runChecks(doc, derived)),
-      'estimateCost': ms(() => estimateCost(doc, derived)),
-      'command.AddFurniture': command('AddFurniture', {
-        'floorId': floor.id,
-        'kind': FurnitureKind.values.first,
-        'x': 500,
-        'y': 500
+      'validateHouse': ms((_) => validateHouse(doc)),
+      'encodeHouse': ms((_) => encodeHouse(doc)),
+      'loadHouse': ms((_) => loadHouse(bytes)),
+      // With nothing kept from earlier: what opening a project costs.
+      'deriveFloorBase.cold': ms((_) {
+        clearDerived();
+        deriveFloorBase(doc, floor.id);
       }),
-      'command.RenameRoom': command(
-          'RenameRoom', {'roomId': floor.rooms.first.id, 'value': 'abc'}),
-      'command.SetFloorHeight': command(
-          'SetFloorHeight', {'floorId': floor.id, 'value': floor.height + 100}),
+      'deriveHouse.cold': ms((_) {
+        clearDerived();
+        deriveHouse(doc);
+      }),
+      'runChecks': ms((_) => runChecks(doc, derived)),
+      'estimateCost': ms((_) => estimateCost(doc, derived)),
+      'command.AddFurniture': command(
+          'AddFurniture',
+          (i) => {
+                'floorId': floor.id,
+                'kind': FurnitureKind.values.first,
+                'x': 500 + i,
+                'y': 500
+              }),
+      'command.RenameRoom': command('RenameRoom',
+          (i) => {'roomId': floor.rooms.first.id, 'value': 'room $i'}),
+      'command.SetFloorHeight': command('SetFloorHeight',
+          (i) => {'floorId': floor.id, 'value': floor.height + 1 + i % 100}),
       'command.ResizeOpening': command('ResizeOpening', resize),
-      'command.MoveOpening': command('MoveOpening', {
-        'openingId': opening.id,
-        'position': {'type': 'fromStart', 'd': 150}
-      }),
-      if (axes.isNotEmpty)
-        'command.MoveAxis': command(
-            'MoveAxis', {'axisId': axes.first.$1, 'pos': axes.first.$2 + 100}),
+      'command.MoveOpening': command(
+          'MoveOpening',
+          (i) => {
+                'openingId': opening.id,
+                'position': {'type': 'fromStart', 'd': 100 + i % 100}
+              }),
+      if (axis != null) 'command.MoveAxis': command('MoveAxis', moveAxis),
       // One pointer move of a drag as the editor runs it: the command, then
       // the geometry of its result.
-      'dragFrame': ms(() {
-        final r = executeCommand(s, DesignCommand('ResizeOpening', resize), ctx)
-            as Applied;
-        deriveHouse(composeDocument(benchMeta, r.newState));
-      }),
+      'dragFrame.resizeOpening': dragFrame('ResizeOpening', resize),
+      if (axis != null) 'dragFrame.moveAxis': dragFrame('MoveAxis', moveAxis),
     },
   };
 }

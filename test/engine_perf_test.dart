@@ -69,6 +69,8 @@ void main() {
     expect(perf.timing('command.RenameRoom')!.count, 1);
 
     final doc = composeDocument(benchMeta, (result as Applied).newState);
+    // Nothing kept from the command, so the geometry below is derived.
+    clearDerived();
     perf.reset();
     final derived = deriveHouse(doc);
     deriveHouse(doc);

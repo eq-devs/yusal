@@ -1,0 +1,4 @@
+{
+  "SceneVertex": {"type": "vertex", "file": "shaders/gpu/scene.vert"},
+  "SceneFragment": {"type": "fragment", "file": "shaders/gpu/scene.frag"}
+}

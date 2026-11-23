@@ -52,3 +52,37 @@ YUSAL_BENCH_RUNS=100 YUSAL_BENCH_OUT=build/baseline.json \
 Both measure a typical plan (12 × 10 m, two floors, 16 rooms) and a large
 one (30 × 24 m, two floors, 72 rooms). Read the two runs against earlier
 runs on the same machine, not against a phone.
+
+## The 3D view on the GPU
+
+The 3D view draws its faces with Flutter GPU (a depth buffer, 4x
+anti-aliasing where the device offers it) when the device can, and with the
+canvas painter otherwise. Nothing has to be chosen: `SceneGpu.prepare()`
+looks once at start-up, and the view paints on the canvas until it answers
+and for good where there is no renderer.
+
+Where the canvas painter still draws:
+
+- the web, and any phone without Impeller (Android 9 and older);
+- walking through the house, and the foundation view;
+- the sky, the ground, sun shadows and labels, in every view;
+- the rest of the run after the GPU fails once while drawing.
+
+The switches that turn Flutter GPU on are in `AndroidManifest.xml`
+(`io.flutter.embedding.android.EnableFlutterGPU`) and both `Info.plist`
+files (`FLTEnableFlutterGPU`). The shaders in `shaders/gpu` are compiled by
+`hook/build.dart` during the build.
+
+```sh
+# The GPU tests need both flags; without them they check the canvas path.
+flutter test test/gpu --enable-impeller --enable-flutter-gpu
+
+# Pictures of each view from both painters, to look at side by side.
+YUSAL_GPU_SHOTS=/tmp/shots flutter test test/gpu --enable-impeller --enable-flutter-gpu
+
+# A build that never uses the GPU, to compare on the same phone.
+flutter run --dart-define=YUSAL_GPU=false
+```
+
+Flutter GPU is a preview API: it can change between Flutter releases, so
+run the GPU tests after every Flutter upgrade.

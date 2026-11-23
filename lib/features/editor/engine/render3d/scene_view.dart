@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
@@ -320,6 +321,12 @@ class ScenePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    timed('paint.scene3d', () => _paint(canvas, size));
+    sized('scene3d.drawn', () => _items.length);
+    sized('scene3d.culled', () => culled);
+  }
+
+  void _paint(Canvas canvas, Size size) {
     final night = settings.night;
     canvas.drawRect(
         Offset.zero & size, Paint()..color = night ? skyNight : skyDay);

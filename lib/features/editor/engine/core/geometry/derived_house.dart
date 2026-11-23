@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
 import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
@@ -104,7 +105,7 @@ List<OpeningPlacement> deriveOpenings(
 final _houses = DerivedCache<int, DerivedHouse>(4);
 
 DerivedHouse deriveHouse(HouseDocument doc) =>
-    _houses.get(doc, 0, () => _deriveHouse(doc));
+    _houses.get(doc, 0, () => timed('derive.house', () => _deriveHouse(doc)));
 
 DerivedHouse _deriveHouse(HouseDocument doc) {
   final elements = <SceneElement>[];

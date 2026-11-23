@@ -1,3 +1,4 @@
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:meta/meta.dart';
 import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
@@ -69,7 +70,12 @@ List<ValidationError> validateDesignState(UndoableDesignState state) =>
 /// are immutable, so caching by identity is safe.
 final _validInputs = Expando<bool>('validInputs');
 
-CommandResult executeCommand(
+CommandResult executeCommand(UndoableDesignState state, DesignCommand command,
+        CommandContext context) =>
+    timed('command.${command.kind}',
+        () => _executeCommand(state, command, context));
+
+CommandResult _executeCommand(
     UndoableDesignState state, DesignCommand command, CommandContext context) {
   final doc = _document(state);
   final args = command.arguments;

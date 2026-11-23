@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
 import 'dart:math' as math;
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
 import 'package:yusal/features/editor/engine/core/canonicalization/room_canonicalizer.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
@@ -147,7 +148,8 @@ class DerivedCache<K extends Object, V> {
 final _floorBases = DerivedCache<String, FloorBase>(8);
 
 FloorBase deriveFloorBase(HouseDocument doc, String floorId) =>
-    _floorBases.get(doc, floorId, () => _deriveFloorBase(doc, floorId));
+    _floorBases.get(doc, floorId,
+        () => timed('derive.floorBase', () => _deriveFloorBase(doc, floorId)));
 
 FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
   final floor = doc.floors.firstWhere((f) => f.id == floorId);

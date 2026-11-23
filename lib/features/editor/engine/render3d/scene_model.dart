@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:ui' show Color, Offset;
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
 import 'package:yusal/features/editor/engine/core/analysis/site_analysis.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
@@ -320,6 +321,18 @@ class Mat {
 }
 
 SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
+    SceneOptions options, String Function(Room) roomName,
+    {String areaUnit = 'm²'}) {
+  final scene = timed('scene3d.build',
+      () => _buildScene(doc, derived, options, roomName, areaUnit: areaUnit));
+  sized('scene3d.faces', () => scene.faces.length);
+  sized('scene3d.vertices',
+      () => scene.faces.fold(0, (n, f) => n + f.points.length));
+  sized('scene3d.lines', () => scene.lines.length);
+  return scene;
+}
+
+SceneModel _buildScene(HouseDocument doc, DerivedHouse derived,
     SceneOptions options, String Function(Room) roomName,
     {String areaUnit = 'm²'}) {
   final faces = <Face3>[];

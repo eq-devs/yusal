@@ -1,4 +1,5 @@
 import 'dart:ui' show Offset;
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
 
 /// A piece of a [Face3] after the BSP tree split it; [uv] follows the
@@ -45,6 +46,12 @@ class BspTree {
   static const eps = 1e-5;
 
   factory BspTree.build(List<Face3> faces) {
+    final tree = timed('scene3d.bsp', () => BspTree._build(faces));
+    sized('scene3d.bspFragments', () => tree.fragmentCount);
+    return tree;
+  }
+
+  factory BspTree._build(List<Face3> faces) {
     final list = <Fragment>[
       for (final f in faces)
         if (f.points.length >= 3 && f.normal.length > 0.5)

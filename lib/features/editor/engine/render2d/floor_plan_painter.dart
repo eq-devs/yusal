@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/constant/tokens.dart';
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
@@ -317,7 +318,10 @@ class FloorPlanPainter extends CustomPainter {
   }
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(Canvas canvas, Size size) =>
+      timed('paint.plan2d', () => _paint(canvas, size));
+
+  void _paint(Canvas canvas, Size size) {
     final t = tokens;
     final paint = Paint();
     final width = base.axes.v.last.pos.toDouble();

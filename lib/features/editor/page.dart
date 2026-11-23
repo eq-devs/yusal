@@ -29,6 +29,7 @@ import 'package:yusal/service/storage/house_import.dart';
 import 'package:yusal/service/storage/last_open.dart';
 import 'package:yusal/features/editor/widgets/footprint_sketch.dart';
 import 'package:yusal/features/editor/widgets/wall_length_dialog.dart';
+import 'package:yusal/features/editor/widgets/perf_meter.dart';
 import 'package:yusal/features/editor/util/wall_attachment_points.dart';
 import 'package:yusal/features/editor/util/wall_snap.dart';
 import 'package:yusal/features/editor/util/drawing_export.dart';
@@ -2656,7 +2657,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PerfMeter(child: buildPage(context));
+
+  Widget buildPage(BuildContext context) {
     watchLang(context);
     final t = Tokens.of(context);
     return PopScope(

@@ -693,6 +693,10 @@ class _DemandQueue extends StatefulWidget {
 class _DemandQueueState extends State<_DemandQueue> {
   final _selected = <String>{};
 
+  /// Swiped away (approved or rejected): out of the list at once, before
+  /// the queue is read again.
+  final _decided = <String>{};
+
   Future<void> _batch(bool approve) async {
     String reason = '';
     if (!approve) {
@@ -782,6 +786,7 @@ class _DemandQueueState extends State<_DemandQueue> {
                           style: YText.caption.copyWith(color: t.muted)))
                   : null,
               item: (context, d) {
+                if (_decided.contains(d.id)) return const SizedBox.shrink();
                 final card = _DemandCard(
                     demand: d,
                     selected: _selected.contains(d.id),
@@ -819,6 +824,7 @@ class _DemandQueueState extends State<_DemandQueue> {
                       }
                       return _reject(d);
                     },
+                    onDismissed: (_) => setState(() => _decided.add(d.id)),
                     child: card);
               })),
     ]);

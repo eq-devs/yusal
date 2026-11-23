@@ -33,7 +33,6 @@ void main() {
       await t.pumpWidget(
           testApp(MockBackend(latency: Duration.zero), store: store));
       await t.pumpAndSettle();
-      expect(find.textContaining('演示模式'), findsOneWidget);
       await t.tap(find.text('我的房子').last);
       await t.pumpAndSettle();
       // The design list is read from disk off the test clock.

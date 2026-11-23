@@ -251,18 +251,18 @@ void main() {
     rbac('SESS:promote-ui-after-sync', freshUi, 'ALLOWED',
         freshUi ? 'restrict button shown' : 'still hidden');
 
-    // Demotion: the backend refuses at once; the console closes once the
-    // app re-reads the account.
+    // Demotion: the backend refuses at once, and that 403 makes the app
+    // re-read the account, so the console closes without a restart.
     await open(t, const AdminPage());
     await io(t, () => root.grant(live.id, ''));
     final demoted = await attempt(t, repos.admin.todo);
     rbac('SESS:demote-backend-immediate', demoted == ApiCodes.forbidden,
         'DENIED', demoted);
-    final consoleStillOpen = !shown(_noAccess);
-    // ignore: avoid_print
-    print(
-        'RBAC_UI|SESS:demote-ui-before-sync|${consoleStillOpen ? 'STALE' : 'FRESH'}|'
-        'console ${consoleStillOpen ? 'still open until the account is re-read' : 'closed'}');
+    await t.runAsync(() => Future<void>.delayed(const Duration(seconds: 1)));
+    await idle(t, 1200);
+    final closedOn403 = shown(_noAccess);
+    rbac('SESS:demote-ui-after-403', closedOn403, 'DENIED',
+        closedOn403 ? 'lock screen' : 'console still open');
     await t.runAsync(repos.api.syncSession);
     await idle(t, 1200);
     final closed = shown(_noAccess);

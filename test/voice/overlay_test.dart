@@ -317,6 +317,22 @@ void main() {
     expect(find.byKey(const Key('voice-intro')), findsNothing);
   });
 
+  testWidgets('the introduction waits while a page is open over the tabs',
+      (t) async {
+    SharedPreferences.setMockInitialValues({});
+    await pump(t, VoiceMock(ScriptedBackend([])));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('voice-intro')), findsOneWidget);
+    // A cooperation or a demand opened from a tab: its buttons stay clear.
+    navigator.currentState!.push(MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('page'))));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('voice-intro')), findsNothing);
+    navigator.currentState!.pop();
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('voice-intro')), findsOneWidget);
+  });
+
   testWidgets('the sign-in page has no orb over its buttons', (t) async {
     await pump(t, VoiceMock(ScriptedBackend([])));
     await t.pump();

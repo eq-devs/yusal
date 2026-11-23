@@ -142,8 +142,11 @@ void main() {
       final item = find.widgetWithText(TextField, '分项').first;
       await scrollTo(t, item);
       await t.enterText(item, '铺瓦');
-      final row = find.ancestor(of: item, matching: find.byType(Row)).first;
-      final fields = find.descendant(of: row, matching: find.byType(TextField));
+      // The name has a line of its own, the numbers sit under it.
+      final line =
+          find.ancestor(of: item, matching: find.byType(Column)).first;
+      final fields =
+          find.descendant(of: line, matching: find.byType(TextField));
       await t.enterText(fields.at(1), '120');
       await t.enterText(fields.at(2), '3500');
       await t.pumpAndSettle();

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 
 void main() {
   var ids = 0;
@@ -58,7 +58,8 @@ void main() {
   test(
       'short unfinished wall persists, renders in both views and keeps one room',
       () {
-    final before = initial(), s = add(before, 2000, 3000, 6000, 3000);
+    final before = initial();
+    final s = add(before, 2000, 3000, 6000, 3000);
     expect(before.floors.first.explicitWalls, false);
     expect(s.floors.first.explicitWalls, true);
     expect(s.floors.first.rooms.length, 1);
@@ -120,7 +121,9 @@ void main() {
       {'x0': 2000, 'y0': 3000, 'x1': 6000, 'y1': 4000},
       {'x0': 2000, 'y0': 3000, 'x1': 2100, 'y1': 3000},
       {'x0': 2000, 'y0': 3000, 'x1': 14000, 'y1': 3000}
-    ]) expect(edit(s, 'AddDrawnWall', a), isA<Rejected>());
+    ]) {
+      expect(edit(s, 'AddDrawnWall', a), isA<Rejected>());
+    }
     expect(s.floors.first.wallOverrides.length, 1);
   });
   test('independent wall moves 100mm without the legacy 300mm axis restriction',
@@ -223,7 +226,8 @@ void main() {
             .wallSegments
             .any((w) => w.axis.dir == AxisDir.V && w.axis.pos == 3000),
         true);
-    final a = s.floors.first.rooms[0].id, b = s.floors.first.rooms[1].id;
+    final a = s.floors.first.rooms[0].id;
+    final b = s.floors.first.rooms[1].id;
     s = (edit(s, 'MergeRooms', {'roomIdA': a, 'roomIdB': b}) as Applied)
         .newState;
     expect(s.floors.first.rooms.length, 1);
@@ -350,7 +354,8 @@ void main() {
       'roomType': RoomType.custom
     }) as Applied)
         .newState;
-    final d = doc(s), axes = resolveFloorAxes(d, s.floors.first.id)!;
+    final d = doc(s);
+    final axes = resolveFloorAxes(d, s.floors.first.id)!;
     String id(AxisDir dir, int pos) =>
         axes.all.firstWhere((a) => a.dir == dir && a.pos == pos).id;
     s = (edit(s, 'AddStair', {

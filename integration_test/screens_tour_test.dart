@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../test/support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/features/editor/house_editor.dart';
-import 'package:yusal/main.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/page.dart';
 import '../test/support/mock/mock_backend.dart';
 import '../test/support/mock/mock_seed.dart';
-import 'package:yusal/features/shell/shell.dart';
-import 'package:yusal/storage/last_open.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 /// A slow walk through the main screens on a real device or simulator, so
 /// they can be looked at (or captured with `xcrun simctl io booted
 /// screenshot`): each screen is held for a few seconds and announced with a
 /// `SCREEN <name>` line.
 ///
-///   flutter test integration_test/screens_tour_test.dart -d <device> \
-///       --dart-define=TOUR_LANG=kk --dart-define=TOUR_NIGHT=true
+/// ```
+/// flutter test integration_test/screens_tour_test.dart -d <device> \
+///     --dart-define=TOUR_LANG=kk --dart-define=TOUR_NIGHT=true
+/// ```
 const _lang = String.fromEnvironment('TOUR_LANG', defaultValue: 'ru');
 const _night = bool.fromEnvironment('TOUR_NIGHT');
 
@@ -29,8 +30,8 @@ void main() {
     final store = ProjectStore();
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
-    AppSettings.instance.lang = AppLang.values.byName(_lang);
-    AppSettings.instance.theme = _night ? ThemeChoice.night : ThemeChoice.day;
+    appLang = AppLang.values.byName(_lang);
+    appTheme = _night ? ThemeChoice.night : ThemeChoice.day;
     var n = 0;
     final id = await store.createProject(createKazakhTemplate(
         DateTime.now().toUtc().toIso8601String(), () => 'tour_${n++}',
@@ -48,8 +49,7 @@ void main() {
     try {
       final backend = MockBackend(latency: Duration.zero)
         ..signInAs(SeedIds.owner);
-      await t.pumpWidget(
-          ProviderScope(child: HouseApp(repos: backend, store: store)));
+      await t.pumpWidget(testApp(backend, store: store));
       await hold('discover');
       await t.tap(find.byType(ShellBarTab).at(1));
       await hold('houses');
@@ -80,8 +80,8 @@ void main() {
       await t.pumpWidget(const SizedBox.shrink());
       await store.deleteProject(id);
       await LastOpenProject.write(previous);
-      AppSettings.instance.lang = AppLang.zh;
-      AppSettings.instance.theme = ThemeChoice.auto;
+      appLang = AppLang.zh;
+      appTheme = ThemeChoice.auto;
     }
   });
 }

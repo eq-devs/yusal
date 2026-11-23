@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/core/commands/house_templates.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/checks/check_engine.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
 
 void main() {
   for (final kind in houseTemplates.keys) {

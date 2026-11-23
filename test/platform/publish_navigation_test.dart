@@ -1,15 +1,16 @@
 import 'dart:async';
+import '../support/test_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/core/commands/room_commands.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/features/home/post_page.dart';
-import 'package:yusal/features/home/publish_post_page.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/home/pages/post.dart';
+import 'package:yusal/features/home/pages/publish_post.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 class DelayedPublication extends MockBackend {
@@ -28,7 +29,7 @@ void main() {
   testWidgets(
       'back during publication cannot leave a submitted form underneath detail',
       (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 1600);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -44,11 +45,10 @@ void main() {
         timestamp: '2026-11-04T00:00:00Z',
         newId: () => 'nav_${seq++}');
     final id = await store.createProject(doc);
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: backend,
         store: store,
         child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
             home: Builder(
                 builder: (context) => Scaffold(
                     body: TextButton(
@@ -82,7 +82,7 @@ void main() {
 
   testWidgets('publishing defaults to asking for feedback with chosen topics',
       (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -99,12 +99,11 @@ void main() {
         timestamp: '2026-11-04T00:00:00Z',
         newId: () => 'fb_${seq++}');
     final id = await store.createProject(doc);
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: backend,
         store: store,
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: PublishPostPage(entry: ProjectEntry(id, doc)))));
+        child:
+            MaterialApp(home: PublishPostPage(entry: ProjectEntry(id, doc)))));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('focus-layout')));
     await t.tap(find.byKey(const Key('focus-cost')));

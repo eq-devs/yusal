@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import '../support/mock/backend.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/main.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/features/demand/demand_detail_page.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/screen.dart';
+import 'package:yusal/features/demand/page.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/screen.dart';
 
 import '../platform/explore_test.dart' show launch;
 
@@ -28,7 +29,7 @@ void main() {
             id,
             args,
             ActionContext(
-                repos: repos,
+                repos: voiceRepos(repos),
                 loggedIn: true,
                 entities: entities,
                 page: VoiceScreens.current?.context),

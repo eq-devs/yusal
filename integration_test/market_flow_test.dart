@@ -3,30 +3,28 @@
 //   flutter test integration_test/market_flow_test.dart -d <device> \
 //     --dart-define=YUSAL_API=http://localhost:8080 \
 //     --dart-define=E2E_SHOTS=$PWD/test-screens
+import '../test/support/test_scope.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/main.dart';
-import 'package:yusal/data/http/http_backend.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/features/apply/apply_page.dart';
-import 'package:yusal/features/chat/chat_page.dart';
-import 'package:yusal/features/coop/agreement_form.dart';
-import 'package:yusal/features/coop/coop_page.dart';
-import 'package:yusal/features/coop/review_page.dart';
-import 'package:yusal/features/demand/applications_page.dart';
-import 'package:yusal/features/demand/demand_detail_page.dart';
-import 'package:yusal/features/demand/publish_page.dart';
-import 'package:yusal/features/profile/profile_edit_page.dart';
-import 'package:yusal/storage/last_open.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/apply/page.dart';
+import 'package:yusal/features/chat/page.dart';
+import 'package:yusal/features/coop/widgets/agreement_form.dart';
+import 'package:yusal/features/coop/page.dart';
+import 'package:yusal/features/coop/pages/review.dart';
+import 'package:yusal/features/demand/pages/applications.dart';
+import 'package:yusal/features/demand/page.dart';
+import 'package:yusal/features/demand/pages/publish.dart';
+import 'package:yusal/features/profile/pages/edit.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import 'e2e_support.dart';
 
@@ -45,11 +43,11 @@ class FakeGallery extends FileSelectorPlatform {
 /// A small PNG drawn on the spot.
 Future<Uint8List> sitePhoto() async {
   final rec = ui.PictureRecorder();
-  final c = Canvas(rec);
-  c.drawRect(const Rect.fromLTWH(0, 0, 320, 240),
-      Paint()..color = const Color(0xffb5651d));
-  c.drawRect(const Rect.fromLTWH(40, 60, 240, 120),
-      Paint()..color = const Color(0xffeeeeee));
+  Canvas(rec)
+    ..drawRect(const Rect.fromLTWH(0, 0, 320, 240),
+        Paint()..color = const Color(0xffb5651d))
+    ..drawRect(const Rect.fromLTWH(40, 60, 240, 120),
+        Paint()..color = const Color(0xffeeeeee));
   final img = await rec.endRecording().toImage(320, 240);
   final png = await img.toByteData(format: ui.ImageByteFormat.png);
   return png!.buffer.asUint8List();
@@ -113,28 +111,27 @@ void main() {
       'reviews, chat, notifications, report', (t) async {
     requireBackend();
     final run = DateTime.now().millisecondsSinceEpoch.toString();
-    final worker = 'Wang $run', owner = 'Olga $run';
+    final worker = 'Wang $run';
+    final owner = 'Olga $run';
     final demandTitle = '砌墙 130 平米 $run';
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('yusal_api.refresh_token');
     await prefs.setString('house-lang', 'zh');
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
 
-    final repos = HttpBackend(api);
-    await repos.restore();
+    final repos = TestHttp(api);
+    await repos.api.restore();
     try {
       await t.pumpWidget(RepaintBoundary(
-          key: shotKey,
-          child: ProviderScope(
-              child: HouseApp(repos: repos, store: ProjectStore()))));
+          key: shotKey, child: testApp(repos, store: ProjectStore())));
       await idle(t, 1000);
 
       // ── 1. Worker creates a service profile ──
       await signIn(t, repos, worker);
-      final workerId = repos.currentAccount!.id;
+      final workerId = repos.api.currentAccount!.id;
       await home(t);
       await open(t, const ProfileEditPage());
       await waitFor(t, find.text('创建接活名片'));
@@ -146,14 +143,14 @@ void main() {
       await shot(t, 'm01-profile-form');
       await tapIt(t, find.widgetWithText(FilledButton, '保存'));
       await idle(t, 1000);
-      final profiles = await io(t, () => repos.myProfiles());
+      final profiles = await io(t, repos.profiles.myProfiles);
       expect(profiles, hasLength(1));
       expect(profiles.single.trades, ['mason']);
 
       // ── 2. Owner publishes a contract demand; it opens ──
       await signOut(t, repos);
       await signIn(t, repos, owner);
-      final ownerId = repos.currentAccount!.id;
+      final ownerId = repos.api.currentAccount!.id;
       await home(t);
       await open(t, const PublishPage());
       await waitFor(t, find.text('下一步'));
@@ -172,7 +169,7 @@ void main() {
       await shot(t, 'm02-demand-preview');
       await tapIt(t, find.text('提交发布'));
       await waitFor(t, find.byType(DemandDetailPage));
-      final demands = await io(t, () => repos.myDemands());
+      final demands = await io(t, repos.demands.myDemands);
       final demand = demands.singleWhere((d) => d.current.title == demandTitle);
       expect(demand.status, DemandStatus.open);
       await shot(t, 'm03-demand-open');
@@ -200,7 +197,7 @@ void main() {
       await shot(t, 'm05-quote-form');
       await tapIt(t, find.text('发送报价'));
       await idle(t, 1000);
-      final mine = await io(t, () => repos.myApplications());
+      final mine = await io(t, repos.applications.myApplications);
       final application = mine.singleWhere((a) => a.demandId == demand.id);
       expect(application.applicantId, workerId);
 
@@ -220,14 +217,14 @@ void main() {
       // ── 4. Owner: unread badge, notifications, quote, invite ──
       await signOut(t, repos);
       await signIn(t, repos, owner);
-      expect(await io(t, () => repos.unreadMessages()), greaterThan(0));
+      expect(await io(t, repos.chat.unreadMessages), greaterThan(0));
       await home(t);
       await tab(t, '消息');
       await waitFor(t, find.textContaining('你好，我明天可以去现场看看'));
       await shot(t, 'm07-inbox-owner');
       await tapIt(t, find.text('通知'));
       await idle(t, 1000);
-      final notes = await io(t, () => repos.notifications());
+      final notes = await io(t, repos.notifications.notifications);
       expect(notes, isNotEmpty);
       expect(notes.any((n) => n.refId == demand.id || n.title == demandTitle),
           isTrue,
@@ -246,7 +243,8 @@ void main() {
       }
       await tapIt(t, find.text('发起并确认我方'));
       await idle(t, 1000);
-      var coops = await io(t, () => repos.cooperationsFor(demand.id));
+      var coops =
+          await io(t, () => repos.cooperations.cooperationsFor(demand.id));
       expect(coops, hasLength(1));
       var coop = coops.single;
       expect(coop.status, CooperationStatus.pending);
@@ -258,7 +256,7 @@ void main() {
       await openCoop(t, coop.id);
       await tapIt(t, find.text('确认合作'));
       await idle(t, 1000);
-      coop = (await io(t, () => repos.cooperation(coop.id)))!;
+      coop = (await io(t, () => repos.cooperations.cooperation(coop.id)))!;
       expect(coop.status, CooperationStatus.confirmed);
       expect(coop.milestones, isNotEmpty,
           reason: 'a contract comes with inspection points');
@@ -275,7 +273,7 @@ void main() {
       await idle(t, 1500);
       expect(find.textContaining('加照片 1/'), findsOneWidget);
       await submitSiteEntry(t, '今天砌了一层 $run');
-      coop = (await io(t, () => repos.cooperation(coop.id)))!;
+      coop = (await io(t, () => repos.cooperations.cooperation(coop.id)))!;
       expect(coop.milestones.first.status, MilestoneStatus.requested);
       expect(coop.workLogs, hasLength(1));
       expect(coop.workLogs.single.photos, hasLength(1));
@@ -289,7 +287,7 @@ void main() {
       await idle(t, 1000);
       await scrollTap(t, find.widgetWithText(TextButton, '确认').first);
       await idle(t, 1000);
-      coop = (await io(t, () => repos.cooperation(coop.id)))!;
+      coop = (await io(t, () => repos.cooperations.cooperation(coop.id)))!;
       expect(coop.milestones.first.status, MilestoneStatus.accepted);
       expect(coop.workLogs.single.confirmed, isTrue);
       // The owner gets the worker's photo back from the server (/media).
@@ -300,7 +298,7 @@ void main() {
       await scrollTap(t, find.text('请求结束'));
       await answerDialog(t, '工程完成 $run');
       await idle(t, 1000);
-      coop = (await io(t, () => repos.cooperation(coop.id)))!;
+      coop = (await io(t, () => repos.cooperations.cooperation(coop.id)))!;
       expect(coop.endRequest, isNotNull);
 
       // ── 7. Worker confirms the end and reviews the owner ──
@@ -309,11 +307,12 @@ void main() {
       await openCoop(t, coop.id);
       await scrollTap(t, find.text('确认结束'));
       await idle(t, 1000);
-      coop = (await io(t, () => repos.cooperation(coop.id)))!;
+      coop = (await io(t, () => repos.cooperations.cooperation(coop.id)))!;
       expect(coop.status, CooperationStatus.ended);
       await scrollTap(t, find.text('评价对方（可跳过）'));
       await reviewAll(t, '房主很爽快 $run');
-      expect(await io(t, () => repos.reviewsFor(coop.id)), hasLength(1));
+      expect(
+          await io(t, () => repos.reviews.reviewsFor(coop.id)), hasLength(1));
 
       // ── 8. Owner reviews the worker; both reviews are now public ──
       await signOut(t, repos);
@@ -321,9 +320,10 @@ void main() {
       await openCoop(t, coop.id);
       await scrollTap(t, find.text('评价对方（可跳过）'));
       await reviewAll(t, '活干得好 $run');
-      final reviews = await io(t, () => repos.reviewsFor(coop.id));
+      final reviews = await io(t, () => repos.reviews.reviewsFor(coop.id));
       expect(reviews, hasLength(2));
-      expect(await io(t, () => repos.reviewsAbout(workerId)), isNotEmpty);
+      expect(
+          await io(t, () => repos.reviews.reviewsAbout(workerId)), isNotEmpty);
       await openCoop(t, coop.id);
       await scrollTo(t, find.text('活干得好 $run'));
       await shot(t, 'm12-coop-ended-reviews');

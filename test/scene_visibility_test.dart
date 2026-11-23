@@ -3,13 +3,13 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/house_templates.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/render3d/scene_cleanup.dart';
-import 'package:yusal/render3d/scene_model.dart';
-import 'package:yusal/render3d/scene_view.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_cleanup.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_view.dart';
 
 /// The six faces of a box, wound outward, as the scene builder makes them.
 List<Face3> boxFaces(Vec3 a, Vec3 b, {Color color = const Color(0xffcccccc)}) {
@@ -39,15 +39,17 @@ ScenePainter paint(SceneModel model, Camera cam, SceneSettings s,
       settings: s,
       northAngleDeg: 0,
       walk: walk,
-      labels: false);
-  p.paint(Canvas(ui.PictureRecorder()), const Size(800, 600));
+      labels: false)
+    ..paint(Canvas(ui.PictureRecorder()), const Size(800, 600));
   return p;
 }
 
 void main() {
   test('faces between stacked wall pieces are dropped, the rest merged', () {
-    const a0 = Vec3(0, 0, 0), a1 = Vec3(2, 1, 0.3);
-    const b0 = Vec3(0, 1, 0), b1 = Vec3(2, 2, 0.3);
+    const a0 = Vec3(0, 0, 0);
+    const a1 = Vec3(2, 1, 0.3);
+    const b0 = Vec3(0, 1, 0);
+    const b1 = Vec3(2, 2, 0.3);
     final faces = [...boxFaces(a0, a1), ...boxFaces(b0, b1)];
     final out = cleanFaces(faces, [solid(a0, a1), solid(b0, b1)]);
     // Bottom, top, and four sides each 2 m tall: the lower top and the
@@ -66,8 +68,10 @@ void main() {
   });
 
   test('a box that can be hidden on its own does not hide its neighbour', () {
-    const a0 = Vec3(0, 0, 0), a1 = Vec3(1, 1, 1);
-    const b0 = Vec3(0, 1, 0), b1 = Vec3(1, 2, 1);
+    const a0 = Vec3(0, 0, 0);
+    const a1 = Vec3(1, 1, 1);
+    const b0 = Vec3(0, 1, 0);
+    const b1 = Vec3(1, 2, 1);
     final faces = boxFaces(a0, a1);
     // The upper box is on the floor above: hiding that floor shows the
     // top of the lower one.
@@ -97,7 +101,7 @@ void main() {
         kzModel,
         orbitCamera(pose.target, pose.yaw + 0.6, 0.25, pose.distance * 0.3),
         const SceneSettings(cut: true));
-    expect(near.items.length, lessThan(far.items.length * 0.8));
+    expect(near.itemCount, lessThan(far.itemCount * 0.8));
     expect(near.culled, greaterThan(0));
   });
 
@@ -158,7 +162,7 @@ void main() {
         const Vec3(0, 0, -1), 72 * math.pi / 180);
     final p = paint(model, outside, const SceneSettings(), walk: true);
     expect(p.walkerInside, isFalse);
-    expect(p.items.length, greaterThan(100));
+    expect(p.itemCount, greaterThan(100));
     final inside = Camera(Vec3(model.width * 0.3, 1.6, model.depth * 0.6),
         const Vec3(0, 0, -1), 72 * math.pi / 180);
     final q =

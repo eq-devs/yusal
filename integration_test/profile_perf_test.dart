@@ -6,28 +6,28 @@
 //
 // Reports the median and 90th-percentile UI-thread (build + layout + paint)
 // and raster time per frame for each scenario.
+import '../test/support/test_scope.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/main.dart' show HouseApp;
-import 'package:yusal/shared/ui/widgets.dart' show Avatar, debugFrostedGlass;
+import 'package:yusal/features/shared/ui/widgets.dart'
+    show Avatar, debugFrostedGlass;
 import '../test/support/mock/mock_backend.dart';
 import '../test/support/mock/mock_seed.dart';
-import 'package:yusal/features/profile/profile_page.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/features/shell/shell.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/profile/page.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import '../test/storage_test.dart' show MemoryFiles;
 
 void appNavigatorPush(WidgetTester t, Widget page) {
-  t.state<NavigatorState>(find.byType(Navigator).first).push(
-      platformRoute<void>((_) => page));
+  t
+      .state<NavigatorState>(find.byType(Navigator).first)
+      .push(platformRoute<void>((_) => page));
 }
 
 void main() {
@@ -61,16 +61,20 @@ void main() {
 
     Future<void> scenario(String name, Future<void> Function(int i) step,
         {int count = 160}) async {
-      for (var i = 0; i < 20; i++) await step(i);
+      for (var i = 0; i < 20; i++) {
+        await step(i);
+      }
       await flush();
       frames.clear();
-      for (var i = 0; i < count; i++) await step(i);
+      for (var i = 0; i < count; i++) {
+        await step(i);
+      }
       await flush();
       double ms(Duration d) => d.inMicroseconds / 1000;
       List<double> sorted(double Function(FrameTiming) f) =>
           frames.map(f).toList()..sort();
-      final ui = sorted((f) => ms(f.buildDuration)),
-          raster = sorted((f) => ms(f.rasterDuration));
+      final ui = sorted((f) => ms(f.buildDuration));
+      final raster = sorted((f) => ms(f.rasterDuration));
       double at(List<double> v, double q) =>
           v.isEmpty ? 0 : v[((v.length - 1) * q).round()];
       report[name] = {
@@ -85,12 +89,11 @@ void main() {
 
     Future<void> mount(Widget home, String account) async {
       final b = MockBackend(latency: Duration.zero)..signInAs(account);
-      await t.pumpWidget(PlatformScope(
+      await t.pumpWidget(TestScope(
           key: UniqueKey(),
           repos: b,
           store: ProjectStore(fileSystem: MemoryFiles()),
-          child: MaterialApp(
-              builder: (_, child) => AppScope(child: child!), home: home)));
+          child: MaterialApp(home: home)));
       // Entrances play out; fixed pumps, since some pages never settle.
       for (var i = 0; i < 90; i++) {
         await t.pump(const Duration(milliseconds: 16));
@@ -122,10 +125,8 @@ void main() {
 
     // The whole app as it ships: voice orb, theme, routes.
     final b = MockBackend(latency: Duration.zero)..signInAs(SeedIds.mason);
-    await t.pumpWidget(ProviderScope(
-        key: UniqueKey(),
-        child: HouseApp(
-            repos: b, store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(testApp(b,
+        store: ProjectStore(fileSystem: MemoryFiles()), key: UniqueKey()));
     Future<void> rest() async {
       for (var i = 0; i < 90; i++) {
         await t.pump(const Duration(milliseconds: 16));
@@ -141,10 +142,8 @@ void main() {
         t.binding.hasScheduledFrame;
     await scrollScenario('app me tab scroll');
     await t.pumpWidget(const SizedBox());
-    await t.pumpWidget(ProviderScope(
-        key: UniqueKey(),
-        child: HouseApp(
-            repos: b, store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(testApp(b,
+        store: ProjectStore(fileSystem: MemoryFiles()), key: UniqueKey()));
     await rest();
     appNavigatorPush(t, const ProfilePage(profileId: 'prof_mason'));
     await rest();

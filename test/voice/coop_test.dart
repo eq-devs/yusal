@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/domain/rules.dart';
-import 'package:yusal/features/coop/coop_page.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/screen.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
+import 'package:yusal/features/coop/page.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/screen.dart';
 
 import '../platform/mock_backend_test.dart' show backend, terms;
 import '../storage_test.dart' show MemoryFiles;
@@ -19,7 +19,7 @@ void main() {
   testWidgets(
       'voice is offered what each side can do with the cooperation now, '
       'and only that', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -28,22 +28,21 @@ void main() {
     final coop = await b.invite('app_team_wall', terms());
 
     Set<String> offered() => {
-          for (final a
-              in appActions.offered(VoiceScreens.context(b, loggedIn: true)))
+          for (final a in appActions
+              .offered(VoiceScreens.context(voiceRepos(b), loggedIn: true)))
             if (a.id.startsWith('coop.') && !a.id.endsWith('_milestone')) a.id
         };
     Future<ActionResult> say(String id,
             [Map<String, Object?> args = const {}]) =>
-        executor.run(id, args, VoiceScreens.context(b, loggedIn: true),
+        executor.run(
+            id, args, VoiceScreens.context(voiceRepos(b), loggedIn: true),
             source: Source.voice);
     Future<void> open(String who) async {
       b.signInAs(who);
-      await t.pumpWidget(PlatformScope(
+      await t.pumpWidget(TestScope(
           repos: b,
           store: ProjectStore(fileSystem: MemoryFiles()),
-          child: MaterialApp(
-              builder: (_, child) => AppScope(child: child!),
-              home: CooperationPage(cooperationId: coop.id))));
+          child: MaterialApp(home: CooperationPage(cooperationId: coop.id))));
       await t.pumpAndSettle();
     }
 
@@ -73,7 +72,7 @@ void main() {
   });
 
   testWidgets('voice asks for and answers inspections in order', (t) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -84,22 +83,21 @@ void main() {
     await b.confirm(coop.id);
 
     Set<String> offered() => {
-          for (final a
-              in appActions.offered(VoiceScreens.context(b, loggedIn: true)))
+          for (final a in appActions
+              .offered(VoiceScreens.context(voiceRepos(b), loggedIn: true)))
             if (a.id.endsWith('_milestone')) a.id
         };
     Future<ActionResult> say(String id,
             [Map<String, Object?> args = const {}]) =>
-        executor.run(id, args, VoiceScreens.context(b, loggedIn: true),
+        executor.run(
+            id, args, VoiceScreens.context(voiceRepos(b), loggedIn: true),
             source: Source.voice);
     Future<void> open(String who) async {
       b.signInAs(who);
-      await t.pumpWidget(PlatformScope(
+      await t.pumpWidget(TestScope(
           repos: b,
           store: ProjectStore(fileSystem: MemoryFiles()),
-          child: MaterialApp(
-              builder: (_, child) => AppScope(child: child!),
-              home: CooperationPage(cooperationId: coop.id))));
+          child: MaterialApp(home: CooperationPage(cooperationId: coop.id))));
       await t.pumpAndSettle();
     }
 

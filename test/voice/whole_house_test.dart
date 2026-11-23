@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import '../support/mock/backend.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/features/editor/house_editor.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/page.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/actions_design.dart';
-import 'package:yusal/voice/actions_houses.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/screen.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/actions/design.dart';
+import 'package:yusal/features/voice/actions/houses.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/screen.dart';
 
 import '../house_spec_test.dart' show spec;
 import '../storage_test.dart' show MemoryFiles;
@@ -51,7 +53,8 @@ void main() {
       seed: false);
 
   Future<ActionResult> say(String id, [Map<String, Object?> args = const {}]) =>
-      executor.run(id, args, VoiceScreens.context(repos, loggedIn: true),
+      executor.run(
+          id, args, VoiceScreens.context(voiceRepos(repos), loggedIn: true),
           source: Source.voice);
 
   Map<String, String> shown(String kind) => {
@@ -73,18 +76,18 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-14T00:00:00Z',
         newId: () => 'id${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
   }
 
   testWidgets('a whole house replaces the open design and undoes in one step',
       (t) async {
     await editor(t);
-    final host = VoiceScreens.current! as DesignHost;
-    host.beginUndoGroup();
+    final host = VoiceScreens.current! as DesignHost..beginUndoGroup();
     final made = await say('design.create_house', {'spec': spec});
     host.endUndoGroup();
     await t.pump();
@@ -108,7 +111,7 @@ void main() {
     expect(bad.say['errors'], isNotEmpty);
     expect(shown('room'), hasLength(1));
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 
@@ -142,7 +145,7 @@ void main() {
             .code,
         ActionCodes.badArgs);
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 
@@ -150,7 +153,8 @@ void main() {
     final library = HouseLibrary.instance = FakeLibrary();
     addTearDown(() => HouseLibrary.instance = null);
     Future<ActionResult> run(String id, Map<String, Object?> args) =>
-        executor.run(id, args, ActionContext(repos: repos, loggedIn: true),
+        executor.run(
+            id, args, ActionContext(repos: voiceRepos(repos), loggedIn: true),
             source: Source.voice);
 
     expect((await run('houses.open', {'name': 'менің үйім'})).ok, isTrue);

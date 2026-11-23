@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/features/editor/house_editor.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/render2d/site_plan_painter.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/render2d/site_plan_painter.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
 import 'tabs.dart';
 
@@ -32,13 +33,13 @@ void main() {
     addTearDown(t.view.resetDevicePixelRatio);
     final store = ProjectStore(fileSystem: MemoryFiles());
     final id = await store.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        builder: (context, child) => AppScope(child: child!),
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await t.pumpAndSettle();
     addTearDown(() async {
-      AppSettings.instance.lang = AppLang.zh;
-      await t.pumpWidget(const SizedBox.shrink());
+      appLang = AppLang.zh;
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
     return (store: store, id: id);
@@ -56,7 +57,7 @@ void main() {
     await t.pumpAndSettle();
   }
 
-  for (final size in [const Size(1280, 900), const Size(390, 844)])
+  for (final size in [const Size(1280, 900), const Size(390, 844)]) {
     testWidgets('every new page opens without layout errors at ${size.width}',
         (t) async {
       await mount(t, village(), size: size);
@@ -65,7 +66,7 @@ void main() {
         expect(t.takeException(), isNull, reason: key);
       }
       for (final lang in AppLang.values) {
-        AppSettings.instance.lang = lang;
+        appLang = lang;
         await t.pumpAndSettle();
         for (final key in ['heat', 'cost', 'build', 'site']) {
           await page(t, key);
@@ -73,6 +74,7 @@ void main() {
         }
       }
     });
+  }
 
   testWidgets('the budget edits a price and the schedule ticks a check',
       (t) async {

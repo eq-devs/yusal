@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/features/editor/house_editor.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import 'storage_test.dart' show MemoryFiles;
 
@@ -15,7 +16,8 @@ void main() {
   String next() => 're_${sequence++}';
   final ctx = CommandContext(newId: next, now: () => '2026-11-17T00:00:00Z');
   HouseDocument run(HouseDocument doc, String kind, Map<String, dynamic> args) {
-    final r = executeCommand(extractDesignState(doc), DesignCommand(kind, args), ctx);
+    final r =
+        executeCommand(extractDesignState(doc), DesignCommand(kind, args), ctx);
     expect(r, isA<Applied>(), reason: '$kind: $r');
     return composeDocument(doc.meta, (r as Applied).newState);
   }
@@ -30,7 +32,7 @@ void main() {
         initialRoom: true,
         timestamp: ctx.now(),
         newId: next);
-    for (final w in walls)
+    for (final w in walls) {
       doc = run(doc, 'AddDrawnWall', {
         'floorId': doc.floors.first.id,
         'x0': w[0],
@@ -38,6 +40,7 @@ void main() {
         'x1': w[2],
         'y1': w[3]
       });
+    }
     return doc;
   }
 
@@ -53,13 +56,14 @@ void main() {
     t.view.physicalSize = const Size(390, 844);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    final store = ProjectStore(fileSystem: MemoryFiles()),
-        id = await store.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    final store = ProjectStore(fileSystem: MemoryFiles());
+    final id = await store.createProject(doc);
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await t.pumpAndSettle();
     addTearDown(() async {
-      await t.pumpWidget(const SizedBox.shrink());
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
     return (store, id);
@@ -98,7 +102,8 @@ void main() {
     final size = t.getSize(canvas);
     final centre = t.getTopLeft(canvas) + p.point(5000, 2500, size);
     final shown = MatrixUtils.transformPoint(
-        t.widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        t
+            .widget<InteractiveViewer>(find.byType(InteractiveViewer))
             .transformationController!
             .value,
         centre - t.getTopLeft(canvas));
@@ -142,8 +147,7 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('a room of a set size is slid to a wall and put down',
-      (t) async {
+  testWidgets('a room of a set size is slid to a wall and put down', (t) async {
     final session = await mount(t, house());
     await t.tap(find.byTooltip('加房间'));
     await t.pumpAndSettle();
@@ -171,8 +175,8 @@ void main() {
     await t.tap(find.byKey(const Key('stamp-place')));
     await t.pumpAndSettle();
     final doc = await saved(t, session);
-    final kitchen = doc.floors.single.rooms
-        .singleWhere((r) => r.type == RoomType.kitchen);
+    final kitchen =
+        doc.floors.single.rooms.singleWhere((r) => r.type == RoomType.kitchen);
     final axes = resolveFloorAxes(doc, doc.floors.single.id)!;
     final r = resolveRect(axes, kitchen.regions.single).rect!;
     expect((r.left, r.bottom, r.right, r.top), (7000, 8400, 10000, 12000));
@@ -312,8 +316,8 @@ void main() {
     await t.tap(find.text('二楼'));
     await t.pumpAndSettle();
     expect(painter(t).belowOpenings, hasLength(1));
-    expect(painter(t).below!.wallSegments.any((w) => w.axis.pos == 5000),
-        isTrue);
+    expect(
+        painter(t).below!.wallSegments.any((w) => w.axis.pos == 5000), isTrue);
     expect(t.takeException(), isNull);
   });
 
@@ -321,13 +325,15 @@ void main() {
       (t) async {
     await mount(t, house());
     // Only the drawing group's pages show at first.
-    for (final key in ['plan', 'site', 'iss'])
+    for (final key in ['plan', 'site', 'iss']) {
       expect(find.byKey(ValueKey('tab-$key')), findsOneWidget, reason: key);
+    }
     expect(find.byKey(const ValueKey('tab-cost')), findsNothing);
     await t.tap(find.byKey(const ValueKey('group-build')));
     await t.pumpAndSettle();
-    for (final key in ['cost', 'qty', 'build', 'det', 'heat'])
+    for (final key in ['cost', 'qty', 'build', 'det', 'heat']) {
       expect(find.byKey(ValueKey('tab-$key')), findsOneWidget, reason: key);
+    }
     await t.tap(find.byKey(const ValueKey('tab-qty')));
     await t.pumpAndSettle();
     // A group remembers its page.

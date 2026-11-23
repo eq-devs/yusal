@@ -3,11 +3,22 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/domain/rules.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
 
 import 'mock_backend_test.dart' show backend, publishAsOwner;
+
+/// The app's machines, in the order of `docs/state_machines.json`.
+/// All of the above, in the order of `docs/state_machines.json`.
+const List<StateMachine> marketMachines = [
+  demandMachine,
+  applicationMachine,
+  cooperationMachine,
+  agreementMachine,
+  milestoneMachine,
+  reportMachine,
+];
 
 void main() {
   test('the machines are the ones in docs/state_machines.json', () {
@@ -70,8 +81,7 @@ void main() {
   });
 
   test('an upheld report takes a paused demand down too', () async {
-    final b = backend();
-    b.signInAs(SeedIds.team);
+    final b = backend()..signInAs(SeedIds.team);
     await b.pause('dem_rebar');
     b.signInAs(SeedIds.admin);
     await b.resolveReport('rep_seed', true, '工资信息虚假');
@@ -81,7 +91,7 @@ void main() {
         throwsA(isA<ApiFailure>()));
   });
 
-  test('a confirmed cooperation\'s ending: none, asked, disputed, asked again',
+  test("a confirmed cooperation's ending: none, asked, disputed, asked again",
       () {
     final at = DateTime.utc(2026);
     Cooperation coop(CooperationStatus status, EndRequest? r) => Cooperation(

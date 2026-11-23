@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/checks/check_engine.dart';
-import 'package:yusal/core/commands/house_spec.dart';
-import 'package:yusal/core/commands/house_templates.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_spec.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 
 Map<String, dynamic> spec(
         {required String bathDoorTo, bool kitchenWindow = true}) =>
@@ -86,8 +86,8 @@ void main() {
 
   test('a narrow door is pointed out', () {
     var n = 0;
-    final doc = buildHouseFromSpec(spec(bathDoorTo: 'cor'),
-            '2026-11-15T00:00:00Z', () => 'id${n++}')
+    final doc = buildHouseFromSpec(
+            spec(bathDoorTo: 'cor'), '2026-11-15T00:00:00Z', () => 'id${n++}')
         .document!;
     expect(runChecks(doc, deriveHouse(doc)).map((c) => c.ruleId),
         isNot(contains('R13')));

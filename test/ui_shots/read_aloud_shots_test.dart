@@ -1,22 +1,21 @@
 // The speaker on a reply and the voice download dialog, for visual review
 // (not run in CI).
 // SHOTS_OUT=/path flutter test test/ui_shots/read_aloud_shots_test.dart
+import '../support/test_scope.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/main.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/services/voice/read_aloud.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/session.dart';
+import 'package:yusal/service/voice/read_aloud.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/state/session.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 import '../voice/read_aloud_test.dart' show FakeReader;
@@ -52,8 +51,7 @@ void main() {
     await loadFont('Inter', [
       for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Inter-$w.otf'
     ]);
-    await loadFont('InterDisplay',
-        [for (final w in [600, 700]) 'assets/fonts/InterDisplay-$w.otf']);
+    await loadFont('InterDisplay', ['assets/fonts/InterDisplay-600.otf']);
     final flutter = Platform.environment['FLUTTER_ROOT']!;
     await loadFont('MaterialIcons', [
       '$flutter/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf'
@@ -69,17 +67,14 @@ void main() {
     t.view.viewPadding = const FakeViewPadding(top: 40, bottom: 24);
     addTearDown(t.view.reset);
     SharedPreferences.setMockInitialValues({'voice-intro-seen': true});
-    AppSettings.instance.lang = AppLang.kk;
+    appLang = AppLang.kk;
     final reader = FakeReader();
     ReadAloud.instance = reader;
     final repos = KazakhVoice()..signInAs(SeedIds.owner);
     final key = GlobalKey();
     await t.pumpWidget(RepaintBoundary(
         key: key,
-        child: ProviderScope(
-            child: HouseApp(
-                repos: repos,
-                store: ProjectStore(fileSystem: MemoryFiles())))));
+        child: testApp(repos, store: ProjectStore(fileSystem: MemoryFiles()))));
     await t.pumpAndSettle();
     var shot = 0;
     Future<void> snap(String name) async {
@@ -108,7 +103,7 @@ void main() {
     await t.tap(find.byKey(const Key('voice-download-hide')));
     await t.pumpAndSettle();
     await snap('downloading_in_background');
-    reader.phase = const VoiceModelStatus(VoiceModelPhase.installed);
+    reader.phase.value = const VoiceModelStatus(VoiceModelPhase.installed);
     await t.pump();
     await snap('reading');
     debugDefaultTargetPlatformOverride = null;

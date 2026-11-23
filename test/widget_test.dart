@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/main.dart';
+import 'package:yusal/service/settings/settings.dart';
 import 'support/mock/mock_backend.dart';
 import 'support/mock/mock_clock.dart';
 import 'support/mock/mock_seed.dart';
-import 'package:yusal/features/demand/demand_detail_page.dart';
-import 'package:yusal/features/home/post_page.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/demand/page.dart';
+import 'package:yusal/features/home/pages/post.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
-import 'package:yusal/shared/brand/yicon.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 MockBackend mock() => MockBackend(
     clock: MockClock(DateTime.utc(2026, 11, 3, 9)),
@@ -23,15 +22,14 @@ Future<MockBackend> launch(WidgetTester t,
   SharedPreferences.setMockInitialValues({});
   t.binding.platformDispatcher.defaultRouteNameTestValue = route;
   addTearDown(t.binding.platformDispatcher.clearDefaultRouteNameTestValue);
-  AppSettings.instance.lang = AppLang.zh;
+  appLang = AppLang.zh;
   t.view.physicalSize = const Size(1200, 2400);
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
   final repos = mock();
   if (as != null) repos.signInAs(as);
-  await t.pumpWidget(ProviderScope(
-      child: HouseApp(
-          repos: repos, store: ProjectStore(fileSystem: MemoryFiles()))));
+  await t.pumpWidget(
+      testApp(repos, store: ProjectStore(fileSystem: MemoryFiles())));
   await t.pumpAndSettle();
   return repos;
 }
@@ -68,8 +66,7 @@ void main() {
     expect(find.text('给父母盖的一层砖房'), findsOneWidget);
     expect(find.text('120 m²'), findsOneWidget);
     expect(
-        find.byWidgetPredicate(
-            (w) => w is YusalIcon && w.icon == YIcon.share),
+        find.byWidgetPredicate((w) => w is YusalIcon && w.icon == YIcon.share),
         findsOneWidget);
     // No page to go back to: a home button leads to the feed.
     await t.tap(find.byTooltip('首页'));
@@ -111,6 +108,6 @@ void main() {
     await t.tap(find.text('Русский'));
     await t.pumpAndSettle();
     expect(find.text('Настройки'), findsOneWidget);
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
   });
 }

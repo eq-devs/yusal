@@ -1,15 +1,15 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/analysis/cost_estimate.dart';
-import 'package:yusal/core/analysis/heat_loss.dart';
-import 'package:yusal/core/analysis/house_analysis.dart';
-import 'package:yusal/core/checks/check_engine.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/render3d/scene_model.dart';
+import 'package:yusal/features/editor/engine/core/analysis/cost_estimate.dart';
+import 'package:yusal/features/editor/engine/core/analysis/heat_loss.dart';
+import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
+import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
 
 void main() {
   var n = 0;
@@ -35,8 +35,9 @@ void main() {
         initialRoom: true,
         timestamp: stamp,
         newId: next);
-    for (var i = 1; i < floors; i++)
+    for (var i = 1; i < floors; i++) {
       doc = run(doc, 'AddFloor', {'floorId': doc.floors.last.id});
+    }
     return doc;
   }
 
@@ -101,7 +102,8 @@ void main() {
     final full = box();
     final cut =
         run(full, 'CutOutline', {'corner': 'bl', 'width': 3000, 'depth': 4000});
-    final df = deriveHouse(full), dc = deriveHouse(cut);
+    final df = deriveHouse(full);
+    final dc = deriveHouse(cut);
     expect(wallTakeoff(cut, dc).exteriorGross,
         closeTo(wallTakeoff(full, df).exteriorGross, 1));
     expect(estimateCost(cut, dc).buildingArea, 68);
@@ -109,13 +111,14 @@ void main() {
     expect(heatLoss(cut, dc).total, lessThan(heatLoss(full, df).total));
     // Ground slab pieces stay inside the L.
     for (final e in dc.scene3d.where((e) => e.kind == 'Slab')) {
-      final xs = e.vertices.map((v) => v.x), ys = e.vertices.map((v) => v.y);
+      final xs = e.vertices.map((v) => v.x);
+      final ys = e.vertices.map((v) => v.y);
       final cx = (xs.reduce((a, b) => a < b ? a : b) +
-                  xs.reduce((a, b) => a > b ? a : b)) /
-              2,
-          cy = (ys.reduce((a, b) => a < b ? a : b) +
-                  ys.reduce((a, b) => a > b ? a : b)) /
-              2;
+              xs.reduce((a, b) => a > b ? a : b)) /
+          2;
+      final cy = (ys.reduce((a, b) => a < b ? a : b) +
+              ys.reduce((a, b) => a > b ? a : b)) /
+          2;
       expect(cx < 3000 && cy < 4000, false, reason: 'slab at $cx, $cy');
     }
     final flat = run(cut, 'SetRoof', {
@@ -224,8 +227,9 @@ void main() {
     });
     final after = deriveHouse(doc).floors.first.base;
     expect(after.roomGeometry, hasLength(2));
-    for (final r in after.roomGeometry)
+    for (final r in after.roomGeometry) {
       expect(r.cells.any(after.outside.contains), false);
+    }
   });
 
   test('one floor only gives a terrace; restoring brings the rectangle back',
@@ -261,8 +265,9 @@ void main() {
         {'floorId': floorId, 'x0': 3000, 'y0': 0, 'x1': 3000, 'y1': 8000});
     final base = deriveHouse(doc).floors.first.base;
     expect(base.roomGeometry, hasLength(2));
-    for (final r in base.roomGeometry)
+    for (final r in base.roomGeometry) {
       expect(r.cells.any(base.outside.contains), false);
+    }
     roundTrip(doc);
   });
 

@@ -10,26 +10,25 @@
 // grant before every run (granting while the app runs stops the app).
 // Without it iOS asks on screen and the two tests that record fail with
 // "the microphone must be allowed".
+import '../test/support/test_scope.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/features/editor/house_editor.dart';
-import 'package:yusal/main.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/page.dart';
 import '../test/support/mock/mock_backend.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/storage/last_open.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/audio_device.dart';
-import 'package:yusal/voice/screen.dart';
-import 'package:yusal/voice/session.dart';
-import 'package:yusal/voice/speech.dart';
-import 'package:yusal/voice/voice_overlay.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/repository/audio_device.dart';
+import 'package:yusal/features/voice/state/screen.dart';
+import 'package:yusal/features/voice/state/session.dart';
+import 'package:yusal/features/voice/repository/speech.dart';
+import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 
 VoiceTurn act(String turnId, List<(String, Map<String, Object?>)> calls) =>
     VoiceTurn(turnId: turnId, calls: [
@@ -125,7 +124,7 @@ void main() {
       (t) async {
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final repos = VoiceMock([
       act('t1', [
         ('nav.tab', {'tab': 'me'})
@@ -133,7 +132,7 @@ void main() {
       const VoiceTurn(reply: '已打开“我的”。'),
     ]);
     try {
-      await t.pumpWidget(ProviderScope(child: HouseApp(repos: repos)));
+      await t.pumpWidget(testApp(repos));
       await t.pumpAndSettle();
       final start = VoiceScreens.current!.screenId;
       expect(start, startsWith('shell.'));
@@ -159,15 +158,16 @@ void main() {
     }
   });
 
-  testWidgets('a spoken request is recorded, sent as heard and answered in text',
+  testWidgets(
+      'a spoken request is recorded, sent as heard and answered in text',
       (t) async {
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
-    AppSettings.instance.lang = AppLang.kk;
+    appLang = AppLang.kk;
     final repos = VoiceMock([const VoiceTurn(reply: 'Жарайды.')],
         hears: 'менің бетімді аш');
     try {
-      await t.pumpWidget(ProviderScope(child: HouseApp(repos: repos)));
+      await t.pumpWidget(testApp(repos));
       await t.pumpAndSettle();
       // Tap the orb to listen, tap it again when done.
       await t.tap(find.byKey(const Key('voice-button')));
@@ -198,7 +198,7 @@ void main() {
       await t.pumpWidget(const SizedBox.shrink());
       await t.pumpAndSettle();
       await LastOpenProject.write(previous);
-      AppSettings.instance.lang = AppLang.zh;
+      appLang = AppLang.zh;
     }
   }, skip: !onPhone);
 
@@ -241,7 +241,7 @@ void main() {
         timestamp: DateTime.now().toUtc().toIso8601String(),
         newId: () => 'voice_${sequence++}');
     final id = await store.createProject(doc);
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final repos = VoiceMock([
       act('t1', [
         ('design.add_floor', {}),
@@ -266,7 +266,10 @@ void main() {
       await t.pumpWidget(MaterialApp(
           navigatorKey: navigator,
           builder: (context, child) => VoiceHost(
-              navigator: navigator, repos: repos, enabled: true, child: child!),
+              navigator: navigator,
+              repos: voiceRepos(repos),
+              voice: repos,
+              child: child!),
           home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
       await t.pumpAndSettle();
       expect(VoiceScreens.current!.screenId, 'editor.plan');

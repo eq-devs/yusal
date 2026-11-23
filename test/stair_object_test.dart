@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 
 void main() {
   var n = 0;
@@ -19,7 +19,8 @@ void main() {
       timestamp: ctx.now(),
       newId: next);
 
-  CommandResult attempt(HouseDocument doc, String kind, Map<String, dynamic> a) =>
+  CommandResult attempt(
+          HouseDocument doc, String kind, Map<String, dynamic> a) =>
       executeCommand(extractDesignState(doc), DesignCommand(kind, a), ctx);
 
   HouseDocument run(HouseDocument doc, String kind, Map<String, dynamic> a) {
@@ -80,8 +81,8 @@ void main() {
   test('a stair moves and leaves nothing behind', () {
     var doc = twoFloors();
     doc = run(doc, 'PlaceStair', at(doc, 0, 0, 2400, 3600));
-    final id = doc.floors.first.stairs.single.id,
-        shape = doc.floors.first.stairs.single.type;
+    final id = doc.floors.first.stairs.single.id;
+    final shape = doc.floors.first.stairs.single.type;
     doc = run(doc, 'PlaceStair',
         {...at(doc, 7600, 8400, 10000, 12000), 'stairId': id});
     expect(doc.floors.first.stairs, hasLength(1));
@@ -99,8 +100,8 @@ void main() {
   test('a removed stair gives its place back to the room', () {
     var doc = twoFloors();
     doc = run(doc, 'PlaceStair', at(doc, 0, 0, 2400, 3600));
-    doc = run(
-        doc, 'RemoveStair', {'stairId': doc.floors.first.stairs.single.id});
+    doc =
+        run(doc, 'RemoveStair', {'stairId': doc.floors.first.stairs.single.id});
     final floor = doc.floors.first;
     expect(floor.stairs, isEmpty);
     expect(floor.wallOverrides, isEmpty);
@@ -138,8 +139,8 @@ void main() {
         walls.where((w) =>
             w.kind != 'open' && w.axis.dir == AxisDir.V && w.axis.pos == 2400),
         isEmpty);
-    split = run(split, 'RemoveStair',
-        {'stairId': split.floors.first.stairs.single.id});
+    split = run(
+        split, 'RemoveStair', {'stairId': split.floors.first.stairs.single.id});
     expect(split.floors.first.rooms, hasLength(2));
     expect(xs(split), [0, 10000]);
   });

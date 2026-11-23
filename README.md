@@ -2,14 +2,10 @@
 
 当前入口：**首页 · 项目 · 消息 · 我的**。以房屋项目为中心，保留离线设计；发布作品与找施工方是独立操作，询价不要求先公开作品。
 
-平台账号、聊天、作品、需求、报价与备份目前使用内存模拟后端，重启会重置；本地 `.house` 设计独立持久保存。真实后端尚未接入。
+平台账号、聊天、作品、需求、报价与备份都存在真实后端 yusal-api 上；本地 `.house` 设计保存在设备上。
 
 - 当前产品方向：[产品重定位](docs/PRODUCT_REPOSITION.md)
-- 本轮目标与验证状态：[优化 Goal](docs/superpowers/plans/2026-11-04-yusal-goal.md)
-- 本轮计划：[优化计划](docs/superpowers/plans/2026-11-04-yusal-optimization.md)
-- 验证记录：[优化报告](docs/OPTIMIZATION_RESULT_2026-11-04.md)
-
-以下是设计工具的功能说明与历史版本记录，不代表本轮已重新完成所有验收。
+- 代码结构：[architecture.md](docs/architecture.md)
 
 ## 自建房设计工具
 
@@ -62,35 +58,27 @@ The unit/widget suite includes 10,000 seeded canonicalization cases, byte-for-by
 
 ## Structure
 
-- `lib/app/`: language and theme settings, colour tokens, shared page widgets, Kazakh text for core messages.
-- `lib/core/document/house_extras.dart`, `lib/core/commands/extras_commands.dart`: furniture, notes, construction specs and issues (file schema v3, only written when used).
-- `lib/core/analysis/`, `lib/core/checks/construction_checks.dart`: wall roles, foundation and masonry take-offs, construction remarks.
-- `lib/core/commands/kz_template.dart`: the 10 × 13 m village house as an editable template.
-- `lib/core/document/extras_planning.dart`, `lib/core/analysis/{cost_estimate,heat_loss,utility_plan,site_analysis,build_schedule}.dart`: planning data (file schema v4, only written when used) and its pure-Dart calculations.
-- `lib/core/commands/outline_commands.dart`: corner cuts for non-rectangular houses.
-- `lib/features/editor/drawing_export.dart`: the PDF/PNG drawing set.
-- `lib/render3d/scene_model.dart`, `scene_view.dart`: software 3D with sun, night, cut, foundation and the walk-through.
+- `lib/service/settings/`, `lib/constant/`, `lib/localization/`: language and theme settings, colour tokens, the three languages' texts.
+- `lib/features/editor/engine/core/document/house_extras.dart`, `lib/features/editor/engine/core/commands/extras_commands.dart`: furniture, notes, construction specs and issues (file schema v3, only written when used).
+- `lib/features/editor/engine/core/analysis/`, `lib/features/editor/engine/core/checks/construction_checks.dart`: wall roles, foundation and masonry take-offs, construction remarks.
+- `lib/features/editor/engine/core/commands/kz_template.dart`: the 10 × 13 m village house as an editable template.
+- `lib/features/editor/engine/core/document/extras_planning.dart`, `lib/features/editor/engine/core/analysis/{cost_estimate,heat_loss,utility_plan,site_analysis,build_schedule}.dart`: planning data (file schema v4, only written when used) and its pure-Dart calculations.
+- `lib/features/editor/engine/core/commands/outline_commands.dart`: corner cuts for non-rectangular houses.
+- `lib/features/editor/util/drawing_export.dart`: the PDF/PNG drawing set.
+- `lib/features/editor/engine/render3d/scene_model.dart`, `scene_view.dart`: software 3D with sun, night, cut, foundation and the walk-through.
 
-Feature-first layout (one folder per feature, shared code below it):
+Feature-first layout (see `docs/architecture.md`):
 
-- `lib/main.dart`: startup only (settings, Firebase and session restore side by side, then `runApp`); the root widget is `lib/app/house_app.dart`.
-- `lib/features/<name>/`: one folder per feature: `shell` (tab bar), `explore`, `home` (house posts), `houses`, `projects`, `chat`, `me`, `profile`, `auth`, `demand`, `apply`, `coop`, `discover`, `backup`, and `editor` (the design tool; `house_editor.dart` and its parts).
-- `lib/shared/ui/`: the platform look and building blocks every feature uses (`theme.dart`, `widgets.dart`, `components.dart`, `cards.dart`, `plan_viewer.dart`, `scope.dart`, …); `lib/shared/motion/`: motion tokens and transitions.
-- `lib/domain/`: platform models and rules; `lib/data/`: repositories, `http/` (the real backend, yusal-api). The in-memory backend the tests use lives in `test/support/mock/`.
-- `lib/services/`: Firebase, push, Shorebird updates.
-- `lib/core/`: pure Dart documents, codec, validation, axes, canonicalization, commands, history, geometry and checks.
-- `lib/render2d/`, `lib/render3d/`: render derived geometry.
-- `lib/storage/`: platform filesystem boundary, index and project persistence.
-- `lib/voice/`: the voice assistant.
-
-Features build on the lower layers, never the other way round: nothing under `shared/`, `domain/`, `data/`, `services/`, `core/`, `storage/` or `render*/` imports a feature (`test/architecture_test.dart` checks this). Only the app root and `lib/voice/` wire features together; what a lower layer needs from a feature is passed in (the login page through `PlatformScope.loginPage`, the push target opener through `PushSetup.opener`).
+- `lib/main.dart`: startup only; `lib/app.dart`: Boot, BootGate and `HouseApp` (theme, language, routes).
+- `lib/constant/`: theme and colour tokens; `lib/localization/`: the zh / kk / ru texts; `lib/utils/`: small helpers.
+- `lib/service/`: `api/` (the yusal-api client: requests, tokens, session), `storage/` (local designs), settings, Firebase, push, Shorebird updates, read-aloud.
+- `lib/features/<name>/`: `page.dart`, `pages/`, `widgets/`, `state/` (Riverpod providers), `repository/` (interface, `Http…Repository` class, provider), `model/`, `util/`. `features/shared/` holds the UI kit, motion, brand, platform models and the session provider. `features/editor/` is the design tool; its house engine is `features/editor/engine/{core,render2d,render3d}`.
 - `android/`, `ios/`: native bounded file-import handlers and document registration.
 
 ## Acceptance status
 
 This is a runnable implementation candidate. Full acceptance of every matrix in the development specification has not been certified. The current 3D renderer uses software projection with CustomPainter; final engine selection, depth/transparency accuracy, performance and physical-device acceptance remain open. Storage failures currently use exceptions internally, and index listing rebuilds from source files. Grid lines and doors/windows support reversible drag previews, alongside precise property dialogs. Sharing/opening must still be tested in the target users' real chat/file apps on physical iOS/Android devices.
 
-See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conformance work.
 
 
 ## v0.7 预算、采暖、水电、宅基地与施工
@@ -141,7 +129,6 @@ See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conforman
 - 删除、放置、撤销、重做和保存失败都有提示；保存失败每 5 秒自动重试。刷新页面或重启后回到正在编辑的设计。
 - 键盘：Esc 逐级退出，Ctrl/⌘+Z 撤销，Ctrl/⌘+Shift+Z 或 Ctrl+Y 重做，Delete 删除选中墙。鼠标悬停时光标提示可拖、可点的位置。
 
-改动过程、浏览器检查与剩余问题见 [v0.5 优化记录](docs/OPTIMIZATION_LOG_v05.md)。
 
 ### 文件兼容
 
@@ -149,15 +136,14 @@ See `IMPLEMENTATION_PLAN.md` for implementation progress and remaining conforman
 
 独立墙段至少 0.30 米，精确坐标以整数毫米保存。当前支持矩形外形和正交墙，斜墙、任意外轮廓不在本轮交付范围。手机上的吸附以屏幕距离计算，细微调整可使用数字输入。
 
-研究、取舍、证据范围与代码自评见 [UX_IMPLEMENTATION_PLAN.md](docs/UX_IMPLEMENTATION_PLAN.md)。最终验证及构建记录见 [DELIVERY_REPORT.md](docs/DELIVERY_REPORT.md)。
 
 ## 连接真实后端（yusal-api）
 
-应用总是连真实后端（eqserver，`https://eqserver.tail920a63.ts.net`，写在 `lib/main.dart`）。直接 `flutter run`，不需要任何配置文件或参数；测试登录和语音按钮一直打开。
+应用总是连真实后端（eqserver，`https://eqserver.tail920a63.ts.net`，写在 `lib/service/api/api_client.dart`）。直接 `flutter run`，不需要任何配置文件或参数；测试登录和语音按钮一直打开。
 
 装到手机上测试用 `scripts/install_dev.sh`：打包并装到所有连着电脑的 Android 手机和 iPhone 上。
 
-`HttpBackend`（`lib/data/http/http_backend.dart`）把所有数据交给后端：账号、设计快照、发布的房子、云备份、名片、需求、报价、合作、聊天、通知和审核。已经没有离线演示模式。
+各 feature 的 `Http…Repository`（`lib/features/*/repository/`，共用 `lib/service/api/api_client.dart`）把所有数据交给后端：账号、设计快照、发布的房子、云备份、名片、需求、报价、合作、聊天、通知和审核。已经没有离线演示模式。
 
 登录只有 Google 和 Apple，第一次接入需要：
 

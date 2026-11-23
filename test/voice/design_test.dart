@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import '../support/mock/backend.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/features/editor/house_editor.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/page.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/core/analysis/house_analysis.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/actions_design.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/screen.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/actions/design.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/screen.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 
@@ -23,7 +25,8 @@ void main() {
       seed: false);
 
   Future<ActionResult> say(String id, [Map<String, Object?> args = const {}]) =>
-      executor.run(id, args, VoiceScreens.context(repos, loggedIn: true),
+      executor.run(
+          id, args, VoiceScreens.context(voiceRepos(repos), loggedIn: true),
           source: Source.voice);
 
   Map<String, String> shown(String kind) => {
@@ -45,10 +48,11 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-14T00:00:00Z',
         newId: () => 'id${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
 
     final editor = VoiceScreens.current!;
@@ -98,7 +102,7 @@ void main() {
     expect(shown('floor').keys, ['f1']);
     expect((await say('editor.undo')).code, ActionCodes.notAvailable);
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 
@@ -117,10 +121,11 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-14T00:00:00Z',
         newId: () => 'id${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
     final host = VoiceScreens.current! as DesignHost;
     expect(shown('opening'), isEmpty);
@@ -158,16 +163,15 @@ void main() {
         'design.add_opening', {'room': 'r1', 'side': 'north', 'kind': 'door'});
     expect(door.ok, isTrue);
     await t.pump();
-    DoorOpening theDoor() => host.document.floors.single.openings
-        .whereType<DoorOpening>()
-        .single;
+    DoorOpening theDoor() =>
+        host.document.floors.single.openings.whereType<DoorOpening>().single;
     final alias = VoiceScreens.current!.entities
         .firstWhere((e) => e.id == theDoor().id)
         .alias;
     final swing = theDoor().opensTo;
     expect(
-        (await say('design.resize_opening',
-                {'opening': alias, 'width_mm': 1000}))
+        (await say(
+                'design.resize_opening', {'opening': alias, 'width_mm': 1000}))
             .ok,
         isTrue);
     expect((await say('design.flip_door', {'opening': alias})).ok, isTrue);
@@ -178,8 +182,8 @@ void main() {
     expect(theDoor().opensTo, isNot(swing));
     expect(host.document.mainEntranceOpeningId, theDoor().id);
     // A window cannot be the way in: the reason comes back.
-    expect((await say('design.set_main_entrance', {'opening': 'o2'})).ok,
-        isFalse);
+    expect(
+        (await say('design.set_main_entrance', {'opening': 'o2'})).ok, isFalse);
     expect((await say('design.delete_opening', {'opening': alias})).ok, isTrue);
     await t.pump();
 
@@ -188,7 +192,6 @@ void main() {
       await t.pump();
       expect(host.document.roof.type.name, type);
     }
-
 
     // Furniture lands inside the room it was asked for.
     final bed =
@@ -207,17 +210,18 @@ void main() {
     await t.pump();
     expect(host.document.extras.furniture, isEmpty);
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 
   testWidgets('design actions are not offered outside the editor', (t) async {
-    await t.pumpWidget(const MaterialApp(home: SizedBox()));
+    await t
+        .pumpWidget(const ProviderScope(child: MaterialApp(home: SizedBox())));
     expect(VoiceScreens.current, isNull);
     expect((await say('design.add_floor')).code, ActionCodes.notAvailable);
     expect(
         appActions
-            .offered(VoiceScreens.context(repos, loggedIn: true))
+            .offered(VoiceScreens.context(voiceRepos(repos), loggedIn: true))
             .map((a) => a.id),
         isNot(contains('design.add_floor')));
   });
@@ -236,10 +240,11 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-17T00:00:00Z',
         newId: () => 'st${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
     final host = VoiceScreens.current! as DesignHost;
 
@@ -287,7 +292,7 @@ void main() {
     expect((await say('editor.undo')).ok, isTrue);
     await t.pump();
     expect(host.document.floors.first.stairs, hasLength(1));
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 }

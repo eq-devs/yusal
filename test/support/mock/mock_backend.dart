@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'mock_rules.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:math' show max;
 import 'package:flutter/foundation.dart' show ChangeNotifier, Listenable;
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/domain/rules.dart';
-import 'package:yusal/data/repositories.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
+import 'backend.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/state/session.dart';
+import 'package:yusal/features/shared/model/admin_models.dart';
 import 'mock_clock.dart';
 import 'mock_seed.dart';
 
@@ -14,7 +18,7 @@ import 'mock_seed.dart';
 /// mark itself hired, confirm for the other side, or skip review.
 ///
 /// Data lives only in memory and is re-seeded on every launch.
-class MockBackend implements PlatformRepositories, ClockSource {
+class MockBackend implements Backend, ClockSource {
   MockBackend(
       {MockClock? clock,
       this.latency = const Duration(milliseconds: 120),
@@ -117,8 +121,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
 
   String get _me {
     final id = currentId;
-    if (id == null || accounts[id] == null || accounts[id]!.deleted)
+    if (id == null || accounts[id] == null || accounts[id]!.deleted) {
       throw const ApiFailure(ApiCodes.notSignedIn);
+    }
     return id;
   }
 
@@ -198,13 +203,14 @@ class MockBackend implements PlatformRepositories, ClockSource {
   }
 
   static String normalisePhone(String phone) =>
-      phone.replaceAll(RegExp(r'[^0-9+]'), '');
+      phone.replaceAll(RegExp('[^0-9+]'), '');
 
   @override
   Future<void> requestCode(String phone) => _io(() {
         final p = normalisePhone(phone);
-        if (p.replaceAll('+', '').length < 10)
+        if (p.replaceAll('+', '').length < 10) {
           throw const ApiFailure(ApiCodes.badPhone);
+        }
         _codesSent.add(p);
       });
 
@@ -212,8 +218,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<Account> verify(String phone, String code, {String? displayName}) =>
       _io(() {
         final p = normalisePhone(phone);
-        if (!_codesSent.contains(p) || code.trim() != verificationCode)
+        if (!_codesSent.contains(p) || code.trim() != verificationCode) {
           throw const ApiFailure(ApiCodes.badCode);
+        }
         var account = accounts.values
             .where((a) => a.phone == p && !a.deleted)
             .firstOrNull;
@@ -223,7 +230,7 @@ class MockBackend implements PlatformRepositories, ClockSource {
               id: id,
               phone: p,
               displayName: (displayName ?? '').trim().isEmpty
-                  ? '${p.substring(p.length - 4)}'
+                  ? p.substring(p.length - 4)
                   : displayName!.trim(),
               createdAt: now);
           accounts[id] = account;
@@ -247,8 +254,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<Account> updatePhone(String phone) => _io(() {
         final p = normalisePhone(phone);
         final digits = p.replaceAll('+', '').length;
-        if (p.isNotEmpty && (digits < 10 || digits > 15))
+        if (p.isNotEmpty && (digits < 10 || digits > 15)) {
           throw const ApiFailure(ApiCodes.invalidInput, 'phone');
+        }
         final a = _meAccount.copyWith(phone: p);
         accounts[a.id] = a;
         return a;
@@ -263,9 +271,10 @@ class MockBackend implements PlatformRepositories, ClockSource {
           profiles[p.id] = p.copyWith(status: ProfileStatus.hidden);
         }
         for (final d in demands.values.where((d) => d.ownerId == me).toList()) {
-          if (demandMachine.can(d.status, DemandEvent.close))
+          if (demandMachine.can(d.status, DemandEvent.close)) {
             demands[d.id] = _fire(d, DemandEvent.close)
                 .copyWith(closeReason: 'accountDeleted');
+          }
         }
         backupsByAccount.remove(me);
         currentId = null;
@@ -311,12 +320,14 @@ class MockBackend implements PlatformRepositories, ClockSource {
           if (f.availableNow && !p.availableOn(now)) return false;
           if (q.isNotEmpty &&
               !p.name.toLowerCase().contains(q) &&
-              !p.bio.toLowerCase().contains(q)) return false;
+              !p.bio.toLowerCase().contains(q)) {
+            return false;
+          }
           return true;
         }).toList()
           ..sort((a, b) {
-            final av = a.availableOn(now) ? 0 : 1,
-                bv = b.availableOn(now) ? 0 : 1;
+            final av = a.availableOn(now) ? 0 : 1;
+            final bv = b.availableOn(now) ? 0 : 1;
             if (av != bv) return av - bv;
             return b.availabilityConfirmedAt
                 .compareTo(a.availabilityConfirmedAt);
@@ -328,11 +339,13 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<ServiceProfile> saveProfile(ServiceProfile p) => _io(() {
         final me = _me;
         _requireActive();
-        if (p.name.trim().isEmpty || p.trades.isEmpty || p.regions.isEmpty)
+        if (p.name.trim().isEmpty || p.trades.isEmpty || p.regions.isEmpty) {
           throw const ApiFailure(ApiCodes.invalidInput);
+        }
         for (final r in p.refPrices) {
-          if (r.amount <= 0 || !priceUnits.contains(r.unit))
+          if (r.amount <= 0 || !priceUnits.contains(r.unit)) {
             throw const ApiFailure(ApiCodes.invalidInput, 'refPrice');
+          }
         }
         if (p.id.isEmpty) {
           final id = newId('prof');
@@ -387,7 +400,8 @@ class MockBackend implements PlatformRepositories, ClockSource {
             refPrices: saved.refPrices,
             bio: saved.bio,
             works: saved.works,
-            status: modHidden.contains(p.id) ? ProfileStatus.hidden : saved.status,
+            status:
+                modHidden.contains(p.id) ? ProfileStatus.hidden : saved.status,
             showPhone: saved.showPhone,
             role: p.role,
             verified: old.verified);
@@ -412,8 +426,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
                 c.status == CooperationStatus.ended));
         final coopIds = coops.map((c) => c.id).toSet();
         final visible = reviews.values.where((r) {
-          if (!coopIds.contains(r.cooperationId) || r.targetId != p.ownerId)
+          if (!coopIds.contains(r.cooperationId) || r.targetId != p.ownerId) {
             return false;
+          }
           final c = cooperations[r.cooperationId]!;
           return reviewsVisible(c, _reviewsOf(c.id), now);
         }).toList();
@@ -421,8 +436,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         for (final d in reviewDimensions) {
           final scores =
               visible.map((r) => r.scores[d]).whereType<int>().toList();
-          if (scores.isNotEmpty)
+          if (scores.isNotEmpty) {
             avg[d] = scores.reduce((a, b) => a + b) / scores.length;
+          }
         }
         return ProfileStats(
             confirmedCooperations: coops.length,
@@ -443,11 +459,14 @@ class MockBackend implements PlatformRepositories, ClockSource {
 
   bool _demandVisible(Demand d) {
     if (d.ownerId == currentId) return true;
-    if (currentId != null && accounts[currentId]!.can(AdminPerms.read)) return true;
+    if (currentId != null && accounts[currentId]!.can(AdminPerms.read)) {
+      return true;
+    }
     if (currentId != null &&
         applications.values
-            .any((a) => a.demandId == d.id && a.applicantId == currentId))
+            .any((a) => a.demandId == d.id && a.applicantId == currentId)) {
       return true;
+    }
     return const {
       DemandStatus.open,
       DemandStatus.paused,
@@ -479,7 +498,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
           if (q.isNotEmpty &&
               !v.title.toLowerCase().contains(q) &&
               !v.description.toLowerCase().contains(q) &&
-              !v.locality.toLowerCase().contains(q)) return false;
+              !v.locality.toLowerCase().contains(q)) {
+            return false;
+          }
           return true;
         }).toList()
           ..sort((a, b) => (b.publishedAt ?? b.createdAt)
@@ -573,11 +594,13 @@ class MockBackend implements PlatformRepositories, ClockSource {
     } else {
       final c = v.contract;
       if (c == null) bad = 'contract';
-      if (c != null && c.scopeKind == ScopeKind.stages && c.stages.isEmpty)
+      if (c != null && c.scopeKind == ScopeKind.stages && c.stages.isEmpty) {
         bad = 'stages';
+      }
       if (c != null &&
-          c.quantities.any((q) => q.quantity != null && q.quantity! <= 0))
+          c.quantities.any((q) => q.quantity != null && q.quantity! <= 0)) {
         bad = 'quantity';
+      }
     }
     if (v.snapshotId != null) {
       final s = snapshots[v.snapshotId];
@@ -623,8 +646,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         if (existingId != null) {
           final d = _owned(existingId);
           if (d.status != DemandStatus.draft &&
-              d.status != DemandStatus.rejected)
+              d.status != DemandStatus.rejected) {
             throw const ApiFailure(ApiCodes.invalidState);
+          }
           final versions = [...d.versions];
           versions[versions.length - 1] = _numbered(draft, versions.last.no);
           return demands[d.id] = d.copyWith(versions: versions);
@@ -704,8 +728,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<Demand> revise(String demandId, DemandVersion next) => _io(() {
         _requireActive();
         final d = _owned(demandId);
-        if (!demandMachine.can(d.status, DemandEvent.recheck))
+        if (!demandMachine.can(d.status, DemandEvent.recheck)) {
           throw const ApiFailure(ApiCodes.invalidState);
+        }
         _validateDemand(d.type, next);
         final version = _numbered(next, d.current.no + 1);
         var updated = d.copyWith(versions: [...d.versions, version]);
@@ -773,8 +798,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   @override
   Future<Demand> close(String demandId, String reason) => _io(() {
         final d = _owned(demandId);
-        if (reason.trim().isEmpty)
+        if (reason.trim().isEmpty) {
           throw const ApiFailure(ApiCodes.invalidInput);
+        }
         return demands[d.id] =
             _fire(d, DemandEvent.close).copyWith(closeReason: reason.trim());
       });
@@ -849,10 +875,17 @@ class MockBackend implements PlatformRepositories, ClockSource {
           final d = demands[a.demandId];
           if (d == null || d.ownerId != me) continue;
           if (a.status == ApplicationStatus.withdrawn ||
-              a.status == ApplicationStatus.notSelected) continue;
+              a.status == ApplicationStatus.notSelected) {
+            continue;
+          }
           final c = out[d.id] ?? (total: 0, unread: 0);
-          out[d.id] =
-              (total: c.total + 1, unread: c.unread + (a.readByOwner || a.status != ApplicationStatus.submitted ? 0 : 1));
+          out[d.id] = (
+            total: c.total + 1,
+            unread: c.unread +
+                (a.readByOwner || a.status != ApplicationStatus.submitted
+                    ? 0
+                    : 1)
+          );
         }
         return out;
       });
@@ -928,16 +961,20 @@ class MockBackend implements PlatformRepositories, ClockSource {
         if (d == null) throw const ApiFailure(ApiCodes.notFound);
         if (d.ownerId == me) throw const ApiFailure(ApiCodes.ownDemand);
         if (_isBlocked(me, d.ownerId)) throw const ApiFailure(ApiCodes.blocked);
-        if (!acceptsApplications(d, now))
+        if (!acceptsApplications(d, now)) {
           throw const ApiFailure(ApiCodes.notAccepting);
+        }
         final p = profiles[profileId];
-        if (p == null || p.ownerId != me || p.status != ProfileStatus.active)
+        if (p == null || p.ownerId != me || p.status != ProfileStatus.active) {
           throw const ApiFailure(ApiCodes.forbidden, 'profile');
+        }
         if (d.type == DemandType.hire) {
-          if (version.headcountOffered < 1)
+          if (version.headcountOffered < 1) {
             throw const ApiFailure(ApiCodes.invalidInput, 'headcount');
-          if (!version.acceptsOffer && (version.expectedWage ?? 0) <= 0)
+          }
+          if (!version.acceptsOffer && (version.expectedWage ?? 0) <= 0) {
             throw const ApiFailure(ApiCodes.invalidInput, 'wage');
+          }
         } else {
           final ok = switch (version.pricing) {
             PricingMode.perQuantity => version.lines.isNotEmpty &&
@@ -949,8 +986,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
             PricingMode.siteConfirm => true,
           };
           if (!ok) throw const ApiFailure(ApiCodes.invalidInput, 'price');
-          if (version.scopeText.trim().isEmpty)
+          if (version.scopeText.trim().isEmpty) {
             throw const ApiFailure(ApiCodes.invalidInput, 'scope');
+          }
         }
         final existing = applications.values
             .where((a) => a.demandId == d.id && a.profileId == p.id)
@@ -1057,16 +1095,21 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final a = applications[applicationId];
         if (a == null) throw const ApiFailure(ApiCodes.notFound);
         final d = _owned(a.demandId);
-        if (!applicationMachine.can(a.status, ApplicationEvent.invite))
+        if (!applicationMachine.can(a.status, ApplicationEvent.invite)) {
           throw const ApiFailure(ApiCodes.invalidState);
-        if (d.status == DemandStatus.closed)
+        }
+        if (d.status == DemandStatus.closed) {
           throw const ApiFailure(ApiCodes.invalidState);
-        if (_isBlocked(me, a.applicantId))
+        }
+        if (_isBlocked(me, a.applicantId)) {
           throw const ApiFailure(ApiCodes.blocked);
-        if (terms.scope.trim().isEmpty)
+        }
+        if (terms.scope.trim().isEmpty) {
           throw const ApiFailure(ApiCodes.invalidInput, 'scope');
-        if (terms.amount != null && terms.amount! <= 0)
+        }
+        if (terms.amount != null && terms.amount! <= 0) {
           throw const ApiFailure(ApiCodes.invalidInput, 'amount');
+        }
         final id = newId('coop');
         cooperations[id] = Cooperation(
             id: id,
@@ -1097,11 +1140,13 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<Cooperation> confirm(String cooperationId) => _io(() {
         final me = _me;
         final c = _coop(cooperationId);
-        if (!cooperationMachine.can(c.status, CooperationEvent.confirm))
+        if (!cooperationMachine.can(c.status, CooperationEvent.confirm)) {
           throw const ApiFailure(ApiCodes.invalidState);
+        }
         final g = c.agreements.first;
-        if (g.confirmedBy.contains(me))
+        if (g.confirmedBy.contains(me)) {
           throw const ApiFailure(ApiCodes.invalidState, 'alreadyConfirmed');
+        }
         final confirmed = {...g.confirmedBy, me};
         final both =
             confirmed.contains(c.ownerId) && confirmed.contains(c.providerId);
@@ -1181,7 +1226,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<Cooperation> decline(String cooperationId) => _io(() {
         final c = _coop(cooperationId);
         if (!cooperationMachine.can(c.status, CooperationEvent.notForm) ||
-            c.providerId != _me) throw const ApiFailure(ApiCodes.invalidState);
+            c.providerId != _me) {
+          throw const ApiFailure(ApiCodes.invalidState);
+        }
         return _notFormed(c, NoticeKind.cooperationDeclined, c.ownerId);
       });
 
@@ -1189,7 +1236,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<Cooperation> revoke(String cooperationId) => _io(() {
         final c = _coop(cooperationId);
         if (!cooperationMachine.can(c.status, CooperationEvent.notForm) ||
-            c.ownerId != _me) throw const ApiFailure(ApiCodes.invalidState);
+            c.ownerId != _me) {
+          throw const ApiFailure(ApiCodes.invalidState);
+        }
         return _notFormed(c, NoticeKind.cooperationDeclined, c.providerId);
       });
 
@@ -1198,10 +1247,13 @@ class MockBackend implements PlatformRepositories, ClockSource {
       _io(() {
         final me = _me;
         final c = _coop(cooperationId);
-        if (c.status != CooperationStatus.confirmed || c.pendingChange != null)
+        if (c.status != CooperationStatus.confirmed ||
+            c.pendingChange != null) {
           throw const ApiFailure(ApiCodes.invalidState);
-        if (terms.scope.trim().isEmpty)
+        }
+        if (terms.scope.trim().isEmpty) {
           throw const ApiFailure(ApiCodes.invalidInput, 'scope');
+        }
         final next = _agreementFrom(terms, c.agreements.last.version + 1, me,
             demands[c.demandId]!.current.no, AgreementStatus.proposed);
         cooperations[c.id] = c.copyWith(agreements: [...c.agreements, next]);
@@ -1217,8 +1269,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final me = _me;
         final c = _coop(cooperationId);
         final change = c.pendingChange;
-        if (change == null || change.proposedBy == me)
+        if (change == null || change.proposedBy == me) {
           throw const ApiFailure(ApiCodes.invalidState);
+        }
         final list = [
           for (final g in c.agreements)
             if (identical(g, change))
@@ -1244,10 +1297,12 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<Cooperation> requestEnd(String cooperationId, String note) => _io(() {
         final me = _me;
         final c = _coop(cooperationId);
-        if (c.status != CooperationStatus.confirmed)
+        if (c.status != CooperationStatus.confirmed) {
           throw const ApiFailure(ApiCodes.invalidState);
-        if (c.endPhase == EndPhase.asked)
+        }
+        if (c.endPhase == EndPhase.asked) {
           throw const ApiFailure(ApiCodes.invalidState, 'pending');
+        }
         cooperations[c.id] = c.copyWith(
             endRequest: EndRequest(by: me, at: now, note: note.trim()));
         notice(
@@ -1290,8 +1345,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final c = _coop(cooperationId);
         final r = c.endRequest;
         // Asked, or disputed already (a new objection replaces the old).
-        if (c.endPhase == EndPhase.none || r!.by == me)
+        if (c.endPhase == EndPhase.none || r!.by == me) {
           throw const ApiFailure(ApiCodes.invalidState);
+        }
         if (note.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
         cooperations[c.id] = c.copyWith(
             endRequest: EndRequest(
@@ -1305,8 +1361,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<Cooperation> addUpdate(String cooperationId, String text) => _io(() {
         final me = _me;
         final c = _coop(cooperationId);
-        if (c.status != CooperationStatus.confirmed || text.trim().isEmpty)
+        if (c.status != CooperationStatus.confirmed || text.trim().isEmpty) {
           throw const ApiFailure(ApiCodes.invalidState);
+        }
         return cooperations[c.id] = c.copyWith(updates: [
           ...c.updates,
           ProgressUpdate(by: me, at: now, text: text.trim())
@@ -1319,15 +1376,18 @@ class MockBackend implements PlatformRepositories, ClockSource {
       _io(() {
         final me = _me;
         final c = _coop(cooperationId);
-        if (c.status != CooperationStatus.confirmed || me != c.providerId)
+        if (c.status != CooperationStatus.confirmed || me != c.providerId) {
           throw const ApiFailure(ApiCodes.invalidState);
-        if (index < 0 || index >= c.milestones.length)
+        }
+        if (index < 0 || index >= c.milestones.length) {
           throw const ApiFailure(ApiCodes.invalidInput, 'milestone');
+        }
         final m = c.milestones[index];
         final requested =
             milestoneMachine.next(m.status, MilestoneEvent.request);
-        if (requested == null)
+        if (requested == null) {
           throw const ApiFailure(ApiCodes.invalidState, 'accepted');
+        }
         final list = [...c.milestones];
         list[index] = m.copyWith(
             status: requested,
@@ -1346,16 +1406,20 @@ class MockBackend implements PlatformRepositories, ClockSource {
       _io(() {
         final me = _me;
         final c = _coop(cooperationId);
-        if (c.status != CooperationStatus.pending)
+        if (c.status != CooperationStatus.pending) {
           throw const ApiFailure(ApiCodes.invalidState, 'confirmed');
-        if (plan.isEmpty || plan.length > 8)
+        }
+        if (plan.isEmpty || plan.length > 8) {
           throw const ApiFailure(ApiCodes.invalidInput, 'count');
+        }
         if (plan.any((m) => m.percent < 0) ||
-            plan.fold(0, (s, m) => s + m.percent) != 100)
+            plan.fold(0, (s, m) => s + m.percent) != 100) {
           throw const ApiFailure(ApiCodes.invalidInput, 'percent');
+        }
         if (plan.map((m) => m.key).toSet().length != plan.length ||
-            plan.any((m) => m.key.trim().isEmpty || m.key == 'c:'))
+            plan.any((m) => m.key.trim().isEmpty || m.key == 'c:')) {
           throw const ApiFailure(ApiCodes.invalidInput, 'name');
+        }
         final g = c.agreements.first;
         cooperations[c.id] = c.copyWith(milestones: [
           for (final m in plan)
@@ -1382,14 +1446,16 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final me = _me;
         final c = _coop(cooperationId);
         if (me != c.ownerId) throw const ApiFailure(ApiCodes.forbidden);
-        if (index < 0 || index >= c.milestones.length)
+        if (index < 0 || index >= c.milestones.length) {
           throw const ApiFailure(ApiCodes.invalidInput, 'milestone');
+        }
         final m = c.milestones[index];
         final answered = milestoneMachine.next(
             m.status, accept ? MilestoneEvent.accept : MilestoneEvent.dispute);
         if (answered == null) throw const ApiFailure(ApiCodes.invalidState);
-        if (!accept && note.trim().isEmpty)
+        if (!accept && note.trim().isEmpty) {
           throw const ApiFailure(ApiCodes.invalidInput, 'note');
+        }
         final list = [...c.milestones];
         list[index] = m.copyWith(
             status: answered,
@@ -1407,15 +1473,18 @@ class MockBackend implements PlatformRepositories, ClockSource {
       _io(() {
         final me = _me;
         final c = _coop(cooperationId);
-        if (c.status != CooperationStatus.confirmed || me != c.providerId)
+        if (c.status != CooperationStatus.confirmed || me != c.providerId) {
           throw const ApiFailure(ApiCodes.invalidState);
-        if (headcount < 1 || headcount > 200)
+        }
+        if (headcount < 1 || headcount > 200) {
           throw const ApiFailure(ApiCodes.invalidInput, 'headcount');
+        }
         // The Kazakhstan calendar day (UTC+5); a confirmed day stays as is.
         final kz = now.toUtc().add(const Duration(hours: 5));
         final day = DateTime.utc(kz.year, kz.month, kz.day);
-        if (c.workLogs.any((w) => w.day == day && w.confirmed))
+        if (c.workLogs.any((w) => w.day == day && w.confirmed)) {
           throw const ApiFailure(ApiCodes.invalidState, 'workLogConfirmed');
+        }
         final rest = c.workLogs.where((w) => w.day != day);
         final log = WorkLog(
             id: newId('wl'),
@@ -1435,8 +1504,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final me = _me;
         final c = _coop(cooperationId);
         if (me != c.ownerId) throw const ApiFailure(ApiCodes.forbidden);
-        if (!c.workLogs.any((w) => w.id == logId))
+        if (!c.workLogs.any((w) => w.id == logId)) {
           throw const ApiFailure(ApiCodes.notFound);
+        }
         return cooperations[c.id] = c.copyWith(workLogs: [
           for (final w in c.workLogs) w.id == logId ? w.confirm() : w
         ]);
@@ -1479,13 +1549,16 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final me = _me;
         final c = _coop(cooperationId);
         if (!reviewsOpen(c, now)) throw const ApiFailure(ApiCodes.invalidState);
-        if (_reviewsOf(c.id).any((r) => r.authorId == me))
+        if (_reviewsOf(c.id).any((r) => r.authorId == me)) {
           throw const ApiFailure(ApiCodes.invalidState, 'reviewed');
+        }
         if (scores.isEmpty ||
             scores.entries.any((e) =>
                 !reviewDimensions.contains(e.key) ||
                 e.value < 1 ||
-                e.value > 5)) throw const ApiFailure(ApiCodes.invalidInput);
+                e.value > 5)) {
+          throw const ApiFailure(ApiCodes.invalidInput);
+        }
         final id = newId('rev');
         reviews[id] = Review(
             id: id,
@@ -1524,8 +1597,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Conversation _conv(String id) {
     final c = convs[id];
     if (c == null) throw const ApiFailure(ApiCodes.notFound);
-    if (!c.participants.contains(_me))
+    if (!c.participants.contains(_me)) {
       throw const ApiFailure(ApiCodes.forbidden);
+    }
     return c;
   }
 
@@ -1590,8 +1664,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
           {String? demandId}) =>
       _io(() {
         final me = _me;
-        if (otherAccountId == me || accounts[otherAccountId] == null)
+        if (otherAccountId == me || accounts[otherAccountId] == null) {
           throw const ApiFailure(ApiCodes.invalidInput);
+        }
         return _withSummary(
             openOrCreate(me, otherAccountId, demandId: demandId), me);
       });
@@ -1621,17 +1696,21 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final me = _me;
         _requireActive();
         final c = _conv(conversationId);
-        if (_isBlocked(me, c.otherSide(me)))
+        if (_isBlocked(me, c.otherSide(me))) {
           throw const ApiFailure(ApiCodes.blocked);
-        if (kind == MessageKind.text && text.trim().isEmpty)
+        }
+        if (kind == MessageKind.text && text.trim().isEmpty) {
           throw const ApiFailure(ApiCodes.invalidInput);
-        if (kind == MessageKind.system || kind == MessageKind.phoneShared)
+        }
+        if (kind == MessageKind.system || kind == MessageKind.phoneShared) {
           throw const ApiFailure(ApiCodes.forbidden);
+        }
         final recent = _messagesOf(c.id).where((m) =>
             m.senderId == me &&
             m.sentAt.isAfter(now.subtract(const Duration(minutes: 1))));
-        if (recent.length >= chatLimitPerMinute)
+        if (recent.length >= chatLimitPerMinute) {
           throw const ApiFailure(ApiCodes.rateLimited);
+        }
         _lastRead['$me|${c.id}'] = now;
         return addMessage(c.id, me, kind,
             text: text.trim(),
@@ -1673,10 +1752,12 @@ class MockBackend implements PlatformRepositories, ClockSource {
         // Sharing a phone is sending a message.
         _requireActive();
         final c = _conv(conversationId);
-        if (_isBlocked(me, c.otherSide(me)))
+        if (_isBlocked(me, c.otherSide(me))) {
           throw const ApiFailure(ApiCodes.blocked);
-        if (_meAccount.phone.isEmpty)
+        }
+        if (_meAccount.phone.isEmpty) {
           throw const ApiFailure(ApiCodes.invalidInput, 'phone');
+        }
         return addMessage(c.id, me, MessageKind.phoneShared,
             text: _meAccount.phone);
       });
@@ -1752,8 +1833,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         }
         if (demandId != null) {
           final d = demands[demandId];
-          if (d == null || d.current.snapshotId != id || !_demandVisible(d))
+          if (d == null || d.current.snapshotId != id || !_demandVisible(d)) {
             return null;
+          }
           return s.ownerId == currentId
               ? s
               : _publicSnapshot(id, d.current.visibility);
@@ -1795,8 +1877,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         if (old != null &&
             expectedPreviousUpdatedAt != null &&
             old.designUpdatedAt != expectedPreviousUpdatedAt &&
-            old.designUpdatedAt != designUpdatedAt)
+            old.designUpdatedAt != designUpdatedAt) {
           throw const ApiFailure(ApiCodes.conflict);
+        }
         return store[projectId] = BackupRecord(
             projectId: projectId,
             name: name,
@@ -1834,14 +1917,17 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<List<HousePost>> feed(FeedFilter f) => _read(() {
         final q = f.query.trim().toLowerCase();
         final list = posts.values.where((p) {
-          if (!_postVisible(p) || p.status != PostStatus.published)
+          if (!_postVisible(p) || p.status != PostStatus.published) {
             return false;
+          }
           if (f.region != null && p.region != f.region) return false;
           if (f.openForBuilders && !p.openForBuilders) return false;
           if (f.askingFeedback && !_asksFeedback(p)) return false;
           if (q.isNotEmpty &&
               !p.title.toLowerCase().contains(q) &&
-              !p.story.toLowerCase().contains(q)) return false;
+              !p.story.toLowerCase().contains(q)) {
+            return false;
+          }
           return true;
         }).toList();
         switch (f.sort) {
@@ -1881,13 +1967,16 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final me = _me;
         _requireActive();
         final snap = snapshots[d.snapshotId];
-        if (snap == null || snap.ownerId != me)
+        if (snap == null || snap.ownerId != me) {
           throw const ApiFailure(ApiCodes.forbidden, 'snapshot');
-        if (d.title.trim().isEmpty)
+        }
+        if (d.title.trim().isEmpty) {
           throw const ApiFailure(ApiCodes.invalidInput, 'title');
+        }
         final word = bannedWordIn('${d.title} ${d.story}');
-        if (word != null)
+        if (word != null) {
           throw ApiFailure(ApiCodes.invalidInput, 'banned:$word');
+        }
         final id = newId('post');
         return posts[id] = HousePost(
             id: id,
@@ -1915,8 +2004,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         if (old == null) throw const ApiFailure(ApiCodes.notFound);
         if (old.ownerId != _me) throw const ApiFailure(ApiCodes.forbidden);
         final word = bannedWordIn('${p.title} ${p.story}');
-        if (word != null)
+        if (word != null) {
           throw ApiFailure(ApiCodes.invalidInput, 'banned:$word');
+        }
         return posts[p.id] = old.copyWith(
             title: p.title.trim(),
             story: p.story.trim(),
@@ -1944,22 +2034,25 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<void> hidePost(String id) => _io(() {
         final p = posts[id];
         if (p == null) throw const ApiFailure(ApiCodes.notFound);
-        if (p.ownerId != _me && !_meAccount.can(AdminPerms.moderate))
+        if (p.ownerId != _me && !_meAccount.can(AdminPerms.moderate)) {
           throw const ApiFailure(ApiCodes.forbidden);
+        }
         posts[id] = p.copyWith(status: PostStatus.hidden, updatedAt: now);
       });
 
   @override
   Future<String?> reusePost(String postId) => _io(() {
         final p = posts[postId];
-        if (p == null || !_postVisible(p))
+        if (p == null || !_postVisible(p)) {
           throw const ApiFailure(ApiCodes.notFound);
+        }
         final plan = snapshots[p.snapshotId]?.planJson;
         if (plan == null) throw const ApiFailure(ApiCodes.notFound, 'plan');
         posts[postId] = p.copyWith(reuseCount: p.reuseCount + 1);
-        if (p.ownerId != currentId)
+        if (p.ownerId != currentId) {
           notice(p.ownerId, NoticeKind.postReused, RefType.post, postId,
               title: p.title);
+        }
         return plan;
       });
 
@@ -1967,15 +2060,17 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<bool> toggleLike(String postId) => _io(() {
         final me = _me;
         final p = posts[postId];
-        if (p == null || !_postVisible(p))
+        if (p == null || !_postVisible(p)) {
           throw const ApiFailure(ApiCodes.notFound);
+        }
         final set = likes.putIfAbsent(postId, () => {});
         final on = !set.remove(me);
         if (on) set.add(me);
         posts[postId] = p.copyWith(likeCount: set.length);
-        if (on && p.ownerId != me)
+        if (on && p.ownerId != me) {
           notice(p.ownerId, NoticeKind.postLiked, RefType.post, postId,
               title: p.title);
+        }
         return on;
       });
 
@@ -2009,35 +2104,45 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final me = _me;
         _requireActive();
         final p = posts[postId];
-        if (p == null || !_postVisible(p))
+        if (p == null || !_postVisible(p)) {
           throw const ApiFailure(ApiCodes.notFound);
+        }
         final parent = parentId == null ? null : commentsById[parentId];
         if (parentId != null &&
             (parent == null ||
                 parent.postId != postId ||
-                parent.parentId != null))
+                parent.parentId != null)) {
           throw const ApiFailure(ApiCodes.notFound, 'parent');
-        if (parent != null && (rating != null || topic != null))
+        }
+        if (parent != null && (rating != null || topic != null)) {
           throw const ApiFailure(ApiCodes.invalidInput, 'reply');
-        if (parent != null && text.trim().isEmpty)
+        }
+        if (parent != null && text.trim().isEmpty) {
           throw const ApiFailure(ApiCodes.invalidInput, 'empty');
-        if (topic != null && !feedbackTopics.contains(topic))
+        }
+        if (topic != null && !feedbackTopics.contains(topic)) {
           throw const ApiFailure(ApiCodes.invalidInput, 'topic');
-        if (text.trim().isEmpty && rating == null)
+        }
+        if (text.trim().isEmpty && rating == null) {
           throw const ApiFailure(ApiCodes.invalidInput, 'empty');
-        if (rating != null && (rating < 1 || rating > 5))
+        }
+        if (rating != null && (rating < 1 || rating > 5)) {
           throw const ApiFailure(ApiCodes.invalidInput, 'rating');
-        if (rating != null && p.ownerId == me)
+        }
+        if (rating != null && p.ownerId == me) {
           throw const ApiFailure(ApiCodes.invalidState, 'own');
+        }
         final word = bannedWordIn(text);
-        if (word != null)
+        if (word != null) {
           throw ApiFailure(ApiCodes.invalidInput, 'banned:$word');
+        }
         final times = _commentTimes.putIfAbsent(me, () => [])
           ..removeWhere((t) => now.difference(t) > const Duration(minutes: 1));
         if (times.length >= 10) throw const ApiFailure(ApiCodes.rateLimited);
         times.add(now);
         // One rating per person: a new rating replaces the old one.
-        var sum = p.ratingSum, count = p.ratingCount;
+        var sum = p.ratingSum;
+        var count = p.ratingCount;
         if (rating != null) {
           final prev = commentsById.values
               .where((c) =>
@@ -2047,10 +2152,11 @@ class MockBackend implements PlatformRepositories, ClockSource {
             sum -= c.rating!;
             count--;
             // Keep a critique others replied to; only its rating moves.
-            if (commentsById.values.any((r) => r.parentId == c.id))
+            if (commentsById.values.any((r) => r.parentId == c.id)) {
               commentsById[c.id] = c.copyWith(clearRating: true);
-            else
+            } else {
               commentsById.remove(c.id);
+            }
           }
           sum += rating;
           count++;
@@ -2070,13 +2176,15 @@ class MockBackend implements PlatformRepositories, ClockSource {
                 commentsById.values.where((c) => c.postId == postId).length,
             ratingSum: sum,
             ratingCount: count);
-        if (p.ownerId != me)
+        if (p.ownerId != me) {
           notice(p.ownerId, NoticeKind.postCommented, RefType.post, postId,
               title: p.title);
-        if (parent != null && parent.authorId != me)
+        }
+        if (parent != null && parent.authorId != me) {
           notice(
               parent.authorId, NoticeKind.commentReplied, RefType.post, postId,
               title: p.title);
+        }
         return c;
       });
 
@@ -2087,12 +2195,14 @@ class MockBackend implements PlatformRepositories, ClockSource {
         if (c == null) throw const ApiFailure(ApiCodes.notFound);
         final p = posts[c.postId]!;
         if (p.ownerId != me) throw const ApiFailure(ApiCodes.forbidden);
-        if (c.parentId != null || c.authorId == me)
+        if (c.parentId != null || c.authorId == me) {
           throw const ApiFailure(ApiCodes.invalidState);
+        }
         final next = commentsById[c.id] = c.copyWith(helpful: helpful);
-        if (helpful && !c.helpful)
+        if (helpful && !c.helpful) {
           notice(c.authorId, NoticeKind.commentHelpful, RefType.post, p.id,
               title: p.title);
+        }
         return next;
       });
 
@@ -2101,8 +2211,11 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final c = commentsById[id];
         if (c == null) throw const ApiFailure(ApiCodes.notFound);
         final p = posts[c.postId]!;
-        if (c.authorId != _me && p.ownerId != _me && !_meAccount.can(AdminPerms.moderate))
+        if (c.authorId != _me &&
+            p.ownerId != _me &&
+            !_meAccount.can(AdminPerms.moderate)) {
           throw const ApiFailure(ApiCodes.forbidden);
+        }
         _removeComment(c);
       });
 
@@ -2136,7 +2249,8 @@ class MockBackend implements PlatformRepositories, ClockSource {
             .toList()
           ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
         if (coops.isEmpty) return null;
-        var agreed = 0, accepted = 0;
+        var agreed = 0;
+        var accepted = 0;
         final builders =
             <({ServiceProfile profile, String scope, bool ended})>[];
         for (final c in coops) {
@@ -2166,12 +2280,15 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<HousePost?> postForDemand(String demandId) => _read(() {
         final d = demands[demandId];
         if (d == null) return null;
-        for (final p in posts.values)
+        for (final p in posts.values) {
           if (_postVisible(p) &&
               p.ownerId == d.ownerId &&
               (d.current.snapshotId == p.snapshotId ||
                   (d.designProjectId != null &&
-                      d.designProjectId == p.projectId))) return p;
+                      d.designProjectId == p.projectId))) {
+            return p;
+          }
+        }
         return null;
       });
 
@@ -2232,8 +2349,11 @@ class MockBackend implements PlatformRepositories, ClockSource {
 
   void _alertMatches(Demand d) {
     for (final e in alerts.entries) {
-      if (e.key == d.ownerId || !e.value.matches(d) || _isBlocked(e.key, d.ownerId))
+      if (e.key == d.ownerId ||
+          !e.value.matches(d) ||
+          _isBlocked(e.key, d.ownerId)) {
         continue;
+      }
       notice(e.key, NoticeKind.newDemandMatch, RefType.demand, d.id,
           title: d.current.title);
     }
@@ -2245,7 +2365,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
     switch (kind) {
       case ReportTarget.demand:
         final d = demands[id];
-        if (d != null) return (owner: d.ownerId, title: d.current.title, postId: null);
+        if (d != null) {
+          return (owner: d.ownerId, title: d.current.title, postId: null);
+        }
       case ReportTarget.profile:
         final p = profiles[id];
         if (p != null) return (owner: p.ownerId, title: p.name, postId: null);
@@ -2272,8 +2394,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<void> report(ReportTarget target, String targetId, String reason) =>
       _io(() {
         final me = _me;
-        if (reason.trim().isEmpty)
+        if (reason.trim().isEmpty) {
           throw const ApiFailure(ApiCodes.invalidInput);
+        }
         final dup = reportsById.values.any((r) =>
             r.reporterId == me &&
             r.targetId == targetId &&
@@ -2293,8 +2416,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   Future<Appeal> fileAppeal(String target, String targetId, String text) =>
       _io(() {
         final me = _me;
-        if (text.trim().isEmpty || text.length > 1000)
+        if (text.trim().isEmpty || text.length > 1000) {
           throw const ApiFailure(ApiCodes.invalidInput);
+        }
         final kind = switch (target) {
           'demand' => ReportTarget.demand,
           'profile' => ReportTarget.profile,
@@ -2305,8 +2429,11 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final t = _target(kind, targetId);
         if (t.owner != me) throw const ApiFailure(ApiCodes.forbidden);
         for (final a in appealsById.values) {
-          if (a.accountId == me && a.targetId == targetId && a.status == AppealStatus.open)
+          if (a.accountId == me &&
+              a.targetId == targetId &&
+              a.status == AppealStatus.open) {
             return a;
+          }
         }
         final id = newId('appeal');
         return appealsById[id] = Appeal(
@@ -2336,13 +2463,18 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final me = _me;
         _requireActive();
         final p = profiles[profileId];
-        if (p == null || p.ownerId != me) throw const ApiFailure(ApiCodes.notFound);
-        if (phone.trim().length < 6 || photos.isEmpty || photos.length > 6)
+        if (p == null || p.ownerId != me) {
+          throw const ApiFailure(ApiCodes.notFound);
+        }
+        if (phone.trim().length < 6 || photos.isEmpty || photos.length > 6) {
           throw const ApiFailure(ApiCodes.invalidInput);
+        }
         if (p.verified) throw const ApiFailure(ApiCodes.invalidState);
         for (final v in verificationsById.values) {
-          if (v.profileId == profileId && v.status == VerificationStatus.pending)
+          if (v.profileId == profileId &&
+              v.status == VerificationStatus.pending) {
             return v;
+          }
         }
         final id = newId('verif');
         return verificationsById[id] = Verification(
@@ -2353,7 +2485,8 @@ class MockBackend implements PlatformRepositories, ClockSource {
             phone: phone.trim(),
             note: note.trim(),
             photos: [
-              for (final b in photos) 'data:image/jpeg;base64,${base64Encode(b)}'
+              for (final b in photos)
+                'data:image/jpeg;base64,${base64Encode(b)}'
             ],
             createdAt: now);
       });
@@ -2385,8 +2518,10 @@ class MockBackend implements PlatformRepositories, ClockSource {
           NotificationSettings s) =>
       _io(() {
         final me = _me;
-        if (s.muted.any((m) => m != PushCategory.community && m != PushCategory.alerts))
+        if (s.muted.any(
+            (m) => m != PushCategory.community && m != PushCategory.alerts)) {
           throw const ApiFailure(ApiCodes.invalidInput);
+        }
         return settings[me] = s;
       });
 
@@ -2395,16 +2530,19 @@ class MockBackend implements PlatformRepositories, ClockSource {
   List<T> _sorted<T>(Iterable<T> items, DateTime Function(T) at,
           {bool oldest = false}) =>
       items.toList()
-        ..sort((a, b) => oldest ? at(a).compareTo(at(b)) : at(b).compareTo(at(a)));
+        ..sort(
+            (a, b) => oldest ? at(a).compareTo(at(b)) : at(b).compareTo(at(a)));
 
   @override
   Future<AdminTodo> todo() => _read(() {
         _requireAdmin(AdminPerms.read);
-        TodoList<T> list<T>(List<T> all) => TodoList(all.length, all.take(5).toList());
+        TodoList<T> list<T>(List<T> all) =>
+            TodoList(all.length, all.take(5).toList());
         final cutoff = now.subtract(const Duration(days: 3));
         return AdminTodo(
             review: list(_sorted(
-                demands.values.where((d) => d.status == DemandStatus.pendingReview),
+                demands.values
+                    .where((d) => d.status == DemandStatus.pendingReview),
                 (d) => d.createdAt,
                 oldest: true)),
             reports: list(_sorted(
@@ -2438,15 +2576,20 @@ class MockBackend implements PlatformRepositories, ClockSource {
         _requireAdmin(AdminPerms.read);
         final today = DateTime(now.year, now.month, now.day);
         bool on(DateTime? t, DateTime day) =>
-            t != null && !t.isBefore(day) && t.isBefore(day.add(const Duration(days: 1)));
-        final published = posts.values.where((p) => p.status == PostStatus.published);
+            t != null &&
+            !t.isBefore(day) &&
+            t.isBefore(day.add(const Duration(days: 1)));
+        final published =
+            posts.values.where((p) => p.status == PostStatus.published);
         final regions = <String, (int, int)>{};
-        for (final d in demands.values.where((d) => d.status == DemandStatus.open)) {
+        for (final d
+            in demands.values.where((d) => d.status == DemandStatus.open)) {
           final r = regions[d.current.region] ?? (0, 0);
           regions[d.current.region] = (r.$1 + 1, r.$2);
         }
         for (final p in profiles.values.where((p) =>
-            p.status == ProfileStatus.active && p.availability != Availability.notTaking)) {
+            p.status == ProfileStatus.active &&
+            p.availability != Availability.notTaking)) {
           for (final reg in p.regions) {
             final r = regions[reg] ?? (0, 0);
             regions[reg] = (r.$1, r.$2 + 1);
@@ -2454,28 +2597,42 @@ class MockBackend implements PlatformRepositories, ClockSource {
         }
         final hours = <double>[];
         for (final d in demands.values.where((d) => d.publishedAt != null)) {
-          final apps = applications.values.where((a) => a.demandId == d.id).toList()
+          final apps = applications.values
+              .where((a) => a.demandId == d.id)
+              .toList()
             ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-          if (apps.isNotEmpty)
-            hours.add(apps.first.createdAt.difference(d.publishedAt!).inMinutes / 60);
+          if (apps.isNotEmpty) {
+            hours.add(
+                apps.first.createdAt.difference(d.publishedAt!).inMinutes / 60);
+          }
         }
         hours.sort();
         final quoted = applications.values.map((a) => a.demandId).toSet();
         final coops = cooperations.values
-            .where((c) => c.status == CooperationStatus.confirmed || c.status == CooperationStatus.ended)
+            .where((c) =>
+                c.status == CooperationStatus.confirmed ||
+                c.status == CooperationStatus.ended)
             .map((c) => c.demandId)
             .toSet();
         return AdminDashboard(
             today: {
               'active': 1,
-              'new_users': accounts.values.where((a) => on(a.createdAt, today)).length,
-              'new_posts': published.where((p) => on(p.createdAt, today)).length,
-              'new_demands': demands.values.where((d) => on(d.publishedAt, today)).length,
-              'new_quotes': applications.values.where((a) => on(a.createdAt, today)).length,
-              'new_cooperations': cooperations.values.where((c) => on(c.createdAt, today)).length,
+              'new_users':
+                  accounts.values.where((a) => on(a.createdAt, today)).length,
+              'new_posts':
+                  published.where((p) => on(p.createdAt, today)).length,
+              'new_demands':
+                  demands.values.where((d) => on(d.publishedAt, today)).length,
+              'new_quotes': applications.values
+                  .where((a) => on(a.createdAt, today))
+                  .length,
+              'new_cooperations': cooperations.values
+                  .where((c) => on(c.createdAt, today))
+                  .length,
               'inspections': cooperations.values
                   .where((c) => c.milestones.any((m) =>
-                      m.status == MilestoneStatus.accepted && on(m.answeredAt, today)))
+                      m.status == MilestoneStatus.accepted &&
+                      on(m.answeredAt, today)))
                   .length,
             },
             daily: [
@@ -2485,31 +2642,46 @@ class MockBackend implements PlatformRepositories, ClockSource {
                   return DashboardDay(
                       '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}',
                       active: i == 0 ? 1 : 0,
-                      demands: demands.values.where((d) => on(d.publishedAt, day)).length,
-                      quotes: applications.values.where((a) => on(a.createdAt, day)).length);
+                      demands: demands.values
+                          .where((d) => on(d.publishedAt, day))
+                          .length,
+                      quotes: applications.values
+                          .where((a) => on(a.createdAt, day))
+                          .length);
                 }()
             ],
             funnel: [
               ('posts', published.length),
               ('reuses', published.fold(0, (n, p) => n + p.reuseCount)),
-              ('demands', demands.values.where((d) => d.publishedAt != null).length),
+              (
+                'demands',
+                demands.values.where((d) => d.publishedAt != null).length
+              ),
               ('quoted', quoted.length),
               ('cooperations', coops.length),
-              ('inspected', cooperations.values
-                  .where((c) => c.milestones.any((m) => m.status == MilestoneStatus.accepted))
-                  .length),
+              (
+                'inspected',
+                cooperations.values
+                    .where((c) => c.milestones
+                        .any((m) => m.status == MilestoneStatus.accepted))
+                    .length
+              ),
               ('reviews', reviews.length),
             ],
             regions: [
               for (final e in regions.entries)
-                if (e.key.isNotEmpty) RegionSupply(e.key, demands: e.value.$1, workers: e.value.$2)
+                if (e.key.isNotEmpty)
+                  RegionSupply(e.key, demands: e.value.$1, workers: e.value.$2)
             ]..sort((a, b) => b.demands.compareTo(a.demands)),
             firstQuoteHours: hours.isEmpty ? null : hours[hours.length ~/ 2],
             totals: {
               'users': accounts.values.where((a) => !a.deleted).length,
               'posts': published.length,
-              'profiles': profiles.values.where((p) => p.status == ProfileStatus.active).length,
-              'demands': demands.values.where((d) => d.publishedAt != null).length,
+              'profiles': profiles.values
+                  .where((p) => p.status == ProfileStatus.active)
+                  .length,
+              'demands':
+                  demands.values.where((d) => d.publishedAt != null).length,
             });
       });
 
@@ -2518,7 +2690,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
       _read(() {
         _requireAdmin(AdminPerms.read);
         return Paged.of(
-            _sorted(demands.values.where((d) => d.status == DemandStatus.pendingReview),
+            _sorted(
+                demands.values
+                    .where((d) => d.status == DemandStatus.pendingReview),
                 (d) => d.createdAt,
                 oldest: true),
             page,
@@ -2527,7 +2701,10 @@ class MockBackend implements PlatformRepositories, ClockSource {
 
   @override
   Future<Paged<Demand>> adminDemands(
-          {DemandStatus? status, String query = '', int page = 1, int pageSize = 20}) =>
+          {DemandStatus? status,
+          String query = '',
+          int page = 1,
+          int pageSize = 20}) =>
       _read(() {
         _requireAdmin(AdminPerms.read);
         final q = query.trim().toLowerCase();
@@ -2547,8 +2724,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   void _approve(String demandId) {
     _requireAdmin();
     final d = demands[demandId];
-    if (d == null || d.status != DemandStatus.pendingReview)
+    if (d == null || d.status != DemandStatus.pendingReview) {
       throw const ApiFailure(ApiCodes.invalidState);
+    }
     _decide(d, true, _me, 'manual');
   }
 
@@ -2562,8 +2740,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
     if (d == null ||
         (d.status != DemandStatus.pendingReview &&
             d.status != DemandStatus.open &&
-            d.status != DemandStatus.paused))
+            d.status != DemandStatus.paused)) {
       throw const ApiFailure(ApiCodes.invalidState);
+    }
     if (reason.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
     _decide(d, false, _me, reason.trim());
   }
@@ -2625,8 +2804,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
             ? null
             : reportMachine.next(
                 r.status, upheld ? ReportEvent.uphold : ReportEvent.dismiss);
-        if (r == null || handled == null)
+        if (r == null || handled == null) {
           throw const ApiFailure(ApiCodes.invalidState);
+        }
         if (note.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
         final t = _target(r.target, r.targetId);
         reportsById[r.id] = r.handle(handled, me, now, note.trim());
@@ -2634,8 +2814,10 @@ class MockBackend implements PlatformRepositories, ClockSource {
           switch (r.target) {
             case ReportTarget.demand:
               final d = demands[r.targetId];
-              if (d != null && demandMachine.can(d.status, DemandEvent.reject))
+              if (d != null &&
+                  demandMachine.can(d.status, DemandEvent.reject)) {
                 _decide(d, false, me, note.trim());
+              }
             case ReportTarget.profile:
               final p = profiles[r.targetId];
               if (p != null) {
@@ -2646,7 +2828,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
               _restrict(me, r.targetId, true, note.trim());
             case ReportTarget.post:
               final p = posts[r.targetId];
-              if (p != null) posts[p.id] = p.copyWith(status: PostStatus.hidden);
+              if (p != null) {
+                posts[p.id] = p.copyWith(status: PostStatus.hidden);
+              }
             case ReportTarget.comment:
               final c = commentsById[r.targetId];
               if (c != null) _removeComment(c);
@@ -2697,8 +2881,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         if (note.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
         final a = accounts[accountId];
         if (a == null) throw const ApiFailure(ApiCodes.notFound);
-        if (restricted && a.role != null)
+        if (restricted && a.role != null) {
           throw const ApiFailure(ApiCodes.invalidState);
+        }
         if (a.restricted == restricted) return;
         _restrict(_me, accountId, restricted, note.trim());
       });
@@ -2710,11 +2895,12 @@ class MockBackend implements PlatformRepositories, ClockSource {
         if (note.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
         final p = posts[postId];
         if (p == null) throw const ApiFailure(ApiCodes.notFound);
-        posts[p.id] =
-            p.copyWith(status: hidden ? PostStatus.hidden : PostStatus.published);
-        if (hidden)
+        posts[p.id] = p.copyWith(
+            status: hidden ? PostStatus.hidden : PostStatus.published);
+        if (hidden) {
           notice(p.ownerId, NoticeKind.contentRemoved, RefType.post, p.id,
               title: p.title);
+        }
         _record(_me, hidden ? 'post_hide' : 'post_show', 'post', p.id, p.title,
             note.trim());
       });
@@ -2725,7 +2911,8 @@ class MockBackend implements PlatformRepositories, ClockSource {
       _read(() {
         _requireAdmin(AdminPerms.read);
         final list = _sorted(
-            appealsById.values.where((a) => status == null || a.status == status),
+            appealsById.values
+                .where((a) => status == null || a.status == status),
             (a) => a.createdAt);
         final pg = Paged.of(list, page, pageSize);
         return Paged([
@@ -2750,8 +2937,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
         _requireAdmin();
         final me = _me;
         final a = appealsById[id];
-        if (a == null || a.status != AppealStatus.open)
+        if (a == null || a.status != AppealStatus.open) {
           throw const ApiFailure(ApiCodes.invalidState);
+        }
         if (note.trim().isEmpty) throw const ApiFailure(ApiCodes.invalidInput);
         if (accept) {
           switch (a.target) {
@@ -2760,15 +2948,20 @@ class MockBackend implements PlatformRepositories, ClockSource {
             case 'profile':
               final p = profiles[a.targetId];
               modHidden.remove(a.targetId);
-              if (p != null) profiles[p.id] = p.copyWith(status: ProfileStatus.active);
+              if (p != null) {
+                profiles[p.id] = p.copyWith(status: ProfileStatus.active);
+              }
             case 'post':
               final p = posts[a.targetId];
-              if (p != null) posts[p.id] = p.copyWith(status: PostStatus.published);
+              if (p != null) {
+                posts[p.id] = p.copyWith(status: PostStatus.published);
+              }
             case 'demand':
               final d = demands[a.targetId];
-              if (d != null && d.status == DemandStatus.rejected)
-                _decide(d.copyWith(status: DemandStatus.pendingReview), true, me,
-                    note.trim());
+              if (d != null && d.status == DemandStatus.rejected) {
+                _decide(d.copyWith(status: DemandStatus.pendingReview), true,
+                    me, note.trim());
+              }
           }
         }
         appealsById[id] = Appeal(
@@ -2794,7 +2987,8 @@ class MockBackend implements PlatformRepositories, ClockSource {
       _read(() {
         _requireAdmin(AdminPerms.read);
         final list = _sorted(
-            verificationsById.values.where((v) => status == null || v.status == status),
+            verificationsById.values
+                .where((v) => status == null || v.status == status),
             (v) => v.createdAt,
             oldest: true);
         final pg = Paged.of(list, page, pageSize);
@@ -2820,10 +3014,12 @@ class MockBackend implements PlatformRepositories, ClockSource {
       _io(() {
         _requireAdmin();
         final v = verificationsById[id];
-        if (v == null || v.status != VerificationStatus.pending)
+        if (v == null || v.status != VerificationStatus.pending) {
           throw const ApiFailure(ApiCodes.invalidState);
-        if (!approve && note.trim().isEmpty)
+        }
+        if (!approve && note.trim().isEmpty) {
           throw const ApiFailure(ApiCodes.invalidInput);
+        }
         verificationsById[id] = Verification(
             id: v.id,
             profileId: v.profileId,
@@ -2833,13 +3029,17 @@ class MockBackend implements PlatformRepositories, ClockSource {
             createdAt: v.createdAt,
             photos: v.photos,
             note: v.note,
-            status: approve ? VerificationStatus.approved : VerificationStatus.rejected,
+            status: approve
+                ? VerificationStatus.approved
+                : VerificationStatus.rejected,
             resolution: note.trim());
         final p = profiles[v.profileId];
         if (approve && p != null) profiles[p.id] = p.copyWith(verified: true);
         notice(
             v.ownerId,
-            approve ? NoticeKind.verificationApproved : NoticeKind.verificationRejected,
+            approve
+                ? NoticeKind.verificationApproved
+                : NoticeKind.verificationRejected,
             RefType.profile,
             v.profileId,
             title: v.name);
@@ -2882,16 +3082,14 @@ class MockBackend implements PlatformRepositories, ClockSource {
         final q = query.trim().toLowerCase();
         return Paged.of(
             _sorted(
-                    accounts.values.where((a) =>
-                        !a.deleted &&
-                        (q.isEmpty ||
-                            a.displayName.toLowerCase().contains(q) ||
-                            a.id == query.trim()) &&
-                        (!restricted || a.restricted) &&
-                        (!admins || a.role != null)),
-                    (a) => a.createdAt)
-                .map(_row)
-                .toList(),
+                accounts.values.where((a) =>
+                    !a.deleted &&
+                    (q.isEmpty ||
+                        a.displayName.toLowerCase().contains(q) ||
+                        a.id == query.trim()) &&
+                    (!restricted || a.restricted) &&
+                    (!admins || a.role != null)),
+                (a) => a.createdAt).map(_row).toList(),
             page,
             pageSize);
       });
@@ -2899,7 +3097,10 @@ class MockBackend implements PlatformRepositories, ClockSource {
   @override
   Future<List<AdminUserRow>> team() => _read(() {
         _requireAdmin(AdminPerms.read);
-        return accounts.values.where((a) => a.role != null && !a.deleted).map(_row).toList();
+        return accounts.values
+            .where((a) => a.role != null && !a.deleted)
+            .map(_row)
+            .toList();
       });
 
   @override
@@ -2907,14 +3108,17 @@ class MockBackend implements PlatformRepositories, ClockSource {
         _requireAdmin(AdminPerms.team);
         final me = _me;
         if (accountId == me) throw const ApiFailure(ApiCodes.invalidState);
-        if (role != null && !AdminRoles.all.contains(role))
+        if (role != null && !AdminRoles.all.contains(role)) {
           throw const ApiFailure(ApiCodes.invalidInput, 'role');
+        }
         final a = accounts[accountId];
         if (a == null || a.deleted) throw const ApiFailure(ApiCodes.notFound);
-        if (role != null && a.restricted) throw const ApiFailure(ApiCodes.invalidState);
+        if (role != null && a.restricted) {
+          throw const ApiFailure(ApiCodes.invalidState);
+        }
         accounts[a.id] = a.withRole(role);
-        _record(me, role == null ? 'role_revoke' : 'role_grant:$role', 'account', a.id,
-            a.displayName, '');
+        _record(me, role == null ? 'role_revoke' : 'role_grant:$role',
+            'account', a.id, a.displayName, '');
       });
 
   @override
@@ -2922,43 +3126,52 @@ class MockBackend implements PlatformRepositories, ClockSource {
         _requireAdmin(AdminPerms.read);
         final a = accounts[accountId];
         if (a == null) throw const ApiFailure(ApiCodes.notFound);
-        final mine = [
-          ...profiles.values.where((p) => p.ownerId == accountId).map((p) => p.id),
-          ...demands.values.where((d) => d.ownerId == accountId).map((d) => d.id),
+        final mine = {
+          ...profiles.values
+              .where((p) => p.ownerId == accountId)
+              .map((p) => p.id),
+          ...demands.values
+              .where((d) => d.ownerId == accountId)
+              .map((d) => d.id),
           ...posts.values.where((p) => p.ownerId == accountId).map((p) => p.id),
           accountId,
-        ].toSet();
+        };
         return AccountDetail(
             account: a,
-            profiles: profiles.values.where((p) => p.ownerId == accountId).toList(),
-            demands: _sorted(demands.values.where((d) => d.ownerId == accountId),
-                    (d) => d.createdAt)
-                .take(20)
-                .toList(),
-            applications:
-                applications.values.where((x) => x.applicantId == accountId).length,
+            profiles:
+                profiles.values.where((p) => p.ownerId == accountId).toList(),
+            demands: _sorted(
+                demands.values.where((d) => d.ownerId == accountId),
+                (d) => d.createdAt).take(20).toList(),
+            applications: applications.values
+                .where((x) => x.applicantId == accountId)
+                .length,
             cooperations: _sorted(
-                    cooperations.values.where(
-                        (c) => c.ownerId == accountId || c.providerId == accountId),
-                    (c) => c.createdAt)
-                .take(20)
-                .toList(),
+                cooperations.values.where(
+                    (c) => c.ownerId == accountId || c.providerId == accountId),
+                (c) => c.createdAt).take(20).toList(),
             posts: [
               for (final p in posts.values.where((p) => p.ownerId == accountId))
                 (
-                    id: p.id,
-                    title: p.title,
-                    hidden: p.status == PostStatus.hidden,
-                    featured: false)
+                  id: p.id,
+                  title: p.title,
+                  hidden: p.status == PostStatus.hidden,
+                  featured: false
+                )
             ],
             reportsAbout: _sorted(
                 reportsById.values.where((r) => mine.contains(r.targetId)),
                 (r) => r.createdAt),
-            reportsFiled:
-                reportsById.values.where((r) => r.reporterId == accountId).length,
-            appeals: _sorted(appealsById.values.where((x) => x.accountId == accountId),
+            reportsFiled: reportsById.values
+                .where((r) => r.reporterId == accountId)
+                .length,
+            appeals: _sorted(
+                appealsById.values.where((x) => x.accountId == accountId),
                 (x) => x.createdAt),
-            audit: auditLog.reversed.where((e) => mine.contains(e.targetId)).take(50).toList());
+            audit: auditLog.reversed
+                .where((e) => mine.contains(e.targetId))
+                .take(50)
+                .toList());
       });
 
   @override
@@ -2970,8 +3183,9 @@ class MockBackend implements PlatformRepositories, ClockSource {
   @override
   Future<PushPolicy> savePushPolicy(PushPolicy p) => _io(() {
         _requireAdmin(AdminPerms.operate);
-        if (p.dailyCap < 0 || p.dailyCap > 100)
+        if (p.dailyCap < 0 || p.dailyCap > 100) {
           throw const ApiFailure(ApiCodes.invalidInput);
+        }
         _record(_me, 'push_policy', 'platform', 'push-policy', '',
             '${p.quietStart}–${p.quietEnd} · ${p.dailyCap}');
         return policy = p;

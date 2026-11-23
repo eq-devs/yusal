@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/shared/ui/photos.dart';
+import 'package:yusal/features/shared/ui/photos.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

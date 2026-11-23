@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import '../support/mock/backend.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/registry.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/registry.dart';
 
 const _name = L3('动作', 'Әрекет', 'Действие');
 
@@ -57,10 +58,10 @@ void main() {
   });
 
   final ctx = ActionContext(
-      repos: MockBackend(
+      repos: voiceRepos(MockBackend(
           clock: MockClock(DateTime.utc(2026, 11, 3, 9)),
           latency: Duration.zero,
-          seed: false),
+          seed: false)),
       loggedIn: false,
       entities: const [
         Entity('room', 'room-uuid-1', alias: 'r1', title: '客厅'),

@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 
 /// A large two-floor plan (6 × 6 rooms, partitions built from separate wall
 /// pieces, a door in every piece) used to check that the edits run during a
@@ -33,22 +33,26 @@ void main() {
       return (r as Applied).newState;
     }
 
-    for (var i = 1; i < 6; i++)
-      for (var j = 0; j < 6; j++)
+    for (var i = 1; i < 6; i++) {
+      for (var j = 0; j < 6; j++) {
         s = run('AddDrawnWall', {
           'x0': i * 5000,
           'y0': j * 4000,
           'x1': i * 5000,
           'y1': j * 4000 + 4000
         });
-    for (var j = 1; j < 6; j++)
-      for (var i = 0; i < 6; i++)
+      }
+    }
+    for (var j = 1; j < 6; j++) {
+      for (var i = 0; i < 6; i++) {
         s = run('AddDrawnWall', {
           'x0': i * 5000,
           'y0': j * 4000,
           'x1': i * 5000 + 5000,
           'y1': j * 4000
         });
+      }
+    }
     final doc = composeDocument(
         Meta(name: '大户型', createdAt: ctx.now(), updatedAt: ctx.now()), s);
     for (final w in deriveFloorBase(doc, floorId).wallSegments) {
@@ -89,7 +93,9 @@ void main() {
     Duration time(void Function() body, {int runs = 10}) {
       body();
       final watch = Stopwatch()..start();
-      for (var i = 0; i < runs; i++) body();
+      for (var i = 0; i < runs; i++) {
+        body();
+      }
       return watch.elapsed ~/ runs;
     }
 

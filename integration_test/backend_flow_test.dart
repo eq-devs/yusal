@@ -7,20 +7,18 @@
 //
 // Screenshots of key screens go to E2E_SHOTS, else the app's temp folder
 // under `test-screens/`; the path is printed at the end.
+import '../test/support/test_scope.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/main.dart';
-import 'package:yusal/data/http/http_backend.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/features/home/post_page.dart';
-import 'package:yusal/storage/last_open.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/home/pages/post.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import 'e2e_support.dart';
 
@@ -48,14 +46,15 @@ void main() {
     requireBackend();
 
     final run = DateTime.now().millisecondsSinceEpoch.toString();
-    final ana = 'Ana $run', bek = 'Bek $run';
+    final ana = 'Ana $run';
+    final bek = 'Bek $run';
     final houseName = 'E2E 小屋 $run';
     final title = '给父母的一层砖房 $run';
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('yusal_api.refresh_token');
     await prefs.setString('house-lang', 'zh');
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final previous = await LastOpenProject.read();
     await LastOpenProject.write(null);
 
@@ -73,17 +72,15 @@ void main() {
       ),
     );
 
-    final repos = HttpBackend(api);
-    await repos.restore();
-    expect(repos.currentAccount, isNull);
+    final repos = TestHttp(api);
+    await repos.api.restore();
+    expect(repos.api.currentAccount, isNull);
 
     try {
       await t.pumpWidget(
         RepaintBoundary(
           key: shotKey,
-          child: ProviderScope(
-            child: HouseApp(repos: repos, store: store),
-          ),
+          child: testApp(repos, store: store),
         ),
       );
       await idle(t, 1000);
@@ -91,7 +88,7 @@ void main() {
       // ── Ana signs in and publishes her house ──
       await signIn(t, repos, ana);
       await shot(t, '01-signed-in-ana');
-      final anaId = repos.currentAccount!.id;
+      final anaId = repos.api.currentAccount!.id;
 
       await tab(t, '我的房子');
       await waitFor(t, find.text(houseName));
@@ -111,11 +108,12 @@ void main() {
       await idle(t);
       await shot(t, '03-published-post');
 
-      final mine = await t.runAsync(() => repos.myPosts());
+      final mine = await t.runAsync(repos.posts.myPosts);
       final post = mine!.firstWhere((p) => p.title == title);
       expect(post.ownerId, anaId);
       expect(post.projectId, projectId);
-      final snap = await t.runAsync(() => repos.snapshot(post.snapshotId));
+      final snap =
+          await t.runAsync(() => repos.snapshots.snapshot(post.snapshotId));
       expect(snap, isNotNull);
       expect(snap!.projectName, houseName);
 
@@ -130,8 +128,8 @@ void main() {
       await signIn(t, repos, bek);
       await openPost(t, title);
       await tapIt(t, find.byTooltip('收藏').first);
-      expect(await t.runAsync(() => repos.liked(post.id)), isTrue);
-      expect(await t.runAsync(() => repos.likedPosts()), contains(post.id));
+      expect(await t.runAsync(() => repos.posts.liked(post.id)), isTrue);
+      expect(await t.runAsync(repos.posts.likedPosts), contains(post.id));
 
       // The composer opens in a sheet from the bar's comment button.
       await tapIt(t, find.byKey(const Key('post-comment')));
@@ -145,10 +143,10 @@ void main() {
       await waitFor(t, find.text('厨房可以再大一点 $run'));
       await shot(t, '05-critique-by-bek');
 
-      var comments = await t.runAsync(() => repos.comments(post.id));
+      var comments = await t.runAsync(() => repos.posts.comments(post.id));
       final critique = comments!.singleWhere((c) => c.text == '厨房可以再大一点 $run');
       expect(critique.rating, 4);
-      final rated = await t.runAsync(() => repos.post(post.id));
+      final rated = await t.runAsync(() => repos.posts.post(post.id));
       expect(rated!.likeCount, 1);
       expect(rated.ratingCount, 1);
       expect(rated.ratingSum, 4);
@@ -174,7 +172,7 @@ void main() {
       await waitFor(t, find.byIcon(Icons.thumb_up_alt));
       await shot(t, '06-reply-and-helpful');
 
-      comments = await t.runAsync(() => repos.comments(post.id));
+      comments = await t.runAsync(() => repos.posts.comments(post.id));
       expect(comments!.singleWhere((c) => c.id == critique.id).helpful, isTrue);
       final reply = comments.singleWhere((c) => c.text == '好的，我改一下 $run');
       expect(reply.parentId, critique.id);
@@ -199,14 +197,14 @@ void main() {
       );
       await idle(t, 1000);
       await shot(t, '07-backup-list');
-      final backups = await t.runAsync(() => repos.backups());
+      final backups = await t.runAsync(repos.backups.backups);
       final cloud = backups!.singleWhere((b) => b.projectId == projectId);
       expect(cloud.name, houseName);
 
       // ── A stale upload is refused, not overwritten ──
       final stale = await t.runAsync(() async {
         try {
-          await repos.upload(
+          await repos.backups.upload(
             projectId: projectId,
             name: houseName,
             houseText: cloud.houseText,
@@ -219,13 +217,13 @@ void main() {
         }
       });
       expect(stale, ApiCodes.conflict);
-      final after = await t.runAsync(() => repos.backup(projectId));
+      final after = await t.runAsync(() => repos.backups.backup(projectId));
       expect(after!.designUpdatedAt, cloud.designUpdatedAt);
 
       // ── The saved refresh token signs a fresh start back in ──
-      final relaunch = HttpBackend(api);
-      await t.runAsync(() => relaunch.restore());
-      expect(relaunch.currentAccount?.id, anaId);
+      final relaunch = TestHttp(api);
+      await t.runAsync(relaunch.api.restore);
+      expect(relaunch.api.currentAccount?.id, anaId);
 
       // ── Rename ──
       await home(t);
@@ -241,11 +239,11 @@ void main() {
       await tapIt(t, find.widgetWithText(FilledButton, '确定'));
       await waitFor(t, find.text('Ana 改名 $run'));
       await shot(t, '08-renamed');
-      expect(repos.currentAccount?.displayName, 'Ana 改名 $run');
+      expect(repos.api.currentAccount?.displayName, 'Ana 改名 $run');
       // A later start reads the new name from the server.
-      final again = HttpBackend(api);
-      await t.runAsync(() => again.restore());
-      expect(again.currentAccount?.displayName, 'Ana 改名 $run');
+      final again = TestHttp(api);
+      await t.runAsync(again.api.restore);
+      expect(again.api.currentAccount?.displayName, 'Ana 改名 $run');
 
       // ignore: avoid_print
       print(

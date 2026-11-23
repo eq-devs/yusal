@@ -1,18 +1,17 @@
 import 'dart:io' show Platform;
+import '../test/support/test_scope.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yusal/app/house_app.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/features/projects/projects_page.dart';
-import 'package:yusal/storage/last_open.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/projects/page.dart';
+import 'package:yusal/service/storage/last_open.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 
 import '../test/support/mock/mock_backend.dart';
 
@@ -29,9 +28,8 @@ import '../test/support/mock/mock_backend.dart';
 Future<void> startApp(WidgetTester tester) async {
   (await SharedPreferences.getInstance()).setString('house-lang', 'zh');
   await LastOpenProject.write(null);
-  await AppSettings.instance.load();
-  runApp(ProviderScope(
-      child: HouseApp(repos: MockBackend(latency: Duration.zero))));
+  await loadSettings();
+  runApp(testApp(MockBackend(latency: Duration.zero)));
   await tester.pumpAndSettle();
   await tester.tap(find.text('我的房子').last);
 }
@@ -167,7 +165,8 @@ void main() {
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     var painter =
         tester.widget<CustomPaint>(canvas).painter! as FloorPlanPainter;
-    var origin = tester.getTopLeft(canvas), size = tester.getSize(canvas);
+    var origin = tester.getTopLeft(canvas);
+    var size = tester.getSize(canvas);
     final line =
         await tester.startGesture(origin + painter.point(6000, 2000, size));
     await line.moveTo(origin + painter.point(6000, 8000, size));
@@ -223,7 +222,8 @@ void main() {
     await tester.tap(find.text('在画布上拖出外形'));
     await tester.pumpAndSettle();
     final canvas = find.byKey(const ValueKey('footprint-sketch-canvas'));
-    final size = tester.getSize(canvas), origin = tester.getTopLeft(canvas);
+    final size = tester.getSize(canvas);
+    final origin = tester.getTopLeft(canvas);
     final scale = math.min(size.width - 48, size.height - 48) / 20000;
     final start = origin + const Offset(30, 30);
     final gesture = await tester.startGesture(start);

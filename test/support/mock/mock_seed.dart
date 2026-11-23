@@ -1,8 +1,9 @@
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/core/commands/house_templates.dart';
-import 'package:yusal/domain/models.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'mock_rules.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
+import 'package:yusal/features/shared/model/models.dart';
 import 'mock_backend.dart';
-import 'package:yusal/domain/design_snapshot.dart';
+import 'package:yusal/features/shared/model/design_snapshot.dart';
 
 /// Ids of the seeded demo accounts; developer tools sign in as them.
 abstract final class SeedIds {
@@ -196,7 +197,6 @@ void seedMockData(MockBackend b) {
                       source: QtySource.manual,
                       stage: 'walls'),
                 ],
-                materials: MaterialMode.labourOnly,
                 targetDays: 25,
                 quoteDeadline: now.add(const Duration(days: 6))),
             photoCount: 2),
@@ -233,8 +233,7 @@ void seedMockData(MockBackend b) {
                 wage: 20000,
                 days: 10,
                 foodLodging: true,
-                toolsByEmployer: true,
-                settleCycle: 'weekly')),
+                toolsByEmployer: true)),
       ]);
   b.demands['dem_rebar'] = Demand(
       id: 'dem_rebar',
@@ -246,7 +245,6 @@ void seedMockData(MockBackend b) {
       publishedAt: ago(2),
       expiresAt: now.add(const Duration(days: 28)),
       shareToken: 'share_rebar',
-      followUpsSent: 0,
       versions: [
         DemandVersion(
             no: 1,
@@ -353,7 +351,6 @@ void seedMockData(MockBackend b) {
                 '外墙与内墙砌筑，含构造柱模板',
                 'Сыртқы және ішкі қабырғаларды қалау, бағандардың қалыбымен',
                 'Кладка наружных и внутренних стен, с опалубкой колонн'),
-            materials: MaterialMode.labourOnly,
             pricing: PricingMode.perQuantity,
             lines: [
               QuoteLine(
@@ -390,8 +387,6 @@ void seedMockData(MockBackend b) {
             createdAt: ago(2),
             scopeText: _l('全部砌墙，两人施工', 'Барлық қабырғаны қалау, екі адам',
                 'Вся кладка, работаем вдвоём'),
-            materials: MaterialMode.labourOnly,
-            pricing: PricingMode.lumpSum,
             lumpSum: 1350000,
             durationDays: 30,
             includes:
@@ -412,17 +407,18 @@ void seedMockData(MockBackend b) {
             demandVersionNo: 1,
             createdAt: ago(0, 20),
             availableFrom: now.add(const Duration(days: 5)),
-            acceptsOffer: true,
-            headcountOffered: 1,
             note: _l('可以带自己的瓦刀和水平尺。', 'Өз қалағым мен деңгейіммен келемін.',
                 'Приду со своей кельмой и уровнем.')),
       ]);
-  b.notice(SeedIds.owner, NoticeKind.newApplication, RefType.demand, 'dem_wall',
-      title: _l('120 平米住宅砌墙', '120 м² үйдің қабырғасын қалау',
-          'Кладка стен дома 120 м²'));
-  b.notice(SeedIds.owner, NoticeKind.newApplication, RefType.demand, 'dem_hire',
-      title: _l('找两名瓦工，按天结算', 'Екі қалаушы керек, күндік төлем',
-          'Нужны два каменщика, оплата по дням'));
+  b
+    ..notice(
+        SeedIds.owner, NoticeKind.newApplication, RefType.demand, 'dem_wall',
+        title: _l('120 平米住宅砌墙', '120 м² үйдің қабырғасын қалау',
+            'Кладка стен дома 120 м²'))
+    ..notice(
+        SeedIds.owner, NoticeKind.newApplication, RefType.demand, 'dem_hire',
+        title: _l('找两名瓦工，按天结算', 'Екі қалаушы керек, күндік төлем',
+            'Нужны два каменщика, оплата по дням'));
 
   // A finished cooperation with both reviews in.
   b.applications['app_team_found'] = Application(
@@ -440,7 +436,6 @@ void seedMockData(MockBackend b) {
             scopeText: _l('条形基础，包工包料', 'Таспалы іргетас, жұмыс пен материал',
                 'Ленточный фундамент, работа и материалы'),
             materials: MaterialMode.labourAndMaterial,
-            pricing: PricingMode.lumpSum,
             lumpSum: 2100000,
             durationDays: 12),
       ]);

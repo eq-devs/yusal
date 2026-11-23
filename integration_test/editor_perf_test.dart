@@ -10,14 +10,14 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:yusal/app/tokens.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/features/editor/house_editor.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import '../test/storage_test.dart' show MemoryFiles;
 
@@ -27,10 +27,11 @@ void main() {
   testWidgets('editor frame cost', (t) async {
     var n = 0;
     final doc = createKazakhTemplate('2026-10-14T00:00:00Z', () => 'p${n++}');
-    final store = ProjectStore(fileSystem: MemoryFiles()),
-        id = await store.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    final store = ProjectStore(fileSystem: MemoryFiles());
+    final id = await store.createProject(doc);
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await t.pumpAndSettle();
 
     final frames = <FrameTiming>[];
@@ -49,16 +50,20 @@ void main() {
 
     Future<void> scenario(String name, Future<void> Function(int i) step,
         {int count = 120}) async {
-      for (var i = 0; i < 20; i++) await step(i);
+      for (var i = 0; i < 20; i++) {
+        await step(i);
+      }
       await flush();
       frames.clear();
-      for (var i = 0; i < count; i++) await step(i);
+      for (var i = 0; i < count; i++) {
+        await step(i);
+      }
       await flush();
       double ms(Duration d) => d.inMicroseconds / 1000;
       List<double> sorted(double Function(FrameTiming) f) =>
           frames.map(f).toList()..sort();
-      final ui = sorted((f) => ms(f.buildDuration)),
-          raster = sorted((f) => ms(f.rasterDuration));
+      final ui = sorted((f) => ms(f.buildDuration));
+      final raster = sorted((f) => ms(f.rasterDuration));
       double at(List<double> v, double q) =>
           v.isEmpty ? 0 : v[((v.length - 1) * q).round()];
       report[name] = {
@@ -82,8 +87,10 @@ void main() {
     });
 
     {
-      final a = await t.startGesture(centre + const Offset(-63, 71), pointer: 11);
-      final b = await t.startGesture(centre + const Offset(37, 71), pointer: 12);
+      final a =
+          await t.startGesture(centre + const Offset(-63, 71), pointer: 11);
+      final b =
+          await t.startGesture(centre + const Offset(37, 71), pointer: 12);
       await t.pump();
       await b.moveBy(const Offset(30, 0));
       await t.pump();
@@ -109,14 +116,15 @@ void main() {
 
     {
       // The plan painter alone, recorded off screen: which layer costs what.
-      final g = deriveHouse(doc).floors.first, floor = doc.floors.first;
+      final g = deriveHouse(doc).floors.first;
+      final floor = doc.floors.first;
       final size = t.getSize(canvas);
-      double paint({bool labels = true, bool dims = true, bool furniture = true}) {
+      double paint(
+          {bool labels = true, bool dims = true, bool furniture = true}) {
         FloorPlanPainter make() => FloorPlanPainter(
             g.base, {for (final r in floor.rooms) r.id: r.name}, const {},
             openings: g.openings,
             stairs: g.stairs,
-            tokens: Tokens.light,
             furniture: [
               for (final i in doc.extras.furniture)
                 if (i.floorId == floor.id) i
@@ -130,9 +138,13 @@ void main() {
           r.endRecording().dispose();
         }
 
-        for (var i = 0; i < 30; i++) once();
+        for (var i = 0; i < 30; i++) {
+          once();
+        }
         final sw = Stopwatch()..start();
-        for (var i = 0; i < 200; i++) once();
+        for (var i = 0; i < 200; i++) {
+          once();
+        }
         return sw.elapsedMicroseconds / 200 / 1000;
       }
 
@@ -148,7 +160,7 @@ void main() {
 
     SchedulerBinding.instance.removeTimingsCallback(collect);
     binding.reportData = report;
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pump(const Duration(milliseconds: 400));
   });
 }

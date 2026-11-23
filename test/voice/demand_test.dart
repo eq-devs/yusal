@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
+import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/domain/rules.dart';
-import 'package:yusal/features/demand/demand_detail_page.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/actions_demand.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/screen.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
+import 'package:yusal/features/demand/page.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/actions/demand.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/screen.dart';
 
 import '../platform/mock_backend_test.dart' show backend;
 import '../storage_test.dart' show MemoryFiles;
@@ -22,7 +22,7 @@ void main() {
   final executor =
       ActionExecutor(appActions, confirm: (_, __) async => approve);
 
-  ActionContext ctx() => VoiceScreens.context(b, loggedIn: true);
+  ActionContext ctx() => VoiceScreens.context(voiceRepos(b), loggedIn: true);
   Set<String> offered() => {
         for (final a in appActions.offered(ctx()))
           if (a.id.startsWith('demand.')) a.id
@@ -31,22 +31,20 @@ void main() {
       executor.run(id, args, ctx(), source: Source.voice);
 
   Future<void> open(WidgetTester t, String id) async {
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1000, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: b,
         store: ProjectStore(fileSystem: MemoryFiles()),
-        child: MaterialApp(
-            builder: (_, child) => AppScope(child: child!),
-            home: DemandDetailPage(demandId: id))));
+        child: MaterialApp(home: DemandDetailPage(demandId: id))));
     await t.pumpAndSettle();
   }
 
   testWidgets(
       'voice is offered what the status allows, the same as the buttons, '
-      'and nothing on someone else\'s demand', (t) async {
+      "and nothing on someone else's demand", (t) async {
     b.signInAs(SeedIds.owner);
     final d = b.demands['dem_wall']!;
     expect(d.status, DemandStatus.open);

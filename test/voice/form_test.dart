@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/features/demand/publish_page.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/form.dart';
-import 'package:yusal/voice/screen.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/demand/pages/publish.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/model/form.dart';
+import 'package:yusal/features/voice/state/screen.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 
@@ -21,7 +21,8 @@ class _Form extends StatefulWidget {
 }
 
 class _FormState extends State<_Form> with VoiceScreen {
-  final wage = TextEditingController(), note = TextEditingController();
+  final wage = TextEditingController();
+  final note = TextEditingController();
   String unit = 'day';
   int sent = 0;
 
@@ -50,7 +51,8 @@ void main() {
       ActionExecutor(appActions, confirm: (_, __) async => approve);
 
   Future<ActionResult> say(String id, [Map<String, Object?> args = const {}]) =>
-      executor.run(id, args, VoiceScreens.context(repos, loggedIn: true),
+      executor.run(
+          id, args, VoiceScreens.context(voiceRepos(repos), loggedIn: true),
           source: Source.voice);
 
   testWidgets('one sentence fills several fields and sends nothing', (t) async {
@@ -114,7 +116,7 @@ void main() {
     t.view.physicalSize = const Size(1000, 1600);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    await t.pumpWidget(PlatformScope(
+    await t.pumpWidget(TestScope(
         repos: repos,
         store: ProjectStore(fileSystem: MemoryFiles()),
         child: const MaterialApp(home: PublishPage())));

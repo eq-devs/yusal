@@ -1,18 +1,20 @@
 import 'dart:async';
 
+import '../support/mock/backend.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/features/editor/house_editor.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/page.dart';
 import '../support/mock/mock_backend.dart';
-import 'package:yusal/data/repositories.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/actions_design.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/screen.dart';
-import 'package:yusal/voice/session.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/actions/design.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/screen.dart';
+import 'package:yusal/features/voice/state/session.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 
@@ -27,7 +29,7 @@ class ScriptedBackend implements VoiceBackend {
   VoiceTurn _next() {
     final next = script.removeAt(0);
     if (next is VoiceTurn) return next;
-    throw next;
+    throw next as Exception;
   }
 
   @override
@@ -93,7 +95,7 @@ void main() {
   VoiceSession session(ScriptedBackend backend) => VoiceSession(
       backend: backend,
       executor: ActionExecutor(appActions, confirm: (_, __) async => true),
-      repos: repos,
+      repos: voiceRepos(repos),
       loggedIn: () => true,
       sessionId: 's1');
 
@@ -111,16 +113,17 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-14T00:00:00Z',
         newId: () => 'id${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
     return VoiceScreens.current! as DesignHost;
   }
 
   Future<void> close(WidgetTester t) async {
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   }
 
@@ -333,7 +336,7 @@ void main() {
     final s = VoiceSession(
         backend: backend,
         executor: ActionExecutor(appActions, confirm: (_, __) async => true),
-        repos: repos,
+        repos: voiceRepos(repos),
         loggedIn: () => true,
         sessionId: 's1');
     final first = s.say('加一层楼', spoken: true);

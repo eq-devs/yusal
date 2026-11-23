@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import '../support/mock/backend.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/features/editor/house_editor.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/page.dart';
 import '../support/mock/mock_backend.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/actions_design.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/screen.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/actions/design.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/screen.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 
@@ -32,10 +34,11 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-14T00:00:00Z',
         newId: () => 'id${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
     final host = VoiceScreens.current! as DesignHost;
     String scene() => VoiceScreens.current!.scene;
@@ -43,7 +46,7 @@ void main() {
     Future<ActionResult> say(String id,
         [Map<String, Object?> args = const {}]) async {
       final result = await executor.run(
-          id, args, VoiceScreens.context(repos, loggedIn: true),
+          id, args, VoiceScreens.context(voiceRepos(repos), loggedIn: true),
           source: Source.voice);
       await t.pump();
       return result;
@@ -99,7 +102,7 @@ void main() {
                 {'opening': 'o1', 'room': 'r2', 'side': 'south'}))
             .ok,
         isTrue);
-    expect(scene(), contains(RegExp(r' r2 .*windows o1 south')));
+    expect(scene(), contains(RegExp(' r2 .*windows o1 south')));
     expect((await say('design.move_opening', {'opening': 'o1'})).code,
         ActionCodes.badArgs);
 
@@ -145,7 +148,7 @@ void main() {
     expect(scene(), contains('floor f2 '));
     expect(scene(), contains('other floor f1 '));
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 }

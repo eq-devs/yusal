@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 
 final minimal = File('test/fixtures/minimal_flat.house').readAsBytesSync();
 final full = File('test/fixtures/full_two_floor_gable.house').readAsBytesSync();

@@ -1,31 +1,35 @@
 import 'package:flutter/material.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/features/shell/shell.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/features/editor/house_editor.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yusal/app.dart' show HouseApp;
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/page.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
-import 'package:yusal/domain/models.dart';
-import 'package:yusal/shared/ui/cards.dart';
-import 'package:yusal/features/chat/inbox_page.dart';
-import 'package:yusal/shared/ui/components.dart';
-import 'package:yusal/features/demand/from_design_page.dart';
-import 'package:yusal/shared/ui/plan_viewer.dart';
-import 'package:yusal/features/home/publish_post_page.dart';
-import 'package:yusal/features/houses/workspace_page.dart';
-import 'package:yusal/shared/ui/theme.dart';
-import 'package:yusal/shared/ui/widgets.dart';
-import 'package:yusal/shared/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/demand/widgets/demand_card.dart';
+import 'package:yusal/features/chat/pages/inbox.dart';
+import 'package:yusal/features/shared/ui/components.dart';
+import 'package:yusal/features/demand/pages/from_design.dart';
+import 'package:yusal/features/home/widgets/plan_viewer.dart';
+import 'package:yusal/features/home/pages/publish_post.dart';
+import 'package:yusal/features/houses/page.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 import 'explore_test.dart' show launch;
 
 /// WCAG contrast ratio of two opaque colours.
 double contrast(Color a, Color b) {
-  final la = a.computeLuminance(), lb = b.computeLuminance();
-  final hi = la > lb ? la : lb, lo = la > lb ? lb : la;
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  final hi = la > lb ? la : lb;
+  final lo = la > lb ? lb : la;
   return (hi + 0.05) / (lo + 0.05);
 }
 
@@ -46,8 +50,8 @@ Future<void> addDesign(WidgetTester t, ProjectStore store) async {
 
 void main() {
   tearDown(() {
-    AppSettings.instance.lang = AppLang.zh;
-    AppSettings.instance.theme = ThemeChoice.auto;
+    appLang = AppLang.zh;
+    appTheme = ThemeChoice.auto;
   });
 
   group('contrast', () {
@@ -127,9 +131,12 @@ void main() {
   for (final lang in AppLang.values) {
     testWidgets('system texts follow the app language ($lang)', (t) async {
       await launch(t, route: '/h/post_aigerim', size: phone);
-      AppSettings.instance.setLang(lang);
+      ProviderScope.containerOf(t.element(find.byType(HouseApp)))
+          .read(settingsProvider.notifier)
+          .setLang(lang);
       await t.pumpAndSettle();
-      final l = MaterialLocalizations.of(t.element(find.byType(Scaffold).first));
+      final l =
+          MaterialLocalizations.of(t.element(find.byType(Scaffold).first));
       expect(
           l.backButtonTooltip,
           switch (lang) {
@@ -179,9 +186,8 @@ void main() {
       expect(find.text('打开这个示例'), findsOneWidget);
     });
 
-    testWidgets('the list and the new-design dialog are in Russian',
-        (t) async {
-      AppSettings.instance.lang = AppLang.ru;
+    testWidgets('the list and the new-design dialog are in Russian', (t) async {
+      appLang = AppLang.ru;
       final (_, store) = await launch(t, size: phone, lang: AppLang.ru);
       await addDesign(t, store);
       await t.tap(find.byType(ShellBarTab).at(1));
@@ -223,7 +229,7 @@ void main() {
       expect((await store.listProjects()).length, 1);
       await t.tap(find.widgetWithText(FilledButton, '删除'));
       await t.pumpAndSettle();
-      expect((await store.listProjects()), isEmpty);
+      expect(await store.listProjects(), isEmpty);
       expect(find.byKey(const Key('designs-empty')), findsOneWidget);
     });
   });
@@ -305,9 +311,9 @@ void main() {
         newId: () => 'ed_${id++}');
     final store = ProjectStore(fileSystem: MemoryFiles());
     final pid = await store.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        builder: (context, child) => AppScope(child: child!),
-        home: HouseEditor(entry: ProjectEntry(pid, doc), store: store)));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(pid, doc), store: store))));
     await t.pumpAndSettle();
     // The two switches no longer sit in the header's scrolling row.
     expect(find.text('Қазақша'), findsNothing);
@@ -316,30 +322,31 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.textContaining('语言'));
     await t.pumpAndSettle();
-    for (final name in ['Қазақша', 'Русский', '中文'])
+    for (final name in ['Қазақша', 'Русский', '中文']) {
       expect(find.text(name), findsOneWidget);
+    }
     await t.tap(find.text('Русский'));
     await t.pumpAndSettle();
-    expect(AppSettings.instance.lang, AppLang.ru);
+    expect(appLang, AppLang.ru);
     expect(t.takeException(), isNull);
     await t.pumpWidget(const SizedBox.shrink());
     await t.pumpAndSettle();
   });
 
   test('demo content is written in the language the app starts in', () async {
-    AppSettings.instance.lang = AppLang.ru;
+    appLang = AppLang.ru;
     final ru = _backend();
     expect((await ru.post('post_aigerim'))!.title,
         'Одноэтажный кирпичный дом для родителей');
-    AppSettings.instance.lang = AppLang.kk;
+    appLang = AppLang.kk;
     final kk = _backend();
     expect((await kk.post('post_aigerim'))!.title,
         'Ата-анама арналған бір қабатты кірпіш үй');
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     final zh = _backend();
     expect((await zh.post('post_aigerim'))!.title, '给父母盖的一层砖房');
     // No Chinese is left in any Russian title, story or name.
-    final cjk = RegExp(r'[一-鿿]');
+    final cjk = RegExp('[一-鿿]');
     for (final p in await ru.feed(const FeedFilter())) {
       expect(cjk.hasMatch(p.title + p.story), isFalse, reason: p.title);
     }
@@ -358,5 +365,5 @@ MockBackend _backend() => MockBackend(
     latency: Duration.zero,
     autoReviewDelay: Duration.zero);
 
-Widget _scope(MockBackend b, Widget child) => PlatformScope(
+Widget _scope(MockBackend b, Widget child) => TestScope(
     repos: b, store: ProjectStore(fileSystem: MemoryFiles()), child: child);

@@ -65,8 +65,35 @@ Where the canvas painter still draws:
 
 - the web, and any phone without Impeller (Android 9 and older);
 - walking through the house, and the foundation view;
-- the sky, the ground, sun shadows and labels, in every view;
+- the sky, the ground, the house's shadow on the ground and labels, in
+  every view;
 - the rest of the run after the GPU fails once while drawing.
+
+### Shadows and corners
+
+On the GPU the house also casts its shadow on itself, and corners and the
+undersides of eaves are darker (ambient occlusion). The solids are drawn
+twice more: once from the sun, onto a 2048 pixel square that is redrawn
+only when the house, what is shown of it or the hour changes, and once
+from the eye at half size every frame. Each pixel of the view then reads
+the first nine times and the second twelve times, which is the cost to
+watch on a slow phone.
+
+The renderer tries a shadow on a small scene when it starts
+(`SceneGpu.shades`) and draws without both where that fails. They can also
+be switched off: `SceneGpu.effects = false`, or for a whole build
+
+```sh
+flutter run --dart-define=YUSAL_GPU_EFFECTS=false
+```
+
+A line drawing has neither; at night there are corners and no sun.
+
+### Still pictures
+
+`ScenePainter.still(size, longSide: 2400)` gives the view as a picture
+for saving: every face in full, on the GPU at twice the size and brought
+down. The camera button on the 3D view shares it.
 
 The switches that turn Flutter GPU on are in `AndroidManifest.xml`
 (`io.flutter.embedding.android.EnableFlutterGPU`) and both `Info.plist`
@@ -77,7 +104,8 @@ files (`FLTEnableFlutterGPU`). The shaders in `shaders/gpu` are compiled by
 # The GPU tests need both flags; without them they check the canvas path.
 flutter test test/gpu --enable-impeller --enable-flutter-gpu
 
-# Pictures of each view from both painters, to look at side by side.
+# Pictures of each view from both painters, to look at side by side, and
+# larger ones of the shadows.
 YUSAL_GPU_SHOTS=/tmp/shots flutter test test/gpu --enable-impeller --enable-flutter-gpu
 
 # A build that never uses the GPU, to compare on the same phone.

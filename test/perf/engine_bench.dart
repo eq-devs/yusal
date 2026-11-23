@@ -163,6 +163,10 @@ Map<String, Object> measurePlan(UndoableDesignState s,
       'command.SetFloorHeight': command(
           'SetFloorHeight', {'floorId': floor.id, 'value': floor.height + 100}),
       'command.ResizeOpening': command('ResizeOpening', resize),
+      'command.MoveOpening': command('MoveOpening', {
+        'openingId': opening.id,
+        'position': {'type': 'fromStart', 'd': 150}
+      }),
       if (axes.isNotEmpty)
         'command.MoveAxis': command(
             'MoveAxis', {'axisId': axes.first.$1, 'pos': axes.first.$2 + 100}),

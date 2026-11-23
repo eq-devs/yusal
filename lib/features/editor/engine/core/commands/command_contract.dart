@@ -347,19 +347,7 @@ CommandResult _executeCommand(
       return apply(document);
     }
 
-    final message = result.error!;
-    final reason = message.contains('间距') || message.contains('两条线')
-        ? 'SPACING'
-        : message.contains('相邻房间')
-            ? 'NOT_ADJACENT'
-            : message.contains('主入口需要') || message.contains('只有门')
-                ? 'NOT_A_DOOR'
-                : message.contains('上方还有')
-                    ? 'TOP_FLOOR'
-                    : message.contains('重叠')
-                        ? 'OVERLAP'
-                        : 'INVALID_VALUE';
-    return Rejected(reason, message);
+    return Rejected(result.code, result.error!);
   } on StateError {
     return const Rejected('NOT_FOUND', '找不到要编辑的对象');
   } catch (_) {

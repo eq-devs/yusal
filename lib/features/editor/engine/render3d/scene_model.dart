@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:ui' show Color, Offset;
+import 'package:meta/meta.dart';
 import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
 import 'package:yusal/features/editor/engine/core/analysis/site_analysis.dart';
@@ -319,6 +320,12 @@ class Mat {
     Color(0xff5E3A1E)
   ];
 }
+
+/// What removes the hidden faces of a scene and joins the rest; a test
+/// puts the first, slower cleanup here to compare the two.
+@visibleForTesting
+List<Face3> Function(List<Face3> faces, List<SolidBox> solids) sceneCleanup =
+    cleanFaces;
 
 SceneModel buildScene(HouseDocument doc, DerivedHouse derived,
     SceneOptions options, String Function(Room) roomName,
@@ -1010,8 +1017,11 @@ SceneModel _buildScene(HouseDocument doc, DerivedHouse derived,
         p.z >= r.$2 - 0.01 &&
         p.z <= r.$4 + 0.01));
   }
-  return SceneModel(cleanFaces(faces, solids), lines, labels, colliders,
-      elevations, w, d, math.max(top, 1), gl, frontZ)
+  sized('scene3d.rawFaces', () => faces.length);
+  sized('scene3d.solids', () => solids.length);
+  final clean = timed('scene3d.clean', () => sceneCleanup(faces, solids));
+  return SceneModel(clean, lines, labels, colliders, elevations, w, d,
+      math.max(top, 1), gl, frontZ)
     ..portals.addAll(portals)
     ..sections.addAll(sections);
 }

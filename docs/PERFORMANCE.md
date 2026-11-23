@@ -11,6 +11,7 @@ are the baseline every later change to the engine is compared with.
 | `derive.floorBase` | the plan geometry of one floor, when it is not cached |
 | `derive.house` | the geometry of the whole house, when it is not cached |
 | `scene3d.build` | turning the derived house into the faces of the 3D scene |
+| `scene3d.clean` | the part of `scene3d.build` that drops hidden faces and joins the ones that lie flush |
 | `scene3d.bsp` | ordering those faces for drawing |
 | `paint.plan2d` | one paint of the 2D plan |
 | `paint.scene3d` | one paint of the 3D view |

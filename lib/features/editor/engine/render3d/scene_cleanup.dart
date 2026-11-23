@@ -16,13 +16,14 @@ import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
 List<Face3> cleanFaces(List<Face3> faces, List<SolidBox> solids) {
   final kept = <Face3>[];
   final rects = <_Rect>[];
+  final index = _SolidIndex(solids);
   for (final f in faces) {
     final r = _Rect.of(f);
     if (r == null) {
       kept.add(f);
       continue;
     }
-    if (_covered(r, f, solids)) continue;
+    if (_covered(r, f, index)) continue;
     rects.add(r);
   }
   return [...kept, ..._merge(rects)];
@@ -94,7 +95,36 @@ class _Rect {
 
 const _eps = 1e-4;
 
-bool _covered(_Rect r, Face3 f, List<SolidBox> solids) {
+/// The solid boxes by the planes their sides lie on, so a face asks only
+/// the boxes that touch its plane instead of every box in the house.
+class _SolidIndex {
+  _SolidIndex(List<SolidBox> solids) {
+    for (final s in solids) {
+      for (var axis = 0; axis < 3; axis++) {
+        (_low[axis][_key(_Rect.get(s.lo, axis))] ??= []).add(s);
+        (_high[axis][_key(_Rect.get(s.hi, axis))] ??= []).add(s);
+      }
+    }
+  }
+  final _low = [for (var i = 0; i < 3; i++) <int, List<SolidBox>>{}];
+  final _high = [for (var i = 0; i < 3; i++) <int, List<SolidBox>>{}];
+
+  static int _key(double v) => (v / _eps).round();
+
+  /// Every box whose low side ([low]) or high side on [axis] is within
+  /// [_eps] of [c], and maybe a few just beyond: two values that close
+  /// round to keys at most two apart.
+  Iterable<SolidBox> touching(int axis, double c, {required bool low}) sync* {
+    final planes = (low ? _low : _high)[axis];
+    final k = _key(c);
+    for (var d = -2; d <= 2; d++) {
+      final found = planes[k + d];
+      if (found != null) yield* found;
+    }
+  }
+}
+
+bool _covered(_Rect r, Face3 f, _SolidIndex solids) {
   // Only boxes that always show with the face may hide it.
   final out = r.face.normal.dot(
           Vec3(r.axis == 0 ? 1 : 0, r.axis == 1 ? 1 : 0, r.axis == 2 ? 1 : 0)) >
@@ -102,7 +132,7 @@ bool _covered(_Rect r, Face3 f, List<SolidBox> solids) {
   final ua = _Rect.uAxis(r.axis);
   final va = _Rect.vAxis(r.axis);
   final cover = <(double, double, double, double)>[];
-  for (final s in solids) {
+  for (final s in solids.touching(r.axis, r.c, low: out)) {
     if (s.floor != f.floorIndex ||
         s.roof != f.roof ||
         s.furniture != f.furniture ||
@@ -176,30 +206,51 @@ List<Face3> _merge(List<_Rect> rects) {
   }
   bool near(double a, double b) => (a - b).abs() < _eps;
   final out = <Face3>[];
+
+  /// Grows [a] over [b] when they share a whole edge, and says whether.
+  bool join(_Rect a, _Rect b) {
+    if (near(a.v0, b.v0) &&
+        near(a.v1, b.v1) &&
+        (near(a.u1, b.u0) || near(b.u1, a.u0))) {
+      a.u0 = a.u0 < b.u0 ? a.u0 : b.u0;
+      a.u1 = a.u1 > b.u1 ? a.u1 : b.u1;
+      return true;
+    }
+    if (near(a.u0, b.u0) &&
+        near(a.u1, b.u1) &&
+        (near(a.v1, b.v0) || near(b.v1, a.v0))) {
+      a.v0 = a.v0 < b.v0 ? a.v0 : b.v0;
+      a.v1 = a.v1 > b.v1 ? a.v1 : b.v1;
+      return true;
+    }
+    return false;
+  }
+
   for (final g in groups.values) {
-    var changed = true;
-    while (changed && g.length > 1) {
-      changed = false;
-      for (var i = 0; i < g.length && !changed; i++) {
-        for (var j = i + 1; j < g.length; j++) {
-          final a = g[i];
-          final b = g[j];
-          if (near(a.v0, b.v0) &&
-              near(a.v1, b.v1) &&
-              (near(a.u1, b.u0) || near(b.u1, a.u0))) {
-            a.u0 = a.u0 < b.u0 ? a.u0 : b.u0;
-            a.u1 = a.u1 > b.u1 ? a.u1 : b.u1;
-          } else if (near(a.u0, b.u0) &&
-              near(a.u1, b.u1) &&
-              (near(a.v1, b.v0) || near(b.v1, a.v0))) {
-            a.v0 = a.v0 < b.v0 ? a.v0 : b.v0;
-            a.v1 = a.v1 > b.v1 ? a.v1 : b.v1;
-          } else {
-            continue;
-          }
+    // Joins the first pair that can be joined, in list order, until none
+    // can. No pair before [i] can be joined; after a join only pairs with
+    // the rectangle that grew are new, so only those are looked at again.
+    var i = 0;
+    while (i < g.length) {
+      var joined = false;
+      for (var j = i + 1; j < g.length; j++) {
+        if (join(g[i], g[j])) {
           g.removeAt(j);
-          changed = true;
+          joined = true;
           break;
+        }
+      }
+      if (!joined) {
+        i++;
+        continue;
+      }
+      // The grown rectangle may now meet an earlier one, which takes it in
+      // and may in turn meet one earlier still.
+      for (var q = 0; q < i; q++) {
+        if (join(g[q], g[i])) {
+          g.removeAt(i);
+          i = q;
+          q = -1;
         }
       }
     }

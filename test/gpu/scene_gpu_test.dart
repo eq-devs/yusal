@@ -201,6 +201,36 @@ void main() {
     });
   });
 
+  testWidgets('a still picture is larger than the view and as full', (t) async {
+    await t.runAsync(() async {
+      SceneGpu.reset();
+      await SceneGpu.prepare();
+      final (camera, settings) = views['no roof']!;
+      // With a GPU and without: the canvas makes the picture where there
+      // is none.
+      for (final gpu in {SceneGpu.instance, null}) {
+        final p = painter(camera, settings, gpu: gpu);
+        final image = await p.still(size, longSide: 1440);
+        expect((image.width, image.height), (1440, 1080));
+        final bytes = (await image.toByteData())!.buffer.asUint8List();
+        if (shots != null) {
+          final png = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+          File('$shots/still ${gpu == null ? 'canvas' : 'gpu'}.png')
+            ..createSync(recursive: true)
+            ..writeAsBytesSync(png.buffer.asUint8List());
+        }
+        // The house is in it: many colours, not one ground.
+        final seen = <int>{};
+        for (var i = 0; i < bytes.length; i += 4 * 97) {
+          seen.add(bytes[i] << 16 | bytes[i + 1] << 8 | bytes[i + 2]);
+        }
+        expect(seen.length, greaterThan(40));
+        image.dispose();
+      }
+      if (SceneGpu.instance != null) expect(SceneGpu.reason, isNull);
+    });
+  });
+
   testWidgets('a tap finds the same thing on the GPU as on the canvas',
       (t) async {
     await t.runAsync(() async {

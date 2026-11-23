@@ -215,6 +215,32 @@ class ScenePainter extends CustomPainter {
       gpu: gpu,
       pixelRatio: pixelRatio);
 
+  /// This view as a still picture, [longSide] pixels along its longer
+  /// side, for a view shown [shown] large: every face drawn in full, with
+  /// sun shadows, and on the GPU at twice the size and brought down, which
+  /// smooths edges and the grain of the darkened corners.
+  Future<ui.Image> still(Size shown, {int longSide = 2400}) async {
+    final scale = longSide / math.max(shown.width, shown.height);
+    final width = math.max(1, (shown.width * scale).round());
+    final height = math.max(1, (shown.height * scale).round());
+    final painter = ScenePainter(
+        model: model,
+        camera: camera,
+        settings: settings,
+        northAngleDeg: northAngleDeg,
+        walk: walk,
+        labels: labels,
+        gpu: SceneGpu.instance == null ? null : gpu,
+        pixelRatio: scale * 2);
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder)..scale(scale);
+    painter.paint(canvas, shown);
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(width, height);
+    picture.dispose();
+    return image;
+  }
+
   final SceneModel model;
   final Camera camera;
   final SceneSettings settings;
@@ -1204,6 +1230,16 @@ class ScenePainter extends CustomPainter {
 }
 
 /// Orbit and walk-through views of the house.
+/// A handle on a [SceneView] for taking a still picture of what it shows.
+class SceneStill {
+  Future<Uint8List?> Function(int longSide)? _take;
+
+  /// The view as a PNG, [longSide] pixels along its longer side; null
+  /// when no view is showing.
+  Future<Uint8List?> png({int longSide = 2400}) async =>
+      await _take?.call(longSide);
+}
+
 class SceneView extends StatefulWidget {
   const SceneView(
       {super.key,
@@ -1220,7 +1256,11 @@ class SceneView extends StatefulWidget {
       this.selected,
       this.outsideLabel = 'outside',
       this.inWallLabel = 'wall',
-      this.areaUnit = 'm²'});
+      this.areaUnit = 'm²',
+      this.still});
+
+  /// Takes pictures of this view for whoever holds it.
+  final SceneStill? still;
   final HouseDocument doc;
   final DerivedHouse derived;
   final String Function(Room) roomName;
@@ -1609,6 +1649,16 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
         fast: !widget.walk && interacting,
         gpu: SceneGpu.instance,
         pixelRatio: MediaQuery.devicePixelRatioOf(context));
+    widget.still?._take = (longSide) async {
+      final size = context.size;
+      if (!mounted || size == null || size.isEmpty) return null;
+      final shown = painter;
+      if (shown == null) return null;
+      final image = await shown.still(size, longSide: longSide);
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      return data?.buffer.asUint8List();
+    };
     final view = Listener(
         // Keys (W A S D, arrows) go to the view the user last touched.
         onPointerDown: (_) {

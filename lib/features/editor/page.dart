@@ -362,6 +362,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   SceneSettings sceneSettings = const SceneSettings();
   String sceneView = 'iso';
   int sceneViewToken = 0;
+
+  /// Takes the 3D view's picture for sharing.
+  final sceneStill = SceneStill();
   SourceRef? scenePicked;
 
   /// Where the walk-through starts; a new token moves the walker there.

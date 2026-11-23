@@ -25,11 +25,25 @@ extension _SceneTab on _HouseEditorState {
               outsideLabel: tr3('室外', 'Сыртта', 'Снаружи'),
               inWallLabel: tr3('墙内', 'Қабырға ішінде', 'Внутри стены'),
               areaUnit: unitM2,
+              still: sceneStill,
               onPick: walk
                   ? null
                   : (source) => update(() => scenePicked = source))),
       if (scenePicked != null && !walk)
         Positioned(left: 10, top: 10, right: 10, child: pickedChip()),
+      if (!walk)
+        Positioned(
+            right: 8,
+            bottom: 62,
+            child: Material(
+                color: t.panel.withValues(alpha: 0.92),
+                shape: CircleBorder(side: BorderSide(color: t.line)),
+                child: IconButton(
+                    key: const ValueKey('scene-still'),
+                    tooltip:
+                        tr3('导出图片', 'Суретті сақтау', 'Сохранить картинку'),
+                    onPressed: shareSceneImage,
+                    icon: const Icon(Icons.photo_camera_outlined, size: 22)))),
       // Within thumb reach on the stage itself: frame the house again
       // after turning or zooming away (CAD viewers' "zoom to fit").
       if (!walk)
@@ -203,6 +217,58 @@ extension _SceneTab on _HouseEditorState {
         SceneStyle.white => tr3('白模', 'Ақ макет', 'Белый макет'),
         SceneStyle.lines => tr3('线稿', 'Сызба', 'Линии'),
       };
+
+  /// The 3D view as a large picture, to save or send.
+  Future<void> shareSceneImage() async {
+    showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => PopScope(
+            canPop: false,
+            child: AlertDialog(
+                content: Row(children: [
+              const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5)),
+              const SizedBox(width: 16),
+              Expanded(
+                  child: Text(tr3(
+                      '正在生成图片…', 'Сурет жасалуда…', 'Создаётся картинка…'))),
+            ]))));
+    Uint8List? bytes;
+    try {
+      // A frame first, so the dialog shows before the work starts.
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      bytes = await sceneStill.png();
+    } catch (_) {
+      bytes = null;
+    }
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    if (bytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(tr3('图片没有生成，请再试一次', 'Сурет жасалмады, қайталап көріңіз',
+              'Картинка не создана, попробуйте ещё раз'))));
+      return;
+    }
+    final cleaned = history.present.meta.name
+        .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '')
+        .trim();
+    final base =
+        cleaned.isEmpty ? tr3('房屋设计', 'Үй жобасы', 'Проект дома') : cleaned;
+    final filename = '$base 3D.png';
+    final file = XFile.fromData(bytes, mimeType: 'image/png', name: filename);
+    if (kIsWeb) {
+      await file.saveTo(filename);
+    } else {
+      final box = context.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(ShareParams(
+          files: [file],
+          sharePositionOrigin:
+              box == null ? null : box.localToGlobal(Offset.zero) & box.size));
+    }
+  }
 
   List<Widget> sceneToggles() {
     final s = sceneSettings;

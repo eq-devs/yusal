@@ -281,17 +281,37 @@ class ThicknessWall extends WallOverride {
 @immutable
 class SolidWall extends WallOverride {
   const SolidWall(
-      {required super.id, required super.anchor, required this.value});
+      {required super.id,
+      required super.anchor,
+      required this.value,
+      this.height});
+
+  /// Thickness, in millimetres.
   final int value;
+
+  /// How high the wall stands, in millimetres; null for a wall that
+  /// reaches the ceiling. A wall given a height is a low wall (a knee
+  /// wall, a bar, a balustrade): one can see over it, so it divides no
+  /// room, carries no door or window and takes nothing from a room's
+  /// measured area.
+  final int? height;
+
+  bool get low => height != null;
+
   @override
   bool operator ==(Object other) =>
       other is SolidWall &&
       id == other.id &&
       anchor == other.anchor &&
-      value == other.value;
+      value == other.value &&
+      height == other.height;
   @override
-  int get hashCode => Object.hash(id, anchor, value);
+  int get hashCode => Object.hash(id, anchor, value, height);
 }
+
+/// The lowest and highest a low wall may stand, in millimetres.
+const lowWallMin = 300;
+const lowWallMax = 2100;
 
 sealed class OpeningPosition {
   const OpeningPosition();

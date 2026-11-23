@@ -46,8 +46,32 @@ class UnitEdge {
   final Cell? positive;
   final String kind;
   final double thickness;
+
+  /// A wall to the ceiling. A low wall (kind `low`) is not one: rooms run
+  /// on past it.
   bool get hasWall =>
       kind == 'exterior' || kind == 'interior' || kind == 'temporary';
+}
+
+/// A wall one can see over: where it stands and how high. It divides no
+/// room and is drawn in its own way in plan and in 3D.
+class LowWall {
+  const LowWall(this.id, this.segment, this.rect, this.height);
+  final String id;
+
+  /// Where it runs, in the form the full-height walls have, so that the
+  /// tools that select, stretch and move a wall work on it too. Its kind
+  /// is `low`.
+  final WallSegment segment;
+  WallRef get ref => segment.ref;
+  double get thickness => segment.thickness;
+  final PlanRect rect;
+
+  /// Millimetres above the floor.
+  final double height;
+
+  /// Whether it runs along x.
+  bool get horizontal => rect.right - rect.left >= rect.top - rect.bottom;
 }
 
 class WallSegment {
@@ -94,7 +118,21 @@ class FloorBase {
       this.stairGeometryBase,
       this.unassignedCells,
       this.unassignedNominalArea,
-      [this.outside = const {}]);
+      [this.outside = const {},
+      this.lowWalls = const []]);
+
+  /// The walls of this floor that stand lower than the ceiling.
+  final List<LowWall> lowWalls;
+
+  /// Every wall a hand can take hold of: those to the ceiling, then the
+  /// low ones.
+  Iterable<WallSegment> get allWallSegments sync* {
+    yield* wallSegments;
+    for (final w in lowWalls) {
+      yield w.segment;
+    }
+  }
+
   final ResolvedAxes axes;
   final Map<Cell, String?> owners;
   final List<UnitEdge> edges;
@@ -319,7 +357,13 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
       if (chain.carrier.id == a.id &&
           s.pos >= chain.startPos &&
           e.pos <= chain.endPos) {
-        if (override is SolidWall) {
+        if (override is SolidWall && override.low) {
+          // Seen over: the rooms on its two sides are one.
+          if (wall.kind != 'exterior') {
+            wall =
+                UnitEdge(a, s, e, neg, pos, 'low', override.value.toDouble());
+          }
+        } else if (override is SolidWall) {
           // A drawn wall on the outline stays an outside wall.
           if (wall.kind != 'exterior') {
             wall = UnitEdge(
@@ -601,7 +645,38 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
               sum +
               (axes.v[c.i + 1].pos - axes.v[c.i].pos) *
                   (axes.h[c.j + 1].pos - axes.h[c.j].pos)),
-      Set.unmodifiable(outside));
+      Set.unmodifiable(outside),
+      List.unmodifiable([
+        for (final (override, chain) in overrides)
+          if (override is SolidWall &&
+              override.low &&
+              chain.carrier.kind != 'boundary')
+            LowWall(
+                override.id,
+                WallSegment(
+                    WallRef(floorId, override.anchor.axisId,
+                        override.anchor.startAxisId, override.anchor.endAxisId),
+                    chain.carrier,
+                    axes.all
+                        .firstWhere((a) => a.id == override.anchor.startAxisId),
+                    axes.all
+                        .firstWhere((a) => a.id == override.anchor.endAxisId),
+                    'low',
+                    override.value.toDouble(),
+                    const []),
+                chain.carrier.dir == AxisDir.H
+                    ? PlanRect(
+                        chain.startPos.toDouble(),
+                        chain.carrier.pos - override.value / 2,
+                        chain.endPos.toDouble(),
+                        chain.carrier.pos + override.value / 2)
+                    : PlanRect(
+                        chain.carrier.pos - override.value / 2,
+                        chain.startPos.toDouble(),
+                        chain.carrier.pos + override.value / 2,
+                        chain.endPos.toDouble()),
+                override.height!.toDouble())
+      ]));
 }
 
 /// Plan area of the building on [base]'s floor, mm², cut-outs left out.

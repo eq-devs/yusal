@@ -1866,6 +1866,7 @@
             "EnableWallDrawing",
             "AddDrawnWall",
             "UpdateDrawnWall",
+            "SetDrawnWallHeight",
             "MoveDrawnWall",
             "DeleteDrawnWall",
             "AddFurniture",

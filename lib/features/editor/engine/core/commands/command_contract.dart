@@ -162,6 +162,12 @@ CommandResult _executeCommand(
           ? apply(result.document!)
           : Rejected('WALL_CONFLICT', result.error!);
     }
+    if (command.kind == 'SetDrawnWallHeight') {
+      final result = setDrawnWallHeight(doc, args, context.newId);
+      return result.accepted
+          ? apply(result.document!)
+          : Rejected('WALL_CONFLICT', result.error!);
+    }
     if (command.kind == 'MoveDrawnWall') {
       final result = moveDrawnWall(doc, args, context.newId);
       return result.accepted

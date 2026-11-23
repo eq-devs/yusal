@@ -608,6 +608,23 @@ SceneModel _buildScene(HouseDocument doc, DerivedHouse derived,
         }
       }
     }
+    // Low walls: knee walls, bars and balustrades, as high as they are.
+    for (final low in g.base.lowWalls) {
+      final top = elevation + low.height / 1000;
+      final source = WallSource(low.ref);
+      sections.add(SolidBox(
+          Vec3(px(low.rect.left), elevation, pz(low.rect.top)),
+          Vec3(px(low.rect.right), top, pz(low.rect.bottom)),
+          floor: f,
+          roof: false,
+          furniture: false,
+          layer: Layer3.sorted,
+          source: source));
+      planBox(low.rect, elevation, top, Mat.part,
+          source: source, floor: f, interior: true);
+      colliders.add(Collider(px(low.rect.left), pz(low.rect.top),
+          px(low.rect.right), pz(low.rect.bottom), f));
+    }
     // Plinth under the exterior walls of the ground floor.
     if (f == 0) {
       for (final wall in walls.where((w) => w.role == WallRole.exterior)) {

@@ -1335,6 +1335,10 @@
         },
         "y1": {
           "type": "integer"
+        },
+        "height": {
+          "type": "integer",
+          "description": "Millimetres the wall stands above the floor, 300 to 2100, for a low wall; 0 for a wall to the ceiling."
         }
       },
       "required": [
@@ -1395,6 +1399,10 @@
         },
         "y1": {
           "type": "integer"
+        },
+        "height": {
+          "type": "integer",
+          "description": "Millimetres the wall stands above the floor, 300 to 2100, for a low wall; 0 for a wall to the ceiling."
         }
       },
       "required": [
@@ -1403,6 +1411,55 @@
         "y0",
         "x1",
         "y1"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "SetDrawnWallHeight",
+    "group": "walls",
+    "summary": "Make a drawn wall a low wall (a knee wall, a bar, a balustrade) or a wall to the ceiling again. A low wall divides no room and carries no door or window.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floorId": {
+          "type": "string",
+          "description": "id of a floor"
+        },
+        "wallId": {
+          "type": "string",
+          "description": "id of a drawn wall"
+        },
+        "anchor": {
+          "type": "object",
+          "description": "A stretch of wall: the axis it lies on and the two crossing axes it runs between. The wall by where it runs, when not by id.",
+          "properties": {
+            "axisId": {
+              "type": "string"
+            },
+            "startAxisId": {
+              "type": "string"
+            },
+            "endAxisId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "axisId",
+            "startAxisId",
+            "endAxisId"
+          ],
+          "additionalProperties": false
+        },
+        "height": {
+          "type": "integer",
+          "description": "Millimetres the wall stands above the floor, 300 to 2100, for a low wall; 0 for a wall to the ceiling."
+        }
+      },
+      "required": [
+        "floorId",
+        "height"
       ],
       "additionalProperties": false
     }

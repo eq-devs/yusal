@@ -1588,7 +1588,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     selectedDrawnAnchor = solid.anchor;
     editStart = start;
     editEnd = end;
-    selectedWall = base.wallSegments
+    selectedWall = base.allWallSegments
             .where((w) =>
                 w.axis.dir == (vertical ? AxisDir.V : AxisDir.H) &&
                 w.axis.pos == (vertical ? start.dx : start.dy) &&
@@ -1888,6 +1888,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     if (choice == 'length') await preciseWallLength();
     if (choice == 'move') await preciseWallPosition();
     if (choice == 'thickness') await wallSettings(directThickness: true);
+    if (choice == 'height') await chooseWallHeight();
     if (choice == 'delete') await deleteSelectedWall();
   }
 
@@ -3226,7 +3227,11 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                                       0.42)!
                                             },
                                             viewportInsets: canvasInsets,
-                                            showGaps: history.present.floors[floorIndex].explicitWalls && drawingEnd == null,
+                                            showGaps: history
+                                                    .present
+                                                    .floors[floorIndex]
+                                                    .explicitWalls &&
+                                                drawingEnd == null,
                                             openings: displayOpenings,
                                             below: floorIndex > 0 && showBelow
                                                 ? derived
@@ -3240,18 +3245,14 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                                   s.opening
                                             ],
                                             belowLabel: tr3(
-                                                '楼梯口', 'Баспалдақ ойығы', 'Проём лестницы'),
-                                            stairs: derived
-                                                .floors[floorIndex].stairs,
-                                            northAngleDeg: history.present
-                                                .footprint.northAngleDeg,
+                                                '楼梯口',
+                                                'Баспалдақ ойығы',
+                                                'Проём лестницы'),
+                                            stairs:
+                                                derived.floors[floorIndex].stairs,
+                                            northAngleDeg: history.present.footprint.northAngleDeg,
                                             focus: focus,
-                                            editableWall:
-                                                (tool == EditorTool.editWall || tool == EditorTool.drawWall) &&
-                                                        editStart != null &&
-                                                        editEnd != null
-                                                    ? PlanRect((editPreviewStart ?? editStart)!.dx, (editPreviewStart ?? editStart)!.dy, (editPreviewEnd ?? editEnd)!.dx, (editPreviewEnd ?? editEnd)!.dy)
-                                                    : null,
+                                            editableWall: (tool == EditorTool.editWall || tool == EditorTool.drawWall) && editStart != null && editEnd != null ? PlanRect((editPreviewStart ?? editStart)!.dx, (editPreviewStart ?? editStart)!.dy, (editPreviewEnd ?? editEnd)!.dx, (editPreviewEnd ?? editEnd)!.dy) : null,
                                             wallSeed: tool == EditorTool.drawWall ? drawingOrigin : null,
                                             wallAttachments: (tool == EditorTool.drawWall || tool == EditorTool.selectWall) && drawingEnd == null && editPreviewStart == null ? visibleWallAttachments(size) : const [],
                                             handleScale: canvasZoom,

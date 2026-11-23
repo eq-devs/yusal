@@ -439,6 +439,9 @@ List<CommandArgument> _box() => [
       _need('top', integer),
     ];
 
+const _lowWall = 'Millimetres the wall stands above the floor, 300 to 2100, '
+    'for a low wall; 0 for a wall to the ceiling.';
+
 List<CommandArgument> _line() => [
       _need('x0', integer),
       _need('y0', integer),
@@ -682,16 +685,30 @@ final List<CommandSpec> commandCatalog = List.unmodifiable([
       'Turn the walls of a floor into separate pieces that can be drawn and moved.',
       [_need('floorId', _floor)]),
   CommandSpec(
-      'AddDrawnWall',
-      'walls',
-      'Draw a straight wall between two points.',
-      [_need('floorId', _floor), ..._line()]),
+      'AddDrawnWall', 'walls', 'Draw a straight wall between two points.', [
+    _need('floorId', _floor),
+    ..._line(),
+    _may('height', integer, _lowWall)
+  ]),
   CommandSpec('UpdateDrawnWall', 'walls', 'Set the two ends of a drawn wall.', [
     _need('floorId', _floor),
     _may('wallId', _wall),
     _may('anchor', anchor, 'The wall by where it runs, when not by id.'),
     ..._line(),
+    _may('height', integer, _lowWall),
   ]),
+  CommandSpec(
+      'SetDrawnWallHeight',
+      'walls',
+      'Make a drawn wall a low wall (a knee wall, a bar, a balustrade) or a '
+          'wall to the ceiling again. A low wall divides no room and '
+          'carries no door or window.',
+      [
+        _need('floorId', _floor),
+        _may('wallId', _wall),
+        _may('anchor', anchor, 'The wall by where it runs, when not by id.'),
+        _need('height', integer, _lowWall),
+      ]),
   CommandSpec('MoveDrawnWall', 'walls',
       'Move a drawn wall sideways; the walls ending on it follow.', [
     _need('floorId', _floor),

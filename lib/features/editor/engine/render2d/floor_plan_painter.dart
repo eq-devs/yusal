@@ -425,6 +425,22 @@ class FloorPlanPainter extends CustomPainter {
     }
     canvas.restore();
 
+    // Low walls: seen from above rather than cut, so an outline with a
+    // light fill instead of the solid of a wall to the ceiling.
+    if (base.lowWalls.isNotEmpty) {
+      final fill = Paint()..color = Tokens.mix(t.wall, 0.16, t.panel);
+      final line = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = math.max(0.8, px(1.2))
+        ..color = t.wall;
+      for (final w in base.lowWalls) {
+        final r = rectangle(w.rect, size);
+        canvas
+          ..drawRect(r, fill)
+          ..drawRect(r, line);
+      }
+    }
+
     // Open (wall-less) edges between rooms: dashed arch lines.
     final arch = Paint()
       ..color = t.accent

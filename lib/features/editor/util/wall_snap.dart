@@ -150,7 +150,7 @@ WallSegment? nearestWall(FloorBase base, Offset p, double tolerance,
     {bool innerOnly = false}) {
   WallSegment? best;
   var bestScore = double.infinity;
-  for (final w in base.wallSegments) {
+  for (final w in base.allWallSegments) {
     if (innerOnly && w.axis.kind == 'boundary') continue;
     final along = _along(w, p);
     final cross = _cross(w, p);

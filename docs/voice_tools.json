@@ -779,6 +779,73 @@
     }
   },
   {
+    "name": "design.plan_house",
+    "title": {
+      "zh": "按需求排出整栋房子",
+      "kk": "Талап бойынша үйді жоспарлау",
+      "ru": "Спланировать дом по пожеланиям"
+    },
+    "examples": {
+      "zh": "设计一个三室、十二乘十米的平房，大门朝北",
+      "kk": "Үш жатын бөлмелі, он екіге он метр үй, есігі солтүстікке",
+      "ru": "Дом двенадцать на десять с тремя спальнями, вход с севера"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "width_mm": {
+          "type": "integer"
+        },
+        "depth_mm": {
+          "type": "integer"
+        },
+        "area_sqm": {
+          "type": "number"
+        },
+        "floors": {
+          "type": "integer"
+        },
+        "bedrooms": {
+          "type": "integer"
+        },
+        "bathrooms": {
+          "type": "integer"
+        },
+        "entrance": {
+          "type": "string",
+          "enum": [
+            "north",
+            "east",
+            "south",
+            "west"
+          ]
+        },
+        "hall": {
+          "type": "boolean"
+        },
+        "boiler": {
+          "type": "boolean"
+        },
+        "storage": {
+          "type": "boolean"
+        },
+        "dining": {
+          "type": "boolean"
+        },
+        "plan": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bedrooms"
+      ]
+    }
+  },
+  {
     "name": "design.add_room",
     "title": {
       "zh": "画一个房间",

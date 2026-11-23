@@ -115,6 +115,63 @@ void main() {
     await t.pumpAndSettle();
   });
 
+  testWidgets('a house is laid out from what it must have, in several plans',
+      (t) async {
+    await editor(t);
+    final host = VoiceScreens.current! as DesignHost;
+    final made = await say('design.plan_house', {
+      'width_mm': 12000,
+      'depth_mm': 10000,
+      'bedrooms': 3,
+      'entrance': 'north'
+    });
+    await t.pump();
+    expect(made.ok, isTrue);
+    expect(made.say['plan'], 1);
+    expect(made.say['plans'], 3);
+    expect(made.say['entrance'], 'north');
+    expect(host.document.footprint.width, 12000);
+    expect(
+        host.document.floors.single.rooms
+            .where((r) => r.type == RoomType.bedroom),
+        hasLength(3));
+    expect(host.document.mainEntranceOpeningId, isNotNull);
+    final first = made.say['layout'];
+
+    // "Another one" is a different layout of the same house.
+    final other = await say('design.plan_house', {
+      'width_mm': 12000,
+      'depth_mm': 10000,
+      'bedrooms': 3,
+      'entrance': 'north',
+      'plan': 2
+    });
+    expect(other.ok, isTrue);
+    expect(other.say['layout'], isNot(first));
+    expect(
+        (await say('design.plan_house',
+                {'area_sqm': 120, 'bedrooms': 3, 'plan': 9}))
+            .code,
+        ActionCodes.badArgs);
+
+    // An area becomes a width and a depth.
+    final byArea =
+        await say('design.plan_house', {'area_sqm': 120, 'bedrooms': 3});
+    expect(byArea.say['width_mm'], 12000);
+    expect(byArea.say['depth_mm'], 10000);
+
+    // No size is not enough, and a house too small for the rooms says so.
+    expect((await say('design.plan_house', {'bedrooms': 3})).code,
+        ActionCodes.badArgs);
+    final small = await say('design.plan_house',
+        {'width_mm': 6000, 'depth_mm': 6000, 'bedrooms': 5});
+    expect(small.code, tooSmall);
+    expect(host.document.footprint.width, 12000);
+
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
+    await t.pumpAndSettle();
+  });
+
   testWidgets('rooms are drawn by size and split in two', (t) async {
     await editor(t);
     // The house is one room; carve a bedroom out of its south-west corner.

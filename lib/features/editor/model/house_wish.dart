@@ -6,6 +6,15 @@ import 'package:yusal/features/editor/engine/core/number_input.dart';
 import 'package:yusal/features/editor/engine/render2d/furniture_names.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
 
+/// Room names by type in the app's language, for a house drawn from a
+/// wish.
+Map<String, String> wishRoomNames() => {
+      for (final t in RoomType.values)
+        if (t != RoomType.custom) t.name: roomTypeName(t),
+      'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл'),
+      'family': tr3('起居室', 'Отбасы бөлмесі', 'Общая комната'),
+    };
+
 /// What the questions collect before a house is asked for.
 class HouseWish {
   const HouseWish(
@@ -33,22 +42,17 @@ class HouseWish {
   /// The wish as a house spec drawn without the assistant: two rows of
   /// rooms along a corridor, named in the app's language.
   Map<String, Object?> spec(String name) => wishSpec(
-          name: name,
-          width: (width * 1000).round(),
-          depth: (depth * 1000).round(),
-          floors: floors,
-          bedrooms: bedrooms,
-          bathrooms: bathrooms,
-          hall: hall,
-          boiler: boiler,
-          storage: storage,
-          dining: dining,
-          names: {
-            for (final t in RoomType.values)
-              if (t != RoomType.custom) t.name: roomTypeName(t),
-            'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл'),
-            'family': tr3('起居室', 'Отбасы бөлмесі', 'Общая комната'),
-          });
+      name: name,
+      width: (width * 1000).round(),
+      depth: (depth * 1000).round(),
+      floors: floors,
+      bedrooms: bedrooms,
+      bathrooms: bathrooms,
+      hall: hall,
+      boiler: boiler,
+      storage: storage,
+      dining: dining,
+      names: wishRoomNames());
 
   /// The wish as one sentence in the app's language, for the assistant
   /// that designs whole houses.

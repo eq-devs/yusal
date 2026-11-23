@@ -25,11 +25,25 @@ extension _SceneTab on _HouseEditorState {
               outsideLabel: tr3('室外', 'Сыртта', 'Снаружи', 'Outside', ky: 'Сырты', uz: 'Tashqari'),
               inWallLabel: tr3('墙内', 'Қабырға ішінде', 'Внутри стены', 'Inside the wall', ky: 'Дубалдын ичи', uz: 'Devor ichi'),
               areaUnit: unitM2,
+              still: sceneStill,
               onPick: walk
                   ? null
                   : (source) => update(() => scenePicked = source))),
       if (scenePicked != null && !walk)
         Positioned(left: 10, top: 10, right: 10, child: pickedChip()),
+      if (!walk)
+        Positioned(
+            right: 8,
+            bottom: 62,
+            child: Material(
+                color: t.panel.withValues(alpha: 0.92),
+                shape: CircleBorder(side: BorderSide(color: t.line)),
+                child: IconButton(
+                    key: const ValueKey('scene-still'),
+                    tooltip:
+                        tr3('导出图片', 'Суретті сақтау', 'Сохранить картинку', 'Save picture', ky: 'Сүрөттү сактоо', uz: 'Rasmni saqlash'),
+                    onPressed: shareSceneImage,
+                    icon: const Icon(Icons.photo_camera_outlined, size: 22)))),
       // Within thumb reach on the stage itself: frame the house again
       // after turning or zooming away (CAD viewers' "zoom to fit").
       if (!walk)
@@ -196,6 +210,66 @@ extension _SceneTab on _HouseEditorState {
   /// Frame the current preset view again.
   void refitScene() => update(() => sceneViewToken++);
 
+  String sceneStyleName(SceneStyle style) => switch (style) {
+        SceneStyle.shaded ||
+        SceneStyle.plain =>
+          tr3('着色', 'Түрлі түсті', 'Цвет', 'Colour', ky: 'Түстүү', uz: 'Rangli'),
+        SceneStyle.white => tr3('白模', 'Ақ макет', 'Белый макет', 'White model', ky: 'Ак макет', uz: 'Oq maket'),
+        SceneStyle.lines => tr3('线稿', 'Сызба', 'Линии', 'Lines', ky: 'Сызыктар', uz: 'Chiziqlar'),
+      };
+
+  /// The 3D view as a large picture, to save or send.
+  Future<void> shareSceneImage() async {
+    showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => PopScope(
+            canPop: false,
+            child: AlertDialog(
+                content: Row(children: [
+              const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5)),
+              const SizedBox(width: 16),
+              Expanded(
+                  child: Text(tr3(
+                      '正在生成图片…', 'Сурет жасалуда…', 'Создаётся картинка…', 'Making the picture…', ky: 'Сүрөт жасалууда…', uz: 'Rasm tayyorlanmoqda…'))),
+            ]))));
+    Uint8List? bytes;
+    try {
+      // A frame first, so the dialog shows before the work starts.
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      bytes = await sceneStill.png();
+    } catch (_) {
+      bytes = null;
+    }
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    if (bytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(tr3('图片没有生成，请再试一次', 'Сурет жасалмады, қайталап көріңіз',
+              'Картинка не создана, попробуйте ещё раз', "The picture wasn't made; try again", ky: 'Сүрөт жасалган жок, кайра аракет кылыңыз', uz: 'Rasm yaratilmadi, qaytadan urinib koʻring'))));
+      return;
+    }
+    final cleaned = history.present.meta.name
+        .replaceAll(RegExp(r'[/\\:*?"<>|\x00-\x1f]'), '')
+        .trim();
+    final base =
+        cleaned.isEmpty ? tr3('房屋设计', 'Үй жобасы', 'Проект дома', 'House design', ky: 'Үй долбоору', uz: 'Uy loyihasi') : cleaned;
+    final filename = '$base 3D.png';
+    final file = XFile.fromData(bytes, mimeType: 'image/png', name: filename);
+    if (kIsWeb) {
+      await file.saveTo(filename);
+    } else {
+      final box = context.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(ShareParams(
+          files: [file],
+          sharePositionOrigin:
+              box == null ? null : box.localToGlobal(Offset.zero) & box.size));
+    }
+  }
+
   List<Widget> sceneToggles() {
     final s = sceneSettings;
     final set = setScene;
@@ -221,6 +295,24 @@ extension _SceneTab on _HouseEditorState {
           label: tr3('剖切', 'Кесу', 'Разрез', 'Section', ky: 'Кесилиш', uz: 'Kesim'),
           selected: s.cut,
           onChanged: (v) => set(s.copyWith(cut: v))),
+      // The look of the model, as the visual styles of a CAD viewport:
+      // each tap moves on to the next.
+      ActionChip(
+          key: const ValueKey('scene-style'),
+          avatar: Icon(
+              switch (s.style) {
+                SceneStyle.white => Icons.view_in_ar_outlined,
+                SceneStyle.lines => Icons.draw_outlined,
+                _ => Icons.palette_outlined,
+              },
+              size: 16),
+          label: Text(sceneStyleName(s.style)),
+          onPressed: () => set(s.copyWith(
+                  style: switch (s.style) {
+                SceneStyle.shaded || SceneStyle.plain => SceneStyle.white,
+                SceneStyle.white => SceneStyle.lines,
+                SceneStyle.lines => SceneStyle.shaded,
+              }))),
       ActionChip(
           key: const ValueKey('scene-roof-style'),
           avatar: RoofIcon(roofStyle, size: 16),

@@ -175,6 +175,58 @@ extension _WallTool on _HouseEditorState {
             "This wall can't be moved", ky: 'Бул дубалды жылдырууга болбойт', uz: 'Bu devorni surib boʻlmaydi'));
   }
 
+  /// Ask how high the selected wall stands: to the ceiling, or one of the
+  /// usual heights of a low wall.
+  Future<void> chooseWallHeight() async {
+    final id = selectedDrawnId;
+    if (id == null) return;
+    final now = floor.wallOverrides
+            .whereType<SolidWall>()
+            .where((w) => w.id == id)
+            .firstOrNull
+            ?.height ??
+        0;
+    final picked = await showDialog<int>(
+        context: context,
+        builder: (context) => SimpleDialog(
+                title: Text(tr3('墙的高度', 'Қабырға биіктігі', 'Высота стены', 'Wall height', ky: 'Дубалдын бийиктиги', uz: 'Devor balandligi')),
+                children: [
+                  for (final (value, label) in [
+                    (
+                      0,
+                      tr3('到顶（分隔房间）', 'Төбеге дейін (бөлмені бөледі)',
+                          'До потолка (делит комнату)', 'To the ceiling (divides the room)', ky: 'Шыпка чейин (бөлмөнү бөлөт)', uz: 'Shiftgacha (xonani ajratadi)')
+                    ),
+                    (600, tr3('0.6 米 · 矮台', '0,6 м · аласа', '0,6 м · бортик', '0.6 m · ledge', ky: '0,6 м · бортик', uz: '0,6 m · bortik')),
+                    (
+                      900,
+                      tr3('0.9 米 · 栏杆', '0,9 м · қоршау', '0,9 м · перила', '0.9 m · railing', ky: '0,9 м · тосмо', uz: '0,9 m · panjara')
+                    ),
+                    (1100, tr3('1.1 米 · 吧台', '1,1 м · бар', '1,1 м · стойка', '1.1 m · bar counter', ky: '1,1 м · бар', uz: '1,1 m · bar peshtaxtasi')),
+                    (
+                      1500,
+                      tr3('1.5 米 · 半隔断', '1,5 м · жартылай',
+                          '1,5 м · полуперегородка', '1.5 m · half partition', ky: '1,5 м · жарым тосмо', uz: '1,5 m · yarim toʻsiq')
+                    ),
+                  ])
+                    SimpleDialogOption(
+                        key: ValueKey('wall-height-$value'),
+                        onPressed: () => Navigator.pop(context, value),
+                        child: Row(children: [
+                          Icon(
+                              value == now
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                              size: 18),
+                          const SizedBox(width: 10),
+                          Text(label)
+                        ])),
+                ]));
+    if (picked == null || picked == now || !mounted) return;
+    action('SetDrawnWallHeight',
+        {'floorId': floor.id, 'wallId': id, 'height': picked});
+  }
+
   /// Actions for the pressed wall, placed beside it rather than in a sheet
   /// so the wall and its grips stay visible.
   Widget? wallMenuCard() {
@@ -273,6 +325,8 @@ extension _WallTool on _HouseEditorState {
                                                   : null))
                                 ]))))));
     final length = (b - a).distance;
+    final low =
+        base.lowWalls.where((w) => identical(w.segment, wall)).firstOrNull;
     return Positioned(
         left: x,
         top: y,
@@ -284,10 +338,24 @@ extension _WallTool on _HouseEditorState {
                 Expanded(
                     child: Text(
                         tr3(
-                            '${inner ? '内墙' : '外墙'} ${meters(length)} 米 · 厚 ${meters(wall.thickness)} 米',
-                            '${inner ? 'Ішкі' : 'Сыртқы'} қабырға ${meters(length)} м · қалыңдығы ${meters(wall.thickness)} м',
-                            '${inner ? 'Перегородка' : 'Наружная стена'} ${meters(length)} м · толщина ${meters(wall.thickness)} м',
-                            '${inner ? 'Partition' : 'Outer wall'} ${meters(length)} m · thickness ${meters(wall.thickness)} m', ky: '${inner ? 'Тосмо' : 'Сырткы дубал'} ${meters(length)} м · калыңдыгы ${meters(wall.thickness)} м', uz: '${inner ? 'Toʻsiq devor' : 'Tashqi devor'} ${meters(length)} m · qalinligi ${meters(wall.thickness)} m'),
+                            low != null
+                                ? '矮墙 ${meters(length)} 米 · 高 ${meters(low.height)} 米'
+                                : '${inner ? '内墙' : '外墙'} ${meters(length)} 米 · 厚 ${meters(wall.thickness)} 米',
+                            low != null
+                                ? 'Аласа қабырға ${meters(length)} м · биіктігі ${meters(low.height)} м'
+                                : '${inner ? 'Ішкі' : 'Сыртқы'} қабырға ${meters(length)} м · қалыңдығы ${meters(wall.thickness)} м',
+                            low != null
+                                ? 'Низкая стена ${meters(length)} м · высота ${meters(low.height)} м'
+                                : '${inner ? 'Перегородка' : 'Наружная стена'} ${meters(length)} м · толщина ${meters(wall.thickness)} м',
+                            low != null
+                                ? 'Low wall ${meters(length)} m · height ${meters(low.height)} m'
+                                : '${inner ? 'Partition' : 'Outer wall'} ${meters(length)} m · thickness ${meters(wall.thickness)} m',
+                            ky: low != null
+                                ? 'Жапыз дубал ${meters(length)} м · бийиктиги ${meters(low.height)} м'
+                                : '${inner ? 'Тосмо' : 'Сырткы дубал'} ${meters(length)} м · калыңдыгы ${meters(wall.thickness)} м',
+                            uz: low != null
+                                ? 'Past devor ${meters(length)} m · balandligi ${meters(low.height)} m'
+                                : '${inner ? 'Toʻsiq devor' : 'Tashqi devor'} ${meters(length)} m · qalinligi ${meters(wall.thickness)} m'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -314,11 +382,19 @@ extension _WallTool on _HouseEditorState {
                       '调整长度'.trKey('Ұзындығын өзгерту', 'Изменить длину', 'Change the length', 'Узундугун өзгөртүү', 'Uzunlikni oʻzgartirish')),
                   button('move', Icons.open_with, tr3('位置', 'Орны', 'Место', 'Location', ky: 'Жайгашкан жери', uz: 'Joylashuvi'),
                       '移动墙体'.trKey('Қабырғаны жылжыту', 'Переместить стену', 'Move the wall', 'Дубалды жылдыруу', 'Devorni surish')),
-                  button(
-                      'thickness',
-                      Icons.line_weight,
-                      tr3('墙厚', 'Қалыңдық', 'Толщина', 'Thickness', ky: 'Калыңдыгы', uz: 'Qalinligi'),
-                      '修改墙厚'.trKey('Қалыңдығын өзгерту', 'Изменить толщину', 'Change the thickness', 'Калыңдыгын өзгөртүү', 'Qalinlikni oʻzgartirish')),
+                  if (low == null)
+                    button(
+                        'thickness',
+                        Icons.line_weight,
+                        tr3('墙厚', 'Қалыңдық', 'Толщина', 'Thickness', ky: 'Калыңдыгы', uz: 'Qalinligi'),
+                        '修改墙厚'.trKey('Қалыңдығын өзгерту', 'Изменить толщину', 'Change the thickness', 'Калыңдыгын өзгөртүү', 'Qalinlikni oʻzgartirish')),
+                  if (selectedDrawnId != null)
+                    button(
+                        'height',
+                        Icons.height,
+                        tr3('高度', 'Биіктік', 'Высота', 'Height', ky: 'Бийиктиги', uz: 'Balandligi'),
+                        '到顶的墙或矮墙'.trKey('Төбеге дейін немесе аласа қабырға',
+                            'До потолка или низкая стена', 'To the ceiling or a low wall', 'Шыпка чейин же жапыз дубал', 'Shiftgacha yoki past devor')),
                   button(
                       'delete',
                       Icons.delete_outline,

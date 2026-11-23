@@ -341,11 +341,15 @@ class _Decoder {
       );
     }
     if (raw == 'solid') {
-      _shape(m, p, ['type', 'id', 'anchor', 'value']);
+      _shape(m, p, ['type', 'id', 'anchor', 'value'],
+          allowed: ['type', 'id', 'anchor', 'value', 'height']);
       return SolidWall(
           id: str(m['id'], '$p/id', id: true),
           anchor: anchor(m['anchor'], '$p/anchor'),
-          value: integer(m['value'], '$p/value'));
+          value: integer(m['value'], '$p/value'),
+          height: m.containsKey('height')
+              ? integer(m['height'], '$p/height')
+              : null);
     }
     if (raw == 'thickness') {
       _shape(m, p, ['type', 'id', 'anchor', 'value']);
@@ -832,7 +836,8 @@ String encodeHouse(HouseDocument d) {
                     'type': 'solid',
                     'id': w.id,
                     'anchor': anchor(w.anchor),
-                    'value': w.value
+                    'value': w.value,
+                    if (w.height != null) 'height': w.height
                   },
                 ThicknessWall() => {
                     'type': 'thickness',

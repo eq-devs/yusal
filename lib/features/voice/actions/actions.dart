@@ -1,6 +1,7 @@
 import 'package:yusal/features/voice/actions/coop.dart';
 import 'package:yusal/features/voice/actions/demand.dart';
 import 'package:yusal/features/voice/actions/design.dart';
+import 'package:yusal/features/voice/actions/engine.dart';
 import 'package:yusal/features/voice/actions/houses.dart';
 import 'package:yusal/features/voice/actions/nav.dart';
 import 'package:yusal/features/voice/model/form.dart';
@@ -13,5 +14,7 @@ final appActions = ActionRegistry([
   ...demandActions,
   ...coopActions,
   ...designActions,
-  ...formActions
+  ...formActions,
+  // Last, so the tools before them keep their place in voice_tools.json.
+  ...engineActions
 ]);

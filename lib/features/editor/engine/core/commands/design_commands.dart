@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:yusal/features/editor/engine/core/commands/document_edits.dart';
+import 'package:yusal/features/editor/engine/core/validation/document_validator.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/serialization/house_codec.dart';
 import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
@@ -9,9 +11,13 @@ import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/engine/core/canonicalization/room_canonicalizer.dart';
 
 class EditResult {
-  const EditResult(this.document, this.error);
+  const EditResult(this.document, this.error, [this.code = 'INVALID_VALUE']);
   final HouseDocument? document;
   final String? error;
+
+  /// Why the edit was refused, as a word that does not change with the
+  /// wording of [error]; only meaningful when [error] is set.
+  final String code;
   bool get accepted => document != null;
 }
 
@@ -19,8 +25,15 @@ class EditResult {
 String _floorName(int number) =>
     number <= 10 ? '${'一二三四五六七八九十'[number - 1]}楼' : '$number楼';
 
+/// Carries out the document command [kind] on [original].
+///
+/// The commands in [objectEditKinds] are done by copying the objects they
+/// change, and fall back to the file round trip below whenever that does not
+/// give a valid document, so a refusal is worded the same either way.
+/// [objectEdits] false always takes the round trip; tests compare the two.
 EditResult executeDocumentCommand(HouseDocument original, String kind,
-    Map<String, dynamic> args, String Function() newId) {
+    Map<String, dynamic> args, String Function() newId,
+    {bool objectEdits = true}) {
   try {
     var doc = original;
     if (kind == 'AddStair' ||
@@ -32,7 +45,7 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
               .id;
       final index = doc.floors.indexWhere((f) => f.id == targetFloor);
       if (index < 0 || index == doc.floors.length - 1) {
-        return const EditResult(null, '楼梯需要上方还有楼层');
+        return const EditResult(null, '楼梯需要上方还有楼层', 'TOP_FLOOR');
       }
       final region = args['region'] as AxisRectangle;
       final axes = resolveFloorAxes(doc, targetFloor)!;
@@ -57,6 +70,75 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
           cellsOfRect(resolveRect(axes, region).rect!), RoomType.custom, newId,
           erase: true);
     }
+    HouseDocument? edited;
+    if (objectEdits && objectEditKinds.contains(kind)) {
+      HouseDocument? quick;
+      try {
+        quick = editDocumentObjects(doc, kind, args, newId);
+      } catch (_) {
+        quick = null;
+      }
+      if (quick != null && validateHouse(quick).isEmpty) edited = quick;
+    }
+    if (edited == null) {
+      final result = _editThroughFile(original, doc, kind, args, newId);
+      if (!result.accepted || kind == 'MergeRooms') return result;
+      edited = result.document!;
+    }
+    final next = edited;
+    if (kind == 'SetFootprintSize' || kind == 'MoveAxis') {
+      final healthy = documentOpenings(doc)
+          .where((p) => p.status == 'ok')
+          .map((p) => p.opening.id)
+          .toSet();
+      if (documentOpenings(next)
+          .any((p) => healthy.contains(p.opening.id) && p.status != 'ok')) {
+        return const EditResult(null, '此尺寸会影响已有门窗，请先调整门窗或保留更多空间');
+      }
+    }
+    if (['AddOpening', 'MoveOpening', 'ResizeOpening', 'SetOpeningKind']
+        .contains(kind)) {
+      final originalIds =
+          doc.floors.expand((f) => f.openings).map((o) => o.id).toSet();
+      final placements = documentOpenings(next);
+      for (final candidate in placements) {
+        final changed = kind == 'AddOpening'
+            ? !originalIds.contains(candidate.opening.id)
+            : candidate.opening.id == args['openingId'];
+        if (!changed) continue;
+        if (candidate.status != 'ok') {
+          return const EditResult(null, '门窗超出有效墙面，请换一个位置或调整尺寸');
+        }
+        for (final other in placements) {
+          if (candidate.opening.id == other.opening.id ||
+              other.status != 'ok') {
+            continue;
+          }
+          if (candidate.host?.ref == other.host?.ref &&
+              candidate.start < other.end &&
+              other.start < candidate.end &&
+              candidate.opening.sill <
+                  other.opening.sill + other.opening.height &&
+              other.opening.sill <
+                  candidate.opening.sill + candidate.opening.height) {
+            return const EditResult(null, '与已有门窗重叠，请挪开一些', 'OVERLAP');
+          }
+        }
+      }
+    }
+    return EditResult(next, null);
+  } catch (_) {
+    return const EditResult(null, '操作参数无效，原设计已保留');
+  }
+}
+
+/// [doc] after command [kind], made by writing the document out as a file,
+/// changing the file's fields and reading it back: every command can be done
+/// this way, and reading validates the result, at the cost of a full encode,
+/// parse and decode.
+EditResult _editThroughFile(HouseDocument original, HouseDocument doc,
+    String kind, Map<String, dynamic> args, String Function() newId) {
+  try {
     final raw = jsonDecode(encodeHouse(doc)) as Map<String, dynamic>;
     final floors = raw['floors'] as List<dynamic>;
     Map<String, dynamic> floor(String id) =>
@@ -120,7 +202,7 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
           final list = lookup.dir == AxisDir.V ? axes.v : axes.h;
           if (value < list[lookup.index - 1].pos + 300 ||
               value > list[lookup.index + 1].pos - 300) {
-            return const EditResult(null, '分隔线不能越过相邻线，间距至少 0.30 米');
+            return const EditResult(null, '分隔线不能越过相邻线，间距至少 0.30 米', 'SPACING');
           }
         }
         for (final a in [
@@ -231,7 +313,9 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         final ca = regionCells(axes, ra.regions).cells;
         final cb = regionCells(axes, rb.regions).cells;
         final cells = {...ca, ...cb};
-        if (!isConnected(cells)) return const EditResult(null, '只能合并相邻房间');
+        if (!isConnected(cells)) {
+          return const EditResult(null, '只能合并相邻房间', 'NOT_ADJACENT');
+        }
         final keep = compareComponentPriority(axes, ca, cb) <= 0 ? ra : rb;
         (floor(f.id)['rooms'] as List)
             .removeWhere((r) => r['id'] == (keep.id == a ? b : a));
@@ -357,7 +441,9 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         break;
       case 'FlipDoor':
         final o = object('openings', args['openingId'] as String);
-        if (o['kind'] != 'door') return const EditResult(null, '只有门可以调整开向');
+        if (o['kind'] != 'door') {
+          return const EditResult(null, '只有门可以调整开向', 'NOT_A_DOOR');
+        }
         for (final field in ['hinge', 'opensTo']) {
           if (args.containsKey(field)) o[field] = args[field];
         }
@@ -413,7 +499,7 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
         } else {
           if (object('openings', args['openingId'] as String)['kind'] !=
               'door') {
-            return const EditResult(null, '主入口需要是一扇门');
+            return const EditResult(null, '主入口需要是一扇门', 'NOT_A_DOOR');
           }
           raw['mainEntranceOpeningId'] = args['openingId'];
         }
@@ -506,47 +592,21 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
     }
     final loaded = loadHouse(utf8.encode(jsonEncode(raw)));
     if (!loaded.isSuccess) {
-      return EditResult(null, '操作无法完成：${loaded.failure!.errors.first.message}');
-    }
-    if (kind == 'SetFootprintSize' || kind == 'MoveAxis') {
-      final healthy = documentOpenings(doc)
-          .where((p) => p.status == 'ok')
-          .map((p) => p.opening.id)
-          .toSet();
-      if (documentOpenings(loaded.document!)
-          .any((p) => healthy.contains(p.opening.id) && p.status != 'ok')) {
-        return const EditResult(null, '此尺寸会影响已有门窗，请先调整门窗或保留更多空间');
-      }
-    }
-    if (['AddOpening', 'MoveOpening', 'ResizeOpening', 'SetOpeningKind']
-        .contains(kind)) {
-      final originalIds =
-          doc.floors.expand((f) => f.openings).map((o) => o.id).toSet();
-      final placements = documentOpenings(loaded.document!);
-      for (final candidate in placements) {
-        final changed = kind == 'AddOpening'
-            ? !originalIds.contains(candidate.opening.id)
-            : candidate.opening.id == args['openingId'];
-        if (!changed) continue;
-        if (candidate.status != 'ok') {
-          return const EditResult(null, '门窗超出有效墙面，请换一个位置或调整尺寸');
-        }
-        for (final other in placements) {
-          if (candidate.opening.id == other.opening.id ||
-              other.status != 'ok') {
-            continue;
-          }
-          if (candidate.host?.ref == other.host?.ref &&
-              candidate.start < other.end &&
-              other.start < candidate.end &&
-              candidate.opening.sill <
-                  other.opening.sill + other.opening.height &&
-              other.opening.sill <
-                  candidate.opening.sill + candidate.opening.height) {
-            return const EditResult(null, '与已有门窗重叠，请挪开一些');
-          }
-        }
-      }
+      final first = loaded.failure!.errors.first;
+      return EditResult(
+          null,
+          '操作无法完成：${first.message}',
+          switch (first.code) {
+            // Lines too close together.
+            'INV05' => 'SPACING',
+            // Two wall pieces, or two rooms or stairs, in the same place.
+            'INV14' => 'OVERLAP',
+            // The validator files a room outside the house under the same
+            // number as two rooms in one place; only its words tell them
+            // apart.
+            'INV11' => first.message.contains('重叠') ? 'OVERLAP' : 'OUTSIDE',
+            _ => 'INVALID_VALUE',
+          });
     }
     return EditResult(loaded.document, null);
   } catch (_) {

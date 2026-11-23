@@ -560,6 +560,21 @@ class Sleeve {
 }
 
 @immutable
+
+/// Where a room's area is measured to. Builders, sellers and the rules for
+/// living space each count differently, and a plan has to say which it
+/// shows.
+enum AreaBasis {
+  /// Between the finished wall faces: the floor one can use.
+  clear,
+
+  /// To the middle of the walls around the room.
+  centre,
+
+  /// To the middle of inside walls and the outer face of outside ones.
+  outer,
+}
+
 class HouseExtras {
   HouseExtras({
     List<FurnitureItem> furniture = const [],
@@ -577,6 +592,7 @@ class HouseExtras {
     List<UtilityPoint> utilities = const [],
     this.site,
     List<BuildStage> schedule = const [],
+    this.areaBasis = AreaBasis.clear,
   })  : cost = cost ?? CostSpec(),
         utilities = List.unmodifiable(utilities),
         schedule = List.unmodifiable(schedule),
@@ -615,6 +631,9 @@ class HouseExtras {
   /// Building stages; empty means the built-in ones, untouched.
   final List<BuildStage> schedule;
 
+  /// How room areas are shown on the plan, in lists and on drawings.
+  final AreaBasis areaBasis;
+
   /// The stages shown and edited: the saved ones or the defaults.
   List<BuildStage> get stages =>
       schedule.isEmpty ? defaultSchedule() : schedule;
@@ -636,6 +655,7 @@ class HouseExtras {
     SitePlan? site,
     bool clearSite = false,
     List<BuildStage>? schedule,
+    AreaBasis? areaBasis,
   }) =>
       HouseExtras(
           furniture: furniture ?? this.furniture,
@@ -652,7 +672,8 @@ class HouseExtras {
           heat: heat ?? this.heat,
           utilities: utilities ?? this.utilities,
           site: clearSite ? null : site ?? this.site,
-          schedule: schedule ?? this.schedule);
+          schedule: schedule ?? this.schedule,
+          areaBasis: areaBasis ?? this.areaBasis);
 
   /// Drop references to floors, rooms and openings that no longer exist.
   HouseExtras pruned(
@@ -724,13 +745,14 @@ class HouseExtras {
       if (site != null) 'site': site!.toJson(),
       if (schedule.isNotEmpty)
         'schedule': [for (final s in schedule) s.toJson()],
+      if (areaBasis != AreaBasis.clear) 'areaBasis': areaBasis.name,
     };
   }
 
   /// Whether the saved extras use anything that needs schema version 4.
   bool get needsVersion4 {
     final json = toJson();
-    return const ['cost', 'heat', 'utilities', 'site', 'schedule']
+    return const ['cost', 'heat', 'utilities', 'site', 'schedule', 'areaBasis']
             .any(json.containsKey) ||
         [
           if (json.containsKey('wallLayers')) ...wallLayers,
@@ -759,7 +781,8 @@ class HouseExtras {
       'heat',
       'utilities',
       'site',
-      'schedule'
+      'schedule',
+      'areaBasis'
     };
     for (final k in m.keys) {
       if (!known.contains(k)) r.err('UNKNOWN_FIELD', '$p/$k', '未知字段 $k');
@@ -806,7 +829,9 @@ class HouseExtras {
         site: m['site'] == null
             ? null
             : SitePlan.fromJson(m['site'], '$p/site', r),
-        schedule: items('schedule', BuildStage.fromJson));
+        schedule: items('schedule', BuildStage.fromJson),
+        areaBasis: r.en(
+            m['areaBasis'], '$p/areaBasis', AreaBasis.values, AreaBasis.clear));
   }
 
   /// Structural problems; references to missing objects are pruned instead.

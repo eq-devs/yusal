@@ -4,16 +4,45 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_edges.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_gpu.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_gpu_frame.dart';
 import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
 import 'package:yusal/features/editor/engine/render3d/textures.dart';
 
 /// What the 3D page shows; kept by the editor so it survives page changes.
+/// How the 3D view draws the model, as the visual styles of a CAD
+/// viewport: the same geometry, shown for a different purpose.
+enum SceneStyle {
+  /// Colours, materials, light and shadow, with the form's edges drawn.
+  shaded,
+
+  /// The same without the edges: what is drawn while the view turns on a
+  /// device that paints on the canvas.
+  plain,
+
+  /// Everything one white material, lit, with edges: the form alone, as
+  /// a card model shows it.
+  white,
+
+  /// Edges on paper, nothing lit: a line drawing with hidden lines
+  /// removed.
+  lines;
+
+  bool get edges => this != plain;
+
+  /// Whether materials show: colours, textile patterns, night.
+  bool get materials => this == shaded || this == plain;
+}
+
 class SceneSettings {
   const SceneSettings(
       {this.roof = true,
+      this.style = SceneStyle.shaded,
       this.furniture = true,
       this.foundation = false,
       this.cut = false,
@@ -23,6 +52,7 @@ class SceneSettings {
       this.dark = false,
       this.site = true});
   final bool roof;
+  final SceneStyle style;
   final bool furniture;
   final bool foundation;
   final bool cut;
@@ -35,6 +65,7 @@ class SceneSettings {
   final int maxFloor;
   SceneSettings copyWith(
           {bool? roof,
+          SceneStyle? style,
           bool? furniture,
           bool? foundation,
           bool? cut,
@@ -45,6 +76,7 @@ class SceneSettings {
           bool? site}) =>
       SceneSettings(
           roof: roof ?? this.roof,
+          style: style ?? this.style,
           furniture: furniture ?? this.furniture,
           foundation: foundation ?? this.foundation,
           cut: cut ?? this.cut,
@@ -53,7 +85,9 @@ class SceneSettings {
           maxFloor: maxFloor ?? this.maxFloor,
           dark: dark ?? this.dark,
           site: site ?? this.site);
-  bool get night => dark || hour < 6 || hour > 20.5;
+
+  /// The white model and the line drawing are always shown by day.
+  bool get night => style.materials && (dark || hour < 6 || hour > 20.5);
 }
 
 class Camera {
@@ -166,6 +200,8 @@ class ScenePainter extends CustomPainter {
       required this.labels,
       this.selected,
       this.fast = false,
+      this.gpu,
+      this.pixelRatio = 1,
       super.repaint});
   ScenePainter withCamera(Camera c) => ScenePainter(
       model: model,
@@ -175,7 +211,35 @@ class ScenePainter extends CustomPainter {
       walk: walk,
       labels: labels,
       selected: selected,
-      fast: fast);
+      fast: fast,
+      gpu: gpu,
+      pixelRatio: pixelRatio);
+
+  /// This view as a still picture, [longSide] pixels along its longer
+  /// side, for a view shown [shown] large: every face drawn in full, with
+  /// sun shadows, and on the GPU at twice the size and brought down, which
+  /// smooths edges and the grain of the darkened corners.
+  Future<ui.Image> still(Size shown, {int longSide = 2400}) async {
+    final scale = longSide / math.max(shown.width, shown.height);
+    final width = math.max(1, (shown.width * scale).round());
+    final height = math.max(1, (shown.height * scale).round());
+    final painter = ScenePainter(
+        model: model,
+        camera: camera,
+        settings: settings,
+        northAngleDeg: northAngleDeg,
+        walk: walk,
+        labels: labels,
+        gpu: SceneGpu.instance == null ? null : gpu,
+        pixelRatio: scale * 2);
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder)..scale(scale);
+    painter.paint(canvas, shown);
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(width, height);
+    picture.dispose();
+    return image;
+  }
 
   final SceneModel model;
   final Camera camera;
@@ -189,6 +253,21 @@ class ScenePainter extends CustomPainter {
   /// textile patterns as plain colour, then draw everything when it rests
   /// (the "interactive quality" switch of CAD and map viewers).
   final bool fast;
+
+  /// Draws the faces when the device has one and the view is one it draws
+  /// ([gpuDraws]); with none, everything is painted on the canvas.
+  final SceneGpu? gpu;
+
+  /// Device pixels to a logical one, for the size of the GPU's picture.
+  final double pixelRatio;
+
+  /// Whether the last paint drew its faces on the GPU.
+  bool get drewOnGpu => _gpuFrame != null;
+
+  /// What the GPU was last given to draw; null when the canvas drew.
+  GpuFrame? get gpuFrame => _gpuFrame;
+  GpuFrame? _gpuFrame;
+  Size _gpuSize = Size.zero;
   List<_Item> _items = [];
 
   /// How many items the last paint drew (faces, edges, labels).
@@ -198,11 +277,109 @@ class ScenePainter extends CustomPainter {
   /// closed shell; for tests and diagnostics.
   int culled = 0;
 
-  /// Layer and source of each drawn item, for tests.
-  List<(int, SourceRef?)> get debugItems =>
-      [for (final i in _items) (i.layer, i.source)];
+  /// Layer and source of each drawn face (and each line of the foundation
+  /// view), for tests; the form's edges are not counted.
+  List<(int, SourceRef?)> get debugItems => [
+        for (final i in _items)
+          if (i.stroke == 0 || i.layer == 0) (i.layer, i.source)
+      ];
   Path? groundPath;
   Paint? groundPaint;
+
+  /// The sheet a line drawing is drawn on, and the card of a white model.
+  static const paper = Color(0xffFAF9F6);
+  static const card = Color(0xffF4F3F0);
+  static const ink = Color(0xff26241F);
+
+  /// The background behind the house.
+  Color get sky => switch (settings.style) {
+        SceneStyle.lines => paper,
+        SceneStyle.white => const Color(0xffECEDED),
+        _ => settings.night ? skyNight : skyDay,
+      };
+
+  /// Colour and width (in logical pixels) of the form's edges.
+  Color get edgeColor => switch (settings.style) {
+        SceneStyle.lines => ink,
+        SceneStyle.white => ink.withValues(alpha: 0.72),
+        _ => settings.night
+            ? const Color(0xff05070B).withValues(alpha: 0.6)
+            : ink.withValues(alpha: 0.5),
+      };
+  double get edgeWidth => settings.style == SceneStyle.lines ? 1.25 : 1.0;
+
+  /// Whether this frame draws the form's edges. On the canvas they are
+  /// left out while a finger turns the view.
+  bool get drawsEdges => settings.style.edges && !walk && !settings.foundation;
+
+  static final _edgeCache = Expando<(String, List<SceneEdge>, EdgeIndex?)>();
+
+  /// The edges of what this view shows, with the cut faces of walls at
+  /// [sectionY] when the house is cut. Worked out once for a model and a
+  /// set of switches, not per frame.
+  List<SceneEdge> edges(double sectionY) => _edgesFor(sectionY).$2;
+
+  /// The same, to ask whether a stretch of an outline lies on one.
+  EdgeIndex edgeIndex(double sectionY) {
+    final e = _edgesFor(sectionY);
+    if (e.$3 != null) return e.$3!;
+    final index = EdgeIndex(e.$2);
+    _edgeCache[model] = (e.$1, e.$2, index);
+    return index;
+  }
+
+  (String, List<SceneEdge>, EdgeIndex?) _edgesFor(double sectionY) {
+    final cutY = settings.cut ? settings.cutHeight : double.infinity;
+    final key = '$roofOn ${settings.furniture} ${settings.maxFloor} '
+        '$cutY $sectionY';
+    final kept = _edgeCache[model];
+    if (kept != null && kept.$1 == key) return kept;
+    final shell = roofOn && !cutY.isFinite;
+    final faces = <EdgeFace>[];
+    for (final f in model.faces) {
+      if (!visible(f)) continue;
+      if (f.layer == Layer3.buried || f.layer == Layer3.ceiling) continue;
+      var pts = f.points;
+      if (cutY.isFinite) {
+        if (f.floorIndex < 0) continue;
+        if (pts.every((q) => q.y > cutY)) continue;
+        if (pts.any((q) => q.y > cutY)) {
+          pts = clip(pts, (q) => cutY - q.y);
+          if (pts.length < 3) continue;
+        }
+      }
+      faces.add(EdgeFace(pts, f.normal, liftRank(f, shell), f.doubleSided));
+    }
+    if (cutY.isFinite) {
+      for (final b in model.sections) {
+        if (b.floor > settings.maxFloor ||
+            b.lo.y >= cutY - 1e-3 ||
+            b.hi.y <= cutY + 1e-3) {
+          continue;
+        }
+        faces.add(EdgeFace([
+          Vec3(b.lo.x, sectionY, b.lo.z),
+          Vec3(b.lo.x, sectionY, b.hi.z),
+          Vec3(b.hi.x, sectionY, b.hi.z),
+          Vec3(b.hi.x, sectionY, b.lo.z),
+        ], const Vec3(0, 1, 0)));
+      }
+    }
+    final found = timed('scene3d.edges', () => featureEdges(faces));
+    final entry = (key, found, null);
+    _edgeCache[model] = entry;
+    return entry;
+  }
+
+  /// How far toward the eye a face is drawn so that it stays in front of
+  /// what it lies on: 0 not at all, 1 a floor finish, 2 a covering on it,
+  /// 3 a roof slope over the wall tops (with the [shell] closed).
+  static int liftRank(Face3 f, bool shell) => switch (f.layer) {
+        Layer3.floorSurface => 1,
+        Layer3.covering => 2,
+        Layer3.sorted => f.covering && shell ? 3 : 0,
+        _ => 0,
+      };
 
   static const skyDay = Color(0xffDCE5E8);
   static const skyNight = Color(0xff0C1420);
@@ -228,12 +405,50 @@ class ScenePainter extends CustomPainter {
       camera.eye.z < model.depth;
 
   SourceRef? pick(Offset p) {
+    final frame = _gpuFrame;
+    if (frame != null) return _pickRay(frame, p);
     for (final i in _items.reversed) {
       if (i.stroke == 0 && i.source != null && i.path.contains(p)) {
         return i.source;
       }
     }
     return null;
+  }
+
+  /// What the GPU drew under [p]: the nearest face along the line of sight
+  /// that belongs to something, as the canvas painter answers from its
+  /// paths.
+  SourceRef? _pickRay(GpuFrame frame, Offset p) {
+    final size = _gpuSize;
+    final focal = size.height / 2 / math.tan(camera.fov / 2);
+    final d = camera.forward +
+        camera.right * ((p.dx - size.width / 2) / focal) +
+        camera.up * (-(p.dy - size.height / 2) / focal);
+    final o = camera.eye;
+    SourceRef? hit;
+    var nearest = double.infinity;
+    for (final (pts, source) in frame.picks) {
+      for (var k = 1; k < pts.length - 1; k++) {
+        // Möller–Trumbore, for the triangle pts[0], pts[k], pts[k + 1].
+        final e1 = pts[k] - pts[0];
+        final e2 = pts[k + 1] - pts[0];
+        final h = d.cross(e2);
+        final a = e1.dot(h);
+        if (a.abs() < 1e-12) continue;
+        final s = o - pts[0];
+        final u = s.dot(h) / a;
+        if (u < 0 || u > 1) continue;
+        final q = s.cross(e1);
+        final v = d.dot(q) / a;
+        if (v < 0 || u + v > 1) continue;
+        final t = e2.dot(q) / a;
+        if (t > near && t < nearest) {
+          nearest = t;
+          hit = source;
+        }
+      }
+    }
+    return hit;
   }
 
   Offset? project(Vec3 c, Size size, double focal) {
@@ -259,13 +474,29 @@ class ScenePainter extends CustomPainter {
     return out;
   }
 
+  /// How solid [f] is drawn: lit windows glow through at night, and glass
+  /// all but disappears from a line drawing.
+  double faceAlpha(Face3 f) => f.glow && settings.night
+      ? 0.62
+      : settings.style == SceneStyle.lines && f.alpha < 1
+          ? 0.08
+          : f.alpha;
+
   Color shade(Face3 f, Vec3 n, double distance, Vec3 light) {
     final night = settings.night;
-    final sky = night ? skyNight : skyDay;
+    final sky = this.sky;
+    final style = settings.style;
+    final picked = f.source != null && f.source == selected;
+    if (style == SceneStyle.lines) {
+      // Paper: nothing is lit, the edges carry the drawing.
+      return picked ? Color.lerp(paper, const Color(0xffE5952F), 0.45)! : paper;
+    }
     if (f.glow && night) return const Color(0xffFFC46B);
-    double r = f.color.r;
-    double g = f.color.g;
-    double b = f.color.b;
+    // A white model keeps only glass apart from the card.
+    final base = style == SceneStyle.white && f.alpha >= 1 ? card : f.color;
+    double r = base.r;
+    double g = base.g;
+    double b = base.b;
     final up = n.y * 0.5 + 0.5;
     double lr;
     double lg;
@@ -291,7 +522,7 @@ class ScenePainter extends CustomPainter {
     r = (r * lr).clamp(0, 1);
     g = (g * lg).clamp(0, 1);
     b = (b * lb).clamp(0, 1);
-    if (f.source != null && f.source == selected) {
+    if (picked) {
       r = r * 0.55 + 0.45 * (0xE5 / 255);
       g = g * 0.55 + 0.45 * (0x95 / 255);
       b = b * 0.55 + 0.45 * (0x2F / 255);
@@ -304,6 +535,29 @@ class ScenePainter extends CustomPainter {
     }
     return Color.from(alpha: 1, red: r, green: g, blue: b);
   }
+
+  /// The share of its light a face lit as [shade] lights it loses where
+  /// the sun does not reach: what the GPU darkens it by in shadow. Below
+  /// zero for a face turned from the sun, which is in shadow everywhere;
+  /// zero when nothing is lit by the sun.
+  double shadowShare(Face3 f, Vec3 n, Vec3 light) {
+    if (settings.night || settings.style == SceneStyle.lines || f.glow) {
+      return 0;
+    }
+    final up = n.y * 0.5 + 0.5;
+    final el = math.asin(light.y.clamp(-1.0, 1.0));
+    final warm = math.min(1.0, el / 0.6);
+    final toward = n.dot(light);
+    final s = math.max(0.0, toward) * (0.55 + 0.45 * warm);
+    final base = 0.60 + 0.18 * up;
+    final lit = base + 0.24 * s * (0.86 + 0.12 * warm);
+    final share = 1 - (base - shadowDepth) / lit;
+    return toward > 0.02 ? share : -share;
+  }
+
+  /// How much of the sky's light a shadow takes besides the sun's, so that
+  /// it reads as a shadow on a face the sun only grazes.
+  static const shadowDepth = 0.09;
 
   /// The roof shows when switched on and every floor is shown.
   bool get roofOn =>
@@ -320,9 +574,15 @@ class ScenePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    timed('paint.scene3d', () => _paint(canvas, size));
+    sized('scene3d.drawn', () => _items.length);
+    sized('scene3d.culled', () => culled);
+  }
+
+  void _paint(Canvas canvas, Size size) {
     final night = settings.night;
-    canvas.drawRect(
-        Offset.zero & size, Paint()..color = night ? skyNight : skyDay);
+    final lineDrawing = settings.style == SceneStyle.lines;
+    canvas.drawRect(Offset.zero & size, Paint()..color = sky);
     final focal = size.height / 2 / math.tan(camera.fov / 2);
     final light = sun;
     final cutY = settings.cut && !walk ? settings.cutHeight : double.infinity;
@@ -422,13 +682,53 @@ class ScenePainter extends CustomPainter {
           points: pts));
     }
 
+    // The form's edges, stroked with each face as it is painted so that
+    // whatever is painted after covers them like the face itself.
+    final index =
+        drawsEdges && !fast ? edgeIndex(cutY.isFinite ? cutY : 0) : null;
+    final edgeInk = edgeColor;
+    final edgeStroke = edgeWidth;
+    void addEdges(List<Vec3> world, int layer) {
+      if (index == null || index.isEmpty) return;
+      for (var k = 0; k < world.length; k++) {
+        final p = world[k];
+        final q = world[(k + 1) % world.length];
+        for (final (f0, f1) in index.along(p, q)) {
+          var a = camera.toCamera(Vec3.lerp(p, q, f0));
+          var b = camera.toCamera(Vec3.lerp(p, q, f1));
+          if (a.z <= near && b.z <= near) continue;
+          if (a.z <= near) {
+            a = Vec3.lerp(a, b, (near - a.z) / (b.z - a.z) + 1e-6);
+          }
+          if (b.z <= near) {
+            b = Vec3.lerp(b, a, (near - b.z) / (a.z - b.z) + 1e-6);
+          }
+          final p0 = project(a, size, focal);
+          final p1 = project(b, size, focal);
+          if (p0 == null || p1 == null) continue;
+          _items.add(_Item(
+              Path()
+                ..moveTo(p0.dx, p0.dy)
+                ..lineTo(p1.dx, p1.dy),
+              edgeInk,
+              (a.z + b.z) / 2,
+              layer,
+              null,
+              stroke: edgeStroke));
+        }
+      }
+    }
+
     // Ground: one large square, fading into the sky toward the horizon
     // (a screen-space gradient stands in for fog).
     final c = model.center;
     final g = model.groundLevel;
     const span = 70.0;
-    final sky = night ? skyNight : skyDay;
-    final ground = _lit(Mat.ground, night);
+    final ground = lineDrawing
+        ? paper
+        : settings.style == SceneStyle.white
+            ? const Color(0xffE4E3DF)
+            : _lit(Mat.ground, night);
     final groundPoly = clipNear([
       for (final p in [
         Vec3(c.x - span, g, c.z - span),
@@ -469,7 +769,7 @@ class ScenePainter extends CustomPainter {
     }
 
     // Sun shadows of the house on the ground.
-    if (!night && light.y > 0.05 && !walk && !fast) {
+    if (!night && light.y > 0.05 && !walk && !fast && !lineDrawing) {
       final shadow = Path()..fillType = PathFillType.nonZero;
       for (final f in model.faces) {
         if (!f.castsShadow || f.layer != Layer3.sorted || !visible(f)) continue;
@@ -497,107 +797,145 @@ class ScenePainter extends CustomPainter {
           .add(_Item(shadow, Colors.black.withValues(alpha: 0.22), 0, 2, null));
     }
 
-    // Faces come out of the BSP tree farthest first, so overlapping faces
-    // keep their true order from every angle (no flicker while orbiting).
+    // Where the device can, the faces go to the GPU, which keeps what is
+    // in front in front for every pixel; nothing is sorted or split.
+    ui.Image? gpuImage;
+    _gpuFrame = null;
+    final renderer = gpu;
+    if (renderer != null && gpuDraws(this) && !size.isEmpty) {
+      try {
+        final frame = buildGpuFrame(this, size);
+        final scale =
+            math.min(pixelRatio, 4096 / math.max(size.width, size.height));
+        gpuImage = renderer.draw(
+            frame,
+            math.max(1, (size.width * scale).round()),
+            math.max(1, (size.height * scale).round()));
+        _gpuFrame = frame;
+        _gpuSize = size;
+        sized('scene3d.gpuFaces', () => frame.faces);
+      } catch (e) {
+        // From here on the canvas paints, this frame included.
+        SceneGpu.fail(e);
+      }
+    }
+    // Otherwise they come out of the BSP tree farthest first, so
+    // overlapping faces keep their true order from every angle (no flicker
+    // while orbiting).
     var order = 0;
-    model.bsp.backToFront(inView: inView, camera.eye, (frag) {
-      final f = frag.face;
-      if (!visible(f)) return;
-      if (f.layer == Layer3.buried && !foundation) return;
-      if (f.layer == Layer3.ceiling && !walk) return;
-      var pts = frag.points;
-      var clipped = false;
-      if (cutY.isFinite && f.floorIndex >= 0) {
-        if (pts.every((p) => p.y > cutY)) return;
-        if (pts.any((p) => p.y > cutY)) {
-          pts = clip(pts, (p) => cutY - p.y);
-          clipped = true;
+    if (gpuImage == null) {
+      model.bsp.backToFront(inView: inView, camera.eye, (frag) {
+        final f = frag.face;
+        if (!visible(f)) return;
+        if (f.layer == Layer3.buried && !foundation) return;
+        if (f.layer == Layer3.ceiling && !walk) return;
+        var pts = frag.points;
+        var clipped = false;
+        if (cutY.isFinite && f.floorIndex >= 0) {
+          if (pts.every((p) => p.y > cutY)) return;
+          if (pts.any((p) => p.y > cutY)) {
+            pts = clip(pts, (p) => cutY - p.y);
+            clipped = true;
+          }
+          if (pts.length < 3) return;
+        } else if (cutY.isFinite && f.floorIndex < 0) {
+          return;
         }
-        if (pts.length < 3) return;
-      } else if (cutY.isFinite && f.floorIndex < 0) {
-        return;
-      }
-      final toEye = camera.eye - pts.first;
-      var n = f.normal;
-      final facing = n.dot(toEye);
-      // A face seen edge-on covers no area, but its seam-closing hairline
-      // would still draw a light line across the wall in front of it.
-      if (facing.abs() < 0.012 * toEye.length) return;
-      if (facing <= 0) {
-        if (!f.doubleSided && f.alpha >= 1 && !cutY.isFinite) return;
-        n = n * -1;
-      }
-      // Shade by the whole face, not the fragment, so the pieces a BSP
-      // split leaves share one colour and no seams show between them.
-      var centre = const Vec3(0, 0, 0);
-      for (final p in f.points) {
-        centre = centre + p;
-      }
-      centre = centre * (1 / f.points.length);
-      // With the roof on, the inside is only seen through glass: draw it
-      // before the shell so walls and roof always cover it.
-      final layer = switch (f.layer) {
-        Layer3.buried => 0,
-        Layer3.ground => 1,
-        Layer3.floorSurface => 3,
-        Layer3.covering => f.interior && shell ? 6 : 4,
-        Layer3.ceiling => 5,
-        // A roof seen from above caps the walls under it: wall tops that
-        // meet the slope along its edges must not show through.
-        Layer3.sorted => f.interior && shell
-            ? 6
-            : f.covering && shell && facing > 0
-                ? 8
-                : 7,
-      };
-      final alpha = f.glow && night ? 0.62 : f.alpha;
-      final before = _items.length;
-      final enclosed = f.enclosed && shell;
-      if (f.textile != null && frag.uv != null && !clipped && !fast) {
-        final outline = [
-          for (final p in clipNear([for (final p in pts) camera.toCamera(p)]))
-            project(p, size, focal)!
-        ];
-        if (outline.length >= 3 && shows(outline, enclosed)) {
-          addTextured(f, pts, frag.uv!, n, (centre - camera.eye).length, light,
-              layer, size, focal);
+        final toEye = camera.eye - pts.first;
+        var n = f.normal;
+        final facing = n.dot(toEye);
+        // A face seen edge-on covers no area, but its seam-closing hairline
+        // would still draw a light line across the wall in front of it.
+        if (facing.abs() < 0.012 * toEye.length) return;
+        if (facing <= 0) {
+          if (!f.doubleSided && f.alpha >= 1 && !cutY.isFinite) return;
+          n = n * -1;
         }
-      } else {
-        addPoly(pts, shade(f, n, (centre - camera.eye).length, light), alpha,
-            layer, f.source,
-            enclosed: enclosed);
-      }
-      for (var i = before; i < _items.length; i++) {
-        _items[i].order = order++;
-      }
-    });
-    // Section fill: where the cut plane passes through a wall, its cut face
-    // is filled solid (the poché of a CAD section) instead of leaving the
-    // wall open as a hollow box. Seen from above the cut nothing else can
-    // be in front of it, so it is drawn last.
-    if (cutY.isFinite && camera.eye.y > cutY + 0.01) {
-      for (final b in model.sections) {
-        if (b.floor > settings.maxFloor ||
-            b.lo.y >= cutY - 1e-3 ||
-            b.hi.y <= cutY + 1e-3) {
-          continue;
+        // Shade by the whole face, not the fragment, so the pieces a BSP
+        // split leaves share one colour and no seams show between them.
+        var centre = const Vec3(0, 0, 0);
+        for (final p in f.points) {
+          centre = centre + p;
         }
+        centre = centre * (1 / f.points.length);
+        // With the roof on, the inside is only seen through glass: draw it
+        // before the shell so walls and roof always cover it.
+        final layer = switch (f.layer) {
+          Layer3.buried => 0,
+          Layer3.ground => 1,
+          Layer3.floorSurface => 3,
+          Layer3.covering => f.interior && shell ? 6 : 4,
+          Layer3.ceiling => 5,
+          // A roof seen from above caps the walls under it: wall tops that
+          // meet the slope along its edges must not show through.
+          Layer3.sorted => f.interior && shell
+              ? 6
+              : f.covering && shell && facing > 0
+                  ? 8
+                  : 7,
+        };
+        final alpha = faceAlpha(f);
         final before = _items.length;
-        addPoly(
-            [
+        final enclosed = f.enclosed && shell;
+        if (f.textile != null &&
+            frag.uv != null &&
+            !clipped &&
+            !fast &&
+            settings.style.materials) {
+          final outline = [
+            for (final p in clipNear([for (final p in pts) camera.toCamera(p)]))
+              project(p, size, focal)!
+          ];
+          if (outline.length >= 3 && shows(outline, enclosed)) {
+            addTextured(f, pts, frag.uv!, n, (centre - camera.eye).length,
+                light, layer, size, focal);
+          }
+        } else {
+          addPoly(pts, shade(f, n, (centre - camera.eye).length, light), alpha,
+              layer, f.source,
+              enclosed: enclosed);
+        }
+        if (_items.length > before) addEdges(pts, layer);
+        for (var i = before; i < _items.length; i++) {
+          _items[i].order = order++;
+        }
+      });
+      // Section fill: where the cut plane passes through a wall, its cut face
+      // is filled solid (the poché of a CAD section) instead of leaving the
+      // wall open as a hollow box. Seen from above the cut nothing else can
+      // be in front of it, so it is drawn last.
+      if (cutY.isFinite && camera.eye.y > cutY + 0.01) {
+        for (final b in model.sections) {
+          if (b.floor > settings.maxFloor ||
+              b.lo.y >= cutY - 1e-3 ||
+              b.hi.y <= cutY + 1e-3) {
+            continue;
+          }
+          final before = _items.length;
+          addPoly(
+              [
+                Vec3(b.lo.x, cutY, b.lo.z),
+                Vec3(b.lo.x, cutY, b.hi.z),
+                Vec3(b.hi.x, cutY, b.hi.z),
+                Vec3(b.hi.x, cutY, b.lo.z),
+              ],
+              b.source != null && b.source == selected
+                  ? sectionSelected
+                  : sectionFill,
+              1,
+              9,
+              b.source);
+          if (_items.length > before) {
+            addEdges([
               Vec3(b.lo.x, cutY, b.lo.z),
               Vec3(b.lo.x, cutY, b.hi.z),
               Vec3(b.hi.x, cutY, b.hi.z),
               Vec3(b.hi.x, cutY, b.lo.z),
-            ],
-            b.source != null && b.source == selected
-                ? sectionSelected
-                : sectionFill,
-            1,
-            9,
-            b.source);
-        for (var i = before; i < _items.length; i++) {
-          _items[i].order = order++;
+            ], 9);
+          }
+          for (var i = before; i < _items.length; i++) {
+            _items[i].order = order++;
+          }
         }
       }
     }
@@ -708,6 +1046,15 @@ class ScenePainter extends CustomPainter {
     }
     flush();
     drawGround();
+    if (gpuImage != null) {
+      canvas.drawImageRect(
+          gpuImage,
+          Rect.fromLTWH(
+              0, 0, gpuImage.width.toDouble(), gpuImage.height.toDouble()),
+          Offset.zero & size,
+          Paint()..filterQuality = FilterQuality.low);
+      gpuImage.dispose();
+    }
     if (labels && !walk && (settings.cut || !roofOn)) {
       // Nearest rooms first; a tag that would cover one already placed
       // tries just above or below, and is left out if neither is free
@@ -883,6 +1230,16 @@ class ScenePainter extends CustomPainter {
 }
 
 /// Orbit and walk-through views of the house.
+/// A handle on a [SceneView] for taking a still picture of what it shows.
+class SceneStill {
+  Future<Uint8List?> Function(int longSide)? _take;
+
+  /// The view as a PNG, [longSide] pixels along its longer side; null
+  /// when no view is showing.
+  Future<Uint8List?> png({int longSide = 2400}) async =>
+      await _take?.call(longSide);
+}
+
 class SceneView extends StatefulWidget {
   const SceneView(
       {super.key,
@@ -899,7 +1256,11 @@ class SceneView extends StatefulWidget {
       this.selected,
       this.outsideLabel = 'outside',
       this.inWallLabel = 'wall',
-      this.areaUnit = 'm²'});
+      this.areaUnit = 'm²',
+      this.still});
+
+  /// Takes pictures of this view for whoever holds it.
+  final SceneStill? still;
   final HouseDocument doc;
   final DerivedHouse derived;
   final String Function(Room) roomName;
@@ -969,6 +1330,13 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     ticker = createTicker(tick);
+    // The canvas paints until the GPU renderer is ready, and for good on
+    // a device that has none.
+    if (SceneGpu.instance == null) {
+      SceneGpu.prepare().then((_) {
+        if (mounted && SceneGpu.instance != null) setState(() {});
+      });
+    }
     rebuild();
     applyView(widget.view);
     placeWalker();
@@ -1264,6 +1632,11 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
         model: model,
         camera: camera,
         settings: widget.settings.copyWith(
+            // Walking through the house and looking under it are shown
+            // in colour, whatever the style of the outside view.
+            style: widget.walk || widget.settings.foundation
+                ? SceneStyle.plain
+                : null,
             // Inside, the floors above are hidden (the ceiling closes
             // the view); from outside the whole house shows.
             maxFloor: widget.walk
@@ -1273,7 +1646,19 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
         walk: widget.walk,
         labels: true,
         selected: widget.selected,
-        fast: !widget.walk && interacting);
+        fast: !widget.walk && interacting,
+        gpu: SceneGpu.instance,
+        pixelRatio: MediaQuery.devicePixelRatioOf(context));
+    widget.still?._take = (longSide) async {
+      final size = context.size;
+      if (!mounted || size == null || size.isEmpty) return null;
+      final shown = painter;
+      if (shown == null) return null;
+      final image = await shown.still(size, longSide: longSide);
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      return data?.buffer.asUint8List();
+    };
     final view = Listener(
         // Keys (W A S D, arrows) go to the view the user last touched.
         onPointerDown: (_) {

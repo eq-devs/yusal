@@ -91,7 +91,8 @@ List<LoadError> validateSchemaV1(Object? value) {
       'type': 'string',
       'id': 'id',
       'anchor': 'Anchor',
-      'value': 'int'
+      'value': 'int',
+      'height?': 'int'
     },
     'Position.center': {'type': 'string'},
     'Position.fromStart': {'type': 'string', 'd': 'int'},

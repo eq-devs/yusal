@@ -279,14 +279,14 @@ Future<HousePlan?> showHousePlans(BuildContext context, List<HousePlan> plans) {
                   children: [
                     Text(
                         tr3('选一个方案', 'Бір нұсқасын таңдаңыз',
-                            'Выберите вариант'),
+                            'Выберите вариант', 'Pick a layout', ky: 'Вариантты тандаңыз', uz: 'Variantni tanlang'),
                         style: const TextStyle(
                             fontSize: 20, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
                     Text(tr3(
                         '同样的要求，不同的排法。选了之后都能改。',
                         'Талап бірдей, орналасуы әртүрлі. Кейін бәрін өзгертуге болады.',
-                        'Те же пожелания, разная планировка. Потом всё можно изменить.')),
+                        'Те же пожелания, разная планировка. Потом всё можно изменить.', 'Same wishes, different layouts. You can change everything later.', ky: 'Каалоолор бирдей, жайгашуусу ар башка. Кийин баарын өзгөртсө болот.', uz: 'Istaklar bir xil, joylashuvi har xil. Keyin hammasini oʻzgartirish mumkin.')),
                     for (final (i, plan) in plans.indexed)
                       Padding(
                           padding: const EdgeInsets.only(top: 12),
@@ -306,11 +306,11 @@ Future<HousePlan?> showHousePlans(BuildContext context, List<HousePlan> plans) {
                                     ? tr3(
                                         '不设走廊，房间围着客厅',
                                         'Дәлізсіз, бөлмелер қонақ бөлмені айнала',
-                                        'Без коридора, комнаты вокруг гостиной')
+                                        'Без коридора, комнаты вокруг гостиной', 'No corridor; rooms around the living room', ky: 'Коридорсуз, бөлмөлөр конок бөлмөнү айланып', uz: 'Koridorsiz, xonalar mehmonxona atrofida')
                                     : tr3(
                                         '中间一条走廊，房间在两侧',
                                         'Ортасында дәліз, бөлмелер екі жағында',
-                                        'Коридор посередине, комнаты по сторонам')),
+                                        'Коридор посередине, комнаты по сторонам', 'A corridor down the middle, rooms on both sides', ky: 'Ортодо коридор, бөлмөлөр эки жагында', uz: 'Oʻrtada koridor, xonalar ikki tomonda')),
                               ])))
                   ]))));
 }

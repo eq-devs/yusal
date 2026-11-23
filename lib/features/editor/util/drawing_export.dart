@@ -277,6 +277,7 @@ FloorPlanPainter _plan(DrawingInput input, int f,
       g.base, {for (final r in floor.rooms) r.id: input.roomName(r)}, const {},
       openings: g.openings,
       stairs: g.stairs,
+      areaBasis: doc.extras.areaBasis,
       northAngleDeg: doc.footprint.northAngleDeg,
       viewportInsets: const EdgeInsets.fromLTRB(70, 70, 80, 70),
       bearingMin: doc.extras.foundation.bearingMin,
@@ -342,7 +343,7 @@ List<_Sheet> _sheets(DrawingInput input) {
     var area0 = 0.0;
     for (final g in derived.floors) {
       for (final r in g.base.roomGeometry) {
-        area0 += r.clearArea / 1e6;
+        area0 += r.area(doc.extras.areaBasis) / 1e6;
       }
     }
     y += _figures(c, Rect.fromLTRB(side.left, y, side.right, side.bottom), [
@@ -389,7 +390,8 @@ List<_Sheet> _sheets(DrawingInput input) {
         rows.add([
           _Cell(input.roomName(r)),
           if (multi) _Cell(input.floorName(doc.floors[f].name), muted: true),
-          _Cell('${_n(g.clearArea / 1e6)} $unitM2', numeric: true),
+          _Cell('${_n(g.area(doc.extras.areaBasis) / 1e6)} $unitM2',
+              numeric: true),
         ]);
       }
     }
@@ -662,7 +664,7 @@ List<_Sheet> _sheets(DrawingInput input) {
       roomRows.add([
         _Cell(input.roomName(r)),
         if (multi) _Cell(input.floorName(doc.floors[f].name), muted: true),
-        _Cell(_n(g.clearArea / 1e6), numeric: true),
+        _Cell(_n(g.area(doc.extras.areaBasis) / 1e6), numeric: true),
         _Cell(label == null ? '—' : _n(label / 100), numeric: true),
       ]);
     }

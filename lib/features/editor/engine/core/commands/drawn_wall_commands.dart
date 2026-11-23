@@ -122,13 +122,16 @@ HouseDocument recognizeWallRooms(
   });
   final used = <String>{};
   final rooms = <Room>[];
+  // Worked out once a room, not once a room for every group.
+  final roomCells = <String, Set<Cell>>{};
   for (final group in groups) {
     Room? prior;
     var best = 0.0;
     var bestSeeds = -1;
     for (final room in floor.rooms) {
       if (used.contains(room.id)) continue;
-      final cells = regionCells(axes, room.regions).cells;
+      final cells =
+          roomCells[room.id] ??= regionCells(axes, room.regions).cells;
       var overlap = 0.0;
       for (final c in group.intersection(cells)) {
         overlap += (axes.v[c.i + 1].pos - axes.v[c.i].pos) *
@@ -169,6 +172,10 @@ HouseDocument recognizeWallRooms(
           outside: floor.outside));
 }
 
+/// Whether [syncRoomWalls] leaves a floor alone when its geometry is the
+/// same as before. A test turns it off to compare the two.
+bool skipUnchangedFloors = true;
+
 /// Keep room-based tools usable after upgrading to physical wall segments.
 /// Preserve unfinished partitions; materialize new boundaries and remove only
 /// the boundaries that a room edit actually merged.
@@ -178,6 +185,10 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
   if (!floor.explicitWalls) return after;
   final old = deriveFloorBase(before, floorId);
   final current = deriveFloorBase(after, floorId);
+  // The same geometry object means nothing this floor's walls and rooms
+  // are made from has changed, so there is nothing to bring in line: an
+  // edit to one floor leaves the others alone.
+  if (skipUnchangedFloors && identical(old, current)) return after;
   final natural = _replaceFloor(
       after,
       Floor(
@@ -215,11 +226,20 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
       edges.add(wanted.edges[i]);
     }
   }
-  final originals = floor.wallOverrides.whereType<SolidWall>().toList();
+  // Low walls divide no room, so no room edit makes or removes one: they
+  // are carried over as they are, ahead of the walls that do.
+  final originals =
+      floor.wallOverrides.whereType<SolidWall>().where((w) => !w.low).toList();
+  // Where each wall runs, found once instead of for every edge tried
+  // against it.
+  final runs = Map<SolidWall, ResolvedChain?>.identity();
+  ResolvedChain run(SolidWall w) =>
+      (runs[w] ??= resolveAnchor(current.axes, w.anchor).chain)!;
   final used = <String>{};
   final walls = <WallOverride>[
     for (final w in floor.wallOverrides)
       if (w is OpenWall ||
+          (w is SolidWall && w.low) ||
           (w is! SolidWall &&
               current.axes.all
                       .firstWhere((a) => a.id == w.anchor.axisId)
@@ -233,7 +253,7 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
     final first = group.first;
     final last = group.last;
     final prior = originals.where((w) {
-      final c = resolveAnchor(current.axes, w.anchor).chain!;
+      final c = run(w);
       return c.carrier.id == first.axis.id &&
           c.startPos <= first.start.pos &&
           c.endPos >= last.end.pos &&
@@ -251,16 +271,19 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
     group = [];
   }
 
+  final owning = <UnitEdge, String?>{};
+  String? originalId(UnitEdge edge) => owning.containsKey(edge)
+      ? owning[edge]
+      : owning[edge] = originals
+          .where((w) {
+            final c = run(w);
+            return c.carrier.id == edge.axis.id &&
+                c.startPos <= edge.start.pos &&
+                c.endPos >= edge.end.pos;
+          })
+          .firstOrNull
+          ?.id;
   for (final e in edges) {
-    String? originalId(UnitEdge edge) => originals
-        .where((w) {
-          final c = resolveAnchor(current.axes, w.anchor).chain!;
-          return c.carrier.id == edge.axis.id &&
-              c.startPos <= edge.start.pos &&
-              c.endPos >= edge.end.pos;
-        })
-        .firstOrNull
-        ?.id;
     if (group.isNotEmpty &&
         (group.last.axis.id != e.axis.id ||
             group.last.end.pos != e.start.pos ||
@@ -403,6 +426,17 @@ EditResult editDrawnWall(HouseDocument original, String kind,
     }
     final oldChain =
         prior == null ? null : resolveAnchor(oldAxes, prior.anchor).chain!;
+    // No height given keeps the wall as high as it was; 0 or less makes
+    // it a wall to the ceiling again.
+    final givenHeight = (args['height'] as num?)?.round();
+    final height = givenHeight == null
+        ? prior?.height
+        : givenHeight <= 0
+            ? null
+            : givenHeight;
+    if (height != null && (height < lowWallMin || height > lowWallMax)) {
+      return const EditResult(null, '矮墙高度必须在 0.30 到 2.10 米之间');
+    }
     if (kind == 'UpdateDrawnWall' && oldChain != null) {
       final x0 = args['x0'] as int;
       final y0 = args['y0'] as int;
@@ -414,7 +448,8 @@ EditResult editDrawnWall(HouseDocument original, String kind,
               : y0 == y1 && y0 == oldChain.carrier.pos) &&
           math.min(vertical ? y0 : x0, vertical ? y1 : x1) ==
               oldChain.startPos &&
-          math.max(vertical ? y0 : x0, vertical ? y1 : x1) == oldChain.endPos) {
+          math.max(vertical ? y0 : x0, vertical ? y1 : x1) == oldChain.endPos &&
+          height == prior!.height) {
         return EditResult(original, null);
       }
     }
@@ -519,7 +554,8 @@ EditResult editDrawnWall(HouseDocument original, String kind,
       walls.add(SolidWall(
           id: prior?.id ?? newId(),
           anchor: anchor,
-          value: prior?.value ?? doc.defaults.innerWallThickness));
+          value: prior?.value ?? doc.defaults.innerWallThickness,
+          height: height));
     }
     final opens = <Opening>[];
     final removed = <String>{};
@@ -537,6 +573,9 @@ EditResult editDrawnWall(HouseDocument original, String kind,
       if (!hosted) {
         opens.add(o);
         continue;
+      }
+      if (kind != 'DeleteDrawnWall' && height != null) {
+        return const EditResult(null, '矮墙上不能有门窗，请先移走这面墙上的门窗');
       }
       if (kind == 'DeleteDrawnWall') {
         if (args['deleteHostedObjects'] != true) {
@@ -666,6 +705,42 @@ EditResult editDrawnWall(HouseDocument original, String kind,
       return const EditResult(null, '此调整会影响已有门窗，请避开门窗位置');
     }
     return EditResult(doc, null);
+  } on FormatException catch (e) {
+    return EditResult(null, e.message);
+  }
+}
+
+/// Make a drawn wall a low wall of [args]['height'] millimetres, or a wall
+/// to the ceiling again when the height is 0. The wall stays where it is.
+EditResult setDrawnWallHeight(HouseDocument original, Map<String, dynamic> args,
+    String Function() newId) {
+  try {
+    final floorId = args['floorId'] as String;
+    final floor = original.floors.firstWhere((f) => f.id == floorId);
+    final wallId = args['wallId'] as String?;
+    final anchor = args['anchor'] as BoundaryAnchor?;
+    final target = floor.wallOverrides
+        .whereType<SolidWall>()
+        .where((w) => wallId != null ? w.id == wallId : w.anchor == anchor)
+        .firstOrNull;
+    if (target == null) return const EditResult(null, '找不到这段墙，请重新选择');
+    final chain =
+        resolveAnchor(resolveFloorAxes(original, floorId)!, target.anchor)
+            .chain!;
+    final vertical = chain.carrier.dir == AxisDir.V;
+    return editDrawnWall(
+        original,
+        'UpdateDrawnWall',
+        {
+          'floorId': floorId,
+          'wallId': target.id,
+          'x0': vertical ? chain.carrier.pos : chain.startPos,
+          'y0': vertical ? chain.startPos : chain.carrier.pos,
+          'x1': vertical ? chain.carrier.pos : chain.endPos,
+          'y1': vertical ? chain.endPos : chain.carrier.pos,
+          'height': (args['height'] as num).round(),
+        },
+        newId);
   } on FormatException catch (e) {
     return EditResult(null, e.message);
   }

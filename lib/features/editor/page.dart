@@ -29,6 +29,7 @@ import 'package:yusal/service/storage/house_import.dart';
 import 'package:yusal/service/storage/last_open.dart';
 import 'package:yusal/features/editor/widgets/footprint_sketch.dart';
 import 'package:yusal/features/editor/widgets/wall_length_dialog.dart';
+import 'package:yusal/features/editor/widgets/perf_meter.dart';
 import 'package:yusal/features/editor/util/wall_attachment_points.dart';
 import 'package:yusal/features/editor/util/wall_snap.dart';
 import 'package:yusal/features/editor/util/drawing_export.dart';
@@ -53,6 +54,7 @@ import 'package:yusal/features/editor/engine/render2d/site_plan_painter.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/design.dart';
+import 'package:yusal/features/voice/actions/engine.dart';
 import 'package:yusal/features/voice/actions/houses.dart';
 import 'package:yusal/features/voice/model/scene.dart';
 import 'package:yusal/features/voice/state/screen.dart';
@@ -225,7 +227,10 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   FloorBase get floorBase => base;
 
   @override
-  List<String> get actions => [for (final a in designActions) a.id];
+  List<String> get actions => [
+        for (final a in designActions) a.id,
+        for (final a in engineActions) a.id
+      ];
 
   @override
   String get currentFloorId => floor.id;
@@ -365,6 +370,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   SceneSettings sceneSettings = const SceneSettings();
   String sceneView = 'iso';
   int sceneViewToken = 0;
+
+  /// Takes the 3D view's picture for sharing.
+  final sceneStill = SceneStill();
   SourceRef? scenePicked;
 
   /// Where the walk-through starts; a new token moves the walker there.
@@ -1603,7 +1611,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     selectedDrawnAnchor = solid.anchor;
     editStart = start;
     editEnd = end;
-    selectedWall = base.wallSegments
+    selectedWall = base.allWallSegments
             .where((w) =>
                 w.axis.dir == (vertical ? AxisDir.V : AxisDir.H) &&
                 w.axis.pos == (vertical ? start.dx : start.dy) &&
@@ -1908,6 +1916,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     if (choice == 'length') await preciseWallLength();
     if (choice == 'move') await preciseWallPosition();
     if (choice == 'thickness') await wallSettings(directThickness: true);
+    if (choice == 'height') await chooseWallHeight();
     if (choice == 'delete') await deleteSelectedWall();
   }
 
@@ -2710,7 +2719,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PerfMeter(child: buildPage(context));
+
+  Widget buildPage(BuildContext context) {
     watchLang(context);
     final t = Tokens.of(context);
     return PopScope(
@@ -3258,6 +3269,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                         key: canvasKey,
                                         size: size,
                                         painter: FloorPlanPainter(
+                                            areaBasis: history
+                                                .present.extras.areaBasis,
                                             displayBase,
                                             {
                                               for (final r in displayRooms)
@@ -3274,6 +3287,11 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                                       0.42)!
                                             },
                                             viewportInsets: canvasInsets,
+                                            showGaps: history
+                                                    .present
+                                                    .floors[floorIndex]
+                                                    .explicitWalls &&
+                                                drawingEnd == null,
                                             openings: displayOpenings,
                                             below: floorIndex > 0 && showBelow
                                                 ? derived
@@ -3293,12 +3311,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                             northAngleDeg: history.present
                                                 .footprint.northAngleDeg,
                                             focus: focus,
-                                            editableWall:
-                                                (tool == EditorTool.editWall || tool == EditorTool.drawWall) &&
-                                                        editStart != null &&
-                                                        editEnd != null
-                                                    ? PlanRect((editPreviewStart ?? editStart)!.dx, (editPreviewStart ?? editStart)!.dy, (editPreviewEnd ?? editEnd)!.dx, (editPreviewEnd ?? editEnd)!.dy)
-                                                    : null,
+                                            editableWall: (tool == EditorTool.editWall || tool == EditorTool.drawWall) && editStart != null && editEnd != null ? PlanRect((editPreviewStart ?? editStart)!.dx, (editPreviewStart ?? editStart)!.dy, (editPreviewEnd ?? editEnd)!.dx, (editPreviewEnd ?? editEnd)!.dy) : null,
                                             wallSeed: tool == EditorTool.drawWall ? drawingOrigin : null,
                                             wallAttachments: (tool == EditorTool.drawWall || tool == EditorTool.selectWall) && drawingEnd == null && editPreviewStart == null ? visibleWallAttachments(size) : const [],
                                             handleScale: canvasZoom,

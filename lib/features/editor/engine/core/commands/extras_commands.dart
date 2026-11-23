@@ -310,6 +310,11 @@ SitePlan defaultSitePlan(int width, int depth) {
       if (args['reset'] == true) heat = const HeatSpec();
       return ok(x.copyWith(heat: heat));
 
+    case 'SetAreaBasis':
+      final basis = args['basis'];
+      if (basis is! AreaBasis) return fail('操作参数无效');
+      return ok(x.copyWith(areaBasis: basis));
+
     // ------------------------------------------------------- utilities
     case 'AddUtility' || 'AddUtilities':
       final raw = kind == 'AddUtility'

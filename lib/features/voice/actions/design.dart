@@ -186,7 +186,7 @@ Future<ActionResult> planWholeHouse(Args args) async {
           entrance: args.has('entrance') ? args.choice('entrance') : null),
       name: args.has('name')
           ? args.text('name')
-          : tr3('我的房屋', 'Менің үйім', 'Мой дом'),
+          : tr3('我的房屋', 'Менің үйім', 'Мой дом', 'My house', ky: 'Менин үйүм', uz: 'Mening uyim'),
       timestamp: DateTime.now().toUtc().toIso8601String(),
       newId: () => const Uuid().v4(),
       names: wishRoomNames());

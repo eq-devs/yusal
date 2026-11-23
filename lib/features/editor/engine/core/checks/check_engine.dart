@@ -1,6 +1,7 @@
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/wall_gaps.dart';
 
 class CheckResult {
   const CheckResult(
@@ -17,10 +18,12 @@ class CheckResult {
 List<CheckResult> runChecks(HouseDocument doc, DerivedHouse derived) {
   final results = <CheckResult>[];
   void add(String rule, String level, String? floor, List<String> ids,
-      String message) {
-    PlanRect? focus;
+      String message,
+      {PlanRect? at}) {
+    PlanRect? focus = at;
     String? locatedFloor = floor;
     for (final g in derived.floors) {
+      if (at != null) break;
       if (floor != null && g.base.axes.floorId != floor) continue;
       final space = [...g.base.roomGeometry, ...g.base.stairGeometryBase]
           .where((s) => ids.contains(s.id))
@@ -186,6 +189,19 @@ List<CheckResult> runChecks(HouseDocument doc, DerivedHouse derived) {
     if (g.base.unassignedCells.isNotEmpty) {
       add('R09', 'suggestion', floor.id, [],
           '${floor.name}还有 ${(g.base.unassignedNominalArea / 1e6).toStringAsFixed(1)} ㎡ 没有划分成房间。');
+    }
+    // A drawn wall that stops short of the next one leaves both sides one
+    // room: what a CAD program reports as a room that is not enclosed.
+    if (floor.explicitWalls) {
+      for (final gap in findWallGaps(g.base)) {
+        add(
+            'R14',
+            'suggestion',
+            floor.id,
+            [if (gap.roomId != null) gap.roomId!],
+            '${floor.name}有一段墙差 ${(gap.length / 1000).toStringAsFixed(2)} 米没有接上，两边还是同一个房间。可以把墙画到头，需要通道就在墙上开门洞。',
+            at: gap.area);
+      }
     }
     final ok = g.openings.where((p) => p.status == 'ok').toList();
     for (var i = 0; i < ok.length; i++) {

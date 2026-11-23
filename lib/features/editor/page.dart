@@ -16,7 +16,7 @@ import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 import 'package:yusal/features/editor/engine/core/geometry/furniture_snap.dart';
 import 'package:yusal/features/editor/engine/core/history/design_history.dart';
 import 'package:yusal/features/editor/engine/core/commands/delete_axis.dart';
-import 'package:yusal/features/editor/engine/core/commands/house_spec.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_layout.dart';
 import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
 import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';

@@ -119,12 +119,12 @@ class _HomePageState extends State<HomePage> {
                                                         '挑一套，用它开始你的房子',
                                                         'Үлгі таңдап, өз үйіңізді бастаңыз',
                                                         'Выберите дом и начните свой с него',
-                                                        'Pick a house and start yours from it')
+                                                        'Pick a house and start yours from it', ky: 'Үй тандап, өзүңүздүкүн андан баштаңыз', uz: 'Uy tanlang va oʻzingiznikini undan boshlang')
                                                     : tr3(
                                                         '看看大家设计的房子',
                                                         'Адамдар жобалаған үйлер',
                                                         'Дома, которые спроектировали люди',
-                                                        'Houses people designed'),
+                                                        'Houses people designed', ky: 'Адамдар долбоорлогон үйлөр', uz: 'Odamlar loyihalagan uylar'),
                                                 style: display()),
                                             const SizedBox(height: 12),
                                             SearchField(
@@ -134,7 +134,7 @@ class _HomePageState extends State<HomePage> {
                                                     '搜索房子、地区',
                                                     'Үй не аймақ іздеу',
                                                     'Дом или район',
-                                                    'House or district')),
+                                                    'House or district', ky: 'Үй же район', uz: 'Uy yoki tuman')),
                                             const SizedBox(height: 12),
                                             SingleChildScrollView(
                                                 scrollDirection:
@@ -160,7 +160,7 @@ class _HomePageState extends State<HomePage> {
                                                                     '排序',
                                                                     'Сұрыптау',
                                                                     'Сортировка',
-                                                                    'Sort'),
+                                                                    'Sort', ky: 'Иреттөө', uz: 'Saralash'),
                                                                 [
                                                                   for (final s
                                                                       in FeedSort
@@ -197,7 +197,7 @@ class _HomePageState extends State<HomePage> {
                                                               '正在找施工方',
                                                               'Құрылысшы іздейді',
                                                               'Ищут строителей',
-                                                              'Looking for builders'),
+                                                              'Looking for builders', ky: 'Куруучуларды издейт', uz: 'Quruvchilarni qidirmoqda'),
                                                           selected: filter
                                                               .openForBuilders,
                                                           onTap: () => set(FeedFilter(
@@ -220,7 +220,7 @@ class _HomePageState extends State<HomePage> {
                                                               '求点评',
                                                               'Пікір сұрайды',
                                                               'Просят отзывы',
-                                                              'Asking for feedback'),
+                                                              'Asking for feedback', ky: 'Пикир сурайт', uz: 'Fikr soʻramoqda'),
                                                           selected: filter
                                                               .askingFeedback,
                                                           onTap: () => set(
@@ -239,7 +239,7 @@ class _HomePageState extends State<HomePage> {
                                                               null
                                                           ? tr3('地区', 'Аймақ',
                                                               'Район',
-                                                              'District')
+                                                              'District', ky: 'Район', uz: 'Tuman')
                                                           : regionName(
                                                               filter.region!),
                                                       selected:
@@ -257,12 +257,12 @@ class _HomePageState extends State<HomePage> {
                                                                     '地区',
                                                                     'Аймақ',
                                                                     'Район',
-                                                                    'District'),
+                                                                    'District', ky: 'Район', uz: 'Tuman'),
                                                                 tr3(
                                                                     '全部',
                                                                     'Барлығы',
                                                                     'Все',
-                                                                    'All'),
+                                                                    'All', ky: 'Баары', uz: 'Hammasi'),
                                                                 [
                                                                   for (final c
                                                                       in regionCodes)
@@ -313,12 +313,12 @@ class _HomePageState extends State<HomePage> {
                                                   '暂时无法加载房子',
                                                   'Үйлерді жүктеу мүмкін болмады',
                                                   'Не удалось загрузить дома',
-                                                  "Couldn't load houses"),
+                                                  "Couldn't load houses", ky: 'Үйлөрдү жүктөө мүмкүн болбоду', uz: 'Uylarni yuklab boʻlmadi'),
                                               action: OutlinedButton(
                                                   onPressed: () =>
                                                       setState(() => _retry++),
                                                   child: Text(tr3(
-                                                      '重试', 'Қайталау', 'Повторить', 'Retry')))))),
+                                                      '重试', 'Қайталау', 'Повторить', 'Retry', ky: 'Кайталоо', uz: 'Qayta urinish')))))),
                                   loading: const SliverToBoxAdapter(
                                       child: SkeletonList(
                                           cover: 230,
@@ -338,14 +338,14 @@ class _HomePageState extends State<HomePage> {
                                                           '刷新失败，正在显示上次结果',
                                                           'Жаңарту сәтсіз, алдыңғы нәтиже көрсетілді',
                                                           'Не удалось обновить. Показаны прошлые результаты.',
-                                                          "Couldn't refresh. Showing the previous results.")),
+                                                          "Couldn't refresh. Showing the previous results.", ky: 'Жаңылоо мүмкүн болбоду. Мурунку жыйынтыктар көрсөтүлүүдө.', uz: 'Yangilab boʻlmadi. Oldingi natijalar koʻrsatilmoqda.')),
                                                       OutlinedButton(
                                                           onPressed: retry,
                                                           child: Text(tr3(
                                                               '重试',
                                                               'Қайталау',
                                                               'Повторить',
-                                                              'Retry')))
+                                                              'Retry', ky: 'Кайталоо', uz: 'Qayta urinish')))
                                                     ]))),
                                         feed(context, data),
                                       ]),
@@ -357,7 +357,7 @@ class _HomePageState extends State<HomePage> {
                 onPressed: widget.onDesign,
                 icon: const YusalIcon(YIcon.design, mono: true),
                 label: Text(
-                    tr3('设计我的房子', 'Үйімді жобалау', 'Спроектировать дом', 'Design my house'))));
+                    tr3('设计我的房子', 'Үйімді жобалау', 'Спроектировать дом', 'Design my house', ky: 'Менин үйүмдү долбоорлоо', uz: 'Uyimni loyihalash'))));
   }
 
   Widget feed(BuildContext context, (List<HousePost>, Set<String>) data) {
@@ -369,10 +369,10 @@ class _HomePageState extends State<HomePage> {
           child: EmptyState(
               icon: Icons.home_outlined,
               yicon: YIcon.home,
-              title: tr3('还没有符合条件的房子', 'Үй табылмады', 'Домов не найдено', 'No houses found'),
+              title: tr3('还没有符合条件的房子', 'Үй табылмады', 'Домов не найдено', 'No houses found', ky: 'Үйлөр табылган жок', uz: 'Uylar topilmadi'),
               body: tr3('换个筛选，或者发布你自己的设计。', 'Сүзгіні өзгертіңіз.',
                   'Измените фильтр или опубликуйте свой проект.',
-                  'Change the filter or publish your own design.')));
+                  'Change the filter or publish your own design.', ky: 'Чыпканы өзгөртүңүз же өз долбооруңузду жарыялаңыз.', uz: 'Filtrni oʻzgartiring yoki oʻz loyihangizni eʼlon qiling.')));
     }
     Widget card(HousePost p) => HouseCard(
         post: p,
@@ -430,7 +430,7 @@ class _ProBanner extends StatelessWidget {
                   child: Text(
                       tr3('找人／找活 · 查看专业人士与施工需求', 'Маман / жұмыс табу',
                           'Найти мастера или работу',
-                          'Find a pro or work'),
+                          'Find a pro or work', ky: 'Адис же иш табуу', uz: 'Mutaxassis yoki ish topish'),
                       style: const TextStyle(
                           fontWeight: FontWeight.w600, fontSize: YFont.label))),
               Icon(Icons.chevron_right, color: t.muted),

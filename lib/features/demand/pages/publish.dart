@@ -42,29 +42,29 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
   List<VoiceField> get fields => [
         VoiceField.choice(
             'type',
-            const L3('类型', 'Түрі', 'Тип', 'Type'),
+            const L3('类型', 'Түрі', 'Тип', 'Type', ky: 'Түрү', uz: 'Turi'),
             [for (final t in DemandType.values) t.name],
             (v) => setState(() => type = DemandType.values.byName(v))),
         VoiceField(
-            'title', const L3('标题', 'Тақырып', 'Заголовок', 'Title'), FieldType.text,
+            'title', const L3('标题', 'Тақырып', 'Заголовок', 'Title', ky: 'Аталышы', uz: 'Sarlavha'), FieldType.text,
             (v) {
           titleTouched = true;
           title.text = v as String;
         }),
         VoiceField.text(
             'locality',
-            const L3('村镇／街区', 'Ауыл / аудан', 'Посёлок / микрорайон', 'Village / neighbourhood'),
+            const L3('村镇／街区', 'Ауыл / аудан', 'Посёлок / микрорайон', 'Village / neighbourhood', ky: 'Айыл / кичи район', uz: 'Qishloq / mahalla'),
             locality),
         VoiceField.text('address',
-            const L3('具体地址', 'Нақты мекенжай', 'Точный адрес', 'Exact address'), address),
-        VoiceField.text('description', const L3('说明', 'Сипаттама', 'Описание', 'Description'),
+            const L3('具体地址', 'Нақты мекенжай', 'Точный адрес', 'Exact address', ky: 'Так дарек', uz: 'Aniq manzil'), address),
+        VoiceField.text('description', const L3('说明', 'Сипаттама', 'Описание', 'Description', ky: 'Сүрөттөмө', uz: 'Tavsif'),
             description),
         VoiceField.number('headcount',
-            const L3('需要人数', 'Адам саны', 'Сколько человек', 'How many people'), headcount),
-        VoiceField.number('wage', const L3('工资', 'Жалақы', 'Ставка', 'Rate'), wage),
-        VoiceField.number('days', const L3('预计工作天数', 'Күн саны', 'Дней', 'Days'), days),
+            const L3('需要人数', 'Адам саны', 'Сколько человек', 'How many people', ky: 'Канча адам', uz: 'Necha kishi'), headcount),
+        VoiceField.number('wage', const L3('工资', 'Жалақы', 'Ставка', 'Rate', ky: 'Акы', uz: 'Stavka'), wage),
+        VoiceField.number('days', const L3('预计工作天数', 'Күн саны', 'Дней', 'Days', ky: 'Күн', uz: 'Kun'), days),
         VoiceField.number('target_days',
-            const L3('目标工期（天）', 'Мерзім (күн)', 'Срок (дней)', 'Duration (days)'), targetDays),
+            const L3('目标工期（天）', 'Мерзім (күн)', 'Срок (дней)', 'Duration (days)', ky: 'Мөөнөтү (күн)', uz: 'Muddati (kun)'), targetDays),
       ];
 
   @override
@@ -248,25 +248,25 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
   String? validate(int s) {
     if (s == 1) {
       if (trades.isEmpty) {
-        return tr3('请选择工种', 'Мамандықты таңдаңыз', 'Выберите специальность', 'Choose a trade');
+        return tr3('请选择工种', 'Мамандықты таңдаңыз', 'Выберите специальность', 'Choose a trade', ky: 'Кесип тандаңыз', uz: 'Kasb tanlang');
       }
       if (region == null) {
-        return tr3('请选择地区', 'Аймақты таңдаңыз', 'Выберите район', 'Choose a district');
+        return tr3('请选择地区', 'Аймақты таңдаңыз', 'Выберите район', 'Choose a district', ky: 'Район тандаңыз', uz: 'Tuman tanlang');
       }
       if (title.text.trim().isEmpty) {
-        return tr3('请填写标题', 'Тақырып жазыңыз', 'Введите заголовок', 'Enter a title');
+        return tr3('请填写标题', 'Тақырып жазыңыз', 'Введите заголовок', 'Enter a title', ky: 'Аталышын киргизиңиз', uz: 'Sarlavha kiriting');
       }
       if (type == DemandType.hire) {
         if ((parseInt(headcount.text) ?? 0) < 1) {
-          return tr3('人数至少 1 人', 'Кемінде 1 адам', 'Минимум 1 человек', 'At least 1 person');
+          return tr3('人数至少 1 人', 'Кемінде 1 адам', 'Минимум 1 человек', 'At least 1 person', ky: 'Кеминде 1 адам', uz: 'Kamida 1 kishi');
         }
         if (!wageNegotiable && (parseInt(wage.text) ?? 0) <= 0) {
           return tr3('请填写工资，或选择面议', 'Жалақыны жазыңыз не «келісіледі»',
               'Укажите ставку или «договорная»',
-              'Enter a rate or “negotiable”');
+              'Enter a rate or “negotiable”', ky: 'Акыны же «келишим боюнча» дегенди киргизиңиз', uz: 'Haqni yoki “kelishiladi” ni kiriting');
         }
       } else if (scopeKind == ScopeKind.stages && stages.isEmpty) {
-        return tr3('请选择施工阶段', 'Кезеңді таңдаңыз', 'Выберите этапы', 'Choose stages');
+        return tr3('请选择施工阶段', 'Кезеңді таңдаңыз', 'Выберите этапы', 'Choose stages', ky: 'Этаптарды тандаңыз', uz: 'Bosqichlarni tanlang');
       }
     }
     if (s == 2) {
@@ -275,13 +275,13 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
           if ((parseInt(budgetAmount.text) ?? 0) <= 0) {
             return tr3('请填写金额，或选择“请报价”', 'Соманы жазыңыз',
                 'Укажите сумму или «ждём предложений»',
-                'Enter an amount or “waiting for quotes”');
+                'Enter an amount or “waiting for quotes”', ky: 'Сумманы же «сунуштарды күтөм» дегенди киргизиңиз', uz: 'Summani yoki “takliflarni kutaman” ni kiriting');
           }
         case BudgetMode.range:
           final a = parseInt(budgetMin.text) ?? 0;
           final b = parseInt(budgetMax.text) ?? 0;
           if (a <= 0 || b < a) {
-            return tr3('区间不正确', 'Аралық қате', 'Неверный диапазон', 'Invalid range');
+            return tr3('区间不正确', 'Аралық қате', 'Неверный диапазон', 'Invalid range', ky: 'Аралык туура эмес', uz: 'Oraliq notoʻgʻri');
           }
         case BudgetMode.askQuote:
           break;
@@ -371,11 +371,11 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
     toast(
         context,
         switch (result.status) {
-          DemandStatus.open => tr3('已发布，正在招募', 'Жарияланды', 'Опубликовано', 'Published'),
+          DemandStatus.open => tr3('已发布，正在招募', 'Жарияланды', 'Опубликовано', 'Published', ky: 'Жарыяланды', uz: 'Eʼlon qilindi'),
           DemandStatus.rejected =>
-            tr3('审核未通过，请查看原因', 'Қабылданбады', 'Не прошло проверку', "Didn't pass review"),
+            tr3('审核未通过，请查看原因', 'Қабылданбады', 'Не прошло проверку', "Didn't pass review", ky: 'Текшерүүдөн өткөн жок', uz: 'Tekshiruvdan oʻtmadi'),
           _ => tr3(
-              '已提交审核，通过后自动公开', 'Тексеруге жіберілді', 'Отправлено на проверку', 'Sent for review'),
+              '已提交审核，通过后自动公开', 'Тексеруге жіберілді', 'Отправлено на проверку', 'Sent for review', ky: 'Текшерүүгө жөнөтүлдү', uz: 'Tekshiruvga yuborildi'),
         });
     Navigator.pop(context);
     if (!editing) {
@@ -403,7 +403,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
       }
       return demands.saveDraft(type, compose(),
           role: role, designProjectId: widget.designProjectId);
-    }, success: tr3('草稿已保存，仅自己可见', 'Жоба сақталды', 'Черновик сохранён', 'Draft saved'));
+    }, success: tr3('草稿已保存，仅自己可见', 'Жоба сақталды', 'Черновик сохранён', 'Draft saved', ky: 'Долбоор сакталды', uz: 'Qoralama saqlandi'));
     if (d != null && mounted) Navigator.pop(context);
   }
 
@@ -434,15 +434,15 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
         child: Scaffold(
             appBar: AppBar(
                 title: Text(editing
-                    ? tr3('修改需求', 'Тапсырысты өзгерту', 'Изменить заявку', 'Edit the request')
+                    ? tr3('修改需求', 'Тапсырысты өзгерту', 'Изменить заявку', 'Edit the request', ky: 'Суроо-талапты түзөтүү', uz: 'Soʻrovni tahrirlash')
                     : fromDesign
-                        ? tr3('从设计发布', 'Жобадан жариялау', 'Из проекта', 'From a design')
-                        : tr3('发布需求', 'Тапсырыс беру', 'Новая заявка', 'New request')),
+                        ? tr3('从设计发布', 'Жобадан жариялау', 'Из проекта', 'From a design', ky: 'Долбоордон', uz: 'Loyihadan')
+                        : tr3('发布需求', 'Тапсырыс беру', 'Новая заявка', 'New request', ky: 'Жаңы суроо-талап', uz: 'Yangi soʻrov')),
                 actions: [
                   if (!editing && step > 0)
                     TextButton(
                         onPressed: saveDraftOnly,
-                        child: Text(tr3('存草稿', 'Сақтау', 'Черновик', 'Draft'))),
+                        child: Text(tr3('存草稿', 'Сақтау', 'Черновик', 'Draft', ky: 'Черновик', uz: 'Qoralama'))),
                 ],
                 bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(4),
@@ -474,18 +474,18 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                           error = null;
                           step--;
                         }),
-                    child: Text(tr3('返回', 'Артқа', 'Назад', 'Back'))),
+                    child: Text(tr3('返回', 'Артқа', 'Назад', 'Back', ky: 'Артка', uz: 'Orqaga'))),
               const Spacer(),
               if (step < last)
                 FilledButton(
-                    onPressed: next, child: Text(tr3('下一步', 'Келесі', 'Далее', 'Next')))
+                    onPressed: next, child: Text(tr3('下一步', 'Келесі', 'Далее', 'Next', ky: 'Кийинки', uz: 'Keyingi')))
               else
                 BusyButton(
                     expand: false,
                     label:
                         editing && widget.editing!.status != DemandStatus.draft
-                            ? tr3('发布新版本', 'Жаңа нұсқа', 'Опубликовать версию', 'Publish version')
-                            : tr3('提交发布', 'Жариялау', 'Опубликовать', 'Publish'),
+                            ? tr3('发布新版本', 'Жаңа нұсқа', 'Опубликовать версию', 'Publish version', ky: 'Версияны жарыялоо', uz: 'Versiyani eʼlon qilish')
+                            : tr3('提交发布', 'Жариялау', 'Опубликовать', 'Publish', ky: 'Жарыялоо', uz: 'Eʼlon qilish'),
                     onPressed: submit),
             ]))));
   }
@@ -545,10 +545,10 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
   Widget _typeStep(BuildContext context) =>
       Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _heading(
-            tr3('你想找什么样的人？', 'Кімді іздейсіз?', 'Кого вы ищете?', 'Who are you looking for?'),
+            tr3('你想找什么样的人？', 'Кімді іздейсіз?', 'Кого вы ищете?', 'Who are you looking for?', ky: 'Кимди издеп жатасыз?', uz: 'Kimni qidiryapsiz?'),
             tr3('不需要先画图，也能发布。', 'Сызбасыз да жариялауға болады.',
                 'Чертёж не обязателен.',
-                "A drawing isn't required.")),
+                "A drawing isn't required.", ky: 'Чийме милдеттүү эмес.', uz: 'Chizma shart emas.')),
         _choice(
             selected: type == DemandType.hire,
             icon: Icons.engineering_outlined,
@@ -557,7 +557,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                 '例如：找两名瓦工，按天结算。对方报名并说明到岗时间。',
                 'Мысалы: 2 қалаушы, күнделікті төлем.',
                 'Например: 2 каменщика, подённая оплата.',
-                'E.g. 2 masons, paid by the day.'),
+                'E.g. 2 masons, paid by the day.', ky: 'Мисалы, 2 дубалчы, күнүмдүк акы.', uz: 'Masalan, 2 gʻishtchi, kunbay haq.'),
             onTap: () => setState(() => type = DemandType.hire)),
         _choice(
             selected: type == DemandType.contract,
@@ -567,19 +567,19 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                 '例如：130 平米住宅砌墙。对方说明承接范围、价格和工期。',
                 'Мысалы: 130 м² үйдің қабырғасы.',
                 'Например: кладка стен дома 130 м².',
-                'E.g. wall masonry for a 130 m² house.'),
+                'E.g. wall masonry for a 130 m² house.', ky: 'Мисалы, 130 м² үйдүн дубалдарын тургузуу.', uz: 'Masalan, 130 m² uy devorlarini terish.'),
             onTap: () => setState(() => type = DemandType.contract)),
         const SizedBox(height: 8),
-        Text(tr3('你的身份', 'Сіз кімсіз', 'Вы', 'You'),
+        Text(tr3('你的身份', 'Сіз кімсіз', 'Вы', 'You', ky: 'Сиз', uz: 'Siz'),
             style: const TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Wrap(spacing: 8, children: [
           FilterPill(
-              label: tr3('业主／房屋所有人', 'Үй иесі', 'Владелец', 'Owner'),
+              label: tr3('业主／房屋所有人', 'Үй иесі', 'Владелец', 'Owner', ky: 'Ээси', uz: 'Egasi'),
               selected: role == PublisherRole.owner,
               onTap: () => setState(() => role = PublisherRole.owner)),
           FilterPill(
-              label: tr3('施工方（分包／补人）', 'Мердігер', 'Подрядчик (субподряд)', 'Contractor (subcontract)'),
+              label: tr3('施工方（分包／补人）', 'Мердігер', 'Подрядчик (субподряд)', 'Contractor (subcontract)', ky: 'Подрядчы (субподряд)', uz: 'Pudratchi (subpudrat)'),
               selected: role == PublisherRole.contractor,
               onTap: () => setState(() => role = PublisherRole.contractor)),
         ]),
@@ -597,7 +597,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                     labelText: label,
                     suffixIcon: const Icon(Icons.expand_more)),
                 child: Text(
-                    value.isEmpty ? tr3('请选择', 'Таңдаңыз', 'Выберите', 'Choose') : value,
+                    value.isEmpty ? tr3('请选择', 'Таңдаңыз', 'Выберите', 'Choose', ky: 'Тандоо', uz: 'Tanlash') : value,
                     style:
                         TextStyle(color: value.isEmpty ? t.muted : t.ink)))));
   }
@@ -630,24 +630,24 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
     final t = YTokens.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _heading(
-          tr3('工作内容', 'Жұмыс', 'Работа', 'Work'),
+          tr3('工作内容', 'Жұмыс', 'Работа', 'Work', ky: 'Иш', uz: 'Ish'),
           tr3(
               '公开页面只显示城市／村镇／街区；具体地址只在你授权后给合作方。',
               'Жария бетте тек елді мекен көрсетіледі.',
               'Публично виден только населённый пункт; точный адрес — по вашему решению.',
-              'Only the town is public; the exact address is up to you.')),
-      _pickerTile(tr3('工种', 'Мамандық', 'Специальность', 'Trade'),
+              'Only the town is public; the exact address is up to you.', ky: 'Шаар гана ачык; так даректи өзүңүз чечесиз.', uz: 'Faqat shahar ommaviy; aniq manzilni oʻzingiz hal qilasiz.')),
+      _pickerTile(tr3('工种', 'Мамандық', 'Специальность', 'Trade', ky: 'Кесип', uz: 'Kasb'),
           trades.map(tradeName).join(listSep), () async {
         final v = await pickMany<String>(
             context,
-            tr3('工种（可多选）', 'Мамандық', 'Специальности', 'Trades'),
+            tr3('工种（可多选）', 'Мамандық', 'Специальности', 'Trades', ky: 'Кесиптер', uz: 'Kasblar'),
             [for (final c in tradeCodes) (c, tradeName(c))],
             trades);
         if (v != null) setState(() => trades = v);
       }),
-      _pickerTile(tr3('地区', 'Аймақ', 'Район', 'District'),
+      _pickerTile(tr3('地区', 'Аймақ', 'Район', 'District', ky: 'Район', uz: 'Tuman'),
           region == null ? '' : regionName(region!), () async {
-        final v = await pickOne<String>(context, tr3('地区', 'Аймақ', 'Район', 'District'),
+        final v = await pickOne<String>(context, tr3('地区', 'Аймақ', 'Район', 'District', ky: 'Район', uz: 'Tuman'),
             [for (final c in regionCodes) (c, regionName(c))],
             selected: region);
         if (v != null) setState(() => region = v);
@@ -656,14 +656,14 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
           locality,
           tr3('村镇／街区（公开）', 'Ауыл / аудан (жария)',
               'Посёлок / микрорайон (публично)',
-              'Village / neighbourhood (public)')),
+              'Village / neighbourhood (public)', ky: 'Айыл / кичи район (ачык)', uz: 'Qishloq / mahalla (ommaviy)')),
       _field(address,
-          tr3('具体地址（不公开）', 'Нақты мекенжай (жасырын)', 'Точный адрес (скрыт)', 'Exact address (hidden)'),
+          tr3('具体地址（不公开）', 'Нақты мекенжай (жасырын)', 'Точный адрес (скрыт)', 'Exact address (hidden)', ky: 'Так дарек (жашырылган)', uz: 'Aniq manzil (yashirin)'),
           helper: tr3('只在合作约定中由你选择是否告诉对方', 'Тек келісімде көрсетіледі',
               'Передаётся только по соглашению',
-              'Shared only by agreement')),
+              'Shared only by agreement', ky: 'Макулдашуу боюнча гана бөлүшүлөт', uz: 'Faqat kelishuv boʻyicha ulashiladi')),
       if (type == DemandType.hire) ...[
-        _field(headcount, tr3('需要人数', 'Адам саны', 'Сколько человек', 'How many people'),
+        _field(headcount, tr3('需要人数', 'Адам саны', 'Сколько человек', 'How many people', ky: 'Канча адам', uz: 'Necha kishi'),
             number: true),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final p in PayMode.values)
@@ -673,12 +673,12 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                 onTap: () => setState(() => payMode = p)),
         ]),
         const SizedBox(height: 12),
-        _switch(tr3('工资面议', 'Жалақы келісіледі', 'Ставка договорная', 'Rate negotiable'),
+        _switch(tr3('工资面议', 'Жалақы келісіледі', 'Ставка договорная', 'Rate negotiable', ky: 'Акы келишим боюнча', uz: 'Haq kelishiladi'),
             wageNegotiable, (v) => wageNegotiable = v),
         if (!wageNegotiable)
           Row(children: [
             Expanded(
-                child: _field(wage, tr3('工资（₸）', 'Жалақы (₸)', 'Ставка (₸)', 'Rate (₸)'),
+                child: _field(wage, tr3('工资（₸）', 'Жалақы (₸)', 'Ставка (₸)', 'Rate (₸)', ky: 'Акы (₸)', uz: 'Haq (₸)'),
                     number: true)),
             const SizedBox(width: 12),
             DropdownButton<String>(
@@ -698,14 +698,14 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                 ],
                 onChanged: (v) => setState(() => wageUnit = v ?? 'day')),
           ]),
-        _field(days, tr3('预计工作天数（可空）', 'Күн саны', 'Дней (необязательно)', 'Days (optional)'),
+        _field(days, tr3('预计工作天数（可空）', 'Күн саны', 'Дней (необязательно)', 'Days (optional)', ky: 'Күн (милдеттүү эмес)', uz: 'Kun (ixtiyoriy)'),
             number: true),
-        _switch(tr3('提供食宿', 'Тамақ пен жатын орын бар', 'Питание и жильё', 'Meals and lodging'),
+        _switch(tr3('提供食宿', 'Тамақ пен жатын орын бар', 'Питание и жильё', 'Meals and lodging', ky: 'Тамак жана жатакана', uz: 'Ovqat va turar joy'),
             food, (v) => food = v),
         _switch(
             tr3('工具由雇主提供', 'Құралды жұмыс беруші береді',
                 'Инструмент от работодателя',
-                'Tools from the employer'),
+                'Tools from the employer', ky: 'Аспаптар иш берүүчүдөн', uz: 'Asboblar ish beruvchidan'),
             tools,
             (v) => tools = v),
         Wrap(spacing: 8, runSpacing: 8, children: [
@@ -717,7 +717,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
         ]),
         const SizedBox(height: 12),
       ] else ...[
-        Text(tr3('承接范围', 'Көлемі', 'Объём работ', 'Scope of work'),
+        Text(tr3('承接范围', 'Көлемі', 'Объём работ', 'Scope of work', ky: 'Иштин көлөмү', uz: 'Ish hajmi'),
             style: const TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Wrap(spacing: 8, runSpacing: 8, children: [
@@ -761,18 +761,18 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
         const SizedBox(height: 14),
         Row(children: [
           Expanded(
-              child: Text(tr3('工程量', 'Көлемдер', 'Объёмы', 'Quantities'),
+              child: Text(tr3('工程量', 'Көлемдер', 'Объёмы', 'Quantities', ky: 'Көлөмдөр', uz: 'Miqdorlar'),
                   style: const TextStyle(fontWeight: FontWeight.w700))),
           TextButton.icon(
               onPressed: addQuantity,
               icon: const Icon(Icons.add, size: 18),
-              label: Text(tr3('添加', 'Қосу', 'Добавить', 'Add'))),
+              label: Text(tr3('添加', 'Қосу', 'Добавить', 'Add', ky: 'Кошуу', uz: 'Qoʻshish'))),
         ]),
         if (quantities.isEmpty)
           Text(
               tr3('未知可以不填，或注明现场测量。', 'Белгісіз болса, бос қалдырыңыз.',
                   'Можно не указывать или отметить замер.',
-                  'You can leave them out or mark a site measure.'),
+                  'You can leave them out or mark a site measure.', ky: 'Аларды калтырбасаңыз же объектиде өлчөө деп белгилесеңиз болот.', uz: 'Ularni qoldirmasangiz yoki obyektda oʻlchash deb belgilasangiz boʻladi.'),
               style: TextStyle(color: t.muted)),
         for (final (i, q) in quantities.indexed)
           ListTile(
@@ -782,18 +782,18 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                 Text(
                     q.quantity == null
-                        ? tr3('现场测量', 'Орында', 'Замер', 'Site measure')
+                        ? tr3('现场测量', 'Орында', 'Замер', 'Site measure', ky: 'Объектиде өлчөө', uz: 'Obyektda oʻlchash')
                         : '${numText(q.quantity!)} ${unitLabel(q.unit)}',
                     style: const TextStyle(fontFeatures: YText.tabular)),
                 IconButton(
-                    tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete'),
+                    tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
                     icon: const Icon(Icons.close, size: 18),
                     onPressed: () => setState(() => quantities.removeAt(i))),
               ])),
         const SizedBox(height: 8),
-        _field(targetDays, tr3('目标工期（天）', 'Мерзім (күн)', 'Срок (дней)', 'Duration (days)'),
+        _field(targetDays, tr3('目标工期（天）', 'Мерзім (күн)', 'Срок (дней)', 'Duration (days)', ky: 'Мөөнөтү (күн)', uz: 'Muddati (kun)'),
             number: true),
-        _pickerTile(tr3('报价截止日期', 'Ұсыныс мерзімі', 'Приём цен до', 'Quotes accepted until'),
+        _pickerTile(tr3('报价截止日期', 'Ұсыныс мерзімі', 'Приём цен до', 'Quotes accepted until', ky: 'Сунуштар кабыл алынат', uz: 'Takliflar qabul qilinadi'),
             quoteDeadline == null ? '' : fmtDay(quoteDeadline), () async {
           final d = await showDatePicker(
               context: context,
@@ -804,29 +804,29 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
           if (d != null) setState(() => quoteDeadline = d);
         }),
       ],
-      _field(description, tr3('说明（可选）', 'Сипаттама', 'Описание', 'Description'), lines: 3),
+      _field(description, tr3('说明（可选）', 'Сипаттама', 'Описание', 'Description', ky: 'Сүрөттөмө', uz: 'Tavsif'), lines: 3),
       _field(siteNotes,
-          tr3('现场限制（可选）', 'Орын шектеулері', 'Ограничения на объекте', 'Site restrictions'),
+          tr3('现场限制（可选）', 'Орын шектеулері', 'Ограничения на объекте', 'Site restrictions', ky: 'Объекттеги чектөөлөр', uz: 'Obyektdagi cheklovlar'),
           hint: tr3(
-              '例如：无电、道路窄', 'Мысалы: жарық жоқ', 'Напр.: нет электричества', 'E.g. no electricity')),
+              '例如：无电、道路窄', 'Мысалы: жарық жоқ', 'Напр.: нет электричества', 'E.g. no electricity', ky: 'Мисалы, электр жок', uz: 'Masalan, elektr yoʻq')),
       Row(children: [
         OutlinedButton.icon(
             onPressed: () => setState(() => photos++),
             icon: const Icon(Icons.add_a_photo_outlined),
-            label: Text(tr3('添加照片', 'Фото қосу', 'Добавить фото', 'Add photos'))),
+            label: Text(tr3('添加照片', 'Фото қосу', 'Добавить фото', 'Add photos', ky: 'Сүрөт кошуу', uz: 'Rasm qoʻshish'))),
         const SizedBox(width: 12),
         Text(
             tr3('$photos 张（测试环境为占位）', '$photos фото',
                 '$photos фото (заглушка)',
-                '$photos photos (placeholder)'),
+                '$photos photos (placeholder)', ky: '$photos сүрөт (белгилөөчү)', uz: '$photos ta rasm (vaqtinchalik)'),
             style: TextStyle(color: t.muted)),
       ]),
       const SizedBox(height: 16),
-      _field(title, tr3('标题', 'Тақырып', 'Заголовок', 'Title'),
+      _field(title, tr3('标题', 'Тақырып', 'Заголовок', 'Title', ky: 'Аталышы', uz: 'Sarlavha'),
           hint: suggestedTitle(),
           helper: tr3('留空时根据工种和地区自动生成', 'Бос қалса, автоматты жасалады',
               'Если пусто — создадим автоматически',
-              "If empty, we'll create one automatically"),
+              "If empty, we'll create one automatically", ky: 'Бош болсо, автоматтык түрдө түзөбүз', uz: 'Boʻsh boʻlsa, avtomatik yaratamiz'),
           onChanged: (_) => titleTouched = true),
     ]);
   }
@@ -841,19 +841,19 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
         builder: (context) => PlatformTheme(
             child: StatefulBuilder(
                 builder: (context, setDialog) => AlertDialog(
-                        title: Text(tr3('工程量', 'Көлем', 'Объём', 'Quantity')),
+                        title: Text(tr3('工程量', 'Көлем', 'Объём', 'Quantity', ky: 'Саны', uz: 'Miqdori')),
                         content:
                             Column(mainAxisSize: MainAxisSize.min, children: [
                           TextField(
                               controller: name,
                               decoration: InputDecoration(
-                                  labelText: tr3('分项名称', 'Атауы', 'Название', 'Name'))),
+                                  labelText: tr3('分项名称', 'Атауы', 'Название', 'Name', ky: 'Аталышы', uz: 'Nomi'))),
                           const SizedBox(height: 10),
                           CheckboxListTile(
                               contentPadding: EdgeInsets.zero,
                               value: site,
                               title: Text(tr3(
-                                  '需现场测量', 'Орында өлшенеді', 'Нужен замер', 'Needs a site measure')),
+                                  '需现场测量', 'Орында өлшенеді', 'Нужен замер', 'Needs a site measure', ky: 'Объектиде өлчөө керек', uz: 'Obyektda oʻlchash kerak')),
                               onChanged: (v) =>
                                   setDialog(() => site = v ?? false)),
                           if (!site)
@@ -866,7 +866,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                                               decimal: true),
                                       decoration: InputDecoration(
                                           labelText:
-                                              tr3('数量', 'Саны', 'Кол-во', 'Qty')))),
+                                              tr3('数量', 'Саны', 'Кол-во', 'Qty', ky: 'Саны', uz: 'Soni')))),
                               const SizedBox(width: 10),
                               DropdownButton<String>(
                                   value: unit,
@@ -888,7 +888,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                         actions: [
                           TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'))),
+                              child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
                           FilledButton(
                               onPressed: () {
                                 final q = parseNum(qty.text);
@@ -906,7 +906,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                                             ? QtySource.siteMeasure
                                             : QtySource.manual));
                               },
-                              child: Text(tr3('添加', 'Қосу', 'Добавить', 'Add'))),
+                              child: Text(tr3('添加', 'Қосу', 'Добавить', 'Add', ky: 'Кошуу', uz: 'Qoʻshish'))),
                         ]))));
     if (item != null) setState(() => quantities.add(item));
   }
@@ -914,16 +914,16 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
   Widget _budgetStep(BuildContext context) =>
       Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _heading(
-            tr3('时间与预算', 'Уақыт пен бюджет', 'Сроки и бюджет', 'Dates and budget'),
+            tr3('时间与预算', 'Уақыт пен бюджет', 'Сроки и бюджет', 'Dates and budget', ky: 'Мөөнөттөр жана бюджет', uz: 'Muddatlar va byudjet'),
             tr3(
                 '不确定可以选择“请报价”，不需要编一个数字。',
                 'Білмесеңіз, «баға ұсыныңыз» таңдаңыз.',
                 'Не знаете бюджет — выберите «ждём предложений».',
-                "Don't know the budget? Choose “waiting for quotes”.")),
+                "Don't know the budget? Choose “waiting for quotes”.", ky: 'Бюджетти билбейсизби? «Сунуштарды күтөм» дегенди тандаңыз.', uz: 'Byudjetni bilmaysizmi? “Takliflarni kutaman” ni tanlang.')),
         _pickerTile(
-            tr3('预计开工', 'Басталуы', 'Начало', 'Start'),
+            tr3('预计开工', 'Басталуы', 'Начало', 'Start', ky: 'Башталышы', uz: 'Boshlanishi'),
             startDate == null
-                ? tr3('待协商', 'Келісіледі', 'По договорённости', 'By agreement')
+                ? tr3('待协商', 'Келісіледі', 'По договорённости', 'By agreement', ky: 'Макулдашуу боюнча', uz: 'Kelishuv boʻyicha')
                 : fmtDay(startDate), () async {
           final d = await showDatePicker(
               context: context,
@@ -933,20 +933,20 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                   startDate ?? context.now.add(const Duration(days: 7)));
           setState(() => startDate = d);
         }),
-        _field(duration, tr3('预计天数（可空）', 'Күн саны', 'Дней (необязательно)', 'Days (optional)'),
+        _field(duration, tr3('预计天数（可空）', 'Күн саны', 'Дней (необязательно)', 'Days (optional)', ky: 'Күн (милдеттүү эмес)', uz: 'Kun (ixtiyoriy)'),
             number: true),
         const SizedBox(height: 4),
-        Text(tr3('预算', 'Бюджет', 'Бюджет', 'Budget'),
+        Text(tr3('预算', 'Бюджет', 'Бюджет', 'Budget', ky: 'Бюджет', uz: 'Byudjet'),
             style: const TextStyle(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final (m, label) in [
             (
               BudgetMode.askQuote,
-              tr3('不确定，请报价', 'Баға ұсыныңыз', 'Ждём предложений', 'Waiting for quotes')
+              tr3('不确定，请报价', 'Баға ұсыныңыз', 'Ждём предложений', 'Waiting for quotes', ky: 'Сунуштарды күтөм', uz: 'Takliflarni kutaman')
             ),
-            (BudgetMode.range, tr3('区间', 'Аралық', 'Диапазон', 'Range')),
-            (BudgetMode.fixed, tr3('明确金额', 'Нақты сома', 'Точная сумма', 'Exact amount')),
+            (BudgetMode.range, tr3('区间', 'Аралық', 'Диапазон', 'Range', ky: 'Аралык', uz: 'Oraliq')),
+            (BudgetMode.fixed, tr3('明确金额', 'Нақты сома', 'Точная сумма', 'Exact amount', ky: 'Так сумма', uz: 'Aniq summa')),
           ])
             FilterPill(
                 label: label,
@@ -957,21 +957,21 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
         if (budgetMode == BudgetMode.range)
           Row(children: [
             Expanded(
-                child: _field(budgetMin, tr3('最低 ₸', 'Ең аз ₸', 'От ₸', 'From ₸'),
+                child: _field(budgetMin, tr3('最低 ₸', 'Ең аз ₸', 'От ₸', 'From ₸', ky: '₸ баштап', uz: '₸ dan'),
                     number: true)),
             const SizedBox(width: 12),
             Expanded(
-                child: _field(budgetMax, tr3('最高 ₸', 'Ең көп ₸', 'До ₸', 'To ₸'),
+                child: _field(budgetMax, tr3('最高 ₸', 'Ең көп ₸', 'До ₸', 'To ₸', ky: '₸ чейин', uz: '₸ gacha'),
                     number: true)),
           ]),
         if (budgetMode == BudgetMode.fixed)
-          _field(budgetAmount, tr3('金额 ₸', 'Сома ₸', 'Сумма ₸', 'Amount ₸'), number: true),
+          _field(budgetAmount, tr3('金额 ₸', 'Сома ₸', 'Сумма ₸', 'Amount ₸', ky: 'Суммасы ₸', uz: 'Summa ₸'), number: true),
         if (budgetMode != BudgetMode.askQuote)
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (final u in const ['total', 'day', 'm3', 'm2'])
               FilterPill(
                   label: u == 'total'
-                      ? tr3('总价', 'Жалпы', 'Всего', 'Total')
+                      ? tr3('总价', 'Жалпы', 'Всего', 'Total', ky: 'Бардыгы', uz: 'Jami')
                       : '/ ${unitLabel(u)}',
                   selected: budgetBasis == u,
                   onTap: () => setState(() => budgetBasis = u)),
@@ -982,39 +982,39 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
               '预算范围：${materialName(materials)}。人工与材料请分开说明。',
               'Бюджет: ${materialName(materials)}.',
               'Бюджет: ${materialName(materials)}.',
-              'Budget: ${materialName(materials)}.')),
+              'Budget: ${materialName(materials)}.', ky: 'Бюджет: ${materialName(materials)}.', uz: 'Byudjet: ${materialName(materials)}.')),
         ],
       ]);
 
   Widget _privacyStep(BuildContext context) {
     final t = YTokens.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _heading(tr3('附件与隐私', 'Тіркеме және құпиялық', 'Вложения и приватность', 'Attachments and privacy')),
+      _heading(tr3('附件与隐私', 'Тіркеме және құпиялық', 'Вложения и приватность', 'Attachments and privacy', ky: 'Тиркемелер жана купуялык', uz: 'Ilovalar va maxfiylik')),
       if (fromDesign) ...[
         Text(
             tr3(
                 '设计附件会固定为当前版本；之后修改设计不会改变已发布内容。',
                 'Жоба тіркемесі осы нұсқада бекітіледі.',
                 'Проект фиксируется в текущей версии.',
-                'The design is captured at its current version.'),
+                'The design is captured at its current version.', ky: 'Долбоор учурдагы версиясында алынат.', uz: 'Loyiha joriy versiyasida olinadi.'),
             style: TextStyle(color: t.muted)),
         const SizedBox(height: 8),
         _switch(
-            tr3('公开工程量', 'Көлемді жариялау', 'Показывать объёмы', 'Show quantities'),
+            tr3('公开工程量', 'Көлемді жариялау', 'Показывать объёмы', 'Show quantities', ky: 'Көлөмдөрдү көрсөтүү', uz: 'Miqdorlarni koʻrsatish'),
             visibility.quantities,
             (v) => visibility = AttachmentVisibility(
                 quantities: v,
                 plan: visibility.plan,
                 render: visibility.render)),
         _switch(
-            tr3('公开平面图', 'Жоспарды жариялау', 'Показывать план', 'Show the plan'),
+            tr3('公开平面图', 'Жоспарды жариялау', 'Показывать план', 'Show the plan', ky: 'Планды көрсөтүү', uz: 'Rejani koʻrsatish'),
             visibility.plan,
             (v) => visibility = AttachmentVisibility(
                 quantities: visibility.quantities,
                 plan: v,
                 render: visibility.render)),
         _switch(
-            tr3('公开效果图', 'Көріністі жариялау', 'Показывать визуализацию', 'Show the rendering'),
+            tr3('公开效果图', 'Көріністі жариялау', 'Показывать визуализацию', 'Show the rendering', ky: 'Сүрөттү көрсөтүү', uz: 'Tasvirni koʻrsatish'),
             visibility.render,
             (v) => visibility = AttachmentVisibility(
                 quantities: visibility.quantities,
@@ -1027,7 +1027,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
               '不会公开：手机号、具体地址、完整 .house 设计文件、家庭备注。',
               'Жарияланбайды: телефон, мекенжай, .house файлы, отбасы жазбалары.',
               'Не публикуется: телефон, точный адрес, файл .house, личные заметки.',
-              'Not published: phone, exact address, .house file, private notes.'),
+              'Not published: phone, exact address, .house file, private notes.', ky: 'Жарыяланбайт: телефон, так дарек, .house файлы, жеке эскертмелер.', uz: 'Eʼlon qilinmaydi: telefon, aniq manzil, .house fayli, shaxsiy izohlar.'),
           icon: Icons.lock_outline),
     ]);
   }
@@ -1044,10 +1044,10 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
         shareToken: '');
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _heading(
-          tr3('预览', 'Алдын ала қарау', 'Предпросмотр', 'Preview'),
+          tr3('预览', 'Алдын ала қарау', 'Предпросмотр', 'Preview', ky: 'Алдын ала көрүү', uz: 'Oldindan koʻrish'),
           tr3('提交后进入审核，通过后公开。', 'Тексеруден кейін жарияланады.',
               'После проверки заявка станет публичной.',
-              'After review the request becomes public.')),
+              'After review the request becomes public.', ky: 'Текшерүүдөн кийин суроо-талап ачык болот.', uz: 'Tekshiruvdan keyin soʻrov ommaviy boʻladi.')),
       DemandCard(demand: preview, onTap: () {}),
       const SizedBox(height: 12),
       if (v.contract != null && v.contract!.quantities.isNotEmpty)
@@ -1059,7 +1059,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                 '将生成第 ${widget.editing!.current.no + 1} 版。已有报名／报价会标记“待重新确认”，已确认的合作不受影响。',
                 '${widget.editing!.current.no + 1}-нұсқа жасалады. Бар ұсыныстар қайта расталуы керек.',
                 'Будет создана версия ${widget.editing!.current.no + 1}. Отклики нужно будет подтвердить заново.',
-                'Version ${widget.editing!.current.no + 1} will be created. Responses will need to be confirmed again.'),
+                'Version ${widget.editing!.current.no + 1} will be created. Responses will need to be confirmed again.', ky: '${widget.editing!.current.no + 1}-версия түзүлөт. Жоопторду кайра ырастоо керек болот.', uz: '${widget.editing!.current.no + 1}-versiya yaratiladi. Javoblarni qayta tasdiqlash kerak boʻladi.'),
             warn: true),
       ],
     ]);

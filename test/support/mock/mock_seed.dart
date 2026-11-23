@@ -22,7 +22,7 @@ abstract final class SeedIds {
 /// Demo text in the language the app was opened in, so a Kazakh or Russian
 /// speaker does not meet a feed written in Chinese. The seed is built once,
 /// when the backend starts.
-String _l(String zh, String kk, String ru) => tr3(zh, kk, ru);
+String _l(String zh, String kk, String ru) => tr3(zh, kk, ru, null);
 
 void seedMockData(MockBackend b) {
   final now = b.now;
@@ -566,7 +566,7 @@ void seedMockData(MockBackend b) {
         summary: tr3(
             '${facts.width / 1000} × ${facts.depth / 1000} 米 · ${facts.floors} 层 · 建筑面积 ${facts.buildingArea.toStringAsFixed(0)} ㎡',
             '${facts.width / 1000} × ${facts.depth / 1000} м · ${facts.floors} қабат · ${facts.buildingArea.toStringAsFixed(0)} м²',
-            '${facts.width / 1000} × ${facts.depth / 1000} м · этажей: ${facts.floors} · ${facts.buildingArea.toStringAsFixed(0)} м²'));
+            '${facts.width / 1000} × ${facts.depth / 1000} м · этажей: ${facts.floors} · ${facts.buildingArea.toStringAsFixed(0)} м²', null));
     return DesignSnapshot(
         id: id,
         ownerId: owner,

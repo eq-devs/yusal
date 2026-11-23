@@ -27,7 +27,7 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
           '请输入 0.30 到 100 米',
           '0,30–100 м аралығында енгізіңіз',
           'Введите значение от 0,30 до 100 м',
-          'Enter a value from 0.30 to 100 m'));
+          'Enter a value from 0.30 to 100 m', ky: '0,30дан 100 мге чейинки маани киргизиңиз', uz: '0,30 dan 100 m gacha qiymat kiriting'));
       return;
     }
     Navigator.pop(
@@ -38,7 +38,7 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
   Widget build(BuildContext context) => AlertDialog(
           title: Text(tr3('从起点输入墙长', 'Бастаудан қабырға ұзындығы',
               'Длина стены от начальной точки',
-              'Wall length from the start point')),
+              'Wall length from the start point', ky: 'Башталыш чекитинен дубалдын узундугу', uz: 'Boshlanish nuqtasidan devor uzunligi')),
           scrollable: true,
           content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -50,18 +50,18 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                         labelText: tr3(
-                            '墙长（米）', 'Қабырға ұзындығы (м)', 'Длина стены (м)', 'Wall length (m)'),
+                            '墙长（米）', 'Қабырға ұзындығы (м)', 'Длина стены (м)', 'Wall length (m)', ky: 'Дубалдын узундугу (м)', uz: 'Devor uzunligi (m)'),
                         errorText: error),
                     onSubmitted: (_) => submit()),
                 const SizedBox(height: 16),
-                Text(tr3('方向', 'Бағыты', 'Направление', 'Direction')),
+                Text(tr3('方向', 'Бағыты', 'Направление', 'Direction', ky: 'Багыты', uz: 'Yoʻnalishi')),
                 const SizedBox(height: 8),
                 Wrap(spacing: 8, runSpacing: 4, children: [
                   for (final item in {
-                    'right': tr3('向右', 'Оңға', 'Вправо', 'Right'),
-                    'up': tr3('向上', 'Жоғары', 'Вверх', 'Up'),
-                    'left': tr3('向左', 'Солға', 'Влево', 'Left'),
-                    'down': tr3('向下', 'Төмен', 'Вниз', 'Down')
+                    'right': tr3('向右', 'Оңға', 'Вправо', 'Right', ky: 'Оңго', uz: 'Oʻngga'),
+                    'up': tr3('向上', 'Жоғары', 'Вверх', 'Up', ky: 'Өйдө', uz: 'Yuqoriga'),
+                    'left': tr3('向左', 'Солға', 'Влево', 'Left', ky: 'Солго', uz: 'Chapga'),
+                    'down': tr3('向下', 'Төмен', 'Вниз', 'Down', ky: 'Ылдый', uz: 'Pastga')
                   }.entries)
                     ChoiceChip(
                         label: Text(item.value),
@@ -72,10 +72,10 @@ class _WallLengthDialogState extends State<WallLengthDialog> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'))),
+                child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
             FilledButton(
                 onPressed: submit,
-                child: Text(tr3('增加墙', 'Қабырға қосу', 'Добавить стену', 'Add a wall')))
+                child: Text(tr3('增加墙', 'Қабырға қосу', 'Добавить стену', 'Add a wall', ky: 'Дубал кошуу', uz: 'Devor qoʻshish')))
           ]);
 }
 
@@ -107,7 +107,7 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
           '请输入 0.05 到 1.00 米',
           '0,05–1,00 м аралығында енгізіңіз',
           'Введите значение от 0,05 до 1,00 м',
-          'Enter a value from 0.05 to 1.00 m'));
+          'Enter a value from 0.05 to 1.00 m', ky: '0,05тен 1,00 мге чейинки маани киргизиңиз', uz: '0,05 dan 1,00 m gacha qiymat kiriting'));
       return;
     }
     Navigator.pop(context, (meters * 1000).round());
@@ -117,7 +117,7 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
   Widget build(BuildContext context) {
     final current = ((parseNumber(controller.text) ?? 0) * 1000).round();
     return AlertDialog(
-        title: Text(tr3('墙厚', 'Қабырға қалыңдығы', 'Толщина стены', 'Wall thickness')),
+        title: Text(tr3('墙厚', 'Қабырға қалыңдығы', 'Толщина стены', 'Wall thickness', ky: 'Дубалдын калыңдыгы', uz: 'Devor qalinligi')),
         scrollable: true,
         content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -141,7 +141,7 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
                   decoration: InputDecoration(
                       labelText: tr3('墙厚（米）', 'Қабырға қалыңдығы (м)',
                           'Толщина стены (м)',
-                          'Wall thickness (m)'),
+                          'Wall thickness (m)', ky: 'Дубалдын калыңдыгы (м)', uz: 'Devor qalinligi (m)'),
                       errorText: error),
                   onChanged: (_) => setState(() => error = null),
                   onSubmitted: (_) => submit()),
@@ -149,9 +149,9 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'))),
+              child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
           FilledButton(
-              onPressed: submit, child: Text(tr3('确定', 'Жарайды', 'ОК', 'OK')))
+              onPressed: submit, child: Text(tr3('确定', 'Жарайды', 'ОК', 'OK', ky: 'OK', uz: 'OK')))
         ]);
   }
 }
@@ -191,7 +191,7 @@ class _WallResizeDialogState extends State<WallResizeDialog> {
           '请输入 0.30 到 100 米',
           '0,30–100 м аралығында енгізіңіз',
           'Введите значение от 0,30 до 100 м',
-          'Enter a value from 0.30 to 100 m'));
+          'Enter a value from 0.30 to 100 m', ky: '0,30дан 100 мге чейинки маани киргизиңиз', uz: '0,30 dan 100 m gacha qiymat kiriting'));
       return;
     }
     Navigator.pop(context, (length: (meters * 1000).round(), keepEnd: keepEnd));
@@ -199,7 +199,7 @@ class _WallResizeDialogState extends State<WallResizeDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-          title: Text(tr3('墙长', 'Қабырға ұзындығы', 'Длина стены', 'Wall length')),
+          title: Text(tr3('墙长', 'Қабырға ұзындығы', 'Длина стены', 'Wall length', ky: 'Дубалдын узундугу', uz: 'Devor uzunligi')),
           scrollable: true,
           content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -212,33 +212,33 @@ class _WallResizeDialogState extends State<WallResizeDialog> {
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                         labelText: tr3(
-                            '墙长（米）', 'Қабырға ұзындығы (м)', 'Длина стены (м)', 'Wall length (m)'),
+                            '墙长（米）', 'Қабырға ұзындығы (м)', 'Длина стены (м)', 'Wall length (m)', ky: 'Дубалдын узундугу (м)', uz: 'Devor uzunligi (m)'),
                         helperText: tr3(
                             '可以写 3,6+2,4',
                             '3,6+2,4 деп жазуға болады',
                             'Можно написать 3,6+2,4',
-                            'You can type 3.6+2.4'),
+                            'You can type 3.6+2.4', ky: '3.6+2.4 деп жазсаңыз болот', uz: '3.6+2.4 deb yozishingiz mumkin'),
                         errorText: error),
                     onChanged: (_) => setState(() => error = null),
                     onSubmitted: (_) => submit()),
                 const SizedBox(height: 16),
                 Text(tr3('哪一头不动', 'Қай ұшы орнында қалады',
                     'Какой конец остаётся на месте',
-                    'Which end stays in place')),
+                    'Which end stays in place', ky: 'Кайсы учу ордунда калат', uz: 'Qaysi uchi joyida qoladi')),
                 const SizedBox(height: 8),
                 Wrap(spacing: 8, runSpacing: 4, children: [
                   for (final (end, label) in [
                     (
                       false,
                       widget.vertical
-                          ? tr3('下端不动', 'Төменгі ұшы', 'Нижний', 'Bottom')
-                          : tr3('左端不动', 'Сол ұшы', 'Левый', 'Left')
+                          ? tr3('下端不动', 'Төменгі ұшы', 'Нижний', 'Bottom', ky: 'Ылдыйкы', uz: 'Pastki')
+                          : tr3('左端不动', 'Сол ұшы', 'Левый', 'Left', ky: 'Сол', uz: 'Chap')
                     ),
                     (
                       true,
                       widget.vertical
-                          ? tr3('上端不动', 'Жоғарғы ұшы', 'Верхний', 'Top')
-                          : tr3('右端不动', 'Оң ұшы', 'Правый', 'Right')
+                          ? tr3('上端不动', 'Жоғарғы ұшы', 'Верхний', 'Top', ky: 'Үстүнкү', uz: 'Yuqori')
+                          : tr3('右端不动', 'Оң ұшы', 'Правый', 'Right', ky: 'Оң', uz: 'Oʻng')
                     )
                   ])
                     ChoiceChip(
@@ -250,8 +250,8 @@ class _WallResizeDialogState extends State<WallResizeDialog> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'))),
+                child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
             FilledButton(
-                onPressed: submit, child: Text(tr3('确定', 'Жарайды', 'ОК', 'OK')))
+                onPressed: submit, child: Text(tr3('确定', 'Жарайды', 'ОК', 'OK', ky: 'OK', uz: 'OK')))
           ]);
 }

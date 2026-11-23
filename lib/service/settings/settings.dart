@@ -3,10 +3,22 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/localization/messages_en.dart';
+import 'package:yusal/localization/messages_ky_uz.dart';
 import 'package:yusal/localization/messages_ru.dart';
 
-/// Chinese, Kazakh, Russian and English, everywhere in the app.
-enum AppLang { zh, kk, ru, en }
+/// Chinese, Kazakh, Russian, English, Kyrgyz and Uzbek, everywhere in the
+/// app.
+enum AppLang { zh, kk, ru, en, ky, uz }
+
+/// Each language named in itself, in the order the pickers list them.
+const languageNames = [
+  (AppLang.kk, 'Қазақша'),
+  (AppLang.ru, 'Русский'),
+  (AppLang.zh, '中文'),
+  (AppLang.en, 'English'),
+  (AppLang.ky, 'Кыргызча'),
+  (AppLang.uz, 'Oʻzbekcha'),
+];
 
 enum ThemeChoice { auto, day, night }
 
@@ -44,6 +56,8 @@ Future<void> loadSettings() async {
           'zh' => AppLang.zh,
           'ru' => AppLang.ru,
           'en' => AppLang.en,
+          'ky' => AppLang.ky,
+          'uz' => AppLang.uz,
           _ => AppLang.kk,
         };
     appTheme =
@@ -84,51 +98,65 @@ class SettingsNotifier extends Notifier<Settings> {
 /// it, so this is the same signal Flutter's own texts use.
 void watchLang(BuildContext context) => Localizations.localeOf(context);
 
-/// Cyrillic interface: Kazakh, or Russian falling back to Kazakh where only
-/// Chinese and Kazakh text exist.
-bool get isKk => appLang == AppLang.kk || appLang == AppLang.ru;
+/// Cyrillic interface: Kazakh, Russian or Kyrgyz (Cyrillic units such as
+/// м², and words like "млн").
+bool get isKk =>
+    appLang == AppLang.kk || appLang == AppLang.ru || appLang == AppLang.ky;
 
 bool get isRu => appLang == AppLang.ru;
 
 bool get isEn => appLang == AppLang.en;
+
+bool get isKy => appLang == AppLang.ky;
+
+bool get isUz => appLang == AppLang.uz;
 
 /// Any interface but Chinese: names and numbers are written the Western
 /// way (no 万, Latin or Cyrillic units).
 bool get isWestern => appLang != AppLang.zh;
 
 /// A Chinese / Kazakh pair from a table (names of furniture, stages,
-/// checklists). In Russian the Kazakh text is looked up in [ruText], in
-/// English in [enText]; strings written at a call use [tr3] instead.
+/// checklists). The Kazakh text is the key: Russian is looked up in
+/// [ruText], English in [enText], Kyrgyz in [kyText] and Uzbek in
+/// [uzText]; strings written at a call use [tr3] instead.
 String tr(String zh, String kk) => switch (appLang) {
       AppLang.zh => zh,
       AppLang.kk => kk,
       AppLang.ru => ruText(kk),
       AppLang.en => enText(kk) ?? ruText(kk),
+      AppLang.ky => kyText(kk) ?? ruText(kk),
+      AppLang.uz => uzText(kk) ?? ruText(kk),
     };
 
-/// Platform strings, written at the call in Chinese, Kazakh, Russian and
-/// English. Without English the Russian is shown.
-String tr3(String zh, String kk, String ru, [String? en]) => switch (appLang) {
+/// Platform strings, written at the call in Chinese, Kazakh, Russian,
+/// English, and optionally Kyrgyz and Uzbek. Where Kyrgyz or Uzbek is
+/// missing the Russian is shown, which both audiences read.
+String tr3(String zh, String kk, String ru, String? en,
+        {String? ky, String? uz}) =>
+    switch (appLang) {
       AppLang.zh => zh,
       AppLang.kk => kk,
       AppLang.ru => ru,
       AppLang.en => en ?? ru,
+      AppLang.ky => ky ?? ru,
+      AppLang.uz => uz ?? ru,
     };
 
 /// Between items of a list: 、 in Chinese, a comma elsewhere.
-String get listSep => tr3('、', ', ', ', ', ', ');
+String get listSep => tr3('、', ', ', ', ', ', ', ky: ', ', uz: ', ');
 
-/// Kazakh writes decimals with a comma.
-String dec(String number) => isKk ? number.replaceAll('.', ',') : number;
+/// Kazakh, Russian, Kyrgyz and Uzbek write decimals with a comma.
+String dec(String number) =>
+    isWestern && !isEn ? number.replaceAll('.', ',') : number;
 
 /// Metres from millimetres, two decimals: 3600 → "3.60".
 String m2dp(num mm) => dec((mm / 1000).toStringAsFixed(2));
 
-String get unitM => tr3('米', 'м', 'м', 'm');
-String get unitM2 => tr3('㎡', 'м²', 'м²', 'm²');
-String get unitM3 => tr3('m³', 'м³', 'м³', 'm³');
-String get unitMm => tr3('mm', 'мм', 'мм', 'mm');
-String get unitPcs => tr3('个', 'дана', 'шт.', 'pcs');
+String get unitM => tr3('米', 'м', 'м', 'm', ky: 'м', uz: 'm');
+String get unitM2 => tr3('㎡', 'м²', 'м²', 'm²', ky: 'м²', uz: 'm²');
+String get unitM3 => tr3('m³', 'м³', 'м³', 'm³', ky: 'м³', uz: 'm³');
+String get unitMm => tr3('mm', 'мм', 'мм', 'mm', ky: 'мм', uz: 'mm');
+String get unitPcs => tr3('个', 'дана', 'шт.', 'pcs', ky: 'даана', uz: 'dona');
 
 /// Floors named automatically ("一楼", "二楼 副本") are stored in Chinese and
 /// shown in the interface language; a name the user typed is kept.
@@ -139,5 +167,7 @@ String floorDisplayName(String name) {
   final n = numerals.indexOf(m[1]!) + 1;
   if (isEn) return 'Floor $n${m[2] == null ? '' : ' (copy)'}';
   if (isRu) return '$n-й этаж${m[2] == null ? '' : ' (копия)'}';
+  if (isKy) return '$n-кабат${m[2] == null ? '' : ' (көчүрмө)'}';
+  if (isUz) return '$n-qavat${m[2] == null ? '' : ' (nusxa)'}';
   return '$n-қабат${m[2] == null ? '' : ' (көшірме)'}';
 }

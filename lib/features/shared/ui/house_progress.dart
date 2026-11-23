@@ -23,10 +23,10 @@ HouseStage stageFromDemands(Iterable<Demand> demands) {
 }
 
 String houseStageName(HouseStage s) => switch (s) {
-      HouseStage.design => tr3('设计', 'Жоба', 'Проект', 'Project'),
-      HouseStage.finding => tr3('找人', 'Іздеу', 'Поиск', 'Search'),
-      HouseStage.building => tr3('施工', 'Құрылыс', 'Стройка', 'Build'),
-      HouseStage.done => tr3('完工', 'Аяқталды', 'Готово', 'Done'),
+      HouseStage.design => tr3('设计', 'Жоба', 'Проект', 'Project', ky: 'Долбоор', uz: 'Loyiha'),
+      HouseStage.finding => tr3('找人', 'Іздеу', 'Поиск', 'Search', ky: 'Издөө', uz: 'Qidiruv'),
+      HouseStage.building => tr3('施工', 'Құрылыс', 'Стройка', 'Build', ky: 'Курулуш', uz: 'Qurilish'),
+      HouseStage.done => tr3('完工', 'Аяқталды', 'Готово', 'Done', ky: 'Даяр', uz: 'Tayyor'),
     };
 
 /// "● 设计 ─ ● 找人中 ─ ○ 施工 ─ ○ 完工"
@@ -42,7 +42,7 @@ class HouseProgress extends StatelessWidget {
     final t = YTokens.of(context);
     const steps = HouseStage.values;
     return Semantics(
-        label: '${tr3('进度', 'Барысы', 'Этап', 'Stage')}: ${houseStageName(stage)}',
+        label: '${tr3('进度', 'Барысы', 'Этап', 'Stage', ky: 'Этап', uz: 'Bosqich')}: ${houseStageName(stage)}',
         child: Row(children: [
           for (var i = 0; i < steps.length; i++) ...[
             if (i > 0)

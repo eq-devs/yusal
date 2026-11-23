@@ -126,7 +126,7 @@ class SitePlanPainter extends CustomPainter {
     final street = Rect.fromLTRB(
         plot.left - 30, plot.bottom + 4, plot.right + 30, plot.bottom + 22);
     canvas.drawRect(street, Paint()..color = Tokens.mix(t.line, 0.6, t.panel));
-    _text(canvas, tr3('街道', 'Көше', 'Улица', 'Outside'), street.center,
+    _text(canvas, tr3('街道', 'Көше', 'Улица', 'Outside', ky: 'Сырты', uz: 'Tashqari'), street.center,
         font: 10, color: t.muted);
 
     // Areas first, then buildings, so outbuildings sit on the yard.
@@ -289,7 +289,7 @@ class SitePlanPainter extends CustomPainter {
         maxWidth: math.max(30, hr.width - 6));
     _text(
         canvas,
-        '${_m(house.right - house.left)} × ${_m(house.top - house.bottom)} ${tr3('米', 'м', 'м', 'm')}',
+        '${_m(house.right - house.left)} × ${_m(house.top - house.bottom)} ${tr3('米', 'м', 'м', 'm', ky: 'м', uz: 'm')}',
         hr.center + const Offset(0, 9),
         font: 10,
         color: t.muted,
@@ -308,10 +308,10 @@ class SitePlanPainter extends CustomPainter {
         _m(site.depth - house.top),
         vertical: true);
     // Plot size along the top and the left.
-    _text(canvas, '${_m(site.width.toDouble())} ${tr3('米', 'м', 'м', 'm')}',
+    _text(canvas, '${_m(site.width.toDouble())} ${tr3('米', 'м', 'м', 'm', ky: 'м', uz: 'm')}',
         Offset(plot.center.dx, plot.top - 12),
         color: t.dim, mono_: true);
-    _text(canvas, '${_m(site.depth.toDouble())} ${tr3('米', 'м', 'м', 'm')}',
+    _text(canvas, '${_m(site.depth.toDouble())} ${tr3('米', 'м', 'м', 'm', ky: 'м', uz: 'm')}',
         Offset(plot.left - 14, plot.center.dy),
         color: t.dim, mono_: true, angle: -math.pi / 2);
 
@@ -351,7 +351,7 @@ class SitePlanPainter extends CustomPainter {
       ..lineTo(c.dx - dir.dx * 10 - dir.dy * 6, c.dy - dir.dy * 10 + dir.dx * 6)
       ..close();
     canvas.drawPath(path, Paint()..color = t.ink);
-    _text(canvas, tr3('北', 'С', 'С', 'N'), c + dir * 24, weight: FontWeight.w700);
+    _text(canvas, tr3('北', 'С', 'С', 'N', ky: 'Т', uz: 'Sh'), c + dir * 24, weight: FontWeight.w700);
   }
 
   @override

@@ -23,7 +23,7 @@ Future<String?> startFromPost(BuildContext context, HousePost post,
   final doc = loaded.document;
   if (doc == null) {
     toast(context,
-        tr3('这套设计暂时无法复制', 'Көшіру мүмкін болмады', 'Не удалось скопировать', "Couldn't copy it"));
+        tr3('这套设计暂时无法复制', 'Көшіру мүмкін болмады', 'Не удалось скопировать', "Couldn't copy it", ky: 'Көчүрүү мүмкүн болбоду', uz: 'Nusxalab boʻlmadi'));
     return null;
   }
   final now = DateTime.now().toUtc().toIso8601String();
@@ -31,7 +31,7 @@ Future<String?> startFromPost(BuildContext context, HousePost post,
       Meta(
           name: tr3('基于「${post.title}」的房子', '«${post.title}» негізіндегі үй',
               'Дом на основе «${post.title}»',
-              'House based on “${post.title}”'),
+              'House based on “${post.title}”', ky: '«${post.title}» негизиндеги үй', uz: '“${post.title}” asosidagi uy'),
           createdAt: now,
           updatedAt: now),
       extractDesignState(doc));
@@ -45,7 +45,7 @@ Future<String?> startFromPost(BuildContext context, HousePost post,
       context,
       tr3('已复制到“我的房子”，改一下尺寸和房间，造价会自动更新', '«Үйлерім» ішіне көшірілді',
           'Скопировано в «Мои дома»',
-          'Copied to “My houses”'));
+          'Copied to “My houses”', ky: '«Менин үйлөрүмө» көчүрүлдү', uz: '“Mening uylarim” ga nusxalandi'));
   if (openEditor) {
     final drafting = nav?.drafting ?? Theme.of(context);
     final opened = await store.openProject(id);

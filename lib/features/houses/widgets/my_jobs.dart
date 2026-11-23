@@ -50,12 +50,12 @@ class MyJobsView extends StatelessWidget {
               ended.isEmpty) {
             return EmptyState(
                 icon: Icons.work_outline,
-                title: tr3('还没有接活', 'Әзірге жұмыс жоқ', 'Пока нет работы', 'No work yet'),
+                title: tr3('还没有接活', 'Әзірге жұмыс жоқ', 'Пока нет работы', 'No work yet', ky: 'Азырынча иш жок', uz: 'Hozircha ish yoʻq'),
                 body: tr3(
                     '去“发现 · 找活”看看附近在招的房子。',
                     '«Шолу · Жұмыс» бөлімін қараңыз.',
                     'Загляните в «Обзор · Работа».',
-                    'Have a look in “Discover · Jobs”.'));
+                    'Have a look in “Discover · Jobs”.', ky: '«Ачылыштар · Иштер» бөлүмүн карап көрүңүз.', uz: '“Kashf qilish · Ishlar” boʻlimini koʻrib chiqing.'));
           }
           Widget group(String title, List<_Item> items, {bool hot = false}) =>
               items.isEmpty
@@ -75,10 +75,10 @@ class MyJobsView extends StatelessWidget {
           return ListView(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
               children: [
-                group(tr3('待处理', 'Күтуде', 'Ждут вас', 'Waiting for you'), waiting, hot: true),
-                group(tr3('进行中', 'Жүріп жатыр', 'В работе', 'In progress'), working),
-                group(tr3('已报名 / 已报价', 'Жіберілді', 'Отправлено', 'Sent'), sent),
-                group(tr3('已结束', 'Аяқталды', 'Завершено', 'Finished'), ended),
+                group(tr3('待处理', 'Күтуде', 'Ждут вас', 'Waiting for you', ky: 'Сизди күтүүдө', uz: 'Sizni kutmoqda'), waiting, hot: true),
+                group(tr3('进行中', 'Жүріп жатыр', 'В работе', 'In progress', ky: 'Аткарылууда', uz: 'Jarayonda'), working),
+                group(tr3('已报名 / 已报价', 'Жіберілді', 'Отправлено', 'Sent', ky: 'Жөнөтүлдү', uz: 'Yuborildi'), sent),
+                group(tr3('已结束', 'Аяқталды', 'Завершено', 'Finished', ky: 'Бүттү', uz: 'Tugallandi'), ended),
               ]);
         });
   }
@@ -112,20 +112,20 @@ class _JobCard extends StatelessWidget {
           ? c.endRequest!.by == me
               ? tr3('已请求结束，等业主确认', 'Аяқтау сұралды',
                   'Ждём подтверждения завершения',
-                  'Waiting for completion to be confirmed')
+                  'Waiting for completion to be confirmed', ky: 'Бүтүрүүнүн ырасталышын күтүүдө', uz: 'Yakunlash tasdiqlanishi kutilmoqda')
               : tr3('业主请求结束，等你确认', 'Иесі аяқтауды сұрады',
                   'Заказчик просит завершить',
-                  'The client asks to finish')
+                  'The client asks to finish', ky: 'Кардар бүтүрүүнү сурап жатат', uz: 'Mijoz yakunlashni soʻramoqda')
           : c.status == CooperationStatus.confirmed && next != null
               ? tr3(
                   '${milestoneName(next.key)}进行中 · 已记工 ${c.workLogs.length} 天',
                   '${milestoneName(next.key)} · ${c.workLogs.length} күн',
                   '${milestoneName(next.key)} · ${c.workLogs.length} дн.',
-                  '${milestoneName(next.key)} · ${c.workLogs.length} d')
+                  '${milestoneName(next.key)} · ${c.workLogs.length} d', ky: '${milestoneName(next.key)} · ${c.workLogs.length} к', uz: '${milestoneName(next.key)} · ${c.workLogs.length} k')
               : cooperationStatusName(c);
     } else {
       status = a!.needsReconfirm
-          ? tr3('需求已修改，待重新确认报价', 'Тапсырыс өзгерді', 'Заявка изменилась', 'The request changed')
+          ? tr3('需求已修改，待重新确认报价', 'Тапсырыс өзгерді', 'Заявка изменилась', 'The request changed', ky: 'Суроо-талап өзгөрдү', uz: 'Soʻrov oʻzgardi')
           : [
               applicationStatusName(a.status),
               if (a.current.total != null)
@@ -133,17 +133,17 @@ class _JobCard extends StatelessWidget {
                     '报价 ${money(a.current.total!.round())}',
                     'Ұсыныс ${money(a.current.total!.round())}',
                     'Цена ${money(a.current.total!.round())}',
-                    'Price ${money(a.current.total!.round())}')
+                    'Price ${money(a.current.total!.round())}', ky: 'Баасы ${money(a.current.total!.round())}', uz: 'Narxi ${money(a.current.total!.round())}')
               else if (a.current.expectedWage != null)
                 tr3(
                     '期望 ${money(a.current.expectedWage)} / 天',
                     '${money(a.current.expectedWage)} / күн',
                     '${money(a.current.expectedWage)} / день',
-                    '${money(a.current.expectedWage)} / day'),
+                    '${money(a.current.expectedWage)} / day', ky: '${money(a.current.expectedWage)} / күн', uz: '${money(a.current.expectedWage)} / kun'),
               if (a.status == ApplicationStatus.submitted)
                 a.readByOwner
-                    ? tr3('业主已看', 'Көрді', 'Просмотрено', 'Viewed')
-                    : tr3('业主未看', 'Әлі көрмеді', 'Не просмотрено', 'Not viewed'),
+                    ? tr3('业主已看', 'Көрді', 'Просмотрено', 'Viewed', ky: 'Каралды', uz: 'Koʻrildi')
+                    : tr3('业主未看', 'Әлі көрмеді', 'Не просмотрено', 'Not viewed', ky: 'Каралган жок', uz: 'Koʻrilmagan'),
             ].join(' · ');
     }
     return Card(
@@ -163,7 +163,7 @@ class _JobCard extends StatelessWidget {
                       Text(
                           title.isEmpty
                               ? tr3(
-                                  '需求已不可见', 'Қолжетімсіз', 'Заявка недоступна', 'Request unavailable')
+                                  '需求已不可见', 'Қолжетімсіз', 'Заявка недоступна', 'Request unavailable', ky: 'Суроо-талап жеткиликсиз', uz: 'Soʻrov mavjud emas')
                               : title,
                           style: const TextStyle(
                               fontWeight: FontWeight.w700,
@@ -186,7 +186,7 @@ class _JobCard extends StatelessWidget {
                                         (_) => SitePage(cooperationId: c.id)),
                                     child: Text(tr3('申请验收', 'Қабылдауды сұрау',
                                         'Попросить приёмку',
-                                        'Ask for acceptance'))),
+                                        'Ask for acceptance', ky: 'Кабыл алууну суроо', uz: 'Qabul qilishni soʻrash'))),
                             ])),
                     ]))));
   }
@@ -201,10 +201,10 @@ class SitePage extends StatelessWidget {
       provider: siteCooperationProvider(cooperationId),
       loading: const SkeletonPage(),
       builder: (context, c) => PageScaffold(
-          title: tr3('施工', 'Құрылыс', 'Стройка', 'Build'),
+          title: tr3('施工', 'Құрылыс', 'Стройка', 'Build', ky: 'Курулуш', uz: 'Qurilish'),
           body: c == null
               ? EmptyState(
                   icon: Icons.lock_outline,
-                  title: tr3('无法查看', 'Қолжетімсіз', 'Недоступно', 'Unavailable'))
+                  title: tr3('无法查看', 'Қолжетімсіз', 'Недоступно', 'Unavailable', ky: 'Жеткиликсиз', uz: 'Mavjud emas'))
               : SiteSection(cooperation: c)));
 }

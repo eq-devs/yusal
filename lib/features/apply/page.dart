@@ -42,23 +42,23 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
   List<VoiceField> get fields => [
         if (hire) ...[
           VoiceField.number('wage',
-              const L3('期望工资', 'Күтетін жалақы', 'Ожидаемая ставка', 'Expected rate'), wage),
+              const L3('期望工资', 'Күтетін жалақы', 'Ожидаемая ставка', 'Expected rate', ky: 'Күтүлгөн акы', uz: 'Kutilayotgan haq'), wage),
           VoiceField.number('headcount',
-              const L3('可提供人数', 'Адам саны', 'Сколько человек', 'How many people'), headcount),
+              const L3('可提供人数', 'Адам саны', 'Сколько человек', 'How many people', ky: 'Канча адам', uz: 'Necha kishi'), headcount),
         ] else ...[
           VoiceField.text('scope',
-              const L3('承接范围', 'Қандай жұмыс', 'Что вы выполняете', "What you'll do"), scope),
+              const L3('承接范围', 'Қандай жұмыс', 'Что вы выполняете', "What you'll do", ky: 'Эмне кыласыз', uz: 'Nima qilasiz'), scope),
           VoiceField.number(
-              'lump_sum', const L3('总价', 'Жалпы баға', 'Сумма', 'Amount'), lump),
+              'lump_sum', const L3('总价', 'Жалпы баға', 'Сумма', 'Amount', ky: 'Суммасы', uz: 'Summa'), lump),
           VoiceField.number(
-              'days', const L3('预计工期（天）', 'Мерзім (күн)', 'Срок (дней)', 'Duration (days)'), days),
+              'days', const L3('预计工期（天）', 'Мерзім (күн)', 'Срок (дней)', 'Duration (days)', ky: 'Мөөнөтү (күн)', uz: 'Muddati (kun)'), days),
           VoiceField.text(
-              'includes', const L3('包含', 'Кіреді', 'Входит', 'Included'), includes),
+              'includes', const L3('包含', 'Кіреді', 'Входит', 'Included', ky: 'Кирет', uz: 'Kiradi'), includes),
           VoiceField.text(
-              'excludes', const L3('不包含', 'Кірмейді', 'Не входит', 'Not included'), excludes),
+              'excludes', const L3('不包含', 'Кірмейді', 'Не входит', 'Not included', ky: 'Кирбейт', uz: 'Kirmaydi'), excludes),
         ],
         VoiceField.text(
-            'note', const L3('补充说明', 'Қосымша', 'Комментарий', 'Comment'), note),
+            'note', const L3('补充说明', 'Қосымша', 'Комментарий', 'Comment', ky: 'Комментарий', uz: 'Izoh'), note),
       ];
 
   @override
@@ -185,24 +185,24 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
 
   String? validate() {
     if (profileId == null) {
-      return tr3('请选择用哪个名片报名', 'Профильді таңдаңыз', 'Выберите профиль', 'Choose a profile');
+      return tr3('请选择用哪个名片报名', 'Профильді таңдаңыз', 'Выберите профиль', 'Choose a profile', ky: 'Профиль тандаңыз', uz: 'Profil tanlang');
     }
     if (hire) {
       if (!acceptsOffer && (parseInt(wage.text) ?? 0) <= 0) {
-        return tr3('请填写期望工资，或接受原条件', 'Жалақыны жазыңыз', 'Укажите ставку', 'Enter a rate');
+        return tr3('请填写期望工资，或接受原条件', 'Жалақыны жазыңыз', 'Укажите ставку', 'Enter a rate', ky: 'Акыны киргизиңиз', uz: 'Haqni kiriting');
       }
       return null;
     }
     if (scope.text.trim().isEmpty) {
-      return tr3('请写明承接范围', 'Көлемді жазыңыз', 'Опишите объём работ', 'Describe the scope of work');
+      return tr3('请写明承接范围', 'Көлемді жазыңыз', 'Опишите объём работ', 'Describe the scope of work', ky: 'Иштин көлөмүн сүрөттөңүз', uz: 'Ish hajmini tasvirlang');
     }
     if (pricing == PricingMode.lumpSum && (parseInt(lump.text) ?? 0) <= 0) {
-      return tr3('请填写总价', 'Жалпы бағаны жазыңыз', 'Укажите сумму', 'Enter an amount');
+      return tr3('请填写总价', 'Жалпы бағаны жазыңыз', 'Укажите сумму', 'Enter an amount', ky: 'Сумманы киргизиңиз', uz: 'Summani kiriting');
     }
     if (pricing == PricingMode.perQuantity && lineTotal == null) {
       return tr3('请为每一项填写数量和单价', 'Әр жолға сан мен баға',
           'Заполните количество и цену',
-          'Fill in quantity and price');
+          'Fill in quantity and price', ky: 'Санын жана баасын толтуруңуз', uz: 'Miqdor va narxni toʻldiring');
     }
     return null;
   }
@@ -219,8 +219,8 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
             version: compose(),
             requestId: requestId),
         success: hire
-            ? tr3('报名已发送', 'Өтінім жіберілді', 'Отклик отправлен', 'Response sent')
-            : tr3('报价已发送', 'Ұсыныс жіберілді', 'Предложение отправлено', 'Quote sent'));
+            ? tr3('报名已发送', 'Өтінім жіберілді', 'Отклик отправлен', 'Response sent', ky: 'Жооп жөнөтүлдү', uz: 'Javob yuborildi')
+            : tr3('报价已发送', 'Ұсыныс жіберілді', 'Предложение отправлено', 'Quote sent', ky: 'Сунуш жөнөтүлдү', uz: 'Taklif yuborildi'));
     if (ok != null && mounted) {
       HapticFeedback.lightImpact();
       Navigator.pop(context);
@@ -252,17 +252,17 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
             e.status == ApplicationStatus.cooperating);
     return PageScaffold(
         title: hire
-            ? tr3('报名', 'Өтінім', 'Отклик', 'Response')
-            : tr3('报价', 'Баға ұсынысы', 'Предложение', 'Quote'),
+            ? tr3('报名', 'Өтінім', 'Отклик', 'Response', ky: 'Жооп', uz: 'Javob')
+            : tr3('报价', 'Баға ұсынысы', 'Предложение', 'Quote', ky: 'Сунуш', uz: 'Taklif'),
         bottom: locked
             ? null
             : BusyButton(
                 label: e == null
                     ? (hire
-                        ? tr3('发送报名', 'Жіберу', 'Отправить', 'Send')
-                        : tr3('发送报价', 'Жіберу', 'Отправить', 'Send'))
+                        ? tr3('发送报名', 'Жіберу', 'Отправить', 'Send', ky: 'Жөнөтүү', uz: 'Yuborish')
+                        : tr3('发送报价', 'Жіберу', 'Отправить', 'Send', ky: 'Жөнөтүү', uz: 'Yuborish'))
                     : tr3(
-                        '更新（保留历史）', 'Жаңарту', 'Обновить (история сохранится)', 'Update (history is kept)'),
+                        '更新（保留历史）', 'Жаңарту', 'Обновить (история сохранится)', 'Update (history is kept)', ky: 'Жаңылоо (тарых сакталат)', uz: 'Yangilash (tarix saqlanadi)'),
                 onPressed: submit),
         body: Live<List<ServiceProfile>>(
             provider: applyProfilesProvider,
@@ -283,12 +283,12 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                             '依据第 ${d.current.no} 版需求',
                             '${d.current.no}-нұсқа бойынша',
                             'По версии ${d.current.no}',
-                            'For version ${d.current.no}'),
+                            'For version ${d.current.no}', ky: '${d.current.no}-версия үчүн', uz: '${d.current.no}-versiya uchun'),
                         style: TextStyle(color: t.muted)),
                     if (e != null) ...[
                       const SizedBox(height: 12),
                       Hint(
-                          '${tr3('当前状态', 'Күйі', 'Статус', 'Status')}: ${applicationStatusName(e.status)}${e.needsReconfirm ? ' · ${tr3('需求已修改，请确认或更新', 'Тапсырыс өзгерді', 'Заявка изменилась — обновите', 'The request changed; update yours')}' : ''}',
+                          '${tr3('当前状态', 'Күйі', 'Статус', 'Status', ky: 'Абалы', uz: 'Holati')}: ${applicationStatusName(e.status)}${e.needsReconfirm ? ' · ${tr3('需求已修改，请确认或更新', 'Тапсырыс өзгерді', 'Заявка изменилась — обновите', 'The request changed; update yours', ky: 'Суроо-талап өзгөрдү; өзүңүздүкүн жаңылаңыз', uz: 'Soʻrov oʻzgardi; oʻzingiznikini yangilang')}' : ''}',
                           warn: e.needsReconfirm),
                       if (locked)
                         Padding(
@@ -297,7 +297,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                                 '已进入合作约定，修改请在合作页提出变更。',
                                 'Келісім жасалған, өзгерісті келісім бетінде ұсыныңыз.',
                                 'Есть соглашение — изменения через страницу сотрудничества.',
-                                "There's an agreement; make changes on the cooperation page."))),
+                                "There's an agreement; make changes on the cooperation page.", ky: 'Макулдашуу бар; өзгөртүүлөрдү кызматташуу бетинде киргизиңиз.', uz: 'Kelishuv bor; oʻzgarishlarni hamkorlik sahifasida kiriting.'))),
                       const SizedBox(height: 8),
                       if (e.status == ApplicationStatus.submitted ||
                           e.status == ApplicationStatus.pendingConfirm)
@@ -309,7 +309,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                                           context,
                                           tr3('撤回？', 'Қайтару?',
                                               'Отозвать?',
-                                              'Withdraw?')) &&
+                                              'Withdraw?', ky: 'Кайтарып аласызбы?', uz: 'Qaytarib olasizmi?')) &&
                                       context.mounted) {
                                     await attempt(
                                         context,
@@ -319,9 +319,9 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                                     if (context.mounted) Navigator.pop(context);
                                   }
                                 },
-                                child: Text(tr3('撤回', 'Қайтару', 'Отозвать', 'Withdraw')))),
+                                child: Text(tr3('撤回', 'Қайтару', 'Отозвать', 'Withdraw', ky: 'Кайтарып алуу', uz: 'Qaytarib olish')))),
                     ],
-                    SectionTitle(tr3('用哪个名片', 'Қай профиль', 'От имени', 'On behalf of')),
+                    SectionTitle(tr3('用哪个名片', 'Қай профиль', 'От имени', 'On behalf of', ky: 'Кимдин атынан', uz: 'Kimning nomidan')),
                     if (profiles.isEmpty)
                       YCard(
                           onTap: () => pushPage<void>(
@@ -334,7 +334,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                                     '先创建接活名片（个人或团队），只需几项信息。',
                                     'Алдымен профиль жасаңыз.',
                                     'Сначала создайте профиль мастера или бригады.',
-                                    'First create a pro or crew profile.'))),
+                                    'First create a pro or crew profile.', ky: 'Адегенде адистин же бригаданын профилин түзүңүз.', uz: 'Avval mutaxassis yoki brigada profilini yarating.'))),
                             const Icon(Icons.chevron_right),
                           ]))
                     else
@@ -349,10 +349,10 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                       ]),
                     if (hire) ...[
                       SectionTitle(
-                          tr3('到岗与工资', 'Келу және жалақы', 'Выход и оплата', 'Start and pay')),
+                          tr3('到岗与工资', 'Келу және жалақы', 'Выход и оплата', 'Start and pay', ky: 'Башталышы жана төлөм', uz: 'Boshlanish va toʻlov')),
                       ListTile(
                           title:
-                              Text(tr3('可到岗日期', 'Келу күні', 'Могу выйти с', 'I can start on')),
+                              Text(tr3('可到岗日期', 'Келу күні', 'Могу выйти с', 'I can start on', ky: 'Баштай алам', uz: 'Boshlay olaman')),
                           subtitle: Text(fmtDay(availableFrom)),
                           trailing: const YusalIcon(YIcon.calendar),
                           onTap: () async {
@@ -372,14 +372,14 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                                 '接受原工资 ${money(hireTerms!.wage, unit: hireTerms.wageUnit)}',
                                 'Жалақыға келісемін ${money(hireTerms.wage, unit: hireTerms.wageUnit)}',
                                 'Согласен на ${money(hireTerms.wage, unit: hireTerms.wageUnit)}',
-                                'I agree to ${money(hireTerms.wage, unit: hireTerms.wageUnit)}')),
+                                'I agree to ${money(hireTerms.wage, unit: hireTerms.wageUnit)}', ky: '${money(hireTerms.wage, unit: hireTerms.wageUnit)} акыга макулмун', uz: '${money(hireTerms.wage, unit: hireTerms.wageUnit)} haqqa roziman')),
                             value: acceptsOffer,
                             onChanged: (v) => setState(() => acceptsOffer = v)),
                       if (!acceptsOffer || hireTerms?.wage == null)
                         _field(
                             wage,
                             tr3('期望工资 ₸ / ${unitLabel(hireTerms?.wageUnit ?? 'day')}',
-                                'Күтетін жалақы ₸', 'Ожидаемая ставка ₸', 'Expected rate ₸'),
+                                'Күтетін жалақы ₸', 'Ожидаемая ставка ₸', 'Expected rate ₸', ky: 'Күтүлгөн акы ₸', uz: 'Kutilayotgan haq ₸'),
                             number: true),
                       if (profiles
                               .where((p) => p.id == profileId)
@@ -387,18 +387,18 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                               ?.kind ==
                           ProfileKind.team)
                         _field(headcount,
-                            tr3('可提供人数', 'Адам саны', 'Сколько человек', 'How many people'),
+                            tr3('可提供人数', 'Адам саны', 'Сколько человек', 'How many people', ky: 'Канча адам', uz: 'Necha kishi'),
                             number: true),
                     ] else ...[
-                      SectionTitle(tr3('承接范围', 'Көлемі', 'Объём', 'Scope')),
+                      SectionTitle(tr3('承接范围', 'Көлемі', 'Объём', 'Scope', ky: 'Иштин көлөмү', uz: 'Ish hajmi')),
                       _field(scope,
-                          tr3('你承接哪些工作', 'Қандай жұмыс', 'Что вы выполняете', "What you'll do"),
+                          tr3('你承接哪些工作', 'Қандай жұмыс', 'Что вы выполняете', "What you'll do", ky: 'Эмне кыласыз', uz: 'Nima qilasiz'),
                           lines: 2,
                           hint: tr3(
                               '例如：外墙与内墙砌筑，含构造柱模板',
                               'Мысалы: сыртқы және ішкі қабырға',
                               'Напр.: кладка наружных и внутренних стен',
-                              'E.g. outer and inner wall masonry')),
+                              'E.g. outer and inner wall masonry', ky: 'Мисалы, сырткы жана ички дубалдарды тургузуу', uz: 'Masalan, tashqi va ichki devorlarni terish')),
                       Wrap(spacing: 8, runSpacing: 8, children: [
                         for (final m in const [
                           MaterialMode.labourOnly,
@@ -409,7 +409,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                               selected: materials == m,
                               onTap: () => setState(() => materials = m)),
                       ]),
-                      SectionTitle(tr3('价格', 'Баға', 'Цена', 'Price')),
+                      SectionTitle(tr3('价格', 'Баға', 'Цена', 'Price', ky: 'Баасы', uz: 'Narxi')),
                       Wrap(spacing: 8, runSpacing: 8, children: [
                         for (final p in PricingMode.values)
                           FilterPill(
@@ -419,7 +419,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                       ]),
                       const SizedBox(height: 12),
                       if (pricing == PricingMode.lumpSum)
-                        _field(lump, tr3('总价 ₸', 'Жалпы баға ₸', 'Сумма ₸', 'Amount ₸'),
+                        _field(lump, tr3('总价 ₸', 'Жалпы баға ₸', 'Сумма ₸', 'Amount ₸', ky: 'Суммасы ₸', uz: 'Summa ₸'),
                             number: true),
                       if (pricing == PricingMode.perQuantity) ...[
                         for (final (i, r) in rows.indexed)
@@ -434,9 +434,9 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                                           controller: r.name,
                                           decoration: InputDecoration(
                                               labelText: tr3(
-                                                  '分项', 'Жұмыс', 'Работа', 'Labour')))),
+                                                  '分项', 'Жұмыс', 'Работа', 'Labour', ky: 'Жумуш', uz: 'Ish haqi')))),
                                   IconButton(
-                                      tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete'),
+                                      tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
                                       onPressed: () =>
                                           setState(() => rows.removeAt(i)),
                                       icon: const Icon(Icons.close, size: 18)),
@@ -474,10 +474,10 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                                       TextEditingController()))),
                               icon: const Icon(Icons.add, size: 18),
                               label: Text(
-                                  tr3('添加分项', 'Жол қосу', 'Добавить строку', 'Add a line'))),
+                                  tr3('添加分项', 'Жол қосу', 'Добавить строку', 'Add a line', ky: 'Сап кошуу', uz: 'Qator qoʻshish'))),
                           const Spacer(),
                           Text(
-                              '${tr3('合计', 'Барлығы', 'Итого', 'Total')}: ${money(lineTotal)}',
+                              '${tr3('合计', 'Барлығы', 'Итого', 'Total', ky: 'Бардыгы', uz: 'Jami')}: ${money(lineTotal)}',
                               style:
                                   const TextStyle(fontWeight: FontWeight.w700)),
                         ]),
@@ -487,20 +487,20 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                             '报价状态为“需现场确认”，对比时会单独提示，不与确定价格混排。',
                             'Баға орында нақтыланады.',
                             'Цена будет уточнена на месте.',
-                            'The price will be confirmed on site.')),
+                            'The price will be confirmed on site.', ky: 'Баа объектиде такталат.', uz: 'Narx obyektda aniqlanadi.')),
                       const SizedBox(height: 12),
                       _field(
-                          days, tr3('预计工期（天）', 'Мерзім (күн)', 'Срок (дней)', 'Duration (days)'),
+                          days, tr3('预计工期（天）', 'Мерзім (күн)', 'Срок (дней)', 'Duration (days)', ky: 'Мөөнөтү (күн)', uz: 'Muddati (kun)'),
                           number: true),
                       _field(
                           includes,
                           tr3('包含（运输、设备、清运…）', 'Кіреді',
                               'Входит (доставка, техника…)',
-                              'Includes (delivery, machinery…)')),
-                      _field(excludes, tr3('不包含', 'Кірмейді', 'Не входит', 'Not included')),
+                              'Includes (delivery, machinery…)', ky: 'Кирет (жеткирүү, техника…)', uz: 'Kiradi (yetkazib berish, texnika…)')),
+                      _field(excludes, tr3('不包含', 'Кірмейді', 'Не входит', 'Not included', ky: 'Кирбейт', uz: 'Kirmaydi')),
                       ListTile(
                           title:
-                              Text(tr3('报价有效期', 'Жарамдылық', 'Действует до', 'Valid until')),
+                              Text(tr3('报价有效期', 'Жарамдылық', 'Действует до', 'Valid until', ky: 'Жарактуу мөөнөтү', uz: 'Amal qilish muddati')),
                           subtitle: Text(
                               validUntil == null ? '—' : fmtDay(validUntil)),
                           trailing: const YusalIcon(YIcon.calendar),
@@ -515,7 +515,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                             if (v != null) setState(() => validUntil = v);
                           }),
                     ],
-                    _field(note, tr3('补充说明（可选）', 'Қосымша', 'Комментарий', 'Comment'),
+                    _field(note, tr3('补充说明（可选）', 'Қосымша', 'Комментарий', 'Comment', ky: 'Комментарий', uz: 'Izoh'),
                         lines: 2),
                     if (error != null) ...[
                       const SizedBox(height: 8),
@@ -524,10 +524,10 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                     const SizedBox(height: 12),
                     Hint(tr3('不要向发布者缴纳任何押金。遇到可疑要求请举报。', 'Кепілақы төлемеңіз.',
                         'Не платите залог. О подозрительных просьбах сообщайте.',
-                        "Don't pay deposits. Report suspicious requests.")),
+                        "Don't pay deposits. Report suspicious requests.", ky: 'Алдын ала төлөм бербеңиз. Шектүү суроо-талаптар жөнүндө кабарлаңыз.', uz: 'Oldindan toʻlov bermang. Shubhali soʻrovlar haqida xabar bering.')),
                     if (d.current.contract?.quantities.isNotEmpty ?? false) ...[
                       SectionTitle(tr3(
-                          '需求中的工程量', 'Тапсырыстағы көлем', 'Объёмы в заявке', 'Quantities in the request')),
+                          '需求中的工程量', 'Тапсырыстағы көлем', 'Объёмы в заявке', 'Quantities in the request', ky: 'Суроо-талаптагы көлөмдөр', uz: 'Soʻrovdagi miqdorlar')),
                       QtyTable(d.current.contract!.quantities),
                     ],
                   ]);

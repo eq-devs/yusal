@@ -16,8 +16,8 @@ const _tabs = ['explore', 'houses', 'messages', 'me'];
 final navActions = [
   AppAction(
     id: 'nav.tab',
-    title: const L3('切换主页面', 'Негізгі бетке өту', 'Перейти на вкладку', 'Go to a tab'),
-    examples: const L3('打开消息', 'Хабарларды аш', 'Открой чаты', 'Open chats'),
+    title: const L3('切换主页面', 'Негізгі бетке өту', 'Перейти на вкладку', 'Go to a tab', ky: 'Өтмөккө өтүү', uz: 'Boʻlimga oʻtish'),
+    examples: const L3('打开消息', 'Хабарларды аш', 'Открой чаты', 'Open chats', ky: 'Чаттарды ач', uz: 'Chatlarni och'),
     params: const {'tab': Param.choice(_tabs)},
     risk: Risk.read,
     run: (ctx, args) async {
@@ -32,8 +32,8 @@ final navActions = [
   ),
   AppAction(
     id: 'nav.open',
-    title: const L3('打开一项内容', 'Нысанды ашу', 'Открыть объект', 'Open an item'),
-    examples: const L3('打开这个需求', 'Осы сұранысты аш', 'Открой эту заявку', 'Open this request'),
+    title: const L3('打开一项内容', 'Нысанды ашу', 'Открыть объект', 'Open an item', ky: 'Нерсени ачуу', uz: 'Elementni ochish'),
+    examples: const L3('打开这个需求', 'Осы сұранысты аш', 'Открой эту заявку', 'Open this request', ky: 'Бул суроо-талапты ач', uz: 'Bu soʻrovni och'),
     params: {
       'kind': Param.choice([for (final t in RefType.values) t.name]),
       'ref': const Param.text(),

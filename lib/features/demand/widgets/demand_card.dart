@@ -41,13 +41,13 @@ class DemandCard extends StatelessWidget {
     final t = YTokens.of(context);
     final v = demand.current;
     final start = v.startDate == null
-        ? tr3('开工待协商', 'Басталуы келісіледі', 'Старт по договорённости', 'Start by agreement')
+        ? tr3('开工待协商', 'Басталуы келісіледі', 'Старт по договорённости', 'Start by agreement', ky: 'Макулдашуу боюнча баштоо', uz: 'Kelishuv boʻyicha boshlash')
         : tr3('${fmtDay(v.startDate)} 开工', '${fmtDay(v.startDate)} басталады',
             'Старт ${fmtDay(v.startDate)}',
-            'Start ${fmtDay(v.startDate)}');
+            'Start ${fmtDay(v.startDate)}', ky: 'Башталышы ${fmtDay(v.startDate)}', uz: 'Boshlanishi ${fmtDay(v.startDate)}');
     final headcount = v.hire == null
         ? ''
-        : ' · ${tr3('${v.hire!.headcount} 人', '${v.hire!.headcount} адам', '${v.hire!.headcount} чел.', '${v.hire!.headcount} people')}';
+        : ' · ${tr3('${v.hire!.headcount} 人', '${v.hire!.headcount} адам', '${v.hire!.headcount} чел.', '${v.hire!.headcount} people', ky: '${v.hire!.headcount} адам', uz: '${v.hire!.headcount} kishi')}';
     final info =
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -83,7 +83,7 @@ class DemandCard extends StatelessWidget {
                     '按清单报价 · ${v.contract!.quantities.length} 项',
                     'Тізім бойынша · ${v.contract!.quantities.length}',
                     'По смете · ${v.contract!.quantities.length} поз.',
-                    'By estimate · ${v.contract!.quantities.length} items'),
+                    'By estimate · ${v.contract!.quantities.length} items', ky: 'Смета боюнча · ${v.contract!.quantities.length} нерсе', uz: 'Smeta boʻyicha · ${v.contract!.quantities.length} ta element'),
                 color: t.accent)),
       const SizedBox(height: 6),
       Text.rich(TextSpan(children: [
@@ -103,8 +103,8 @@ class DemandCard extends StatelessWidget {
         ? null
         : IconButton(
             tooltip: favourite == true
-                ? tr3('取消收藏', 'Таңдаулыдан алу', 'Убрать из избранного', 'Remove from favourites')
-                : tr3('收藏', 'Таңдаулы', 'В избранное', 'Add to favourites'),
+                ? tr3('取消收藏', 'Таңдаулыдан алу', 'Убрать из избранного', 'Remove from favourites', ky: 'Тандалгандардан алып салуу', uz: 'Sevimlilardan olib tashlash')
+                : tr3('收藏', 'Таңдаулы', 'В избранное', 'Add to favourites', ky: 'Тандалгандарга кошуу', uz: 'Sevimlilarga qoʻshish'),
             onPressed: () {
               if (favourite != true) HapticFeedback.lightImpact();
               onFavourite!();
@@ -156,7 +156,7 @@ class DemandCard extends StatelessWidget {
                                       child: StatusPill(
                                           tr3('附设计工程量', 'Жоба көлемімен',
                                               'С объёмами из проекта',
-                                              'With quantities from the design'),
+                                              'With quantities from the design', ky: 'Долбоордогу көлөмдөр менен', uz: 'Loyihadagi miqdorlar bilan'),
                                           color: YTokens.light.ink,
                                           filled: true)),
                                 ])),

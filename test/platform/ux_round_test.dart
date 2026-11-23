@@ -144,6 +144,8 @@ void main() {
             AppLang.ru => 'Назад',
             AppLang.kk => 'Артқа',
             AppLang.en => 'Back',
+            AppLang.ky => 'Артка',
+            AppLang.uz => 'Orqaga',
           });
     });
   }

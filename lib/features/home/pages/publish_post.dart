@@ -79,7 +79,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
 
   Future<void> _publish() async {
     if (title.text.trim().isEmpty) {
-      toast(context, tr3('请填标题', 'Атауын жазыңыз', 'Введите название', 'Enter a title'));
+      toast(context, tr3('请填标题', 'Атауын жазыңыз', 'Введите название', 'Enter a title', ky: 'Аталышын киргизиңиз', uz: 'Sarlavha kiriting'));
       return;
     }
     if (!await requireLogin(context) || !mounted) return;
@@ -92,7 +92,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
         lines: e?.lines ?? const [],
         summary: e == null
             ? doc.meta.name
-            : '${(e.width / 1000).toStringAsFixed(1)} × ${(e.depth / 1000).toStringAsFixed(1)} m · ${e.floors} ${tr3('层', 'қабат', 'эт.', 'fl.')} · ${e.buildingArea.toStringAsFixed(0)} m²',
+            : '${(e.width / 1000).toStringAsFixed(1)} × ${(e.depth / 1000).toStringAsFixed(1)} m · ${e.floors} ${tr3('层', 'қабат', 'эт.', 'fl.', ky: 'каб.', uz: 'qav.')} · ${e.buildingArea.toStringAsFixed(0)} m²',
         preview: widget.entry.preview);
     final snapshots = context.read(snapshotRepositoryProvider);
     final posts = context.read(postRepositoryProvider);
@@ -120,7 +120,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
     });
     if (!mounted) return;
     if (post != null) {
-      toast(context, tr3('已发布到首页', 'Жарияланды', 'Опубликовано', 'Published'));
+      toast(context, tr3('已发布到首页', 'Жарияланды', 'Опубликовано', 'Published', ky: 'Жарыяланды', uz: 'Eʼlon qilindi'));
       Navigator.of(context)
           .pushReplacement(platformRoute((_) => PostPage(postId: post.id)));
     }
@@ -137,7 +137,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
         isBusy: () => _busy,
         changes: Listenable.merge([title, story]),
         child: PageScaffold(
-            title: tr3('发布到首页', 'Басты бетке', 'Опубликовать', 'Publish'),
+            title: tr3('发布到首页', 'Басты бетке', 'Опубликовать', 'Publish', ky: 'Жарыялоо', uz: 'Eʼlon qilish'),
             bottom: Row(children: [
               Expanded(
                   child: Text(
@@ -145,12 +145,12 @@ class _PublishPostPageState extends State<PublishPostPage> {
                           '发布后所有人可查看各楼层图纸；不含私人备注，随时可下架。',
                           'Қабат жоспарлары жарияланады, жеке жазбаларсыз. Жасыруға болады.',
                           'Планы этажей доступны всем, без личных заметок. Можно скрыть.',
-                          'Floor plans are visible to everyone, without private notes. You can hide it.'),
+                          'Floor plans are visible to everyone, without private notes. You can hide it.', ky: 'Кабат пландары жеке эскертмелерсиз баарына көрүнөт. Аны жашырсаңыз болот.', uz: 'Qavat rejalari shaxsiy izohlarsiz hammaga koʻrinadi. Uni yashirishingiz mumkin.'),
                       style: TextStyle(color: t.muted, fontSize: YFont.small))),
               BusyButton(
                   expand: false,
                   onPressed: publish,
-                  label: tr3('发布', 'Жариялау', 'Опубликовать', 'Publish')),
+                  label: tr3('发布', 'Жариялау', 'Опубликовать', 'Publish', ky: 'Жарыялоо', uz: 'Eʼlon qilish')),
             ]),
             body: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -166,7 +166,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
                     Padding(
                         padding: const EdgeInsets.only(top: 10),
                         child: Text(
-                            '${e.buildingArea.toStringAsFixed(0)} m² · ${e.floors} ${tr3('层', 'қабат', 'эт.', 'fl.')} · ${e.rooms} ${tr3('个房间', 'бөлме', 'комн.', 'rooms')}${e.estimatedCost == null ? '' : ' · ≈ ${money(e.estimatedCost)}'}',
+                            '${e.buildingArea.toStringAsFixed(0)} m² · ${e.floors} ${tr3('层', 'қабат', 'эт.', 'fl.', ky: 'каб.', uz: 'qav.')} · ${e.rooms} ${tr3('个房间', 'бөлме', 'комн.', 'rooms', ky: 'бөлмө', uz: 'xona')}${e.estimatedCost == null ? '' : ' · ≈ ${money(e.estimatedCost)}'}',
                             style: TextStyle(color: t.muted)))
                   else
                     Padding(
@@ -176,9 +176,9 @@ class _PublishPostPageState extends State<PublishPostPage> {
                                 '无法从这个设计算出面积和造价，只发布平面图和说明。',
                                 'Есептеу мүмкін емес.',
                                 'Не удалось посчитать площадь и стоимость.',
-                                "Couldn't calculate the area and cost."),
+                                "Couldn't calculate the area and cost.", ky: 'Аянтты жана баасын эсептөө мүмкүн болбоду.', uz: 'Maydon va narxni hisoblab boʻlmadi.'),
                             warn: true)),
-                  SectionTitle(tr3('你想要什么？', 'Не қалайсыз?', 'Чего вы хотите?', 'What do you want?'),
+                  SectionTitle(tr3('你想要什么？', 'Не қалайсыз?', 'Чего вы хотите?', 'What do you want?', ky: 'Эмне каалайсыз?', uz: 'Nima xohlaysiz?'),
                       top: 18),
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Expanded(
@@ -187,10 +187,10 @@ class _PublishPostPageState extends State<PublishPostPage> {
                             selected: !openForBuilders,
                             icon: Icons.forum_outlined,
                             title:
-                                tr3('听听大家意见', 'Пікір тыңдау', 'Узнать мнения', 'Get opinions'),
+                                tr3('听听大家意见', 'Пікір тыңдау', 'Узнать мнения', 'Get opinions', ky: 'Пикир алуу', uz: 'Fikr olish'),
                             body: tr3('只分享，收点评和建议', 'Тек бөлісу',
                                 'Просто поделиться и получить советы',
-                                'Just share it and get advice'),
+                                'Just share it and get advice', ky: 'Жөн эле бөлүшүп, кеңеш алуу', uz: 'Shunchaki ulashib, maslahat olish'),
                             onTap: () =>
                                 setState(() => openForBuilders = false))),
                     const SizedBox(width: 10),
@@ -201,12 +201,12 @@ class _PublishPostPageState extends State<PublishPostPage> {
                             icon: Icons.construction,
                             title: tr3('准备盖，找施工方', 'Салуға дайын',
                                 'Строю, ищу мастеров',
-                                "I'm building and looking for pros"),
+                                "I'm building and looking for pros", ky: 'Курам жатам, адис издейм', uz: 'Qurayapman, mutaxassis qidiryapman'),
                             body: tr3(
                                 '标出“正在找施工方”，之后发具体需求',
                                 'Құрылысшы іздеймін',
                                 'Пометка «ищет строителей»',
-                                '“Looking for builders” tag'),
+                                '“Looking for builders” tag', ky: '«Куруучуларды издейт» тэги', uz: '“Quruvchilarni qidirmoqda” tegi'),
                             onTap: () =>
                                 setState(() => openForBuilders = true))),
                   ]),
@@ -217,7 +217,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
                             '最想请大家看哪些方面？（最多 3 个，可不选）',
                             'Нені көрсін? (3-ке дейін)',
                             'На что обратить внимание? (до 3)',
-                            'What should people look at? (up to 3)'),
+                            'What should people look at? (up to 3)', ky: 'Адамдар эмнеге көңүл бурсун? (3кө чейин)', uz: 'Odamlar nimaga eʼtibor bersin? (3 tagacha)'),
                         style:
                             TextStyle(color: t.muted, fontSize: YFont.small)),
                     const SizedBox(height: 6),
@@ -237,7 +237,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
                                         context,
                                         tr3('最多选 3 个', 'Ең көбі 3',
                                             'Не больше 3',
-                                            'No more than 3'));
+                                            'No more than 3', ky: '3төн ашпашы керек', uz: '3 tadan oshmasin'));
                                   }
                                 })),
                     ]),
@@ -247,7 +247,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
                             '想盖的时候，在房子页点“准备开建？”就能找人，点评都会保留。',
                             'Кейін «Салуға дайынсыз ба?» басыңыз.',
                             'Когда решите строить — нажмите «Готовы строить?».',
-                            'When you decide to build, tap “Ready to build?”.'),
+                            'When you decide to build, tap “Ready to build?”.', ky: 'Курууну чечкенде «Курууга даярсызбы?» дегенди басыңыз.', uz: 'Qurishga qaror qilganingizda “Qurishga tayyormisiz?” ni bosing.'),
                         style:
                             TextStyle(color: t.muted, fontSize: YFont.caption)),
                   ],
@@ -256,10 +256,10 @@ class _PublishPostPageState extends State<PublishPostPage> {
                       controller: title,
                       maxLength: 40,
                       decoration: InputDecoration(
-                          labelText: tr3('标题', 'Атауы', 'Название', 'Title'),
+                          labelText: tr3('标题', 'Атауы', 'Название', 'Title', ky: 'Аталышы', uz: 'Sarlavha'),
                           hintText: tr3('比如：给父母盖的一层砖房', 'Мысалы: ата-анама үй',
                               'Например: дом для родителей',
-                              'E.g. a house for my parents'))),
+                              'E.g. a house for my parents', ky: 'Мисалы, ата-энем үчүн үй', uz: 'Masalan, ota-onam uchun uy'))),
                   const SizedBox(height: 12),
                   TextField(
                       controller: story,
@@ -267,14 +267,14 @@ class _PublishPostPageState extends State<PublishPostPage> {
                       maxLines: 8,
                       maxLength: 600,
                       decoration: InputDecoration(
-                          labelText: tr3('说明（可选）', 'Сипаттама', 'Описание', 'Description'),
+                          labelText: tr3('说明（可选）', 'Сипаттама', 'Описание', 'Description', ky: 'Сүрөттөмө', uz: 'Tavsif'),
                           hintText: tr3(
                               '给谁住、为什么这么设计、想听大家什么意见…',
                               'Кім тұрады, неге осылай…',
                               'Для кого, почему так, что хотите услышать…',
-                              "Who it's for, why it's like this, what you'd like to hear…"),
+                              "Who it's for, why it's like this, what you'd like to hear…", ky: 'Ким үчүн, эмне үчүн ушундай, эмнени уккуңуз келет…', uz: 'Kim uchun, nega shunday, nimani eshitmoqchisiz…'),
                           alignLabelWithHint: true)),
-                  SectionTitle(tr3('地区', 'Аймақ', 'Район', 'District'), top: 8),
+                  SectionTitle(tr3('地区', 'Аймақ', 'Район', 'District', ky: 'Район', uz: 'Tuman'), top: 8),
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     for (final c in regionCodes)
                       FilterPill(
@@ -282,7 +282,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
                           selected: region == c,
                           onTap: () => setState(() => region = c)),
                   ]),
-                  SectionTitle(tr3('标签', 'Тегтер', 'Теги', 'Tags')),
+                  SectionTitle(tr3('标签', 'Тегтер', 'Теги', 'Tags', ky: 'Тэгдер', uz: 'Teglar')),
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     for (final c in postTags)
                       FilterPill(

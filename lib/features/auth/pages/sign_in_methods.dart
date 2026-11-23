@@ -51,22 +51,22 @@ class _SignInMethodsPageState extends State<SignInMethodsPage> {
     });
     if (r == null || !mounted) return;
     await _apply(() => widget.api.linkSignIn(provider, r.idToken),
-        success: tr3('已绑定', 'Қосылды', 'Привязано', 'Linked'));
+        success: tr3('已绑定', 'Қосылды', 'Привязано', 'Linked', ky: 'Байланган', uz: 'Ulangan'));
   }
 
   Future<void> _unlink(String provider, String name) async {
     if (!await confirmDialog(context,
-            tr3('解绑$name？', '$name ажырату керек пе?', 'Отвязать $name?', 'Unlink $name?'),
+            tr3('解绑$name？', '$name ажырату керек пе?', 'Отвязать $name?', 'Unlink $name?', ky: '$name ажыратылсынбы?', uz: '$name uzilsinmi?'),
             body: tr3('解绑后不能再用它登录这个账号。', 'Онымен бұл аккаунтқа кіре алмайсыз.',
                 'Войти в этот аккаунт через него больше не получится.',
-                "You won't be able to sign in to this account with it any more."),
-            ok: tr3('解绑', 'Ажырату', 'Отвязать', 'Unlink'),
+                "You won't be able to sign in to this account with it any more.", ky: 'Мындан ары аны менен бул аккаунтка кире албайсыз.', uz: 'Bundan buyon u orqali bu akkauntga kira olmaysiz.'),
+            ok: tr3('解绑', 'Ажырату', 'Отвязать', 'Unlink', ky: 'Ажыратуу', uz: 'Uzish'),
             danger: true) ||
         !mounted) {
       return;
     }
     await _apply(() => widget.api.unlinkSignIn(provider),
-        success: tr3('已解绑', 'Ажыратылды', 'Отвязано', 'Unlinked'));
+        success: tr3('已解绑', 'Ажыратылды', 'Отвязано', 'Unlinked', ky: 'Ажыратылды', uz: 'Uzildi'));
   }
 
   Future<void> _password() async {
@@ -74,7 +74,7 @@ class _SignInMethodsPageState extends State<SignInMethodsPage> {
         context: context, builder: (_) => const _PasswordDialog());
     if (pw == null || !mounted) return;
     await _apply(() => widget.api.setPassword(pw),
-        success: tr3('密码已保存', 'Құпиясөз сақталды', 'Пароль сохранён', 'Password saved'));
+        success: tr3('密码已保存', 'Құпиясөз сақталды', 'Пароль сохранён', 'Password saved', ky: 'Сырсөз сакталды', uz: 'Parol saqlandi'));
   }
 
   Widget _row(
@@ -89,15 +89,15 @@ class _SignInMethodsPageState extends State<SignInMethodsPage> {
         icon: icon,
         title: name,
         subtitle: linked
-            ? (m.email.isEmpty ? tr3('已绑定', 'Қосылған', 'Привязан', 'Linked') : m.email)
-            : tr3('未绑定', 'Қосылмаған', 'Не привязан', 'Not linked'),
+            ? (m.email.isEmpty ? tr3('已绑定', 'Қосылған', 'Привязан', 'Linked', ky: 'Байланган', uz: 'Ulangan') : m.email)
+            : tr3('未绑定', 'Қосылмаған', 'Не привязан', 'Not linked', ky: 'Байланган эмес', uz: 'Ulanmagan'),
         trailing: TextButton(
             key: Key('$key-action'),
             onPressed:
                 linked ? () => _unlink(provider, name) : () => _link(provider),
             child: Text(linked
-                ? tr3('解绑', 'Ажырату', 'Отвязать', 'Unlink')
-                : tr3('绑定', 'Қосу', 'Привязать', 'Link'))));
+                ? tr3('解绑', 'Ажырату', 'Отвязать', 'Unlink', ky: 'Ажыратуу', uz: 'Uzish')
+                : tr3('绑定', 'Қосу', 'Привязать', 'Link', ky: 'Байлоо', uz: 'Ulash'))));
   }
 
   @override
@@ -105,7 +105,7 @@ class _SignInMethodsPageState extends State<SignInMethodsPage> {
     final me = context.session.currentAccount;
     final email = _find('email');
     return PageScaffold(
-        title: tr3('登录方式', 'Кіру тәсілдері', 'Способы входа', 'Sign-in methods'),
+        title: tr3('登录方式', 'Кіру тәсілдері', 'Способы входа', 'Sign-in methods', ky: 'Кирүү ыкмалары', uz: 'Kirish usullari'),
         body: FutureBuilder(
             future: _load,
             builder: (context, snap) {
@@ -114,7 +114,7 @@ class _SignInMethodsPageState extends State<SignInMethodsPage> {
                     ? Center(
                         child: TextButton(
                             onPressed: () => setState(() => _load = _fetch()),
-                            child: Text(tr3('重试', 'Қайталау', 'Повторить', 'Retry'))))
+                            child: Text(tr3('重试', 'Қайталау', 'Повторить', 'Retry', ky: 'Кайталоо', uz: 'Qayta urinish'))))
                     : const Padding(
                         padding: EdgeInsets.all(32),
                         child: Center(child: CircularProgressIndicator()));
@@ -126,7 +126,7 @@ class _SignInMethodsPageState extends State<SignInMethodsPage> {
                         '绑定多种方式后，用其中任何一种都能登录同一个账号。至少保留一种。',
                         'Бірнеше тәсіл қосылса, кез келгенімен бір аккаунтқа кіресіз. Кемінде біреуі қалуы керек.',
                         'С любым привязанным способом вы входите в один и тот же аккаунт. Хотя бы один должен остаться.',
-                        'Every linked method signs you in to the same account. At least one must stay.')),
+                        'Every linked method signs you in to the same account. At least one must stay.', ky: 'Ар бир байланган ыкма бир эле аккаунтка киргизет. Жок дегенде бирөө калышы керек.', uz: 'Har bir ulangan usul bitta akkauntga kiritadi. Kamida bittasi qolishi kerak.')),
                     SettingsGroup(children: [
                       if (SocialSignIn.appleAvailable || _find('apple') != null)
                         _row(
@@ -145,16 +145,16 @@ class _SignInMethodsPageState extends State<SignInMethodsPage> {
                           key: const Key('method-email'),
                           icon: Icons.mail_outline,
                           title: tr3(
-                              '邮箱和密码', 'Пошта мен құпиясөз', 'Почта и пароль', 'Email and password'),
+                              '邮箱和密码', 'Пошта мен құпиясөз', 'Почта и пароль', 'Email and password', ky: 'Email жана сырсөз', uz: 'Email va parol'),
                           subtitle: email != null
                               ? email.email
                               : (me?.email.isNotEmpty ?? false)
                                   ? tr3('未设置密码', 'Құпиясөз жоқ',
                                       'Пароль не задан',
-                                      'No password set')
+                                      'No password set', ky: 'Сырсөз коюлган эмес', uz: 'Parol oʻrnatilmagan')
                                   : tr3('账号没有邮箱', 'Аккаунтта пошта жоқ',
                                       'У аккаунта нет почты',
-                                      'The account has no email'),
+                                      'The account has no email', ky: 'Аккаунтта email жок', uz: 'Akkauntda email yoʻq'),
                           trailing:
                               Row(mainAxisSize: MainAxisSize.min, children: [
                             if (me?.email.isNotEmpty ?? false)
@@ -162,14 +162,14 @@ class _SignInMethodsPageState extends State<SignInMethodsPage> {
                                   key: const Key('method-email-password'),
                                   onPressed: _password,
                                   child: Text(email != null
-                                      ? tr3('改密码', 'Өзгерту', 'Сменить', 'Change')
-                                      : tr3('设密码', 'Орнату', 'Задать', 'Set'))),
+                                      ? tr3('改密码', 'Өзгерту', 'Сменить', 'Change', ky: 'Өзгөртүү', uz: 'Oʻzgartirish')
+                                      : tr3('设密码', 'Орнату', 'Задать', 'Set', ky: 'Коюу', uz: 'Oʻrnatish'))),
                             if (email != null)
                               TextButton(
                                   key: const Key('method-email-remove'),
                                   onPressed: () => _unlink(
-                                      'email', tr3('邮箱登录', 'Пошта', 'почту', 'email')),
-                                  child: Text(tr3('移除', 'Алу', 'Убрать', 'Remove'))),
+                                      'email', tr3('邮箱登录', 'Пошта', 'почту', 'email', ky: 'email', uz: 'email')),
+                                  child: Text(tr3('移除', 'Алу', 'Убрать', 'Remove', ky: 'Алып салуу', uz: 'Olib tashlash'))),
                           ])),
                     ]),
                   ]);
@@ -197,7 +197,7 @@ class _PasswordDialogState extends State<_PasswordDialog> {
   Widget build(BuildContext context) {
     final ok = _pw.text.length >= 8;
     return AlertDialog(
-        title: Text(tr3('设置登录密码', 'Құпиясөз орнату', 'Пароль для входа', 'Sign-in password')),
+        title: Text(tr3('设置登录密码', 'Құпиясөз орнату', 'Пароль для входа', 'Sign-in password', ky: 'Кирүү сырсөзү', uz: 'Kirish paroli')),
         content: TextField(
             key: const Key('method-password-field'),
             controller: _pw,
@@ -210,7 +210,7 @@ class _PasswordDialogState extends State<_PasswordDialog> {
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
                 labelText:
-                    tr3('至少 8 位', 'Кемінде 8 таңба', 'Не короче 8 символов', 'At least 8 characters'),
+                    tr3('至少 8 位', 'Кемінде 8 таңба', 'Не короче 8 символов', 'At least 8 characters', ky: 'Кеминде 8 белги', uz: 'Kamida 8 ta belgi'),
                 suffixIcon: IconButton(
                     icon: Icon(_show
                         ? Icons.visibility_off_outlined
@@ -219,11 +219,11 @@ class _PasswordDialogState extends State<_PasswordDialog> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'))),
+              child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
           FilledButton(
               key: const Key('method-password-save'),
               onPressed: ok ? () => Navigator.pop(context, _pw.text) : null,
-              child: Text(tr3('保存', 'Сақтау', 'Сохранить', 'Save'))),
+              child: Text(tr3('保存', 'Сақтау', 'Сохранить', 'Save', ky: 'Сактоо', uz: 'Saqlash'))),
         ]);
   }
 }

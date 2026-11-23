@@ -52,20 +52,20 @@ class _CreateSheet extends StatelessWidget {
       (
         1,
         YIcon.plan,
-        tr3('从图纸库挑一套', 'Кітапханадан таңдау', 'Из библиотеки', 'From the plan library'),
-        tr3('用别人的房子改', 'Біреудің үйін өзгерту', 'Взять чужой дом за основу', "Start from someone else's house"),
+        tr3('从图纸库挑一套', 'Кітапханадан таңдау', 'Из библиотеки', 'From the plan library', ky: 'Пландар китепканасынан', uz: 'Rejalar kutubxonasidan'),
+        tr3('用别人的房子改', 'Біреудің үйін өзгерту', 'Взять чужой дом за основу', "Start from someone else's house", ky: 'Башка бирөөнүн үйүнөн баштоо', uz: 'Boshqa birovning uyidan boshlash'),
       ),
       (
         0,
         YIcon.design,
-        tr3('从零画', 'Нөлден сызу', 'С нуля', 'From scratch'),
-        tr3('输长宽、选屋顶就能开始', 'Өлшем мен шатырды таңдаңыз', 'Размеры и крыша', 'Size and roof'),
+        tr3('从零画', 'Нөлден сызу', 'С нуля', 'From scratch', ky: 'Нөлдөн', uz: 'Noldan'),
+        tr3('输长宽、选屋顶就能开始', 'Өлшем мен шатырды таңдаңыз', 'Размеры и крыша', 'Size and roof', ky: 'Өлчөм жана чатыр', uz: 'Oʻlcham va tom'),
       ),
       (
         2,
         YIcon.hire,
-        tr3('直接找人', 'Адам іздеу', 'Найти мастера', 'Find a pro'),
-        tr3('不用图纸，填需求', 'Сызбасыз тапсырыс', 'Без чертежа', 'No drawing needed'),
+        tr3('直接找人', 'Адам іздеу', 'Найти мастера', 'Find a pro', ky: 'Адис табуу', uz: 'Mutaxassis topish'),
+        tr3('不用图纸，填需求', 'Сызбасыз тапсырыс', 'Без чертежа', 'No drawing needed', ky: 'Чийме кереги жок', uz: 'Chizma shart emas'),
       ),
     ];
     final t = YTokens.of(context);
@@ -79,7 +79,7 @@ class _CreateSheet extends StatelessWidget {
                   Text(
                       tr3('你想做什么？', 'Не істегіңіз келеді?',
                           'Что вы хотите сделать?',
-                          'What do you want to do?'),
+                          'What do you want to do?', ky: 'Эмне кылгыңыз келет?', uz: 'Nima qilmoqchisiz?'),
                       style: display(size: 22)),
                   const SizedBox(height: 14),
                   LayoutBuilder(builder: (context, c) {
@@ -115,7 +115,7 @@ class _CreateSheet extends StatelessWidget {
                                   '我是工人 / 包工头 / 工程师：入驻接活',
                                   'Шеберсіз бе? Жұмыс алу',
                                   'Вы мастер? Получать заказы',
-                                  'Are you a pro? Get orders'),
+                                  'Are you a pro? Get orders', ky: 'Адиссизби? Буйрутма алыңыз', uz: 'Mutaxassismisiz? Buyurtma oling'),
                               style: TextStyle(color: t.muted)))),
                 ])));
   }
@@ -158,7 +158,7 @@ class _OptionCard extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: t.accent,
                       borderRadius: BorderRadius.circular(YRadius.pill)),
-                  child: Text(tr3('推荐', 'Ұсынамыз', 'Совет', 'Tip'),
+                  child: Text(tr3('推荐', 'Ұсынамыз', 'Совет', 'Tip', ky: 'Кеңеш', uz: 'Maslahat'),
                       style: TextStyle(
                           color: t.accentInk,
                           fontSize: YFont.caption,
@@ -205,7 +205,7 @@ class PlanLibraryPage extends StatelessWidget {
     return Scaffold(
         appBar: AppBar(
             title: Text(tr3('图纸库', 'Жобалар кітапханасы', 'Библиотека проектов',
-                'Plan library'))),
+                'Plan library', ky: 'Пландар китепканасы', uz: 'Rejalar kutubxonasi'))),
         body: HomePage(
             embedded: true,
             onPick: (post) => Navigator.of(context).pop(post)));

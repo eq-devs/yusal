@@ -22,11 +22,11 @@ final myCooperationsProvider = FutureProvider.autoDispose
   await Future.wait(cooperations.map((c) => c.demandId).toSet().map((id) async {
     try {
       titles[id] = (await demands.demand(id))?.current.title ??
-          tr3('需求已不可见', 'Тапсырыс қолжетімсіз', 'Заявка недоступна', 'Request unavailable');
+          tr3('需求已不可见', 'Тапсырыс қолжетімсіз', 'Заявка недоступна', 'Request unavailable', ky: 'Суроо-талап жеткиликсиз', uz: 'Soʻrov mavjud emas');
     } catch (_) {
       titles[id] = tr3('标题暂不可用', 'Атауы уақытша қолжетімсіз',
           'Название временно недоступно',
-          'Title temporarily unavailable');
+          'Title temporarily unavailable', ky: 'Аталышы убактылуу жеткиликсиз', uz: 'Sarlavha vaqtincha mavjud emas');
     }
   }));
   return [for (final c in cooperations) (c, titles[c.demandId]!)];

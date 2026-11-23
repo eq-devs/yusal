@@ -60,7 +60,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
           if (!people) ...[
             FilterPill(
                 label: type == null
-                    ? tr3('全部类型', 'Барлық түрі', 'Все типы', 'All types')
+                    ? tr3('全部类型', 'Барлық түрі', 'Все типы', 'All types', ky: 'Бардык түрлөр', uz: 'Barcha turlar')
                     : demandTypeName(type!),
                 selected: type != null,
                 icon: Icons.tune,
@@ -68,8 +68,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 onTap: () async {
                   final v = await pickFilter<DemandType>(
                       context,
-                      tr3('需求类型', 'Түрі', 'Тип', 'Type'),
-                      tr3('全部', 'Барлығы', 'Все', 'All'),
+                      tr3('需求类型', 'Түрі', 'Тип', 'Type', ky: 'Түрү', uz: 'Turi'),
+                      tr3('全部', 'Барлығы', 'Все', 'All', ky: 'Баары', uz: 'Hammasi'),
                       [
                         for (final d in DemandType.values)
                           (d, demandTypeName(d)),
@@ -81,7 +81,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
           ],
           FilterPill(
               label: trade == null
-                  ? tr3('工种', 'Мамандық', 'Специальность', 'Trade')
+                  ? tr3('工种', 'Мамандық', 'Специальность', 'Trade', ky: 'Кесип', uz: 'Kasb')
                   : tradeName(trade!),
               selected: trade != null,
               icon: Icons.handyman_outlined,
@@ -89,8 +89,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
               onTap: () async {
                 final v = await pickFilter<String>(
                     context,
-                    tr3('工种', 'Мамандық', 'Специальность', 'Trade'),
-                    tr3('全部', 'Барлығы', 'Все', 'All'),
+                    tr3('工种', 'Мамандық', 'Специальность', 'Trade', ky: 'Кесип', uz: 'Kasb'),
+                    tr3('全部', 'Барлығы', 'Все', 'All', ky: 'Баары', uz: 'Hammasi'),
                     [for (final c in tradeCodes) (c, tradeName(c))],
                     selected: trade);
                 if (v != null && mounted) setState(() => trade = v.$1);
@@ -98,7 +98,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
           const SizedBox(width: 8),
           FilterPill(
               label: region == null
-                  ? tr3('地区', 'Аймақ', 'Район', 'District')
+                  ? tr3('地区', 'Аймақ', 'Район', 'District', ky: 'Район', uz: 'Tuman')
                   : regionName(region!),
               selected: region != null,
               icon: Icons.place_outlined,
@@ -107,8 +107,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
               onTap: () async {
                 final v = await pickFilter<String>(
                     context,
-                    tr3('地区', 'Аймақ', 'Район', 'District'),
-                    tr3('全部', 'Барлығы', 'Все', 'All'),
+                    tr3('地区', 'Аймақ', 'Район', 'District', ky: 'Район', uz: 'Tuman'),
+                    tr3('全部', 'Барлығы', 'Все', 'All', ky: 'Баары', uz: 'Hammasi'),
                     [for (final c in regionCodes) (c, regionName(c))],
                     selected: region);
                 if (v != null && mounted) setState(() => region = v.$1);
@@ -116,13 +116,13 @@ class _DiscoverPageState extends State<DiscoverPage> {
           if (people) ...[
             const SizedBox(width: 8),
             FilterPill(
-                label: tr3('现在可接', 'Қазір бос', 'Свободен сейчас', 'Available now'),
+                label: tr3('现在可接', 'Қазір бос', 'Свободен сейчас', 'Available now', ky: 'Азыр бош', uz: 'Hozir boʻsh'),
                 selected: availableNow,
                 onTap: () => setState(() => availableNow = !availableNow)),
             const SizedBox(width: 8),
             FilterPill(
                 label: kind == null
-                    ? tr3('个人／团队', 'Жеке / бригада', 'Мастер / бригада', 'Pro / crew')
+                    ? tr3('个人／团队', 'Жеке / бригада', 'Мастер / бригада', 'Pro / crew', ky: 'Адис / бригада', uz: 'Mutaxassis / brigada')
                     : profileKindName(kind!),
                 selected: kind != null,
                 onTap: () => setState(() => kind = switch (kind) {
@@ -140,14 +140,14 @@ class _DiscoverPageState extends State<DiscoverPage> {
             hint: people
                 ? tr3('搜索工人、施工队', 'Шебер не бригада іздеу',
                     'Поиск мастеров и бригад',
-                    'Search pros and crews')
+                    'Search pros and crews', ky: 'Адистерди жана бригадаларды издөө', uz: 'Mutaxassis va brigadalarni qidirish')
                 : tr3('搜索需求，如“砌墙”', 'Тапсырыс іздеу',
                     'Поиск заявок, напр. «кладка»',
-                    'Search requests, e.g. “masonry”')));
+                    'Search requests, e.g. “masonry”', ky: 'Суроо-талаптарды издөө, мис. «дубал тургузуу»', uz: 'Soʻrovlarni qidirish, masalan, “gʻisht terish”')));
     final toggle = Row(children: [
       for (final (isPeople, icon, label) in [
-        (false, YIcon.contract, tr3('找活', 'Жұмыс табу', 'Найти работу', 'Find work')),
-        (true, YIcon.hire, tr3('找人', 'Адам табу', 'Найти мастера', 'Find a pro')),
+        (false, YIcon.contract, tr3('找活', 'Жұмыс табу', 'Найти работу', 'Find work', ky: 'Иш табуу', uz: 'Ish topish')),
+        (true, YIcon.hire, tr3('找人', 'Адам табу', 'Найти мастера', 'Find a pro', ky: 'Адис табуу', uz: 'Mutaxassis topish')),
       ])
         Expanded(
             child: InkWell(
@@ -183,10 +183,10 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     icon: Icons.person_search_outlined,
                     yicon: YIcon.hire,
                     title:
-                        tr3('没有符合条件的人', 'Сәйкес адам жоқ', 'Никого не нашли', 'No one found'),
+                        tr3('没有符合条件的人', 'Сәйкес адам жоқ', 'Никого не нашли', 'No one found', ky: 'Эч ким табылган жок', uz: 'Hech kim topilmadi'),
                     body: tr3('试试放宽地区或工种', 'Сүзгіні кеңейтіп көріңіз',
                         'Попробуйте смягчить фильтры',
-                        'Try loosening the filters'))
+                        'Try loosening the filters', ky: 'Чыпкаларды жумшартып көрүңүз', uz: 'Filtrlarni yumshatib koʻring'))
                 : Column(children: [
                     for (final p in list)
                       Padding(
@@ -209,10 +209,10 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     yicon: YIcon.search,
                     title: tr3('暂时没有符合条件的需求', 'Сәйкес тапсырыс жоқ',
                         'Нет подходящих заявок',
-                        'No matching requests'),
+                        'No matching requests', ky: 'Ылайыктуу суроо-талап жок', uz: 'Mos soʻrov yoʻq'),
                     body: tr3('换个地区或工种看看', 'Аймақ не мамандықты өзгертіңіз',
                         'Измените район или специальность',
-                        'Change the district or trade'));
+                        'Change the district or trade', ky: 'Районду же кесипти өзгөртүңүз', uz: 'Tuman yoki kasbni oʻzgartiring'));
               }
               return LayoutBuilder(builder: (context, c) {
                 final columns = c.maxWidth > 900
@@ -240,14 +240,14 @@ class _DiscoverPageState extends State<DiscoverPage> {
             });
     return Scaffold(
         appBar: widget.pushed
-            ? AppBar(title: Text(tr3('接活大厅', 'Жұмыс орталығы', 'Биржа работы', 'Job board')))
+            ? AppBar(title: Text(tr3('接活大厅', 'Жұмыс орталығы', 'Биржа работы', 'Job board', ky: 'Жумуш тактасы', uz: 'Ishlar taxtasi')))
             : null,
         floatingActionButton: people || widget.embedded
             ? null
             : FloatingActionButton.extended(
                 onPressed: publish,
                 icon: const YusalIcon(YIcon.add, mono: true),
-                label: Text(tr3('发布需求', 'Тапсырыс беру', 'Разместить заявку', 'Post a request'))),
+                label: Text(tr3('发布需求', 'Тапсырыс беру', 'Разместить заявку', 'Post a request', ky: 'Суроо-талап жарыялоо', uz: 'Soʻrov eʼlon qilish'))),
         body: SafeArea(
             top: !widget.embedded,
             child: Center(

@@ -230,7 +230,7 @@ class _LiveState<T> extends ConsumerState<Live<T>> {
                     const SizedBox(height: 12),
                     OutlinedButton(
                         onPressed: _reload,
-                        child: Text(tr3('重试', 'Қайталау', 'Повторить', 'Retry'))),
+                        child: Text(tr3('重试', 'Қайталау', 'Повторить', 'Retry', ky: 'Кайталоо', uz: 'Qayta urinish'))),
                   ])));
     }
     return widget.builder(context, value.requireValue);

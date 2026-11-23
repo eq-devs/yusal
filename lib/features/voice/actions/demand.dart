@@ -59,35 +59,35 @@ final demandActions = [
   _demandAction(
       DemandEvent.publish,
       'demand.publish',
-      const L3('提交审核', 'Тексеруге жіберу', 'Отправить на проверку', 'Send for review'),
-      const L3('提交审核', 'Тексеруге жібер', 'Отправь на проверку', 'Send it for review'),
+      const L3('提交审核', 'Тексеруге жіберу', 'Отправить на проверку', 'Send for review', ky: 'Текшерүүгө жөнөтүү', uz: 'Tekshiruvga yuborish'),
+      const L3('提交审核', 'Тексеруге жібер', 'Отправь на проверку', 'Send it for review', ky: 'Текшерүүгө жөнөт', uz: 'Tekshiruvga yubor'),
       (ctx, d, _) => ctx.repos.demands.publish(d.id)),
   _demandAction(
       DemandEvent.pause,
       'demand.pause',
-      const L3('暂停招募', 'Іздеуді тоқтату', 'Приостановить набор', 'Pause hiring'),
-      const L3('先暂停招人', 'Іздеуді уақытша тоқтат', 'Приостанови набор', 'Pause hiring'),
+      const L3('暂停招募', 'Іздеуді тоқтату', 'Приостановить набор', 'Pause hiring', ky: 'Жалдоону тындыруу', uz: 'Yollashni toʻxtatish'),
+      const L3('先暂停招人', 'Іздеуді уақытша тоқтат', 'Приостанови набор', 'Pause hiring', ky: 'Жалдоону тындыр', uz: 'Yollashni toʻxtat'),
       (ctx, d, _) => ctx.repos.demands.pause(d.id)),
   _demandAction(
       DemandEvent.resume,
       'demand.resume',
-      const L3('继续招募', 'Іздеуді жалғастыру', 'Возобновить набор', 'Resume hiring'),
-      const L3('继续招人', 'Іздеуді жалғастыр', 'Возобнови набор', 'Resume hiring'),
+      const L3('继续招募', 'Іздеуді жалғастыру', 'Возобновить набор', 'Resume hiring', ky: 'Жалдоону улантуу', uz: 'Yollashni davom ettirish'),
+      const L3('继续招人', 'Іздеуді жалғастыр', 'Возобнови набор', 'Resume hiring', ky: 'Жалдоону улант', uz: 'Yollashni davom ettir'),
       (ctx, d, _) => ctx.repos.demands.resume(d.id)),
   _demandAction(
       DemandEvent.renew,
       'demand.renew',
-      const L3('续期 30 天', '30 күнге ұзарту', 'Продлить на 30 дней', 'Extend by 30 days'),
-      const L3('再延长一个月', 'Тағы бір айға ұзарт', 'Продли ещё на месяц', 'Extend it another month'),
+      const L3('续期 30 天', '30 күнге ұзарту', 'Продлить на 30 дней', 'Extend by 30 days', ky: '30 күнгө узартуу', uz: '30 kunga uzaytirish'),
+      const L3('再延长一个月', 'Тағы бір айға ұзарт', 'Продли ещё на месяц', 'Extend it another month', ky: 'Дагы бир айга узарт', uz: 'Yana bir oyga uzaytir'),
       (ctx, d, _) => ctx.repos.demands.renew(d.id)),
   AppAction(
     id: 'demand.mark_found',
     title: const L3('标记已找到人', 'Адам табылды деп белгілеу',
         'Отметить, что исполнитель найден',
-        'Mark that someone was found'),
+        'Mark that someone was found', ky: 'Адам табылганын белгилөө', uz: 'Odam topilganini belgilash'),
     examples: const L3('已经找到瓦工了，不再招人', 'Қалаушы табылды, енді іздемеймін',
         'Каменщика нашли, больше не ищем',
-        'We found a mason, not looking any more'),
+        'We found a mason, not looking any more', ky: 'Дубалчы таптык, мындан ары издебейбиз', uz: 'Gʻishtchi topdik, boshqa qidirmaymiz'),
     params: {
       'outcome': Param.choice([for (final o in OutcomeKind.values) o.name])
     },
@@ -107,10 +107,10 @@ final demandActions = [
   _demandAction(
       DemandEvent.close,
       'demand.close',
-      const L3('关闭需求', 'Тапсырысты жабу', 'Закрыть заявку', 'Close the request'),
+      const L3('关闭需求', 'Тапсырысты жабу', 'Закрыть заявку', 'Close the request', ky: 'Суроо-талапты жабуу', uz: 'Soʻrovni yopish'),
       const L3('关掉这个需求，不需要了', 'Бұл тапсырысты жап, керек емес',
           'Закрой заявку, уже не нужно',
-          "Close the request, it's not needed any more"),
+          "Close the request, it's not needed any more", ky: 'Суроо-талапты жап, мындан ары кереги жок', uz: 'Soʻrovni yop, endi kerak emas'),
       (ctx, d, args) => ctx.repos.demands.close(d.id, args.text('reason')),
       params: const {'reason': Param.text()}),
 ];

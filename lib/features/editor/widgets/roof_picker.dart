@@ -34,9 +34,9 @@ HouseDocument withRoof(HouseDocument doc, String style) {
 }
 
 String roofStyleName(String style) => switch (style) {
-      'flat' => tr3('平屋顶', 'Тегіс шатыр', 'Плоская крыша', 'Flat roof'),
-      'hip' => tr3('四坡屋顶', 'Төрт беткейлі', 'Вальмовая', 'Hip'),
-      _ => tr3('双坡屋顶', 'Қос беткейлі', 'Двускатная', 'Gable'),
+      'flat' => tr3('平屋顶', 'Тегіс шатыр', 'Плоская крыша', 'Flat roof', ky: 'Жалпак чатыр', uz: 'Tekis tom'),
+      'hip' => tr3('四坡屋顶', 'Төрт беткейлі', 'Вальмовая', 'Hip', ky: 'Төрт капталдуу', uz: 'Toʻrt nishabli'),
+      _ => tr3('双坡屋顶', 'Қос беткейлі', 'Двускатная', 'Gable', ky: 'Эки капталдуу', uz: 'Ikki nishabli'),
     };
 
 /// A small side view of each roof style, so the choice is seen, not read.
@@ -119,7 +119,7 @@ extension _RoofPicker on _HouseEditorState {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши', 'Roof type'),
+                        Text(tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши', 'Roof type', ky: 'Чатырдын түрү', uz: 'Tom turi'),
                             style: const TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w700)),
                         const SizedBox(height: 12),
@@ -169,7 +169,7 @@ extension _RoofPicker on _HouseEditorState {
                                 '坡度、挑檐和女儿墙高度在“构造细节”里调。',
                                 'Еңіс, карниз және парапет «Құрылым» бетінде.',
                                 'Уклон, свес и высота парапета настраиваются в разделе «Детали конструкции».',
-                                'Slope, overhang and parapet height are set in “Construction details”.'),
+                                'Slope, overhang and parapet height are set in “Construction details”.', ky: 'Жантаюу, карниздин чыгышы жана парапеттин бийиктиги «Конструкция деталдары» бөлүмүндө коюлат.', uz: 'Nishab, karniz chiqishi va parapet balandligi “Konstruksiya tafsilotlari” boʻlimida belgilanadi.'),
                             style: TextStyle(fontSize: 12, color: t.muted)),
                       ])));
         });

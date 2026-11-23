@@ -29,7 +29,7 @@ class InboxButton extends StatelessWidget {
         provider: unreadProvider,
         loading: const SizedBox(width: 48),
         builder: (context, unread) => IconButton(
-            tooltip: tr3('消息', 'Хабарлар', 'Сообщения', 'Messages'),
+            tooltip: tr3('消息', 'Хабарлар', 'Сообщения', 'Messages', ky: 'Билдирүүлөр', uz: 'Xabarlar'),
             onPressed: () async {
               if (await requireLogin(context) && context.mounted) {
                 await pushPage<void>(context, (_) => const InboxPage());
@@ -74,7 +74,7 @@ class InboxPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     watchLang(context);
-    final title = Text(tr3('消息', 'Хабарлар', 'Сообщения', 'Messages'));
+    final title = Text(tr3('消息', 'Хабарлар', 'Сообщения', 'Messages', ky: 'Билдирүүлөр', uz: 'Xabarlar'));
     return OnChange(builder: (context) {
       if (context.session.currentAccount == null) {
         return Scaffold(
@@ -83,12 +83,12 @@ class InboxPage extends StatelessWidget {
                 icon: Icons.forum_outlined,
                 text: tr3('登录后查看消息', 'Хабарларды көру үшін кіріңіз',
                     'Войдите, чтобы видеть сообщения',
-                    'Sign in to see messages'),
+                    'Sign in to see messages', ky: 'Билдирүүлөрдү көрүү үчүн кириңиз', uz: 'Xabarlarni koʻrish uchun kiring'),
                 body: tr3(
                     '和房主、师傅的聊天，以及报价、验收等通知都在这里。',
                     'Үй иелері мен шеберлермен чаттар, ұсыныстар мен қабылдау туралы хабарламалар осында.',
                     'Здесь чаты с владельцами и мастерами, уведомления о предложениях и приёмке.',
-                    'Chats with owners and pros, and notifications about quotes and acceptance, live here.')));
+                    'Chats with owners and pros, and notifications about quotes and acceptance, live here.', ky: 'Ээлер жана адистер менен чаттар, сунуштар жана кабыл алуу жөнүндө билдирмелер ушул жерде.', uz: 'Egalar va mutaxassislar bilan chatlar, takliflar va qabul haqidagi bildirishnomalar shu yerda.')));
       }
       return DefaultTabController(
           length: 2,
@@ -97,7 +97,7 @@ class InboxPage extends StatelessWidget {
                   title: title,
                   actions: [
                     IconButton(
-                        tooltip: tr3('全部已读', 'Барлығы оқылды', 'Прочитать всё', 'Mark all read'),
+                        tooltip: tr3('全部已读', 'Барлығы оқылды', 'Прочитать всё', 'Mark all read', ky: 'Баарын окулду деп белгилөө', uz: 'Hammasini oʻqildi deb belgilash'),
                         icon: const Icon(Icons.done_all),
                         onPressed: () => attempt(
                             context,
@@ -107,8 +107,8 @@ class InboxPage extends StatelessWidget {
                     const SizedBox(width: YSpace.xs),
                   ],
                   bottom: TabBar(tabs: [
-                    Tab(text: tr3('会话', 'Чаттар', 'Чаты', 'Chats')),
-                    Tab(text: tr3('通知', 'Хабарламалар', 'Уведомления', 'Notifications')),
+                    Tab(text: tr3('会话', 'Чаттар', 'Чаты', 'Chats', ky: 'Чаттар', uz: 'Chatlar')),
+                    Tab(text: tr3('通知', 'Хабарламалар', 'Уведомления', 'Notifications', ky: 'Билдирмелер', uz: 'Bildirishnomalar')),
                   ])),
               body: const MotionTabView(
                   children: [_Conversations(), _Notices()])));
@@ -136,10 +136,10 @@ class _Conversations extends StatelessWidget {
         builder: (context, list) => list.isEmpty
             ? EmptyState(
                 icon: Icons.forum_outlined,
-                title: tr3('还没有会话', 'Чат жоқ', 'Нет чатов', 'No chats'),
+                title: tr3('还没有会话', 'Чат жоқ', 'Нет чатов', 'No chats', ky: 'Чаттар жок', uz: 'Chatlar yoʻq'),
                 body: tr3('在需求或名片页点击“联系”开始沟通。', 'Тапсырыс бетінен жазыңыз.',
                     'Напишите со страницы заявки или профиля.',
-                    'Write from a request or profile page.'))
+                    'Write from a request or profile page.', ky: 'Суроо-талаптын же профилдин бетинен жазыңыз.', uz: 'Soʻrov yoki profil sahifasidan yozing.'))
             : RefreshIndicator(
                 onRefresh: refresh.call,
                 child: ListView.separated(
@@ -194,10 +194,10 @@ class _Conversations extends StatelessWidget {
 
 String messagePreview(ChatMessage m) => switch (m.kind) {
       MessageKind.text => m.text,
-      MessageKind.image => tr3('[图片]', '[Сурет]', '[Фото]', '[Photo]'),
-      MessageKind.demandCard => tr3('[需求卡片]', '[Тапсырыс]', '[Заявка]', '[Request]'),
-      MessageKind.quoteCard => tr3('[报价卡片]', '[Ұсыныс]', '[Предложение]', '[Quote]'),
-      MessageKind.phoneShared => tr3('[电话号码]', '[Телефон]', '[Телефон]', '[Phone]'),
+      MessageKind.image => tr3('[图片]', '[Сурет]', '[Фото]', '[Photo]', ky: '[Сүрөт]', uz: '[Rasm]'),
+      MessageKind.demandCard => tr3('[需求卡片]', '[Тапсырыс]', '[Заявка]', '[Request]', ky: '[Суроо-талап]', uz: '[Soʻrov]'),
+      MessageKind.quoteCard => tr3('[报价卡片]', '[Ұсыныс]', '[Предложение]', '[Quote]', ky: '[Сунуш]', uz: '[Taklif]'),
+      MessageKind.phoneShared => tr3('[电话号码]', '[Телефон]', '[Телефон]', '[Phone]', ky: '[Телефон]', uz: '[Telefon]'),
       MessageKind.system => m.text,
     };
 
@@ -219,7 +219,7 @@ class _Notices extends StatelessWidget {
         builder: (context, list) => list.isEmpty
             ? EmptyState(
                 icon: Icons.notifications_none,
-                title: tr3('暂无通知', 'Хабарлама жоқ', 'Нет уведомлений', 'No notifications'))
+                title: tr3('暂无通知', 'Хабарлама жоқ', 'Нет уведомлений', 'No notifications', ky: 'Билдирмелер жок', uz: 'Bildirishnomalar yoʻq'))
             : RefreshIndicator(
                 onRefresh: refresh.call,
                 child: ListView.separated(
@@ -308,16 +308,16 @@ Future<void> openNotice(BuildContext context, AppNotification n) async {
                     title: Text(noticeText(n)),
                     content: restricted && n.title.isNotEmpty
                         ? Text(
-                            '${tr3('原因', 'Себебі', 'Причина', 'Reason')}: ${reasonText(n.title)}')
+                            '${tr3('原因', 'Себебі', 'Причина', 'Reason', ky: 'Себеби', uz: 'Sababi')}: ${reasonText(n.title)}')
                         : null,
                     actions: [
                   if (!restricted)
                     TextButton(
                         onPressed: () => Navigator.pop(context, 'open'),
-                        child: Text(tr3('查看', 'Ашу', 'Открыть', 'Open'))),
+                        child: Text(tr3('查看', 'Ашу', 'Открыть', 'Open', ky: 'Ачуу', uz: 'Ochish'))),
                   FilledButton(
                       onPressed: () => Navigator.pop(context, 'appeal'),
-                      child: Text(tr3('申诉', 'Шағымдану', 'Обжаловать', 'Appeal'))),
+                      child: Text(tr3('申诉', 'Шағымдану', 'Обжаловать', 'Appeal', ky: 'Даттануу', uz: 'Apellyatsiya'))),
                 ])));
     if (!context.mounted) return;
     if (v == 'appeal') return appealDecision(context, target, n.refId);

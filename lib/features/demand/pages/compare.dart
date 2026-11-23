@@ -27,29 +27,29 @@ class ComparePage extends StatelessWidget {
     final rows =
         <(String, String Function(ApplicationVersion v, Application a))>[
       (
-        tr3('价格', 'Баға', 'Цена', 'Price'),
+        tr3('价格', 'Баға', 'Цена', 'Price', ky: 'Баасы', uz: 'Narxi'),
         (v, a) =>
-            v.total == null ? tr3('需现场确认', 'Орында', 'Замер', 'Site measure') : money(v.total)
+            v.total == null ? tr3('需现场确认', 'Орында', 'Замер', 'Site measure', ky: 'Объектиде өлчөө', uz: 'Obyektda oʻlchash') : money(v.total)
       ),
-      (tr3('计价方式', 'Баға түрі', 'Тип цены', 'Price type'), (v, a) => pricingName(v.pricing)),
+      (tr3('计价方式', 'Баға түрі', 'Тип цены', 'Price type', ky: 'Баанын түрү', uz: 'Narx turi'), (v, a) => pricingName(v.pricing)),
       (
-        tr3('人工／材料', 'Жұмыс / материал', 'Работа / материалы', 'Labour / materials'),
+        tr3('人工／材料', 'Жұмыс / материал', 'Работа / материалы', 'Labour / materials', ky: 'Жумуш / материалдар', uz: 'Ish / materiallar'),
         (v, a) => materialName(v.materials)
       ),
       (
-        tr3('工期', 'Мерзім', 'Срок', 'Duration'),
+        tr3('工期', 'Мерзім', 'Срок', 'Duration', ky: 'Мөөнөтү', uz: 'Muddati'),
         (v, a) => v.durationDays == null
             ? '—'
             : tr3('${v.durationDays} 天', '${v.durationDays} күн',
                 '${v.durationDays} дн.',
-                '${v.durationDays} d')
+                '${v.durationDays} d', ky: '${v.durationDays} к', uz: '${v.durationDays} k')
       ),
       (
-        tr3('承接范围', 'Көлемі', 'Объём', 'Scope'),
+        tr3('承接范围', 'Көлемі', 'Объём', 'Scope', ky: 'Иштин көлөмү', uz: 'Ish hajmi'),
         (v, a) => v.scopeText.isEmpty ? '—' : v.scopeText
       ),
       (
-        tr3('分项单价', 'Бірлік бағасы', 'Расценки', 'Rates'),
+        tr3('分项单价', 'Бірлік бағасы', 'Расценки', 'Rates', ky: 'Баалар', uz: 'Stavkalar'),
         (v, a) => v.lines.isEmpty
             ? '—'
             : v.lines
@@ -58,25 +58,25 @@ class ComparePage extends StatelessWidget {
                 .join('\n')
       ),
       (
-        tr3('包含', 'Кіреді', 'Входит', 'Included'),
+        tr3('包含', 'Кіреді', 'Входит', 'Included', ky: 'Кирет', uz: 'Kiradi'),
         (v, a) => v.includes.isEmpty ? '—' : v.includes
       ),
       (
-        tr3('不包含', 'Кірмейді', 'Не входит', 'Not included'),
+        tr3('不包含', 'Кірмейді', 'Не входит', 'Not included', ky: 'Кирбейт', uz: 'Kirmaydi'),
         (v, a) => v.excludes.isEmpty ? '—' : v.excludes
       ),
       (
-        tr3('有效期', 'Жарамды', 'Действует до', 'Valid until'),
+        tr3('有效期', 'Жарамды', 'Действует до', 'Valid until', ky: 'Жарактуу мөөнөтү', uz: 'Amal qilish muddati'),
         (v, a) => v.validUntil == null ? '—' : fmtDay(v.validUntil)
       ),
       (
-        tr3('依据版本', 'Нұсқа', 'Версия', 'Version'),
+        tr3('依据版本', 'Нұсқа', 'Версия', 'Version', ky: 'Версия', uz: 'Versiya'),
         (v, a) => '${v.demandVersionNo}${a.needsReconfirm ? ' ⚠' : ''}'
       ),
     ];
     const colWidth = 200.0;
     return PageScaffold(
-        title: tr3('报价对比', 'Ұсыныстарды салыстыру', 'Сравнение предложений', 'Compare quotes'),
+        title: tr3('报价对比', 'Ұсыныстарды салыстыру', 'Сравнение предложений', 'Compare quotes', ky: 'Сунуштарды салыштыруу', uz: 'Takliflarni solishtirish'),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(demand.current.title,
               style: const TextStyle(
@@ -87,12 +87,12 @@ class ComparePage extends StatelessWidget {
                   '当前需求为第 ${demand.current.no} 版。平台不做最低价推荐。',
                   'Қазіргі нұсқа: ${demand.current.no}. Ең арзанды ұсынбаймыз.',
                   'Текущая версия ${demand.current.no}. Мы не рекомендуем «самое дешёвое».',
-                  "Current version ${demand.current.no}. We don't recommend “the cheapest”."),
+                  "Current version ${demand.current.no}. We don't recommend “the cheapest”.", ky: 'Учурдагы версия ${demand.current.no}. «Эң арзанын» сунуштабайбыз.', uz: 'Joriy versiya ${demand.current.no}. “Eng arzonini” tavsiya qilmaymiz.'),
               style: TextStyle(color: t.muted)),
           const SizedBox(height: 12),
           if (issues.isEmpty)
             Hint(tr3('这些报价的版本、材料范围和单位一致，可以直接比较。',
-                'Ұсыныстар салыстыруға жарайды.', 'Предложения сопоставимы.', 'The quotes are comparable.'))
+                'Ұсыныстар салыстыруға жарайды.', 'Предложения сопоставимы.', 'The quotes are comparable.', ky: 'Сунуштарды салыштырса болот.', uz: 'Takliflarni solishtirish mumkin.'))
           else
             for (final i in issues)
               Padding(
@@ -103,13 +103,13 @@ class ComparePage extends StatelessWidget {
             Text(
                 tr3('按同一张清单逐项对比', 'Бір тізім бойынша салыстыру',
                     'Построчно по одной смете',
-                    'Line by line against one estimate'),
+                    'Line by line against one estimate', ky: 'Бир смета боюнча сап-сабы менен', uz: 'Bitta smeta boʻyicha qatorma-qator'),
                 style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
             Text(
                 tr3('每行最低价标绿；“未报”表示这位师傅没填这一项。', 'Ең төмені жасыл.',
                     'Минимум по строке выделен зелёным; «нет» — позиция не указана.',
-                    "The lowest in each line is green; “none” means the item isn't quoted."),
+                    "The lowest in each line is green; “none” means the item isn't quoted.", ky: 'Ар бир саптагы эң төмөнкүсү жашыл; «жок» нерсе сунушта жок дегенди билдирет.', uz: 'Har bir qatordagi eng pasti yashil; “yoʻq” bu element taklifda yoʻqligini bildiradi.'),
                 style: TextStyle(color: t.muted, fontSize: YFont.small)),
             const SizedBox(height: 8),
             SingleChildScrollView(
@@ -202,7 +202,7 @@ class _LineTable extends StatelessWidget {
             top: BorderSide(color: t.line)),
         children: [
           TableRow(children: [
-            cell(tr3('项目', 'Позиция', 'Позиция', 'Item'), color: t.muted),
+            cell(tr3('项目', 'Позиция', 'Позиция', 'Item', ky: 'Аталышы', uz: 'Nomi'), color: t.muted),
             for (final a in quotes) cell(nameOf(a), bold: true),
           ]),
           for (final n in names)
@@ -217,7 +217,7 @@ class _LineTable extends StatelessWidget {
                 return [
                   for (final v in totals)
                     v == null
-                        ? cell(tr3('未报', 'жоқ', 'нет', 'none'), color: t.faint)
+                        ? cell(tr3('未报', 'жоқ', 'нет', 'none', ky: 'жок', uz: 'yoʻq'), color: t.faint)
                         : cell(money(v.round()),
                             color: present.length > 1 && v == min ? t.ok : null,
                             bold: present.length > 1 && v == min),
@@ -225,11 +225,11 @@ class _LineTable extends StatelessWidget {
               }(),
             ]),
           TableRow(children: [
-            cell(tr3('合计', 'Барлығы', 'Итого', 'Total'), bold: true),
+            cell(tr3('合计', 'Барлығы', 'Итого', 'Total', ky: 'Бардыгы', uz: 'Jami'), bold: true),
             for (final a in quotes)
               cell(
                   a.current.total == null
-                      ? tr3('需现场确认', 'Орында', 'Замер', 'Site measure')
+                      ? tr3('需现场确认', 'Орында', 'Замер', 'Site measure', ky: 'Объектиде өлчөө', uz: 'Obyektda oʻlchash')
                       : money(a.current.total),
                   bold: true),
           ]),

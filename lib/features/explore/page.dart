@@ -123,9 +123,9 @@ class _ExplorePageState extends State<ExplorePage> {
     });
     final t = YTokens.of(context);
     final labels = [
-      (YIcon.plan, tr3('房子', 'Үйлер', 'Дома', 'Houses')),
-      (YIcon.contract, tr3('找活', 'Жұмыс', 'Работа', 'Jobs')),
-      (YIcon.hire, tr3('找人', 'Шеберлер', 'Мастера', 'Pros')),
+      (YIcon.plan, tr3('房子', 'Үйлер', 'Дома', 'Houses', ky: 'Үйлөр', uz: 'Uylar')),
+      (YIcon.contract, tr3('找活', 'Жұмыс', 'Работа', 'Jobs', ky: 'Иштер', uz: 'Ishlar')),
+      (YIcon.hire, tr3('找人', 'Шеберлер', 'Мастера', 'Pros', ky: 'Адистер', uz: 'Mutaxassislar')),
     ];
     final logoRow = _Measure(
         onSize: (s) => _logoHeight = s.height,
@@ -138,7 +138,7 @@ class _ExplorePageState extends State<ExplorePage> {
                       child: YusalLogo(height: 26))),
               IconButton(
                   key: const Key('explore-create'),
-                  tooltip: tr3('发布', 'Жариялау', 'Создать', 'Create'),
+                  tooltip: tr3('发布', 'Жариялау', 'Создать', 'Create', ky: 'Түзүү', uz: 'Yaratish'),
                   icon: const YusalIcon(YIcon.add, size: 26),
                   onPressed: () => showCreateSheet(context)),
             ])));

@@ -620,7 +620,7 @@ Future<List<T>?> pickMany<T>(BuildContext context, String title,
                                           for (final (v, _) in options)
                                             if (chosen.contains(v)) v
                                         ]),
-                                    child: Text(tr3('完成', 'Дайын', 'Готово', 'Done')))),
+                                    child: Text(tr3('完成', 'Дайын', 'Готово', 'Done', ky: 'Даяр', uz: 'Tayyor')))),
                           ]))))));
 }
 
@@ -718,8 +718,8 @@ Future<bool> confirmDialog(BuildContext context, String title,
       builder: (context) => PlatformTheme(
               child: SheetBody(title: title, body: body, children: [
             SheetAnswers(
-                cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'),
-                ok: ok ?? tr3('确定', 'Иә', 'Да', 'Yes'),
+                cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'),
+                ok: ok ?? tr3('确定', 'Иә', 'Да', 'Yes', ky: 'Ооба', uz: 'Ha'),
                 danger: danger,
                 onOk: () => Navigator.pop(context, true)),
           ])));
@@ -744,8 +744,8 @@ Future<String?> askText(BuildContext context, String title,
                 decoration: InputDecoration(hintText: hint)),
             const SizedBox(height: 14),
             SheetAnswers(
-                cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'),
-                ok: tr3('确定', 'Иә', 'Да', 'Yes'),
+                cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'),
+                ok: tr3('确定', 'Иә', 'Да', 'Yes', ky: 'Ооба', uz: 'Ha'),
                 onOk: () {
                   if (required && controller.text.trim().isEmpty) return;
                   Navigator.pop(context, controller.text.trim());
@@ -848,7 +848,7 @@ class VerifiedBadge extends StatelessWidget {
   Widget build(BuildContext context) => Tooltip(
       message: tr3('已核验身份与施工现场，不代表质量担保', 'Жеке басы тексерілген',
           'Личность и объекты проверены, качество не гарантируется',
-          'Identity and projects verified; quality not guaranteed'),
+          'Identity and projects verified; quality not guaranteed', ky: 'Инсандыгы жана долбоорлору текшерилген; сапатка кепилдик жок', uz: 'Shaxsi va loyihalari tekshirilgan; sifat kafolatlanmaydi'),
       child:
           Icon(Icons.verified, size: size, color: YTokens.of(context).accent));
 }

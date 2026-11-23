@@ -154,7 +154,12 @@ class PushSetup {
       await api.request('POST', '/client/devices', body: {
         'token': t,
         'platform': platform,
-        'language': appLang.name,
+        // The server sends pushes in Chinese, Kazakh or Russian only and
+        // refuses other codes; everyone else reads them in Russian.
+        'language': switch (appLang) {
+          AppLang.zh || AppLang.kk => appLang.name,
+          _ => 'ru',
+        },
       });
     } on ApiFailure {
       _registeredFor = null;

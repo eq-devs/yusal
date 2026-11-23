@@ -268,12 +268,16 @@ List<ConstructionIssue> heatChecks(HouseDocument doc, HeatLoss loss) {
       '外墙保温偏弱',
       'Сыртқы қабырға жылуы әлсіз',
       'Слабое утепление наружных стен',
-      'Weak outer wall insulation'
+      'Weak outer wall insulation',
+      'Сырткы дубалдын жылуулоосу начар',
+      'Tashqi devor izolyatsiyasi zaif'
     ), (
       '外墙传热系数 U = ${u(loss.wallU)} W/(m²·K)，寒冷地区宜不大于 0.40，严寒地区 0.30 左右。加厚保温层（如岩棉 100 → 150 mm）最划算。',
       'Сыртқы қабырға U = ${u(loss.wallU).replaceAll('.', ',')} Вт/(м²·К); суық аймақта 0,40-тан аспағаны жөн, қатты суықта шамамен 0,30. Жылытқышты қалыңдату (мысалы, 100 → 150 мм) ең тиімді.',
       'Наружная стена: U = ${u(loss.wallU).replaceAll('.', ',')} Вт/(м²·К); в холодном климате лучше не выше 0,40, в суровом — около 0,30. Эффективнее всего утолстить утеплитель (например, 100 → 150 мм).',
-      "Outer wall: U = ${u(loss.wallU)} W/(m²·K); in a cold climate it's better at 0.40 or below, in a severe one about 0.30. Thicker insulation is the most effective fix (e.g. 100 → 150 mm)."
+      "Outer wall: U = ${u(loss.wallU)} W/(m²·K); in a cold climate it's better at 0.40 or below, in a severe one about 0.30. Thicker insulation is the most effective fix (e.g. 100 → 150 mm).",
+      'Сырткы дубал: U = ${u(loss.wallU).replaceAll('.', ',')} Вт/(м²·К); суук климатта 0,40 же андан төмөн, катуу суукта болжол менен 0,30 болгону жакшы. Жылуулоочуну калыңдатуу эң натыйжалуу (мис., 100 → 150 мм).',
+      'Tashqi devor: U = ${u(loss.wallU).replaceAll('.', ',')} Vt/(m²·K); sovuq iqlimda 0,40 yoki undan past, qattiq sovuqda taxminan 0,30 boʻlgani yaxshi. Izolyatsiyani qalinlashtirish eng samarali (masalan, 100 → 150 mm).'
     )));
   }
   if (loss.roofU > 0.30) {
@@ -281,12 +285,16 @@ List<ConstructionIssue> heatChecks(HouseDocument doc, HeatLoss loss) {
       '屋顶保温偏弱',
       'Шатыр жылуы әлсіз',
       'Слабое утепление крыши',
-      'Weak roof insulation'
+      'Weak roof insulation',
+      'Чатырдын жылуулоосу начар',
+      'Tom izolyatsiyasi zaif'
     ), (
       '屋顶传热系数 U = ${u(loss.roofU)} W/(m²·K)，宜不大于 0.25。热空气往上走，屋顶保温不足时冬天最费燃料。',
       'Шатыр U = ${u(loss.roofU).replaceAll('.', ',')} Вт/(м²·К), 0,25-тен аспағаны жөн. Жылы ауа жоғары көтеріледі, шатыр жылуы аз болса отын көп жұмсалады.',
       'Крыша: U = ${u(loss.roofU).replaceAll('.', ',')} Вт/(м²·К), лучше не выше 0,25. Тёплый воздух поднимается вверх: при слабом утеплении крыши уходит много топлива.',
-      'Roof: U = ${u(loss.roofU)} W/(m²·K); better at 0.25 or below. Warm air rises, so a poorly insulated roof burns a lot of fuel.'
+      'Roof: U = ${u(loss.roofU)} W/(m²·K); better at 0.25 or below. Warm air rises, so a poorly insulated roof burns a lot of fuel.',
+      'Чатыр: U = ${u(loss.roofU).replaceAll('.', ',')} Вт/(м²·К); 0,25 же андан төмөн болгону жакшы. Жылуу аба өйдө көтөрүлөт, ошондуктан начар жылуулоочу чатыр көп отун жейт.',
+      'Tom: U = ${u(loss.roofU).replaceAll('.', ',')} Vt/(m²·K); 0,25 yoki undan past boʻlgani yaxshi. Iliq havo yuqoriga koʻtariladi, shuning uchun yomon izolyatsiyalangan tom koʻp yoqilgʻi sarflaydi.'
     )));
   }
   if (loss.floorU > 0.40) {
@@ -294,12 +302,16 @@ List<ConstructionIssue> heatChecks(HouseDocument doc, HeatLoss loss) {
       '地面保温偏弱',
       'Еден жылуы әлсіз',
       'Слабое утепление пола',
-      'Weak floor insulation'
+      'Weak floor insulation',
+      'Полдун жылуулоосу начар',
+      'Pol izolyatsiyasi zaif'
     ), (
       '首层地面传热系数 U = ${u(loss.floorU)} W/(m²·K)。全家席地而坐，地面温度很重要，建议地坪下 XPS 不少于 100 mm 并连续铺设。',
       'Бірінші қабат едені U = ${u(loss.floorU).replaceAll('.', ',')} Вт/(м²·К). Еденде отыратын болғандықтан еден жылуы маңызды, астына кемінде 100 мм XPS үзіліссіз төсеңіз.',
       'Пол первого этажа: U = ${u(loss.floorU).replaceAll('.', ',')} Вт/(м²·К). На полу сидят, поэтому его утепление важно: уложите под него сплошной слой XPS не тоньше 100 мм.',
-      'Ground floor: U = ${u(loss.floorU)} W/(m²·K). People sit on the floor, so its insulation matters: lay a continuous XPS layer at least 100 mm thick under it.'
+      'Ground floor: U = ${u(loss.floorU)} W/(m²·K). People sit on the floor, so its insulation matters: lay a continuous XPS layer at least 100 mm thick under it.',
+      'Биринчи кабаттын полу: U = ${u(loss.floorU).replaceAll('.', ',')} Вт/(м²·К). Адамдар полдо отурат, ошондуктан анын жылуулоосу маанилүү: астына кеминде 100 мм калыңдыктагы үзгүлтүксүз XPS катмарын төшөңүз.',
+      'Birinchi qavat poli: U = ${u(loss.floorU).replaceAll('.', ',')} Vt/(m²·K). Odamlar polda oʻtiradi, shuning uchun uning izolyatsiyasi muhim: ostiga kamida 100 mm qalinlikdagi uzluksiz XPS qatlamini yotqizing.'
     )));
   }
   if (loss.windowU > 1.6) {
@@ -307,12 +319,16 @@ List<ConstructionIssue> heatChecks(HouseDocument doc, HeatLoss loss) {
       '窗户保温偏弱',
       'Терезе жылуы әлсіз',
       'Слабая теплозащита окон',
-      'Weak window insulation'
+      'Weak window insulation',
+      'Терезенин жылуулук сактоосу начар',
+      'Deraza issiqlik saqlashi zaif'
     ), (
       '窗传热系数 U = ${u(loss.windowU)} W/(m²·K)。三玻两腔 PVC 窗约 1.0–1.2，单层中空玻璃窗约 2.7，冬天窗边会结露。',
       'Терезе U = ${u(loss.windowU).replaceAll('.', ',')} Вт/(м²·К). Үш әйнекті ПВХ терезе шамамен 1,0–1,2, бір камералы шамамен 2,7 — қыста терезе жиегі терлейді.',
       'Окна: U = ${u(loss.windowU).replaceAll('.', ',')} Вт/(м²·К). У трёхстекольного ПВХ-окна около 1,0–1,2, у однокамерного около 2,7 — зимой по краям окна будет конденсат.',
-      "Windows: U = ${u(loss.windowU)} W/(m²·K). A triple-glazed PVC window is about 1.0–1.2, a single-chamber one about 2.7; in winter there'll be condensation at the window edges."
+      "Windows: U = ${u(loss.windowU)} W/(m²·K). A triple-glazed PVC window is about 1.0–1.2, a single-chamber one about 2.7; in winter there'll be condensation at the window edges.",
+      'Терезелер: U = ${u(loss.windowU).replaceAll('.', ',')} Вт/(м²·К). Үч айнектүү ПВХ терезе болжол менен 1,0–1,2, бир камералуусу болжол менен 2,7; кышында терезенин четтеринде тер пайда болот.',
+      'Derazalar: U = ${u(loss.windowU).replaceAll('.', ',')} Vt/(m²·K). Uch oynali PVX deraza taxminan 1,0–1,2, bir kameralisi taxminan 2,7; qishda deraza chetlarida ter paydo boʻladi.'
     )));
   }
   final share = loss.total <= 0 ? 0.0 : loss.windows / loss.total;
@@ -321,12 +337,16 @@ List<ConstructionIssue> heatChecks(HouseDocument doc, HeatLoss loss) {
       '窗户失热占比大',
       'Терезеден жылу көп кетеді',
       'Через окна уходит много тепла',
-      'A lot of heat escapes through the windows'
+      'A lot of heat escapes through the windows',
+      'Терезелер аркылуу көп жылуулук чыгат',
+      'Derazalar orqali koʻp issiqlik chiqadi'
     ), (
       '窗户失热占全屋的 ${(share * 100).round()}%。北面的大窗可以缩小，或换用保温更好的窗。',
       'Үйдің жылу шығынының ${(share * 100).round()}%-ы терезеден. Солтүстіктегі үлкен терезені кішірейтіңіз не жылырақ терезе қойыңыз.',
       '${(share * 100).round()} % теплопотерь дома приходится на окна. Уменьшите большое окно на северной стороне или поставьте более тёплые окна.',
-      "${(share * 100).round()}% of the house's heat loss goes through the windows. Make the large north window smaller or fit warmer windows."
+      "${(share * 100).round()}% of the house's heat loss goes through the windows. Make the large north window smaller or fit warmer windows.",
+      'Үйдүн жылуулук жоготуусунун ${(share * 100).round()}% терезелер аркылуу кетет. Түндүктөгү чоң терезени кичирейтиңиз же жылуураак терезе коюңуз.',
+      'Uy issiqlik yoʻqotishining ${(share * 100).round()}% derazalar orqali ketadi. Shimoldagi katta derazani kichiklashtiring yoki issiqroq derazalar oʻrnating.'
     )));
   }
   return out;

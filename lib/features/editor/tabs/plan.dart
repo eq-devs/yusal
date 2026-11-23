@@ -52,20 +52,20 @@ extension _PlanTab on _HouseEditorState {
                       Row(children: [
                         IconButton(
                             tooltip: '楼层操作'
-                                .trKey('Қабат әрекеттері', 'Действия с этажом', 'Floor actions'),
+                                .trKey('Қабат әрекеттері', 'Действия с этажом', 'Floor actions', 'Кабат боюнча аракеттер', 'Qavat amallari'),
                             visualDensity: VisualDensity.compact,
                             onPressed: floorOptions,
                             icon: const Icon(Icons.layers_outlined, size: 20)),
                         IconButton(
                             tooltip: '房屋长宽'.trKey('Үйдің ені мен ұзындығы',
                                 'Ширина и длина дома',
-                                'House width and length'),
+                                'House width and length', 'Үйдүн туурасы жана узундугу', 'Uy eni va uzunligi'),
                             visualDensity: VisualDensity.compact,
                             onPressed: footprintOptions,
                             icon: const Icon(Icons.aspect_ratio, size: 20)),
                         IconButton(
                             tooltip: '立即保存'
-                                .trKey('Қазір сақтау', 'Сохранить сейчас', 'Save now'),
+                                .trKey('Қазір сақтау', 'Сохранить сейчас', 'Save now', 'Азыр сактоо', 'Hozir saqlash'),
                             visualDensity: VisualDensity.compact,
                             onPressed: save,
                             icon: const Icon(Icons.save_outlined, size: 20)),
@@ -206,12 +206,12 @@ extension _PlanTab on _HouseEditorState {
     }
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      button(Icons.add, tr3('放大', 'Үлкейту', 'Увеличить', 'Zoom in'), () => zoom(1.3)),
-      button(Icons.remove, tr3('缩小', 'Кішірейту', 'Уменьшить', 'Zoom out'),
+      button(Icons.add, tr3('放大', 'Үлкейту', 'Увеличить', 'Zoom in', ky: 'Чоңойтуу', uz: 'Kattalashtirish'), () => zoom(1.3)),
+      button(Icons.remove, tr3('缩小', 'Кішірейту', 'Уменьшить', 'Zoom out', ky: 'Кичирейтүү', uz: 'Kichiklashtirish'),
           () => zoom(1 / 1.3)),
       button(
           Icons.fit_screen_outlined,
-          tr3('恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид', 'Reset view'),
+          tr3('恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид', 'Reset view', ky: 'Көрүнүштү баштапкы абалга келтирүү', uz: 'Koʻrinishni asliga qaytarish'),
           () => canvasTransform.value = Matrix4.identity()),
     ]);
   }
@@ -253,22 +253,22 @@ extension _PlanTab on _HouseEditorState {
                       bar(t.wall, hatch: true),
                       tr3('承重墙 ≥$bearing', 'Көтергіш ≥$bearing',
                           'Несущая ≥$bearing',
-                          'Load-bearing ≥$bearing')),
+                          'Load-bearing ≥$bearing', ky: 'Көтөрүүчү ≥$bearing', uz: 'Yuk koʻtaruvchi ≥$bearing')),
                   swatch(bar(t.wall, h: 4),
-                      tr3('隔墙', 'Қалқа қабырға', 'Перегородка', 'Partition')),
-                  swatch(bar(t.chk), tr3('窗', 'Терезе', 'Окно', 'Window')),
+                      tr3('隔墙', 'Қалқа қабырға', 'Перегородка', 'Partition', ky: 'Тосмо', uz: 'Toʻsiq')),
+                  swatch(bar(t.chk), tr3('窗', 'Терезе', 'Окно', 'Window', ky: 'Терезе', uz: 'Deraza')),
                   if (showFoundation) ...[
                     swatch(dashed(t.ok),
-                        '${tr3('有基础', 'Іргетасы бар', 'Есть фундамент', 'Has a foundation')} ${history.present.extras.foundation.width}×${history.present.extras.foundation.height}'),
+                        '${tr3('有基础', 'Іргетасы бар', 'Есть фундамент', 'Has a foundation', ky: 'Пайдубалы бар', uz: 'Poydevori bor')} ${history.present.extras.foundation.width}×${history.present.extras.foundation.height}'),
                     swatch(
                         Container(
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
                                 color: t.chk, shape: BoxShape.circle)),
-                        tr3('预留套管', 'Гильза', 'Гильза', 'Sleeve')),
+                        tr3('预留套管', 'Гильза', 'Гильза', 'Sleeve', ky: 'Гильза', uz: 'Gilza')),
                     swatch(dashed(t.crit, fill: true),
-                        tr3('缺基础', 'Іргетасы жоқ', 'Нет фундамента', 'No foundation')),
+                        tr3('缺基础', 'Іргетасы жоқ', 'Нет фундамента', 'No foundation', ky: 'Пайдубалы жок', uz: 'Poydevori yoʻq')),
                   ],
                 ]))));
   }
@@ -314,7 +314,7 @@ extension _PlanTab on _HouseEditorState {
       (
         'browse',
         basicTool(
-            Icons.pan_tool_outlined, tr3('浏览', 'Шолу', 'Просмотр', 'View'), browse, () {
+            Icons.pan_tool_outlined, tr3('浏览', 'Шолу', 'Просмотр', 'View', ky: 'Көрүнүш', uz: 'Koʻrinish'), browse, () {
           tool = EditorTool.browse;
         })
       ),
@@ -340,7 +340,7 @@ extension _PlanTab on _HouseEditorState {
                 '在空白处拖出独立墙，或点一下选起点',
                 'Бос жерден қабырға тартыңыз немесе бастауды басыңыз',
                 'Протяните стену на свободном месте или нажмите, чтобы задать начало',
-                'Drag a wall in empty space, or tap to set its start');
+                'Drag a wall in empty space, or tap to set its start', ky: 'Бош жерде дубал сүйрөңүз же башталышын коюу үчүн басыңыз', uz: 'Boʻsh joyda devor chizing yoki boshlanishini belgilash uchun bosing');
           })
         ),
       (
@@ -400,15 +400,15 @@ extension _PlanTab on _HouseEditorState {
 
   List<Widget> layerChips() => [
         PillToggle(
-            label: tr3('家具', 'Жиһаз', 'Мебель', 'Furniture'),
+            label: tr3('家具', 'Жиһаз', 'Мебель', 'Furniture', ky: 'Эмерек', uz: 'Mebel'),
             selected: showFurniture,
             onChanged: (v) => update(() => showFurniture = v)),
         PillToggle(
-            label: tr3('尺寸', 'Өлшемдер', 'Размеры', 'Dimensions'),
+            label: tr3('尺寸', 'Өлшемдер', 'Размеры', 'Dimensions', ky: 'Өлчөмдөр', uz: 'Oʻlchamlar'),
             selected: showDimensions,
             onChanged: (v) => update(() => showDimensions = v)),
         PillToggle(
-            label: tr3('水电', 'Су-электр', 'Электрика и вода', 'Electrical and water'),
+            label: tr3('水电', 'Су-электр', 'Электрика и вода', 'Electrical and water', ky: 'Электр жана суу', uz: 'Elektr va suv'),
             selected: showUtilities,
             onChanged: (v) => update(() {
                   showUtilities = v;
@@ -421,7 +421,7 @@ extension _PlanTab on _HouseEditorState {
                   }
                 })),
         PillToggle(
-            label: tr3('地基', 'Іргетас', 'Фундамент', 'Foundation'),
+            label: tr3('地基', 'Іргетас', 'Фундамент', 'Foundation', ky: 'Пайдубал', uz: 'Poydevor'),
             selected: showFoundation,
             onChanged: (v) => update(() {
                   showFoundation = v;
@@ -431,7 +431,7 @@ extension _PlanTab on _HouseEditorState {
                   }
                 })),
         PillToggle(
-            label: tr3('测距', 'Қашықтық өлшеу', 'Измерить расстояние', 'Measure distance'),
+            label: tr3('测距', 'Қашықтық өлшеу', 'Измерить расстояние', 'Measure distance', ky: 'Аралыкты өлчөө', uz: 'Masofani oʻlchash'),
             icon: Icons.straighten,
             checkbox: false,
             selected: tool == EditorTool.measure,
@@ -469,7 +469,7 @@ extension _PlanTab on _HouseEditorState {
       costChipFor = history.present;
       costChip = v <= 0
           ? ''
-          : '≈ ${currencySymbol(e.currency)} ${v < 1e6 ? money(v) : isKk ? '${dec((v / 1e6).toStringAsFixed(1))} млн' : isEn ? '${(v / 1e6).toStringAsFixed(1)}M' : '${(v / 1e4).round()} 万'}';
+          : '≈ ${currencySymbol(e.currency)} ${v < 1e6 ? money(v) : isKk ? '${dec((v / 1e6).toStringAsFixed(1))} млн' : isUz ? '${dec((v / 1e6).toStringAsFixed(1))} mln' : isEn ? '${(v / 1e6).toStringAsFixed(1)}M' : '${(v / 1e4).round()} 万'}';
     }
     return costChip;
   }
@@ -522,7 +522,7 @@ extension _PlanTab on _HouseEditorState {
         TextButton.icon(
             onPressed: footprintOptions,
             icon: const Icon(Icons.edit_outlined, size: 18),
-            label: Text(tr3('输入长宽', 'Өлшем енгізу', 'Ввести размеры', 'Enter dimensions'))),
+            label: Text(tr3('输入长宽', 'Өлшем енгізу', 'Ввести размеры', 'Enter dimensions', ky: 'Өлчөмдөрдү киргизүү', uz: 'Oʻlchamlarni kiritish'))),
       if (reachAcrossPoint != null)
         TextButton(
             key: const Key('wall-reach-across'),
@@ -531,7 +531,7 @@ extension _PlanTab on _HouseEditorState {
                 padding: const EdgeInsets.symmetric(horizontal: 8)),
             onPressed: reachAcross,
             child: Text(
-                tr3('接到对面', 'Қарсы қабырғаға дейін', 'До стены напротив', 'To the opposite wall'))),
+                tr3('接到对面', 'Қарсы қабырғаға дейін', 'До стены напротив', 'To the opposite wall', ky: 'Карама-каршы дубалга чейин', uz: 'Qarama-qarshi devorgacha'))),
       if (stamping) ...[
         TextButton(
             key: const Key('stamp-cancel'),
@@ -539,14 +539,14 @@ extension _PlanTab on _HouseEditorState {
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: 8)),
             onPressed: cancelStamp,
-            child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'))),
+            child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
         FilledButton(
             key: const Key('stamp-place'),
             style: FilledButton.styleFrom(
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: 14)),
             onPressed: spatialError == null ? placeStamp : null,
-            child: Text(tr3('放下', 'Қою', 'Поставить', 'Place'))),
+            child: Text(tr3('放下', 'Қою', 'Поставить', 'Place', ky: 'Коюу', uz: 'Joylash'))),
       ],
       if (tool == EditorTool.drawWall)
         IconButton(
@@ -569,7 +569,7 @@ extension _PlanTab on _HouseEditorState {
                   placingUtility = null;
                   measurePoints = [];
                 }),
-            child: Text(tr3('结束', 'Аяқтау', 'Завершить', 'Finish'))),
+            child: Text(tr3('结束', 'Аяқтау', 'Завершить', 'Finish', ky: 'Бүтүрүү', uz: 'Tugatish'))),
       // While just looking at the plan: how much the checks found,
       // so nobody has to reach the last tab to learn of it.
       if (!coach && browse && openIssues.crit + openIssues.warn > 0)
@@ -586,7 +586,7 @@ extension _PlanTab on _HouseEditorState {
                     '问题 ${openIssues.crit + openIssues.warn}',
                     'Ескерту ${openIssues.crit + openIssues.warn}',
                     'Замечания: ${openIssues.crit + openIssues.warn}',
-                    'Issues: ${openIssues.crit + openIssues.warn}'),
+                    'Issues: ${openIssues.crit + openIssues.warn}', ky: 'Маселелер: ${openIssues.crit + openIssues.warn}', uz: 'Muammolar: ${openIssues.crit + openIssues.warn}'),
                 style: const TextStyle(
                     fontSize: 12, fontWeight: FontWeight.w600))),
       // While just looking at the plan: what it would cost to build.

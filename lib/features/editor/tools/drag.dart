@@ -119,7 +119,7 @@ extension _DragTool on _HouseEditorState {
             '拖到另一面墙，门窗会自动贴合',
             'Басқа қабырғаға апарыңыз, есік-терезе өзі орнығады',
             'Перетащите на другую стену — окно или дверь встанет на место',
-            'Drag onto another wall and the window or door snaps into place');
+            'Drag onto another wall and the window or door snaps into place', ky: 'Башка дубалга сүйрөңүз, терезе же эшик өз ордуна түшөт', uz: 'Boshqa devorga suring, deraza yoki eshik oʻz joyiga tushadi');
         return;
       }
       final along = wall.axis.dir == AxisDir.H ? x : y;
@@ -127,7 +127,7 @@ extension _DragTool on _HouseEditorState {
       if (available < 0) {
         placementHint = tr3('这段墙放不下这个门窗', 'Бұл қабырғаға есік-терезе сыймайды',
             'Окно или дверь не помещается на этой стене',
-            "The window or door doesn't fit on this wall");
+            "The window or door doesn't fit on this wall", ky: 'Терезе же эшик бул дубалга батпайт', uz: 'Deraza yoki eshik bu devorga sigʻmaydi');
         return;
       }
       dragKind = 'MoveOpening';
@@ -272,7 +272,7 @@ extension _DragTool on _HouseEditorState {
               '分房后会得到 $count 个独立空间，松手完成',
               'Бөлгенде $count бөлек кеңістік шығады, жіберіңіз',
               'Получится отдельных помещений: $count, отпустите',
-              'Makes $count separate spaces, release')
+              'Makes $count separate spaces, release', ky: '$count өзүнчө мейкиндик пайда болот, коё бериңиз', uz: '$count ta alohida boʻshliq hosil boʻladi, qoʻyib yuboring')
           : null;
     } else {
       spatialDocument = null;
@@ -363,7 +363,7 @@ extension _DragTool on _HouseEditorState {
           '拖到墙上，门窗会自动贴合',
           'Қабырғаға апарыңыз, есік-терезе өзі орнығады',
           'Перетащите на стену — окно или дверь встанет на место',
-          'Drag onto a wall and the window or door snaps into place');
+          'Drag onto a wall and the window or door snaps into place', ky: 'Дубалга сүйрөп келиңиз, терезе же эшик өз ордуна түшөт', uz: 'Devorga sudrab keling, deraza yoki eshik oʻz joyiga tushadi');
       return;
     }
     final arguments = <String, dynamic>{
@@ -384,11 +384,11 @@ extension _DragTool on _HouseEditorState {
       base = derived.floors[floorIndex].base;
       placementHint = tr3('已贴合墙面，松手放置', 'Қабырғаға орнықты, жіберіңіз',
           'Привязано к стене, отпустите',
-          'Snapped to the wall, release');
+          'Snapped to the wall, release', ky: 'Дубалга жабышты, коё бериңиз', uz: 'Devorga yopishdi, qoʻyib yuboring');
     } else {
       placementHint = result is Rejected
           ? result.message
-          : tr3('此处无法放置', 'Мұнда қоюға болмайды', 'Здесь поставить нельзя', "Can't place it here");
+          : tr3('此处无法放置', 'Мұнда қоюға болмайды', 'Здесь поставить нельзя', "Can't place it here", ky: 'Бул жерге коюуга болбойт', uz: 'Bu yerga qoʻyib boʻlmaydi');
     }
   }
 }

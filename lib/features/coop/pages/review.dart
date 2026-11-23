@@ -33,9 +33,9 @@ class _ReviewPageState extends State<ReviewPage> {
     watchLang(context);
     final t = YTokens.of(context);
     return PageScaffold(
-        title: tr3('评价', 'Пікір', 'Отзыв', 'Review'),
+        title: tr3('评价', 'Пікір', 'Отзыв', 'Review', ky: 'Пикир', uz: 'Sharh'),
         bottom: BusyButton(
-            label: tr3('提交评价', 'Жіберу', 'Отправить', 'Send'),
+            label: tr3('提交评价', 'Жіберу', 'Отправить', 'Send', ky: 'Жөнөтүү', uz: 'Yuborish'),
             onPressed: scores.isEmpty
                 ? null
                 : () async {
@@ -46,14 +46,14 @@ class _ReviewPageState extends State<ReviewPage> {
                             .submitReview(
                                 widget.cooperationId, scores, text.text),
                         success:
-                            tr3('已提交，双方都提交后公开', 'Жіберілді', 'Отправлено', 'Sent'));
+                            tr3('已提交，双方都提交后公开', 'Жіберілді', 'Отправлено', 'Sent', ky: 'Жөнөтүлдү', uz: 'Yuborildi'));
                     if (ok != null && context.mounted) Navigator.pop(context);
                   }),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(
               tr3('评价 ${widget.otherName}', '${widget.otherName} туралы',
                   'Отзыв о ${widget.otherName}',
-                  'Review of ${widget.otherName}'),
+                  'Review of ${widget.otherName}', ky: '${widget.otherName} жөнүндө пикир', uz: '${widget.otherName} haqida sharh'),
               style: const TextStyle(
                   fontSize: YFont.title, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
@@ -62,7 +62,7 @@ class _ReviewPageState extends State<ReviewPage> {
                   '只评你实际经历的维度。双方都提交或 14 天后同时公开，降低报复性评价。',
                   'Тек өзіңіз көргенді бағалаңыз. Екеуі де жазғанда ашылады.',
                   'Оценивайте только то, что видели. Отзывы откроются одновременно.',
-                  'Rate only what you saw. Reviews open at the same time.'),
+                  'Rate only what you saw. Reviews open at the same time.', ky: 'Көргөнүңүздү гана баалаңыз. Пикирлер бир убакта ачылат.', uz: 'Faqat koʻrganingizni baholang. Sharhlar bir vaqtda ochiladi.'),
               style: TextStyle(color: t.muted)),
           const SizedBox(height: 16),
           for (final d in widget.ratingPro
@@ -91,7 +91,7 @@ class _ReviewPageState extends State<ReviewPage> {
               maxLines: 5,
               decoration: InputDecoration(
                   labelText:
-                      tr3('说说经历（可选）', 'Пікір (міндетті емес)', 'Комментарий', 'Comment'))),
+                      tr3('说说经历（可选）', 'Пікір (міндетті емес)', 'Комментарий', 'Comment', ky: 'Комментарий', uz: 'Izoh'))),
         ]));
   }
 }

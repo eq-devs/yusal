@@ -14,8 +14,8 @@ extension _CostTab on _HouseEditorState {
         initial: value == value.roundToDouble()
             ? '${value.round()}'
             : value.toStringAsFixed(2),
-        cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'),
-        ok: tr3('确定', 'Жарайды', 'ОК', 'OK'),
+        cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'),
+        ok: tr3('确定', 'Жарайды', 'ОК', 'OK', ky: 'OK', uz: 'OK'),
         number: true,
         suffix: suffix);
     final parsed =
@@ -26,10 +26,10 @@ extension _CostTab on _HouseEditorState {
   Future<void> editPrice(CostLine line, Currency currency) async {
     final text = await promptText(context,
         title:
-            '${costLineName(line.key)} · ${tr3('单价', 'Бірлік бағасы', 'Цена за единицу', 'Unit price')} (${currencySymbol(currency)}/${unitName(line.unit)})',
+            '${costLineName(line.key)} · ${tr3('单价', 'Бірлік бағасы', 'Цена за единицу', 'Unit price', ky: 'Бирдиктин баасы', uz: 'Birlik narxi')} (${currencySymbol(currency)}/${unitName(line.unit)})',
         initial: '${line.price}',
-        cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'),
-        ok: tr3('确定', 'Жарайды', 'ОК', 'OK'),
+        cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'),
+        ok: tr3('确定', 'Жарайды', 'ОК', 'OK', ky: 'OK', uz: 'OK'),
         number: true,
         suffix: '${currencySymbol(currency)}/${unitName(line.unit)}');
     if (text == null) return;
@@ -46,17 +46,17 @@ extension _CostTab on _HouseEditorState {
 
   Future<void> editCostItem(CostItem? item) async {
     final name =
-        await askText(tr3('名称', 'Атауы', 'Наименование', 'Name'), item?.name ?? '');
+        await askText(tr3('名称', 'Атауы', 'Наименование', 'Name', ky: 'Аталышы', uz: 'Nomi'), item?.name ?? '');
     if (name == null || name.trim().isEmpty || !mounted) return;
-    final unit = await askText(tr3('单位', 'Өлшем бірлігі', 'Единица измерения', 'Unit'),
-        item?.unit ?? tr3('项', 'дана', 'шт.', 'pcs'));
+    final unit = await askText(tr3('单位', 'Өлшем бірлігі', 'Единица измерения', 'Unit', ky: 'Бирдик', uz: 'Birlik'),
+        item?.unit ?? tr3('项', 'дана', 'шт.', 'pcs', ky: 'даана', uz: 'dona'));
     if (unit == null || !mounted) return;
     final quantity = await askNumber(
-        tr3('数量', 'Мөлшері', 'Количество', 'Quantity'), (item?.quantity ?? 100) / 100);
+        tr3('数量', 'Мөлшері', 'Количество', 'Quantity', ky: 'Саны', uz: 'Miqdori'), (item?.quantity ?? 100) / 100);
     if (quantity == null || !mounted) return;
     final c = history.present.extras.cost.currency ?? languageCurrency;
     final price = await askNumber(
-        '${tr3('单价', 'Бірлік бағасы', 'Цена за единицу', 'Unit price')} (${currencySymbol(c)})',
+        '${tr3('单价', 'Бірлік бағасы', 'Цена за единицу', 'Unit price', ky: 'Бирдиктин баасы', uz: 'Birlik narxi')} (${currencySymbol(c)})',
         item?.price ?? 0);
     if (price == null) return;
     final args = {
@@ -83,7 +83,7 @@ extension _CostTab on _HouseEditorState {
         if (e.stageMaterials(s) > 0) s
     ];
     final currency = Seg<Currency>(
-        label: tr3('货币', 'Валюта', 'Валюта', 'Currency'),
+        label: tr3('货币', 'Валюта', 'Валюта', 'Currency', ky: 'Валюта', uz: 'Valyuta'),
         value: e.currency,
         items: [for (final c in Currency.values) (c, currencyName(c))],
         onChanged: (c) {
@@ -93,16 +93,16 @@ extension _CostTab on _HouseEditorState {
               '已换成${currencyName(c)}，单价改用该货币的示例价格',
               '${currencyName(c)} таңдалды, бағалар осы валютадағы мысалға ауысты',
               'Выбрано: ${currencyName(c)}, цены заменены примерными в этой валюте',
-              'Selected: ${currencyName(c)}; prices replaced with approximate ones in this currency'));
+              'Selected: ${currencyName(c)}; prices replaced with approximate ones in this currency', ky: 'Тандалды: ${currencyName(c)}; баалар ушул валютадагы болжолдуу бааларга алмаштырылды', uz: 'Tanlandi: ${currencyName(c)}; narxlar shu valyutadagi taxminiy narxlarga almashtirildi'));
         });
     final summary = InfoCard(
         title:
-            '${tr3('造价预算', 'Құрылыс сметасы', 'Смета строительства', 'Construction estimate')} · ${cash(e.total)}',
+            '${tr3('造价预算', 'Құрылыс сметасы', 'Смета строительства', 'Construction estimate', ky: 'Курулуш сметасы', uz: 'Qurilish smetasi')} · ${cash(e.total)}',
         subtitle: tr3(
             '按模型算出的工程量 × 单价。单价是 2026 年乡村自建房的大致示例，请换成当地报价。',
             'Модельден есептелген көлем × бірлік баға. Бағалар 2026 жылғы ауыл үйінің шамамен алынған мысалы, жергілікті бағамен ауыстырыңыз.',
             'Объёмы, рассчитанные по модели, × цена за единицу. Цены — примерные для сельского дома в 2026 году, замените их местными.',
-            'Quantities from the model × unit price. Prices are approximate for a rural house in 2026; replace them with local ones.'),
+            'Quantities from the model × unit price. Prices are approximate for a rural house in 2026; replace them with local ones.', ky: 'Моделдеги көлөм × бирдиктин баасы. Баалар 2026-жылдагы айылдык үй үчүн болжолдуу; жергиликтүү бааларга алмаштырыңыз.', uz: 'Modeldagi miqdor × birlik narxi. Narxlar 2026-yil uchun qishloq uyi boʻyicha taxminiy; mahalliy narxlarga almashtiring.'),
         trailing: wide ? currency : null,
         children: [
           if (!wide)
@@ -114,19 +114,19 @@ extension _CostTab on _HouseEditorState {
                 cash(e.total),
                 tr3('合计 (含人工和预备费)', 'Барлығы (жұмыс пен резервпен)',
                     'Итого (с работой и резервом)',
-                    'Total (with labour and contingency)')),
+                    'Total (with labour and contingency)', ky: 'Бардыгы (жумуш жана күтүлбөгөн чыгымдар менен)', uz: 'Jami (ish haqi va kutilmagan xarajatlar bilan)')),
             Kv('${cash(e.perArea)} / $unitM2',
-                tr3('每平方米', 'Әр шаршы метрге', 'На квадратный метр', 'Per square metre')),
-            Kv(cash(e.materials), tr3('材料', 'Материалдар', 'Материалы', 'Materials')),
+                tr3('每平方米', 'Әр шаршы метрге', 'На квадратный метр', 'Per square metre', ky: 'Бир чарчы метрге', uz: 'Bir kvadrat metrga')),
+            Kv(cash(e.materials), tr3('材料', 'Материалдар', 'Материалы', 'Materials', ky: 'Материалдар', uz: 'Materiallar')),
             Kv(
                 '${cash(e.labour)} · ${e.labourPct}%',
                 tr3('人工 (按材料比例)', 'Жұмыс ақысы (материалдан %)',
                     'Работа (% от материалов)',
-                    'Labour (% of materials)'), onTap: () async {
+                    'Labour (% of materials)', ky: 'Жумуш (материалдардын %)', uz: 'Ish haqi (materiallarning %)'), onTap: () async {
               final v = await askNumber(
                   tr3('人工占材料的百分比', 'Жұмыс ақысы, материалдан %',
                       'Работа, % от материалов',
-                      'Labour, % of materials'),
+                      'Labour, % of materials', ky: 'Жумуш, материалдардын %', uz: 'Ish haqi, materiallarning %'),
                   e.labourPct,
                   suffix: '%');
               if (v != null) action('SetCost', {'labourPct': v.round()});
@@ -135,9 +135,9 @@ extension _CostTab on _HouseEditorState {
                 '${cash(e.contingency)} · ${e.contingencyPct}%',
                 tr3('预备费', 'Күтпеген шығын резерві',
                     'Резерв на непредвиденные расходы',
-                    'Contingency'), onTap: () async {
+                    'Contingency', ky: 'Күтүлбөгөн чыгымдар', uz: 'Kutilmagan xarajatlar'), onTap: () async {
               final v = await askNumber(
-                  tr3('预备费百分比', 'Резерв, %', 'Резерв, %', 'Contingency, %'), e.contingencyPct,
+                  tr3('预备费百分比', 'Резерв, %', 'Резерв, %', 'Contingency, %', ky: 'Күтүлбөгөн чыгымдар, %', uz: 'Kutilmagan xarajatlar, %'), e.contingencyPct,
                   suffix: '%');
               if (v != null) action('SetCost', {'contingencyPct': v.round()});
             }),
@@ -145,12 +145,12 @@ extension _CostTab on _HouseEditorState {
                 '${dec(e.buildingArea.toStringAsFixed(1))} $unitM2',
                 tr3('建筑面积 (各层合计)', 'Құрылыс ауданы (барлық қабат)',
                     'Общая площадь (все этажи)',
-                    'Total area (all floors)')),
+                    'Total area (all floors)', ky: 'Жалпы аянт (бардык кабаттар)', uz: 'Umumiy maydon (barcha qavatlar)')),
           ], minWidth: 150),
           Text(
               tr3('各阶段花费 (含人工)', 'Кезеңдер бойынша (жұмыспен)',
                   'По этапам (с работой)',
-                  'By stage (with labour)'),
+                  'By stage (with labour)', ky: 'Этаптар боюнча (жумуш менен)', uz: 'Bosqichlar boʻyicha (ish haqi bilan)'),
               style:
                   const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           ShareBars([
@@ -163,14 +163,14 @@ extension _CostTab on _HouseEditorState {
           ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
             Btn(
-                label: tr3('施工进度', 'Құрылыс кестесі', 'График строительства', 'Build schedule'),
+                label: tr3('施工进度', 'Құрылыс кестесі', 'График строительства', 'Build schedule', ky: 'Курулуш графиги', uz: 'Qurilish jadvali'),
                 icon: Icons.event_note_outlined,
                 onPressed: () => showTab('build')),
             if (spec.prices.isNotEmpty)
               Btn(
                   label: tr3('全部恢复示例单价', 'Барлық мысал бағаны қайтару',
                       'Вернуть все примерные цены',
-                      'Restore all approximate prices'),
+                      'Restore all approximate prices', ky: 'Бардык болжолдуу бааларды калыбына келтирүү', uz: 'Barcha taxminiy narxlarni tiklash'),
                   icon: Icons.restart_alt,
                   onPressed: () => action('SetCost', {'resetPrices': true})),
           ]),
@@ -180,19 +180,19 @@ extension _CostTab on _HouseEditorState {
       return InfoCard(
           title: '${costStageName(stage)} · ${cash(e.stageMaterials(stage))}',
           subtitle:
-              '${tr3('另加人工', 'Жұмыс ақысы қосымша', 'Работа дополнительно', 'Extra labour')} ${cash(e.stageLabour(stage))}',
+              '${tr3('另加人工', 'Жұмыс ақысы қосымша', 'Работа дополнительно', 'Extra labour', ky: 'Кошумча жумуш', uz: 'Qoʻshimcha ish')} ${cash(e.stageLabour(stage))}',
           children: [
             const SizedBox(height: 6),
             PlainTable(header: [
-              tr3('项目', 'Атауы', 'Наименование', 'Item'),
-              tr3('数量', 'Мөлшері', 'Количество', 'Quantity'),
-              tr3('单价', 'Бағасы', 'Цена', 'Price'),
-              tr3('金额', 'Сомасы', 'Сумма', 'Amount'),
+              tr3('项目', 'Атауы', 'Наименование', 'Item', ky: 'Аталышы', uz: 'Nomi'),
+              tr3('数量', 'Мөлшері', 'Количество', 'Quantity', ky: 'Саны', uz: 'Miqdori'),
+              tr3('单价', 'Бағасы', 'Цена', 'Price', ky: 'Баасы', uz: 'Narxi'),
+              tr3('金额', 'Сомасы', 'Сумма', 'Amount', ky: 'Суммасы', uz: 'Summa'),
             ], rows: [
               for (final l in lines)
                 [
                   TableCellData(
-                      '${costLineName(l.key)}${l.estimated ? tr3(' (估)', ' (шамамен)', ' (прибл.)', ' (approx.)') : ''}',
+                      '${costLineName(l.key)}${l.estimated ? tr3(' (估)', ' (шамамен)', ' (прибл.)', ' (approx.)', ky: ' (болжол менен)', uz: ' (taxminan)') : ''}',
                       muted: l.estimated),
                   TableCellData('${qty(l.quantity)} ${unitName(l.unit)}',
                       numeric: true),
@@ -208,20 +208,20 @@ extension _CostTab on _HouseEditorState {
 
     final own = InfoCard(
         title:
-            '${tr3('其他费用', 'Басқа шығындар', 'Прочие расходы', 'Other costs')} · ${cash(e.stageMaterials('other'))}',
+            '${tr3('其他费用', 'Басқа шығындар', 'Прочие расходы', 'Other costs', ky: 'Башка чыгымдар', uz: 'Boshqa xarajatlar')} · ${cash(e.stageMaterials('other'))}',
         subtitle: tr3(
             '设计费、运输、手续费、家电等自己添加；不另加人工。',
             'Жобалау, тасымал, құжат, тұрмыстық техника т.б. өзіңіз қосасыз; жұмыс ақысы қосылмайды.',
             'Проектирование, доставку, оформление документов, бытовую технику и т. п. добавьте сами; работа на них не начисляется.',
-            'Add design, delivery, paperwork, appliances and the like yourself; no labour is charged on them.'),
+            'Add design, delivery, paperwork, appliances and the like yourself; no labour is charged on them.', ky: 'Долбоорлоо, жеткирүү, документтер, техника сыяктууларды өзүңүз кошуңуз; аларга жумуш акысы кошулбайт.', uz: 'Loyihalash, yetkazib berish, hujjatlar, texnika kabilarni oʻzingiz qoʻshing; ularga ish haqi qoʻshilmaydi.'),
         children: [
           if (spec.items.isNotEmpty) ...[
             const SizedBox(height: 6),
             PlainTable(header: [
-              tr3('项目', 'Атауы', 'Наименование', 'Item'),
-              tr3('数量', 'Мөлшері', 'Количество', 'Quantity'),
-              tr3('单价', 'Бағасы', 'Цена', 'Price'),
-              tr3('金额', 'Сомасы', 'Сумма', 'Amount'),
+              tr3('项目', 'Атауы', 'Наименование', 'Item', ky: 'Аталышы', uz: 'Nomi'),
+              tr3('数量', 'Мөлшері', 'Количество', 'Quantity', ky: 'Саны', uz: 'Miqdori'),
+              tr3('单价', 'Бағасы', 'Цена', 'Price', ky: 'Баасы', uz: 'Narxi'),
+              tr3('金额', 'Сомасы', 'Сумма', 'Amount', ky: 'Суммасы', uz: 'Summa'),
               '',
             ], rows: [
               for (final item in spec.items)
@@ -244,7 +244,7 @@ extension _CostTab on _HouseEditorState {
           Align(
               alignment: Alignment.centerLeft,
               child: Btn(
-                  label: tr3('添加费用', 'Шығын қосу', 'Добавить расход', 'Add a cost'),
+                  label: tr3('添加费用', 'Шығын қосу', 'Добавить расход', 'Add a cost', ky: 'Чыгым кошуу', uz: 'Xarajat qoʻshish'),
                   icon: Icons.add,
                   onPressed: () => editCostItem(null))),
         ]);
@@ -258,7 +258,7 @@ extension _CostTab on _HouseEditorState {
           '数量来自当前设计：改墙、门窗、基础或屋顶后会自动更新。标“估”的行还没有画水电点位，按面积粗估；在 2D 平面“水电”里布置点位后改为实算。点单价可修改，清空恢复示例价。高亮的是你改过的单价。',
           'Көлемдер қазіргі жобадан алынады: қабырға, есік-терезе, іргетас не шатыр өзгерсе, жаңарады. «Шамамен» жолдарда су-электр нүктелері әлі сызылмаған, ауданмен бағаланған; 2D жоспардағы «Су-электр» құралымен нүкте қойсаңыз, нақты есептеледі. Бағаны басып өзгертіңіз, бос қалдырсаңыз мысал баға қайтады. Түсі ерекшеленгені — сіз өзгерткен бағалар.',
           'Объёмы берутся из текущего проекта: при изменении стен, окон и дверей, фундамента или крыши они обновляются. В строках с пометкой «оценка» точки электрики и воды ещё не расставлены, расчёт сделан по площади; расставьте точки инструментом «Электрика и вода» на 2D-плане — и расчёт станет точным. Нажмите на цену, чтобы изменить её; очистите поле — вернётся примерная цена. Цветом выделены цены, которые вы изменили.',
-          "Quantities come from the current design and update when you change walls, windows and doors, the foundation or the roof. In rows marked “estimate”, electrical and water points aren't placed yet and the figure is based on area; place points with the “Electrical and water” tool on the 2D plan and the figure becomes exact. Tap a price to change it; clear the field to get the approximate price back. Prices you changed are highlighted.")),
+          "Quantities come from the current design and update when you change walls, windows and doors, the foundation or the roof. In rows marked “estimate”, electrical and water points aren't placed yet and the figure is based on area; place points with the “Electrical and water” tool on the 2D plan and the figure becomes exact. Tap a price to change it; clear the field to get the approximate price back. Prices you changed are highlighted.", ky: 'Көлөмдөр учурдагы долбоордон алынат жана дубалдарды, терезе-эшиктерди, пайдубалды же чатырды өзгөрткөндө жаңыланат. «Болжолдуу» деп белгиленген саптарда электр жана суу чекиттери али коюлган эмес, сан аянттан эсептелет; 2D планда «Электр жана суу» аспабы менен чекиттерди койсоңуз, сан так болот. Бааны өзгөртүү үчүн басыңыз; болжолдуу бааны кайтаруу үчүн талааны тазалаңыз. Сиз өзгөрткөн баалар белгиленет.', uz: 'Miqdorlar joriy loyihadan olinadi va devorlar, deraza-eshiklar, poydevor yoki tomni oʻzgartirganda yangilanadi. “Taxminiy” deb belgilangan qatorlarda elektr va suv nuqtalari hali qoʻyilmagan, son maydondan hisoblanadi; 2D rejada “Elektr va suv” asbobi bilan nuqtalarni qoʻysangiz, son aniq boʻladi. Narxni oʻzgartirish uchun bosing; taxminiy narxni qaytarish uchun maydonni tozalang. Siz oʻzgartirgan narxlar ajratib koʻrsatiladi.')),
     ]);
   }
 }

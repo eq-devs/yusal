@@ -290,11 +290,11 @@ final designActions = [
   AppAction(
     id: 'design.plan_house',
     title: const L3('按需求排出整栋房子', 'Талап бойынша үйді жоспарлау',
-        'Спланировать дом по пожеланиям'),
+        'Спланировать дом по пожеланиям', 'Lay out a house from the wishes', ky: 'Каалоолор боюнча үйдү пландоо', uz: 'Istaklar boʻyicha uyni rejalash'),
     examples: const L3(
         '设计一个三室、十二乘十米的平房，大门朝北',
         'Үш жатын бөлмелі, он екіге он метр үй, есігі солтүстікке',
-        'Дом двенадцать на десять с тремя спальнями, вход с севера'),
+        'Дом двенадцать на десять с тремя спальнями, вход с севера', 'Design a three-bedroom bungalow, twelve by ten metres, front door facing north', ky: 'Үч уктоочу бөлмөлүү, он экиге он метр үй, эшиги түндүккө', uz: 'Uch yotoqxonali, oʻn ikkiga oʻn metr uy, eshigi shimolga'),
     params: {
       // The size: both sides, or the total floor area.
       'width_mm': const Param.integer(optional: true),

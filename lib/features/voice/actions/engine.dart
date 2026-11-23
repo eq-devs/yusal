@@ -42,9 +42,9 @@ final engineActions = <AppAction>[
   AppAction(
     id: 'design.command',
     title: const L3('执行设计引擎命令', 'Жоба қозғалтқышының пәрменін орындау',
-        'Выполнить команду движка проекта'),
+        'Выполнить команду движка проекта', 'Run a design engine command', ky: 'Долбоор кыймылдаткычынын буйругун аткаруу', uz: 'Loyiha dvigateli buyrugʻini bajarish'),
     examples: const L3(
-        '在这层加一个插座', 'Осы қабатқа розетка қос', 'Добавь розетку на этом этаже'),
+        '在这层加一个插座', 'Осы қабатқа розетка қос', 'Добавь розетку на этом этаже', 'Add a socket on this floor', ky: 'Бул кабатка розетка кош', uz: 'Bu qavatga rozetka qoʻsh'),
     params: {
       'kind': Param.choice([for (final c in commandCatalog) c.kind]),
       // Written by the command's schema in docs/engine_commands.json; ids
@@ -81,11 +81,11 @@ final engineActions = <AppAction>[
   AppAction(
     id: 'design.describe',
     title: const L3('读取房屋的结构和编号', 'Үйдің құрылымы мен нөмірлерін оқу',
-        'Прочитать состав дома'),
+        'Прочитать состав дома', "Read the house's structure and ids", ky: 'Үйдүн түзүлүшүн жана номерлерин окуу', uz: 'Uyning tuzilishi va raqamlarini oʻqish'),
     examples: const L3(
         '这层有哪些房间和门窗',
         'Бұл қабатта қандай бөлмелер мен есік-терезелер бар',
-        'Какие комнаты и проёмы на этом этаже'),
+        'Какие комнаты и проёмы на этом этаже', 'Which rooms, doors and windows are on this floor', ky: 'Бул кабатта кандай бөлмөлөр, эшиктер жана терезелер бар', uz: 'Bu qavatda qanday xonalar, eshik va derazalar bor'),
     params: const {
       // The floor to describe in full; the one being edited when left out.
       'floor': Param.entity('floor', optional: true),

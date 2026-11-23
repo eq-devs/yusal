@@ -933,7 +933,9 @@ class _HouseHomeState extends ConsumerState<HouseHome>
               ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
             if (!embedded)
-              Seg<AppLang>(
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Seg<AppLang>(
                   label: 'Тіл / 语言 / Language',
                   value: app.lang,
                   items: const [
@@ -942,7 +944,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                     (AppLang.zh, '中文'),
                     (AppLang.en, 'English')
                   ],
-                  onChanged: choose.setLang),
+                  onChanged: choose.setLang)),
             if (!embedded)
               Seg<ThemeChoice>(
                   value: app.theme,

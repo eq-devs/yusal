@@ -204,7 +204,8 @@ class PlanLibraryPage extends StatelessWidget {
     watchLang(context);
     return Scaffold(
         appBar: AppBar(
-            title: Text(tr3('从图纸库挑一套', 'Кітапханадан таңдау', 'Из библиотеки', 'From the plan library'))),
+            title: Text(tr3('图纸库', 'Жобалар кітапханасы', 'Библиотека проектов',
+                'Plan library'))),
         body: HomePage(
             embedded: true,
             onPick: (post) => Navigator.of(context).pop(post)));

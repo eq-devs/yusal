@@ -48,22 +48,16 @@ extension _EditorHeader on _HouseEditorState {
                   overflow: TextOverflow.ellipsis,
                   style: mono(size: 12, color: t.muted)),
             ]));
-    // Four languages no longer fit a segmented switch beside the tools:
-    // the header names the current one and opens the list.
-    final language = Tooltip(
-        message: 'Тіл / Язык / 语言 / Language',
-        child: OutlinedButton.icon(
-            onPressed: chooseLanguage,
-            style: OutlinedButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 10)),
-            icon: const Icon(Icons.translate, size: 16),
-            label: Text(switch (app.lang) {
-              AppLang.kk => 'Қазақша',
-              AppLang.ru => 'Русский',
-              AppLang.zh => '中文',
-              AppLang.en => 'English',
-            })));
+    final language = Seg<AppLang>(
+        label: 'Тіл / 语言 / Language',
+        value: app.lang,
+        items: const [
+          (AppLang.kk, 'Қазақша'),
+          (AppLang.ru, 'Русский'),
+          (AppLang.zh, '中文'),
+          (AppLang.en, 'English')
+        ],
+        onChanged: choose.setLang);
     final theme = Seg<ThemeChoice>(
         value: app.theme,
         items: [
@@ -207,7 +201,10 @@ extension _EditorHeader on _HouseEditorState {
             saveIndicator(),
             more,
             const SizedBox(width: 8),
-            language,
+            // Four languages: on a narrower desktop the switch shrinks
+            // rather than pushing the row off the screen.
+            Flexible(
+                child: FittedBox(fit: BoxFit.scaleDown, child: language)),
             const SizedBox(width: 8),
             theme,
           ]));

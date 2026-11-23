@@ -77,14 +77,16 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
       toast(
           context,
           tr3('每个节点都要有名字', 'Әр кезеңнің атауы болсын',
-              'У каждого этапа должно быть название'));
+              'У каждого этапа должно быть название',
+              'Every stage needs a name', ky: 'Ар бир этаптын аталышы болушу керек', uz: 'Har bir bosqichning nomi boʻlishi kerak'));
       return;
     }
     if (total != 100) {
       toast(
           context,
           tr3('比例加起来要等于 100%', 'Барлығы 100% болуы керек',
-              'Сумма долей должна быть 100%'));
+              'Сумма долей должна быть 100%',
+              'Shares must add up to 100%', ky: 'Үлүштөрдүн суммасы 100% болушу керек', uz: 'Ulushlar yigʻindisi 100% boʻlishi kerak'));
       return;
     }
     final ok = await attempt(
@@ -93,7 +95,8 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
             .read(cooperationRepositoryProvider)
             .setMilestones(widget.cooperation.id, plan),
         success: tr3('已保存，等对方确认', 'Сақталды, екінші жақ растайды',
-            'Сохранено, ждём подтверждения'));
+            'Сохранено, ждём подтверждения',
+            'Saved; waiting for confirmation', ky: 'Сакталды; ырастоону күтүүдө', uz: 'Saqlandi; tasdiqlash kutilmoqda'));
     if (ok != null && mounted) Navigator.of(context).pop();
   }
 
@@ -102,23 +105,24 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
     final t = YTokens.of(context);
     final amount = widget.cooperation.agreement.amount;
     return PageScaffold(
-        title: tr3('验收节点', 'Қабылдау кезеңдері', 'Этапы приёмки'),
+        title: tr3('验收节点', 'Қабылдау кезеңдері', 'Этапы приёмки', 'Acceptance stages', ky: 'Кабыл алуу этаптары', uz: 'Qabul bosqichlari'),
         bottom: Row(children: [
           Expanded(
-              child: Text(tr3('合计 $total%', 'Барлығы $total%', 'Итого $total%'),
+              child: Text(tr3('合计 $total%', 'Барлығы $total%', 'Итого $total%', 'Total $total%', ky: 'Бардыгы $total%', uz: 'Jami $total%'),
                   style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: total == 100 ? t.ok : t.warn))),
           FilledButton(
               key: const Key('milestones-save'),
               onPressed: save,
-              child: Text(tr3('保存并请对方确认', 'Сақтау', 'Сохранить'))),
+              child: Text(tr3('保存并请对方确认', 'Сақтау', 'Сохранить', 'Save', ky: 'Сактоо', uz: 'Saqlash'))),
         ]),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Hint(tr3(
               '按施工节点分阶段验收。改完后双方都要重新确认约定。Yusal 只记录验收，不代收代付。',
               'Кезеңдерді өзгерткен соң екі жақ қайта растайды.',
-              'После изменений обе стороны подтверждают заново. Yusal не принимает платежи.')),
+              'После изменений обе стороны подтверждают заново. Yusal не принимает платежи.',
+              "After changes both sides confirm again. Yusal doesn't take payments.", ky: 'Өзгөртүүлөрдөн кийин эки тарап кайра ырастайт. Yusal төлөм кабыл албайт.', uz: 'Oʻzgarishlardan keyin ikkala tomon qayta tasdiqlaydi. Yusal toʻlov qabul qilmaydi.')),
           const SizedBox(height: 12),
           for (var i = 0; i < rows.length; i++)
             Card(
@@ -132,7 +136,7 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
                                 key: Key('ms-name-$i'),
                                 controller: rows[i].name,
                                 decoration: InputDecoration(
-                                    labelText: tr3('节点', 'Кезең', 'Этап')))),
+                                    labelText: tr3('节点', 'Кезең', 'Этап', 'Stage', ky: 'Этап', uz: 'Bosqich')))),
                         const SizedBox(width: 10),
                         SizedBox(
                             width: 84,
@@ -142,10 +146,10 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
                                 keyboardType: TextInputType.number,
                                 onChanged: (_) => setState(() {}),
                                 decoration: InputDecoration(
-                                    labelText: tr3('比例', 'Үлес', 'Доля'),
+                                    labelText: tr3('比例', 'Үлес', 'Доля', 'Share', ky: 'Үлүш', uz: 'Ulush'),
                                     suffixText: '%'))),
                         IconButton(
-                            tooltip: tr3('删除', 'Жою', 'Удалить'),
+                            tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
                             onPressed: rows.length <= 1
                                 ? null
                                 : () =>
@@ -158,7 +162,7 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
                           maxLines: 2,
                           decoration: InputDecoration(
                               labelText: tr3(
-                                  '验收标准', 'Қабылдау талабы', 'Что проверяем'))),
+                                  '验收标准', 'Қабылдау талабы', 'Что проверяем', 'What we check', ky: 'Эмнени текшеребиз', uz: 'Nimani tekshiramiz'))),
                       const SizedBox(height: 6),
                       Row(children: [
                         if (amount != null)
@@ -182,7 +186,7 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
                             },
                             icon: const Icon(Icons.event_outlined, size: 18),
                             label: Text(rows[i].due == null
-                                ? tr3('预计日期', 'Мерзім', 'Срок')
+                                ? tr3('预计日期', 'Мерзім', 'Срок', 'Deadline', ky: 'Мөөнөт', uz: 'Muddat')
                                 : fmtDay(rows[i].due))),
                       ]),
                     ]))),
@@ -191,10 +195,10 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
                 key: const Key('ms-add'),
                 onPressed: () => setState(() => rows.add(_Row(Milestone(
                     key:
-                        'c:${tr3('新节点', 'Жаңа кезең', 'Новый этап')} ${rows.length + 1}',
+                        'c:${tr3('新节点', 'Жаңа кезең', 'Новый этап', 'New stage', ky: 'Жаңы этап', uz: 'Yangi bosqich')} ${rows.length + 1}',
                     percent: 0)))),
                 icon: const Icon(Icons.add),
-                label: Text(tr3('加一个节点', 'Кезең қосу', 'Добавить этап'))),
+                label: Text(tr3('加一个节点', 'Кезең қосу', 'Добавить этап', 'Add a stage', ky: 'Этап кошуу', uz: 'Bosqich qoʻshish'))),
         ]));
   }
 }

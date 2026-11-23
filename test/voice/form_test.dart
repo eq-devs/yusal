@@ -31,9 +31,9 @@ class _FormState extends State<_Form> with VoiceScreen {
 
   @override
   List<VoiceField> get fields => [
-        VoiceField.number('wage', const L3('工资', 'Жалақы', 'Ставка'), wage),
-        VoiceField.text('note', const L3('说明', 'Қосымша', 'Комментарий'), note),
-        VoiceField.choice('unit', const L3('单位', 'Бірлік', 'Единица'),
+        VoiceField.number('wage', const L3('工资', 'Жалақы', 'Ставка', 'Wage'), wage),
+        VoiceField.text('note', const L3('说明', 'Қосымша', 'Комментарий', 'Note'), note),
+        VoiceField.choice('unit', const L3('单位', 'Бірлік', 'Единица', 'Unit'),
             const ['day', 'month'], (v) => setState(() => unit = v)),
       ];
 

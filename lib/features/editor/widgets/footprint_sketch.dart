@@ -69,7 +69,7 @@ class _FootprintSketchState extends State<FootprintSketch> {
   Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(
           title:
-              Text(tr3('拖出房屋外形', 'Үй пішінін сызу', 'Нарисовать контур дома'))),
+              Text(tr3('拖出房屋外形', 'Үй пішінін сызу', 'Нарисовать контур дома', 'Draw the house outline', ky: 'Үйдүн контурун чийүү', uz: 'Uy konturini chizish'))),
       body: SafeArea(
           child: LayoutBuilder(
               builder: (context, viewport) => SingleChildScrollView(
@@ -81,7 +81,8 @@ class _FootprintSketchState extends State<FootprintSketch> {
                             child: Text(tr3(
                                 '从一个角拖到另一个角。1 格为 1 米，之后可以输入精确长宽。',
                                 'Бір бұрыштан екіншісіне тартыңыз. 1 тор — 1 м, кейін нақты өлшем енгізуге болады.',
-                                'Протяните от одного угла к другому. 1 клетка — 1 м, точные размеры можно ввести позже.'))),
+                                'Протяните от одного угла к другому. 1 клетка — 1 м, точные размеры можно ввести позже.',
+                                'Drag from one corner to the other. 1 cell = 1 m; you can enter exact sizes later.', ky: 'Бир бурчтан экинчисине чейин сүйрөңүз. 1 уяча = 1 м; так өлчөмдөрдү кийин киргизсеңиз болот.', uz: 'Bir burchakdan ikkinchisigacha suring. 1 katak = 1 m; aniq oʻlchamlarni keyin kiritishingiz mumkin.'))),
                         Expanded(child:
                             LayoutBuilder(builder: (context, constraints) {
                           final size =
@@ -164,7 +165,8 @@ class _FootprintSketchState extends State<FootprintSketch> {
                                             .numberWithOptions(decimal: true),
                                         decoration: InputDecoration(
                                             labelText: tr3('宽（米）', 'Ені (м)',
-                                                'Ширина (м)')))),
+                                                'Ширина (м)',
+                                                'Width (m)', ky: 'Туурасы (м)', uz: 'Eni (m)')))),
                                 const SizedBox(width: 16),
                                 Expanded(
                                     child: TextField(
@@ -174,18 +176,20 @@ class _FootprintSketchState extends State<FootprintSketch> {
                                             .numberWithOptions(decimal: true),
                                         decoration: InputDecoration(
                                             labelText: tr3('长（米）',
-                                                'Ұзындығы (м)', 'Длина (м)'))))
+                                                'Ұзындығы (м)', 'Длина (м)', 'Length (m)', ky: 'Узундугу (м)', uz: 'Uzunligi (m)'))))
                               ]),
                               const SizedBox(height: 12),
                               Text(dimensions == null
                                   ? tr3(
                                       '长宽至少 3 米，可重新拖动或输入尺寸',
                                       'Өлшем кемінде 3 м: қайта тартыңыз не енгізіңіз',
-                                      'Длина и ширина — не менее 3 м: протяните заново или введите размеры')
+                                      'Длина и ширина — не менее 3 м: протяните заново или введите размеры',
+                                      'Length and width must be at least 3 m: drag again or enter the dimensions', ky: 'Узундугу жана туурасы кеминде 3 м болушу керек: кайра сүйрөңүз же өлчөмдөрдү киргизиңиз', uz: 'Uzunlik va eni kamida 3 m boʻlishi kerak: qayta suring yoki oʻlchamlarni kiriting')
                                   : tr3(
                                       '外形已确定，可以继续分房',
                                       'Пішін дайын, бөлмелерге бөлуге болады',
-                                      'Контур готов, можно делить на комнаты')),
+                                      'Контур готов, можно делить на комнаты',
+                                      'Outline ready; you can divide it into rooms', ky: 'Контур даяр; аны бөлмөлөргө бөлсөңүз болот', uz: 'Kontur tayyor; uni xonalarga boʻlishingiz mumkin')),
                               const SizedBox(height: 12),
                               SizedBox(
                                   width: double.infinity,
@@ -197,7 +201,8 @@ class _FootprintSketchState extends State<FootprintSketch> {
                                       child: Text(tr3(
                                           '使用这个外形',
                                           'Осы пішінді қолдану',
-                                          'Использовать этот контур')))),
+                                          'Использовать этот контур',
+                                          'Use this outline', ky: 'Бул контурду колдонуу', uz: 'Bu konturdan foydalanish')))),
                             ])),
                       ]))))));
 }

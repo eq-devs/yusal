@@ -6,7 +6,7 @@ import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/state/executor.dart';
 import 'package:yusal/features/voice/state/registry.dart';
 
-const _name = L3('动作', 'Әрекет', 'Действие');
+const _name = L3('动作', 'Әрекет', 'Действие', 'Action');
 
 void main() {
   late List<Args> ran;

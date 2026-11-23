@@ -25,7 +25,8 @@ extension _UtilityTool on _HouseEditorState {
                       children: [
                         Text(
                             tr3('水电暖点位', 'Су, электр, жылу нүктелері',
-                                'Точки воды, электрики и отопления'),
+                                'Точки воды, электрики и отопления',
+                                'Water, electrical and heating points', ky: 'Суу, электр жана жылытуу чекиттери', uz: 'Suv, elektr va isitish nuqtalari'),
                             style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.w700)),
                         Padding(
@@ -34,20 +35,22 @@ extension _UtilityTool on _HouseEditorState {
                                 tr3(
                                     '自动布置会按房间类型放灯、开关、插座、给排水、排气扇和窗下暖气片，之后可以拖动或删除。',
                                     'Автоматты орналастыру бөлме түріне қарай шам, ажыратқыш, розетка, су-кәріз, желдеткіш және терезе астына радиатор қояды; кейін жылжытып не жоюға болады.',
-                                    'Авторасстановка размещает по типу комнаты светильники, выключатели, розетки, водопровод и канализацию, вентиляторы и радиаторы под окнами; затем их можно переместить или удалить.'),
+                                    'Авторасстановка размещает по типу комнаты светильники, выключатели, розетки, водопровод и канализацию, вентиляторы и радиаторы под окнами; затем их можно переместить или удалить.',
+                                    'Auto-place puts lights, switches, sockets, water and drains, fans and under-window radiators by room type; you can move or delete them afterwards.', ky: 'Автоматтык жайгаштыруу бөлмөнүн түрүнө жараша шамдарды, өчүргүчтөрдү, розеткаларды, суу менен агызууну, желдеткичтерди жана терезе алдындагы радиаторлорду коёт; кийин аларды жылдырып же өчүрсөңүз болот.', uz: 'Avtomatik joylash xona turiga qarab chiroqlar, oʻchirgichlar, rozetkalar, suv va oqova, ventilyatorlar va deraza ostidagi radiatorlarni qoʻyadi; keyin ularni surish yoki oʻchirish mumkin.'),
                                 style:
                                     TextStyle(fontSize: 12, color: t.muted))),
                         Wrap(spacing: 8, runSpacing: 8, children: [
                           Btn(
                               label: tr3('自动布置本层', 'Осы қабатты автоматты',
-                                  'Авторасстановка на этаже'),
+                                  'Авторасстановка на этаже',
+                                  'Auto-place on this floor', ky: 'Бул кабатта автоматтык жайгаштыруу', uz: 'Bu qavatda avtomatik joylash'),
                               icon: Icons.auto_fix_high,
                               primary: true,
                               onPressed: () => Navigator.pop(context, 'auto')),
                           if (count > 0)
                             Btn(
                                 label:
-                                    '${tr3('清除本层点位', 'Қабат нүктелерін өшіру', 'Удалить точки этажа')} ($count)',
+                                    '${tr3('清除本层点位', 'Қабат нүктелерін өшіру', 'Удалить точки этажа', "Delete this floor's points", ky: 'Бул кабаттын чекиттерин өчүрүү', uz: 'Bu qavat nuqtalarini oʻchirish')} ($count)',
                                 icon: Icons.delete_sweep_outlined,
                                 danger: true,
                                 onPressed: () =>
@@ -81,7 +84,8 @@ extension _UtilityTool on _HouseEditorState {
       action('ClearUtilities', {'floorId': floor.id});
       notify(
           tr3('已清除本层 $ids 个点位', 'Қабаттағы $ids нүкте өшірілді',
-              'Удалено точек на этаже: $ids'),
+              'Удалено точек на этаже: $ids',
+              'Points deleted on this floor: $ids', ky: 'Бул кабатта өчүрүлгөн чекиттер: $ids', uz: 'Bu qavatda oʻchirilgan nuqtalar: $ids'),
           undo: undo);
       return;
     }
@@ -96,7 +100,8 @@ extension _UtilityTool on _HouseEditorState {
       placementHint = tr3(
           '点平面放置「${utilityName(kind)}」，可连续放置',
           '«${utilityName(kind)}» қою үшін жоспарды басыңыз, бірнеше рет қоюға болады',
-          'Нажмите на план, чтобы поставить «${utilityName(kind)}»; можно ставить несколько раз подряд');
+          'Нажмите на план, чтобы поставить «${utilityName(kind)}»; можно ставить несколько раз подряд',
+          'Tap the plan to place “${utilityName(kind)}”; you can place several in a row', ky: '«${utilityName(kind)}» коюу үчүн планды басыңыз; катары менен бир нечесин койсоңуз болот', uz: '“${utilityName(kind)}” ni joylash uchun rejaga bosing; ketma-ket bir nechtasini qoʻyish mumkin');
     });
   }
 
@@ -106,7 +111,8 @@ extension _UtilityTool on _HouseEditorState {
       notify(tr3(
           '本层已有建议的点位，没有新增',
           'Бұл қабатта ұсынылған нүктелер бар, жаңасы жоқ',
-          'На этом этаже рекомендуемые точки уже есть, новых нет'));
+          'На этом этаже рекомендуемые точки уже есть, новых нет',
+          'This floor already has the recommended points; nothing new', ky: 'Бул кабатта сунушталган чекиттер бар; жаңы эч нерсе жок', uz: 'Bu qavatda tavsiya etilgan nuqtalar bor; yangi narsa yoʻq'));
       return;
     }
     update(() => showUtilities = true);
@@ -120,7 +126,8 @@ extension _UtilityTool on _HouseEditorState {
         tr3(
             '已布置 ${spots.length} 个点位，可拖动调整',
             '${spots.length} нүкте қойылды, сүйреп түзетуге болады',
-            'Расставлено точек: ${spots.length}, их можно перетаскивать'),
+            'Расставлено точек: ${spots.length}, их можно перетаскивать',
+            'Points placed: ${spots.length}; you can drag them', ky: 'Коюлган чекиттер: ${spots.length}; аларды сүйрөсөңүз болот', uz: 'Qoʻyilgan nuqtalar: ${spots.length}; ularni surish mumkin'),
         undo: undo);
   }
 
@@ -186,7 +193,7 @@ extension _UtilityTool on _HouseEditorState {
         x: _FurnitureTool.snap50(u.x + delta.dx),
         y: _FurnitureTool.snap50(u.y + delta.dy));
     placementHint =
-        tr3('松手放下', 'Жіберіп қойыңыз', 'Отпустите, чтобы поставить');
+        tr3('松手放下', 'Жіберіп қойыңыз', 'Отпустите, чтобы поставить', 'Release to place', ky: 'Коюу үчүн коё бериңиз', uz: 'Joylash uchun qoʻyib yuboring');
   }
 
   /// Returns whether the point moved (otherwise the press was a tap).
@@ -216,13 +223,13 @@ extension _UtilityTool on _HouseEditorState {
                       fontSize: 16, fontWeight: FontWeight.w700))),
         ]),
         trailing: IconButton(
-            tooltip: tr3('关闭', 'Жабу', 'Закрыть'),
+            tooltip: tr3('关闭', 'Жабу', 'Закрыть', 'Close', ky: 'Жабуу', uz: 'Yopish'),
             visualDensity: VisualDensity.compact,
             onPressed: () => update(() => selectedUtilityId = null),
             icon: const Icon(Icons.close, size: 18)),
         children: [
           KvGrid([
-            Kv(utilityName(u.kind), tr3('类型', 'Түрі', 'Тип'), onTap: () async {
+            Kv(utilityName(u.kind), tr3('类型', 'Түрі', 'Тип', 'Type', ky: 'Түрү', uz: 'Turi'), onTap: () async {
               final kind = await showMotionSheet<UtilityKind>(
                   context: context,
                   builder: (context) => SafeArea(
@@ -239,24 +246,25 @@ extension _UtilityTool on _HouseEditorState {
               }
             }),
             Kv('${m2dp(u.x)}, ${m2dp(u.y)}',
-                tr3('位置 (米)', 'Орны (м)', 'Положение (м)'), onTap: () async {
+                tr3('位置 (米)', 'Орны (м)', 'Положение (м)', 'Position (m)', ky: 'Орду (м)', uz: 'Joylashuvi (m)'), onTap: () async {
               final x = await length(
-                  tr3('离左墙外皮', 'Сол қабырғадан', 'От левой стены'), u.x);
+                  tr3('离左墙外皮', 'Сол қабырғадан', 'От левой стены', 'From the left wall', ky: 'Сол дубалдан', uz: 'Chap devordan'), u.x);
               if (x == null || !mounted) return;
               final y = await length(
-                  tr3('离下墙外皮', 'Төменгі қабырғадан', 'От нижней стены'), u.y);
+                  tr3('离下墙外皮', 'Төменгі қабырғадан', 'От нижней стены', 'From the bottom wall', ky: 'Ылдыйкы дубалдан', uz: 'Pastki devordan'), u.y);
               if (y == null) return;
               action('UpdateUtility', {'utilityId': u.id, 'x': x, 'y': y});
             }),
           ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
             Btn(
-                label: tr3('备注', 'Белгі', 'Примечание'),
+                label: tr3('备注', 'Белгі', 'Примечание', 'Note', ky: 'Эскертме', uz: 'Izoh'),
                 icon: Icons.edit_outlined,
                 onPressed: () async {
                   final v = await askText(
                       tr3('备注 (如：空调插座 16A)', 'Белгі (мысалы: кондиционер 16А)',
-                          'Примечание (например: кондиционер 16А)'),
+                          'Примечание (например: кондиционер 16А)',
+                          'Note (e.g. air conditioner 16A)', ky: 'Эскертме (мис., кондиционер 16A)', uz: 'Izoh (masalan, konditsioner 16A)'),
                       u.label ?? '');
                   if (v != null) {
                     action('UpdateUtility',
@@ -264,7 +272,7 @@ extension _UtilityTool on _HouseEditorState {
                   }
                 }),
             Btn(
-                label: tr3('删除', 'Жою', 'Удалить'),
+                label: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
                 icon: Icons.delete_outline,
                 danger: true,
                 onPressed: () {
@@ -275,7 +283,8 @@ extension _UtilityTool on _HouseEditorState {
           Note(tr3(
               '拖动符号可移动；在“预算”里，电线和水管长度按点位到配电箱、进水套管、排水套管和锅炉的走墙距离估算。',
               'Белгіні сүйреп жылжытыңыз; «Смета» бетінде сым мен құбыр ұзындығы нүктеден электр қалқанына, су және кәріз гильзасына, қазандыққа дейінгі қабырға бойындағы қашықтықпен есептеледі.',
-              'Перетащите значок, чтобы переместить его; на странице «Смета» длина провода и труб считается по расстоянию вдоль стен от точки до электрощита, гильз водопровода и канализации, котла.')),
+              'Перетащите значок, чтобы переместить его; на странице «Смета» длина провода и труб считается по расстоянию вдоль стен от точки до электрощита, гильз водопровода и канализации, котла.',
+              'Drag an icon to move it; on the “Estimate” page wire and pipe lengths are measured along the walls from each point to the electrical panel, the water and drain sleeves, and the boiler.', ky: 'Жылдыруу үчүн белгини сүйрөңүз; «Смета» бетинде зым жана түтүк узундуктары ар бир чекиттен электр щитине, суу жана агызуу гильзаларына жана казанга чейин дубалдар боюнча өлчөнөт.', uz: 'Surish uchun belgini suring; “Smeta” sahifasida sim va quvur uzunliklari har bir nuqtadan elektr shchitiga, suv va oqova gilzalariga va qozongacha devorlar boʻylab oʻlchanadi.')),
         ]);
   }
 
@@ -284,13 +293,13 @@ extension _UtilityTool on _HouseEditorState {
     final take = utilityTakeoff(history.present);
     if (take.isEmpty) return const SizedBox.shrink();
     return KvGrid([
-      Kv('${take.electrical}', tr3('电气点位', 'Электр нүктелері', 'Электроточки')),
+      Kv('${take.electrical}', tr3('电气点位', 'Электр нүктелері', 'Электроточки', 'Electrical points', ky: 'Электр чекиттери', uz: 'Elektr nuqtalari')),
       Kv('${money(take.lightCable + take.powerCable)} $unitM',
-          tr3('电线约', 'Сым шамамен', 'Провод примерно')),
+          tr3('电线约', 'Сым шамамен', 'Провод примерно', 'Wire, approx.', ky: 'Зым, болжол менен', uz: 'Sim, taxminan')),
       Kv('${money(take.waterPipe + take.drainPipe)} $unitM',
-          tr3('水管约', 'Су құбыры шамамен', 'Водопроводная труба примерно')),
+          tr3('水管约', 'Су құбыры шамамен', 'Водопроводная труба примерно', 'Water pipe, approx.', ky: 'Суу түтүгү, болжол менен', uz: 'Suv quvuri, taxminan')),
       Kv('${take.count(UtilityKind.radiator)}',
-          tr3('暖气片', 'Радиатор', 'Радиатор')),
+          tr3('暖气片', 'Радиатор', 'Радиатор', 'Radiator', ky: 'Радиатор', uz: 'Radiator')),
     ]);
   }
 }

@@ -101,7 +101,7 @@ class PlanAttachment extends StatelessWidget {
     final doc = hidden ? null : _document(snapshot);
     final available = !hidden && (doc != null || snapshot?.preview != null);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      SectionTitle(tr3('设计图纸', 'Жоба сызбалары', 'Чертежи проекта')),
+      SectionTitle(tr3('设计图纸', 'Жоба сызбалары', 'Чертежи проекта', 'Design drawings', ky: 'Долбоордун чиймелери', uz: 'Loyiha chizmalari')),
       YCard(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -115,26 +115,30 @@ class PlanAttachment extends StatelessWidget {
           const SizedBox(height: 8),
           Text(doc == null
               ? tr3('旧版附件：仅提供预览图', 'Ескі тіркеме: тек алдын ала көрініс',
-                  'Старое вложение: только изображение')
+                  'Старое вложение: только изображение',
+                  'Old attachment: image only', ky: 'Эски тиркеме: сүрөт гана', uz: 'Eski ilova: faqat rasm')
               : tr3(
                   '${doc.floors.length} 层 · 发布时版本 · 只读',
                   '${doc.floors.length} қабат · Жарияланған нұсқа · Тек көру',
-                  '${doc.floors.length} эт. · Версия публикации · Только просмотр')),
+                  '${doc.floors.length} эт. · Версия публикации · Только просмотр',
+                  '${doc.floors.length} fl. · Published version · View only', ky: '${doc.floors.length} каб. · Жарыяланган версия · Көрүү гана', uz: '${doc.floors.length} qav. · Eʼlon qilingan versiya · Faqat koʻrish')),
           const SizedBox(height: 8),
           FilledButton.icon(
               onPressed: () => _open(context),
               icon: const Icon(Icons.open_in_full),
-              label: Text(tr3('打开图纸', 'Сызбаны ашу', 'Открыть чертежи'))),
+              label: Text(tr3('打开图纸', 'Сызбаны ашу', 'Открыть чертежи', 'Open drawings', ky: 'Чиймелерди ачуу', uz: 'Chizmalarni ochish'))),
         ] else
           Text(hidden
               ? tr3(
                   '图纸未公开，可联系发布者',
                   'Сызба жарияланбаған, автормен байланысыңыз',
-                  'Чертежи скрыты — свяжитесь с автором')
+                  'Чертежи скрыты — свяжитесь с автором',
+                  'Drawings are hidden; contact the author', ky: 'Чиймелер жашырылган; автор менен байланышыңыз', uz: 'Chizmalar yashirilgan; muallif bilan bogʻlaning')
               : tr3(
                   '此内容暂未附可查看的图纸，请联系发布者补充',
                   'Көруге болатын сызба тіркелмеген. Автордан сұраңыз.',
-                  'Чертежи пока не приложены. Попросите автора добавить их.')),
+                  'Чертежи пока не приложены. Попросите автора добавить их.',
+                  'No drawings attached yet. Ask the author to add them.', ky: 'Азырынча чиймелер тиркелген жок. Авторду аларды кошууну сураныңыз.', uz: 'Hozircha chizmalar biriktirilmagan. Muallifdan ularni qoʻshishni soʻrang.')),
       ])),
     ]);
   }
@@ -168,11 +172,11 @@ class _PlanViewerState extends State<PlanViewer> {
     final doc = document;
     return Scaffold(
       appBar: AppBar(
-          title: Text(tr3('图纸 · 只读', 'Сызба · Тек көру', 'Чертежи · Просмотр')),
+          title: Text(tr3('图纸 · 只读', 'Сызба · Тек көру', 'Чертежи · Просмотр', 'Drawings · View', ky: 'Чиймелер · Көрүү', uz: 'Chizmalar · Koʻrish')),
           actions: [
             IconButton(
                 tooltip: tr3(
-                    '重置缩放', 'Масштабты қалпына келтіру', 'Сбросить масштаб'),
+                    '重置缩放', 'Масштабты қалпына келтіру', 'Сбросить масштаб', 'Reset zoom', ky: 'Масштабды баштапкы абалга келтирүү', uz: 'Masshtabni asliga qaytarish'),
                 onPressed: () => setState(() {
                       transform.value = Matrix4.identity();
                       viewToken++;
@@ -194,7 +198,7 @@ class _PlanViewerState extends State<PlanViewer> {
           }, onSelectionChanged: (v) => setState(() => threeD = v.single)),
           if (threeD)
             FilterChip(
-                label: Text(tr3('显示屋顶', 'Шатырды көрсету', 'Показать крышу')),
+                label: Text(tr3('显示屋顶', 'Шатырды көрсету', 'Показать крышу', 'Show the roof', ky: 'Чатырды көрсөтүү', uz: 'Tomni koʻrsatish')),
                 selected: roof,
                 onSelected: (v) => setState(() => roof = v)),
           Padding(
@@ -245,7 +249,8 @@ class _PlanViewerState extends State<PlanViewer> {
             child: Text(tr3(
                 '双指缩放、拖动查看。设计图不替代专业施工图。',
                 'Екі саусақпен үлкейтіп, жылжытыңыз. Бұл кәсіби құрылыс сызбасы емес.',
-                'Масштабируйте двумя пальцами и перемещайте. План не заменяет рабочую документацию.'))),
+                'Масштабируйте двумя пальцами и перемещайте. План не заменяет рабочую документацию.',
+                "Pinch to zoom and drag to move. The plan doesn't replace working drawings.", ky: 'Чоңойтуу үчүн кыпчып, жылдыруу үчүн сүйрөңүз. План иштөөчү чиймелерди алмаштырбайт.', uz: 'Kattalashtirish uchun qisib-oching, surish uchun suring. Reja ishchi chizmalarni almashtirmaydi.'))),
       ])),
     );
   }
@@ -265,13 +270,14 @@ class _Sheet extends StatelessWidget {
       if (bytes == null) {
         return Center(
             child:
-                Text(tr3('图纸暂不可用', 'Сызба қолжетімсіз', 'Чертежи недоступны')));
+                Text(tr3('图纸暂不可用', 'Сызба қолжетімсіз', 'Чертежи недоступны', 'Drawings unavailable', ky: 'Чиймелер жеткиликсиз', uz: 'Chizmalar mavjud emas')));
       }
       return Image.memory(imageBytes(bytes),
           fit: BoxFit.contain,
           errorBuilder: (_, error, stack) => Center(
               child: Text(tr3('预览图无法读取', 'Көріністі оқу мүмкін емес',
-                  'Не удалось прочитать изображение'))));
+                  'Не удалось прочитать изображение',
+                  "Couldn't read the image", ky: 'Сүрөттү окуу мүмкүн болбоду', uz: 'Rasmni oʻqib boʻlmadi'))));
     }
     final derived = deriveHouse(doc).floors[floor];
     return ColoredBox(

@@ -5,17 +5,24 @@ import 'package:yusal/features/coop/repository/cooperation_repository.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
 import 'package:yusal/features/shared/state/session.dart';
 
-/// One piece of wording in the app's three languages.
+/// One piece of wording in the app's languages. English, Kyrgyz and Uzbek
+/// fall back to Russian where they are missing.
 class L3 {
-  const L3(this.zh, this.kk, this.ru);
+  const L3(this.zh, this.kk, this.ru, this.en, {this.ky, this.uz});
   final String zh;
   final String kk;
   final String ru;
+  final String? en;
+  final String? ky;
+  final String? uz;
 
   String of(AppLang lang) => switch (lang) {
         AppLang.zh => zh,
         AppLang.kk => kk,
         AppLang.ru => ru,
+        AppLang.en => en ?? ru,
+        AppLang.ky => ky ?? ru,
+        AppLang.uz => uz ?? ru,
       };
 
   bool get complete =>

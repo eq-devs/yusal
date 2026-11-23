@@ -143,6 +143,9 @@ void main() {
             AppLang.zh => '返回',
             AppLang.ru => 'Назад',
             AppLang.kk => 'Артқа',
+            AppLang.en => 'Back',
+            AppLang.ky => 'Артка',
+            AppLang.uz => 'Orqaga',
           });
     });
   }

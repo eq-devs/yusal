@@ -56,3 +56,20 @@ write the file again with
 ```
 flutter test test/command_catalog_test.dart --dart-define=UPDATE_CATALOG=true
 ```
+
+## From the voice assistant
+
+Two actions in `lib/features/voice/actions/engine.dart` give the assistant
+the same reach, through the editor's own history:
+
+- `design.describe` reads the house: the floor being edited in full, with
+  both the ids and the aliases the screen shows (`r1`, `o2`), and on request
+  the layout checks, the estimate and the kinds of things there are.
+- `design.command` runs any catalog command: `{"kind": "AddUtility",
+  "arguments": {...}}`. An argument that names something takes an id or an
+  alias. Arguments that cannot be read come back as `bad_command_arguments`
+  with the command's schema, so the model can write them again.
+
+The actions in `design.dart` stay the first choice for what they cover; these
+reach the rest. The gateway can give the model each command's schema from
+`docs/engine_commands.json`.

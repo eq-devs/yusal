@@ -54,6 +54,7 @@ import 'package:yusal/features/editor/engine/render2d/site_plan_painter.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/design.dart';
+import 'package:yusal/features/voice/actions/engine.dart';
 import 'package:yusal/features/voice/actions/houses.dart';
 import 'package:yusal/features/voice/model/scene.dart';
 import 'package:yusal/features/voice/state/screen.dart';
@@ -218,7 +219,10 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   FloorBase get floorBase => base;
 
   @override
-  List<String> get actions => [for (final a in designActions) a.id];
+  List<String> get actions => [
+        for (final a in designActions) a.id,
+        for (final a in engineActions) a.id
+      ];
 
   @override
   String get currentFloorId => floor.id;

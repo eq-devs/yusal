@@ -1804,5 +1804,146 @@
       "properties": {},
       "required": []
     }
+  },
+  {
+    "name": "design.command",
+    "title": {
+      "zh": "执行设计引擎命令",
+      "kk": "Жоба қозғалтқышының пәрменін орындау",
+      "ru": "Выполнить команду движка проекта"
+    },
+    "examples": {
+      "zh": "在这层加一个插座",
+      "kk": "Осы қабатқа розетка қос",
+      "ru": "Добавь розетку на этом этаже"
+    },
+    "risk": "undoable",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "SetFootprintSize",
+            "SetNorthAngle",
+            "SetRoof",
+            "SetDefault",
+            "MirrorPlan",
+            "CutOutline",
+            "RestoreOutline",
+            "AddAxis",
+            "MoveAxis",
+            "PromoteFloorAxis",
+            "DeleteAxis",
+            "AddFloor",
+            "CopyFloor",
+            "DeleteFloor",
+            "SetFloorHeight",
+            "RenameFloor",
+            "RenameRoom",
+            "SetRoomType",
+            "MergeRooms",
+            "SplitSpace",
+            "CarveRoom",
+            "PaintCells",
+            "EraseCells",
+            "SetRoomInfo",
+            "AddOpening",
+            "SetOpeningKind",
+            "ResizeOpening",
+            "MoveOpening",
+            "FlipDoor",
+            "DeleteOpening",
+            "SetMainEntrance",
+            "SetOpeningLabel",
+            "PlaceStair",
+            "RemoveStair",
+            "AddStair",
+            "UpdateStair",
+            "DeleteStair",
+            "SetWallOverride",
+            "MoveLocalWall",
+            "EnableWallDrawing",
+            "AddDrawnWall",
+            "UpdateDrawnWall",
+            "MoveDrawnWall",
+            "DeleteDrawnWall",
+            "AddFurniture",
+            "UpdateFurniture",
+            "RotateFurniture",
+            "DeleteFurniture",
+            "SetNote",
+            "AddIssue",
+            "UpdateIssue",
+            "DeleteIssue",
+            "SetFoundation",
+            "SetLayers",
+            "AddSleeve",
+            "UpdateSleeve",
+            "DeleteSleeve",
+            "SetCost",
+            "AddCostItem",
+            "UpdateCostItem",
+            "DeleteCostItem",
+            "SetHeat",
+            "AddUtility",
+            "AddUtilities",
+            "UpdateUtility",
+            "DeleteUtility",
+            "ClearUtilities",
+            "SetSite",
+            "ClearSite",
+            "AddSiteItem",
+            "UpdateSiteItem",
+            "RotateSiteItem",
+            "DeleteSiteItem",
+            "SetStage",
+            "AddStage",
+            "DeleteStage",
+            "ResetSchedule"
+          ]
+        },
+        "arguments": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "kind",
+        "arguments"
+      ]
+    }
+  },
+  {
+    "name": "design.describe",
+    "title": {
+      "zh": "读取房屋的结构和编号",
+      "kk": "Үйдің құрылымы мен нөмірлерін оқу",
+      "ru": "Прочитать состав дома"
+    },
+    "examples": {
+      "zh": "这层有哪些房间和门窗",
+      "kk": "Бұл қабатта қандай бөлмелер мен есік-терезелер бар",
+      "ru": "Какие комнаты и проёмы на этом этаже"
+    },
+    "risk": "read",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "floor": {
+          "type": "string",
+          "entity": "floor"
+        },
+        "checks": {
+          "type": "boolean"
+        },
+        "cost": {
+          "type": "boolean"
+        },
+        "kinds": {
+          "type": "boolean"
+        }
+      },
+      "required": []
+    }
   }
 ]

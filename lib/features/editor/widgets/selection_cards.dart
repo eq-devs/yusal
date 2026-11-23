@@ -707,12 +707,49 @@ extension _SelectionCards on _HouseEditorState {
         ]);
   }
 
+  /// Asks where room areas are measured to, for the whole project.
+  Future<void> chooseAreaBasis() async {
+    final now = history.present.extras.areaBasis;
+    final picked = await showDialog<AreaBasis>(
+        context: context,
+        builder: (context) => SimpleDialog(
+                title: Text(tr3(
+                    '房间面积怎么算', 'Бөлме ауданын есептеу', 'Как считать площадь')),
+                children: [
+                  for (final b in AreaBasis.values)
+                    SimpleDialogOption(
+                        key: ValueKey('area-basis-${b.name}'),
+                        onPressed: () => Navigator.pop(context, b),
+                        child: Row(children: [
+                          Icon(
+                              b == now
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                              size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                Text(areaBasisName(b)),
+                                Text(areaBasisHint(b),
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Tokens.of(context).muted)),
+                              ]))
+                        ])),
+                ]));
+    if (picked == null || picked == now || !mounted) return;
+    action('SetAreaBasis', {'basis': picked});
+  }
+
   /// Summary of the whole design when nothing is selected.
   Widget houseCard() {
     final t = Tokens.of(context);
     final doc = history.present;
     final g = derived.floors[floorIndex];
-    final interior = g.base.roomGeometry.fold(0.0, (s, r) => s + r.clearArea);
+    final basis = doc.extras.areaBasis;
+    final interior = g.base.roomGeometry.fold(0.0, (s, r) => s + r.area(basis));
     final openings = g.openings.length;
     return InfoCard(
         title: tr3('整栋房屋', 'Бүкіл үй', 'Весь дом'),
@@ -726,7 +763,8 @@ extension _SelectionCards on _HouseEditorState {
                 tr3('建筑面积', 'Құрылыс ауданы', 'Общая площадь'),
                 onTap: footprintOptions),
             Kv('${dec((interior / 1e6).toStringAsFixed(1))} $unitM2',
-                '${displayFloorName(floor.name)} · ${tr3('室内净面积', 'ішкі таза аудан', 'чистая внутренняя площадь')}'),
+                '${displayFloorName(floor.name)} · ${areaBasisName(basis)}',
+                onTap: chooseAreaBasis),
             Kv('${floor.rooms.length}', tr3('房间', 'Бөлмелер', 'Комнаты')),
             Kv('$openings', tr3('门窗', 'Есік-терезе', 'Окна и двери')),
             Kv('${floor.height}',
@@ -769,9 +807,28 @@ extension _SelectionCards on _HouseEditorState {
                           child: Text(displayRoomName(room),
                               style: const TextStyle(fontSize: 13))),
                       Text(
-                          '${dec((g.base.roomGeometry.firstWhere((r) => r.id == room.id).clearArea / 1e6).toStringAsFixed(1))} $unitM2',
+                          '${dec((g.base.roomGeometry.firstWhere((r) => r.id == room.id).area(doc.extras.areaBasis) / 1e6).toStringAsFixed(1))} $unitM2',
                           style: mono(color: t.muted)),
                     ]))),
         ]);
   }
 }
+
+String areaBasisName(AreaBasis b) => switch (b) {
+      AreaBasis.clear => tr3('室内净面积', 'ішкі таза аудан', 'чистая площадь'),
+      AreaBasis.centre =>
+        tr3('墙中线面积', 'қабырға осі бойынша аудан', 'площадь по осям стен'),
+      AreaBasis.outer =>
+        tr3('含外墙面积', 'сыртқы қабырғамен аудан', 'площадь с наружными стенами'),
+    };
+
+String areaBasisHint(AreaBasis b) => switch (b) {
+      AreaBasis.clear => tr3('量到墙的完成面，是能用的地面',
+          'Қабырғаның әрленген бетіне дейін', 'До чистовой поверхности стен'),
+      AreaBasis.centre =>
+        tr3('量到四周墙的中线', 'Қабырғалардың осіне дейін', 'До осей окружающих стен'),
+      AreaBasis.outer => tr3(
+          '内墙量到中线，外墙量到外皮',
+          'Ішкі қабырға осіне, сыртқы қабырғаның сыртына дейін',
+          'До осей внутренних и наружной грани наружных стен'),
+    };

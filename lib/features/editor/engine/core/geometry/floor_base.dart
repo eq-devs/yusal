@@ -87,19 +87,29 @@ class WallSegment {
 }
 
 class SpaceGeometry {
-  const SpaceGeometry(
-      this.id,
-      this.cells,
-      this.nominalArea,
-      this.clearArea,
-      this.clearRects,
-      this.minClearSpan,
-      this.collapsedCells,
-      this.labelAnchor);
+  const SpaceGeometry(this.id, this.cells, this.nominalArea, this.clearArea,
+      this.clearRects, this.minClearSpan, this.collapsedCells, this.labelAnchor,
+      [double? centreArea])
+      : centreArea = centreArea ?? nominalArea;
   final String id;
   final Set<Cell> cells;
+
+  /// To the outer face of outside walls and the middle of inside ones:
+  /// what the room takes of the building.
   final double nominalArea;
+
+  /// Between the finished faces of the walls: the floor one can use.
   final double clearArea;
+
+  /// To the middle of every wall around it.
+  final double centreArea;
+
+  /// The room's area measured the way [basis] says.
+  double area(AreaBasis basis) => switch (basis) {
+        AreaBasis.clear => clearArea,
+        AreaBasis.centre => centreArea,
+        AreaBasis.outer => nominalArea,
+      };
   final double minClearSpan;
   final List<PlanRect> clearRects;
   final List<Cell> collapsedCells;
@@ -460,6 +470,8 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
   }
 
   final rects = <PlanRect>[];
+  // The outer half of each outside wall: what lies beyond its middle.
+  final outerHalves = <PlanRect>[];
   for (final s in segments) {
     final c = cross(s);
     var start = s.start.pos.toDouble();
@@ -483,6 +495,16 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
     rects.add(s.axis.dir == AxisDir.H
         ? PlanRect(start, c.low, end, c.high)
         : PlanRect(c.low, start, c.high, end));
+    if (s.kind == 'exterior') {
+      final p = s.axis.pos.toDouble();
+      final mid = (c.low + c.high) / 2;
+      final (low, high) = (c.low - p).abs() <= (c.high - p).abs()
+          ? (c.low, mid)
+          : (mid, c.high);
+      outerHalves.add(s.axis.dir == AxisDir.H
+          ? PlanRect(start, low, end, high)
+          : PlanRect(low, start, high, end));
+    }
   }
   final allRects = rects;
   SpaceGeometry space(String id) {
@@ -611,20 +633,56 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
           r.contains((xs[s.i] + xs[s.i + 1]) / 2, (ys[s.j] + ys[s.j + 1]) / 2));
     }).toList()
       ..sort((a, b) => a.j != b.j ? a.j.compareTo(b.j) : a.i.compareTo(b.i));
+    // What the outer halves of the outside walls take from the room.
+    var beyond = 0.0;
+    final halves = [
+      for (final h in outerHalves)
+        if (nominal.any((r) =>
+            h.left < r.right &&
+            h.right > r.left &&
+            h.bottom < r.top &&
+            h.top > r.bottom))
+          h
+    ];
+    if (halves.isNotEmpty) {
+      final hx = <double>{
+        for (final r in nominal) ...[r.left, r.right],
+        for (final r in halves) ...[r.left, r.right]
+      }.toList()
+        ..sort();
+      final hy = <double>{
+        for (final r in nominal) ...[r.bottom, r.top],
+        for (final r in halves) ...[r.bottom, r.top]
+      }.toList()
+        ..sort();
+      for (var j = 0; j < hy.length - 1; j++) {
+        for (var i = 0; i < hx.length - 1; i++) {
+          final x = (hx[i] + hx[i + 1]) / 2;
+          final y = (hy[j] + hy[j + 1]) / 2;
+          if (halves.any((r) => r.contains(x, y)) &&
+              nominal.any((r) => r.contains(x, y))) {
+            beyond += (hx[i + 1] - hx[i]) * (hy[j + 1] - hy[j]);
+          }
+        }
+      }
+    }
+    final nominalArea = nominal.fold<double>(0, (a, r) => a + r.area);
     final largest = merged.isEmpty
         ? nominal.first
         : merged.reduce((a, b) => b.area > a.area ? b : a);
     return SpaceGeometry(
         id,
         Set.unmodifiable(cells),
-        nominal.fold<double>(0, (a, r) => a + r.area),
+        nominalArea,
         merged.fold<double>(0, (a, r) => a + r.area),
         List.unmodifiable(merged),
         span.isFinite ? span : 0,
-        List.unmodifiable(collapsed), (
-      x: (largest.left + largest.right) / 2,
-      y: (largest.bottom + largest.top) / 2
-    ));
+        List.unmodifiable(collapsed),
+        (
+          x: (largest.left + largest.right) / 2,
+          y: (largest.bottom + largest.top) / 2
+        ),
+        nominalArea - beyond);
   }
 
   final unassigned = owners.keys

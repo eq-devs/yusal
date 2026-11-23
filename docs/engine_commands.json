@@ -2238,6 +2238,29 @@
     }
   },
   {
+    "name": "SetAreaBasis",
+    "group": "room",
+    "summary": "Choose where room areas are measured to: clear is between the finished wall faces, centre to the middle of the walls, outer to the outer face of outside walls.",
+    "risk": "edit",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "basis": {
+          "type": "string",
+          "enum": [
+            "clear",
+            "centre",
+            "outer"
+          ]
+        }
+      },
+      "required": [
+        "basis"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
     "name": "SetHeat",
     "group": "heat",
     "summary": "Change what the heat loss is worked out from.",

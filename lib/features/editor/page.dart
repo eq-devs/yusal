@@ -3211,6 +3211,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                         key: canvasKey,
                                         size: size,
                                         painter: FloorPlanPainter(
+                                            areaBasis: history
+                                                .present.extras.areaBasis,
                                             displayBase,
                                             {
                                               for (final r in displayRooms)

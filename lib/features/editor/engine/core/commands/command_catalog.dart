@@ -853,6 +853,14 @@ final List<CommandSpec> commandCatalog = List.unmodifiable([
       [_need('itemId', reference('estimate line'))],
       removes: true),
 
+  CommandSpec(
+      'SetAreaBasis',
+      'room',
+      'Choose where room areas are measured to: clear is between the '
+          'finished wall faces, centre to the middle of the walls, outer to '
+          'the outer face of outside walls.',
+      [_need('basis', choice(AreaBasis.values))]),
+
   // ------------------------------------------------------------- heat
   CommandSpec(
       'SetHeat', 'heat', 'Change what the heat loss is worked out from.', [

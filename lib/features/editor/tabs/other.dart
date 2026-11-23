@@ -909,7 +909,7 @@ extension _OtherTabs on _HouseEditorState {
       for (final room in doc.floors[f].rooms) {
         final g = derived.floors[f].base.roomGeometry
             .firstWhere((r) => r.id == room.id);
-        final a = g.clearArea / 1e6;
+        final a = g.area(doc.extras.areaBasis) / 1e6;
         final lab = doc.extras.rooms[room.id]?.labelArea;
         final l = lab == null ? null : lab / 100;
         sumCalc += a;
@@ -1158,7 +1158,7 @@ extension _OtherTabs on _HouseEditorState {
       final area = derived.floors[f].base.roomGeometry
           .where((g) => g.id == room.id)
           .firstOrNull
-          ?.clearArea;
+          ?.area(doc.extras.areaBasis);
       return [
         name,
         displayRoomName(room),

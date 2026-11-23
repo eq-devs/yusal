@@ -1886,6 +1886,7 @@
             "AddCostItem",
             "UpdateCostItem",
             "DeleteCostItem",
+            "SetAreaBasis",
             "SetHeat",
             "AddUtility",
             "AddUtilities",

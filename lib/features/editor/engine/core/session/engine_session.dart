@@ -227,6 +227,8 @@ class EngineSession {
             'name': r.name,
             'type': r.type.name,
             'area': _m2(areas[r.id]?.clearArea ?? 0),
+            'areaToWallCentres': _m2(areas[r.id]?.centreArea ?? 0),
+            'areaToOuterFace': _m2(areas[r.id]?.nominalArea ?? 0),
             'minSpan': areas[r.id]?.minClearSpan.round() ?? 0,
           }
       ],

@@ -517,7 +517,7 @@ SceneModel _buildScene(HouseDocument doc, DerivedHouse derived,
         labels.add(Label3(
             Vec3(px(l.x), elevation + 1.2, pz(l.y)),
             roomName(room),
-            '${(s.clearArea / 1e6).toStringAsFixed(1)} $areaUnit',
+            '${(s.area(doc.extras.areaBasis) / 1e6).toStringAsFixed(1)} $areaUnit',
             f));
       }
     }

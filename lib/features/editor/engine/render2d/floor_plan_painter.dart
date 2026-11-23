@@ -113,7 +113,8 @@ class FloorPlanPainter extends CustomPainter {
       this.utilities = const [],
       this.selectedUtility,
       this.showLabels = true,
-      this.showGaps = false})
+      this.showGaps = false,
+      this.areaBasis = AreaBasis.clear})
       : super(repaint: pulse);
   final FloorBase base;
   final PlanRect? focus;
@@ -165,6 +166,9 @@ class FloorPlanPainter extends CustomPainter {
   /// Marks where a drawn wall stops short of the next one (the room is
   /// not enclosed): a dashed line across the gap with a warning sign.
   final bool showGaps;
+
+  /// Where the area under a room's name is measured to.
+  final AreaBasis areaBasis;
 
   /// Plan areas to flash (issue locations), with [pulse] 0–1 for the beat.
   final List<PlanRect> highlights;
@@ -608,7 +612,7 @@ class FloorPlanPainter extends CustomPainter {
       final showSize = room.clearRects.length == 1 &&
           screenWidth >= 110 &&
           screenHeight >= 64;
-      final area = '${dec((room.clearArea / 1e6).toStringAsFixed(1))} $unitM2';
+      final area = '${dec((room.area(areaBasis) / 1e6).toStringAsFixed(1))} $unitM2';
       final net = largest == null
           ? ''
           : '${tr3('净', 'таза', 'в свету')} ${m2dp(largest.right - largest.left)} × ${m2dp(largest.top - largest.bottom)} $unitM';

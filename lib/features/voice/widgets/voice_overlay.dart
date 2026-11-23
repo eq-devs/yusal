@@ -43,14 +43,15 @@ Future<bool> confirmAction(
               content: Text(tr3(
                   '确认后才会执行，取消则什么都不会发出。',
                   'Растасаңыз ғана орындалады.',
-                  'Выполнится только после подтверждения.')),
+                  'Выполнится только после подтверждения.',
+                  'Runs only after you confirm.')),
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
+                    child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'))),
                 FilledButton(
                     onPressed: () => Navigator.pop(context, true),
-                    child: Text(tr3('确认', 'Растау', 'Подтвердить'))),
+                    child: Text(tr3('确认', 'Растау', 'Подтвердить', 'Confirm'))),
               ]));
   return yes ?? false;
 }
@@ -59,21 +60,26 @@ String _failure(String? code) => switch (code) {
       VoiceCodes.network => tr3(
           '现在连不上服务器，请再试一次',
           'Серверге қосылу мүмкін болмады, қайталап көріңіз',
-          'Нет связи с сервером, попробуйте ещё раз'),
+          'Нет связи с сервером, попробуйте ещё раз',
+          "Can't reach the server; try again"),
       ApiCodes.notSignedIn =>
-        tr3('请先登录，再用语音', 'Алдымен жүйеге кіріңіз', 'Сначала войдите в аккаунт'),
+        tr3('请先登录，再用语音', 'Алдымен жүйеге кіріңіз', 'Сначала войдите в аккаунт', 'Sign in first'),
       'RATE_LIMITED' => tr3('用得太频繁了，请稍后再试', 'Тым жиі, сәл кейінірек көріңіз',
-          'Слишком часто, попробуйте чуть позже'),
+          'Слишком часто, попробуйте чуть позже',
+          'Too many tries; try again a bit later'),
       'VOICE_BUSY' => tr3(
           '语音服务正忙，请稍后再试',
           'Дауыс қызметі бос емес, сәл кейінірек көріңіз',
-          'Голосовой сервис занят, попробуйте чуть позже'),
+          'Голосовой сервис занят, попробуйте чуть позже',
+          'The voice service is busy; try again a bit later'),
       VoiceCodes.tooManySteps => tr3(
           '这句话要做的步骤太多，请分开说',
           'Қадам тым көп, бөліп айтыңыз',
-          'Слишком много шагов, скажите по частям'),
+          'Слишком много шагов, скажите по частям',
+          'Too many steps; say it in parts'),
       _ => tr3('没有成功，请再试一次', 'Сәтсіз болды, қайталап көріңіз',
-          'Не получилось, попробуйте ещё раз'),
+          'Не получилось, попробуйте ещё раз',
+          "That didn't work; try again"),
     };
 
 /// Actions shown as "you can say" suggestions, most useful first.
@@ -292,7 +298,8 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
       speechNote = ok
           ? null
           : tr3('请在系统设置里允许使用麦克风', 'Баптаулардан микрофонға рұқсат беріңіз',
-              'Разрешите доступ к микрофону в настройках');
+              'Разрешите доступ к микрофону в настройках',
+              'Allow microphone access in settings');
     });
     _animate();
     if (ok) {
@@ -314,7 +321,8 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
       text = (await widget.speech!.heard()).trim();
       if (text.isEmpty) {
         note = tr3('没听清，请再说一次', 'Естілмеді, қайталап айтыңыз',
-            'Не расслышал, повторите');
+            'Не расслышал, повторите',
+            "Didn't catch that; say it again");
       }
     } catch (e) {
       note = _failure(e is ApiFailure ? e.code : VoiceCodes.network);
@@ -424,13 +432,13 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                                 s.busy
                                     ? (s.heard.isEmpty
                                         ? tr3(
-                                            '正在处理…', 'Орындалуда…', 'Выполняю…')
+                                            '正在处理…', 'Орындалуда…', 'Выполняю…', 'Working…')
                                         : s.heard)
                                     : failed
                                         ? _failure(s.error)
                                         : s.reply.isNotEmpty
                                             ? s.reply
-                                            : tr3('完成了', 'Дайын', 'Готово'),
+                                            : tr3('完成了', 'Дайын', 'Готово', 'Done'),
                                 maxLines: expanded ? null : 4,
                                 overflow:
                                     expanded ? null : TextOverflow.ellipsis,
@@ -447,17 +455,17 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                           TextButton(
                               key: const Key('voice-undo'),
                               onPressed: undo,
-                              child: Text(tr3('撤销', 'Болдырмау', 'Отменить'))),
+                              child: Text(tr3('撤销', 'Болдырмау', 'Отменить', 'Undo'))),
                         if (s.phase == VoicePhase.acting)
                           IconButton(
-                              tooltip: tr3('停止', 'Тоқтату', 'Стоп'),
+                              tooltip: tr3('停止', 'Тоқтату', 'Стоп', 'Stop'),
                               icon: const Icon(Icons.stop_circle),
                               onPressed: s.stop),
                         if (!s.busy)
                           IconButton(
                               key: const Key('voice-close'),
                               visualDensity: VisualDensity.compact,
-                              tooltip: tr3('关闭', 'Жабу', 'Закрыть'),
+                              tooltip: tr3('关闭', 'Жабу', 'Закрыть', 'Close'),
                               icon: const Icon(Icons.close, size: 18),
                               onPressed: () =>
                                   setState(() => bannerShown = false)),
@@ -509,9 +517,10 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
     // Bottom: what is being heard, or the text field.
     final hint = listening
         ? tr3('正在听…说完点圆球', 'Тыңдап тұрмын… біткенде шарды басыңыз',
-            'Слушаю… нажмите на шар, когда закончите')
+            'Слушаю… нажмите на шар, когда закончите',
+            "Listening… tap the orb when you're done")
         : transcribing
-            ? tr3('正在识别…', 'Танып жатырмын…', 'Распознаю…')
+            ? tr3('正在识别…', 'Танып жатырмын…', 'Распознаю…', 'Recognising…')
             : speechNote;
     final pill = typing
         ? card(
@@ -534,16 +543,16 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                           focusedBorder: InputBorder.none,
                           disabledBorder: InputBorder.none,
                           hintText:
-                              tr3('想做什么？', 'Не істейміз?', 'Что сделать?')))),
+                              tr3('想做什么？', 'Не істейміз?', 'Что сделать?', 'What should I do?')))),
               if (widget.speech != null)
                 IconButton(
                     key: const Key('voice-mic'),
                     tooltip:
-                        tr3('说话（哈萨克语）', 'Сөйлеу', 'Говорить (по-казахски)'),
+                        tr3('说话（哈萨克语）', 'Сөйлеу', 'Говорить (по-казахски)', 'Speak (in Kazakh)'),
                     icon: const YusalIcon(YIcon.voice),
                     onPressed: s.busy ? null : startListening),
               IconButton(
-                  tooltip: tr3('发送', 'Жіберу', 'Отправить'),
+                  tooltip: tr3('发送', 'Жіберу', 'Отправить', 'Send'),
                   icon: const Icon(Icons.arrow_upward),
                   onPressed: s.busy ? null : send),
             ]))
@@ -591,12 +600,12 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                     Icon(Icons.auto_awesome, size: 18, color: colors.primary),
                     const SizedBox(width: 6),
                     Flexible(
-                        child: Text(tr3('AI 助手', 'AI көмекші', 'AI-помощник'),
+                        child: Text(tr3('AI 助手', 'AI көмекші', 'AI-помощник', 'AI assistant'),
                             style: theme.textTheme.titleSmall)),
                     IconButton(
                         key: const Key('voice-intro-close'),
                         visualDensity: VisualDensity.compact,
-                        tooltip: tr3('知道了', 'Түсінікті', 'Понятно'),
+                        tooltip: tr3('知道了', 'Түсінікті', 'Понятно', 'Got it'),
                         icon: const Icon(Icons.close, size: 18),
                         onPressed: closeIntro),
                   ]),
@@ -607,11 +616,13 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                               ? tr3(
                                   '点右边的圆球，直接说你想做什么。比如：',
                                   'Оң жақтағы шарды басып, не керегін айтыңыз. Мысалы:',
-                                  'Нажмите на шар справа и скажите, что нужно. Например:')
+                                  'Нажмите на шар справа и скажите, что нужно. Например:',
+                                  'Tap the orb on the right and say what you need. For example:')
                               : tr3(
                                   '点右边的圆球，写下你想做什么。比如：',
                                   'Оң жақтағы шарды басып, не керегін жазыңыз. Мысалы:',
-                                  'Нажмите на шар справа и напишите, что нужно. Например:'),
+                                  'Нажмите на шар справа и напишите, что нужно. Например:',
+                                  'Tap the orb on the right and type what you need. For example:'),
                           style: theme.textTheme.bodyMedium)),
                   const SizedBox(height: 6),
                   Padding(
@@ -675,8 +686,8 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
     final orbButton = Semantics(
         button: true,
         label: listening
-            ? tr3('说完了', 'Айтып болдым', 'Готово')
-            : tr3('语音操作', 'Дауыспен басқару', 'Голосовое управление'),
+            ? tr3('说完了', 'Айтып болдым', 'Готово', 'Done')
+            : tr3('语音操作', 'Дауыспен басқару', 'Голосовое управление', 'Voice control'),
         child: GestureDetector(
             key: const Key('voice-button'),
             onTap: orb,
@@ -972,23 +983,24 @@ String briefLine(Map<String, Object?> brief) {
   final width = brief['width_m'];
   final depth = brief['depth_m'];
   final entrance = switch (brief['entrance']) {
-    'north' => tr3('北', 'солтүстік', 'север'),
-    'east' => tr3('东', 'шығыс', 'восток'),
-    'south' => tr3('南', 'оңтүстік', 'юг'),
-    'west' => tr3('西', 'батыс', 'запад'),
+    'north' => tr3('北', 'солтүстік', 'север', 'north'),
+    'east' => tr3('东', 'шығыс', 'восток', 'east'),
+    'south' => tr3('南', 'оңтүстік', 'юг', 'south'),
+    'west' => tr3('西', 'батыс', 'запад', 'west'),
     _ => null,
   };
   return [
     if (width != null && depth != null)
-      '${n(width)} × ${n(depth)} ${tr3('米', 'м', 'м')}'
+      '${n(width)} × ${n(depth)} ${tr3('米', 'м', 'м', 'm')}'
     else if (brief['area_m2'] case final area?)
-      '${n(area)} ${tr3('平米', 'м²', 'м²')}',
+      '${n(area)} ${tr3('平米', 'м²', 'м²', 'm²')}',
     if (brief['floors'] case final floors?)
-      tr3('${n(floors)} 层', '${n(floors)} қабат', 'этажей: ${n(floors)}'),
+      tr3('${n(floors)} 层', '${n(floors)} қабат', 'этажей: ${n(floors)}', 'floors: ${n(floors)}'),
     if (brief['bedrooms'] case final bedrooms?)
       tr3('${n(bedrooms)} 间卧室', '${n(bedrooms)} жатын бөлме',
-          'спален: ${n(bedrooms)}'),
+          'спален: ${n(bedrooms)}',
+          'bedrooms: ${n(bedrooms)}'),
     if (entrance != null)
-      tr3('入口朝$entrance', 'кіреберіс: $entrance', 'вход: $entrance'),
+      tr3('入口朝$entrance', 'кіреберіс: $entrance', 'вход: $entrance', 'entrance: $entrance'),
   ].join(' · ');
 }

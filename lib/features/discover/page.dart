@@ -15,6 +15,7 @@ import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/shared/brand/brand.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// First tab: "find work / find people" with search and filters.
 class DiscoverPage extends StatefulWidget {
@@ -59,7 +60,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
           if (!people) ...[
             FilterPill(
                 label: type == null
-                    ? tr3('全部类型', 'Барлық түрі', 'Все типы')
+                    ? tr3('全部类型', 'Барлық түрі', 'Все типы', 'All types')
                     : demandTypeName(type!),
                 selected: type != null,
                 icon: Icons.tune,
@@ -67,8 +68,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 onTap: () async {
                   final v = await pickFilter<DemandType>(
                       context,
-                      tr3('需求类型', 'Түрі', 'Тип'),
-                      tr3('全部', 'Барлығы', 'Все'),
+                      tr3('需求类型', 'Түрі', 'Тип', 'Type'),
+                      tr3('全部', 'Барлығы', 'Все', 'All'),
                       [
                         for (final d in DemandType.values)
                           (d, demandTypeName(d)),
@@ -80,7 +81,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
           ],
           FilterPill(
               label: trade == null
-                  ? tr3('工种', 'Мамандық', 'Специальность')
+                  ? tr3('工种', 'Мамандық', 'Специальность', 'Trade')
                   : tradeName(trade!),
               selected: trade != null,
               icon: Icons.handyman_outlined,
@@ -88,8 +89,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
               onTap: () async {
                 final v = await pickFilter<String>(
                     context,
-                    tr3('工种', 'Мамандық', 'Специальность'),
-                    tr3('全部', 'Барлығы', 'Все'),
+                    tr3('工种', 'Мамандық', 'Специальность', 'Trade'),
+                    tr3('全部', 'Барлығы', 'Все', 'All'),
                     [for (final c in tradeCodes) (c, tradeName(c))],
                     selected: trade);
                 if (v != null && mounted) setState(() => trade = v.$1);
@@ -97,16 +98,17 @@ class _DiscoverPageState extends State<DiscoverPage> {
           const SizedBox(width: 8),
           FilterPill(
               label: region == null
-                  ? tr3('地区', 'Аймақ', 'Район')
+                  ? tr3('地区', 'Аймақ', 'Район', 'District')
                   : regionName(region!),
               selected: region != null,
               icon: Icons.place_outlined,
+              yicon: YIcon.nearby,
               menu: true,
               onTap: () async {
                 final v = await pickFilter<String>(
                     context,
-                    tr3('地区', 'Аймақ', 'Район'),
-                    tr3('全部', 'Барлығы', 'Все'),
+                    tr3('地区', 'Аймақ', 'Район', 'District'),
+                    tr3('全部', 'Барлығы', 'Все', 'All'),
                     [for (final c in regionCodes) (c, regionName(c))],
                     selected: region);
                 if (v != null && mounted) setState(() => region = v.$1);
@@ -114,13 +116,13 @@ class _DiscoverPageState extends State<DiscoverPage> {
           if (people) ...[
             const SizedBox(width: 8),
             FilterPill(
-                label: tr3('现在可接', 'Қазір бос', 'Свободен сейчас'),
+                label: tr3('现在可接', 'Қазір бос', 'Свободен сейчас', 'Available now'),
                 selected: availableNow,
                 onTap: () => setState(() => availableNow = !availableNow)),
             const SizedBox(width: 8),
             FilterPill(
                 label: kind == null
-                    ? tr3('个人／团队', 'Жеке / бригада', 'Мастер / бригада')
+                    ? tr3('个人／团队', 'Жеке / бригада', 'Мастер / бригада', 'Pro / crew')
                     : profileKindName(kind!),
                 selected: kind != null,
                 onTap: () => setState(() => kind = switch (kind) {
@@ -137,13 +139,15 @@ class _DiscoverPageState extends State<DiscoverPage> {
             onChanged: (_) => setState(() {}),
             hint: people
                 ? tr3('搜索工人、施工队', 'Шебер не бригада іздеу',
-                    'Поиск мастеров и бригад')
+                    'Поиск мастеров и бригад',
+                    'Search pros and crews')
                 : tr3('搜索需求，如“砌墙”', 'Тапсырыс іздеу',
-                    'Поиск заявок, напр. «кладка»')));
+                    'Поиск заявок, напр. «кладка»',
+                    'Search requests, e.g. “masonry”')));
     final toggle = Row(children: [
       for (final (isPeople, icon, label) in [
-        (false, Icons.work_outline, tr3('找活', 'Жұмыс табу', 'Найти работу')),
-        (true, Icons.groups_outlined, tr3('找人', 'Адам табу', 'Найти мастера')),
+        (false, YIcon.contract, tr3('找活', 'Жұмыс табу', 'Найти работу', 'Find work')),
+        (true, YIcon.hire, tr3('找人', 'Адам табу', 'Найти мастера', 'Find a pro')),
       ])
         Expanded(
             child: InkWell(
@@ -156,7 +160,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                 color: people == isPeople ? t.ink : t.line,
                                 width: people == isPeople ? 2 : 1))),
                     child: Column(children: [
-                      Icon(icon, color: people == isPeople ? t.ink : t.muted),
+                      YusalIcon(icon,
+                          color: people == isPeople ? t.ink : t.muted,
+                          mono: people != isPeople),
                       const SizedBox(height: 4),
                       Text(label,
                           style: TextStyle(
@@ -175,10 +181,12 @@ class _DiscoverPageState extends State<DiscoverPage> {
             builder: (context, list) => list.isEmpty
                 ? EmptyState(
                     icon: Icons.person_search_outlined,
+                    yicon: YIcon.hire,
                     title:
-                        tr3('没有符合条件的人', 'Сәйкес адам жоқ', 'Никого не нашли'),
+                        tr3('没有符合条件的人', 'Сәйкес адам жоқ', 'Никого не нашли', 'No one found'),
                     body: tr3('试试放宽地区或工种', 'Сүзгіні кеңейтіп көріңіз',
-                        'Попробуйте смягчить фильтры'))
+                        'Попробуйте смягчить фильтры',
+                        'Try loosening the filters'))
                 : Column(children: [
                     for (final p in list)
                       Padding(
@@ -198,10 +206,13 @@ class _DiscoverPageState extends State<DiscoverPage> {
               if (list.isEmpty) {
                 return EmptyState(
                     icon: Icons.search_off,
+                    yicon: YIcon.search,
                     title: tr3('暂时没有符合条件的需求', 'Сәйкес тапсырыс жоқ',
-                        'Нет подходящих заявок'),
+                        'Нет подходящих заявок',
+                        'No matching requests'),
                     body: tr3('换个地区或工种看看', 'Аймақ не мамандықты өзгертіңіз',
-                        'Измените район или специальность'));
+                        'Измените район или специальность',
+                        'Change the district or trade'));
               }
               return LayoutBuilder(builder: (context, c) {
                 final columns = c.maxWidth > 900
@@ -229,14 +240,14 @@ class _DiscoverPageState extends State<DiscoverPage> {
             });
     return Scaffold(
         appBar: widget.pushed
-            ? AppBar(title: Text(tr3('接活大厅', 'Жұмыс орталығы', 'Биржа работы')))
+            ? AppBar(title: Text(tr3('接活大厅', 'Жұмыс орталығы', 'Биржа работы', 'Job board')))
             : null,
         floatingActionButton: people || widget.embedded
             ? null
             : FloatingActionButton.extended(
                 onPressed: publish,
-                icon: const Icon(Icons.add),
-                label: Text(tr3('发布需求', 'Тапсырыс беру', 'Разместить заявку'))),
+                icon: const YusalIcon(YIcon.add, mono: true),
+                label: Text(tr3('发布需求', 'Тапсырыс беру', 'Разместить заявку', 'Post a request'))),
         body: SafeArea(
             top: !widget.embedded,
             child: Center(
@@ -244,6 +255,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     constraints: const BoxConstraints(maxWidth: 1180),
                     child: RefreshIndicator(
                         onRefresh: _refresh.call,
+                        edgeOffset: ExploreInset.of(context),
                         child: CustomScrollView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             slivers: [
@@ -262,8 +274,11 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                           InboxButton(),
                                         ]))),
                               if (widget.embedded)
-                                const SliverToBoxAdapter(
-                                    child: SizedBox(height: 14)),
+                                // Room for Discover's floating header.
+                                SliverToBoxAdapter(
+                                    child: SizedBox(
+                                        height:
+                                            ExploreInset.of(context) + 14)),
                               SliverToBoxAdapter(child: search),
                               const SliverToBoxAdapter(
                                   child: SizedBox(height: 12)),

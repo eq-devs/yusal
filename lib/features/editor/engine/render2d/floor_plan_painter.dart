@@ -585,7 +585,7 @@ class FloorPlanPainter extends CustomPainter {
       final area = '${dec((room.clearArea / 1e6).toStringAsFixed(1))} $unitM2';
       final net = largest == null
           ? ''
-          : '${tr3('净', 'таза', 'в свету')} ${m2dp(largest.right - largest.left)} × ${m2dp(largest.top - largest.bottom)} $unitM';
+          : '${tr3('净', 'таза', 'в свету', 'clear')} ${m2dp(largest.right - largest.left)} × ${m2dp(largest.top - largest.bottom)} $unitM';
       // Long names shrink to one line before they would break mid-word.
       final room_ = math.max(px(24), available - px(8));
       final nameWidth = textWidth(name, px(14), FontWeight.w700);
@@ -775,7 +775,7 @@ class FloorPlanPainter extends CustomPainter {
           center.dy - vector.dy * px(7) - normal.dy * px(5))
       ..close();
     canvas.drawPath(arrow, Paint()..color = t.wall);
-    label(canvas, tr3('北', 'С', 'С'), center + vector * px(20),
+    label(canvas, tr3('北', 'С', 'С', 'N'), center + vector * px(20),
         font: 11, weight: FontWeight.w700);
   }
 
@@ -898,7 +898,8 @@ class FloorPlanPainter extends CustomPainter {
             draftLabel ??
                 (draftIsLine
                     ? tr3('松手分房', 'Жіберсеңіз бөлінеді',
-                        'Отпустите, чтобы разделить')
+                        'Отпустите, чтобы разделить',
+                        'Release to split')
                     : '${dec(((draft!.right - draft!.left) / 1000).toStringAsFixed(1))} × '
                         '${dec(((draft!.top - draft!.bottom) / 1000).toStringAsFixed(1))} $unitM'),
             Offset(rect.center.dx, rect.top - 18),

@@ -71,7 +71,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       setState(() => error = tr3(
           '请填写名称、工种和服务地区',
           'Атау, мамандық және аймақ керек',
-          'Укажите имя, специальности и районы'));
+          'Укажите имя, специальности и районы',
+          'Enter a name, trades and districts'));
       return;
     }
     final refPrices = <RefPrice>[];
@@ -81,7 +82,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         setState(() => error = tr3(
             '参考价需要金额、单位和适用范围',
             'Бағаға сома мен қамту керек',
-            'У цены должны быть сумма, единица и пояснение'));
+            'У цены должны быть сумма, единица и пояснение',
+            'Each price needs an amount, a unit and a note'));
         return;
       }
       refPrices
@@ -109,7 +111,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         showPhone: showPhone);
     final saved = await attempt(
         context, () => context.read(profileRepositoryProvider).saveProfile(p),
-        success: tr3('名片已保存', 'Профиль сақталды', 'Профиль сохранён'));
+        success: tr3('名片已保存', 'Профиль сақталды', 'Профиль сохранён', 'Profile saved'));
     if (saved != null && mounted) Navigator.pop(context);
   }
 
@@ -121,7 +123,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               decoration: InputDecoration(
                   labelText: label, suffixIcon: const Icon(Icons.expand_more)),
               child: Text(value.isEmpty
-                  ? tr3('请选择', 'Таңдаңыз', 'Выберите')
+                  ? tr3('请选择', 'Таңдаңыз', 'Выберите', 'Choose')
                   : value))));
 
   Widget field(TextEditingController c, String label,
@@ -140,17 +142,18 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     watchLang(context);
     return PageScaffold(
         title: widget.profile == null
-            ? tr3('创建接活名片', 'Профиль жасау', 'Создать профиль')
-            : tr3('编辑名片', 'Профильді өзгерту', 'Редактировать профиль'),
+            ? tr3('创建接活名片', 'Профиль жасау', 'Создать профиль', 'Create a profile')
+            : tr3('编辑名片', 'Профильді өзгерту', 'Редактировать профиль', 'Edit the profile'),
         bottom: BusyButton(
-            label: tr3('保存', 'Сақтау', 'Сохранить'), onPressed: save),
+            label: tr3('保存', 'Сақтау', 'Сохранить', 'Save'), onPressed: save),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Hint(tr3(
               '不需要正式简历。先填必需信息，经验、价格和作品可以以后慢慢完善。',
               'Түйіндеме керек емес, қалғанын кейін толтырасыз.',
-              'Резюме не нужно: сначала главное, остальное потом.')),
+              'Резюме не нужно: сначала главное, остальное потом.',
+              'No CV needed: the essentials first, the rest later.')),
           const SizedBox(height: 16),
-          Text(tr3('我是', 'Мен', 'Я'),
+          Text(tr3('我是', 'Мен', 'Я', 'Me'),
               style: TextStyle(color: YTokens.of(context).muted)),
           const SizedBox(height: 6),
           Wrap(spacing: 8, runSpacing: 8, children: [
@@ -175,34 +178,34 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           field(
               name,
               kind == ProfileKind.team
-                  ? tr3('团队名称', 'Бригада атауы', 'Название бригады')
-                  : tr3('姓名', 'Аты-жөні', 'Имя')),
-          picker(tr3('工种', 'Мамандық', 'Специальности'),
+                  ? tr3('团队名称', 'Бригада атауы', 'Название бригады', 'Crew name')
+                  : tr3('姓名', 'Аты-жөні', 'Имя', 'Name')),
+          picker(tr3('工种', 'Мамандық', 'Специальности', 'Trades'),
               trades.map(tradeName).join(listSep), () async {
             final v = await pickMany<String>(
                 context,
-                tr3('工种', 'Мамандық', 'Специальности'),
+                tr3('工种', 'Мамандық', 'Специальности', 'Trades'),
                 [for (final c in tradeCodes) (c, tradeName(c))],
                 trades);
             if (v != null) setState(() => trades = v);
           }),
-          picker(tr3('服务地区', 'Аймақ', 'Районы'),
+          picker(tr3('服务地区', 'Аймақ', 'Районы', 'Districts'),
               regions.map(regionName).join(listSep), () async {
             final v = await pickMany<String>(
                 context,
-                tr3('服务地区', 'Аймақ', 'Районы'),
+                tr3('服务地区', 'Аймақ', 'Районы', 'Districts'),
                 [for (final c in regionCodes) (c, regionName(c))],
                 regions);
             if (v != null) setState(() => regions = v);
           }),
-          Text(tr3('接活状态', 'Күйі', 'Статус'),
+          Text(tr3('接活状态', 'Күйі', 'Статус', 'Status'),
               style: const TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (final (a, label) in [
-              (Availability.now, tr3('现在可接', 'Қазір бос', 'Свободен')),
-              (Availability.fromDate, tr3('指定日期后', 'Күннен бастап', 'С даты')),
-              (Availability.notTaking, tr3('暂不接活', 'Алмаймын', 'Не беру')),
+              (Availability.now, tr3('现在可接', 'Қазір бос', 'Свободен', 'Available')),
+              (Availability.fromDate, tr3('指定日期后', 'Күннен бастап', 'С даты', 'From date')),
+              (Availability.notTaking, tr3('暂不接活', 'Алмаймын', 'Не беру', 'Not taking work')),
             ])
               FilterPill(
                   label: label,
@@ -223,25 +226,26 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   if (v != null) setState(() => availableFrom = v);
                 }),
           const SizedBox(height: 14),
-          field(experience, tr3('从业年数（可选）', 'Тәжірибе (жыл)', 'Опыт, лет'),
+          field(experience, tr3('从业年数（可选）', 'Тәжірибе (жыл)', 'Опыт, лет', 'Experience, years'),
               number: true),
           if (kind == ProfileKind.team)
-            field(teamSize, tr3('团队人数', 'Адам саны', 'Человек в бригаде'),
+            field(teamSize, tr3('团队人数', 'Адам саны', 'Человек в бригаде', 'People in the crew'),
                 number: true),
-          field(bio, tr3('简介（可选）', 'Өзіңіз туралы', 'О себе'), lines: 2),
+          field(bio, tr3('简介（可选）', 'Өзіңіз туралы', 'О себе', 'About'), lines: 2),
           SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(
-                  tr3('在名片上公开电话', 'Телефонды көрсету', 'Показывать телефон')),
+                  tr3('在名片上公开电话', 'Телефонды көрсету', 'Показывать телефон', 'Show my phone')),
               subtitle: Text(tr3('默认隐藏；也可以只在聊天中向指定的人展示。', 'Әдепкіде жасырын.',
-                  'По умолчанию скрыт; можно показать в чате конкретному человеку.')),
+                  'По умолчанию скрыт; можно показать в чате конкретному человеку.',
+                  'Hidden by default; you can show it to a specific person in chat.')),
               value: showPhone,
               onChanged: (v) => setState(() => showPhone = v)),
-          SectionTitle(tr3('参考价格', 'Бағдарлы баға', 'Ориентировочные цены'),
+          SectionTitle(tr3('参考价格', 'Бағдарлы баға', 'Ориентировочные цены', 'Indicative prices'),
               trailing: TextButton(
                   onPressed: () => setState(() => prices.add(_PriceRow(
                       TextEditingController(), 'm3', TextEditingController()))),
-                  child: Text(tr3('添加', 'Қосу', 'Добавить')))),
+                  child: Text(tr3('添加', 'Қосу', 'Добавить', 'Add')))),
           for (final (i, r) in prices.indexed)
             Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -265,7 +269,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         ],
                         onChanged: (v) => setState(() => r.unit = v ?? 'm3')),
                     IconButton(
-                        tooltip: tr3('删除', 'Жою', 'Удалить'),
+                        tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete'),
                         onPressed: () => setState(() => prices.removeAt(i)),
                         icon: const Icon(Icons.close)),
                   ]),
@@ -273,15 +277,16 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                   TextField(
                       controller: r.scope,
                       decoration: InputDecoration(
-                          labelText: tr3('适用范围', 'Не кіреді', 'Что входит'),
+                          labelText: tr3('适用范围', 'Не кіреді', 'Что входит', "What's included"),
                           hintText: tr3('例如：仅人工，砌墙', 'Мысалы: тек жұмыс',
-                              'Напр.: только работа, кладка'))),
+                              'Напр.: только работа, кладка',
+                              'E.g. labour only, masonry'))),
                 ])),
-          SectionTitle(tr3('作品', 'Жұмыстар', 'Работы'),
+          SectionTitle(tr3('作品', 'Жұмыстар', 'Работы', 'Work'),
               trailing: TextButton(
                   onPressed: () async {
                     final title = await askText(
-                        context, tr3('作品标题', 'Атауы', 'Название'),
+                        context, tr3('作品标题', 'Атауы', 'Название', 'Title'),
                         lines: 1);
                     if (title != null) {
                       setState(() => works.add(Work(
@@ -291,7 +296,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                           photoCount: 1)));
                     }
                   },
-                  child: Text(tr3('上传', 'Жүктеу', 'Загрузить')))),
+                  child: Text(tr3('上传', 'Жүктеу', 'Загрузить', 'Upload')))),
           for (final w in works)
             ListTile(
                 leading: Icon(w.source == WorkSource.platform
@@ -300,11 +305,12 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 title: Text(w.title),
                 subtitle: Text(w.source == WorkSource.platform
                     ? tr3('平台合作记录（不可编辑）', 'Платформадан',
-                        'С платформы (нельзя изменить)')
-                    : tr3('自主上传', 'Өзі жүктеген', 'Загружено')),
+                        'С платформы (нельзя изменить)',
+                        "From the platform (can't be changed)")
+                    : tr3('自主上传', 'Өзі жүктеген', 'Загружено', 'Uploaded')),
                 trailing: w.source == WorkSource.uploaded
                     ? IconButton(
-                        tooltip: tr3('删除', 'Жою', 'Удалить'),
+                        tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete'),
                         onPressed: () => setState(() => works.remove(w)),
                         icon: const Icon(Icons.delete_outline))
                     : null),

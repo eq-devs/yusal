@@ -71,8 +71,9 @@ class _AgreementFormState extends State<AgreementForm> {
       pricing = PricingMode.perQuantity;
       materials.text = h.toolsByEmployer
           ? tr3('工具由雇主提供', 'Құралды жұмыс беруші береді',
-              'Инструмент от работодателя')
-          : tr3('工人自带工具', 'Құрал өзінікі', 'Свой инструмент');
+              'Инструмент от работодателя',
+              'Tools from the employer')
+          : tr3('工人自带工具', 'Құрал өзінікі', 'Свой инструмент', 'Own tools');
       payment.text = settleName(h.settleCycle);
     } else {
       scope.text = v?.scopeText.isNotEmpty == true ? v!.scopeText : d.title;
@@ -83,7 +84,7 @@ class _AgreementFormState extends State<AgreementForm> {
       }
       materials.text = materialName(v?.materials ?? MaterialMode.labourOnly);
       open.text = v?.excludes.isNotEmpty == true
-          ? '${tr3('不包含', 'Кірмейді', 'Не входит')}: ${v!.excludes}'
+          ? '${tr3('不包含', 'Кірмейді', 'Не входит', 'Not included')}: ${v!.excludes}'
           : '';
     }
   }
@@ -92,11 +93,11 @@ class _AgreementFormState extends State<AgreementForm> {
     final a = parseInt(amount.text);
     if (scope.text.trim().isEmpty) {
       setState(
-          () => error = tr3('请写明工作范围', 'Көлемді жазыңыз', 'Опишите объём'));
+          () => error = tr3('请写明工作范围', 'Көлемді жазыңыз', 'Опишите объём', 'Describe the scope'));
       return;
     }
     if (amount.text.trim().isNotEmpty && (a == null || a <= 0)) {
-      setState(() => error = tr3('金额不正确', 'Сома қате', 'Неверная сумма'));
+      setState(() => error = tr3('金额不正确', 'Сома қате', 'Неверная сумма', 'Invalid amount'));
       return;
     }
     Navigator.pop(
@@ -146,24 +147,25 @@ class _AgreementFormState extends State<AgreementForm> {
     watchLang(context);
     return PageScaffold(
         title: widget.current == null
-            ? tr3('合作约定', 'Келісім', 'Соглашение')
-            : tr3('提出变更', 'Өзгеріс ұсыну', 'Предложить изменение'),
+            ? tr3('合作约定', 'Келісім', 'Соглашение', 'Agreement')
+            : tr3('提出变更', 'Өзгеріс ұсыну', 'Предложить изменение', 'Propose a change'),
         bottom: FilledButton(
             onPressed: done,
             child: Text(widget.current == null
                 ? tr3(
-                    '发起并确认我方', 'Жіберу және растау', 'Отправить и подтвердить')
+                    '发起并确认我方', 'Жіберу және растау', 'Отправить и подтвердить', 'Send and confirm')
                 : tr3(
-                    '发送变更，待对方确认', 'Өзгерісті жіберу', 'Отправить изменение'))),
+                    '发送变更，待对方确认', 'Өзгерісті жіберу', 'Отправить изменение', 'Send the change'))),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Hint(tr3(
               '这是双方的书面约定记录，不是具有特定法律效力的电子合同。双方分别确认后生效，修改会生成新版本，旧版本可查。',
               'Бұл екі жақтың жазбаша келісімі, заңды электрондық шарт емес.',
-              'Это запись договорённостей сторон, а не юридический договор. Изменения создают новую версию.')),
+              'Это запись договорённостей сторон, а не юридический договор. Изменения создают новую версию.',
+              "This records what the sides agreed; it isn't a legal contract. Changes create a new version.")),
           const SizedBox(height: 16),
-          _field(scope, tr3('工作范围', 'Жұмыс көлемі', 'Объём работ'), lines: 2),
+          _field(scope, tr3('工作范围', 'Жұмыс көлемі', 'Объём работ', 'Scope of work'), lines: 2),
           if (hire)
-            _field(headcount, tr3('录用人数', 'Адам саны', 'Человек'),
+            _field(headcount, tr3('录用人数', 'Адам саны', 'Человек', 'People'),
                 number: true),
           Wrap(spacing: 8, runSpacing: 8, children: [
             for (final p in PricingMode.values)
@@ -175,7 +177,7 @@ class _AgreementFormState extends State<AgreementForm> {
           const SizedBox(height: 12),
           Row(children: [
             Expanded(
-                child: _field(amount, tr3('金额 ₸（可空）', 'Сома ₸', 'Сумма ₸'),
+                child: _field(amount, tr3('金额 ₸（可空）', 'Сома ₸', 'Сумма ₸', 'Amount ₸'),
                     number: true)),
             const SizedBox(width: 10),
             DropdownButton<String>(
@@ -199,38 +201,40 @@ class _AgreementFormState extends State<AgreementForm> {
                 onChanged: (v) => setState(() => unit = v ?? 'total')),
           ]),
           ListTile(
-              title: Text(tr3('开始', 'Басталуы', 'Начало')),
+              title: Text(tr3('开始', 'Басталуы', 'Начало', 'Start')),
               subtitle: Text(fmtDay(start)),
               trailing: const YusalIcon(YIcon.calendar),
               onTap: () => pickDate(true)),
           ListTile(
-              title: Text(tr3('预计结束', 'Аяқталуы', 'Окончание')),
+              title: Text(tr3('预计结束', 'Аяқталуы', 'Окончание', 'End')),
               subtitle: Text(fmtDay(end)),
               trailing: const YusalIcon(YIcon.calendar),
               onTap: () => pickDate(false)),
           const SizedBox(height: 8),
-          _field(payment, tr3('付款约定（可空）', 'Төлем тәртібі', 'Порядок оплаты'),
+          _field(payment, tr3('付款约定（可空）', 'Төлем тәртібі', 'Порядок оплаты', 'Payment terms'),
               hint: tr3('例如：每个节点验收后付对应比例', 'Мысалы: әр кезеңнен кейін',
-                  'Напр.: после приёмки каждого этапа')),
+                  'Напр.: после приёмки каждого этапа',
+                  'E.g. after each stage is accepted')),
           Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
                   tr3(
                       '验收节点默认 4 段：基础 20%、主体 40%、屋顶 25%、完工 15%。发起后、对方确认前都能在合作页修改。Yusal 只记录验收，不代收代付。',
                       'Әдепкі 4 кезең. Растағанға дейін өзгертуге болады. Yusal төлем қабылдамайды.',
-                      'По умолчанию 4 этапа, их можно изменить до подтверждения. Yusal не принимает платежи.'),
+                      'По умолчанию 4 этапа, их можно изменить до подтверждения. Yusal не принимает платежи.',
+                      "4 stages by default; you can change them before confirming. Yusal doesn't take payments."),
                   style: TextStyle(
                       fontSize: YFont.caption,
                       color: YTokens.of(context).muted))),
           _field(materials,
-              tr3('材料与工具责任', 'Материал мен құрал', 'Материалы и инструмент')),
+              tr3('材料与工具责任', 'Материал мен құрал', 'Материалы и инструмент', 'Materials and tools')),
           _field(
-              open, tr3('待确认事项', 'Нақтыланатын мәселелер', 'Открытые вопросы'),
+              open, tr3('待确认事项', 'Нақтыланатын мәселелер', 'Открытые вопросы', 'Open questions'),
               lines: 2),
           SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(
-                  tr3('向对方提供具体地址', 'Мекенжайды беру', 'Передать точный адрес')),
+                  tr3('向对方提供具体地址', 'Мекенжайды беру', 'Передать точный адрес', 'Share the exact address')),
               value: shareAddress,
               onChanged: (v) => setState(() => shareAddress = v)),
           if (error != null) Hint(error!, warn: true),

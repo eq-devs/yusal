@@ -95,7 +95,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
     toast(
         context,
         tr3('已收到，谢谢！每一条我们都会看。', 'Алдық, рақмет! Әрқайсысын оқимыз.',
-            'Получили, спасибо! Читаем каждое.'));
+            'Получили, спасибо! Читаем каждое.',
+            'Got it, thanks! We read every one.'));
     Navigator.pop(context);
   }
 
@@ -105,7 +106,7 @@ class _FeedbackPageState extends State<FeedbackPage> {
     final t = YTokens.of(context);
     final empty = text.text.trim().isEmpty;
     return PageScaffold(
-        title: tr3('意见反馈', 'Пікір қалдыру', 'Обратная связь'),
+        title: tr3('意见反馈', 'Пікір қалдыру', 'Обратная связь', 'Feedback'),
         bottom: Column(mainAxisSize: MainAxisSize.min, children: [
           if (error != null) ...[
             Hint(
@@ -113,15 +114,16 @@ class _FeedbackPageState extends State<FeedbackPage> {
                 tr3(
                     '没发出去：$error。你写的内容还在，可以再试一次。',
                     'Жіберілмеді: $error. Мәтін сақталды, қайталап көріңіз.',
-                    'Не отправлено: $error. Текст сохранён, попробуйте ещё раз.'),
+                    'Не отправлено: $error. Текст сохранён, попробуйте ещё раз.',
+                    'Not sent: $error. Your text is kept; try again.'),
                 warn: true),
             const SizedBox(height: YSpace.sm),
           ],
           BusyButton(
               key: const Key('feedback-send'),
               label: error == null
-                  ? tr3('发送', 'Жіберу', 'Отправить')
-                  : tr3('重试', 'Қайталау', 'Повторить'),
+                  ? tr3('发送', 'Жіберу', 'Отправить', 'Send')
+                  : tr3('重试', 'Қайталау', 'Повторить', 'Retry'),
               onPressed: empty ? null : send),
         ]),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -137,7 +139,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
                   hintText: tr3(
                       '哪里不好用、想要什么功能，直接写就行',
                       'Не ыңғайсыз, не қосу керек, жаза беріңіз',
-                      'Что неудобно, чего не хватает: просто напишите'))),
+                      'Что неудобно, чего не хватает: просто напишите',
+                      "What's awkward or missing: just write it"))),
           const SizedBox(height: YSpace.md),
           FutureBuilder<Map<String, String>>(
               future: details,
@@ -161,14 +164,16 @@ class _FeedbackPageState extends State<FeedbackPage> {
                     onChanged: (v) => setState(() => attach = v),
                     title: Text(
                         tr3('附带设备信息', 'Құрылғы туралы мәлімет қосу',
-                            'Приложить данные устройства'),
+                            'Приложить данные устройства',
+                            'Attach device details'),
                         style: YText.bodyStrong),
                     subtitle: Text(
                         summary.isEmpty
                             ? tr3(
                                 '应用版本、设备型号、系统版本和语言',
                                 'Нұсқа, құрылғы, жүйе және тіл',
-                                'Версия, устройство, система и язык')
+                                'Версия, устройство, система и язык',
+                                'Version, device, system and language')
                             : summary,
                         style: YText.caption.copyWith(color: t.muted)));
               }),
@@ -176,7 +181,8 @@ class _FeedbackPageState extends State<FeedbackPage> {
               tr3(
                   '帮我们更快找到问题。你的设计不会被附带。',
                   'Мәселені тез табуға көмектеседі. Жобаларыңыз жіберілмейді.',
-                  'Помогает быстрее найти проблему. Ваши проекты не передаются.'),
+                  'Помогает быстрее найти проблему. Ваши проекты не передаются.',
+                  "Helps us find the problem faster. Your designs aren't sent."),
               style: YText.caption.copyWith(color: t.muted)),
         ]));
   }

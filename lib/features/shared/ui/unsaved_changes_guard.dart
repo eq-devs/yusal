@@ -31,20 +31,22 @@ class _UnsavedChangesGuardState extends State<UnsavedChangesGuard> {
                       title: Text(tr3(
                           '放弃未保存的内容？',
                           'Сақталмаған өзгерістерді жою керек пе?',
-                          'Отменить несохранённые изменения?')),
+                          'Отменить несохранённые изменения?',
+                          'Discard unsaved changes?')),
                       content: Text(tr3(
                           '继续编辑可保留当前输入。',
                           'Өңдеуді жалғастырсаңыз, енгізілгендер сақталады.',
-                          'Продолжите редактирование, чтобы сохранить введённое.')),
+                          'Продолжите редактирование, чтобы сохранить введённое.',
+                          'Keep editing to save what you entered.')),
                       actions: [
                         TextButton(
                             onPressed: () => Navigator.pop(context, false),
                             child:
-                                Text(tr3('继续编辑', 'Жалғастыру', 'Продолжить'))),
+                                Text(tr3('继续编辑', 'Жалғастыру', 'Продолжить', 'Keep editing'))),
                         TextButton(
                             onPressed: () => Navigator.pop(context, true),
                             child: Text(tr3(
-                                '放弃并返回', 'Жойып, қайту', 'Отменить и выйти'))),
+                                '放弃并返回', 'Жойып, қайту', 'Отменить и выйти', 'Discard and leave'))),
                       ],
                     )) ==
             true;

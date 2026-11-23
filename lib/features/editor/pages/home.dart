@@ -74,7 +74,15 @@ const _templateNames = {
 const _sizePresets = [(8, 10), (10, 12), (12, 10), (10, 13), (15, 10)];
 
 /// Room names of the village-house template in the current language.
-Map<String, String> kazakhTemplateNames() => isRu
+Map<String, String> kazakhTemplateNames() => isEn
+    ? const {
+        'b1': 'Bedroom 1',
+        'b2': 'Bedroom 2',
+        'cor': 'Corridor',
+        'ent': 'Hallway',
+        'boil': 'Boiler room',
+      }
+    : isRu
     ? const {
         'b1': 'Спальня 1',
         'b2': 'Спальня 2',
@@ -162,15 +170,18 @@ class _HouseHomeState extends ConsumerState<HouseHome>
     if (payload['bytes'] is! Uint8List) {
       message(payload['error'] == 'FILE_TOO_LARGE'
           ? tr3('文件超过 10 MiB，无法打开', 'Файл 10 MiB-тан үлкен, ашу мүмкін емес',
-              'Файл больше 10 МиБ, открыть нельзя')
+              'Файл больше 10 МиБ, открыть нельзя',
+              "The file is over 10 MiB and can't be opened")
           : tr3('无法读取设计文件', 'Жоба файлын оқу мүмкін емес',
-              'Не удалось прочитать файл проекта'));
+              'Не удалось прочитать файл проекта',
+              "Couldn't read the design file"));
       return;
     }
     final loaded = loadHouse(payload['bytes'] as Uint8List);
     if (!loaded.isSuccess) {
       message(tr3('这个文件的内容有误，无法打开', 'Файлдың мазмұны қате, ашу мүмкін емес',
-          'Файл повреждён, открыть нельзя'));
+          'Файл повреждён, открыть нельзя',
+          "The file is damaged and can't be opened"));
       return;
     }
     try {
@@ -178,7 +189,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
       if (mounted) await open(ProjectEntry(id, loaded.document!));
     } catch (_) {
       message(tr3('无法保存导入的设计', 'Импортталған жобаны сақтау мүмкін емес',
-          'Не удалось сохранить импортированный проект'));
+          'Не удалось сохранить импортированный проект',
+          "Couldn't save the imported design"));
     }
   }
 
@@ -207,7 +219,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
               : tr3(
                   '设计已保留，项目索引暂时无法更新；可继续编辑或导出。',
                   'Жобалар сақталған, индекс жаңартылмады.',
-                  'Проекты сохранены, индекс не обновлён. Можно редактировать или экспортировать.');
+                  'Проекты сохранены, индекс не обновлён. Можно редактировать или экспортировать.',
+                  'Designs saved, index not updated. You can edit or export them.');
         });
       }
     } catch (_) {
@@ -217,7 +230,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
           error = tr3(
               '暂时无法读取设计，请稍后重试',
               'Жобаларды оқу мүмкін болмады, кейін қайталаңыз',
-              'Не удалось прочитать проекты, попробуйте позже');
+              'Не удалось прочитать проекты, попробуйте позже',
+              "Couldn't read the designs; try again later");
         });
       }
     }
@@ -240,7 +254,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
       await refresh();
     } catch (_) {
       message(tr3('这个设计无法打开，请检查文件', 'Жобаны ашу мүмкін емес, файлды тексеріңіз',
-          'Не удалось открыть проект, проверьте файл'));
+          'Не удалось открыть проект, проверьте файл',
+          "Couldn't open the design; check the file"));
     }
   }
 
@@ -279,7 +294,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
     var doc = template == 'blank'
         ? withRoof(
             createHouse(
-                name: tr3('我的房屋', 'Менің үйім', 'Мой дом'),
+                name: tr3('我的房屋', 'Менің үйім', 'Мой дом', 'My house'),
                 width: width ?? 12000,
                 depth: depth ?? 10000,
                 columns: 1,
@@ -304,7 +319,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
     final now = DateTime.now().toUtc().toIso8601String();
     if (key == 'kz') {
       return createKazakhTemplate(now, () => const Uuid().v4(),
-          name: tr3('哈萨克乡村住宅', 'Қазақ ауыл үйі', 'Казахский сельский дом'),
+          name: tr3('哈萨克乡村住宅', 'Қазақ ауыл үйі', 'Казахский сельский дом', 'Kazakh village house'),
           names: kazakhTemplateNames());
     }
     return createTemplate(key, now, () => const Uuid().v4());
@@ -414,7 +429,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                           children: [
                             Text(
                                 tr3('怎么开始？', 'Қалай бастаймыз?',
-                                    'С чего начнём?'),
+                                    'С чего начнём?',
+                                    'Where shall we start?'),
                                 style: const TextStyle(
                                     fontSize: 20, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 4),
@@ -422,7 +438,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                 tr3(
                                     '都可以随时改：墙、房间、门窗都能拖动调整。',
                                     'Кейін бәрін өзгертуге болады.',
-                                    'Потом всё можно изменить: стены, комнаты, окна и двери двигаются.'),
+                                    'Потом всё можно изменить: стены, комнаты, окна и двери двигаются.',
+                                    'You can change everything later: walls, rooms, windows and doors all move.'),
                                 style: TextStyle(color: t.muted)),
                             const SizedBox(height: 12),
                             // The questions come first: most people know how
@@ -433,40 +450,48 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                 tr3(
                                     '回答几个问题，帮我出一套',
                                     'Сұрақтарға жауап беріп, жоба алу',
-                                    'Ответить на вопросы и получить проект'),
+                                    'Ответить на вопросы и получить проект',
+                                    'Answer questions and get a design'),
                                 VoiceSession.current != null
                                     ? tr3(
                                         '选好大小、层数和房间，助手画出第一版',
                                         'Өлшемін, қабатын, бөлмелерін таңдаңыз — көмекші сызады',
-                                        'Выберите размер, этажи и комнаты — помощник начертит')
+                                        'Выберите размер, этажи и комнаты — помощник начертит',
+                                        'Choose the size, floors and rooms and the assistant draws it')
                                     : tr3(
                                         '选好大小、层数和房间，马上画出第一版',
                                         'Өлшемін, қабатын, бөлмелерін таңдаңыз — бірден сызылады',
-                                        'Выберите размер, этажи и комнаты — сразу начертим')),
+                                        'Выберите размер, этажи и комнаты — сразу начертим',
+                                        'Choose the size, floors and rooms and we draw it right away')),
                             const SizedBox(height: 8),
                             way(
                                 'blank',
                                 Icons.crop_square,
                                 tr3('按长宽新建', 'Өлшеммен бастау',
-                                    'Начать с размеров'),
+                                    'Начать с размеров',
+                                    'Start from dimensions'),
                                 tr3(
                                     '输入面宽和进深，得到一个空房子',
                                     'Ені мен ұзындығын енгізіңіз',
-                                    'Введите ширину и длину — получите пустой дом')),
+                                    'Введите ширину и длину — получите пустой дом',
+                                    'Enter the width and length to get an empty house')),
                             const SizedBox(height: 8),
                             way(
                                 'sketch',
                                 Icons.gesture,
                                 tr3('在画布上拖出外形', 'Пішінді сызып беру',
-                                    'Нарисовать контур'),
+                                    'Нарисовать контур',
+                                    'Draw the outline'),
                                 tr3(
                                     '用手指拉出房子的大小',
                                     'Үйдің өлшемін саусақпен тартыңыз',
-                                    'Растяните размер дома пальцем')),
+                                    'Растяните размер дома пальцем',
+                                    'Stretch the house size with your finger')),
                             const SizedBox(height: 16),
                             Text(
                                 tr3('或者从模板改', 'Немесе үлгіден',
-                                    'Или с шаблона'),
+                                    'Или с шаблона',
+                                    'Or from a template'),
                                 style: const TextStyle(
                                     fontSize: 15, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 8),
@@ -498,7 +523,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
       }
       // No assistant: the first version is drawn here, at once.
       final built = buildHouseFromSpec(
-          wish.spec(tr3('我的房屋', 'Менің үйім', 'Мой дом')),
+          wish.spec(tr3('我的房屋', 'Менің үйім', 'Мой дом', 'My house')),
           DateTime.now().toUtc().toIso8601String(),
           () => const Uuid().v4());
       final doc = built.document;
@@ -506,7 +531,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
         message(tr3(
             '这套要求画不出来，换个大小或少几间试试',
             'Бұл талаппен сызу мүмкін болмады, өлшемін не бөлме санын өзгертіп көріңіз',
-            'По этим пожеланиям начертить не удалось, измените размер или число комнат'));
+            'По этим пожеланиям начертить не удалось, измените размер или число комнат',
+            "Couldn't draw with these wishes; change the size or the number of rooms"));
         return;
       }
       try {
@@ -514,7 +540,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
         if (mounted) await open(ProjectEntry(id, doc));
       } catch (_) {
         message(tr3('无法创建，请检查存储空间', 'Жасау мүмкін емес, жадты тексеріңіз',
-            'Не удалось создать, проверьте свободное место'));
+            'Не удалось создать, проверьте свободное место',
+            "Couldn't create it; check free storage"));
       }
       return;
     }
@@ -524,14 +551,15 @@ class _HouseHomeState extends ConsumerState<HouseHome>
       if (mounted) await open(ProjectEntry(id, doc));
     } catch (_) {
       message(tr3('无法创建，请检查存储空间', 'Жасау мүмкін емес, жадты тексеріңіз',
-          'Не удалось создать, проверьте свободное место'));
+          'Не удалось создать, проверьте свободное место',
+          "Couldn't create it; check free storage"));
     }
   }
 
   @override
   Future<void> create({bool sketch = false}) async {
     final name =
-        TextEditingController(text: tr3('我的房屋', 'Менің үйім', 'Мой дом'));
+        TextEditingController(text: tr3('我的房屋', 'Менің үйім', 'Мой дом', 'My house'));
     final width = TextEditingController(text: '12');
     final depth = TextEditingController(text: '10');
     const columns = 1;
@@ -562,7 +590,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                           decoration: InputDecoration(
                               labelText: label, suffixText: unitM));
                   return AlertDialog(
-                      title: Text(tr3('新建设计', 'Жаңа жоба', 'Новый проект')),
+                      title: Text(tr3('新建设计', 'Жаңа жоба', 'Новый проект', 'New design')),
                       content: SingleChildScrollView(
                           child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -572,7 +600,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                 controller: name,
                                 decoration: InputDecoration(
                                     labelText: tr3('设计名称', 'Жоба атауы',
-                                        'Название проекта'))),
+                                        'Название проекта',
+                                        'Design name'))),
                             const SizedBox(height: 12),
                             // Live outline: the numbers become a shape.
                             Center(
@@ -601,18 +630,20 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                   child: size(
                                       width,
                                       tr3('面宽（左右）', 'Ені (солдан оңға)',
-                                          'Ширина (слева направо)'))),
+                                          'Ширина (слева направо)',
+                                          'Width (left to right)'))),
                               const SizedBox(width: 10),
                               Expanded(
                                   child: size(
                                       depth,
                                       tr3('进深（上下）', 'Ұзындығы (жоғары-төмен)',
-                                          'Длина (сверху вниз)'))),
+                                          'Длина (сверху вниз)',
+                                          'Length (top to bottom)'))),
                             ]),
                             const SizedBox(height: 12),
                             // The roof is chosen up front and can be
                             // changed any time later.
-                            Text(tr3('屋顶', 'Шатыр', 'Крыша'),
+                            Text(tr3('屋顶', 'Шатыр', 'Крыша', 'Roof'),
                                 style:
                                     TextStyle(fontSize: 12.5, color: t.muted)),
                             const SizedBox(height: 4),
@@ -643,7 +674,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                     tr3(
                                         '进去后，从墙上的 ＋ 拖出隔墙。',
                                         'Ішке кірген соң қабырғадағы ＋ белгісінен ішкі қабырға тартыңыз.',
-                                        'Внутри тяните перегородки от значка ＋ на стене.'),
+                                        'Внутри тяните перегородки от значка ＋ на стене.',
+                                        'Inside, drag partitions from the ＋ on a wall.'),
                                     style: TextStyle(
                                         fontSize: 12.5, color: t.muted))),
                             if (validation != null)
@@ -660,10 +692,11 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                             },
                             icon: const Icon(Icons.gesture),
                             label: Text(tr3('在画布上拖出外形', 'Пішінді сызып беру',
-                                'Нарисовать контур'))),
+                                'Нарисовать контур',
+                                'Draw the outline'))),
                         TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
+                            child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'))),
                         FilledButton(
                             onPressed: () {
                               final w = parse(width);
@@ -679,7 +712,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                 setDialog(() => validation = tr3(
                                     '宽和长都要在 3 到 100 米之间',
                                     'Ені мен ұзындығы 3–100 м аралығында болуы керек',
-                                    'Ширина и длина должны быть от 3 до 100 м'));
+                                    'Ширина и длина должны быть от 3 до 100 м',
+                                    'Width and length must be 3 to 100 m'));
                                 return;
                               }
                               Navigator.pop(
@@ -698,7 +732,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                           newId: () => const Uuid().v4()),
                                       roof));
                             },
-                            child: Text(tr3('开始设计', 'Бастау', 'Начать')))
+                            child: Text(tr3('开始设计', 'Бастау', 'Начать', 'Start')))
                       ]);
                 }));
     // The controllers stay alive until the dialog exit animation completes.
@@ -724,7 +758,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
       if (mounted) await open(ProjectEntry(id, doc));
     } catch (_) {
       message(tr3('无法创建，请检查存储空间', 'Жасау мүмкін емес, жадты тексеріңіз',
-          'Не удалось создать, проверьте свободное место'));
+          'Не удалось создать, проверьте свободное место',
+          "Couldn't create it; check free storage"));
     }
   }
 
@@ -733,7 +768,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
     try {
       final file = await openFile(acceptedTypeGroups: [
         XTypeGroup(
-            label: tr3('房屋设计', 'Үй жобасы', 'Проект дома'),
+            label: tr3('房屋设计', 'Үй жобасы', 'Проект дома', 'House design'),
             extensions: const ['house'],
             uniformTypeIdentifiers: const ['public.data'])
       ]);
@@ -742,21 +777,24 @@ class _HouseHomeState extends ConsumerState<HouseHome>
         message(tr3(
             '文件超过 10 MiB，无法打开',
             'Файл 10 MiB-тан үлкен, ашу мүмкін емес',
-            'Файл больше 10 МиБ, открыть нельзя'));
+            'Файл больше 10 МиБ, открыть нельзя',
+            "The file is over 10 MiB and can't be opened"));
         return;
       }
       final loaded = await loadHouseStream(file.openRead(0, maxHouseBytes + 1),
           length: await file.length());
       if (!loaded.isSuccess) {
         message(tr3('这个文件的内容有误，无法打开', 'Файлдың мазмұны қате, ашу мүмкін емес',
-            'Файл повреждён, открыть нельзя'));
+            'Файл повреждён, открыть нельзя',
+            "The file is damaged and can't be opened"));
         return;
       }
       final id = await store.createProject(loaded.document!);
       if (mounted) await open(ProjectEntry(id, loaded.document!));
     } catch (_) {
       message(tr3('无法导入设计', 'Жобаны импорттау мүмкін емес',
-          'Не удалось импортировать проект'));
+          'Не удалось импортировать проект',
+          "Couldn't import the design"));
     }
   }
 
@@ -767,13 +805,13 @@ class _HouseHomeState extends ConsumerState<HouseHome>
               AlertDialog(title: Text(title), content: Text(name), actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
+                    child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'))),
                 FilledButton(
                     style: FilledButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.error,
                         foregroundColor: Theme.of(context).colorScheme.onError),
                     onPressed: () => Navigator.pop(context, true),
-                    child: Text(tr3('删除', 'Жою', 'Удалить')))
+                    child: Text(tr3('删除', 'Жою', 'Удалить', 'Delete')))
               ])) ==
       true;
 
@@ -799,14 +837,15 @@ class _HouseHomeState extends ConsumerState<HouseHome>
       }
     } catch (_) {
       message(tr3('导出失败，请重试', 'Экспорт сәтсіз, қайталаңыз',
-          'Не удалось экспортировать. Повторите.'));
+          'Не удалось экспортировать. Повторите.',
+          "Couldn't export. Try again."));
     }
   }
 
   @override
   Future<void> delete(ProjectEntry entry) async {
     if (!await confirmDelete(
-        tr3('删除这个设计？', 'Бұл жобаны жою керек пе?', 'Удалить проект?'),
+        tr3('删除这个设计？', 'Бұл жобаны жою керек пе?', 'Удалить проект?', 'Delete the design?'),
         entry.document.meta.name)) {
       return;
     }
@@ -814,7 +853,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
       await store.deleteProject(entry.id);
       await refresh();
     } catch (_) {
-      message(tr3('删除失败，请重试', 'Жою сәтсіз', 'Не удалось удалить'));
+      message(tr3('删除失败，请重试', 'Жою сәтсіз', 'Не удалось удалить', "Couldn't delete"));
     }
   }
 
@@ -822,7 +861,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
   Future<void> deleteCorrupt(String id) async {
     if (!await confirmDelete(
         tr3('删除无法打开的设计？', 'Ашылмайтын жобаны жою керек пе?',
-            'Удалить проект, который не открывается?'),
+            'Удалить проект, который не открывается?',
+            "Delete the design that won't open?"),
         id)) {
       return;
     }
@@ -876,9 +916,10 @@ class _HouseHomeState extends ConsumerState<HouseHome>
               children: [
                 Text(
                     embedded
-                        ? tr3('我的设计', 'Жобаларым', 'Мои проекты')
+                        ? tr3('我的设计', 'Жобаларым', 'Мои проекты', 'My designs')
                         : tr3('自建房设计工具', 'Үй жобалау құралы',
-                            'Проектирование дома'),
+                            'Проектирование дома',
+                            'House design'),
                     style: const TextStyle(
                         fontSize: 22, fontWeight: FontWeight.w700)),
                 if (!embedded)
@@ -886,34 +927,36 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                       tr3(
                           '定长宽 · 拖出隔墙 · 放门窗 · 看 3D',
                           'өлшем · қабырға · есік-терезе · 3D',
-                          'размеры · стены · окна и двери · 3D'),
+                          'размеры · стены · окна и двери · 3D',
+                          'dimensions · walls · windows and doors · 3D'),
                       style: mono(size: 12, color: t.muted)),
               ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
             if (!embedded)
               Seg<AppLang>(
-                  label: 'Тіл / 语言',
+                  label: 'Тіл / 语言 / Language',
                   value: app.lang,
                   items: const [
                     (AppLang.kk, 'Қазақша'),
                     (AppLang.ru, 'Русский'),
-                    (AppLang.zh, '中文')
+                    (AppLang.zh, '中文'),
+                    (AppLang.en, 'English')
                   ],
                   onChanged: choose.setLang),
             if (!embedded)
               Seg<ThemeChoice>(
                   value: app.theme,
                   items: [
-                    (ThemeChoice.auto, tr3('◐ 自动', '◐ Авто', '◐ Авто')),
-                    (ThemeChoice.day, tr3('☀ 日间', '☀ Күндіз', '☀ День')),
-                    (ThemeChoice.night, tr3('☾ 夜间', '☾ Түн', '☾ Ночь')),
+                    (ThemeChoice.auto, tr3('◐ 自动', '◐ Авто', '◐ Авто', '◐ Auto')),
+                    (ThemeChoice.day, tr3('☀ 日间', '☀ Күндіз', '☀ День', '☀ Day')),
+                    (ThemeChoice.night, tr3('☾ 夜间', '☾ Түн', '☾ Ночь', '☾ Night')),
                   ],
                   onChanged: choose.setTheme),
             Btn(
-                label: tr3('导入', 'Импорт', 'Импорт'),
+                label: tr3('导入', 'Импорт', 'Импорт', 'Import'),
                 icon: Icons.file_open_outlined,
                 tooltip: tr3(
-                    '导入 .house', '.house файлын ашу', 'Открыть файл .house'),
+                    '导入 .house', '.house файлын ашу', 'Открыть файл .house', 'Open a .house file'),
                 onPressed: import),
           ]),
         ]);
@@ -922,7 +965,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(
               tr3('从长宽开始，设计你的家', 'Өлшемнен бастап, үйіңізді жобалаңыз',
-                  'Начните с размеров и спроектируйте свой дом'),
+                  'Начните с размеров и спроектируйте свой дом',
+                  'Start with dimensions and design your house'),
               style: TextStyle(
                   fontSize: width < 420 ? 22 : 28,
                   fontWeight: FontWeight.w700,
@@ -932,7 +976,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
               tr3(
                   '定长宽 · 拖出隔墙 · 放门窗与家具 · 看 3D 与室内漫游 · 构造与工程量',
                   'Өлшем · қабырға · есік-терезе мен жиһаз · 3D және ішкі серуен · құрылым мен көлем',
-                  'Размеры · стены · окна, двери и мебель · 3D и прогулка внутри · конструкции и объёмы'),
+                  'Размеры · стены · окна, двери и мебель · 3D и прогулка внутри · конструкции и объёмы',
+                  'Dimensions · walls · windows, doors and furniture · 3D and walk-through · structure and quantities'),
               style: TextStyle(color: t.muted)),
           const SizedBox(height: 16),
           Wrap(spacing: 10, runSpacing: 10, children: [
@@ -943,14 +988,14 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                 icon: const Icon(Icons.add),
                 label: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Text(tr3('新建设计', 'Жаңа жоба', 'Новый проект')))),
+                    child: Text(tr3('新建设计', 'Жаңа жоба', 'Новый проект', 'New design')))),
             OutlinedButton.icon(
                 onPressed: createFromTemplate,
                 icon: const Icon(Icons.auto_awesome_mosaic_outlined),
                 label: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     child: Text(tr3(
-                        '也可以从示例开始', 'Үлгіден бастау', 'Начать с примера')))),
+                        '也可以从示例开始', 'Үлгіден бастау', 'Начать с примера', 'Start from an example')))),
           ]),
         ]));
     return Scaffold(
@@ -972,7 +1017,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                             featuredCard(width),
                           ],
                           const SizedBox(height: 24),
-                          Text(tr3('最近设计', 'Соңғы жобалар', 'Недавние проекты'),
+                          Text(tr3('最近设计', 'Соңғы жобалар', 'Недавние проекты', 'Recent designs'),
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 10),
@@ -986,7 +1031,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                     tr3(
                                         '还没有设计，创建你的第一栋房屋。',
                                         'Әзірге жоба жоқ, алғашқы үйіңізді жасаңыз.',
-                                        'Проектов пока нет. Создайте свой первый дом.'),
+                                        'Проектов пока нет. Создайте свой первый дом.',
+                                        'No designs yet. Create your first house.'),
                                     style: TextStyle(color: t.muted))),
                           for (final entry in store.corruptProjects.entries)
                             Padding(
@@ -1001,7 +1047,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                             tooltip: tr3(
                                                 '删除损坏的设计',
                                                 'Бүлінген жобаны жою',
-                                                'Удалить повреждённый проект'),
+                                                'Удалить повреждённый проект',
+                                                'Delete the damaged design'),
                                             icon: const Icon(
                                                 Icons.delete_outline),
                                             onPressed: () =>
@@ -1062,12 +1109,12 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                 fontSize: 15, fontWeight: FontWeight.w700)),
                         const SizedBox(height: 2),
                         Text(
-                            '${m(doc.footprint.width)} × ${m(doc.footprint.depth)} $unitM · ${doc.floors.length} ${tr3('层', 'қабат', 'эт.')}\n${tr3('更新于', 'Жаңартылды', 'Обновлён')} ${doc.meta.updatedAt.split('T').first}',
+                            '${m(doc.footprint.width)} × ${m(doc.footprint.depth)} $unitM · ${doc.floors.length} ${tr3('层', 'қабат', 'эт.', 'fl.')}\n${tr3('更新于', 'Жаңартылды', 'Обновлён', 'Updated')} ${doc.meta.updatedAt.split('T').first}',
                             style: mono(size: 12, color: t.muted)),
                       ])),
                   PopupMenuButton<String>(
                     tooltip:
-                        tr3('项目操作', 'Жоба әрекеттері', 'Действия с проектом'),
+                        tr3('项目操作', 'Жоба әрекеттері', 'Действия с проектом', 'Design actions'),
                     onSelected: (action) async {
                       switch (action) {
                         case 'edit':
@@ -1088,31 +1135,33 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                       PopupMenuItem(
                           value: 'edit',
                           child: Text(
-                              tr3('编辑设计', 'Жобаны өңдеу', 'Редактировать'))),
+                              tr3('编辑设计', 'Жобаны өңдеу', 'Редактировать', 'Edit'))),
                       if (widget.onPublishPost != null)
                         PopupMenuItem(
                             value: 'post',
                             child: Text(tr3('发布作品', 'Жобаны жариялау',
-                                'Опубликовать проект'))),
+                                'Опубликовать проект',
+                                'Publish the design'))),
                       if (widget.onFindBuilders != null)
                         PopupMenuItem(
                             value: 'builders',
                             child: Text(tr3(
-                                '找施工方', 'Мердігер табу', 'Найти подрядчика'))),
+                                '找施工方', 'Мердігер табу', 'Найти подрядчика', 'Find a contractor'))),
                       PopupMenuItem(
                           value: 'export',
                           child: Text(tr3('导出设计文件', 'Жоба файлын экспорттау',
-                              'Экспорт файла проекта'))),
+                              'Экспорт файла проекта',
+                              'Export the design file'))),
                       if (widget.onBackup != null)
                         PopupMenuItem(
                             value: 'backup',
                             child: Text(tr3(
-                                '备份', 'Сақтық көшірме', 'Резервная копия'))),
+                                '备份', 'Сақтық көшірме', 'Резервная копия', 'Backup'))),
                       const PopupMenuDivider(),
                       PopupMenuItem(
                           value: 'delete',
                           child: Text(
-                              tr3('删除设计', 'Жобаны жою', 'Удалить проект'))),
+                              tr3('删除设计', 'Жобаны жою', 'Удалить проект', 'Delete the design'))),
                     ],
                   ),
                 ]))));
@@ -1148,11 +1197,12 @@ class _HouseHomeState extends ConsumerState<HouseHome>
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          TagPill(tr3('示例', 'Үлгі', 'Пример'), t.accent),
+          TagPill(tr3('示例', 'Үлгі', 'Пример', 'Example'), t.accent),
           const SizedBox(height: 6),
           Text(
               tr3('哈萨克乡村住宅 10×13', 'Қазақ ауыл үйі 10×13',
-                  'Казахский сельский дом 10×13'),
+                  'Казахский сельский дом 10×13',
+                  'Kazakh village house 10×13'),
               style:
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
@@ -1160,13 +1210,14 @@ class _HouseHomeState extends ConsumerState<HouseHome>
               tr3(
                   '一层 · 外墙 400 mm · 平屋顶 · 8 个房间。已布置地毯、挂毯、矮圆桌、木箱和褥垫，带条形基础、预留套管和构造做法。打开后每一处都可以修改。',
                   'Бір қабат · сыртқы қабырға 400 мм · тегіс шатыр · 8 бөлме. Кілем, тұскиіз, дөңгелек үстел, сандық пен көрпеше қойылған; таспалы іргетас, гильзалар мен құрылым шешімдері бар. Ашқан соң бәрін өзгертуге болады.',
-                  'Один этаж · наружные стены 400 мм · плоская крыша · 8 комнат. Расставлены ковёр, тускииз, круглый стол, сундук и корпе; есть ленточный фундамент, гильзы и конструктивные решения. После открытия всё можно менять.'),
+                  'Один этаж · наружные стены 400 мм · плоская крыша · 8 комнат. Расставлены ковёр, тускииз, круглый стол, сундук и корпе; есть ленточный фундамент, гильзы и конструктивные решения. После открытия всё можно менять.',
+                  'One floor · 400 mm outer walls · flat roof · 8 rooms. Carpet, tus kiiz, round table, chest and korpe are placed; it has a strip foundation, sleeves and construction details. You can change everything after opening it.'),
               style: TextStyle(color: t.muted, height: 1.5)),
           const SizedBox(height: 12),
           FilledButton.icon(
               onPressed: () => createFromTemplate('kz'),
               icon: const Icon(Icons.open_in_new, size: 18),
-              label: Text(tr3('打开这个示例', 'Үлгіні ашу', 'Открыть пример'))),
+              label: Text(tr3('打开这个示例', 'Үлгіні ашу', 'Открыть пример', 'Open the example'))),
         ]);
     return Sheet(
         padding: const EdgeInsets.all(14),

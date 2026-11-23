@@ -37,14 +37,15 @@ class _LoginPageState extends State<LoginPage> {
     final e = email.text.trim();
     if (!_emailShape.hasMatch(e)) {
       toast(context,
-          tr3('请输入正确的邮箱', 'Поштаны дұрыс енгізіңіз', 'Введите верную почту'));
+          tr3('请输入正确的邮箱', 'Поштаны дұрыс енгізіңіз', 'Введите верную почту', 'Enter a valid email'));
       return;
     }
     if (password.text.isEmpty || (registering && password.text.length < 8)) {
       toast(
           context,
           tr3('密码至少 8 位', 'Құпиясөз кемінде 8 таңба',
-              'Пароль не короче 8 символов'));
+              'Пароль не короче 8 символов',
+              'Password must be at least 8 characters'));
       return;
     }
     final account = await attempt(
@@ -131,7 +132,8 @@ class _LoginPageState extends State<LoginPage> {
       const SizedBox(height: 16),
       Text(
           tr3('欢迎来到 Yusal', 'Yusal-ға қош келдіңіз',
-              'Добро пожаловать в Yusal'),
+              'Добро пожаловать в Yusal',
+              'Welcome to Yusal'),
           style: const TextStyle(
               fontSize: YFont.display, fontWeight: FontWeight.w700)),
       const SizedBox(height: 6),
@@ -139,12 +141,13 @@ class _LoginPageState extends State<LoginPage> {
           tr3(
               '浏览不需要登录。发布、点评、报名、联系和云备份时需要登录。',
               'Қарау үшін кіру керек емес. Жариялау, пікір, өтінім, байланыс және сақтық көшірме үшін кіріңіз.',
-              'Смотреть можно без входа. Для публикации, отзывов, откликов, связи и резервных копий нужно войти.'),
+              'Смотреть можно без входа. Для публикации, отзывов, откликов, связи и резервных копий нужно войти.',
+              'You can browse without signing in. Sign in to publish, review, respond, get in touch and back up.'),
           style: TextStyle(color: t.muted, height: 1.4)),
       const SizedBox(height: 20),
       if (SocialSignIn.appleAvailable) ...[
         BusyButton(
-            label: tr3('通过 Apple 登录', 'Apple арқылы кіру', 'Войти через Apple'),
+            label: tr3('通过 Apple 登录', 'Apple арқылы кіру', 'Войти через Apple', 'Sign in with Apple'),
             icon: Icons.apple,
             onPressed: () => social(api, 'apple')),
         const SizedBox(height: 12),
@@ -152,13 +155,14 @@ class _LoginPageState extends State<LoginPage> {
       if (SocialSignIn.googleAvailable)
         BusyButton(
             label:
-                tr3('通过 Google 登录', 'Google арқылы кіру', 'Войти через Google'),
+                tr3('通过 Google 登录', 'Google арқылы кіру', 'Войти через Google', 'Sign in with Google'),
             icon: Icons.account_circle_outlined,
             outlined: SocialSignIn.appleAvailable,
             onPressed: () => social(api, 'google')),
       if (!SocialSignIn.appleAvailable && !SocialSignIn.googleAvailable)
         Hint(tr3('请在手机 App 中登录。', 'Телефондағы қолданбада кіріңіз.',
-            'Войдите в мобильном приложении.')),
+            'Войдите в мобильном приложении.',
+            'Sign in in the mobile app.')),
       ..._emailForm(context, api),
       // Test sign-in: by name, and one tap per role. The backend must run
       // with DEV_LOGIN=true.
@@ -199,7 +203,7 @@ class _LoginPageState extends State<LoginPage> {
         const Expanded(child: Divider()),
         Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(tr3('或用邮箱', 'немесе поштамен', 'или по почте'),
+            child: Text(tr3('或用邮箱', 'немесе поштамен', 'или по почте', 'or with email'),
                 style: TextStyle(color: t.muted, fontSize: YFont.caption))),
         const Expanded(child: Divider()),
       ]),
@@ -216,7 +220,8 @@ class _LoginPageState extends State<LoginPage> {
               inputFormatters: [LengthLimitingTextInputFormatter(40)],
               decoration: InputDecoration(
                   labelText: tr3('称呼（选填）', 'Атыңыз (міндетті емес)',
-                      'Имя (необязательно)'))),
+                      'Имя (необязательно)',
+                      'Name (optional)'))),
           const SizedBox(height: 12),
         ],
         TextField(
@@ -228,7 +233,7 @@ class _LoginPageState extends State<LoginPage> {
             enableSuggestions: false,
             autofillHints: const [AutofillHints.email],
             decoration:
-                InputDecoration(labelText: tr3('邮箱', 'Пошта', 'Почта'))),
+                InputDecoration(labelText: tr3('邮箱', 'Пошта', 'Почта', 'Email'))),
         const SizedBox(height: 12),
         TextField(
             key: const Key('email-password'),
@@ -245,12 +250,13 @@ class _LoginPageState extends State<LoginPage> {
             decoration: InputDecoration(
                 labelText: registering
                     ? tr3('密码（至少 8 位）', 'Құпиясөз (кемінде 8 таңба)',
-                        'Пароль (от 8 символов)')
-                    : tr3('密码', 'Құпиясөз', 'Пароль'),
+                        'Пароль (от 8 символов)',
+                        'Password (8+ characters)')
+                    : tr3('密码', 'Құпиясөз', 'Пароль', 'Password'),
                 suffixIcon: IconButton(
                     tooltip: showPassword
-                        ? tr3('隐藏密码', 'Жасыру', 'Скрыть пароль')
-                        : tr3('显示密码', 'Көрсету', 'Показать пароль'),
+                        ? tr3('隐藏密码', 'Жасыру', 'Скрыть пароль', 'Hide password')
+                        : tr3('显示密码', 'Көрсету', 'Показать пароль', 'Show password'),
                     icon: Icon(showPassword
                         ? Icons.visibility_off_outlined
                         : Icons.visibility_outlined),
@@ -261,8 +267,8 @@ class _LoginPageState extends State<LoginPage> {
       BusyButton(
           key: const Key('email-submit'),
           label: registering
-              ? tr3('注册', 'Тіркелу', 'Зарегистрироваться')
-              : tr3('登录', 'Кіру', 'Войти'),
+              ? tr3('注册', 'Тіркелу', 'Зарегистрироваться', 'Sign up')
+              : tr3('登录', 'Кіру', 'Войти', 'Sign in'),
           outlined: true,
           onPressed: () => emailSignIn(api)),
       TextButton(
@@ -270,9 +276,10 @@ class _LoginPageState extends State<LoginPage> {
           onPressed: () => setState(() => registering = !registering),
           child: Text(registering
               ? tr3(
-                  '已有账号？去登录', 'Аккаунт бар ма? Кіру', 'Уже есть аккаунт? Войти')
+                  '已有账号？去登录', 'Аккаунт бар ма? Кіру', 'Уже есть аккаунт? Войти', 'Already have an account? Sign in')
               : tr3('没有账号？用邮箱注册', 'Аккаунт жоқ па? Тіркелу',
-                  'Нет аккаунта? Зарегистрироваться'))),
+                  'Нет аккаунта? Зарегистрироваться',
+                  'No account? Sign up'))),
     ];
   }
 
@@ -298,11 +305,11 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return PageScaffold(
-        title: tr3('登录或注册', 'Кіру не тіркелу', 'Вход или регистрация'),
+        title: tr3('登录或注册', 'Кіру не тіркелу', 'Вход или регистрация', 'Sign in or sign up'),
         body: switch (context.read(authRepositoryProvider)) {
           final HttpAuthRepository api => _socialBody(context, api),
           _ => Hint(tr3(
-              '暂时无法登录。', 'Қазір кіру мүмкін емес.', 'Вход сейчас недоступен.')),
+              '暂时无法登录。', 'Қазір кіру мүмкін емес.', 'Вход сейчас недоступен.', "Sign-in isn't available right now.")),
         });
   }
 }

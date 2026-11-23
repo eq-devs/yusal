@@ -50,11 +50,12 @@ class MyJobsView extends StatelessWidget {
               ended.isEmpty) {
             return EmptyState(
                 icon: Icons.work_outline,
-                title: tr3('还没有接活', 'Әзірге жұмыс жоқ', 'Пока нет работы'),
+                title: tr3('还没有接活', 'Әзірге жұмыс жоқ', 'Пока нет работы', 'No work yet'),
                 body: tr3(
                     '去“发现 · 找活”看看附近在招的房子。',
                     '«Шолу · Жұмыс» бөлімін қараңыз.',
-                    'Загляните в «Обзор · Работа».'));
+                    'Загляните в «Обзор · Работа».',
+                    'Have a look in “Discover · Jobs”.'));
           }
           Widget group(String title, List<_Item> items, {bool hot = false}) =>
               items.isEmpty
@@ -74,10 +75,10 @@ class MyJobsView extends StatelessWidget {
           return ListView(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
               children: [
-                group(tr3('待处理', 'Күтуде', 'Ждут вас'), waiting, hot: true),
-                group(tr3('进行中', 'Жүріп жатыр', 'В работе'), working),
-                group(tr3('已报名 / 已报价', 'Жіберілді', 'Отправлено'), sent),
-                group(tr3('已结束', 'Аяқталды', 'Завершено'), ended),
+                group(tr3('待处理', 'Күтуде', 'Ждут вас', 'Waiting for you'), waiting, hot: true),
+                group(tr3('进行中', 'Жүріп жатыр', 'В работе', 'In progress'), working),
+                group(tr3('已报名 / 已报价', 'Жіберілді', 'Отправлено', 'Sent'), sent),
+                group(tr3('已结束', 'Аяқталды', 'Завершено', 'Finished'), ended),
               ]);
         });
   }
@@ -110,34 +111,39 @@ class _JobCard extends StatelessWidget {
       status = c.endPhase == EndPhase.asked
           ? c.endRequest!.by == me
               ? tr3('已请求结束，等业主确认', 'Аяқтау сұралды',
-                  'Ждём подтверждения завершения')
+                  'Ждём подтверждения завершения',
+                  'Waiting for completion to be confirmed')
               : tr3('业主请求结束，等你确认', 'Иесі аяқтауды сұрады',
-                  'Заказчик просит завершить')
+                  'Заказчик просит завершить',
+                  'The client asks to finish')
           : c.status == CooperationStatus.confirmed && next != null
               ? tr3(
                   '${milestoneName(next.key)}进行中 · 已记工 ${c.workLogs.length} 天',
                   '${milestoneName(next.key)} · ${c.workLogs.length} күн',
-                  '${milestoneName(next.key)} · ${c.workLogs.length} дн.')
+                  '${milestoneName(next.key)} · ${c.workLogs.length} дн.',
+                  '${milestoneName(next.key)} · ${c.workLogs.length} d')
               : cooperationStatusName(c);
     } else {
       status = a!.needsReconfirm
-          ? tr3('需求已修改，待重新确认报价', 'Тапсырыс өзгерді', 'Заявка изменилась')
+          ? tr3('需求已修改，待重新确认报价', 'Тапсырыс өзгерді', 'Заявка изменилась', 'The request changed')
           : [
               applicationStatusName(a.status),
               if (a.current.total != null)
                 tr3(
                     '报价 ${money(a.current.total!.round())}',
                     'Ұсыныс ${money(a.current.total!.round())}',
-                    'Цена ${money(a.current.total!.round())}')
+                    'Цена ${money(a.current.total!.round())}',
+                    'Price ${money(a.current.total!.round())}')
               else if (a.current.expectedWage != null)
                 tr3(
                     '期望 ${money(a.current.expectedWage)} / 天',
                     '${money(a.current.expectedWage)} / күн',
-                    '${money(a.current.expectedWage)} / день'),
+                    '${money(a.current.expectedWage)} / день',
+                    '${money(a.current.expectedWage)} / day'),
               if (a.status == ApplicationStatus.submitted)
                 a.readByOwner
-                    ? tr3('业主已看', 'Көрді', 'Просмотрено')
-                    : tr3('业主未看', 'Әлі көрмеді', 'Не просмотрено'),
+                    ? tr3('业主已看', 'Көрді', 'Просмотрено', 'Viewed')
+                    : tr3('业主未看', 'Әлі көрмеді', 'Не просмотрено', 'Not viewed'),
             ].join(' · ');
     }
     return Card(
@@ -157,7 +163,7 @@ class _JobCard extends StatelessWidget {
                       Text(
                           title.isEmpty
                               ? tr3(
-                                  '需求已不可见', 'Қолжетімсіз', 'Заявка недоступна')
+                                  '需求已不可见', 'Қолжетімсіз', 'Заявка недоступна', 'Request unavailable')
                               : title,
                           style: const TextStyle(
                               fontWeight: FontWeight.w700,
@@ -179,7 +185,8 @@ class _JobCard extends StatelessWidget {
                                     onPressed: () => pushPage<void>(context,
                                         (_) => SitePage(cooperationId: c.id)),
                                     child: Text(tr3('申请验收', 'Қабылдауды сұрау',
-                                        'Попросить приёмку'))),
+                                        'Попросить приёмку',
+                                        'Ask for acceptance'))),
                             ])),
                     ]))));
   }
@@ -194,10 +201,10 @@ class SitePage extends StatelessWidget {
       provider: siteCooperationProvider(cooperationId),
       loading: const SkeletonPage(),
       builder: (context, c) => PageScaffold(
-          title: tr3('施工', 'Құрылыс', 'Стройка'),
+          title: tr3('施工', 'Құрылыс', 'Стройка', 'Build'),
           body: c == null
               ? EmptyState(
                   icon: Icons.lock_outline,
-                  title: tr3('无法查看', 'Қолжетімсіз', 'Недоступно'))
+                  title: tr3('无法查看', 'Қолжетімсіз', 'Недоступно', 'Unavailable'))
               : SiteSection(cooperation: c)));
 }

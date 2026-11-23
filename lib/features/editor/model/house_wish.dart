@@ -46,8 +46,8 @@ class HouseWish {
           names: {
             for (final t in RoomType.values)
               if (t != RoomType.custom) t.name: roomTypeName(t),
-            'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл'),
-            'family': tr3('起居室', 'Отбасы бөлмесі', 'Общая комната'),
+            'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл', 'Stair hall'),
+            'family': tr3('起居室', 'Отбасы бөлмесі', 'Общая комната', 'Common room'),
           });
 
   /// The wish as one sentence in the app's language, for the assistant
@@ -56,10 +56,10 @@ class HouseWish {
     String m(double v) =>
         dec(v == v.roundToDouble() ? '${v.round()}' : v.toStringAsFixed(1));
     final extras = [
-      if (hall) tr3('门厅', 'тамбур', 'тамбур'),
-      if (boiler) tr3('锅炉房', 'қазандық бөлмесі', 'котельная'),
-      if (storage) tr3('储藏间', 'қойма', 'кладовая'),
-      if (dining) tr3('餐厅', 'асхана', 'столовая'),
+      if (hall) tr3('门厅', 'тамбур', 'тамбур', 'vestibule'),
+      if (boiler) tr3('锅炉房', 'қазандық бөлмесі', 'котельная', 'boiler room'),
+      if (storage) tr3('储藏间', 'қойма', 'кладовая', 'storeroom'),
+      if (dining) tr3('餐厅', 'асхана', 'столовая', 'dining room'),
     ];
     return tr3(
         '帮我设计一栋 ${m(width)}×${m(depth)} 米的 $floors 层房子：$bedrooms 间卧室、$bathrooms 个卫生间、客厅和厨房'
@@ -67,7 +67,8 @@ class HouseWish {
         '${m(width)}×${m(depth)} метр, $floors қабатты үй жобалап бер: $bedrooms жатын бөлме, $bathrooms жуынатын бөлме, қонақ бөлме және асүй'
             '${extras.isEmpty ? '' : ', сонымен қатар ${extras.join(', ')}'}. Әр бөлменің есігі болсын, жатын бөлмелерде, қонақ бөлмеде және асүйде терезе болсын.',
         'Спроектируй дом ${m(width)}×${m(depth)} метров, этажей: $floors. Спален: $bedrooms, санузлов: $bathrooms, гостиная и кухня'
-            '${extras.isEmpty ? '' : ', а ещё ${extras.join(', ')}'}. У каждой комнаты должна быть дверь, в спальнях, гостиной и кухне — окно.');
+            '${extras.isEmpty ? '' : ', а ещё ${extras.join(', ')}'}. У каждой комнаты должна быть дверь, в спальнях, гостиной и кухне — окно.',
+        'Design a ${m(width)}×${m(depth)} m house with $floors floors, $bedrooms bedrooms, $bathrooms bathrooms, a living room and a kitchen${extras.isEmpty ? '' : ', plus ${extras.join(', ')}'}. Every room needs a door; bedrooms, the living room and the kitchen need a window.');
   }
 }
 
@@ -134,7 +135,8 @@ Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
                         children: [
                           Text(
                               tr3('想要什么样的房子？', 'Қандай үй керек?',
-                                  'Какой дом нужен?'),
+                                  'Какой дом нужен?',
+                                  'What house do you need?'),
                               style: const TextStyle(
                                   fontSize: 20, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
@@ -142,36 +144,39 @@ Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
                               ? tr3(
                                   '回答几项，马上画出第一版，之后都能改。',
                                   'Бірнеше сұраққа жауап беріңіз, алғашқы нұсқасы бірден сызылады. Кейін бәрін өзгертуге болады.',
-                                  'Ответьте на несколько вопросов — первый вариант будет начерчен сразу. Потом всё можно изменить.')
+                                  'Ответьте на несколько вопросов — первый вариант будет начерчен сразу. Потом всё можно изменить.',
+                                  'Answer a few questions and the first version is drawn right away. You can change everything later.')
                               : tr3(
                                   '回答几项，助手画出第一版，之后都能改。',
                                   'Бірнеше сұраққа жауап беріңіз, көмекші алғашқы нұсқасын сызады. Кейін бәрін өзгертуге болады.',
-                                  'Ответьте на несколько вопросов — помощник начертит первый вариант. Потом всё можно изменить.')),
+                                  'Ответьте на несколько вопросов — помощник начертит первый вариант. Потом всё можно изменить.',
+                                  'Answer a few questions and the assistant draws the first version. You can change everything later.')),
                           title(tr3('房子外形（米）', 'Үйдің өлшемі (м)',
-                              'Размер дома (м)')),
+                              'Размер дома (м)',
+                              'House size (m)')),
                           Row(children: [
-                            size(width, tr3('宽', 'Ені', 'Ширина')),
+                            size(width, tr3('宽', 'Ені', 'Ширина', 'Width')),
                             const SizedBox(width: 12),
-                            size(depth, tr3('长', 'Ұзындығы', 'Длина')),
+                            size(depth, tr3('长', 'Ұзындығы', 'Длина', 'Length')),
                           ]),
-                          title(tr3('几层', 'Қабат саны', 'Этажей')),
+                          title(tr3('几层', 'Қабат саны', 'Этажей', 'Floors')),
                           pick('floors', [1, 2], floors, (v) => floors = v),
-                          title(tr3('几间卧室', 'Жатын бөлме саны', 'Спален')),
+                          title(tr3('几间卧室', 'Жатын бөлме саны', 'Спален', 'Bedrooms')),
                           pick('bedrooms', [1, 2, 3, 4, 5], bedrooms,
                               (v) => bedrooms = v),
                           title(
-                              tr3('几个卫生间', 'Жуынатын бөлме саны', 'Санузлов')),
+                              tr3('几个卫生间', 'Жуынатын бөлме саны', 'Санузлов', 'Bathrooms')),
                           pick('bathrooms', [1, 2], bathrooms,
                               (v) => bathrooms = v),
-                          title(tr3('还要', 'Тағы не керек', 'Что ещё нужно')),
+                          title(tr3('还要', 'Тағы не керек', 'Что ещё нужно', 'What else you need')),
                           Wrap(spacing: 8, runSpacing: 4, children: [
-                            extra(tr3('门厅', 'Тамбур', 'Тамбур'), hall,
+                            extra(tr3('门厅', 'Тамбур', 'Тамбур', 'Vestibule'), hall,
                                 (v) => hall = v),
-                            extra(tr3('锅炉房', 'Қазандық', 'Котельная'), boiler,
+                            extra(tr3('锅炉房', 'Қазандық', 'Котельная', 'Boiler room'), boiler,
                                 (v) => boiler = v),
-                            extra(tr3('储藏间', 'Қойма', 'Кладовая'), storage,
+                            extra(tr3('储藏间', 'Қойма', 'Кладовая', 'Storeroom'), storage,
                                 (v) => storage = v),
-                            extra(tr3('餐厅', 'Асхана', 'Столовая'), dining,
+                            extra(tr3('餐厅', 'Асхана', 'Столовая', 'Dining room'), dining,
                                 (v) => dining = v),
                           ]),
                           if (error != null)
@@ -197,7 +202,8 @@ Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
                                   update(() => error = tr3(
                                       '长宽需在 3–100 米之间',
                                       'Өлшем 3–100 м аралығында болуы керек',
-                                      'Размер должен быть в пределах 3–100 м'));
+                                      'Размер должен быть в пределах 3–100 м',
+                                      'Size must be 3–100 m'));
                                   return;
                                 }
                                 final wish = HouseWish(
@@ -214,7 +220,8 @@ Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
                                   update(() => error = tr3(
                                       '这么大的房子放不下这么多房间。减几间，加一层，或者把房子加大。',
                                       'Мұндай үйге осынша бөлме сыймайды. Бөлмені азайтыңыз, қабат қосыңыз не үйді үлкейтіңіз.',
-                                      'В дом такого размера столько комнат не поместится. Уберите часть комнат, добавьте этаж или увеличьте дом.'));
+                                      'В дом такого размера столько комнат не поместится. Уберите часть комнат, добавьте этаж или увеличьте дом.',
+                                      "That many rooms won't fit in a house this size. Remove some rooms, add a floor or make the house bigger."));
                                   return;
                                 }
                                 Navigator.pop(
@@ -231,7 +238,8 @@ Future<HouseWish?> showHouseWizard(BuildContext context, {bool draft = false}) {
                                         dining: dining));
                               },
                               child: Text(tr3('画出第一版', 'Алғашқы нұсқасын сызу',
-                                  'Начертить первый вариант'))),
+                                  'Начертить первый вариант',
+                                  'Draw the first version'))),
                         ])));
           }));
 }

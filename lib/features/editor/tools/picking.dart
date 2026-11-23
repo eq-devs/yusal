@@ -93,29 +93,31 @@ extension _Picking on _HouseEditorState {
                 Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
-                        '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены')} · ${dec(((wall.end.pos - wall.start.pos) / 1000).toStringAsFixed(2))} $unitM',
+                        '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены', 'Outer wall thickness')} · ${dec(((wall.end.pos - wall.start.pos) / 1000).toStringAsFixed(2))} $unitM',
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w700))),
-                heading(tr3('在点的位置加', 'Осы жерге қосу', 'Добавить здесь')),
+                heading(tr3('在点的位置加', 'Осы жерге қосу', 'Добавить здесь', 'Add here')),
                 item('door', Icons.door_front_door_outlined,
-                    tr3('门', 'Есік', 'Дверь')),
+                    tr3('门', 'Есік', 'Дверь', 'Door')),
                 item('window', Icons.window_outlined,
-                    tr3('窗', 'Терезе', 'Окно')),
+                    tr3('窗', 'Терезе', 'Окно', 'Window')),
                 item('sliding', Icons.door_sliding_outlined,
-                    tr3('推拉门', 'Сырғымалы есік', 'Раздвижная дверь')),
-                heading(tr3('这段墙', 'Осы қабырға', 'Эта стена')),
+                    tr3('推拉门', 'Сырғымалы есік', 'Раздвижная дверь', 'Sliding door')),
+                heading(tr3('这段墙', 'Осы қабырға', 'Эта стена', 'This wall')),
                 item('thickness', Icons.straighten,
-                    tr3('调整墙厚', 'Қалыңдығын өзгерту', 'Изменить толщину')),
+                    tr3('调整墙厚', 'Қалыңдығын өзгерту', 'Изменить толщину', 'Change thickness')),
                 item(
                     'open',
                     Icons.crop_free,
                     tr3('去掉这段墙（开放）', 'Қабырғасыз (ашық)',
-                        'Без стены (открыто)')),
+                        'Без стены (открыто)',
+                        'No wall (open)')),
                 item(
                     'default',
                     Icons.restart_alt,
                     tr3('恢复默认墙', 'Әдепкі қабырғаны қайтару',
-                        'Вернуть стену по умолчанию')),
+                        'Вернуть стену по умолчанию',
+                        'Restore the default wall')),
               ])));
       if (choice == null) return;
       if (choice == 'move') {
@@ -130,9 +132,11 @@ extension _Picking on _HouseEditorState {
         final value = await length(
             wall.axis.dir == AxisDir.V
                 ? tr3('距左侧外墙', 'Сол жақ сыртқы қабырғадан',
-                    'От левой наружной стены')
+                    'От левой наружной стены',
+                    'From the left outer wall')
                 : tr3('距下侧外墙', 'Төменгі сыртқы қабырғадан',
-                    'От нижней наружной стены'),
+                    'От нижней наружной стены',
+                    'From the bottom outer wall'),
             wall.axis.pos);
         if (value != null) {
           action('MoveLocalWall',
@@ -159,7 +163,7 @@ extension _Picking on _HouseEditorState {
         int? thickness;
         if (choice == 'thickness') {
           thickness = await length(
-              tr3('墙厚', 'Қабырға қалыңдығы', 'Толщина стены'),
+              tr3('墙厚', 'Қабырға қалыңдығы', 'Толщина стены', 'Wall thickness'),
               wall.thickness.round());
         }
         if (choice != 'thickness' || thickness != null) {
@@ -212,18 +216,20 @@ extension _Picking on _HouseEditorState {
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 for (final e in {
-                  'move': tr3('挪位置', 'Орнын ауыстыру', 'Передвинуть'),
-                  'size': tr3('改尺寸', 'Өлшемін өзгерту', 'Изменить размер'),
-                  'straight': tr3('直梯', 'Тік баспалдақ', 'Прямая лестница'),
+                  'move': tr3('挪位置', 'Орнын ауыстыру', 'Передвинуть', 'Move'),
+                  'size': tr3('改尺寸', 'Өлшемін өзгерту', 'Изменить размер', 'Resize'),
+                  'straight': tr3('直梯', 'Тік баспалдақ', 'Прямая лестница', 'Straight stairs'),
                   'L': tr3(
-                      'L 型楼梯', 'L тәрізді баспалдақ', 'Г-образная лестница'),
+                      'L 型楼梯', 'L тәрізді баспалдақ', 'Г-образная лестница', 'L-shaped stairs'),
                   'U': tr3(
-                      'U 型楼梯', 'U тәрізді баспалдақ', 'П-образная лестница'),
+                      'U 型楼梯', 'U тәрізді баспалдақ', 'П-образная лестница', 'U-shaped stairs'),
                   'turn': tr3('切换转向', 'Бұрылысын ауыстыру',
-                      'Сменить направление поворота'),
+                      'Сменить направление поворота',
+                      'Switch the turn direction'),
                   'start': tr3('切换起步边', 'Басталатын жағын ауыстыру',
-                      'Сменить сторону начала'),
-                  'delete': tr3('删除楼梯', 'Баспалдақты жою', 'Удалить лестницу')
+                      'Сменить сторону начала',
+                      'Switch the starting side'),
+                  'delete': tr3('删除楼梯', 'Баспалдақты жою', 'Удалить лестницу', 'Delete the stairs')
                 }.entries)
                   ListTile(
                       key: Key('stair-${e.key}'),

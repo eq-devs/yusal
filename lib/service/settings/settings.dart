@@ -2,10 +2,11 @@ import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yusal/localization/messages_en.dart';
 import 'package:yusal/localization/messages_ru.dart';
 
-/// Chinese, Kazakh and Russian, everywhere in the app.
-enum AppLang { zh, kk, ru }
+/// Chinese, Kazakh, Russian and English, everywhere in the app.
+enum AppLang { zh, kk, ru, en }
 
 enum ThemeChoice { auto, day, night }
 
@@ -42,6 +43,7 @@ Future<void> loadSettings() async {
         switch (PlatformDispatcher.instance.locale.languageCode) {
           'zh' => AppLang.zh,
           'ru' => AppLang.ru,
+          'en' => AppLang.en,
           _ => AppLang.kk,
         };
     appTheme =
@@ -84,28 +86,37 @@ void watchLang(BuildContext context) => Localizations.localeOf(context);
 
 /// Cyrillic interface: Kazakh, or Russian falling back to Kazakh where only
 /// Chinese and Kazakh text exist.
-bool get isKk => appLang != AppLang.zh;
+bool get isKk => appLang == AppLang.kk || appLang == AppLang.ru;
 
 bool get isRu => appLang == AppLang.ru;
 
+bool get isEn => appLang == AppLang.en;
+
+/// Any interface but Chinese: names and numbers are written the Western
+/// way (no 万, Latin or Cyrillic units).
+bool get isWestern => appLang != AppLang.zh;
+
 /// A Chinese / Kazakh pair from a table (names of furniture, stages,
-/// checklists). In Russian the Kazakh text is looked up in [ruText];
-/// strings written at a call use [tr3] instead.
+/// checklists). In Russian the Kazakh text is looked up in [ruText], in
+/// English in [enText]; strings written at a call use [tr3] instead.
 String tr(String zh, String kk) => switch (appLang) {
       AppLang.zh => zh,
       AppLang.kk => kk,
       AppLang.ru => ruText(kk),
+      AppLang.en => enText(kk) ?? ruText(kk),
     };
 
-/// Platform strings come in all three languages.
-String tr3(String zh, String kk, String ru) => switch (appLang) {
+/// Platform strings, written at the call in Chinese, Kazakh, Russian and
+/// English. Without English the Russian is shown.
+String tr3(String zh, String kk, String ru, [String? en]) => switch (appLang) {
       AppLang.zh => zh,
       AppLang.kk => kk,
       AppLang.ru => ru,
+      AppLang.en => en ?? ru,
     };
 
-/// Between items of a list: 、 in Chinese, a comma in Kazakh and Russian.
-String get listSep => tr3('、', ', ', ', ');
+/// Between items of a list: 、 in Chinese, a comma elsewhere.
+String get listSep => tr3('、', ', ', ', ', ', ');
 
 /// Kazakh writes decimals with a comma.
 String dec(String number) => isKk ? number.replaceAll('.', ',') : number;
@@ -113,19 +124,20 @@ String dec(String number) => isKk ? number.replaceAll('.', ',') : number;
 /// Metres from millimetres, two decimals: 3600 → "3.60".
 String m2dp(num mm) => dec((mm / 1000).toStringAsFixed(2));
 
-String get unitM => tr3('米', 'м', 'м');
-String get unitM2 => tr3('㎡', 'м²', 'м²');
-String get unitM3 => tr3('m³', 'м³', 'м³');
-String get unitMm => tr3('mm', 'мм', 'мм');
-String get unitPcs => tr3('个', 'дана', 'шт.');
+String get unitM => tr3('米', 'м', 'м', 'm');
+String get unitM2 => tr3('㎡', 'м²', 'м²', 'm²');
+String get unitM3 => tr3('m³', 'м³', 'м³', 'm³');
+String get unitMm => tr3('mm', 'мм', 'мм', 'mm');
+String get unitPcs => tr3('个', 'дана', 'шт.', 'pcs');
 
 /// Floors named automatically ("一楼", "二楼 副本") are stored in Chinese and
 /// shown in the interface language; a name the user typed is kept.
 String floorDisplayName(String name) {
   const numerals = '一二三四五六七八九十';
   final m = RegExp(r'^([一二三四五六七八九十])楼( 副本)?$').firstMatch(name);
-  if (m == null || !isKk) return name;
+  if (m == null || !isWestern) return name;
   final n = numerals.indexOf(m[1]!) + 1;
+  if (isEn) return 'Floor $n${m[2] == null ? '' : ' (copy)'}';
   if (isRu) return '$n-й этаж${m[2] == null ? '' : ' (копия)'}';
   return '$n-қабат${m[2] == null ? '' : ' (көшірме)'}';
 }

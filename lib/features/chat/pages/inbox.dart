@@ -29,7 +29,7 @@ class InboxButton extends StatelessWidget {
         provider: unreadProvider,
         loading: const SizedBox(width: 48),
         builder: (context, unread) => IconButton(
-            tooltip: tr3('消息', 'Хабарлар', 'Сообщения'),
+            tooltip: tr3('消息', 'Хабарлар', 'Сообщения', 'Messages'),
             onPressed: () async {
               if (await requireLogin(context) && context.mounted) {
                 await pushPage<void>(context, (_) => const InboxPage());
@@ -74,7 +74,7 @@ class InboxPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     watchLang(context);
-    final title = Text(tr3('消息', 'Хабарлар', 'Сообщения'));
+    final title = Text(tr3('消息', 'Хабарлар', 'Сообщения', 'Messages'));
     return OnChange(builder: (context) {
       if (context.session.currentAccount == null) {
         return Scaffold(
@@ -82,11 +82,13 @@ class InboxPage extends StatelessWidget {
             body: SignInPrompt(
                 icon: Icons.forum_outlined,
                 text: tr3('登录后查看消息', 'Хабарларды көру үшін кіріңіз',
-                    'Войдите, чтобы видеть сообщения'),
+                    'Войдите, чтобы видеть сообщения',
+                    'Sign in to see messages'),
                 body: tr3(
                     '和房主、师傅的聊天，以及报价、验收等通知都在这里。',
                     'Үй иелері мен шеберлермен чаттар, ұсыныстар мен қабылдау туралы хабарламалар осында.',
-                    'Здесь чаты с владельцами и мастерами, уведомления о предложениях и приёмке.')));
+                    'Здесь чаты с владельцами и мастерами, уведомления о предложениях и приёмке.',
+                    'Chats with owners and pros, and notifications about quotes and acceptance, live here.')));
       }
       return DefaultTabController(
           length: 2,
@@ -95,7 +97,7 @@ class InboxPage extends StatelessWidget {
                   title: title,
                   actions: [
                     IconButton(
-                        tooltip: tr3('全部已读', 'Барлығы оқылды', 'Прочитать всё'),
+                        tooltip: tr3('全部已读', 'Барлығы оқылды', 'Прочитать всё', 'Mark all read'),
                         icon: const Icon(Icons.done_all),
                         onPressed: () => attempt(
                             context,
@@ -105,8 +107,8 @@ class InboxPage extends StatelessWidget {
                     const SizedBox(width: YSpace.xs),
                   ],
                   bottom: TabBar(tabs: [
-                    Tab(text: tr3('会话', 'Чаттар', 'Чаты')),
-                    Tab(text: tr3('通知', 'Хабарламалар', 'Уведомления')),
+                    Tab(text: tr3('会话', 'Чаттар', 'Чаты', 'Chats')),
+                    Tab(text: tr3('通知', 'Хабарламалар', 'Уведомления', 'Notifications')),
                   ])),
               body: const MotionTabView(
                   children: [_Conversations(), _Notices()])));
@@ -134,9 +136,10 @@ class _Conversations extends StatelessWidget {
         builder: (context, list) => list.isEmpty
             ? EmptyState(
                 icon: Icons.forum_outlined,
-                title: tr3('还没有会话', 'Чат жоқ', 'Нет чатов'),
+                title: tr3('还没有会话', 'Чат жоқ', 'Нет чатов', 'No chats'),
                 body: tr3('在需求或名片页点击“联系”开始沟通。', 'Тапсырыс бетінен жазыңыз.',
-                    'Напишите со страницы заявки или профиля.'))
+                    'Напишите со страницы заявки или профиля.',
+                    'Write from a request or profile page.'))
             : RefreshIndicator(
                 onRefresh: refresh.call,
                 child: ListView.separated(
@@ -191,10 +194,10 @@ class _Conversations extends StatelessWidget {
 
 String messagePreview(ChatMessage m) => switch (m.kind) {
       MessageKind.text => m.text,
-      MessageKind.image => tr3('[图片]', '[Сурет]', '[Фото]'),
-      MessageKind.demandCard => tr3('[需求卡片]', '[Тапсырыс]', '[Заявка]'),
-      MessageKind.quoteCard => tr3('[报价卡片]', '[Ұсыныс]', '[Предложение]'),
-      MessageKind.phoneShared => tr3('[电话号码]', '[Телефон]', '[Телефон]'),
+      MessageKind.image => tr3('[图片]', '[Сурет]', '[Фото]', '[Photo]'),
+      MessageKind.demandCard => tr3('[需求卡片]', '[Тапсырыс]', '[Заявка]', '[Request]'),
+      MessageKind.quoteCard => tr3('[报价卡片]', '[Ұсыныс]', '[Предложение]', '[Quote]'),
+      MessageKind.phoneShared => tr3('[电话号码]', '[Телефон]', '[Телефон]', '[Phone]'),
       MessageKind.system => m.text,
     };
 
@@ -216,7 +219,7 @@ class _Notices extends StatelessWidget {
         builder: (context, list) => list.isEmpty
             ? EmptyState(
                 icon: Icons.notifications_none,
-                title: tr3('暂无通知', 'Хабарлама жоқ', 'Нет уведомлений'))
+                title: tr3('暂无通知', 'Хабарлама жоқ', 'Нет уведомлений', 'No notifications'))
             : RefreshIndicator(
                 onRefresh: refresh.call,
                 child: ListView.separated(
@@ -305,16 +308,16 @@ Future<void> openNotice(BuildContext context, AppNotification n) async {
                     title: Text(noticeText(n)),
                     content: restricted && n.title.isNotEmpty
                         ? Text(
-                            '${tr3('原因', 'Себебі', 'Причина')}: ${reasonText(n.title)}')
+                            '${tr3('原因', 'Себебі', 'Причина', 'Reason')}: ${reasonText(n.title)}')
                         : null,
                     actions: [
                   if (!restricted)
                     TextButton(
                         onPressed: () => Navigator.pop(context, 'open'),
-                        child: Text(tr3('查看', 'Ашу', 'Открыть'))),
+                        child: Text(tr3('查看', 'Ашу', 'Открыть', 'Open'))),
                   FilledButton(
                       onPressed: () => Navigator.pop(context, 'appeal'),
-                      child: Text(tr3('申诉', 'Шағымдану', 'Обжаловать'))),
+                      child: Text(tr3('申诉', 'Шағымдану', 'Обжаловать', 'Appeal'))),
                 ])));
     if (!context.mounted) return;
     if (v == 'appeal') return appealDecision(context, target, n.refId);

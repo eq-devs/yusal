@@ -26,11 +26,12 @@ class SiteTab extends StatelessWidget {
     if (active.isEmpty) {
       return EmptyState(
           icon: Icons.foundation_outlined,
-          title: tr3('还没开工', 'Құрылыс басталмады', 'Стройка не начата'),
+          title: tr3('还没开工', 'Құрылыс басталмады', 'Стройка не начата', "Construction hasn't started"),
           body: tr3(
               '合作确认后，节点验收和每天的记工会出现在这里。',
               'Келісімнен кейін осында болады.',
-              'После соглашения здесь будут этапы и рабочие дни.'));
+              'После соглашения здесь будут этапы и рабочие дни.',
+              'After the agreement, stages and work days show here.'));
     }
     String title(String demandId) =>
         house.demands
@@ -80,11 +81,13 @@ class SiteSection extends StatelessWidget {
                 ? tr3(
                     '已验收 ${c.acceptedPercent}%',
                     '${c.acceptedPercent}% қабылданды',
-                    'Принято ${c.acceptedPercent}%')
+                    'Принято ${c.acceptedPercent}%',
+                    '${c.acceptedPercent}% accepted')
                 : tr3(
                     '已验收 ${money(amount * c.acceptedPercent ~/ 100)} / 约定 ${money(amount)}',
                     '${money(amount * c.acceptedPercent ~/ 100)} / ${money(amount)}',
-                    'Принято ${money(amount * c.acceptedPercent ~/ 100)} из ${money(amount)}'),
+                    'Принято ${money(amount * c.acceptedPercent ~/ 100)} из ${money(amount)}',
+                    'Accepted ${money(amount * c.acceptedPercent ~/ 100)} of ${money(amount)}'),
             style: TextStyle(color: t.muted)),
         const SizedBox(height: 8),
         for (var i = 0; i < c.milestones.length; i++)
@@ -104,7 +107,7 @@ class SiteSection extends StatelessWidget {
                       () => context
                           .read(cooperationRepositoryProvider)
                           .answerMilestone(c.id, i, true),
-                      success: tr3('已记录验收', 'Қабылданды', 'Приёмка записана'))
+                      success: tr3('已记录验收', 'Қабылданды', 'Приёмка записана', 'Acceptance recorded'))
                   : null,
               onDispute:
                   milestoneMoves(c, me, i).contains(MilestoneEvent.dispute)
@@ -116,12 +119,13 @@ class SiteSection extends StatelessWidget {
                 tr3(
                     'Yusal 目前只记录验收，不代收代付。',
                     'Yusal тек қабылдауды жазады, ақша ұстамайды.',
-                    'Yusal только записывает приёмку и не принимает платежи.'),
+                    'Yusal только записывает приёмку и не принимает платежи.',
+                    "Yusal only records acceptance and doesn't take payments."),
                 style: TextStyle(color: t.muted, fontSize: YFont.caption))),
       ],
       Row(children: [
         Expanded(
-            child: Text(tr3('施工日志', 'Жұмыс күнделігі', 'Журнал работ'),
+            child: Text(tr3('施工日志', 'Жұмыс күнделігі', 'Журнал работ', 'Work log'),
                 style: const TextStyle(fontWeight: FontWeight.w700))),
         if (pro && live)
           FilledButton.tonalIcon(
@@ -132,7 +136,7 @@ class SiteSection extends StatelessWidget {
       ]),
       const SizedBox(height: 6),
       if (c.workLogs.isEmpty)
-        Text(tr3('还没有记工。', 'Әлі жазба жоқ.', 'Записей пока нет.'),
+        Text(tr3('还没有记工。', 'Әлі жазба жоқ.', 'Записей пока нет.', 'No entries yet.'),
             style: TextStyle(color: t.muted)),
       for (final w in c.workLogs)
         ListTile(
@@ -142,7 +146,7 @@ class SiteSection extends StatelessWidget {
                 w.confirmed ? Icons.check_circle : Icons.radio_button_unchecked,
                 color: w.confirmed ? t.ok : t.faint),
             title: Text(
-                '${fmtDay(w.day)} · ${tr3('到场 ${w.headcount} 人', '${w.headcount} адам', '${w.headcount} чел.')}${w.photoCount > 0 ? ' · 📷${w.photoCount}' : ''}'),
+                '${fmtDay(w.day)} · ${tr3('到场 ${w.headcount} 人', '${w.headcount} адам', '${w.headcount} чел.', '${w.headcount} people')}${w.photoCount > 0 ? ' · 📷${w.photoCount}' : ''}'),
             subtitle: w.note.isEmpty && w.photos.isEmpty
                 ? null
                 : Column(
@@ -161,7 +165,7 @@ class SiteSection extends StatelessWidget {
                         () => context
                             .read(cooperationRepositoryProvider)
                             .confirmWork(c.id, w.id)),
-                    child: Text(tr3('确认', 'Растау', 'Подтвердить')))
+                    child: Text(tr3('确认', 'Растау', 'Подтвердить', 'Confirm')))
                 : null),
     ]);
   }
@@ -169,21 +173,22 @@ class SiteSection extends StatelessWidget {
   Future<void> _request(BuildContext context, int i) async {
     final r = await composeSiteEntry(context,
         title: tr3('申请「${milestoneName(cooperation.milestones[i].key)}」验收',
-            'Қабылдауды сұрау', 'Попросить принять этап'),
+            'Қабылдауды сұрау', 'Попросить принять этап', 'Ask to accept the stage'),
         hint: tr3('做了什么，按验收标准拍几张照片', 'Не істелді, фото қосыңыз',
-            'Что сделано; добавьте фото по критериям'));
+            'Что сделано; добавьте фото по критериям',
+            "What's done; add photos for the criteria"));
     if (r == null || !context.mounted) return;
     await attempt(
         context,
         () => context.read(cooperationRepositoryProvider).requestMilestone(
             cooperation.id, i,
             note: r.note, photos: r.photos),
-        success: tr3('已通知房主来验收', 'Иесіне хабарланды', 'Владелец уведомлён'));
+        success: tr3('已通知房主来验收', 'Иесіне хабарланды', 'Владелец уведомлён', 'The owner was notified'));
   }
 
   Future<void> _dispute(BuildContext context, int i) async {
     final note = await askText(
-        context, tr3('哪里有问题？', 'Қандай ескерту?', 'Какие замечания?'));
+        context, tr3('哪里有问题？', 'Қандай ескерту?', 'Какие замечания?', 'What are the issues?'));
     if (note == null || !context.mounted) return;
     await attempt(
         context,
@@ -204,10 +209,10 @@ WorkLog? todayLog(Cooperation c) {
 
 /// The "log today" button's label: log, edit today's, or already confirmed.
 String logTodayLabel(Cooperation c) => switch (todayLog(c)) {
-      null => tr3('今天记工', 'Бүгінді жазу', 'Отметить день'),
+      null => tr3('今天记工', 'Бүгінді жазу', 'Отметить день', 'Log a day'),
       WorkLog(confirmed: true) =>
-        tr3('今天已确认', 'Бүгін расталды', 'Сегодня подтверждено'),
-      _ => tr3('修改今天记工', 'Бүгінгіні түзету', 'Изменить сегодня'),
+        tr3('今天已确认', 'Бүгін расталды', 'Сегодня подтверждено', 'Today is confirmed'),
+      _ => tr3('修改今天记工', 'Бүгінгіні түзету', 'Изменить сегодня', 'Edit today'),
     };
 
 /// Null (disabled) once the owner confirmed today's log: it is locked.
@@ -218,9 +223,10 @@ VoidCallback? onLogToday(BuildContext context, Cooperation c) =>
 /// log the same day replaces today's unconfirmed one.
 Future<void> logToday(BuildContext context, Cooperation c) async {
   final r = await composeSiteEntry(context,
-      title: tr3('今天记工', 'Бүгінгі жұмыс', 'Рабочий день'),
+      title: tr3('今天记工', 'Бүгінгі жұмыс', 'Рабочий день', 'Work day'),
       hint: tr3('今天干了什么（可以用键盘上的麦克风说）', 'Бүгін не істелді',
-          'Что сделано сегодня (можно надиктовать)'),
+          'Что сделано сегодня (можно надиктовать)',
+          'What was done today (you can dictate)'),
       headcount: c.workLogs.firstOrNull?.headcount ??
           (c.agreement.headcount ?? 0).clamp(1, 99));
   if (r == null || !context.mounted) return;
@@ -229,7 +235,7 @@ Future<void> logToday(BuildContext context, Cooperation c) async {
       () => context
           .read(cooperationRepositoryProvider)
           .logWork(c.id, r.headcount!, note: r.note, photos: r.photos),
-      success: tr3('已记工，房主会收到确认提醒', 'Жазылды', 'Записано'));
+      success: tr3('已记工，房主会收到确认提醒', 'Жазылды', 'Записано', 'Recorded'));
 }
 
 typedef SiteEntry = ({String note, List<List<int>> photos, int? headcount});
@@ -294,7 +300,7 @@ class _SiteEntrySheetState extends State<_SiteEntrySheet> {
                 Row(children: [
                   Expanded(
                       child: Text(
-                          tr3('今天到场', 'Бүгін келді', 'Сегодня на объекте'),
+                          tr3('今天到场', 'Бүгін келді', 'Сегодня на объекте', 'On site today'),
                           style: const TextStyle(fontWeight: FontWeight.w600))),
                   IconButton.outlined(
                       key: const Key('people-minus'),
@@ -305,7 +311,7 @@ class _SiteEntrySheetState extends State<_SiteEntrySheet> {
                   SizedBox(
                       width: 56,
                       child: Text(
-                          tr3('$people 人', '$people адам', '$people чел.'),
+                          tr3('$people 人', '$people адам', '$people чел.', '$people people'),
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                               fontWeight: FontWeight.w700,
@@ -338,7 +344,8 @@ class _SiteEntrySheetState extends State<_SiteEntrySheet> {
                     label: Text(tr3(
                         '加照片 ${photos.length}/$maxSitePhotos',
                         'Фото ${photos.length}/$maxSitePhotos',
-                        'Фото ${photos.length}/$maxSitePhotos'))),
+                        'Фото ${photos.length}/$maxSitePhotos',
+                        'Photos ${photos.length}/$maxSitePhotos'))),
                 const Spacer(),
                 FilledButton(
                     key: const Key('site-entry-submit'),
@@ -347,13 +354,14 @@ class _SiteEntrySheetState extends State<_SiteEntrySheet> {
                           photos: List<List<int>>.of(photos),
                           headcount: people
                         )),
-                    child: Text(tr3('提交', 'Жіберу', 'Отправить'))),
+                    child: Text(tr3('提交', 'Жіберу', 'Отправить', 'Send'))),
               ]),
               Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                       tr3('照片只给合作双方看。', 'Фотоны тек екі жақ көреді.',
-                          'Фото видят только стороны соглашения.'),
+                          'Фото видят только стороны соглашения.',
+                          'Only the sides of the agreement see the photos.'),
                       style:
                           TextStyle(color: t.muted, fontSize: YFont.caption))),
             ])));
@@ -388,7 +396,7 @@ class _MilestoneTile extends StatelessWidget {
       MilestoneStatus.planned => current ? t.accent : t.faint,
     };
     final label = current && m.status == MilestoneStatus.planned
-        ? tr3('进行中', 'Жүріп жатыр', 'В работе')
+        ? tr3('进行中', 'Жүріп жатыр', 'В работе', 'In progress')
         : milestoneStatusName(m.status);
     return Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -429,7 +437,8 @@ class _MilestoneTile extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                     tr3('预计 ${fmtDay(m.due)}', 'Мерзімі ${fmtDay(m.due)}',
-                        'Срок ${fmtDay(m.due)}'),
+                        'Срок ${fmtDay(m.due)}',
+                        'Due ${fmtDay(m.due)}'),
                     style: TextStyle(color: t.muted, fontSize: YFont.caption))),
           if (onRequest != null || onAccept != null)
             Padding(
@@ -439,15 +448,15 @@ class _MilestoneTile extends StatelessWidget {
                     OutlinedButton(
                         onPressed: onRequest,
                         child: Text(tr3(
-                            '申请验收', 'Қабылдауды сұрау', 'Попросить приёмку'))),
+                            '申请验收', 'Қабылдауды сұрау', 'Попросить приёмку', 'Ask for acceptance'))),
                   if (onAccept != null)
                     FilledButton(
                         onPressed: onAccept,
-                        child: Text(tr3('确认验收', 'Қабылдау', 'Принять этап'))),
+                        child: Text(tr3('确认验收', 'Қабылдау', 'Принять этап', 'Accept the stage'))),
                   if (onDispute != null)
                     OutlinedButton(
                         onPressed: onDispute,
-                        child: Text(tr3('有问题', 'Ескерту', 'Замечания'))),
+                        child: Text(tr3('有问题', 'Ескерту', 'Замечания', 'Issues'))),
                 ])),
         ]));
   }

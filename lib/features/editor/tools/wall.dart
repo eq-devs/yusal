@@ -64,17 +64,20 @@ extension _WallTool on _HouseEditorState {
         ? tr3(
             '墙停在了半路。可以接着拖，或点「接到对面」',
             'Қабырға жарты жолда тоқтады. Жалғастырып тартыңыз не «Қарсы қабырғаға дейін» басыңыз',
-            'Стена остановилась на полпути. Тяните дальше или нажмите «До стены напротив»')
+            'Стена остановилась на полпути. Тяните дальше или нажмите «До стены напротив»',
+            'The wall stopped halfway. Keep dragging or tap “To the opposite wall”')
         : tapped
             ? tr3(
                 '按住大 ＋ 拖出新墙 · 也可点尺子输入长度',
                 'Үлкен ＋ белгісін ұстап тартыңыз · не сызғышты басып ұзындық енгізіңіз',
-                'Удерживайте большой ＋ и тяните · или нажмите на линейку и введите длину')
+                'Удерживайте большой ＋ и тяните · или нажмите на линейку и введите длину',
+                'Hold the big ＋ and drag · or tap the ruler and enter a length')
             : !accepted && error == null
                 ? tr3(
                     '墙至少 0.30 米，请拖远一些',
                     'Қабырға кемінде 0,30 м, әріректе жіберіңіз',
-                    'Стена не короче 0,30 м, протяните дальше')
+                    'Стена не короче 0,30 м, протяните дальше',
+                    'Walls are at least 0.30 m; drag further')
                 : null;
     update(() {});
   }
@@ -165,9 +168,11 @@ extension _WallTool on _HouseEditorState {
     }
     schedulePreview(editCommand!, editArgs!,
         ok: tr3('松手完成，支持撤销', 'Жіберіңіз, болдырмауға болады',
-            'Отпустите, действие можно отменить'),
+            'Отпустите, действие можно отменить',
+            'Release; you can undo this'),
         failed: tr3('无法移动这段墙', 'Бұл қабырғаны жылжыту мүмкін емес',
-            'Эту стену нельзя переместить'));
+            'Эту стену нельзя переместить',
+            "This wall can't be moved"));
   }
 
   /// Actions for the pressed wall, placed beside it rather than in a sheet
@@ -281,13 +286,14 @@ extension _WallTool on _HouseEditorState {
                         tr3(
                             '${inner ? '内墙' : '外墙'} ${meters(length)} 米 · 厚 ${meters(wall.thickness)} 米',
                             '${inner ? 'Ішкі' : 'Сыртқы'} қабырға ${meters(length)} м · қалыңдығы ${meters(wall.thickness)} м',
-                            '${inner ? 'Перегородка' : 'Наружная стена'} ${meters(length)} м · толщина ${meters(wall.thickness)} м'),
+                            '${inner ? 'Перегородка' : 'Наружная стена'} ${meters(length)} м · толщина ${meters(wall.thickness)} м',
+                            '${inner ? 'Partition' : 'Outer wall'} ${meters(length)} m · thickness ${meters(wall.thickness)} m'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600))),
                 IconButton(
-                    tooltip: tr3('关闭', 'Жабу', 'Закрыть'),
+                    tooltip: tr3('关闭', 'Жабу', 'Закрыть', 'Close'),
                     visualDensity: VisualDensity.compact,
                     onPressed: () => update(closeWallMenu),
                     icon: const Icon(Icons.close, size: 18))
@@ -296,42 +302,43 @@ extension _WallTool on _HouseEditorState {
                 button(
                     'add',
                     Icons.add_circle_outline,
-                    tr3('接墙', 'Жалғау', 'Пристроить'),
+                    tr3('接墙', 'Жалғау', 'Пристроить', 'Extend'),
                     '从这里接墙'
-                        .trKey('Осы жерден жалғау', 'Пристроить стену отсюда'),
+                        .trKey('Осы жерден жалғау', 'Пристроить стену отсюда', 'Extend a wall from here'),
                     enabled: !opening),
                 if (inner) ...[
                   button(
                       'length',
                       Icons.straighten,
-                      tr3('长度', 'Ұзындық', 'Длина'),
-                      '调整长度'.trKey('Ұзындығын өзгерту', 'Изменить длину')),
-                  button('move', Icons.open_with, tr3('位置', 'Орны', 'Место'),
-                      '移动墙体'.trKey('Қабырғаны жылжыту', 'Переместить стену')),
+                      tr3('长度', 'Ұзындық', 'Длина', 'Length'),
+                      '调整长度'.trKey('Ұзындығын өзгерту', 'Изменить длину', 'Change the length')),
+                  button('move', Icons.open_with, tr3('位置', 'Орны', 'Место', 'Location'),
+                      '移动墙体'.trKey('Қабырғаны жылжыту', 'Переместить стену', 'Move the wall')),
                   button(
                       'thickness',
                       Icons.line_weight,
-                      tr3('墙厚', 'Қалыңдық', 'Толщина'),
-                      '修改墙厚'.trKey('Қалыңдығын өзгерту', 'Изменить толщину')),
+                      tr3('墙厚', 'Қалыңдық', 'Толщина', 'Thickness'),
+                      '修改墙厚'.trKey('Қалыңдығын өзгерту', 'Изменить толщину', 'Change the thickness')),
                   button(
                       'delete',
                       Icons.delete_outline,
-                      tr3('删除', 'Жою', 'Удалить'),
-                      '删除墙体'.trKey('Қабырғаны жою', 'Удалить стену'),
+                      tr3('删除', 'Жою', 'Удалить', 'Delete'),
+                      '删除墙体'.trKey('Қабырғаны жою', 'Удалить стену', 'Delete the wall'),
                       danger: true),
                 ] else ...[
                   button(
                       'footprint',
                       Icons.aspect_ratio,
-                      tr3('房屋尺寸', 'Үй өлшемі', 'Размеры дома'),
+                      tr3('房屋尺寸', 'Үй өлшемі', 'Размеры дома', 'House dimensions'),
                       '调整房屋长宽'.trKey(
-                          'Үй өлшемін өзгерту', 'Изменить размеры дома')),
+                          'Үй өлшемін өзгерту', 'Изменить размеры дома', 'Change the house size')),
                   button(
                       'outerThickness',
                       Icons.line_weight,
-                      tr3('墙厚', 'Қалыңдық', 'Толщина'),
+                      tr3('墙厚', 'Қалыңдық', 'Толщина', 'Thickness'),
                       '外墙厚度'.trKey('Сыртқы қабырға қалыңдығы',
-                          'Толщина наружной стены')),
+                          'Толщина наружной стены',
+                          'Outer wall thickness')),
                 ]
               ]),
               if (opening)
@@ -341,7 +348,8 @@ extension _WallTool on _HouseEditorState {
                         tr3(
                             '这里有门窗，换个位置才能接墙',
                             'Мұнда есік-терезе бар, жалғау үшін басқа жерді таңдаңыз',
-                            'Здесь окно или дверь, выберите другое место для стены'),
+                            'Здесь окно или дверь, выберите другое место для стены',
+                            "There's a window or door here; pick another spot for the wall"),
                         style: const TextStyle(fontSize: 12))),
             ]))));
   }
@@ -363,18 +371,20 @@ extension _WallTool on _HouseEditorState {
                   title: Text(tr3(
                       '删除墙及其门窗？',
                       'Қабырға мен ондағы есік-терезені жою керек пе?',
-                      'Удалить стену вместе с окнами и дверями?')),
+                      'Удалить стену вместе с окнами и дверями?',
+                      'Delete the wall with its windows and doors?')),
                   content: Text(tr3(
                       '这段墙上的 $hosted 个门窗也会删除，可通过撤销恢复。',
                       'Қабырғадағы $hosted есік-терезе де жойылады, болдырмау арқылы қайтаруға болады.',
-                      'Окна и двери на этой стене ($hosted шт.) тоже будут удалены, вернуть их можно отменой.')),
+                      'Окна и двери на этой стене ($hosted шт.) тоже будут удалены, вернуть их можно отменой.',
+                      'The windows and doors on this wall ($hosted) will be deleted too; undo brings them back.')),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
+                        child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'))),
                     FilledButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: Text(tr3('删除', 'Жою', 'Удалить')))
+                        child: Text(tr3('删除', 'Жою', 'Удалить', 'Delete')))
                   ]));
       if (yes != true) return;
     }
@@ -396,8 +406,9 @@ extension _WallTool on _HouseEditorState {
               ? tr3(
                   '已删除墙体和 $hosted 个门窗',
                   'Қабырға мен $hosted есік-терезе жойылды',
-                  'Стена удалена вместе с окнами и дверями ($hosted шт.)')
-              : tr3('已删除墙体', 'Қабырға жойылды', 'Стена удалена'),
+                  'Стена удалена вместе с окнами и дверями ($hosted шт.)',
+                  'Wall deleted with its windows and doors ($hosted)')
+              : tr3('已删除墙体', 'Қабырға жойылды', 'Стена удалена', 'Wall deleted'),
           undo: undo);
     }
   }

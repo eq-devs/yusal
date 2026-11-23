@@ -49,9 +49,10 @@ List<({String id, String name})> matchDesigns(
 final houseActions = [
   AppAction(
     id: 'houses.create',
-    title: const L3('新建房屋设计', 'Жаңа үй жобасы', 'Новый проект дома'),
+    title: const L3('新建房屋设计', 'Жаңа үй жобасы', 'Новый проект дома', 'New house design'),
     examples: const L3('新建一个十二乘十米的房子', 'Он екіге он метр жаңа үй аш',
-        'Создай новый дом двенадцать на десять метров'),
+        'Создай новый дом двенадцать на десять метров',
+        'Create a new house twelve by ten metres'),
     params: const {
       'template': Param.choice(templateKeys, optional: true),
       'name': Param.text(optional: true),
@@ -80,9 +81,9 @@ final houseActions = [
   ),
   AppAction(
     id: 'houses.open',
-    title: const L3('按名称打开设计', 'Жобаны атымен ашу', 'Открыть проект по имени'),
+    title: const L3('按名称打开设计', 'Жобаны атымен ашу', 'Открыть проект по имени', 'Open a design by name'),
     examples: const L3(
-        '打开我的房子', '«Менің үйім» жобасын аш', 'Открой проект «Мой дом»'),
+        '打开我的房子', '«Менің үйім» жобасын аш', 'Открой проект «Мой дом»', 'Open the design “My house”'),
     params: const {'name': Param.text()},
     when: _haveList,
     risk: Risk.read,

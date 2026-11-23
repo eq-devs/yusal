@@ -20,7 +20,8 @@ import 'package:yusal/features/shared/brand/brand.dart';
 /// First tab: houses people designed, newest first. Look, like, rate,
 /// comment; owners recruit from their house, professionals offer to build.
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, this.onDesign, this.embedded = false});
+  const HomePage(
+      {super.key, this.onDesign, this.embedded = false, this.onPick});
 
   /// Jumps to the design tab (the "design your own" call to action).
   final VoidCallback? onDesign;
@@ -28,6 +29,10 @@ class HomePage extends StatefulWidget {
   /// Shown as the "houses" segment of Discover, which owns the header,
   /// the create button and the links to work and people.
   final bool embedded;
+
+  /// The plan library picker: "start from this one" hands the house back
+  /// instead of copying it here.
+  final ValueChanged<HousePost>? onPick;
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -80,9 +85,14 @@ class _HomePageState extends State<HomePage> {
                     constraints: const BoxConstraints(maxWidth: 1100),
                     child: RefreshIndicator(
                         onRefresh: _refresh.call,
+                        edgeOffset: ExploreInset.of(context),
                         child: CustomScrollView(
                             physics: const AlwaysScrollableScrollPhysics(),
                             slivers: [
+                              // Room for Discover's floating header.
+                              SliverToBoxAdapter(
+                                  child: SizedBox(
+                                      height: ExploreInset.of(context))),
                               SliverToBoxAdapter(
                                   child: Padding(
                                       padding: const EdgeInsets.fromLTRB(
@@ -108,11 +118,13 @@ class _HomePageState extends State<HomePage> {
                                                     ? tr3(
                                                         '挑一套，用它开始你的房子',
                                                         'Үлгі таңдап, өз үйіңізді бастаңыз',
-                                                        'Выберите дом и начните свой с него')
+                                                        'Выберите дом и начните свой с него',
+                                                        'Pick a house and start yours from it')
                                                     : tr3(
                                                         '看看大家设计的房子',
                                                         'Адамдар жобалаған үйлер',
-                                                        'Дома, которые спроектировали люди'),
+                                                        'Дома, которые спроектировали люди',
+                                                        'Houses people designed'),
                                                 style: display()),
                                             const SizedBox(height: 12),
                                             SearchField(
@@ -121,7 +133,8 @@ class _HomePageState extends State<HomePage> {
                                                 hint: tr3(
                                                     '搜索房子、地区',
                                                     'Үй не аймақ іздеу',
-                                                    'Дом или район')),
+                                                    'Дом или район',
+                                                    'House or district')),
                                             const SizedBox(height: 12),
                                             SingleChildScrollView(
                                                 scrollDirection:
@@ -146,7 +159,8 @@ class _HomePageState extends State<HomePage> {
                                                                 tr3(
                                                                     '排序',
                                                                     'Сұрыптау',
-                                                                    'Сортировка'),
+                                                                    'Сортировка',
+                                                                    'Sort'),
                                                                 [
                                                                   for (final s
                                                                       in FeedSort
@@ -182,7 +196,8 @@ class _HomePageState extends State<HomePage> {
                                                           label: tr3(
                                                               '正在找施工方',
                                                               'Құрылысшы іздейді',
-                                                              'Ищут строителей'),
+                                                              'Ищут строителей',
+                                                              'Looking for builders'),
                                                           selected: filter
                                                               .openForBuilders,
                                                           onTap: () => set(FeedFilter(
@@ -204,7 +219,8 @@ class _HomePageState extends State<HomePage> {
                                                           label: tr3(
                                                               '求点评',
                                                               'Пікір сұрайды',
-                                                              'Просят отзывы'),
+                                                              'Просят отзывы',
+                                                              'Asking for feedback'),
                                                           selected: filter
                                                               .askingFeedback,
                                                           onTap: () => set(
@@ -222,13 +238,15 @@ class _HomePageState extends State<HomePage> {
                                                       label: filter.region ==
                                                               null
                                                           ? tr3('地区', 'Аймақ',
-                                                              'Район')
+                                                              'Район',
+                                                              'District')
                                                           : regionName(
                                                               filter.region!),
                                                       selected:
                                                           filter.region != null,
                                                       icon:
                                                           Icons.place_outlined,
+                                                      yicon: YIcon.nearby,
                                                       menu: true,
                                                       onTap: () async {
                                                         final r =
@@ -238,11 +256,13 @@ class _HomePageState extends State<HomePage> {
                                                                 tr3(
                                                                     '地区',
                                                                     'Аймақ',
-                                                                    'Район'),
+                                                                    'Район',
+                                                                    'District'),
                                                                 tr3(
                                                                     '全部',
                                                                     'Барлығы',
-                                                                    'Все'),
+                                                                    'Все',
+                                                                    'All'),
                                                                 [
                                                                   for (final c
                                                                       in regionCodes)
@@ -292,12 +312,13 @@ class _HomePageState extends State<HomePage> {
                                               title: tr3(
                                                   '暂时无法加载房子',
                                                   'Үйлерді жүктеу мүмкін болмады',
-                                                  'Не удалось загрузить дома'),
+                                                  'Не удалось загрузить дома',
+                                                  "Couldn't load houses"),
                                               action: OutlinedButton(
                                                   onPressed: () =>
                                                       setState(() => _retry++),
                                                   child: Text(tr3(
-                                                      '重试', 'Қайталау', 'Повторить')))))),
+                                                      '重试', 'Қайталау', 'Повторить', 'Retry')))))),
                                   loading: const SliverToBoxAdapter(
                                       child: SkeletonList(
                                           cover: 230,
@@ -316,13 +337,15 @@ class _HomePageState extends State<HomePage> {
                                                       Text(tr3(
                                                           '刷新失败，正在显示上次结果',
                                                           'Жаңарту сәтсіз, алдыңғы нәтиже көрсетілді',
-                                                          'Не удалось обновить. Показаны прошлые результаты.')),
+                                                          'Не удалось обновить. Показаны прошлые результаты.',
+                                                          "Couldn't refresh. Showing the previous results.")),
                                                       OutlinedButton(
                                                           onPressed: retry,
                                                           child: Text(tr3(
                                                               '重试',
                                                               'Қайталау',
-                                                              'Повторить')))
+                                                              'Повторить',
+                                                              'Retry')))
                                                     ]))),
                                         feed(context, data),
                                       ]),
@@ -332,9 +355,9 @@ class _HomePageState extends State<HomePage> {
             ? null
             : FloatingActionButton.extended(
                 onPressed: widget.onDesign,
-                icon: const Icon(Icons.architecture),
+                icon: const YusalIcon(YIcon.design, mono: true),
                 label: Text(
-                    tr3('设计我的房子', 'Үйімді жобалау', 'Спроектировать дом'))));
+                    tr3('设计我的房子', 'Үйімді жобалау', 'Спроектировать дом', 'Design my house'))));
   }
 
   Widget feed(BuildContext context, (List<HousePost>, Set<String>) data) {
@@ -345,16 +368,20 @@ class _HomePageState extends State<HomePage> {
       return SliverToBoxAdapter(
           child: EmptyState(
               icon: Icons.home_outlined,
-              title: tr3('还没有符合条件的房子', 'Үй табылмады', 'Домов не найдено'),
+              yicon: YIcon.home,
+              title: tr3('还没有符合条件的房子', 'Үй табылмады', 'Домов не найдено', 'No houses found'),
               body: tr3('换个筛选，或者发布你自己的设计。', 'Сүзгіні өзгертіңіз.',
-                  'Измените фильтр или опубликуйте свой проект.')));
+                  'Измените фильтр или опубликуйте свой проект.',
+                  'Change the filter or publish your own design.')));
     }
     Widget card(HousePost p) => HouseCard(
         post: p,
         liked: liked.contains(p.id),
         onLike: () => attempt(context,
             () => context.read(postRepositoryProvider).toggleLike(p.id)),
-        onReuse: () => startFromPost(context, p),
+        onReuse: widget.onPick == null
+            ? () => startFromPost(context, p)
+            : () => widget.onPick!(p),
         onTap: () =>
             pushPage<void>(context, (_) => PostPage(postId: p.id, preview: p)));
     if (wide) {
@@ -402,7 +429,8 @@ class _ProBanner extends StatelessWidget {
               Expanded(
                   child: Text(
                       tr3('找人／找活 · 查看专业人士与施工需求', 'Маман / жұмыс табу',
-                          'Найти мастера или работу'),
+                          'Найти мастера или работу',
+                          'Find a pro or work'),
                       style: const TextStyle(
                           fontWeight: FontWeight.w600, fontSize: YFont.label))),
               Icon(Icons.chevron_right, color: t.muted),

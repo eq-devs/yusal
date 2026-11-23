@@ -15,7 +15,7 @@ extension _FurnitureTool on _HouseEditorState {
                 child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     children: [
-                      Text(tr3('选择家具', 'Жиһаз таңдау', 'Выбрать мебель'),
+                      Text(tr3('选择家具', 'Жиһаз таңдау', 'Выбрать мебель', 'Pick furniture'),
                           style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w700)),
                       for (final (group, kinds) in furnitureGroups()) ...[
@@ -48,7 +48,8 @@ extension _FurnitureTool on _HouseEditorState {
       placementHint = tr3(
           '点平面放置「${furnitureName(kind)}」，可连续放置',
           '«${furnitureName(kind)}» қою үшін жоспарды басыңыз, бірнеше рет қоюға болады',
-          'Нажмите на план, чтобы поставить «${furnitureName(kind)}»; можно ставить несколько раз подряд');
+          'Нажмите на план, чтобы поставить «${furnitureName(kind)}»; можно ставить несколько раз подряд',
+          'Tap the plan to place “${furnitureName(kind)}”; you can place several in a row');
     });
   }
 
@@ -149,7 +150,7 @@ extension _FurnitureTool on _HouseEditorState {
             f.copyWith(x: snap50(f.x + delta.dx), y: snap50(f.y + delta.dy)),
             [for (final r in base.roomGeometry) r.clearRects]);
         placementHint =
-            tr3('松手放下', 'Жіберіп қойыңыз', 'Отпустите, чтобы поставить');
+            tr3('松手放下', 'Жіберіп қойыңыз', 'Отпустите, чтобы поставить', 'Release to place');
       case 'resize':
         final right = math.max(f.x + 100, snap50(p.dx));
         final bottom = math.min(f.top - 100, snap50(p.dy));
@@ -200,8 +201,8 @@ extension _FurnitureTool on _HouseEditorState {
       if (measurePoints.length >= 2) measurePoints = [];
       measurePoints = [...measurePoints, q];
       placementHint = measurePoints.length == 1
-          ? tr3('再点第二个点', 'Екінші нүктені басыңыз', 'Укажите вторую точку')
-          : '${(measurePoints[1] - measurePoints[0]).distance.round()} $unitMm · ${tr3('再点一次重新开始', 'Қайта бастау үшін тағы басыңыз', 'Нажмите ещё раз, чтобы начать заново')}';
+          ? tr3('再点第二个点', 'Екінші нүктені басыңыз', 'Укажите вторую точку', 'Set the second point')
+          : '${(measurePoints[1] - measurePoints[0]).distance.round()} $unitMm · ${tr3('再点一次重新开始', 'Қайта бастау үшін тағы басыңыз', 'Нажмите ещё раз, чтобы начать заново', 'Tap again to start over')}';
     });
   }
 

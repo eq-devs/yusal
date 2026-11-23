@@ -22,8 +22,8 @@ extension _SceneTab on _HouseEditorState {
               walkStart: walkStart,
               walkFloor: floorIndex,
               selected: scenePicked,
-              outsideLabel: tr3('室外', 'Сыртта', 'Снаружи'),
-              inWallLabel: tr3('墙内', 'Қабырға ішінде', 'Внутри стены'),
+              outsideLabel: tr3('室外', 'Сыртта', 'Снаружи', 'Outside'),
+              inWallLabel: tr3('墙内', 'Қабырға ішінде', 'Внутри стены', 'Inside the wall'),
               areaUnit: unitM2,
               onPick: walk
                   ? null
@@ -41,7 +41,7 @@ extension _SceneTab on _HouseEditorState {
                 shape: CircleBorder(side: BorderSide(color: t.line)),
                 child: IconButton(
                     key: const ValueKey('scene-fit'),
-                    tooltip: tr3('适配画面', 'Экранға сыйғызу', 'Вписать в экран'),
+                    tooltip: tr3('适配画面', 'Экранға сыйғызу', 'Вписать в экран', 'Fit to screen'),
                     onPressed: refitScene,
                     icon: const Icon(Icons.fit_screen_outlined, size: 22)))),
     ]));
@@ -108,9 +108,9 @@ extension _SceneTab on _HouseEditorState {
             doc.extras.furniture.where((i) => i.id == furnitureId).firstOrNull;
         return item == null ? '' : item.label ?? furnitureName(item.kind);
       case WallSource():
-        return tr3('墙体', 'Қабырға', 'Стена');
+        return tr3('墙体', 'Қабырға', 'Стена', 'Wall');
       case StairSource():
-        return tr3('楼梯', 'Баспалдақ', 'Лестница');
+        return tr3('楼梯', 'Баспалдақ', 'Лестница', 'Stairs');
     }
   }
 
@@ -136,9 +136,9 @@ extension _SceneTab on _HouseEditorState {
                   onPressed: () => openInPlan(source),
                   icon: const Icon(Icons.edit_outlined, size: 16),
                   label:
-                      Text(tr3('在 2D 中编辑', '2D-де өзгерту', 'Изменить в 2D'))),
+                      Text(tr3('在 2D 中编辑', '2D-де өзгерту', 'Изменить в 2D', 'Edit in 2D'))),
               IconButton(
-                  tooltip: tr3('关闭', 'Жабу', 'Закрыть'),
+                  tooltip: tr3('关闭', 'Жабу', 'Закрыть', 'Close'),
                   visualDensity: VisualDensity.compact,
                   onPressed: () => update(() => scenePicked = null),
                   icon: const Icon(Icons.close, size: 16)),
@@ -201,24 +201,24 @@ extension _SceneTab on _HouseEditorState {
     final set = setScene;
     return [
       PillToggle(
-          label: tr3('屋顶', 'Шатыр', 'Крыша'),
+          label: tr3('屋顶', 'Шатыр', 'Крыша', 'Roof'),
           selected: s.roof,
           onChanged: (v) => set(s.copyWith(roof: v))),
       PillToggle(
-          label: tr3('家具', 'Жиһаз', 'Мебель'),
+          label: tr3('家具', 'Жиһаз', 'Мебель', 'Furniture'),
           selected: s.furniture,
           onChanged: (v) => set(s.copyWith(furniture: v))),
       PillToggle(
-          label: tr3('地基', 'Іргетас', 'Фундамент'),
+          label: tr3('地基', 'Іргетас', 'Фундамент', 'Foundation'),
           selected: s.foundation,
           onChanged: (v) => set(s.copyWith(foundation: v))),
       if (history.present.extras.site != null)
         PillToggle(
-            label: tr3('院子', 'Аула', 'Двор'),
+            label: tr3('院子', 'Аула', 'Двор', 'Yard'),
             selected: s.site,
             onChanged: (v) => set(s.copyWith(site: v))),
       PillToggle(
-          label: tr3('剖切', 'Кесу', 'Разрез'),
+          label: tr3('剖切', 'Кесу', 'Разрез', 'Section'),
           selected: s.cut,
           onChanged: (v) => set(s.copyWith(cut: v))),
       ActionChip(
@@ -253,7 +253,7 @@ extension _SceneTab on _HouseEditorState {
     final s = sceneSettings;
     final top = math.max(3.0, derived.height / 1000);
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      Text(tr3('剖切高度', 'Кесу биіктігі', 'Высота разреза'),
+      Text(tr3('剖切高度', 'Кесу биіктігі', 'Высота разреза', 'Section height'),
           style: TextStyle(fontSize: 13, color: t.muted)),
       SizedBox(
           width: width,
@@ -286,7 +286,7 @@ extension _SceneTab on _HouseEditorState {
             ]);
     return [
       labelled(
-          tr3('日照时间', 'Күн уақыты', 'Время суток'),
+          tr3('日照时间', 'Күн уақыты', 'Время суток', 'Time of day'),
           SizedBox(
               width: 170,
               child: Slider(
@@ -297,7 +297,7 @@ extension _SceneTab on _HouseEditorState {
                   onChanged: (v) => set(s.copyWith(hour: v))))),
       Text(hh, style: mono(size: 12)),
       labelled(
-          tr3('图纸上方朝向', 'Сызбаның жоғарғы жағы', 'Верх чертежа'),
+          tr3('图纸上方朝向', 'Сызбаның жоғарғы жағы', 'Верх чертежа', 'Top of drawing'),
           DropdownButton<int>(
               value: north,
               underline: const SizedBox.shrink(),
@@ -317,7 +317,7 @@ extension _SceneTab on _HouseEditorState {
               })),
       if (floors.length > 1)
         labelled(
-            tr3('显示到', 'Көрсету', 'Показывать до'),
+            tr3('显示到', 'Көрсету', 'Показывать до', 'Show up to'),
             Seg<int>(
                 value: math.min(s.maxFloor, floors.length - 1),
                 items: [
@@ -342,7 +342,7 @@ extension _SceneTab on _HouseEditorState {
         const SizedBox(width: 4),
         IconButton.outlined(
             key: const ValueKey('scene-more'),
-            tooltip: tr3('更多设置', 'Басқа баптаулар', 'Другие настройки'),
+            tooltip: tr3('更多设置', 'Басқа баптаулар', 'Другие настройки', 'More settings'),
             onPressed: sceneMoreSheet,
             icon: const YusalIcon(YIcon.settings, size: 20)),
         const VoiceSlot(),
@@ -392,7 +392,8 @@ extension _SceneTab on _HouseEditorState {
                                 tr3(
                                     '单指拖动旋转 · 双指缩放/平移/扭转 · 剖切可看墙内门窗 · 点物体可回到 2D 编辑',
                                     'Бір саусақпен айналдырыңыз · екі саусақпен үлкейтіңіз/жылжытыңыз · кесу арқылы есік-терезені көріңіз · нысанды басып 2D-де өзгертіңіз',
-                                    'Вращайте одним пальцем · масштабируйте и двигайте двумя · разрез показывает окна и двери внутри · нажмите на объект, чтобы изменить его в 2D'),
+                                    'Вращайте одним пальцем · масштабируйте и двигайте двумя · разрез показывает окна и двери внутри · нажмите на объект, чтобы изменить его в 2D',
+                                    'Rotate with one finger · zoom and pan with two · the section shows windows and doors inside · tap an item to edit it in 2D'),
                                 style: TextStyle(fontSize: 12, color: t.muted)),
                           ])));
             }));
@@ -417,7 +418,7 @@ extension _SceneTab on _HouseEditorState {
           runSpacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text(tr3('视角', 'Көрініс', 'Вид'),
+            Text(tr3('视角', 'Көрініс', 'Вид', 'View'),
                 style: TextStyle(fontSize: 13, color: t.muted)),
             ...viewButtons(),
           ]),
@@ -433,7 +434,8 @@ extension _SceneTab on _HouseEditorState {
               tr3(
                   '单指拖动旋转 · 双指缩放/平移 · 打开“地基”时地面变透明 · 剖切可看墙内门窗关系 · 点物体可回到 2D 编辑',
                   'Бір саусақпен айналдырыңыз · екі саусақпен үлкейтіңіз/жылжытыңыз · «Іргетас» қосылғанда жер мөлдір болады · кесу арқылы есік-терезе орнын көруге болады · нысанды басып 2D-де өзгертіңіз',
-                  'Вращайте одним пальцем · масштабируйте и сдвигайте двумя · при включённом «Фундаменте» земля становится прозрачной · разрез показывает расположение окон и дверей · нажмите на объект, чтобы изменить его в 2D'),
+                  'Вращайте одним пальцем · масштабируйте и сдвигайте двумя · при включённом «Фундаменте» земля становится прозрачной · разрез показывает расположение окон и дверей · нажмите на объект, чтобы изменить его в 2D',
+                  'Rotate with one finger · zoom and pan with two · with “Foundation” on, the ground turns transparent · the section shows where windows and doors are · tap an item to edit it in 2D'),
               style: TextStyle(fontSize: 12, color: t.muted))),
     ];
   }
@@ -459,10 +461,10 @@ extension _SceneTab on _HouseEditorState {
           runSpacing: 6,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text(tr3('去往', 'Бару:', 'Перейти:'),
+            Text(tr3('去往', 'Бару:', 'Перейти:', 'Go to:'),
                 style: TextStyle(fontSize: 13, color: t.muted)),
             Btn(
-                label: tr3('门外', 'Есік алды', 'Перед входом'),
+                label: tr3('门外', 'Есік алды', 'Перед входом', 'In front of the entrance'),
                 icon: Icons.door_front_door_outlined,
                 onPressed: () => update(() => walkStart = null)),
             for (final room in floor.rooms)
@@ -478,7 +480,7 @@ extension _SceneTab on _HouseEditorState {
                       go(spot.x, spot.y, spot.yaw);
                     }),
             Btn(
-                label: tr3('后院', 'Аула', 'Задний двор'),
+                label: tr3('后院', 'Аула', 'Задний двор', 'Backyard'),
                 icon: Icons.park_outlined,
                 // Behind the house, looking back at it.
                 onPressed: () => go(w / 2, d + 4000, math.pi)),
@@ -503,7 +505,8 @@ extension _SceneTab on _HouseEditorState {
               tr3(
                   '左下摇杆移动，拖动画面转头。电脑上可用 W A S D / 方向键。墙会挡住你，门洞可以穿过。',
                   'Сол жақ төмендегі джойстикпен жүріңіз, экранды сүйреп бұрылыңыз. Компьютерде W A S D / бағыт пернелері. Қабырғадан өтпейсіз, есік ойығынан өтуге болады.',
-                  'Двигайтесь джойстиком слева внизу, поворачивайтесь, проводя по экрану. На компьютере — W A S D / стрелки. Сквозь стены пройти нельзя, через дверной проём — можно.'),
+                  'Двигайтесь джойстиком слева внизу, поворачивайтесь, проводя по экрану. На компьютере — W A S D / стрелки. Сквозь стены пройти нельзя, через дверной проём — можно.',
+                  "Move with the joystick at the bottom left and turn by swiping the screen. On a computer use W A S D / arrow keys. You can't walk through walls, but you can through doorways."),
               style: TextStyle(fontSize: 12, color: t.muted))),
     ];
   }

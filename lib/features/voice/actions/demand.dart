@@ -59,33 +59,35 @@ final demandActions = [
   _demandAction(
       DemandEvent.publish,
       'demand.publish',
-      const L3('提交审核', 'Тексеруге жіберу', 'Отправить на проверку'),
-      const L3('提交审核', 'Тексеруге жібер', 'Отправь на проверку'),
+      const L3('提交审核', 'Тексеруге жіберу', 'Отправить на проверку', 'Send for review'),
+      const L3('提交审核', 'Тексеруге жібер', 'Отправь на проверку', 'Send it for review'),
       (ctx, d, _) => ctx.repos.demands.publish(d.id)),
   _demandAction(
       DemandEvent.pause,
       'demand.pause',
-      const L3('暂停招募', 'Іздеуді тоқтату', 'Приостановить набор'),
-      const L3('先暂停招人', 'Іздеуді уақытша тоқтат', 'Приостанови набор'),
+      const L3('暂停招募', 'Іздеуді тоқтату', 'Приостановить набор', 'Pause hiring'),
+      const L3('先暂停招人', 'Іздеуді уақытша тоқтат', 'Приостанови набор', 'Pause hiring'),
       (ctx, d, _) => ctx.repos.demands.pause(d.id)),
   _demandAction(
       DemandEvent.resume,
       'demand.resume',
-      const L3('继续招募', 'Іздеуді жалғастыру', 'Возобновить набор'),
-      const L3('继续招人', 'Іздеуді жалғастыр', 'Возобнови набор'),
+      const L3('继续招募', 'Іздеуді жалғастыру', 'Возобновить набор', 'Resume hiring'),
+      const L3('继续招人', 'Іздеуді жалғастыр', 'Возобнови набор', 'Resume hiring'),
       (ctx, d, _) => ctx.repos.demands.resume(d.id)),
   _demandAction(
       DemandEvent.renew,
       'demand.renew',
-      const L3('续期 30 天', '30 күнге ұзарту', 'Продлить на 30 дней'),
-      const L3('再延长一个月', 'Тағы бір айға ұзарт', 'Продли ещё на месяц'),
+      const L3('续期 30 天', '30 күнге ұзарту', 'Продлить на 30 дней', 'Extend by 30 days'),
+      const L3('再延长一个月', 'Тағы бір айға ұзарт', 'Продли ещё на месяц', 'Extend it another month'),
       (ctx, d, _) => ctx.repos.demands.renew(d.id)),
   AppAction(
     id: 'demand.mark_found',
     title: const L3('标记已找到人', 'Адам табылды деп белгілеу',
-        'Отметить, что исполнитель найден'),
+        'Отметить, что исполнитель найден',
+        'Mark that someone was found'),
     examples: const L3('已经找到瓦工了，不再招人', 'Қалаушы табылды, енді іздемеймін',
-        'Каменщика нашли, больше не ищем'),
+        'Каменщика нашли, больше не ищем',
+        'We found a mason, not looking any more'),
     params: {
       'outcome': Param.choice([for (final o in OutcomeKind.values) o.name])
     },
@@ -105,9 +107,10 @@ final demandActions = [
   _demandAction(
       DemandEvent.close,
       'demand.close',
-      const L3('关闭需求', 'Тапсырысты жабу', 'Закрыть заявку'),
+      const L3('关闭需求', 'Тапсырысты жабу', 'Закрыть заявку', 'Close the request'),
       const L3('关掉这个需求，不需要了', 'Бұл тапсырысты жап, керек емес',
-          'Закрой заявку, уже не нужно'),
+          'Закрой заявку, уже не нужно',
+          "Close the request, it's not needed any more"),
       (ctx, d, args) => ctx.repos.demands.close(d.id, args.text('reason')),
       params: const {'reason': Param.text()}),
 ];

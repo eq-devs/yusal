@@ -65,7 +65,8 @@ class _ReadAloudButtonState extends State<ReadAloudButton> {
       if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
           content: Text(tr3('没能读出来，请再试一次', 'Оқылмады, қайталап көріңіз',
-              'Не удалось озвучить, попробуйте ещё раз'))));
+              'Не удалось озвучить, попробуйте ещё раз',
+              "Couldn't play it; try again"))));
     }
   }
 
@@ -94,8 +95,8 @@ class _ReadAloudButtonState extends State<ReadAloudButton> {
             key: const Key('voice-speak'),
             visualDensity: VisualDensity.compact,
             tooltip: speaking
-                ? tr3('停止朗读', 'Тоқтату', 'Остановить')
-                : tr3('朗读', 'Дауыстап оқу', 'Озвучить'),
+                ? tr3('停止朗读', 'Тоқтату', 'Остановить', 'Stop')
+                : tr3('朗读', 'Дауыстап оқу', 'Озвучить', 'Read aloud'),
             onPressed: tap,
             icon: status.busy
                 ? SizedBox(
@@ -175,7 +176,8 @@ class _VoiceDownloadDialogState extends State<_VoiceDownloadDialog> {
                 color: colors.primary, size: 28)),
         title: Text(
             tr3('下载哈萨克语语音', 'Қазақша дауысты жүктеу',
-                'Скачать казахский голос'),
+                'Скачать казахский голос',
+                'Download the Kazakh voice'),
             textAlign: TextAlign.center),
         content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -186,21 +188,24 @@ class _VoiceDownloadDialogState extends State<_VoiceDownloadDialog> {
                     tr3(
                         '下载一次，以后助手的回答就能在手机上读出来，不用联网。',
                         'Бір рет жүктеңіз: көмекшінің жауабы телефонның өзінде, интернетсіз дауыстап оқылады.',
-                        'Скачайте один раз, и ответы помощника будут озвучиваться прямо на телефоне, без интернета.'),
+                        'Скачайте один раз, и ответы помощника будут озвучиваться прямо на телефоне, без интернета.',
+                        "Download once and the assistant's replies are read aloud right on your phone, with no internet."),
                     textAlign: TextAlign.center),
                 const SizedBox(height: 12),
                 Text(
                     tr3(
                         '大小 ${_mb(reader.downloadBytes)}，建议连 Wi-Fi',
                         'Көлемі ${_mb(reader.downloadBytes)}, Wi-Fi арқылы жүктеген дұрыс',
-                        'Размер ${_mb(reader.downloadBytes)}, лучше по Wi-Fi'),
+                        'Размер ${_mb(reader.downloadBytes)}, лучше по Wi-Fi',
+                        'Size ${_mb(reader.downloadBytes)}; Wi-Fi is best'),
                     textAlign: TextAlign.center,
                     style: quiet),
                 if (s.phase == VoiceModelPhase.failed) ...[
                   const SizedBox(height: 12),
                   Text(
                       tr3('下载没成功：${s.error}', 'Жүктелмеді: ${s.error}',
-                          'Не скачалось: ${s.error}'),
+                          'Не скачалось: ${s.error}',
+                          'Download failed: ${s.error}'),
                       key: const Key('voice-download-error'),
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodySmall
@@ -225,15 +230,16 @@ class _VoiceDownloadDialogState extends State<_VoiceDownloadDialog> {
                 Text(
                     switch (s.phase) {
                       VoiceModelPhase.waiting =>
-                        tr3('等待网络…', 'Желіні күтуде…', 'Ждём сеть…'),
+                        tr3('等待网络…', 'Желіні күтуде…', 'Ждём сеть…', 'Waiting for the network…'),
                       VoiceModelPhase.verifying =>
-                        tr3('正在校验…', 'Тексерілуде…', 'Проверка…'),
+                        tr3('正在校验…', 'Тексерілуде…', 'Проверка…', 'Checking…'),
                       VoiceModelPhase.paused =>
-                        tr3('已暂停', 'Тоқтатылды', 'Пауза'),
+                        tr3('已暂停', 'Тоқтатылды', 'Пауза', 'Paused'),
                       _ => tr3(
                           '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}，下完会自动朗读',
                           '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}, біткен соң жауап оқылады',
-                          '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}, после загрузки ответ прозвучит'),
+                          '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}, после загрузки ответ прозвучит',
+                          '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}; the reply plays after the download'),
                     },
                     textAlign: TextAlign.center,
                     style: quiet),
@@ -254,23 +260,23 @@ class _VoiceDownloadDialogState extends State<_VoiceDownloadDialog> {
                       reader.cancel();
                       Navigator.pop(context, false);
                     },
-                    child: Text(tr3('取消下载', 'Тоқтату', 'Отменить'))),
+                    child: Text(tr3('取消下载', 'Тоқтату', 'Отменить', 'Cancel'))),
                 FilledButton.tonal(
                     key: const Key('voice-download-hide'),
                     onPressed: () => Navigator.pop(context),
-                    child: Text(tr3('后台下载', 'Фонда жүктеу', 'В фоне'))),
+                    child: Text(tr3('后台下载', 'Фонда жүктеу', 'В фоне', 'In background'))),
               ]
             : [
                 TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: Text(tr3('以后再说', 'Кейін', 'Не сейчас'))),
+                    child: Text(tr3('以后再说', 'Кейін', 'Не сейчас', 'Not now'))),
                 FilledButton.icon(
                     key: const Key('voice-download-start'),
                     onPressed: download,
                     icon: const Icon(Icons.download_rounded, size: 18),
                     label: Text(s.phase == VoiceModelPhase.paused
-                        ? tr3('继续', 'Жалғастыру', 'Продолжить')
-                        : tr3('下载', 'Жүктеу', 'Скачать'))),
+                        ? tr3('继续', 'Жалғастыру', 'Продолжить', 'Continue')
+                        : tr3('下载', 'Жүктеу', 'Скачать', 'Download'))),
               ]);
   }
 }

@@ -13,9 +13,9 @@ extension _EditorHeader on _HouseEditorState {
     String meters(int mm) => dec((mm / 1000)
         .toStringAsFixed(mm % 1000 == 0 ? 0 : (mm % 100 == 0 ? 1 : 2)));
     final roof = switch (doc.roof.type) {
-      RoofType.flat => tr3('平屋顶', 'тегіс шатыр', 'плоская крыша'),
-      RoofType.gable => tr3('双坡屋顶', 'қос беткейлі шатыр', 'двускатная крыша'),
-      RoofType.hip => tr3('四坡屋顶', 'төрт беткейлі шатыр', 'вальмовая крыша'),
+      RoofType.flat => tr3('平屋顶', 'тегіс шатыр', 'плоская крыша', 'flat roof'),
+      RoofType.gable => tr3('双坡屋顶', 'қос беткейлі шатыр', 'двускатная крыша', 'gable roof'),
+      RoofType.hip => tr3('四坡屋顶', 'төрт беткейлі шатыр', 'вальмовая крыша', 'hip roof'),
     };
     final title = InkWell(
         borderRadius: BorderRadius.circular(6),
@@ -43,41 +43,48 @@ extension _EditorHeader on _HouseEditorState {
                             color: t.ink))),
               ]),
               Text(
-                  '$w × $d $unitMm · ${doc.floors.length} ${tr3('层', 'қабат', 'этаж')} · ${tr3('外墙', 'сыртқы қабырға', 'наружная стена')} ${doc.defaults.outerWallThickness} $unitMm · $roof',
+                  '$w × $d $unitMm · ${doc.floors.length} ${tr3('层', 'қабат', 'этаж', 'floor')} · ${tr3('外墙', 'сыртқы қабырға', 'наружная стена', 'outer wall')} ${doc.defaults.outerWallThickness} $unitMm · $roof',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: mono(size: 12, color: t.muted)),
             ]));
-    final language = Seg<AppLang>(
-        label: 'Тіл / 语言',
-        value: app.lang,
-        items: const [
-          (AppLang.kk, 'Қазақша'),
-          (AppLang.ru, 'Русский'),
-          (AppLang.zh, '中文')
-        ],
-        onChanged: choose.setLang);
+    // Four languages no longer fit a segmented switch beside the tools:
+    // the header names the current one and opens the list.
+    final language = Tooltip(
+        message: 'Тіл / Язык / 语言 / Language',
+        child: OutlinedButton.icon(
+            onPressed: chooseLanguage,
+            style: OutlinedButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 10)),
+            icon: const Icon(Icons.translate, size: 16),
+            label: Text(switch (app.lang) {
+              AppLang.kk => 'Қазақша',
+              AppLang.ru => 'Русский',
+              AppLang.zh => '中文',
+              AppLang.en => 'English',
+            })));
     final theme = Seg<ThemeChoice>(
         value: app.theme,
         items: [
-          (ThemeChoice.auto, tr3('◐ 自动', '◐ Авто', '◐ Авто')),
-          (ThemeChoice.day, tr3('☀ 日间', '☀ Күндіз', '☀ День')),
-          (ThemeChoice.night, tr3('☾ 夜间', '☾ Түн', '☾ Ночь')),
+          (ThemeChoice.auto, tr3('◐ 自动', '◐ Авто', '◐ Авто', '◐ Auto')),
+          (ThemeChoice.day, tr3('☀ 日间', '☀ Күндіз', '☀ День', '☀ Day')),
+          (ThemeChoice.night, tr3('☾ 夜间', '☾ Түн', '☾ Ночь', '☾ Night')),
         ],
         onChanged: choose.setTheme);
     final floors = Seg<int>(
-        label: tr3('楼层', 'Қабат', 'Этаж'),
+        label: tr3('楼层', 'Қабат', 'Этаж', 'Floor'),
         value: floorIndex,
         items: [
           for (var i = 0; i < doc.floors.length; i++)
             (i, displayFloorName(doc.floors[i].name))
         ],
         onChanged: selectFloor);
-    Widget icon(
-            String zh, String kk, String ru, IconData data, VoidCallback? onTap,
+    Widget icon(String zh, String kk, String ru, String en, IconData data,
+            VoidCallback? onTap,
             {double size = 20}) =>
         IconButton(
-            tooltip: zh.trKey(kk, ru),
+            tooltip: zh.trKey(kk, ru, en),
             onPressed: onTap,
             visualDensity: wide ? null : VisualDensity.compact,
             icon: Icon(data, size: size));
@@ -86,7 +93,7 @@ extension _EditorHeader on _HouseEditorState {
     final addFloor = wide
         ? IconButton(
             key: const Key('add-floor'),
-            tooltip: '加一层'.trKey('Қабат қосу', 'Добавить этаж'),
+            tooltip: '加一层'.trKey('Қабат қосу', 'Добавить этаж', 'Add a floor'),
             onPressed: addFloorAbove,
             icon: const Icon(Icons.add, size: 20))
         : Padding(
@@ -98,23 +105,24 @@ extension _EditorHeader on _HouseEditorState {
                     padding: const EdgeInsets.symmetric(horizontal: 10)),
                 onPressed: addFloorAbove,
                 icon: const Icon(Icons.add, size: 16),
-                label: Text(tr3('加一层', 'Қабат қосу', 'Этаж'))));
+                label: Text(tr3('加一层', 'Қабат қосу', 'Этаж', 'Floor'))));
     final floorOps = icon('楼层操作', 'Қабат әрекеттері', 'Действия с этажом',
-        Icons.layers_outlined, floorOptions);
+        'Floor actions', Icons.layers_outlined, floorOptions);
     final sizeButton = icon('房屋长宽', 'Үйдің ені мен ұзындығы',
-        'Ширина и длина дома', Icons.aspect_ratio, footprintOptions);
+        'Ширина и длина дома', 'House width and length', Icons.aspect_ratio, footprintOptions);
     final history_ = Row(mainAxisSize: MainAxisSize.min, children: [
-      icon('撤销', 'Болдырмау', 'Отменить', Icons.undo,
+      icon('撤销', 'Болдырмау', 'Отменить', 'Undo', Icons.undo,
           history.canUndo ? undo : null,
           size: 21),
-      icon('重做', 'Қайталау', 'Повторить', Icons.redo,
+      icon('重做', 'Қайталау', 'Повторить', 'Redo', Icons.redo,
           history.canRedo ? redo : null,
           size: 21),
     ]);
     final saveButton = icon(
-        '立即保存', 'Қазір сақтау', 'Сохранить сейчас', Icons.save_outlined, save);
+        '立即保存', 'Қазір сақтау', 'Сохранить сейчас', 'Save now',
+        Icons.save_outlined, save);
     final more = PopupMenuButton<String>(
-        tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия'),
+        tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия', 'More actions'),
         onSelected: (value) {
           if (value == 'checks') showTab('iss');
           if (value == 'roof') chooseRoof();
@@ -136,46 +144,49 @@ extension _EditorHeader on _HouseEditorState {
         itemBuilder: (context) => [
               PopupMenuItem(
                   value: 'roof',
-                  child: Text(tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши'))),
+                  child: Text(tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши', 'Roof type'))),
               PopupMenuItem(
                   value: 'checks',
                   child:
-                      Text(tr3('设计检查', 'Жобаны тексеру', 'Проверка проекта'))),
+                      Text(tr3('设计检查', 'Жобаны тексеру', 'Проверка проекта', 'Design check'))),
               PopupMenuItem(
                   value: 'variant',
                   child: Text(tr3('复制为新方案', 'Жаңа нұсқа ретінде көшіру',
-                      'Копировать как новый вариант'))),
+                      'Копировать как новый вариант',
+                      'Copy as a new option'))),
               PopupMenuItem(
                   value: 'compare',
                   child: Text(tr3(
-                      '方案对比', 'Нұсқаларды салыстыру', 'Сравнение вариантов'))),
+                      '方案对比', 'Нұсқаларды салыстыру', 'Сравнение вариантов', 'Compare options'))),
               PopupMenuItem(
                   value: 'settings',
-                  child: Text(tr3('设置', 'Баптаулар', 'Настройки'))),
+                  child: Text(tr3('设置', 'Баптаулар', 'Настройки', 'Settings'))),
               PopupMenuItem(
                   value: 'pdf',
                   child: Text(tr3('导出图纸 PDF', 'Сызбаларды PDF ету',
-                      'Экспорт чертежей в PDF'))),
+                      'Экспорт чертежей в PDF',
+                      'Export drawings to PDF'))),
               PopupMenuItem(
                   value: 'png',
                   child: Text(tr3('导出本层平面图 PNG', 'Қабат жоспарын PNG ету',
-                      'Экспорт плана этажа в PNG'))),
+                      'Экспорт плана этажа в PNG',
+                      'Export floor plan to PNG'))),
               PopupMenuItem(
                   value: 'export',
                   child: Text(tr3(
-                      '导出 .house', '.house файлын шығару', 'Экспорт .house'))),
+                      '导出 .house', '.house файлын шығару', 'Экспорт .house', 'Export .house'))),
               // On phones language and theme live here, not in the header,
               // so the drawing gets the room.
               if (!wide) ...[
                 const PopupMenuDivider(),
                 const PopupMenuItem(
-                    value: 'lang', child: Text('Тіл / Язык / 语言')),
+                    value: 'lang', child: Text('Тіл / Язык / 语言 / Language')),
                 PopupMenuItem(
                     value: 'theme',
                     child: Text(switch (app.theme) {
-                      ThemeChoice.auto => tr3('☀ 日间', '☀ Күндіз', '☀ День'),
-                      ThemeChoice.day => tr3('☾ 夜间', '☾ Түн', '☾ Ночь'),
-                      ThemeChoice.night => tr3('◐ 自动', '◐ Авто', '◐ Авто'),
+                      ThemeChoice.auto => tr3('☀ 日间', '☀ Күндіз', '☀ День', '☀ Day'),
+                      ThemeChoice.day => tr3('☾ 夜间', '☾ Түн', '☾ Ночь', '☾ Night'),
+                      ThemeChoice.night => tr3('◐ 自动', '◐ Авто', '◐ Авто', '◐ Auto'),
                     })),
               ],
             ]);
@@ -294,9 +305,9 @@ extension _EditorHeader on _HouseEditorState {
               color: Tokens.mix(t.line, 0.55, t.bg),
               borderRadius: BorderRadius.circular(10)),
           child: Row(children: [
-            segment('draw', tr3('画图', 'Сызу', 'Чертёж')),
-            segment('view', tr3('看效果', 'Көрініс', 'Вид')),
-            segment('build', tr3('造价与施工', 'Смета, құрылыс', 'Смета и стройка')),
+            segment('draw', tr3('画图', 'Сызу', 'Чертёж', 'Drawing')),
+            segment('view', tr3('看效果', 'Көрініс', 'Вид', 'View')),
+            segment('build', tr3('造价与施工', 'Смета, құрылыс', 'Смета и стройка', 'Estimate and build')),
           ])),
       Padding(
           padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
@@ -323,8 +334,8 @@ extension _EditorHeader on _HouseEditorState {
                           : Icons.grid_on_outlined,
                       size: 16),
                   label: Text(group == 'draw'
-                      ? tr3('看 3D', '3D көру', 'В 3D')
-                      : tr3('回平面', 'Жоспарға', 'К плану'))),
+                      ? tr3('看 3D', '3D көру', 'В 3D', 'To 3D')
+                      : tr3('回平面', 'Жоспарға', 'К плану', 'To the plan'))),
           ])),
       Divider(height: 1, color: t.line),
     ]);
@@ -356,17 +367,17 @@ extension _EditorHeader on _HouseEditorState {
                   TabStrip(tabs: editorTabs, current: tab, onSelect: showTab)),
           const VoiceSlot(size: 40),
           IconButton(
-              tooltip: '撤销'.trKey('Болдырмау', 'Отменить'),
+              tooltip: '撤销'.trKey('Болдырмау', 'Отменить', 'Undo'),
               visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.undo, size: 20),
               onPressed: history.canUndo ? undo : null),
           IconButton(
-              tooltip: '重做'.trKey('Қайталау', 'Повторить'),
+              tooltip: '重做'.trKey('Қайталау', 'Повторить', 'Redo'),
               visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.redo, size: 20),
               onPressed: history.canRedo ? redo : null),
           PopupMenuButton<String>(
-              tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия'),
+              tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия', 'More actions'),
               onSelected: (value) {
                 if (value == 'checks') showTab('iss');
                 if (value == 'roof') chooseRoof();
@@ -392,42 +403,47 @@ extension _EditorHeader on _HouseEditorState {
               itemBuilder: (context) => [
                     PopupMenuItem(
                         value: 'roof',
-                        child: Text(tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши'))),
+                        child: Text(tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши', 'Roof type'))),
                     PopupMenuItem(
                         value: 'checks',
                         child: Text(
-                            tr3('设计检查', 'Жобаны тексеру', 'Проверка проекта'))),
+                            tr3('设计检查', 'Жобаны тексеру', 'Проверка проекта', 'Design check'))),
                     PopupMenuItem(
                         value: 'variant',
                         child: Text(tr3('复制为新方案', 'Жаңа нұсқа ретінде көшіру',
-                            'Копировать как новый вариант'))),
+                            'Копировать как новый вариант',
+                            'Copy as a new option'))),
                     PopupMenuItem(
                         value: 'compare',
                         child: Text(tr3('方案对比', 'Нұсқаларды салыстыру',
-                            'Сравнение вариантов'))),
+                            'Сравнение вариантов',
+                            'Compare options'))),
                     PopupMenuItem(
                         value: 'settings',
-                        child: Text(tr3('设置', 'Баптаулар', 'Настройки'))),
+                        child: Text(tr3('设置', 'Баптаулар', 'Настройки', 'Settings'))),
                     PopupMenuItem(
                         value: 'pdf',
                         child: Text(tr3('导出图纸 PDF', 'Сызбаларды PDF ету',
-                            'Экспорт чертежей в PDF'))),
+                            'Экспорт чертежей в PDF',
+                            'Export drawings to PDF'))),
                     PopupMenuItem(
                         value: 'png',
                         child: Text(tr3('导出本层平面图 PNG', 'Қабат жоспарын PNG ету',
-                            'Экспорт плана этажа в PNG'))),
+                            'Экспорт плана этажа в PNG',
+                            'Export floor plan to PNG'))),
                     PopupMenuItem(
                         value: 'export',
                         child: Text(tr3('导出 .house', '.house файлын шығару',
-                            'Экспорт .house'))),
+                            'Экспорт .house',
+                            'Export .house'))),
                     const PopupMenuItem(
-                        value: 'lang', child: Text('Тіл / Язык / 语言')),
+                        value: 'lang', child: Text('Тіл / Язык / 语言 / Language')),
                     PopupMenuItem(
                         value: 'theme',
                         child: Text(switch (app.theme) {
-                          ThemeChoice.auto => tr3('☀ 日间', '☀ Күндіз', '☀ День'),
-                          ThemeChoice.day => tr3('☾ 夜间', '☾ Түн', '☾ Ночь'),
-                          ThemeChoice.night => tr3('◐ 自动', '◐ Авто', '◐ Авто'),
+                          ThemeChoice.auto => tr3('☀ 日间', '☀ Күндіз', '☀ День', '☀ Day'),
+                          ThemeChoice.day => tr3('☾ 夜间', '☾ Түн', '☾ Ночь', '☾ Night'),
+                          ThemeChoice.night => tr3('◐ 自动', '◐ Авто', '◐ Авто', '◐ Auto'),
                         })),
                   ]),
         ]));
@@ -443,7 +459,8 @@ extension _EditorHeader on _HouseEditorState {
               for (final (value, label) in const [
                 (AppLang.kk, 'Қазақша'),
                 (AppLang.ru, 'Русский'),
-                (AppLang.zh, '中文')
+                (AppLang.zh, '中文'),
+                (AppLang.en, 'English')
               ])
                 ListTile(
                     title: Text(label),
@@ -469,10 +486,10 @@ extension _EditorHeader on _HouseEditorState {
 
   Future<void> renameProject() async {
     final value = await promptText(context,
-        title: tr3('设计名称', 'Жоба атауы', 'Название проекта'),
+        title: tr3('设计名称', 'Жоба атауы', 'Название проекта', 'Design name'),
         initial: history.present.meta.name,
-        cancel: tr3('取消', 'Болдырмау', 'Отмена'),
-        ok: tr3('确定', 'Жарайды', 'ОК'));
+        cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'),
+        ok: tr3('确定', 'Жарайды', 'ОК', 'OK'));
     if (value == null || value.trim().isEmpty || !mounted) return;
     final meta = history.present.meta;
     update(() {
@@ -492,5 +509,6 @@ extension _EditorHeader on _HouseEditorState {
 
 extension _KeyText on String {
   /// Chinese tooltip kept as the stable key; Kazakh shown when chosen.
-  String trKey(String kk, [String? ru]) => tr3(this, kk, ru ?? kk);
+  String trKey(String kk, [String? ru, String? en]) =>
+      tr3(this, kk, ru ?? kk, en);
 }

@@ -104,7 +104,7 @@ final appNavigator = GlobalKey<NavigatorState>();
 final AudioDevice? voiceAudio =
     voiceBuiltIn && voicePlatform ? PluginAudio() : null;
 
-const _locales = [Locale('kk'), Locale('ru'), Locale('zh')];
+const _locales = [Locale('kk'), Locale('ru'), Locale('zh'), Locale('en')];
 
 /// Light and dark themes per theme choice, built once each: a language
 /// switch rebuilds the app but keeps the same ThemeData objects.

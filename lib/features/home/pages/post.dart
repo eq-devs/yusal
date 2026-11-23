@@ -117,11 +117,11 @@ class _PostPageState extends ConsumerState<PostPage> {
                 body: EmptyState(
                     icon: Icons.home_outlined,
                     title: tr3(
-                        '这栋房子已经不可见', 'Үй қолжетімсіз', 'Дом больше недоступен'),
+                        '这栋房子已经不可见', 'Үй қолжетімсіз', 'Дом больше недоступен', 'The house is no longer available'),
                     action: OutlinedButton(
                         onPressed: () => Navigator.of(context)
                             .pushNamedAndRemoveUntil('/', (_) => false),
-                        child: Text(tr3('首页', 'Басты', 'Главная')))));
+                        child: Text(tr3('首页', 'Басты', 'Главная', 'Home')))));
           }
           final me = context.session.currentAccount;
           final mine = me?.id == p.ownerId;
@@ -159,11 +159,11 @@ class _PostPageState extends ConsumerState<PostPage> {
           Future<void> share() async {
             final link = houseLink(p.id);
             final c = await pickOne<String>(
-                context, tr3('分享这栋房子', 'Үймен бөлісу', 'Поделиться домом'), [
-              ('copy', tr3('复制链接', 'Сілтемені көшіру', 'Скопировать ссылку')),
+                context, tr3('分享这栋房子', 'Үймен бөлісу', 'Поделиться домом', 'Share the house'), [
+              ('copy', tr3('复制链接', 'Сілтемені көшіру', 'Скопировать ссылку', 'Copy link')),
               (
                 'share',
-                tr3('通过其他应用分享', 'Басқа қолданбамен бөлісу', 'Отправить через…')
+                tr3('通过其他应用分享', 'Басқа қолданбамен бөлісу', 'Отправить через…', 'Send via…')
               ),
             ]);
             if (c == null || !context.mounted) return;
@@ -173,7 +173,8 @@ class _PostPageState extends ConsumerState<PostPage> {
                 toast(
                     context,
                     tr3('已复制，任何人打开都能看', 'Көшірілді, кез келген адам аша алады',
-                        'Скопировано, откроется у любого'));
+                        'Скопировано, откроется у любого',
+                        'Copied; it opens for anyone'));
               }
             } else {
               try {
@@ -185,7 +186,8 @@ class _PostPageState extends ConsumerState<PostPage> {
                   toast(
                       context,
                       tr3('此设备不支持系统分享，已复制链接', 'Сілтеме көшірілді',
-                          'Ссылка скопирована'));
+                          'Ссылка скопирована',
+                          'Link copied'));
                 }
               }
             }
@@ -193,36 +195,39 @@ class _PostPageState extends ConsumerState<PostPage> {
 
           Future<void> more() async {
             final c = await pickOne<String>(context, p.title, [
-              if (mine) ('edit', tr3('修改标题和说明', 'Өңдеу', 'Изменить описание')),
+              if (mine) ('edit', tr3('修改标题和说明', 'Өңдеу', 'Изменить описание', 'Edit the description')),
               if (mine)
                 (
                   'builders',
                   p.openForBuilders
                       ? tr3('不再找施工方', 'Құрылысшы іздеуді тоқтату',
-                          'Больше не ищу строителей')
-                      : tr3('标记为正在找施工方', 'Құрылысшы іздеймін', 'Ищу строителей')
+                          'Больше не ищу строителей',
+                          'No longer looking for builders')
+                      : tr3('标记为正在找施工方', 'Құрылысшы іздеймін', 'Ищу строителей', 'Looking for builders')
                 ),
               if (mine)
                 (
                   'build',
                   p.showBuild
                       ? tr3('不再公开谁在建和花费', 'Құрылысшыларды жасыру',
-                          'Скрыть строителей и расходы')
+                          'Скрыть строителей и расходы',
+                          'Hide builders and costs')
                       : tr3('公开谁在建和花费', 'Құрылысшыларды көрсету',
-                          'Показать строителей и расходы')
+                          'Показать строителей и расходы',
+                          'Show builders and costs')
                 ),
-              if (mine) ('hide', tr3('下架这栋房子', 'Жасыру', 'Скрыть')),
-              if (!mine) ('report', tr3('举报', 'Шағымдану', 'Пожаловаться')),
+              if (mine) ('hide', tr3('下架这栋房子', 'Жасыру', 'Скрыть', 'Hide')),
+              if (!mine) ('report', tr3('举报', 'Шағымдану', 'Пожаловаться', 'Report')),
             ]);
             if (c == null || !context.mounted) return;
             switch (c) {
               case 'edit':
                 final title = await askText(
-                    context, tr3('标题', 'Атауы', 'Название'),
+                    context, tr3('标题', 'Атауы', 'Название', 'Title'),
                     initial: p.title, lines: 1);
                 if (title == null || !context.mounted) return;
                 final story = await askText(
-                    context, tr3('说明', 'Сипаттама', 'Описание'),
+                    context, tr3('说明', 'Сипаттама', 'Описание', 'Description'),
                     initial: p.story, required: false);
                 if (!context.mounted) return;
                 await attempt(
@@ -241,12 +246,13 @@ class _PostPageState extends ConsumerState<PostPage> {
                         .read(postRepositoryProvider)
                         .updatePost(p.copyWith(showBuild: !p.showBuild)),
                     success: p.showBuild
-                        ? tr3('已不再公开', 'Жасырылды', 'Скрыто')
+                        ? tr3('已不再公开', 'Жасырылды', 'Скрыто', 'Hidden')
                         : tr3('访客现在能看到谁在建、已验收多少', 'Көрсетілді',
-                            'Теперь видно, кто строит и сколько принято'));
+                            'Теперь видно, кто строит и сколько принято',
+                            "Now everyone sees who's building and how much is accepted"));
               case 'hide':
                 if (await confirmDialog(
-                        context, tr3('下架这栋房子？', 'Жасыру?', 'Скрыть дом?'),
+                        context, tr3('下架这栋房子？', 'Жасыру?', 'Скрыть дом?', 'Hide the house?'),
                         danger: true) &&
                     context.mounted) {
                   await attempt(
@@ -299,7 +305,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                     leading: _PostLeading(fromLink: fromLink),
                     actions: [
                       IconAction(
-                          label: tr3('分享', 'Бөлісу', 'Поделиться'),
+                          label: tr3('分享', 'Бөлісу', 'Поделиться', 'Share'),
                           icon: const YusalIcon(YIcon.share, size: 20),
                           onPressed: share),
                       if (!visitorBar)
@@ -312,8 +318,8 @@ class _PostPageState extends ConsumerState<PostPage> {
                                     .toggleLike(p.id)),
                             builder: (context, liked, toggle) => IconAction(
                                 label: liked
-                                    ? tr3('取消喜欢', 'Ұнатуды алу', 'Убрать лайк')
-                                    : tr3('喜欢', 'Ұнайды', 'Нравится'),
+                                    ? tr3('取消喜欢', 'Ұнатуды алу', 'Убрать лайк', 'Unlike')
+                                    : tr3('喜欢', 'Ұнайды', 'Нравится', 'Like'),
                                 color: liked ? t.accent : null,
                                 icon: PopOnActive(
                                     active: liked,
@@ -324,7 +330,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                                         size: 20)),
                                 onPressed: toggle)),
                       IconAction(
-                          label: tr3('更多', 'Тағы', 'Ещё'),
+                          label: tr3('更多', 'Тағы', 'Ещё', 'More'),
                           icon: const Icon(Icons.more_horiz, size: 20),
                           onPressed: more),
                       const SizedBox(width: YSpace.sm),
@@ -404,7 +410,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                                               const SizedBox(width: 6),
                                               Expanded(
                                                   child: Text(
-                                                      '${tr3('正在招：', 'Іздеуде: ', 'Ищут: ')}${open.map((d) => d.current.title).join(listSep)}',
+                                                      '${tr3('正在招：', 'Іздеуде: ', 'Ищут: ', 'Looking for: ')}${open.map((d) => d.current.title).join(listSep)}',
                                                       style: TextStyle(
                                                           color: t.accent,
                                                           fontWeight: FontWeight
@@ -415,7 +421,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                                       if (snap != null &&
                                           snap.lines.isNotEmpty) ...[
                                         SectionTitle(tr3(
-                                            '工程量', 'Көлемдер', 'Объёмы работ')),
+                                            '工程量', 'Көлемдер', 'Объёмы работ', 'Quantities')),
                                         _Quantities(snapshot: snap),
                                       ],
                                       // Recruiting; a house shared only to
@@ -425,14 +431,15 @@ class _PostPageState extends ConsumerState<PostPage> {
                                           build != null) ...[
                                         SectionTitle(
                                             tr3('这栋房子在招谁', 'Бұл үйге кім керек',
-                                                'Кто нужен для этого дома'),
+                                                'Кто нужен для этого дома',
+                                                'Who this house needs'),
                                             trailing: mine && snap != null
                                                 ? TextButton.icon(
                                                     onPressed: recruit,
                                                     icon: const Icon(Icons.add,
                                                         size: 18),
                                                     label: Text(tr3('招人',
-                                                        'Іздеу', 'Найти')))
+                                                        'Іздеу', 'Найти', 'Find')))
                                                 : null),
                                         if (demands.isEmpty)
                                           Text(
@@ -441,21 +448,25 @@ class _PostPageState extends ConsumerState<PostPage> {
                                                   ? tr3(
                                                       '已发布的阶段都有人在做了。需要下一个阶段时再招人。',
                                                       'Барлық кезеңнің орындаушысы бар.',
-                                                      'На все этапы уже есть исполнители.')
+                                                      'На все этапы уже есть исполнители.',
+                                                      'Every stage already has someone.')
                                                   : mine
                                                       ? tr3(
                                                           '还没有为这栋房子发布过需求。点“招人”，工程量会从设计里自动带出来。',
                                                           'Әлі тапсырыс жоқ. «Іздеу» басыңыз.',
-                                                          'Заявок пока нет. Нажмите «Найти», объёмы подставятся из проекта.')
+                                                          'Заявок пока нет. Нажмите «Найти», объёмы подставятся из проекта.',
+                                                          'No requests yet. Tap “Find” and the quantities come from the design.')
                                                       : p.openForBuilders
                                                           ? tr3(
                                                               '设计者正在找施工方，但还没发布具体需求。可以先私信。',
                                                               'Иесі құрылысшы іздейді. Жазып көріңіз.',
-                                                              'Автор ищет строителей, но заявки ещё нет. Напишите ему.')
+                                                              'Автор ищет строителей, но заявки ещё нет. Напишите ему.',
+                                                              "The author is looking for builders but hasn't posted a request yet. Message them.")
                                                           : tr3(
                                                               '暂时没有在招的人。',
                                                               'Қазір іздемейді.',
-                                                              'Сейчас никого не ищет.'),
+                                                              'Сейчас никого не ищет.',
+                                                              'Not looking for anyone now.'),
                                               style: TextStyle(color: t.muted)),
                                         for (final d in demands)
                                           Padding(
@@ -515,7 +526,7 @@ class _PostPageState extends ConsumerState<PostPage> {
           ? open.first
           : await pickOne<Demand>(
               context,
-              tr3('选一个阶段', 'Кезеңді таңдаңыз', 'Выберите этап'),
+              tr3('选一个阶段', 'Кезеңді таңдаңыз', 'Выберите этап', 'Choose a stage'),
               [for (final d in open) (d, d.current.title)]);
       if (d != null && context.mounted) {
         await pushPage<void>(context, (_) => DemandDetailPage(demandId: d.id));
@@ -528,12 +539,13 @@ class _PostPageState extends ConsumerState<PostPage> {
       // Shared to hear opinions: show how it is going and offer the step
       // to building when the author is ready.
       summary = post.commentCount == 0
-          ? tr3('等大家点评', 'Пікір күтілуде', 'Ждём отзывов')
+          ? tr3('等大家点评', 'Пікір күтілуде', 'Ждём отзывов', 'Waiting for feedback')
           // commentCount includes replies, unlike the critiques header.
           : tr3(
               '${post.commentCount} 条点评和回复',
               '${post.commentCount} пікір мен жауап',
-              'Отзывов и ответов: ${post.commentCount}');
+              'Отзывов и ответов: ${post.commentCount}',
+              'Reviews and replies: ${post.commentCount}');
       main = FilledButton(
           key: const Key('post-ready-to-build'),
           onPressed: recruit == null
@@ -547,34 +559,37 @@ class _PostPageState extends ConsumerState<PostPage> {
                   if (ok != null) recruit();
                 },
           child: Text(tr3('准备开建？为它找人', 'Салуға дайынсыз ба?',
-              'Готовы строить? Найти мастеров')));
+              'Готовы строить? Найти мастеров',
+              'Ready to build? Find pros')));
     } else if (mine) {
       if (open.isEmpty && recruit == null) return null;
       summary = open.isEmpty
           ? building
-              ? tr3('施工中', 'Құрылыс жүріп жатыр', 'Идёт стройка')
-              : tr3('还没为它找人', 'Әлі ешкім ізделмейді', 'Пока никого не ищете')
+              ? tr3('施工中', 'Құрылыс жүріп жатыр', 'Идёт стройка', 'Under construction')
+              : tr3('还没为它找人', 'Әлі ешкім ізделмейді', 'Пока никого не ищете', "You're not looking for anyone yet")
           : tr3('在招 ${open.length} 个阶段', '${open.length} кезең ашық',
-              'Открыто этапов: ${open.length}');
+              'Открыто этапов: ${open.length}',
+              'Open stages: ${open.length}');
       main = FilledButton(
           key: const Key('post-main-action'),
           onPressed: open.isEmpty ? recruit : openDemand,
           child: Text(open.isEmpty
               ? building
-                  ? tr3('招下一个阶段', 'Келесі кезең', 'Следующий этап')
-                  : tr3('为这栋房子找人', 'Адам іздеу', 'Найти мастеров')
-              : tr3('管理找人', 'Іздеуді басқару', 'Управлять поиском')));
+                  ? tr3('招下一个阶段', 'Келесі кезең', 'Следующий этап', 'Next stage')
+                  : tr3('为这栋房子找人', 'Адам іздеу', 'Найти мастеров', 'Find pros')
+              : tr3('管理找人', 'Іздеуді басқару', 'Управлять поиском', 'Manage the search')));
     } else if (isPro && (open.isNotEmpty || post.openForBuilders)) {
       summary = open.isNotEmpty
           ? tr3('${open.length} 个阶段在招人', '${open.length} кезең ашық',
-              'Открыто этапов: ${open.length}')
-          : tr3('房主在找施工方', 'Құрылысшы іздейді', 'Ищет строителей');
+              'Открыто этапов: ${open.length}',
+              'Open stages: ${open.length}')
+          : tr3('房主在找施工方', 'Құрылысшы іздейді', 'Ищет строителей', 'Looking for builders');
       main = FilledButton(
           key: const Key('post-main-action'),
           onPressed: open.isEmpty ? contact : openDemand,
           child: Text(open.isEmpty
-              ? tr3('我能建这栋房子', 'Мен сала аламын', 'Я могу построить')
-              : tr3('去报名 / 报价', 'Өтінім беру', 'Откликнуться')));
+              ? tr3('我能建这栋房子', 'Мен сала аламын', 'Я могу построить', 'I can build this')
+              : tr3('去报名 / 报价', 'Өтінім беру', 'Откликнуться', 'Respond')));
     } else {
       // A visitor: like and comment sit in the bar with their counts, as
       // in any feed; the main button starts their own house from this one.
@@ -583,7 +598,7 @@ class _PostPageState extends ConsumerState<PostPage> {
           toggle: () => attempt(context,
               () => context.read(postRepositoryProvider).toggleLike(post.id)),
           builder: (context, liked, toggle) => _CountAction(
-              tooltip: tr3('收藏', 'Сақтау', 'Сохранить'),
+              tooltip: tr3('收藏', 'Сақтау', 'Сохранить', 'Save'),
               count: post.likeCount,
               color: liked ? t.accent : null,
               icon: PopOnActive(
@@ -593,7 +608,7 @@ class _PostPageState extends ConsumerState<PostPage> {
               onTap: toggle));
       final comment = _CountAction(
           key: const Key('post-comment'),
-          tooltip: tr3('写点评', 'Пікір жазу', 'Написать отзыв'),
+          tooltip: tr3('写点评', 'Пікір жазу', 'Написать отзыв', 'Write a review'),
           count: post.commentCount,
           icon: const Icon(Icons.chat_bubble_outline, size: 21),
           onTap: () => openCritiqueComposer(context, post));
@@ -622,7 +637,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                       decoration: BoxDecoration(
                           color: t.surface,
                           borderRadius: BorderRadius.circular(YRadius.pill)),
-                      child: Text(tr3('说说你的看法…', 'Пікіріңіз…', 'Что думаете?'),
+                      child: Text(tr3('说说你的看法…', 'Пікіріңіз…', 'Что думаете?', 'What do you think?'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(color: t.muted))))),
@@ -663,15 +678,16 @@ class _BuildSection extends StatelessWidget {
     final b = info;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       SectionTitle(b.finished
-          ? tr3('谁建了这栋房子', 'Бұл үйді кім салды', 'Кто построил этот дом')
-          : tr3('谁在建这栋房子', 'Бұл үйді кім салып жатыр', 'Кто строит этот дом')),
+          ? tr3('谁建了这栋房子', 'Бұл үйді кім салды', 'Кто построил этот дом', 'Who built this house')
+          : tr3('谁在建这栋房子', 'Бұл үйді кім салып жатыр', 'Кто строит этот дом', "Who's building this house")),
       if (mine && !shown)
         Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Hint(tr3(
                 '只有你能看到这一段。可以在右上角“…”里公开给访客。',
                 'Мұны тек сіз көресіз.',
-                'Видите только вы. Откройте через «…».'))),
+                'Видите только вы. Откройте через «…».',
+                'Only you see this. Open it from “…”.'))),
       if (b.agreedAmount > 0)
         Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -679,7 +695,8 @@ class _BuildSection extends StatelessWidget {
                 tr3(
                     '已验收 ${money(b.acceptedAmount)} / 约定 ${money(b.agreedAmount)}',
                     '${money(b.acceptedAmount)} / ${money(b.agreedAmount)} қабылданды',
-                    'Принято ${money(b.acceptedAmount)} из ${money(b.agreedAmount)}'),
+                    'Принято ${money(b.acceptedAmount)} из ${money(b.agreedAmount)}',
+                    'Accepted ${money(b.acceptedAmount)} of ${money(b.agreedAmount)}'),
                 style: const TextStyle(fontWeight: FontWeight.w600))),
       for (final x in b.builders)
         ListTile(
@@ -688,7 +705,7 @@ class _BuildSection extends StatelessWidget {
             title: Text(x.profile.name,
                 style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: Text(
-                '${x.scope} · ${x.ended ? tr3('已完工', 'Аяқталды', 'Завершено') : tr3('施工中', 'Жүріп жатыр', 'В работе')}',
+                '${x.scope} · ${x.ended ? tr3('已完工', 'Аяқталды', 'Завершено', 'Finished') : tr3('施工中', 'Жүріп жатыр', 'В работе', 'In progress')}',
                 style: TextStyle(color: t.muted)),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => pushPage<void>(
@@ -697,7 +714,8 @@ class _BuildSection extends StatelessWidget {
           tr3(
               '金额来自双方确认的约定和节点验收记录，Yusal 不经手付款。',
               'Сомалар келісім мен қабылдау жазбаларынан.',
-              'Суммы из соглашений и записей приёмки; Yusal не принимает платежи.'),
+              'Суммы из соглашений и записей приёмки; Yusal не принимает платежи.',
+              "Amounts from agreements and acceptance records; Yusal doesn't take payments."),
           style: TextStyle(color: t.muted, fontSize: YFont.caption)),
     ]);
   }
@@ -733,13 +751,13 @@ class _FactSheet extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Row(children: [
         cell(Icons.square_foot, '${post.area.round()} $sqm',
-            tr3('建筑面积', 'Ауданы', 'Площадь')),
+            tr3('建筑面积', 'Ауданы', 'Площадь', 'Area')),
         const SizedBox(width: 8),
         cell(Icons.layers_outlined, '${post.floors}',
-            tr3('层数', 'Қабат', 'Этажей')),
+            tr3('层数', 'Қабат', 'Этажей', 'Floors')),
         const SizedBox(width: 8),
         cell(Icons.meeting_room_outlined, '${post.rooms}',
-            tr3('房间', 'Бөлме', 'Комнат')),
+            tr3('房间', 'Бөлме', 'Комнат', 'Rooms')),
       ]),
       if (post.estimatedCost != null)
         Container(
@@ -752,7 +770,7 @@ class _FactSheet extends StatelessWidget {
               YusalIcon(YIcon.budget, color: t.accent),
               const SizedBox(width: 10),
               Expanded(
-                  child: Text(tr3('预估造价', 'Болжамды құн', 'Оценка стоимости'),
+                  child: Text(tr3('预估造价', 'Болжамды құн', 'Оценка стоимости', 'Cost estimate'),
                       style: TextStyle(color: t.muted))),
               Text('≈ ${money(post.estimatedCost)}',
                   style: const TextStyle(
@@ -785,7 +803,7 @@ class _Quantities extends StatelessWidget {
                         style: const TextStyle(fontSize: YFont.label))),
                 Text(
                     l.quantity == null
-                        ? tr3('现场确认', 'Орнында', 'На месте')
+                        ? tr3('现场确认', 'Орнында', 'На месте', 'On site')
                         : '${numText(l.quantity!)} ${unitLabel(l.unit)}',
                     style: const TextStyle(
                         fontWeight: FontWeight.w600,
@@ -806,7 +824,7 @@ class _PostLeading extends StatelessWidget {
   Widget build(BuildContext context) => Center(
       child: fromLink
           ? IconAction(
-              label: tr3('首页', 'Басты бет', 'Главная'),
+              label: tr3('首页', 'Басты бет', 'Главная', 'Home'),
               icon: const Icon(Icons.home_outlined, size: 20),
               onPressed: () => Navigator.of(context)
                   .pushReplacement(platformRoute((_) => const PlatformShell())))
@@ -920,7 +938,7 @@ class _CoverFrame extends StatelessWidget {
                 button: onTap != null,
                 label: onTap == null
                     ? null
-                    : tr3('查看图纸', 'Сызбаны көру', 'Посмотреть чертежи'),
+                    : tr3('查看图纸', 'Сызбаны көру', 'Посмотреть чертежи', 'View drawings'),
                 child: GestureDetector(onTap: onTap, child: child))));
   }
 }
@@ -951,7 +969,8 @@ class _MetaLine extends StatelessWidget {
         dot(),
         Text(
             tr3('${post.likeCount} 人喜欢', '${post.likeCount} ұнатты',
-                'Нравится: ${post.likeCount}'),
+                'Нравится: ${post.likeCount}',
+                'Likes: ${post.likeCount}'),
             style: muted),
       ],
     ]);
@@ -986,9 +1005,10 @@ class _Byline extends StatelessWidget {
                             fontSize: YFont.label)),
                     Text(
                         mine
-                            ? tr3('这是你的设计', 'Сіздің жобаңыз', 'Ваш проект')
+                            ? tr3('这是你的设计', 'Сіздің жобаңыз', 'Ваш проект', 'Your design')
                             : tr3('设计者 · ${fmtDay(post.createdAt)} 发布', 'Автор',
-                                'Автор · ${fmtDay(post.createdAt)}'),
+                                'Автор · ${fmtDay(post.createdAt)}',
+                                'Author · ${fmtDay(post.createdAt)}'),
                         style:
                             TextStyle(color: t.muted, fontSize: YFont.caption)),
                   ])),
@@ -998,7 +1018,7 @@ class _Byline extends StatelessWidget {
                         visualDensity: VisualDensity.compact),
                     onPressed: onContact,
                     icon: const Icon(Icons.chat_outlined, size: 16),
-                    label: Text(tr3('私信', 'Жазу', 'Написать'))),
+                    label: Text(tr3('私信', 'Жазу', 'Написать', 'Message'))),
             ]));
   }
 }
@@ -1041,8 +1061,8 @@ class _StoryState extends State<_Story> {
                   foregroundColor: t.accent),
               onPressed: () => setState(() => open = !open),
               child: Text(open
-                  ? tr3('收起', 'Жию', 'Свернуть')
-                  : tr3('展开全文', 'Толығырақ', 'Читать полностью'))),
+                  ? tr3('收起', 'Жию', 'Свернуть', 'Collapse')
+                  : tr3('展开全文', 'Толығырақ', 'Читать полностью', 'Read more'))),
       ]);
     });
   }

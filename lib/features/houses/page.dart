@@ -54,7 +54,7 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
                 body: EmptyState(
                     icon: Icons.home_outlined,
                     title:
-                        tr3('这栋房子还没有需求', 'Тапсырыс жоқ', 'Заявок пока нет')));
+                        tr3('这栋房子还没有需求', 'Тапсырыс жоқ', 'Заявок пока нет', 'No requests yet')));
           }
           final t = YTokens.of(context);
           final me = context.session.currentAccount?.id ?? '';
@@ -68,7 +68,7 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
                     if (h.postId != null)
                       IconButton(
                           key: const Key('workspace-house-page'),
-                          tooltip: tr3('房子页', 'Үй беті', 'Страница дома'),
+                          tooltip: tr3('房子页', 'Үй беті', 'Страница дома', 'House page'),
                           onPressed: () => pushPage<void>(
                               context, (_) => PostPage(postId: h.postId!)),
                           icon: const Icon(Icons.public)),
@@ -96,14 +96,14 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: YSpace.sm),
                             tabs: [
-                              Tab(text: tr3('找人', 'Іздеу', 'Поиск')),
+                              Tab(text: tr3('找人', 'Іздеу', 'Поиск', 'Search')),
                               Tab(
                                   text:
-                                      '${tr3('报价', 'Ұсыныстар', 'Предложения')}${h.newQuotes > 0 ? ' · ${h.newQuotes}' : ''}'),
+                                      '${tr3('报价', 'Ұсыныстар', 'Предложения', 'Quotes')}${h.newQuotes > 0 ? ' · ${h.newQuotes}' : ''}'),
                               Tab(
                                   text:
-                                      '${tr3('合作', 'Келісім', 'Соглашения')}${h.pendingConfirm(me) > 0 ? ' · ${h.pendingConfirm(me)}' : ''}'),
-                              Tab(text: tr3('施工', 'Құрылыс', 'Стройка')),
+                                      '${tr3('合作', 'Келісім', 'Соглашения', 'Agreements')}${h.pendingConfirm(me) > 0 ? ' · ${h.pendingConfirm(me)}' : ''}'),
+                              Tab(text: tr3('施工', 'Құрылыс', 'Стройка', 'Build')),
                             ]),
                       ]))),
               body: MotionTabView(controller: tabs, children: [
@@ -141,7 +141,7 @@ class _FindTab extends StatelessWidget {
             onPressed: () => pushPage<void>(
                 context, (_) => PublishPage(designProjectId: house.projectId)),
             icon: const Icon(Icons.add),
-            label: Text(tr3('为这栋房子再招一个阶段', 'Тағы бір кезең', 'Добавить этап'))),
+            label: Text(tr3('为这栋房子再招一个阶段', 'Тағы бір кезең', 'Добавить этап', 'Add a stage'))),
       ]);
 }
 
@@ -158,9 +158,10 @@ class _QuotesTab extends StatelessWidget {
     if (rows.isEmpty) {
       return EmptyState(
           icon: Icons.request_quote_outlined,
-          title: tr3('还没有报名或报价', 'Әзірге өтінім жоқ', 'Откликов пока нет'),
+          title: tr3('还没有报名或报价', 'Әзірге өтінім жоқ', 'Откликов пока нет', 'No responses yet'),
           body: tr3('需求发布后，师傅的报价会按同一张工程量清单出现在这里。', 'Ұсыныстар осында шығады.',
-              'Предложения появятся здесь.'));
+              'Предложения появятся здесь.',
+              'Quotes will appear here.'));
     }
     return ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
@@ -179,7 +180,10 @@ class _QuotesTab extends StatelessWidget {
                                 ? '${house.quotes[d.id]!.total} 份报价，${house.quotes[d.id]!.unread} 份新的 · 点开逐项比较'
                                 : '${house.quotes[d.id]!.total} 份报价 · 点开逐项比较',
                             '${house.quotes[d.id]!.total} ұсыныс',
-                            '${house.quotes[d.id]!.total} предложений, новых ${house.quotes[d.id]!.unread}'),
+                            '${house.quotes[d.id]!.total} предложений, новых ${house.quotes[d.id]!.unread}',
+                            house.quotes[d.id]!.unread > 0
+                                ? '${house.quotes[d.id]!.total} quotes, ${house.quotes[d.id]!.unread} new · tap to compare'
+                                : '${house.quotes[d.id]!.total} quotes · tap to compare'),
                         style: TextStyle(color: t.muted)),
                     trailing: house.quotes[d.id]!.unread > 0
                         ? Badge(label: Text('${house.quotes[d.id]!.unread}'))
@@ -200,9 +204,10 @@ class _CoopTab extends StatelessWidget {
     if (house.cooperations.isEmpty) {
       return EmptyState(
           icon: Icons.handshake_outlined,
-          title: tr3('还没有合作', 'Келісім жоқ', 'Пока нет соглашений'),
+          title: tr3('还没有合作', 'Келісім жоқ', 'Пока нет соглашений', 'No agreements yet'),
           body: tr3('在报价里邀请一位师傅，双方确认合作约定后会出现在这里。', 'Шеберді шақырыңыз.',
-              'Пригласите мастера из предложений.'));
+              'Пригласите мастера из предложений.',
+              'Invite a pro from the quotes.'));
     }
     String demandTitle(String id) =>
         house.demands.where((d) => d.id == id).firstOrNull?.current.title ?? '';
@@ -221,7 +226,7 @@ class _CoopTab extends StatelessWidget {
                         style: TextStyle(color: t.muted)),
                     trailing: (c.status == CooperationStatus.pending &&
                             !c.agreement.confirmedBy.contains(me))
-                        ? StatusPill(tr3('待你确认', 'Растаңыз', 'Подтвердите'),
+                        ? StatusPill(tr3('待你确认', 'Растаңыз', 'Подтвердите', 'Confirm'),
                             color: t.accent, filled: true)
                         : const Icon(Icons.chevron_right),
                     onTap: () => pushPage<void>(

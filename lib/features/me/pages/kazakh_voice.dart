@@ -11,13 +11,13 @@ String _mb(int bytes) => '${(bytes / 1000000).round()} MB';
 
 /// One line for the Me page: whether replies can be read aloud.
 String kazakhVoiceValue(VoiceModelStatus s) => switch (s.phase) {
-      VoiceModelPhase.installed => tr3('已下载', 'Жүктелген', 'Скачано'),
+      VoiceModelPhase.installed => tr3('已下载', 'Жүктелген', 'Скачано', 'Downloaded'),
       VoiceModelPhase.downloading ||
       VoiceModelPhase.waiting ||
       VoiceModelPhase.verifying =>
         '${(s.fraction * 100).round()}%',
-      VoiceModelPhase.paused => tr3('已暂停', 'Тоқтатылды', 'Пауза'),
-      _ => tr3('未下载', 'Жүктелмеген', 'Не скачано'),
+      VoiceModelPhase.paused => tr3('已暂停', 'Тоқтатылды', 'Пауза', 'Paused'),
+      _ => tr3('未下载', 'Жүктелмеген', 'Не скачано', 'Not downloaded'),
     };
 
 /// Downloads or removes the on-device Kazakh voice (qazvoice), and
@@ -45,14 +45,15 @@ class _KazakhVoicePageState extends State<KazakhVoicePage> {
     watchLang(context);
     final t = YTokens.of(context);
     return PageScaffold(
-        title: tr3('哈萨克语朗读', 'Қазақша дауыс', 'Казахский голос'),
+        title: tr3('哈萨克语朗读', 'Қазақша дауыс', 'Казахский голос', 'Kazakh voice'),
         body: FutureBuilder<void>(
             future: started,
             builder: (context, snap) {
               if (snap.hasError) {
                 return Hint(
                     tr3('这台设备用不了', 'Бұл құрылғыда жұмыс істемейді',
-                        'На этом устройстве недоступно'),
+                        'На этом устройстве недоступно',
+                        'Not available on this device'),
                     warn: true);
               }
               if (snap.connectionState != ConnectionState.done) {
@@ -72,14 +73,16 @@ class _KazakhVoicePageState extends State<KazakhVoicePage> {
                                         'өзінде, интернетсіз істейді.',
                                     'После загрузки нажмите на динамик рядом с ответом '
                                         'помощника, и он прозвучит по-казахски. Работает на '
-                                        'самом телефоне, без интернета.'),
+                                        'самом телефоне, без интернета.',
+                                    "After downloading, tap the speaker next to the assistant's reply and it's read aloud in Kazakh. Works on the phone itself, with no internet."),
                                 style: YText.body),
                             const SizedBox(height: YSpace.md),
                             Text(
                                 tr3(
                                     '一次性下载 ${_mb(reader.downloadBytes)}，占用 ${_mb(reader.diskBytes)}，建议连 Wi-Fi。',
                                     'Бір рет жүктеледі: ${_mb(reader.downloadBytes)}, телефонда ${_mb(reader.diskBytes)}. Wi-Fi арқылы жүктеген дұрыс.',
-                                    'Скачивается один раз: ${_mb(reader.downloadBytes)}, на телефоне ${_mb(reader.diskBytes)}. Лучше по Wi-Fi.'),
+                                    'Скачивается один раз: ${_mb(reader.downloadBytes)}, на телефоне ${_mb(reader.diskBytes)}. Лучше по Wi-Fi.',
+                                    'One-time download: ${_mb(reader.downloadBytes)}, ${_mb(reader.diskBytes)} on the phone. Wi-Fi is best.'),
                                 style: YText.caption.copyWith(color: t.muted)),
                             const SizedBox(height: YSpace.lg),
                             ..._status(s),
@@ -103,13 +106,14 @@ class _KazakhVoicePageState extends State<KazakhVoicePage> {
             Hint(
                 key: const Key('kazakh-voice-ready'),
                 tr3('已下载，可以朗读了', 'Жүктелген, оқуға дайын',
-                    'Скачано, можно слушать'),
+                    'Скачано, можно слушать',
+                    'Downloaded; ready to listen'),
                 icon: Icons.check_circle_outline),
             const SizedBox(height: YSpace.md),
             BusyButton(
                 key: const Key('kazakh-voice-delete'),
                 outlined: true,
-                label: tr3('删除语音', 'Дауысты өшіру', 'Удалить голос'),
+                label: tr3('删除语音', 'Дауысты өшіру', 'Удалить голос', 'Delete the voice'),
                 onPressed: reader.delete),
           ],
         VoiceModelPhase.downloading ||
@@ -126,25 +130,25 @@ class _KazakhVoicePageState extends State<KazakhVoicePage> {
             Text(
                 switch (s.phase) {
                   VoiceModelPhase.waiting =>
-                    tr3('等待网络…', 'Желіні күтуде…', 'Ждём сеть…'),
+                    tr3('等待网络…', 'Желіні күтуде…', 'Ждём сеть…', 'Waiting for the network…'),
                   VoiceModelPhase.verifying =>
-                    tr3('正在校验…', 'Тексерілуде…', 'Проверка…'),
-                  VoiceModelPhase.paused => tr3('已暂停', 'Тоқтатылды', 'Пауза'),
+                    tr3('正在校验…', 'Тексерілуде…', 'Проверка…', 'Checking…'),
+                  VoiceModelPhase.paused => tr3('已暂停', 'Тоқтатылды', 'Пауза', 'Paused'),
                   _ =>
-                    '${tr3('正在下载', 'Жүктелуде', 'Загрузка')} ${(s.fraction * 100).round()}%',
+                    '${tr3('正在下载', 'Жүктелуде', 'Загрузка', 'Download')} ${(s.fraction * 100).round()}%',
                 },
                 style: YText.label),
             const SizedBox(height: YSpace.md),
             if (s.phase == VoiceModelPhase.paused)
               BusyButton(
                   key: const Key('kazakh-voice-download'),
-                  label: tr3('继续下载', 'Жалғастыру', 'Продолжить'),
+                  label: tr3('继续下载', 'Жалғастыру', 'Продолжить', 'Continue'),
                   onPressed: download)
             else
               BusyButton(
                   key: const Key('kazakh-voice-cancel'),
                   outlined: true,
-                  label: tr3('取消', 'Болдырмау', 'Отменить'),
+                  label: tr3('取消', 'Болдырмау', 'Отменить', 'Cancel'),
                   onPressed: reader.cancel),
           ],
         _ => [
@@ -152,14 +156,15 @@ class _KazakhVoicePageState extends State<KazakhVoicePage> {
               Hint(
                   key: const Key('kazakh-voice-error'),
                   tr3('下载没成功：${s.error}', 'Жүктелмеді: ${s.error}',
-                      'Не скачалось: ${s.error}'),
+                      'Не скачалось: ${s.error}',
+                      'Download failed: ${s.error}'),
                   warn: true),
               const SizedBox(height: YSpace.md),
             ],
             BusyButton(
                 key: const Key('kazakh-voice-download'),
                 label:
-                    '${tr3('下载', 'Жүктеу', 'Скачать')} (${_mb(reader.downloadBytes)})',
+                    '${tr3('下载', 'Жүктеу', 'Скачать', 'Download')} (${_mb(reader.downloadBytes)})',
                 onPressed: download),
           ],
       };

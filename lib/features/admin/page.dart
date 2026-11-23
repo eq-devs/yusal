@@ -60,13 +60,14 @@ class _AdminPageState extends State<AdminPage> {
               body: EmptyState(
                   icon: Icons.lock_outline,
                   title: tr3('没有后台权限', 'Әкімшілікке рұқсат жоқ',
-                      'Нет доступа к админке')));
+                      'Нет доступа к админке',
+                      'No access to admin')));
         }
         final tabs = [
-          tr3('工作台', 'Шолу', 'Сводка'),
-          tr3('审核', 'Тексеру', 'Проверка'),
-          tr3('用户', 'Қолданушылар', 'Пользователи'),
-          tr3('更多', 'Тағы', 'Ещё'),
+          tr3('工作台', 'Шолу', 'Сводка', 'Overview'),
+          tr3('审核', 'Тексеру', 'Проверка', 'Review'),
+          tr3('用户', 'Қолданушылар', 'Пользователи', 'Users'),
+          tr3('更多', 'Тағы', 'Ещё', 'More'),
         ];
         final pages = [
           _Workbench(open: _open),
@@ -100,11 +101,11 @@ class _AdminPageState extends State<AdminPage> {
 }
 
 String roleName(String? role) => switch (role) {
-      AdminRoles.superadmin => tr3('超级管理员', 'Бас әкімші', 'Суперадмин'),
-      AdminRoles.moderator => tr3('审核员', 'Модератор', 'Модератор'),
-      AdminRoles.operator => tr3('运营', 'Оператор', 'Оператор'),
-      AdminRoles.viewer => tr3('只读', 'Тек оқу', 'Только чтение'),
-      _ => tr3('无', 'Жоқ', 'Нет'),
+      AdminRoles.superadmin => tr3('超级管理员', 'Бас әкімші', 'Суперадмин', 'Super admin'),
+      AdminRoles.moderator => tr3('审核员', 'Модератор', 'Модератор', 'Moderator'),
+      AdminRoles.operator => tr3('运营', 'Оператор', 'Оператор', 'Operator'),
+      AdminRoles.viewer => tr3('只读', 'Тек оқу', 'Только чтение', 'Read only'),
+      _ => tr3('无', 'Жоқ', 'Нет', 'None'),
     };
 
 bool _may(BuildContext context, String perm) =>
@@ -126,79 +127,83 @@ String _reportTargetName(ReportTarget t) => switch (t) {
     };
 
 String _reportStatusName(ReportStatus s) => switch (s) {
-      ReportStatus.open => tr3('待处理', 'Күтуде', 'Ожидает'),
-      ReportStatus.upheld => tr3('成立', 'Расталды', 'Подтверждена'),
-      ReportStatus.dismissed => tr3('驳回', 'Қабылданбады', 'Отклонена'),
+      ReportStatus.open => tr3('待处理', 'Күтуде', 'Ожидает', 'Pending'),
+      ReportStatus.upheld => tr3('成立', 'Расталды', 'Подтверждена', 'Upheld'),
+      ReportStatus.dismissed => tr3('驳回', 'Қабылданбады', 'Отклонена', 'Rejected'),
     };
 
-String get _all => tr3('全部', 'Барлығы', 'Все');
+String get _all => tr3('全部', 'Барлығы', 'Все', 'All');
 String get _userSees => tr3('用户会看到这段说明', 'Бұл түсініктемені пайдаланушы көреді',
-    'Это пояснение увидит пользователь');
-String get _restrictedPill => tr3('受限', 'Шектелген', 'Ограничен');
-String get _unnamed => tr3('（未命名）', '(атаусыз)', '(без имени)');
-String get _approveWord => tr3('通过', 'Мақұлдау', 'Одобрить');
-String get _dismissWord => tr3('驳回', 'Қабылдамау', 'Отклонить');
-String get _teamTitle => tr3('后台成员', 'Команда', 'Команда');
+    'Это пояснение увидит пользователь',
+    'The user will see this explanation');
+String get _restrictedPill => tr3('受限', 'Шектелген', 'Ограничен', 'Restricted');
+String get _unnamed => tr3('（未命名）', '(атаусыз)', '(без имени)', '(no name)');
+String get _approveWord => tr3('通过', 'Мақұлдау', 'Одобрить', 'Approve');
+String get _dismissWord => tr3('驳回', 'Қабылдамау', 'Отклонить', 'Reject');
+String get _teamTitle => tr3('后台成员', 'Команда', 'Команда', 'Team');
 String get _pushTitle =>
-    tr3('推送节制', 'Хабарландыру шектеулері', 'Ограничения уведомлений');
+    tr3('推送节制', 'Хабарландыру шектеулері', 'Ограничения уведомлений', 'Notification limits');
 String _registered(DateTime t) =>
-    tr3('注册 ${_date(t)}', 'Тіркелген: ${_date(t)}', 'Регистрация: ${_date(t)}');
+    tr3('注册 ${_date(t)}', 'Тіркелген: ${_date(t)}', 'Регистрация: ${_date(t)}', 'Joined: ${_date(t)}');
 
 String _targetName(String t) => switch (t) {
-      'demand' => tr3('需求', 'Тапсырыс', 'Заявка'),
-      'profile' => tr3('名片', 'Профиль', 'Профиль'),
-      'account' => tr3('账号', 'Аккаунт', 'Аккаунт'),
-      'message' => tr3('消息', 'Хабар', 'Сообщение'),
-      'post' => tr3('房子', 'Үй', 'Дом'),
-      'comment' => tr3('评论', 'Пікір', 'Комментарий'),
-      'platform' => tr3('全平台', 'Бүкіл платформа', 'Вся платформа'),
+      'demand' => tr3('需求', 'Тапсырыс', 'Заявка', 'Request'),
+      'profile' => tr3('名片', 'Профиль', 'Профиль', 'Profile'),
+      'account' => tr3('账号', 'Аккаунт', 'Аккаунт', 'Account'),
+      'message' => tr3('消息', 'Хабар', 'Сообщение', 'Message'),
+      'post' => tr3('房子', 'Үй', 'Дом', 'House'),
+      'comment' => tr3('评论', 'Пікір', 'Комментарий', 'Comment'),
+      'platform' => tr3('全平台', 'Бүкіл платформа', 'Вся платформа', 'Whole platform'),
       _ => t,
     };
 
 /// A reason as moderators read it: preset codes as short labels.
 String _reasonLabel(String r) => switch (r) {
-      'code:contact' => tr3('含联系方式', 'Байланыс деректері бар', 'Есть контакты'),
-      'code:fake' => tr3('虚假信息', 'Жалған ақпарат', 'Недостоверные сведения'),
+      'code:contact' => tr3('含联系方式', 'Байланыс деректері бар', 'Есть контакты', 'Contains contacts'),
+      'code:fake' => tr3('虚假信息', 'Жалған ақпарат', 'Недостоверные сведения', 'False information'),
       'code:illegal' =>
-        tr3('违规内容', 'Ережеге қайшы мазмұн', 'Запрещённое содержание'),
-      'code:incomplete' => tr3('信息不全', 'Ақпарат толық емес', 'Неполные данные'),
+        tr3('违规内容', 'Ережеге қайшы мазмұн', 'Запрещённое содержание', 'Prohibited content'),
+      'code:incomplete' => tr3('信息不全', 'Ақпарат толық емес', 'Неполные данные', 'Incomplete details'),
       'code:duplicate' =>
-        tr3('重复发布', 'Қайталанған жарияланым', 'Повторная публикация'),
+        tr3('重复发布', 'Қайталанған жарияланым', 'Повторная публикация', 'Duplicate post'),
       'code:abuse' =>
-        tr3('辱骂骚扰', 'Балағат не қудалау', 'Оскорбления, преследование'),
-      'code:spam' => tr3('广告引流', 'Жарнама не спам', 'Реклама или спам'),
-      'code:ok' => tr3('未发现问题', 'Бұзушылық табылмады', 'Нарушений не найдено'),
+        tr3('辱骂骚扰', 'Балағат не қудалау', 'Оскорбления, преследование', 'Abuse or harassment'),
+      'code:spam' => tr3('广告引流', 'Жарнама не спам', 'Реклама или спам', 'Advertising or spam'),
+      'code:ok' => tr3('未发现问题', 'Бұзушылық табылмады', 'Нарушений не найдено', 'No violation found'),
       _ when r.startsWith('banned:') => tr3(
           '命中禁用词：${r.substring(7)}',
           'Тыйым салынған сөз: ${r.substring(7)}',
-          'Запрещённое слово: ${r.substring(7)}'),
+          'Запрещённое слово: ${r.substring(7)}',
+          'Banned word: ${r.substring(7)}'),
       _ => r,
     };
 
 String _actionName(String a) => switch (a) {
-      'approve' => tr3('通过需求', 'Тапсырыс мақұлданды', 'Заявка одобрена'),
-      'reject' => tr3('拒绝需求', 'Тапсырыс қабылданбады', 'Заявка отклонена'),
-      'uphold' => tr3('举报成立', 'Шағым расталды', 'Жалоба подтверждена'),
-      'dismiss' => tr3('驳回举报', 'Шағым қабылданбады', 'Жалоба отклонена'),
-      'restrict' => tr3('限制账号', 'Аккаунт шектелді', 'Аккаунт ограничен'),
-      'unrestrict' => tr3('解除限制', 'Шектеу алынды', 'Ограничение снято'),
-      'post_hide' => tr3('隐藏房子', 'Үй жасырылды', 'Дом скрыт'),
-      'post_show' => tr3('恢复房子', 'Үй қайтарылды', 'Дом восстановлен'),
+      'approve' => tr3('通过需求', 'Тапсырыс мақұлданды', 'Заявка одобрена', 'Request approved'),
+      'reject' => tr3('拒绝需求', 'Тапсырыс қабылданбады', 'Заявка отклонена', 'Request rejected'),
+      'uphold' => tr3('举报成立', 'Шағым расталды', 'Жалоба подтверждена', 'Report upheld'),
+      'dismiss' => tr3('驳回举报', 'Шағым қабылданбады', 'Жалоба отклонена', 'Report rejected'),
+      'restrict' => tr3('限制账号', 'Аккаунт шектелді', 'Аккаунт ограничен', 'Account restricted'),
+      'unrestrict' => tr3('解除限制', 'Шектеу алынды', 'Ограничение снято', 'Restriction lifted'),
+      'post_hide' => tr3('隐藏房子', 'Үй жасырылды', 'Дом скрыт', 'House hidden'),
+      'post_show' => tr3('恢复房子', 'Үй қайтарылды', 'Дом восстановлен', 'House restored'),
       'appeal_accept' =>
-        tr3('申诉成立', 'Апелляция қанағаттандырылды', 'Апелляция удовлетворена'),
+        tr3('申诉成立', 'Апелляция қанағаттандырылды', 'Апелляция удовлетворена', 'Appeal granted'),
       'appeal_reject' =>
-        tr3('申诉驳回', 'Апелляция қабылданбады', 'Апелляция отклонена'),
+        tr3('申诉驳回', 'Апелляция қабылданбады', 'Апелляция отклонена', 'Appeal rejected'),
       'verify_approve' =>
-        tr3('认证通过', 'Растау мақұлданды', 'Верификация одобрена'),
+        tr3('认证通过', 'Растау мақұлданды', 'Верификация одобрена', 'Verification approved'),
       'verify_reject' =>
-        tr3('认证驳回', 'Растау қабылданбады', 'Верификация отклонена'),
-      'role_revoke' => tr3('撤销角色', 'Рөл алынды', 'Роль снята'),
+        tr3('认证驳回', 'Растау қабылданбады', 'Верификация отклонена', 'Verification rejected'),
+      'role_revoke' => tr3('撤销角色', 'Рөл алынды', 'Роль снята', 'Role removed'),
       'push_policy' => tr3('修改推送节制', 'Хабарландыру шектеулері өзгертілді',
-          'Изменены ограничения уведомлений'),
+          'Изменены ограничения уведомлений',
+          'Notification limits changed'),
       _ when a.startsWith('role_grant:') => tr3(
           '授予${roleName(a.substring(11))}',
           'Рөл берілді: ${roleName(a.substring(11))}',
-          'Назначена роль: ${roleName(a.substring(11))}'),
+          'Назначена роль: ${roleName(a.substring(11))}',
+          'Role assigned: ${roleName(a.substring(11))}'),
       _ => a,
     };
 
@@ -215,7 +220,7 @@ Future<String?> _pickReason(BuildContext context, String title,
     ]}) async {
   final v = await pickOne<String>(context, title, [
     for (final c in codes) ('code:$c', _reasonLabel('code:$c')),
-    ('', tr3('自己填写…', 'Өзім жазамын…', 'Свой текст…')),
+    ('', tr3('自己填写…', 'Өзім жазамын…', 'Свой текст…', 'Custom text…')),
   ]);
   if (v == null || !context.mounted) return null;
   if (v.isNotEmpty) return v;
@@ -285,7 +290,7 @@ class _PagedListState<T> extends State<_PagedList<T>> {
                             child: TextButton(
                                 onPressed: _more,
                                 child: Text(tr3(
-                                    '加载更多', 'Тағы жүктеу', 'Показать ещё')))),
+                                    '加载更多', 'Тағы жүктеу', 'Показать ещё', 'Show more')))),
                     ]));
           }));
 }
@@ -343,11 +348,13 @@ class _Workbench extends StatelessWidget {
                                 'sweep_stalled' => tr3(
                                     '定时任务超过 5 分钟没有运行：到期、提醒和单方结束会停住，请检查服务器。',
                                     'Жоспарлы тапсырма 5 минуттан бері іске қосылмады: мерзімнің бітуі, еске салулар және біржақты аяқтау тоқтап тұр. Серверді тексеріңіз.',
-                                    'Фоновая задача не запускалась больше 5 минут: истечение сроков, напоминания и одностороннее завершение остановлены. Проверьте сервер.'),
+                                    'Фоновая задача не запускалась больше 5 минут: истечение сроков, напоминания и одностороннее завершение остановлены. Проверьте сервер.',
+                                    "The background job hasn't run for over 5 minutes: expiries, reminders and one-sided completion are stopped. Check the server."),
                                 'manual_review_on' => tr3(
                                     '已开启人工审核：新需求要等审核员通过才会公开。',
                                     'Қолмен тексеру қосулы: жаңа тапсырыстар модератор мақұлдағаннан кейін ғана жарияланады.',
-                                    'Включена ручная проверка: новые заявки публикуются только после одобрения модератором.'),
+                                    'Включена ручная проверка: новые заявки публикуются только после одобрения модератором.',
+                                    'Manual review is on: new requests are published only after a moderator approves them.'),
                                 _ => h,
                               },
                               warn: h != 'manual_review_on')),
@@ -356,17 +363,19 @@ class _Workbench extends StatelessWidget {
                             ? tr3(
                                 '没有待办，一切正常',
                                 'Күтіп тұрған іс жоқ, бәрі дұрыс',
-                                'Задач нет, всё в порядке')
+                                'Задач нет, всё в порядке',
+                                'No tasks, all good')
                             : tr3(
                                 '待办 ${todo.total} 项',
                                 'Күтіп тұрған іс: ${todo.total}',
-                                'Задач: ${todo.total}'),
+                                'Задач: ${todo.total}',
+                                'Tasks: ${todo.total}'),
                         style: display(size: 22)),
                     const SizedBox(height: YSpace.md),
                     _TodoTile(
                         icon: Icons.fact_check_outlined,
                         title: tr3(
-                            '需求审核', 'Тапсырыстарды тексеру', 'Проверка заявок'),
+                            '需求审核', 'Тапсырыстарды тексеру', 'Проверка заявок', 'Request review'),
                         count: todo.review.count,
                         lines: [
                           for (final x in todo.review.items) x.current.title
@@ -374,7 +383,7 @@ class _Workbench extends StatelessWidget {
                         onTap: () => open(_Review.demands)),
                     _TodoTile(
                         icon: Icons.flag_outlined,
-                        title: tr3('举报', 'Шағымдар', 'Жалобы'),
+                        title: tr3('举报', 'Шағымдар', 'Жалобы', 'Reports'),
                         count: todo.reports.count,
                         lines: [
                           for (final x in todo.reports.items)
@@ -383,14 +392,15 @@ class _Workbench extends StatelessWidget {
                         onTap: () => open(_Review.reports)),
                     _TodoTile(
                         icon: Icons.gavel_outlined,
-                        title: tr3('申诉', 'Апелляциялар', 'Апелляции'),
+                        title: tr3('申诉', 'Апелляциялар', 'Апелляции', 'Appeals'),
                         count: todo.appeals.count,
                         lines: [for (final x in todo.appeals.items) x.text],
                         onTap: () => open(_Review.appeals)),
                     _TodoTile(
                         icon: Icons.verified_outlined,
                         title: tr3('工人认证', 'Шеберлерді растау',
-                            'Верификация мастеров'),
+                            'Верификация мастеров',
+                            'Pro verification'),
                         count: todo.verifications.count,
                         lines: [
                           for (final x in todo.verifications.items) x.name
@@ -401,7 +411,8 @@ class _Workbench extends StatelessWidget {
                         title: tr3(
                             '超过 3 天未解决的争议',
                             '3 күннен астам шешілмеген даулар',
-                            'Споры без решения дольше 3 дней'),
+                            'Споры без решения дольше 3 дней',
+                            'Disputes unresolved for over 3 days'),
                         count: todo.disputes.count,
                         lines: [
                           for (final c in todo.disputes.items)
@@ -409,51 +420,53 @@ class _Workbench extends StatelessWidget {
                                 tr3(
                                     '节点验收有异议',
                                     'Кезеңді қабылдауға қарсылық бар',
-                                    'Спор о приёмке этапа')
+                                    'Спор о приёмке этапа',
+                                    'Stage acceptance dispute')
                         ]),
                     const SizedBox(height: YSpace.xl),
-                    Text(tr3('今天', 'Бүгін', 'Сегодня'),
+                    Text(tr3('今天', 'Бүгін', 'Сегодня', 'Today'),
                         style: YText.bodyStrong),
                     const SizedBox(height: YSpace.sm),
                     Wrap(spacing: YSpace.sm, runSpacing: YSpace.sm, children: [
                       for (final (k, label) in [
                         (
                           'active',
-                          tr3('活跃设备', 'Белсенді құрылғы', 'Активные устройства')
+                          tr3('活跃设备', 'Белсенді құрылғы', 'Активные устройства', 'Active devices')
                         ),
                         (
                           'new_users',
-                          tr3('新用户', 'Жаңа аккаунт', 'Новые аккаунты')
+                          tr3('新用户', 'Жаңа аккаунт', 'Новые аккаунты', 'New accounts')
                         ),
-                        ('new_posts', tr3('新房子', 'Жаңа үй', 'Новые дома')),
+                        ('new_posts', tr3('新房子', 'Жаңа үй', 'Новые дома', 'New houses')),
                         (
                           'new_demands',
-                          tr3('新需求', 'Жаңа тапсырыс', 'Новые заявки')
+                          tr3('新需求', 'Жаңа тапсырыс', 'Новые заявки', 'New requests')
                         ),
                         (
                           'new_quotes',
-                          tr3('新报价', 'Жаңа ұсыныс', 'Новые отклики')
+                          tr3('新报价', 'Жаңа ұсыныс', 'Новые отклики', 'New responses')
                         ),
                         (
                           'new_cooperations',
-                          tr3('新合作', 'Жаңа келісім', 'Новые сделки')
+                          tr3('新合作', 'Жаңа келісім', 'Новые сделки', 'New deals')
                         ),
                         (
                           'inspections',
-                          tr3('节点验收', 'Кезең қабылдау', 'Приёмка этапов')
+                          tr3('节点验收', 'Кезең қабылдау', 'Приёмка этапов', 'Stage acceptances')
                         ),
                       ])
                         _Stat(label, d.today[k] ?? 0),
                     ]),
                     const SizedBox(height: YSpace.xl),
-                    Text(tr3('近 7 天', 'Соңғы 7 күн', 'За 7 дней'),
+                    Text(tr3('近 7 天', 'Соңғы 7 күн', 'За 7 дней', 'Last 7 days'),
                         style: YText.bodyStrong),
                     const SizedBox(height: YSpace.sm),
                     _Bars(days: d.daily),
                     const SizedBox(height: YSpace.xl),
                     Text(
                         tr3('从房子到验收', 'Үйден қабылдауға дейін',
-                            'От дома до приёмки'),
+                            'От дома до приёмки',
+                            'From house to acceptance'),
                         style: YText.bodyStrong),
                     const SizedBox(height: YSpace.sm),
                     _Funnel(steps: d.funnel),
@@ -463,7 +476,8 @@ class _Workbench extends StatelessWidget {
                           tr3(
                               '需求发布后收到第一个报价：中位 ${d.firstQuoteHours!.toStringAsFixed(1)} 小时',
                               'Тапсырыс жарияланғаннан алғашқы ұсынысқа дейін: медиана ${d.firstQuoteHours!.toStringAsFixed(1)} сағ',
-                              'От публикации заявки до первого предложения: медиана ${d.firstQuoteHours!.toStringAsFixed(1)} ч'),
+                              'От публикации заявки до первого предложения: медиана ${d.firstQuoteHours!.toStringAsFixed(1)} ч',
+                              'From posting a request to the first quote: median ${d.firstQuoteHours!.toStringAsFixed(1)} h'),
                           style: YText.caption.copyWith(color: t.muted)),
                     ],
                     const SizedBox(height: YSpace.xl),
@@ -471,7 +485,8 @@ class _Workbench extends StatelessWidget {
                         tr3(
                             '各地区供需（招募中的需求 / 可接活的名片）',
                             'Аймақтар бойынша сұраныс пен ұсыныс (ашық тапсырыстар / бос профильдер)',
-                            'Спрос и предложение по районам (открытые заявки / свободные профили)'),
+                            'Спрос и предложение по районам (открытые заявки / свободные профили)',
+                            'Supply and demand by district (open requests / available profiles)'),
                         style: YText.bodyStrong),
                     const SizedBox(height: YSpace.sm),
                     YCard(
@@ -481,7 +496,7 @@ class _Workbench extends StatelessWidget {
                             Padding(
                                 padding: const EdgeInsets.all(YSpace.lg),
                                 child: Text(
-                                    tr3('暂无数据', 'Дерек жоқ', 'Нет данных'))),
+                                    tr3('暂无数据', 'Дерек жоқ', 'Нет данных', 'No data'))),
                           for (final r in d.regions)
                             ListTile(
                                 dense: true,
@@ -498,7 +513,8 @@ class _Workbench extends StatelessWidget {
                         tr3(
                             '累计：用户 ${total('users')} · 房子 ${total('posts')} · 名片 ${total('profiles')} · 需求 ${total('demands')}',
                             'Барлығы: аккаунт ${total('users')} · үй ${total('posts')} · профиль ${total('profiles')} · тапсырыс ${total('demands')}',
-                            'Всего: аккаунты ${total('users')} · дома ${total('posts')} · профили ${total('profiles')} · заявки ${total('demands')}'),
+                            'Всего: аккаунты ${total('users')} · дома ${total('posts')} · профили ${total('profiles')} · заявки ${total('demands')}',
+                            'Total: accounts ${total('users')} · houses ${total('posts')} · profiles ${total('profiles')} · requests ${total('demands')}'),
                         style: YText.caption.copyWith(color: t.muted)),
                   ]);
             }));
@@ -600,7 +616,8 @@ class _Bars extends StatelessWidget {
                               style: YText.caption.copyWith(color: t.muted)),
                           Text(
                               tr3('活跃 ${d.active}', 'Белс. ${d.active}',
-                                  'Акт. ${d.active}'),
+                                  'Акт. ${d.active}',
+                                  'Active ${d.active}'),
                               style: YText.caption.copyWith(color: t.muted)),
                         ]))),
         ]));
@@ -611,15 +628,15 @@ class _Funnel extends StatelessWidget {
   const _Funnel({required this.steps});
   final List<(String, int)> steps;
   static String _name(String k) => switch (k) {
-        'posts' => tr3('公开的房子', 'Жария үйлер', 'Опубликованные дома'),
-        'reuses' => tr3('被复用', 'Негізге алынды', 'Взято за основу'),
+        'posts' => tr3('公开的房子', 'Жария үйлер', 'Опубликованные дома', 'Published houses'),
+        'reuses' => tr3('被复用', 'Негізге алынды', 'Взято за основу', 'Used as a base'),
         'demands' =>
-          tr3('发布的需求', 'Жарияланған тапсырыстар', 'Опубликованные заявки'),
+          tr3('发布的需求', 'Жарияланған тапсырыстар', 'Опубликованные заявки', 'Published requests'),
         'quoted' =>
-          tr3('收到报价的需求', 'Ұсыныс түскен тапсырыстар', 'Заявки с предложениями'),
-        'cooperations' => tr3('达成合作', 'Келісімдер', 'Сделки'),
-        'inspected' => tr3('有节点验收', 'Кезең қабылданған', 'С приёмкой этапов'),
-        'reviews' => tr3('评价', 'Пікірлер', 'Отзывы'),
+          tr3('收到报价的需求', 'Ұсыныс түскен тапсырыстар', 'Заявки с предложениями', 'Requests with quotes'),
+        'cooperations' => tr3('达成合作', 'Келісімдер', 'Сделки', 'Deals'),
+        'inspected' => tr3('有节点验收', 'Кезең қабылданған', 'С приёмкой этапов', 'With stage acceptance'),
+        'reviews' => tr3('评价', 'Пікірлер', 'Отзывы', 'Reviews'),
         _ => k,
       };
   @override
@@ -667,10 +684,10 @@ class _ReviewTab extends StatelessWidget {
       valueListenable: kind,
       builder: (context, k, _) => Column(children: [
             _Chips<_Review>(options: [
-              (_Review.demands, tr3('需求', 'Тапсырыстар', 'Заявки')),
-              (_Review.reports, tr3('举报', 'Шағымдар', 'Жалобы')),
-              (_Review.appeals, tr3('申诉', 'Апелляциялар', 'Апелляции')),
-              (_Review.verifications, tr3('认证', 'Растау', 'Верификация')),
+              (_Review.demands, tr3('需求', 'Тапсырыстар', 'Заявки', 'Requests')),
+              (_Review.reports, tr3('举报', 'Шағымдар', 'Жалобы', 'Reports')),
+              (_Review.appeals, tr3('申诉', 'Апелляциялар', 'Апелляции', 'Appeals')),
+              (_Review.verifications, tr3('认证', 'Растау', 'Верификация', 'Verification')),
             ], selected: k, onSelect: (v) => kind.value = v),
             Expanded(
                 child: switch (k) {
@@ -705,7 +722,8 @@ class _DemandQueueState extends State<_DemandQueue> {
           tr3(
               '拒绝 ${_selected.length} 个需求的原因',
               'Қабылдамау себебі (тапсырыс: ${_selected.length})',
-              'Причина отклонения (заявок: ${_selected.length})'));
+              'Причина отклонения (заявок: ${_selected.length})',
+              'Rejection reason (requests: ${_selected.length})'));
       if (r == null || !mounted) return;
       reason = r;
     }
@@ -719,22 +737,24 @@ class _DemandQueueState extends State<_DemandQueue> {
         context,
         res.failed.isEmpty
             ? tr3('已处理 ${res.done} 个', 'Өңделді: ${res.done}',
-                'Обработано: ${res.done}')
+                'Обработано: ${res.done}',
+                'Processed: ${res.done}')
             : tr3(
                 '已处理 ${res.done} 个，${res.failed.length} 个状态已变化未处理',
                 'Өңделді: ${res.done}; күйі өзгергендіктен өткізілді: ${res.failed.length}',
-                'Обработано: ${res.done}; пропущено из-за смены статуса: ${res.failed.length}'));
+                'Обработано: ${res.done}; пропущено из-за смены статуса: ${res.failed.length}',
+                'Processed: ${res.done}; skipped because the status changed: ${res.failed.length}'));
     setState(_selected.clear);
   }
 
   Future<bool> _reject(Demand d) async {
     final r = await _pickReason(
-        context, tr3('拒绝原因', 'Қабылдамау себебі', 'Причина отклонения'));
+        context, tr3('拒绝原因', 'Қабылдамау себебі', 'Причина отклонения', 'Rejection reason'));
     if (r == null || !mounted) return false;
     return await attempt(context, () async {
           await context.read(adminRepositoryProvider).reject(d.id, r);
           return true;
-        }, success: tr3('已拒绝', 'Қабылданбады', 'Отклонено')) ==
+        }, success: tr3('已拒绝', 'Қабылданбады', 'Отклонено', 'Rejected')) ==
         true;
   }
 
@@ -755,18 +775,19 @@ class _DemandQueueState extends State<_DemandQueue> {
                           tr3(
                               '已选 ${_selected.length}',
                               'Таңдалды: ${_selected.length}',
-                              'Выбрано: ${_selected.length}'),
+                              'Выбрано: ${_selected.length}',
+                              'Selected: ${_selected.length}'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis)),
                   TextButton(
                       onPressed: () => setState(_selected.clear),
-                      child: Text(tr3('取消', 'Болдырмау', 'Отмена'))),
+                      child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'))),
                   TextButton(
                       onPressed: () => _batch(false),
-                      child: Text(tr3('批量拒绝', 'Қабылдамау', 'Отклонить'))),
+                      child: Text(tr3('批量拒绝', 'Қабылдамау', 'Отклонить', 'Reject'))),
                   FilledButton(
                       onPressed: () => _batch(true),
-                      child: Text(tr3('批量通过', 'Мақұлдау', 'Одобрить'))),
+                      child: Text(tr3('批量通过', 'Мақұлдау', 'Одобрить', 'Approve'))),
                 ]))),
       Expanded(
           child: _PagedList<Demand>(
@@ -774,7 +795,8 @@ class _DemandQueueState extends State<_DemandQueue> {
               load: (p) =>
                   context.read(adminRepositoryProvider).reviewQueue(page: p),
               empty: tr3('没有待审核的需求', 'Тексеруді күткен тапсырыс жоқ',
-                  'Нет заявок на проверке'),
+                  'Нет заявок на проверке',
+                  'No requests to review'),
               header: canModerate
                   ? Padding(
                       padding: const EdgeInsets.only(bottom: YSpace.sm),
@@ -782,7 +804,8 @@ class _DemandQueueState extends State<_DemandQueue> {
                           tr3(
                               '右滑通过，左滑拒绝，长按多选',
                               'Оңға сырғыту — мақұлдау, солға — қабылдамау, ұзақ басу — бірнешеуін таңдау',
-                              'Свайп вправо — одобрить, влево — отклонить, долгое нажатие — выбрать несколько'),
+                              'Свайп вправо — одобрить, влево — отклонить, долгое нажатие — выбрать несколько',
+                              'Swipe right to approve, left to reject, long-press to select several'),
                           style: YText.caption.copyWith(color: t.muted)))
                   : null,
               item: (context, d) {
@@ -810,7 +833,7 @@ class _DemandQueueState extends State<_DemandQueue> {
                     secondaryBackground: _SwipeBg(
                         color: t.crit,
                         icon: Icons.close,
-                        label: tr3('拒绝', 'Қабылдамау', 'Отклонить'),
+                        label: tr3('拒绝', 'Қабылдамау', 'Отклонить', 'Reject'),
                         left: false),
                     confirmDismiss: (dir) async {
                       if (dir == DismissDirection.startToEnd) {
@@ -819,7 +842,7 @@ class _DemandQueueState extends State<_DemandQueue> {
                                   .read(adminRepositoryProvider)
                                   .approve(d.id);
                               return true;
-                            }, success: tr3('已通过', 'Мақұлданды', 'Одобрено')) ==
+                            }, success: tr3('已通过', 'Мақұлданды', 'Одобрено', 'Approved')) ==
                             true;
                       }
                       return _reject(d);
@@ -892,7 +915,7 @@ class _DemandCard extends StatelessWidget {
                           maxLines: 3, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 4),
                       Text(
-                          '${regionName(v.region)} · ${demandTypeName(demand.type)} · ${tr3('第 ${v.no} 版', '${v.no}-нұсқа', 'версия ${v.no}')} · ${_date(demand.createdAt)}',
+                          '${regionName(v.region)} · ${demandTypeName(demand.type)} · ${tr3('第 ${v.no} 版', '${v.no}-нұсқа', 'версия ${v.no}', 'version ${v.no}')} · ${_date(demand.createdAt)}',
                           style: YText.caption.copyWith(color: t.muted)),
                       if (demand.rejectReason != null &&
                           demand.status == DemandStatus.rejected)
@@ -900,7 +923,8 @@ class _DemandCard extends StatelessWidget {
                             tr3(
                                 '拒绝原因：${_reasonLabel(demand.rejectReason!)}',
                                 'Қабылдамау себебі: ${_reasonLabel(demand.rejectReason!)}',
-                                'Причина отклонения: ${_reasonLabel(demand.rejectReason!)}'),
+                                'Причина отклонения: ${_reasonLabel(demand.rejectReason!)}',
+                                'Rejection reason: ${_reasonLabel(demand.rejectReason!)}'),
                             style: YText.caption.copyWith(color: t.crit)),
                     ]))));
   }
@@ -920,11 +944,13 @@ class _ReportsState extends State<_Reports> {
         ? await _pickReason(
             context,
             tr3('举报成立：给对方的说明', 'Шағым расталды: бұзушыға түсініктеме',
-                'Жалоба подтверждена: пояснение нарушителю'))
+                'Жалоба подтверждена: пояснение нарушителю',
+                'Report upheld: explanation for the offender'))
         : await _pickReason(
             context,
             tr3('驳回举报：给举报人的说明', 'Шағым қабылданбады: шағымданушыға түсініктеме',
-                'Жалоба отклонена: пояснение заявителю'),
+                'Жалоба отклонена: пояснение заявителю',
+                'Report rejected: explanation for the reporter'),
             codes: const ['ok']);
     if (note == null || !mounted) return;
     await attempt(
@@ -936,9 +962,11 @@ class _ReportsState extends State<_Reports> {
             ? tr3(
                 '已处理，内容已下架/账号已限制，双方已通知',
                 'Өңделді: мазмұн алынды не аккаунт шектелді, екі жаққа хабарланды',
-                'Готово: контент снят или аккаунт ограничен, обе стороны уведомлены')
+                'Готово: контент снят или аккаунт ограничен, обе стороны уведомлены',
+                'Done: content removed or account restricted; both sides notified')
             : tr3('已驳回，举报人已通知', 'Қабылданбады, шағымданушыға хабарланды',
-                'Отклонено, заявитель уведомлён'));
+                'Отклонено, заявитель уведомлён',
+                'Rejected; the reporter was notified'));
   }
 
   void _openTarget(ReportView v) {
@@ -971,9 +999,9 @@ class _ReportsState extends State<_Reports> {
     final canModerate = _may(context, AdminPerms.moderate);
     return Column(children: [
       _Chips<ReportStatus?>(options: [
-        (ReportStatus.open, tr3('待处理', 'Күтуде', 'Ожидают')),
-        (ReportStatus.upheld, tr3('已成立', 'Расталған', 'Подтверждённые')),
-        (ReportStatus.dismissed, tr3('已驳回', 'Қабылданбаған', 'Отклонённые')),
+        (ReportStatus.open, tr3('待处理', 'Күтуде', 'Ожидают', 'Pending')),
+        (ReportStatus.upheld, tr3('已成立', 'Расталған', 'Подтверждённые', 'Upheld')),
+        (ReportStatus.dismissed, tr3('已驳回', 'Қабылданбаған', 'Отклонённые', 'Rejected')),
         (null, _all),
       ], selected: _status, onSelect: (v) => setState(() => _status = v)),
       Expanded(
@@ -982,7 +1010,7 @@ class _ReportsState extends State<_Reports> {
               load: (p) => context
                   .read(adminRepositoryProvider)
                   .reports(status: _status, page: p),
-              empty: tr3('没有举报', 'Шағым жоқ', 'Жалоб нет'),
+              empty: tr3('没有举报', 'Шағым жоқ', 'Жалоб нет', 'No reports'),
               item: (context, v) {
                 final r = v.report;
                 final reporter = v.reporterName.isEmpty ? '—' : v.reporterName;
@@ -1011,17 +1039,19 @@ class _ReportsState extends State<_Reports> {
                               Text(tr3(
                                   '原因：${_reasonLabel(r.reason)}',
                                   'Себебі: ${_reasonLabel(r.reason)}',
-                                  'Причина: ${_reasonLabel(r.reason)}')),
+                                  'Причина: ${_reasonLabel(r.reason)}',
+                                  'Reason: ${_reasonLabel(r.reason)}')),
                               Text(
                                   tr3(
                                       '举报人 $reporter · 被举报 $accused · ${_date(r.createdAt)}',
                                       'Шағымданушы: $reporter · Кімге: $accused · ${_date(r.createdAt)}',
-                                      'Заявитель: $reporter · На кого: $accused · ${_date(r.createdAt)}'),
+                                      'Заявитель: $reporter · На кого: $accused · ${_date(r.createdAt)}',
+                                      'Reporter: $reporter · Against: $accused · ${_date(r.createdAt)}'),
                                   style:
                                       YText.caption.copyWith(color: t.muted)),
                               if (r.status != ReportStatus.open)
                                 Text(
-                                    '${_reportStatusName(r.status)}${tr3('：', ': ', ': ')}${_reasonLabel(r.resolution)}',
+                                    '${_reportStatusName(r.status)}${tr3('：', ': ', ': ', ': ')}${_reasonLabel(r.resolution)}',
                                     style:
                                         YText.caption.copyWith(color: t.muted)),
                               if (r.status == ReportStatus.open &&
@@ -1035,7 +1065,7 @@ class _ReportsState extends State<_Reports> {
                                             (_) => AccountDetailPage(
                                                 accountId: v.targetOwnerId)),
                                         child: Text(
-                                            tr3('看此人', 'Аккаунт', 'Аккаунт'))),
+                                            tr3('看此人', 'Аккаунт', 'Аккаунт', 'Account'))),
                                   const Spacer(),
                                   OutlinedButton(
                                       onPressed: () => _resolve(v, false),
@@ -1046,11 +1076,11 @@ class _ReportsState extends State<_Reports> {
                                       child: Text(switch (r.target) {
                                         ReportTarget.account ||
                                         ReportTarget.message =>
-                                          tr3('成立并限制', 'Шектеу', 'Ограничить'),
+                                          tr3('成立并限制', 'Шектеу', 'Ограничить', 'Restrict'),
                                         ReportTarget.comment =>
-                                          tr3('成立并删除', 'Жою', 'Удалить'),
+                                          tr3('成立并删除', 'Жою', 'Удалить', 'Delete'),
                                         _ =>
-                                          tr3('成立并下架', 'Алып тастау', 'Снять'),
+                                          tr3('成立并下架', 'Алып тастау', 'Снять', 'Take down'),
                                       })),
                                 ]),
                               ],
@@ -1074,9 +1104,11 @@ class _AppealsState extends State<_Appeals> {
         context,
         accept
             ? tr3('申诉成立：说明', 'Апелляция қанағаттандырылды: түсініктеме',
-                'Апелляция удовлетворена: пояснение')
+                'Апелляция удовлетворена: пояснение',
+                'Appeal granted: explanation')
             : tr3('维持原处理：说明', 'Шешім күшінде қалады: түсініктеме',
-                'Решение оставлено в силе: пояснение'),
+                'Решение оставлено в силе: пояснение',
+                'Decision upheld: explanation'),
         hint: _userSees);
     if (note == null || !mounted) return;
     await attempt(
@@ -1086,9 +1118,11 @@ class _AppealsState extends State<_Appeals> {
             .resolveAppeal(a.id, accept, note),
         success: accept
             ? tr3('已恢复并通知用户', 'Қалпына келтірілді, пайдаланушыға хабарланды',
-                'Восстановлено, пользователь уведомлён')
+                'Восстановлено, пользователь уведомлён',
+                'Restored; the user was notified')
             : tr3('已回复用户', 'Пайдаланушыға жауап жіберілді',
-                'Ответ отправлен пользователю'));
+                'Ответ отправлен пользователю',
+                'Reply sent to the user'));
   }
 
   @override
@@ -1097,12 +1131,12 @@ class _AppealsState extends State<_Appeals> {
     final canModerate = _may(context, AdminPerms.moderate);
     return Column(children: [
       _Chips<AppealStatus?>(options: [
-        (AppealStatus.open, tr3('待处理', 'Күтуде', 'Ожидают')),
+        (AppealStatus.open, tr3('待处理', 'Күтуде', 'Ожидают', 'Pending')),
         (
           AppealStatus.accepted,
-          tr3('已成立', 'Қанағаттандырылған', 'Удовлетворённые')
+          tr3('已成立', 'Қанағаттандырылған', 'Удовлетворённые', 'Granted')
         ),
-        (AppealStatus.rejected, tr3('已驳回', 'Қабылданбаған', 'Отклонённые')),
+        (AppealStatus.rejected, tr3('已驳回', 'Қабылданбаған', 'Отклонённые', 'Rejected')),
         (null, _all),
       ], selected: _status, onSelect: (v) => setState(() => _status = v)),
       Expanded(
@@ -1111,7 +1145,7 @@ class _AppealsState extends State<_Appeals> {
               load: (p) => context
                   .read(adminRepositoryProvider)
                   .appeals(status: _status, page: p),
-              empty: tr3('没有申诉', 'Апелляция жоқ', 'Апелляций нет'),
+              empty: tr3('没有申诉', 'Апелляция жоқ', 'Апелляций нет', 'No appeals'),
               item: (context, a) => Padding(
                   padding: const EdgeInsets.only(bottom: YSpace.sm),
                   child: YCard(
@@ -1139,7 +1173,8 @@ class _AppealsState extends State<_Appeals> {
                                   tr3(
                                       '回复：${_reasonLabel(a.resolution)}',
                                       'Жауап: ${_reasonLabel(a.resolution)}',
-                                      'Ответ: ${_reasonLabel(a.resolution)}'),
+                                      'Ответ: ${_reasonLabel(a.resolution)}',
+                                      'Reply: ${_reasonLabel(a.resolution)}'),
                                   style:
                                       YText.caption.copyWith(color: t.muted)),
                             if (a.status == AppealStatus.open && canModerate)
@@ -1149,14 +1184,15 @@ class _AppealsState extends State<_Appeals> {
                                     OutlinedButton(
                                         onPressed: () => _resolve(a, false),
                                         child: Text(tr3(
-                                            '维持', 'Қабылдамау', 'Отклонить'))),
+                                            '维持', 'Қабылдамау', 'Отклонить', 'Reject'))),
                                     const SizedBox(width: YSpace.sm),
                                     FilledButton(
                                         onPressed: () => _resolve(a, true),
                                         child: Text(tr3(
                                             '成立并恢复',
                                             'Қалпына келтіру',
-                                            'Восстановить'))),
+                                            'Восстановить',
+                                            'Restore'))),
                                   ]),
                           ])))))
     ]);
@@ -1204,11 +1240,12 @@ class _VerificationsState extends State<_Verifications> {
     final note = approve
         ? ''
         : await askText(
-            context, tr3('驳回原因', 'Қабылдамау себебі', 'Причина отклонения'),
+            context, tr3('驳回原因', 'Қабылдамау себебі', 'Причина отклонения', 'Rejection reason'),
             hint: tr3(
                 '例如：照片看不出是本人施工的现场',
                 'Мысалы: фотодан жұмысты өзі істегені көрінбейді',
-                'Например: по фото не видно, что работу выполнял сам мастер'));
+                'Например: по фото не видно, что работу выполнял сам мастер',
+                "For example: the photos don't show that the pro did the work themselves"));
     if (note == null || !mounted) return;
     await attempt(
         context,
@@ -1219,9 +1256,11 @@ class _VerificationsState extends State<_Verifications> {
             ? tr3(
                 '已通过，名片显示“已核验”',
                 'Мақұлданды, профильде «Расталған» белгісі шығады',
-                'Одобрено, в профиле появится отметка «Проверен»')
+                'Одобрено, в профиле появится отметка «Проверен»',
+                'Approved; the profile will show a “Verified” badge')
             : tr3('已驳回并通知', 'Қабылданбады, пайдаланушыға хабарланды',
-                'Отклонено, пользователь уведомлён'));
+                'Отклонено, пользователь уведомлён',
+                'Rejected; the user was notified'));
   }
 
   @override
@@ -1230,11 +1269,11 @@ class _VerificationsState extends State<_Verifications> {
     final canModerate = _may(context, AdminPerms.moderate);
     return Column(children: [
       _Chips<VerificationStatus?>(options: [
-        (VerificationStatus.pending, tr3('待审核', 'Күтуде', 'Ожидают')),
-        (VerificationStatus.approved, tr3('已通过', 'Мақұлданған', 'Одобренные')),
+        (VerificationStatus.pending, tr3('待审核', 'Күтуде', 'Ожидают', 'Pending')),
+        (VerificationStatus.approved, tr3('已通过', 'Мақұлданған', 'Одобренные', 'Approved')),
         (
           VerificationStatus.rejected,
-          tr3('已驳回', 'Қабылданбаған', 'Отклонённые')
+          tr3('已驳回', 'Қабылданбаған', 'Отклонённые', 'Rejected')
         ),
         (null, _all),
       ], selected: _status, onSelect: (v) => setState(() => _status = v)),
@@ -1245,7 +1284,7 @@ class _VerificationsState extends State<_Verifications> {
                   .read(adminRepositoryProvider)
                   .verifications(status: _status, page: p),
               empty: tr3(
-                  '没有认证申请', 'Растау өтінімі жоқ', 'Заявок на верификацию нет'),
+                  '没有认证申请', 'Растау өтінімі жоқ', 'Заявок на верификацию нет', 'No verification requests'),
               item: (context, v) => Padding(
                   padding: const EdgeInsets.only(bottom: YSpace.sm),
                   child: YCard(
@@ -1257,7 +1296,7 @@ class _VerificationsState extends State<_Verifications> {
                                 (_) => ProfilePage(profileId: v.profileId)),
                             child: Text(v.name, style: YText.bodyStrong)),
                         Text(
-                            '${v.ownerName} · ${tr3('电话 ${v.phone}', 'тел. ${v.phone}', 'тел. ${v.phone}')} · ${_date(v.createdAt)}',
+                            '${v.ownerName} · ${tr3('电话 ${v.phone}', 'тел. ${v.phone}', 'тел. ${v.phone}', 'tel. ${v.phone}')} · ${_date(v.createdAt)}',
                             style: YText.caption.copyWith(color: t.muted)),
                         if (v.note.isNotEmpty) Text(v.note),
                         const SizedBox(height: YSpace.sm),
@@ -1269,7 +1308,8 @@ class _VerificationsState extends State<_Verifications> {
                               tr3(
                                   '说明：${v.resolution}',
                                   'Түсініктеме: ${v.resolution}',
-                                  'Пояснение: ${v.resolution}'),
+                                  'Пояснение: ${v.resolution}',
+                                  'Explanation: ${v.resolution}'),
                               style: YText.caption.copyWith(color: t.muted)),
                         if (v.status == VerificationStatus.pending &&
                             canModerate)
@@ -1333,11 +1373,12 @@ class _UsersTabState extends State<_UsersTab> with _Search {
           child: SearchField(
               controller: search,
               hint: tr3('名字、邮箱或账号 ID', 'Аты, email не аккаунт ID',
-                  'Имя, email или ID аккаунта'),
+                  'Имя, email или ID аккаунта',
+                  'Name, email or account ID'),
               onChanged: typed)),
       _Chips<_UserFilter>(options: [
         (_UserFilter.all, _all),
-        (_UserFilter.restricted, tr3('受限', 'Шектелген', 'Ограниченные')),
+        (_UserFilter.restricted, tr3('受限', 'Шектелген', 'Ограниченные', 'Restricted')),
         (_UserFilter.team, _teamTitle),
       ], selected: _filter, onSelect: (v) => setState(() => _filter = v)),
       Expanded(
@@ -1349,7 +1390,7 @@ class _UsersTabState extends State<_UsersTab> with _Search {
                   admins: _filter == _UserFilter.team,
                   page: p),
               empty: tr3(
-                  '没有找到用户', 'Пайдаланушы табылмады', 'Пользователи не найдены'),
+                  '没有找到用户', 'Пайдаланушы табылмады', 'Пользователи не найдены', 'No users found'),
               item: (context, u) => ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Avatar(u.name.isEmpty ? '?' : u.name),
@@ -1379,10 +1420,11 @@ class AccountDetailPage extends StatelessWidget {
         ? await askText(
             context,
             tr3('解除限制：说明', 'Шектеуді алу: түсініктеме',
-                'Снятие ограничения: пояснение'),
+                'Снятие ограничения: пояснение',
+                'Lifting the restriction: explanation'),
             hint: _userSees)
         : await _pickReason(
-            context, tr3('限制原因', 'Шектеу себебі', 'Причина ограничения'),
+            context, tr3('限制原因', 'Шектеу себебі', 'Причина ограничения', 'Restriction reason'),
             codes: const ['fake', 'abuse', 'spam', 'illegal']);
     if (note == null || !context.mounted) return;
     await attempt(
@@ -1391,11 +1433,12 @@ class AccountDetailPage extends StatelessWidget {
             .read(adminRepositoryProvider)
             .setRestriction(a.id, !a.restricted, note),
         success: a.restricted
-            ? tr3('已解除限制', 'Шектеу алынды', 'Ограничение снято')
+            ? tr3('已解除限制', 'Шектеу алынды', 'Ограничение снято', 'Restriction lifted')
             : tr3(
                 '已限制：只能浏览，不能发布、报名和发消息',
                 'Шектелді: тек қарай алады; жариялау, өтінім беру және хабар жазу жабық',
-                'Ограничен: только просмотр, без публикаций, откликов и сообщений'));
+                'Ограничен: только просмотр, без публикаций, откликов и сообщений',
+                'Restricted: view only, no posting, responses or messages'));
   }
 
   Future<void> _ban(BuildContext context, Account a, bool banned) async {
@@ -1405,62 +1448,65 @@ class AccountDetailPage extends StatelessWidget {
         ? await askText(
             context,
             tr3('解封：说明', 'Бұғаттан шығару: түсініктеме',
-                'Разблокировка: пояснение'))
+                'Разблокировка: пояснение',
+                'Unblocking: explanation'))
         : await _pickReason(
-            context, tr3('封禁原因', 'Бұғаттау себебі', 'Причина блокировки'),
+            context, tr3('封禁原因', 'Бұғаттау себебі', 'Причина блокировки', 'Block reason'),
             codes: const ['fake', 'abuse', 'spam', 'illegal']);
     if (note == null || !context.mounted) return;
     await attempt(context, () => api.setBanned(a.id, !banned, note),
         success: banned
-            ? tr3('已解封', 'Бұғаттан шығарылды', 'Разблокирован')
+            ? tr3('已解封', 'Бұғаттан шығарылды', 'Разблокирован', 'Unblocked')
             : tr3('已封禁：不能登录和使用', 'Бұғатталды: кіре алмайды',
-                'Заблокирован: войти нельзя'));
+                'Заблокирован: войти нельзя',
+                "Blocked: can't sign in"));
   }
 
   Future<void> _delete(BuildContext context, Account a) async {
     final api = _http(context);
     if (api == null) return;
     final note = await askText(
-        context, tr3('注销原因', 'Жою себебі', 'Причина удаления'),
+        context, tr3('注销原因', 'Жою себебі', 'Причина удаления', 'Deletion reason'),
         hint: tr3(
             '名片和需求会下架，云端备份删除，不能恢复。',
             'Профильдер мен тапсырыстар алынады, қалпына келмейді.',
-            'Профили и заявки снимаются, восстановить нельзя.'));
+            'Профили и заявки снимаются, восстановить нельзя.',
+            "Profiles and requests are taken down and can't be restored."));
     if (note == null || !context.mounted) return;
     if (!await confirmDialog(context,
-            tr3('注销这个账号？', 'Аккаунтты жою керек пе?', 'Удалить аккаунт?'),
-            ok: tr3('注销', 'Жою', 'Удалить'), danger: true) ||
+            tr3('注销这个账号？', 'Аккаунтты жою керек пе?', 'Удалить аккаунт?', 'Delete the account?'),
+            ok: tr3('注销', 'Жою', 'Удалить', 'Delete'), danger: true) ||
         !context.mounted) {
       return;
     }
     await attempt(context, () => api.deleteAccountFor(a.id, note),
-        success: tr3('已注销', 'Жойылды', 'Удалён'));
+        success: tr3('已注销', 'Жойылды', 'Удалён', 'Deleted'));
   }
 
   Future<void> _takeDown(BuildContext context, String target, String id) async {
     final api = _http(context);
     if (api == null) return;
     final note = await _pickReason(
-        context, tr3('下架原因', 'Алып тастау себебі', 'Причина снятия'));
+        context, tr3('下架原因', 'Алып тастау себебі', 'Причина снятия', 'Takedown reason'));
     if (note == null || !context.mounted) return;
     await attempt(context, () => api.takeDown(target, id, note),
-        success: tr3('已下架', 'Алынды', 'Снято'));
+        success: tr3('已下架', 'Алынды', 'Снято', 'Taken down'));
   }
 
   static String _methodName(String m) => switch (m) {
-        'email' => tr3('邮箱', 'Пошта', 'Почта'),
+        'email' => tr3('邮箱', 'Пошта', 'Почта', 'Email'),
         'google' => 'Google',
         'apple' => 'Apple',
-        _ => tr3('测试登录', 'Тест', 'Тест'),
+        _ => tr3('测试登录', 'Тест', 'Тест', 'Test'),
       };
 
   Future<void> _role(BuildContext context, Account a) async {
     final v = await pickOne<String>(
         context,
-        tr3('后台角色', 'Әкімшіліктегі рөл', 'Роль в админке'),
+        tr3('后台角色', 'Әкімшіліктегі рөл', 'Роль в админке', 'Admin role'),
         [
           for (final r in AdminRoles.all) (r, roleName(r)),
-          ('', tr3('无（撤销）', 'Жоқ (рөлді алу)', 'Нет (снять роль)')),
+          ('', tr3('无（撤销）', 'Жоқ (рөлді алу)', 'Нет (снять роль)', 'None (remove the role)')),
         ],
         selected: a.role ?? '');
     if (v == null || !context.mounted) return;
@@ -1469,7 +1515,7 @@ class AccountDetailPage extends StatelessWidget {
         () => context
             .read(adminRepositoryProvider)
             .setRole(a.id, v.isEmpty ? null : v),
-        success: tr3('已更新角色', 'Рөл жаңартылды', 'Роль обновлена'));
+        success: tr3('已更新角色', 'Рөл жаңартылды', 'Роль обновлена', 'Role updated'));
   }
 
   @override
@@ -1479,7 +1525,7 @@ class AccountDetailPage extends StatelessWidget {
     return Scaffold(
         appBar: AppBar(
             title:
-                Text(tr3('账号详情', 'Аккаунт мәліметі', 'Сведения об аккаунте'))),
+                Text(tr3('账号详情', 'Аккаунт мәліметі', 'Сведения об аккаунте', 'Account details'))),
         body: Live<AccountDetail>(
             provider: accountDetailProvider(accountId),
             builder: (context, d) {
@@ -1512,7 +1558,8 @@ class AccountDetailPage extends StatelessWidget {
                                     tr3(
                                         '最近登录 ${_date(d.lastLogin!)}',
                                         'Соңғы кіру: ${_date(d.lastLogin!)}',
-                                        'Последний вход: ${_date(d.lastLogin!)}'),
+                                        'Последний вход: ${_date(d.lastLogin!)}',
+                                        'Last sign-in: ${_date(d.lastLogin!)}'),
                                 ].join(' · '),
                                 style: YText.caption.copyWith(color: t.muted)),
                           ])),
@@ -1523,10 +1570,10 @@ class AccountDetailPage extends StatelessWidget {
                       if (a.restricted)
                         StatusPill(_restrictedPill, color: t.crit),
                       if (d.banned)
-                        StatusPill(tr3('已封禁', 'Бұғатталған', 'Заблокирован'),
+                        StatusPill(tr3('已封禁', 'Бұғатталған', 'Заблокирован', 'Blocked'),
                             color: t.crit),
                       if (a.deleted)
-                        StatusPill(tr3('已注销', 'Жойылған', 'Удалён')),
+                        StatusPill(tr3('已注销', 'Жойылған', 'Удалён', 'Deleted')),
                     ]),
                     if (!self && !a.deleted) ...[
                       const SizedBox(height: YSpace.md),
@@ -1537,28 +1584,32 @@ class AccountDetailPage extends StatelessWidget {
                               onPressed: () => _restrict(context, a),
                               child: Text(a.restricted
                                   ? tr3('解除限制', 'Шектеуді алу',
-                                      'Снять ограничение')
+                                      'Снять ограничение',
+                                      'Lift the restriction')
                                   : tr3('限制账号', 'Аккаунтты шектеу',
-                                      'Ограничить аккаунт'))),
+                                      'Ограничить аккаунт',
+                                      'Restrict the account'))),
                         if (_may(context, AdminPerms.team) && !a.restricted)
                           OutlinedButton(
                               onPressed: () => _role(context, a),
                               child: Text(tr3('设置后台角色', 'Рөл тағайындау',
-                                  'Назначить роль'))),
+                                  'Назначить роль',
+                                  'Assign a role'))),
                         if (_may(context, AdminPerms.moderate) &&
                             a.role == null)
                           OutlinedButton(
                               onPressed: () => _ban(context, a, d.banned),
                               child: Text(d.banned
                                   ? tr3(
-                                      '解封', 'Бұғаттан шығару', 'Разблокировать')
-                                  : tr3('封禁', 'Бұғаттау', 'Заблокировать'))),
+                                      '解封', 'Бұғаттан шығару', 'Разблокировать', 'Unblock')
+                                  : tr3('封禁', 'Бұғаттау', 'Заблокировать', 'Block'))),
                         if (_may(context, AdminPerms.team) && a.role == null)
                           OutlinedButton(
                               onPressed: () => _delete(context, a),
                               child: Text(
                                   tr3('注销账号', 'Аккаунтты жою',
-                                      'Удалить аккаунт'),
+                                      'Удалить аккаунт',
+                                      'Delete the account'),
                                   style: TextStyle(color: t.crit))),
                       ]),
                     ],
@@ -1567,20 +1618,21 @@ class AccountDetailPage extends StatelessWidget {
                         tr3(
                             '报价/报名 ${d.applications} 次 · 举报他人 ${d.reportsFiled} 次',
                             'Өтінім: ${d.applications} · Берген шағымы: ${d.reportsFiled}',
-                            'Откликов: ${d.applications} · Подано жалоб: ${d.reportsFiled}'),
+                            'Откликов: ${d.applications} · Подано жалоб: ${d.reportsFiled}',
+                            'Responses: ${d.applications} · Reports filed: ${d.reportsFiled}'),
                         style: YText.caption.copyWith(color: t.muted)),
                     if (d.profiles.isNotEmpty) ...[
-                      SectionTitle(tr3('名片', 'Профильдер', 'Профили')),
+                      SectionTitle(tr3('名片', 'Профильдер', 'Профили', 'Profiles')),
                       for (final p in d.profiles)
                         ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(p.name),
                             subtitle: Text([
                               p.status == ProfileStatus.hidden
-                                  ? tr3('隐藏', 'Жасырын', 'Скрыт')
-                                  : tr3('公开', 'Жария', 'Опубликован'),
+                                  ? tr3('隐藏', 'Жасырын', 'Скрыт', 'Hidden')
+                                  : tr3('公开', 'Жария', 'Опубликован', 'Published'),
                               if (p.verified)
-                                tr3('已核验', 'расталған', 'проверен'),
+                                tr3('已核验', 'расталған', 'проверен', 'verified'),
                             ].join(' · ')),
                             onTap: () => pushPage<void>(
                                 context, (_) => ProfilePage(profileId: p.id)),
@@ -1589,25 +1641,26 @@ class AccountDetailPage extends StatelessWidget {
                                 ? TextButton(
                                     onPressed: () =>
                                         _takeDown(context, 'profile', p.id),
-                                    child: Text(tr3('下架', 'Алу', 'Снять')))
+                                    child: Text(tr3('下架', 'Алу', 'Снять', 'Take down')))
                                 : null),
                     ],
                     if (d.posts.isNotEmpty) ...[
-                      SectionTitle(tr3('房子', 'Үйлер', 'Дома')),
+                      SectionTitle(tr3('房子', 'Үйлер', 'Дома', 'Houses')),
                       for (final p in d.posts)
                         ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(p.title),
                             subtitle: Text([
                               p.hidden
-                                  ? tr3('已隐藏', 'Жасырылған', 'Скрыт')
-                                  : tr3('公开', 'Жария', 'Опубликован'),
+                                  ? tr3('已隐藏', 'Жасырылған', 'Скрыт', 'Hidden')
+                                  : tr3('公开', 'Жария', 'Опубликован', 'Published'),
                               if (p.featured)
-                                tr3('精选', 'Таңдаулы', 'В подборке'),
+                                tr3('精选', 'Таңдаулы', 'В подборке', 'Featured'),
                               if (_may(context, AdminPerms.operate) &&
                                   !p.hidden)
                                 tr3('长按设精选', 'Ұзақ басып таңдау',
-                                    'Удерживайте для подборки'),
+                                    'Удерживайте для подборки',
+                                    'Hold to feature'),
                             ].join(' · ')),
                             onLongPress: _may(context, AdminPerms.operate) &&
                                     !p.hidden &&
@@ -1618,11 +1671,13 @@ class AccountDetailPage extends StatelessWidget {
                                         p.id, !p.featured),
                                     success: p.featured
                                         ? tr3('已取消精选', 'Таңдаулыдан алынды',
-                                            'Убрано из подборки')
+                                            'Убрано из подборки',
+                                            'Removed from featured')
                                         : tr3(
                                             '已设为精选，排在首页最前',
                                             'Басты бетте бірінші тұрады',
-                                            'В подборке: первым на главной'))
+                                            'В подборке: первым на главной',
+                                            'Featured: first on the home screen'))
                                 : null,
                             onTap: () =>
                                 pushPage<void>(context, (_) => PostPage(postId: p.id)),
@@ -1635,11 +1690,13 @@ class AccountDetailPage extends StatelessWidget {
                                               tr3(
                                                   '恢复说明',
                                                   'Қайтару түсініктемесі',
-                                                  'Пояснение к восстановлению'))
+                                                  'Пояснение к восстановлению',
+                                                  'Restore explanation'))
                                           : await _pickReason(
                                               context,
                                               tr3('隐藏原因', 'Жасыру себебі',
-                                                  'Причина скрытия'));
+                                                  'Причина скрытия',
+                                                  'Reason for hiding'));
                                       if (note == null || !context.mounted) {
                                         return;
                                       }
@@ -1650,11 +1707,11 @@ class AccountDetailPage extends StatelessWidget {
                                               .setPostHidden(
                                                   p.id, !p.hidden, note));
                                     },
-                                    child: Text(p.hidden ? tr3('恢复', 'Қайтару', 'Вернуть') : tr3('隐藏', 'Жасыру', 'Скрыть')))
+                                    child: Text(p.hidden ? tr3('恢复', 'Қайтару', 'Вернуть', 'Restore') : tr3('隐藏', 'Жасыру', 'Скрыть', 'Hide')))
                                 : null),
                     ],
                     if (d.demands.isNotEmpty) ...[
-                      SectionTitle(tr3('需求', 'Тапсырыстар', 'Заявки')),
+                      SectionTitle(tr3('需求', 'Тапсырыстар', 'Заявки', 'Requests')),
                       for (final x in d.demands) ...[
                         _DemandCard(
                             demand: x,
@@ -1672,14 +1729,16 @@ class AccountDetailPage extends StatelessWidget {
                                   onPressed: () =>
                                       _takeDown(context, 'demand', x.id),
                                   child: Text(tr3('下架这个需求', 'Тапсырысты алу',
-                                      'Снять заявку')))),
+                                      'Снять заявку',
+                                      'Take down the request')))),
                       ],
                     ],
                     if (d.cooperations.isNotEmpty) ...[
                       SectionTitle(tr3(
                           '合作 ${d.cooperations.length}',
                           'Келісімдер: ${d.cooperations.length}',
-                          'Сделки: ${d.cooperations.length}')),
+                          'Сделки: ${d.cooperations.length}',
+                          'Deals: ${d.cooperations.length}')),
                       for (final c in d.cooperations)
                         Text(
                             [
@@ -1689,20 +1748,22 @@ class AccountDetailPage extends StatelessWidget {
                                 tr3(
                                     '争议：${c.endRequest!.dispute}',
                                     'Дау: ${c.endRequest!.dispute}',
-                                    'Спор: ${c.endRequest!.dispute}'),
+                                    'Спор: ${c.endRequest!.dispute}',
+                                    'Dispute: ${c.endRequest!.dispute}'),
                             ].join(' · '),
                             style: YText.caption),
                     ],
                     if (d.reportsAbout.isNotEmpty) ...[
                       SectionTitle(tr3('被举报', 'Үстінен түскен шағымдар',
-                          'Жалобы на аккаунт')),
+                          'Жалобы на аккаунт',
+                          'Reports against the account')),
                       for (final r in d.reportsAbout)
                         Text(
                             '${_date(r.createdAt)} · ${_reportTargetName(r.target)} · ${_reasonLabel(r.reason)} · ${_reportStatusName(r.status)}',
                             style: YText.caption),
                     ],
                     if (d.appeals.isNotEmpty) ...[
-                      SectionTitle(tr3('申诉', 'Апелляциялар', 'Апелляции')),
+                      SectionTitle(tr3('申诉', 'Апелляциялар', 'Апелляции', 'Appeals')),
                       for (final x in d.appeals)
                         Text(
                             '${_date(x.createdAt)} · ${_targetName(x.target)} · ${x.text}',
@@ -1710,7 +1771,7 @@ class AccountDetailPage extends StatelessWidget {
                     ],
                     if (d.audit.isNotEmpty) ...[
                       SectionTitle(
-                          tr3('处理记录', 'Шешімдер тарихы', 'История решений')),
+                          tr3('处理记录', 'Шешімдер тарихы', 'История решений', 'Decision history')),
                       for (final e in d.audit) _AuditRow(e),
                     ],
                   ]);
@@ -1726,19 +1787,20 @@ class _MoreTab extends StatelessWidget {
   Widget build(BuildContext context) => ListView(
           padding: const EdgeInsets.symmetric(horizontal: YSpace.gutter),
           children: [
-            SettingsGroup(title: tr3('内容', 'Мазмұн', 'Контент'), children: [
+            SettingsGroup(title: tr3('内容', 'Мазмұн', 'Контент', 'Content'), children: [
               SettingsRow(
                   icon: Icons.list_alt,
-                  title: tr3('全部需求', 'Барлық тапсырыстар', 'Все заявки'),
+                  title: tr3('全部需求', 'Барлық тапсырыстар', 'Все заявки', 'All requests'),
                   subtitle: tr3(
                       '按状态筛选、搜索标题，可下架已公开的需求',
                       'Күйі бойынша сүзу, атауынан іздеу, жарияланған тапсырысты алып тастау',
-                      'Фильтр по статусу, поиск по названию, снятие опубликованных заявок'),
+                      'Фильтр по статусу, поиск по названию, снятие опубликованных заявок',
+                      'Filter by status, search by title, take down published requests'),
                   onTap: () =>
                       pushPage<void>(context, (_) => const _AllDemandsPage())),
             ]),
             SettingsGroup(
-                title: tr3('团队与记录', 'Команда және журнал', 'Команда и журнал'),
+                title: tr3('团队与记录', 'Команда және журнал', 'Команда и журнал', 'Team and log'),
                 children: [
                   SettingsRow(
                       icon: Icons.badge_outlined,
@@ -1748,65 +1810,70 @@ class _MoreTab extends StatelessWidget {
                   SettingsRow(
                       icon: Icons.history,
                       title:
-                          tr3('操作记录', 'Әрекеттер журналы', 'Журнал действий'),
+                          tr3('操作记录', 'Әрекеттер журналы', 'Журнал действий', 'Action log'),
                       subtitle: tr3(
                           '每一个决定：谁、何时、为什么',
                           'Әр шешім: кім, қашан, не үшін',
-                          'Каждое решение: кто, когда и почему'),
+                          'Каждое решение: кто, когда и почему',
+                          'Every decision: who, when and why'),
                       onTap: () =>
                           pushPage<void>(context, (_) => const AuditPage())),
                 ]),
             SettingsGroup(
                 title: tr3('用户与数据', 'Қолданушылар мен деректер',
-                    'Пользователи и данные'),
+                    'Пользователи и данные',
+                    'Users and data'),
                 children: [
                   SettingsRow(
                       key: const Key('admin-feedback'),
                       icon: Icons.mark_email_unread_outlined,
-                      title: tr3('用户反馈', 'Пікірлер', 'Обратная связь'),
+                      title: tr3('用户反馈', 'Пікірлер', 'Обратная связь', 'Feedback'),
                       onTap: () => pushPage<void>(
                           context, (_) => const FeedbackInboxPage())),
                   SettingsRow(
                       key: const Key('admin-trends'),
                       icon: Icons.insights_outlined,
                       title: tr3(
-                          '近 30 天趋势', 'Соңғы 30 күн', 'Динамика за 30 дней'),
+                          '近 30 天趋势', 'Соңғы 30 күн', 'Динамика за 30 дней', '30-day trends'),
                       onTap: () =>
                           pushPage<void>(context, (_) => const TrendsPage())),
                   if (_may(context, AdminPerms.team)) ...[
                     SettingsRow(
                         icon: Icons.file_download_outlined,
                         title: tr3('导出用户表', 'Қолданушыларды экспорттау',
-                            'Экспорт пользователей'),
+                            'Экспорт пользователей',
+                            'Export users'),
                         onTap: () => _export(context, 'users')),
                     SettingsRow(
                         icon: Icons.file_download_outlined,
                         title: tr3('导出需求表', 'Тапсырыстарды экспорттау',
-                            'Экспорт заявок'),
+                            'Экспорт заявок',
+                            'Export requests'),
                         onTap: () => _export(context, 'demands')),
                   ],
                 ]),
             SettingsGroup(
-                title: tr3('运营', 'Операциялар', 'Операции'),
+                title: tr3('运营', 'Операциялар', 'Операции', 'Operations'),
                 children: [
                   if (_may(context, AdminPerms.operate))
                     SettingsRow(
                         key: const Key('admin-broadcast'),
                         icon: Icons.campaign_outlined,
-                        title: tr3('群发通知', 'Жаппай хабарландыру', 'Рассылка'),
+                        title: tr3('群发通知', 'Жаппай хабарландыру', 'Рассылка', 'Broadcast'),
                         subtitle: tr3('推送到所有用户的手机', 'Барлық телефонға',
-                            'На все телефоны'),
+                            'На все телефоны',
+                            'To all phones'),
                         onTap: () => pushPage<void>(
                             context, (_) => const BroadcastPage())),
                   SettingsRow(
                       key: const Key('admin-banned-words'),
                       icon: Icons.block_outlined,
-                      title: tr3('违禁词', 'Тыйым сөздер', 'Запрещённые слова'),
+                      title: tr3('违禁词', 'Тыйым сөздер', 'Запрещённые слова', 'Banned words'),
                       onTap: () => pushPage<void>(
                           context, (_) => const BannedWordsPage())),
                 ]),
             SettingsGroup(
-                title: tr3('推送', 'Хабарландырулар', 'Уведомления'),
+                title: tr3('推送', 'Хабарландырулар', 'Уведомления', 'Notifications'),
                 children: [
                   SettingsRow(
                       icon: Icons.notifications_paused_outlined,
@@ -1814,7 +1881,8 @@ class _MoreTab extends StatelessWidget {
                       subtitle: tr3(
                           '平台免打扰时段与每人每日上限',
                           '«Мазаламау» уақыты және бір адамға күндік шек',
-                          'Тихие часы и дневной лимит на человека'),
+                          'Тихие часы и дневной лимит на человека',
+                          'Quiet hours and daily limit per person'),
                       onTap: () => pushPage<void>(
                           context, (_) => const _PushPolicyPage())),
                 ]),
@@ -1835,14 +1903,14 @@ class _AllDemandsPageState extends State<_AllDemandsPage> with _Search {
     final canModerate = _may(context, AdminPerms.moderate);
     return Scaffold(
         appBar: AppBar(
-            title: Text(tr3('全部需求', 'Барлық тапсырыстар', 'Все заявки'))),
+            title: Text(tr3('全部需求', 'Барлық тапсырыстар', 'Все заявки', 'All requests'))),
         body: Column(children: [
           Padding(
               padding: const EdgeInsets.fromLTRB(
                   YSpace.gutter, YSpace.sm, YSpace.gutter, 0),
               child: SearchField(
                   controller: search,
-                  hint: tr3('搜索标题', 'Атауы бойынша іздеу', 'Поиск по названию'),
+                  hint: tr3('搜索标题', 'Атауы бойынша іздеу', 'Поиск по названию', 'Search by title'),
                   onChanged: typed)),
           _Chips<DemandStatus?>(options: [
             for (final s in const [
@@ -1863,7 +1931,7 @@ class _AllDemandsPageState extends State<_AllDemandsPage> with _Search {
                   load: (p) => context
                       .read(adminRepositoryProvider)
                       .adminDemands(status: _status, query: _q, page: p),
-                  empty: tr3('没有需求', 'Тапсырыс жоқ', 'Заявок нет'),
+                  empty: tr3('没有需求', 'Тапсырыс жоқ', 'Заявок нет', 'No requests'),
                   item: (context, d) => _DemandCard(
                       demand: d,
                       onTap: () => pushPage<void>(
@@ -1875,7 +1943,8 @@ class _AllDemandsPageState extends State<_AllDemandsPage> with _Search {
                               final r = await _pickReason(
                                   context,
                                   tr3('下架原因', 'Алып тастау себебі',
-                                      'Причина снятия'));
+                                      'Причина снятия',
+                                      'Takedown reason'));
                               if (r == null || !context.mounted) return;
                               await attempt(
                                   context,
@@ -1883,7 +1952,7 @@ class _AllDemandsPageState extends State<_AllDemandsPage> with _Search {
                                       .read(adminRepositoryProvider)
                                       .reject(d.id, r),
                                   success:
-                                      tr3('已下架', 'Алып тасталды', 'Снято'));
+                                      tr3('已下架', 'Алып тасталды', 'Снято', 'Taken down'));
                             }
                           : null))),
         ]));
@@ -1903,7 +1972,8 @@ class _TeamPage extends StatelessWidget {
                     tr3(
                         '超级管理员：全部权限，管理团队；审核员：审核需求、处理举报申诉与认证、限制账号；运营：推送节制；只读：只能查看。角色在“用户”里点开账号设置，不能改自己的角色。',
                         'Бас әкімші: барлық құқық, команданы басқарады. Модератор: тапсырыстарды тексереді, шағымдарды, апелляцияларды және растауды қарайды, аккаунттарды шектейді. Оператор: хабарландыру шектеулері. Тек оқу: тек қарай алады. Рөл «Қолданушылар» қойындысында аккаунтты ашып тағайындалады; өз рөліңізді өзгерте алмайсыз.',
-                        'Суперадмин: все права, управляет командой. Модератор: проверяет заявки, разбирает жалобы, апелляции и верификацию, ограничивает аккаунты. Оператор: ограничения уведомлений. Только чтение: только просмотр. Роль назначается на вкладке «Пользователи» в карточке аккаунта; свою роль изменить нельзя.'),
+                        'Суперадмин: все права, управляет командой. Модератор: проверяет заявки, разбирает жалобы, апелляции и верификацию, ограничивает аккаунты. Оператор: ограничения уведомлений. Только чтение: только просмотр. Роль назначается на вкладке «Пользователи» в карточке аккаунта; свою роль изменить нельзя.',
+                        "Super admin: all rights, manages the team. Moderator: reviews requests, handles reports, appeals and verification, restricts accounts. Operator: notification limits. Read only: view only. Roles are assigned on the “Users” tab in the account card; you can't change your own role."),
                     style: YText.caption
                         .copyWith(color: YTokens.of(context).muted)),
                 const SizedBox(height: YSpace.md),
@@ -1929,10 +1999,10 @@ class _AuditRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(
-              '${_actionName(e.action)}${e.target.isEmpty ? '' : ' · ${_targetName(e.target)}'}${e.title.isEmpty ? '' : tr3('「${e.title}」', ' «${e.title}»', ' «${e.title}»')}',
+              '${_actionName(e.action)}${e.target.isEmpty ? '' : ' · ${_targetName(e.target)}'}${e.title.isEmpty ? '' : tr3('「${e.title}」', ' «${e.title}»', ' «${e.title}»', ' “${e.title}”')}',
               style: YText.body),
           Text(
-              '${e.by.isEmpty || e.by == 'system' ? tr3('自动审核', 'Автоматты тексеру', 'Автопроверка') : (e.byName.isEmpty ? e.by : e.byName)} · ${_date(e.at)}${e.reason.isEmpty ? '' : ' · ${_reasonLabel(e.reason)}'}',
+              '${e.by.isEmpty || e.by == 'system' ? tr3('自动审核', 'Автоматты тексеру', 'Автопроверка', 'Auto check') : (e.byName.isEmpty ? e.by : e.byName)} · ${_date(e.at)}${e.reason.isEmpty ? '' : ' · ${_reasonLabel(e.reason)}'}',
               style: YText.caption.copyWith(color: t.muted)),
         ]));
   }
@@ -1944,11 +2014,11 @@ class AuditPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(
-          title: Text(tr3('操作记录', 'Әрекеттер журналы', 'Журнал действий'))),
+          title: Text(tr3('操作记录', 'Әрекеттер журналы', 'Журнал действий', 'Action log'))),
       body: _PagedList<AuditEntry>(
           key: const ValueKey('audit'),
           load: (p) => context.read(adminRepositoryProvider).audit(page: p),
-          empty: tr3('还没有记录', 'Әзірге жазба жоқ', 'Записей пока нет'),
+          empty: tr3('还没有记录', 'Әзірге жазба жоқ', 'Записей пока нет', 'No entries yet'),
           item: (context, e) => _AuditRow(e)));
 }
 
@@ -1958,24 +2028,24 @@ class _PushPolicyPage extends StatelessWidget {
   static const _hours = ['', '20:00', '21:00', '22:00', '23:00', '00:00'];
   static const _ends = ['', '06:00', '07:00', '08:00', '09:00'];
 
-  static String get _noQuiet => tr3('不限制', 'Шектеусіз', 'Не ограничено');
+  static String get _noQuiet => tr3('不限制', 'Шектеусіз', 'Не ограничено', 'Unlimited');
   static String _cap(int n) => n == 0
-      ? tr3('不限', 'Шексіз', 'Без лимита')
-      : tr3('$n 条', 'Күніне $n', '$n в день');
+      ? tr3('不限', 'Шексіз', 'Без лимита', 'No limit')
+      : tr3('$n 条', 'Күніне $n', '$n в день', '$n a day');
 
   Future<void> _save(BuildContext context, PushPolicy p) => attempt(
       context, () => context.read(adminRepositoryProvider).savePushPolicy(p),
-      success: tr3('已保存', 'Сақталды', 'Сохранено'));
+      success: tr3('已保存', 'Сақталды', 'Сохранено', 'Saved'));
 
   @override
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     final canOperate = _may(context, AdminPerms.operate);
     final quietStart =
-        tr3('免打扰开始', '«Мазаламау» басталуы', 'Начало тихих часов');
-    final quietEnd = tr3('免打扰结束', '«Мазаламау» аяқталуы', 'Конец тихих часов');
+        tr3('免打扰开始', '«Мазаламау» басталуы', 'Начало тихих часов', 'Quiet hours start');
+    final quietEnd = tr3('免打扰结束', '«Мазаламау» аяқталуы', 'Конец тихих часов', 'Quiet hours end');
     final dailyCap =
-        tr3('每人每日上限', 'Бір адамға күндік шек', 'Дневной лимит на человека');
+        tr3('每人每日上限', 'Бір адамға күндік шек', 'Дневной лимит на человека', 'Daily limit per person');
     return Scaffold(
         appBar: AppBar(title: Text(_pushTitle)),
         body: Live<PushPolicy>(
@@ -2072,13 +2142,15 @@ class _PushPolicyPage extends StatelessWidget {
                               tr3(
                                       '只限制点赞、点评和新需求提醒；报名、合作、验收等交易通知总会推送。时间按 UTC+5。消息列表不受影响。',
                                       'Тек ұнату, пікір және жаңа тапсырыс туралы хабарландырулар шектеледі; өтінім, келісім, қабылдау сияқты мәміле хабарландырулары әрдайым жіберіледі. Уақыт UTC+5 бойынша. Хабарлар тізіміне әсер етпейді.',
-                                      'Ограничиваются только уведомления о лайках, отзывах и новых заявках; уведомления по сделкам (отклики, соглашения, приёмка) приходят всегда. Время по UTC+5. На список сообщений не влияет.') +
+                                      'Ограничиваются только уведомления о лайках, отзывах и новых заявках; уведомления по сделкам (отклики, соглашения, приёмка) приходят всегда. Время по UTC+5. На список сообщений не влияет.',
+                                      "Only notifications about likes, reviews and new requests are limited; deal notifications (responses, agreements, acceptance) always arrive. Times are UTC+5. Doesn't affect the message list.") +
                                   (canOperate
                                       ? ''
                                       : tr3(
                                           '\n只有运营或超级管理员可以修改。',
                                           '\nТек оператор не бас әкімші өзгерте алады.',
-                                          '\nМенять может только оператор или суперадмин.')),
+                                          '\nМенять может только оператор или суперадмин.',
+                                          '\nOnly an operator or super admin can change this.')),
                               style: YText.caption.copyWith(color: t.muted))),
                     ])));
   }

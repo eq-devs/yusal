@@ -28,7 +28,8 @@ Future<List<List<int>>> pickPhotos(BuildContext context,
       toast(
           context,
           tr3('无法打开相册', 'Галереяны ашу мүмкін емес',
-              'Не удалось открыть галерею'));
+              'Не удалось открыть галерею',
+              "Couldn't open the gallery"));
     }
     return const [];
   }
@@ -50,12 +51,14 @@ Future<List<List<int>>> pickPhotos(BuildContext context,
         [
           if (skipped > 0)
             tr3('$skipped 张照片无法读取或太大', '$skipped фото оқылмады не тым үлкен',
-                '$skipped фото не удалось прочитать или они слишком большие'),
+                '$skipped фото не удалось прочитать или они слишком большие',
+                "$skipped photos couldn't be read or are too large"),
           if (over > 0)
             tr3(
                 '这次只能再加 $max 张，$over 张没有加入',
                 'Тағы $max фото ғана қосуға болады, $over қосылмады',
-                'Можно добавить ещё $max фото, $over не добавлено'),
+                'Можно добавить ещё $max фото, $over не добавлено',
+                'You can add $max more photos; $over were not added'),
         ].join(' · '));
   }
   return out;

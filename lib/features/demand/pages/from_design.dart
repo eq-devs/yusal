@@ -44,7 +44,8 @@ class _FromDesignPageState extends State<FromDesignPage> {
       failure = tr3(
           '无法从这个设计提取工程量，可以在下一步手填。',
           'Көлемді алу мүмкін болмады, қолмен толтырыңыз.',
-          'Не удалось посчитать объёмы — заполните вручную.');
+          'Не удалось посчитать объёмы — заполните вручную.',
+          "Couldn't calculate the quantities; fill them in by hand.");
     }
     removed.clear();
   }
@@ -63,7 +64,8 @@ class _FromDesignPageState extends State<FromDesignPage> {
         : tr3(
             '${m(e.width)} × ${m(e.depth)} 米 · ${e.floors} 层 · 建筑面积 ${e.buildingArea.toStringAsFixed(0)} ㎡',
             '${m(e.width)} × ${m(e.depth)} м · ${e.floors} қабат · ${e.buildingArea.toStringAsFixed(0)} м²',
-            '${m(e.width)} × ${m(e.depth)} м · этажей: ${e.floors} · ${e.buildingArea.toStringAsFixed(0)} м²');
+            '${m(e.width)} × ${m(e.depth)} м · этажей: ${e.floors} · ${e.buildingArea.toStringAsFixed(0)} м²',
+            '${m(e.width)} × ${m(e.depth)} m · floors: ${e.floors} · ${e.buildingArea.toStringAsFixed(0)} m²');
     final snapshot = buildSnapshot(
         projectId: widget.entry.id,
         doc: doc,
@@ -84,10 +86,10 @@ class _FromDesignPageState extends State<FromDesignPage> {
     final all = stages.length == snapshotStages.length;
     return PageScaffold(
         title: tr3(
-            '从设计找施工方', 'Жобадан мердігер іздеу', 'Найти подрядчика по проекту'),
+            '从设计找施工方', 'Жобадан мердігер іздеу', 'Найти подрядчика по проекту', 'Find a contractor for the design'),
         bottom: FilledButton(
             onPressed: stages.isEmpty ? null : next,
-            child: Text(tr3('下一步：补充信息', 'Келесі', 'Далее'))),
+            child: Text(tr3('下一步：补充信息', 'Келесі', 'Далее', 'Next'))),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(widget.entry.document.meta.name,
               style: const TextStyle(
@@ -97,12 +99,13 @@ class _FromDesignPageState extends State<FromDesignPage> {
               tr3(
                   '设计版本：${fmtDay(DateTime.tryParse(widget.entry.document.meta.updatedAt))}',
                   'Жоба нұсқасы: ${fmtDay(DateTime.tryParse(widget.entry.document.meta.updatedAt))}',
-                  'Версия проекта: ${fmtDay(DateTime.tryParse(widget.entry.document.meta.updatedAt))}'),
+                  'Версия проекта: ${fmtDay(DateTime.tryParse(widget.entry.document.meta.updatedAt))}',
+                  'Design version: ${fmtDay(DateTime.tryParse(widget.entry.document.meta.updatedAt))}'),
               style: TextStyle(color: t.muted)),
-          SectionTitle(tr3('选择范围', 'Көлемді таңдау', 'Что поручить')),
+          SectionTitle(tr3('选择范围', 'Көлемді таңдау', 'Что поручить', 'What to hand over')),
           Wrap(spacing: 8, runSpacing: 8, children: [
             FilterPill(
-                label: tr3('整栋', 'Толық үй', 'Весь дом'),
+                label: tr3('整栋', 'Толық үй', 'Весь дом', 'Whole house'),
                 selected: all,
                 onTap: () => setState(() {
                       stages
@@ -119,12 +122,13 @@ class _FromDesignPageState extends State<FromDesignPage> {
                         refresh();
                       })),
           ]),
-          SectionTitle(tr3('确认工程量', 'Көлемді растау', 'Проверьте объёмы')),
+          SectionTitle(tr3('确认工程量', 'Көлемді растау', 'Проверьте объёмы', 'Check the quantities')),
           Text(
               tr3(
                   '来自设计的工程量按当前设计计算；标“手填”的是估算值。去掉不需要的行，下一步还可以手动增删。',
                   'Жобадан есептелді; қажетсізін алып тастаңыз.',
-                  'Объёмы посчитаны по проекту; уберите лишнее, дальше можно дополнить.'),
+                  'Объёмы посчитаны по проекту; уберите лишнее, дальше можно дополнить.',
+                  "Quantities are calculated from the design; remove what's extra, you can add more later."),
               style: TextStyle(color: t.muted)),
           const SizedBox(height: 10),
           if (failure != null) Hint(failure!, warn: true),
@@ -132,7 +136,8 @@ class _FromDesignPageState extends State<FromDesignPage> {
             Hint(tr3(
                 '这些阶段没有可提取的工程量，可以在下一步手填并注明来源。',
                 'Көлем жоқ, қолмен толтырыңыз.',
-                'Нет объёмов для этих этапов — заполните вручную.')),
+                'Нет объёмов для этих этапов — заполните вручную.',
+                'No quantities for these stages; fill them in by hand.')),
           if (e != null)
             for (final (i, l) in e.lines.indexed)
               CheckboxListTile(
@@ -152,7 +157,8 @@ class _FromDesignPageState extends State<FromDesignPage> {
           Hint(tr3(
               '发布后附件固定为此刻的设计版本。设计检查结果不代表具备施工或审批资格。',
               'Тіркеме осы нұсқада бекітіледі.',
-              'Вложение фиксируется на текущей версии проекта.')),
+              'Вложение фиксируется на текущей версии проекта.',
+              'The attachment is captured at the current design version.')),
           if (e != null && e.lines.isNotEmpty) ...[
             const SizedBox(height: 16),
             QtyTable([

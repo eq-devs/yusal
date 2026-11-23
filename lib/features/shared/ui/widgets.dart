@@ -6,6 +6,7 @@ import 'package:yusal/features/shared/ui/voice_slot.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 export 'package:yusal/utils/image_bytes.dart';
 
@@ -251,11 +252,15 @@ class FilterPill extends StatelessWidget {
       required this.selected,
       required this.onTap,
       this.icon,
+      this.yicon,
       this.menu = false});
   final String label;
   final bool selected;
   final VoidCallback? onTap;
   final IconData? icon;
+
+  /// A logo-book icon, drawn instead of [icon].
+  final YIcon? yicon;
 
   /// Shows a chevron: tapping opens choices instead of toggling.
   final bool menu;
@@ -290,7 +295,10 @@ class FilterPill extends StatelessWidget {
                                 EdgeInsets.fromLTRB(14, 8, menu ? 8 : 14, 8),
                             child:
                                 Row(mainAxisSize: MainAxisSize.min, children: [
-                              if (icon != null) ...[
+                              if (yicon != null) ...[
+                                YusalIcon(yicon!, size: 16, color: fg),
+                                const SizedBox(width: 6),
+                              ] else if (icon != null) ...[
                                 Icon(icon, size: 16, color: fg),
                                 const SizedBox(width: 6),
                               ],
@@ -373,9 +381,13 @@ class EmptyState extends StatelessWidget {
       {super.key,
       required this.icon,
       required this.title,
+      this.yicon,
       this.body,
       this.action});
   final IconData icon;
+
+  /// A logo-book icon, drawn instead of [icon].
+  final YIcon? yicon;
   final String title;
   final String? body;
   final Widget? action;
@@ -385,7 +397,10 @@ class EmptyState extends StatelessWidget {
     return Padding(
         padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 40, color: t.faint),
+          if (yicon != null)
+            YusalIcon(yicon!, size: 40, color: t.faint, mono: true)
+          else
+            Icon(icon, size: 40, color: t.faint),
           const SizedBox(height: 14),
           Text(title,
               textAlign: TextAlign.center,
@@ -605,7 +620,7 @@ Future<List<T>?> pickMany<T>(BuildContext context, String title,
                                           for (final (v, _) in options)
                                             if (chosen.contains(v)) v
                                         ]),
-                                    child: Text(tr3('完成', 'Дайын', 'Готово')))),
+                                    child: Text(tr3('完成', 'Дайын', 'Готово', 'Done')))),
                           ]))))));
 }
 
@@ -703,8 +718,8 @@ Future<bool> confirmDialog(BuildContext context, String title,
       builder: (context) => PlatformTheme(
               child: SheetBody(title: title, body: body, children: [
             SheetAnswers(
-                cancel: tr3('取消', 'Болдырмау', 'Отмена'),
-                ok: ok ?? tr3('确定', 'Иә', 'Да'),
+                cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'),
+                ok: ok ?? tr3('确定', 'Иә', 'Да', 'Yes'),
                 danger: danger,
                 onOk: () => Navigator.pop(context, true)),
           ])));
@@ -729,8 +744,8 @@ Future<String?> askText(BuildContext context, String title,
                 decoration: InputDecoration(hintText: hint)),
             const SizedBox(height: 14),
             SheetAnswers(
-                cancel: tr3('取消', 'Болдырмау', 'Отмена'),
-                ok: tr3('确定', 'Иә', 'Да'),
+                cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel'),
+                ok: tr3('确定', 'Иә', 'Да', 'Yes'),
                 onOk: () {
                   if (required && controller.text.trim().isEmpty) return;
                   Navigator.pop(context, controller.text.trim());
@@ -832,7 +847,22 @@ class VerifiedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Tooltip(
       message: tr3('已核验身份与施工现场，不代表质量担保', 'Жеке басы тексерілген',
-          'Личность и объекты проверены, качество не гарантируется'),
+          'Личность и объекты проверены, качество не гарантируется',
+          'Identity and projects verified; quality not guaranteed'),
       child:
           Icon(Icons.verified, size: size, color: YTokens.of(context).accent));
+}
+
+/// Space the floating Discover header takes at the top of each segment's
+/// list, so the first rows start below it.
+class ExploreInset extends InheritedWidget {
+  const ExploreInset({super.key, required this.top, required super.child});
+  final double top;
+
+  /// The header's height, or 0 outside Discover.
+  static double of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<ExploreInset>()?.top ?? 0;
+
+  @override
+  bool updateShouldNotify(ExploreInset old) => old.top != top;
 }

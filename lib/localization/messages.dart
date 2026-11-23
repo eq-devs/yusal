@@ -1,3 +1,4 @@
+import 'package:yusal/localization/messages_en.dart';
 import 'package:yusal/localization/messages_ru.dart';
 import 'package:yusal/service/settings/settings.dart';
 
@@ -139,117 +140,156 @@ const _exact = {
 };
 
 /// (Chinese pattern, Kazakh text, Russian text).
-final _patterns = <(RegExp, String Function(Match), String Function(Match))>[
+final _patterns = <(
+  RegExp,
+  String Function(Match),
+  String Function(Match),
+  String Function(Match)
+)>[
   (
     RegExp(r'^这里放不下楼梯，净空至少要 ([\d.]+) × ([\d.]+) 米$'),
     (m) =>
         'Мұнда баспалдақ сыймайды: кемінде ${_d(m[1]!)} × ${_d(m[2]!)} м бос орын керек',
     (m) =>
-        'Лестница здесь не поместится: нужно не меньше ${_d(m[1]!)} × ${_d(m[2]!)} м в свету'
+        'Лестница здесь не поместится: нужно не меньше ${_d(m[1]!)} × ${_d(m[2]!)} м в свету',
+    (m) =>
+        "Stairs won't fit here: you need at least ${m[1]} × ${m[2]} m clear"
   ),
   (
     RegExp(r'^(.+)还有 ([\d.]+) ㎡ 没有划分成房间。$'),
     (m) => '${_name(m[1]!)}: ${_d(m[2]!)} м² әлі бөлмеге бөлінбеген.',
-    (m) => '${_name(m[1]!)}: ${_d(m[2]!)} м² ещё не разделено на комнаты.'
+    (m) => '${_name(m[1]!)}: ${_d(m[2]!)} м² ещё не разделено на комнаты.',
+    (m) =>
+        "${_name(m[1]!)}: ${m[2]} m² isn't divided into rooms yet."
   ),
   (
     RegExp(r'^(.+)净面积  ?([\d.]+) ㎡，建议至少 ([\d.]+) ㎡。$'),
     (m) =>
         '${_name(m[1]!)}: таза аудан ${_d(m[2]!)} м², кемінде ${_d(m[3]!)} м² ұсынылады.',
     (m) =>
-        '${_name(m[1]!)}: чистая площадь ${_d(m[2]!)} м², рекомендуется не меньше ${_d(m[3]!)} м².'
+        '${_name(m[1]!)}: чистая площадь ${_d(m[2]!)} м², рекомендуется не меньше ${_d(m[3]!)} м².',
+    (m) =>
+        '${_name(m[1]!)}: net area ${m[2]} m²; at least ${m[3]} m² is recommended.'
   ),
   (
     RegExp(r'^(.+)最窄处净宽  ?([\d.]+) 米，建议不小于 ([\d.]+) 米。$'),
     (m) =>
         '${_name(m[1]!)}: ең тар жері ${_d(m[2]!)} м, кемінде ${_d(m[3]!)} м ұсынылады.',
     (m) =>
-        '${_name(m[1]!)}: в самом узком месте ${_d(m[2]!)} м, рекомендуется не меньше ${_d(m[3]!)} м.'
+        '${_name(m[1]!)}: в самом узком месте ${_d(m[2]!)} м, рекомендуется не меньше ${_d(m[3]!)} м.',
+    (m) =>
+        '${_name(m[1]!)}: ${m[2]} m at the narrowest; at least ${m[3]} m is recommended.'
   ),
   (
     RegExp(r'^(.+)没有窗，采光和通风会很差。可以在外墙上加一扇窗。$'),
     (m) =>
         '${_name(m[1]!)}: терезе жоқ, жарық пен желдету нашар болады. Сыртқы қабырғаға терезе қосыңыз.',
     (m) =>
-        '${_name(m[1]!)}: нет окна, будет мало света и воздуха. Добавьте окно в наружной стене.'
+        '${_name(m[1]!)}: нет окна, будет мало света и воздуха. Добавьте окно в наружной стене.',
+    (m) =>
+        '${_name(m[1]!)}: no window, so light and ventilation will be poor. Add a window in an outer wall.'
   ),
   (
     RegExp(r'^(.+)还没有门，进不去。可以在墙上加一扇门，或把一段墙设为开放。$'),
     (m) =>
         '${_name(m[1]!)}: есігі жоқ, кіру мүмкін емес. Есік қосыңыз немесе қабырғаның бір бөлігін ашық етіңіз.',
     (m) =>
-        '${_name(m[1]!)}: нет двери, войти нельзя. Добавьте дверь или сделайте часть стены открытой.'
+        '${_name(m[1]!)}: нет двери, войти нельзя. Добавьте дверь или сделайте часть стены открытой.',
+    (m) =>
+        "${_name(m[1]!)}: no door, so it can't be entered. Add a door or make part of a wall open."
   ),
   (
     RegExp(r'^(.+)这里的墙已经占满了可用空间，净宽为 0。可以加宽这一格，或调整墙厚。$'),
     (m) =>
         '${_name(m[1]!)}: қабырғалар бос орынды толық алды, таза ені 0. Торды кеңейтіңіз не қабырға қалыңдығын өзгертіңіз.',
     (m) =>
-        '${_name(m[1]!)}: стены заняли всё свободное место, ширина в свету 0. Расширьте ячейку или измените толщину стен.'
+        '${_name(m[1]!)}: стены заняли всё свободное место, ширина в свету 0. Расширьте ячейку или измените толщину стен.',
+    (m) =>
+        '${_name(m[1]!)}: walls fill all the free space, clear width 0. Widen the cell or change the wall thickness.'
   ),
   (
     RegExp(r'^楼梯放不下，至少需要 ([\d.]+) × ([\d.]+) 米净空间。$'),
     (m) =>
         'Баспалдақ сыймайды, кемінде ${_d(m[1]!)} × ${_d(m[2]!)} м таза орын керек.',
     (m) =>
-        'Лестница не помещается: нужно не меньше ${_d(m[1]!)} × ${_d(m[2]!)} м свободного места.'
+        'Лестница не помещается: нужно не меньше ${_d(m[1]!)} × ${_d(m[2]!)} м свободного места.',
+    (m) =>
+        "The stairs don't fit; they need at least ${m[1]} × ${m[2]} m of clear space."
   ),
   (
     RegExp(r'^合并后有 (\d+) 个门窗所在的墙会消失，需要同时移除这些门窗。$'),
     (m) =>
         'Біріктірген соң ${m[1]} есік-терезенің қабырғасы жоғалады, оларды да алып тастау керек.',
     (m) =>
-        'После объединения исчезнет стена с проёмами (${m[1]} шт.), их тоже придётся убрать.'
+        'После объединения исчезнет стена с проёмами (${m[1]} шт.), их тоже придётся убрать.',
+    (m) =>
+        'After merging, the wall holding ${m[1]} windows or doors disappears; they must be removed too.'
   ),
   (
     RegExp(r'^(.+)的门直接开向(.+)，气味和卫生都不好。可以把门改到走廊或门厅一侧。$'),
     (m) =>
         '${_name(m[1]!)} есігі тура ${_name(m[2]!)} жаққа ашылады: иіс пен тазалыққа жаман. Есікті дәліз не кіреберіс жағына ауыстырыңыз.',
     (m) =>
-        'Дверь (${_name(m[1]!)}) открывается прямо в помещение «${_name(m[2]!)}»: запах и гигиена страдают. Перенесите дверь в сторону коридора или прихожей.'
+        'Дверь (${_name(m[1]!)}) открывается прямо в помещение «${_name(m[2]!)}»: запах и гигиена страдают. Перенесите дверь в сторону коридора или прихожей.',
+    (m) =>
+        'The ${_name(m[1]!)} door opens straight into the ${_name(m[2]!)}: bad for smell and hygiene. Move the door to the corridor or hallway side.'
   ),
   (
     RegExp(r'^(.+)没有窗，白天也要开灯，做饭的油烟也散不出去。可以在外墙上加一扇窗。$'),
     (m) =>
         '${_name(m[1]!)}: терезе жоқ, күндіз де шам керек, ас үй түтіні шықпайды. Сыртқы қабырғаға терезе қосыңыз.',
     (m) =>
-        '${_name(m[1]!)}: нет окна, свет нужен даже днём, а кухонный чад не выходит. Добавьте окно в наружной стене.'
+        '${_name(m[1]!)}: нет окна, свет нужен даже днём, а кухонный чад не выходит. Добавьте окно в наружной стене.',
+    (m) =>
+        "${_name(m[1]!)}: no window, so lights are needed even by day and cooking fumes can't escape. Add a window in an outer wall."
   ),
   (
     RegExp(r'^(入户门|这扇门)宽 ([\d.]+) 米，偏窄，建议不小于 ([\d.]+) 米。$'),
     (m) =>
         '${m[1] == '入户门' ? 'Кіреберіс есігі' : 'Бұл есік'} ені ${_d(m[2]!)} м, тар, кемінде ${_d(m[3]!)} м ұсынылады.',
     (m) =>
-        '${m[1] == '入户门' ? 'Входная дверь' : 'Эта дверь'} шириной ${_d(m[2]!)} м узковата, рекомендуется не меньше ${_d(m[3]!)} м.'
+        '${m[1] == '入户门' ? 'Входная дверь' : 'Эта дверь'} шириной ${_d(m[2]!)} м узковата, рекомендуется не меньше ${_d(m[3]!)} м.',
+    (m) =>
+        '${m[1] == '入户门' ? 'The front door' : 'This door'} is ${m[2]} m wide, which is narrow; at least ${m[3]} m is recommended.'
   ),
   (
     RegExp(r'^缺角处有 (\d+) 个门窗，请先移走或删除$'),
     (m) =>
         'Кесілетін бұрышта ${m[1]} есік-терезе бар, алдымен оларды жылжытыңыз не жойыңыз',
     (m) =>
-        'В вырезаемом углу есть окна или двери (${m[1]} шт.), сначала перенесите или удалите их'
+        'В вырезаемом углу есть окна или двери (${m[1]} шт.), сначала перенесите или удалите их',
+    (m) =>
+        'There are ${m[1]} windows or doors in the corner being cut; move or delete them first'
   ),
   (
     RegExp(r'^操作无法完成：(.+)$'),
     (m) => 'Әрекет орындалмады: ${coreMessage(m[1]!)}',
-    (m) => 'Действие не выполнено: ${coreMessage(m[1]!)}'
+    (m) => 'Действие не выполнено: ${coreMessage(m[1]!)}',
+    (m) =>
+        "The action couldn't be done: ${coreMessage(m[1]!)}"
   ),
   (
     RegExp(r'^删除后有冲突：(.+)$'),
     (m) => 'Жойғаннан кейін қақтығыс: ${coreMessage(m[1]!)}',
-    (m) => 'После удаления возникает конфликт: ${coreMessage(m[1]!)}'
+    (m) => 'После удаления возникает конфликт: ${coreMessage(m[1]!)}',
+    (m) =>
+        'Conflict after deleting: ${coreMessage(m[1]!)}'
   ),
   (
     RegExp(r'^此调整影响已有对象：(.+)$'),
     (m) => 'Бұл өзгеріс бар нысандарға әсер етеді: ${coreMessage(m[1]!)}',
-    (m) => 'Изменение затрагивает существующие объекты: ${coreMessage(m[1]!)}'
+    (m) => 'Изменение затрагивает существующие объекты: ${coreMessage(m[1]!)}',
+    (m) =>
+        'This change affects existing items: ${coreMessage(m[1]!)}'
   ),
   (
     RegExp(r'^(门窗.+。)可以删除它，或移到其他墙上。$'),
     (m) =>
         '${coreMessage(m[1]!)} Оны жоюға не басқа қабырғаға жылжытуға болады.',
     (m) =>
-        '${coreMessage(m[1]!)} Его можно удалить или перенести на другую стену.'
+        '${coreMessage(m[1]!)} Его можно удалить или перенести на другую стену.',
+    (m) =>
+        '${coreMessage(m[1]!)} You can delete it or move it to another wall.'
   ),
 ];
 
@@ -271,12 +311,22 @@ String _name(String zh) {
     '房间': ('Бөлме', 'Комната'),
   };
   final room = rooms[zh];
-  if (room != null) return isRu ? room.$2 : room.$1;
+  if (room != null) {
+    return isEn
+        ? enText(room.$1) ?? room.$2
+        : isRu
+            ? room.$2
+            : room.$1;
+  }
   const numerals = '一二三四五六七八九十';
   final floor = RegExp(r'^([一二三四五六七八九十])楼$').firstMatch(zh);
   if (floor != null) {
     final n = numerals.indexOf(floor[1]!) + 1;
-    return isRu ? '$n-й этаж' : '$n-қабат';
+    return isEn
+        ? 'floor $n'
+        : isRu
+            ? '$n-й этаж'
+            : '$n-қабат';
   }
   return zh;
 }
@@ -288,14 +338,27 @@ final _overlap = RegExp(r'^对象 \S+ 与 \S+ 占用重叠$');
 String coreMessage(String zh) {
   if (_overlap.hasMatch(zh)) {
     return tr3('这里已经被占用了，换个位置试试。', 'Бұл жер бос емес, басқа орынды таңдаңыз.',
-        'Это место уже занято, выберите другое.');
+        'Это место уже занято, выберите другое.',
+        'This spot is taken; pick another.');
   }
-  if (!isKk) return zh;
+  if (!isWestern) return zh;
   final exact = _exact[zh];
-  if (exact != null) return isRu ? ruText(exact) : exact;
-  for (final (re, kk, ru) in _patterns) {
+  if (exact != null) {
+    return isEn
+        ? enText(exact) ?? ruText(exact)
+        : isRu
+            ? ruText(exact)
+            : exact;
+  }
+  for (final (re, kk, ru, en) in _patterns) {
     final m = re.firstMatch(zh);
-    if (m != null) return isRu ? ru(m) : kk(m);
+    if (m != null) {
+      return isEn
+          ? en(m)
+          : isRu
+              ? ru(m)
+              : kk(m);
+    }
   }
   return zh;
 }

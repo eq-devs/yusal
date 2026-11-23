@@ -15,14 +15,16 @@ extension _StairTool on _HouseEditorState {
                 content: Text(tr3(
                     '楼梯要通到上面一层，现在还没有。',
                     'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
-                    'Лестница ведёт на этаж выше, а его пока нет.')),
+                    'Лестница ведёт на этаж выше, а его пока нет.',
+                    "The stairs lead to the floor above, which doesn't exist yet.")),
                 behavior: SnackBarBehavior.floating,
                 margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
                 duration: const Duration(seconds: 8),
                 persist: false,
                 action: SnackBarAction(
                     label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
-                        'Добавить этаж и лестницу'),
+                        'Добавить этаж и лестницу',
+                        'Add a floor and stairs'),
                     onPressed: () {
                       final before = history.present;
                       action('AddFloor', {'floorId': floorId});
@@ -90,14 +92,16 @@ extension _StairTool on _HouseEditorState {
                 content: Text(tr3(
                     '楼梯要通到上面一层，现在还没有。',
                     'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
-                    'Лестница ведёт на этаж выше, а его пока нет.')),
+                    'Лестница ведёт на этаж выше, а его пока нет.',
+                    "The stairs lead to the floor above, which doesn't exist yet.")),
                 behavior: SnackBarBehavior.floating,
                 margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
                 duration: const Duration(seconds: 8),
                 persist: false,
                 action: SnackBarAction(
                     label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
-                        'Добавить этаж и лестницу'),
+                        'Добавить этаж и лестницу',
+                        'Add a floor and stairs'),
                     onPressed: () {
                       final before = history.present;
                       action('AddFloor', {'floorId': floorId});
@@ -120,7 +124,8 @@ extension _StairTool on _HouseEditorState {
         notify(tr3(
             '这里已经有楼梯了。点一下楼梯可以换样式或删除。',
             'Мұнда баспалдақ бар. Оны басып түрін өзгертуге не жоюға болады.',
-            'Здесь уже есть лестница. Нажмите на неё, чтобы сменить вид или удалить.'));
+            'Здесь уже есть лестница. Нажмите на неё, чтобы сменить вид или удалить.',
+            'There are stairs here already. Tap them to change the type or delete them.'));
         return;
       }
     }
@@ -165,15 +170,18 @@ extension _StairTool on _HouseEditorState {
             StairType.straight => tr3(
                 '已放直梯 · 点楼梯可换样式',
                 'Тік баспалдақ қойылды · түрін өзгерту үшін оны басыңыз',
-                'Прямая лестница поставлена · нажмите на неё, чтобы сменить вид'),
+                'Прямая лестница поставлена · нажмите на неё, чтобы сменить вид',
+                'Straight stairs placed · tap them to change the type'),
             StairType.L => tr3(
                 '直梯放不下，已换成 L 型 · 点楼梯可换样式',
                 'Тік баспалдақ сыймады, L тәрізді қойылды · түрін өзгерту үшін оны басыңыз',
-                'Прямая не поместилась, поставлена Г-образная · нажмите на неё, чтобы сменить вид'),
+                'Прямая не поместилась, поставлена Г-образная · нажмите на неё, чтобы сменить вид',
+                "Straight stairs didn't fit, L-shaped placed · tap them to change the type"),
             StairType.U => tr3(
                 '直梯放不下，已换成 U 型 · 点楼梯可换样式',
                 'Тік баспалдақ сыймады, U тәрізді қойылды · түрін өзгерту үшін оны басыңыз',
-                'Прямая не поместилась, поставлена П-образная · нажмите на неё, чтобы сменить вид'),
+                'Прямая не поместилась, поставлена П-образная · нажмите на неё, чтобы сменить вид',
+                "Straight stairs didn't fit, U-shaped placed · tap them to change the type"),
           },
           undo: undo);
       return;
@@ -183,6 +191,7 @@ extension _StairTool on _HouseEditorState {
     notify(tr3(
         '这里放不下楼梯，至少要 ${meters(need.requiredA)} × ${meters(need.requiredB)} 米。换一个大些的房间，或先把墙挪开。',
         'Мұнда баспалдақ сыймайды, кемінде ${meters(need.requiredA)} × ${meters(need.requiredB)} м керек. Үлкенірек бөлмені таңдаңыз не қабырғаны жылжытыңыз.',
-        'Лестница здесь не поместится: нужно не меньше ${meters(need.requiredA)} × ${meters(need.requiredB)} м. Выберите комнату побольше или сдвиньте стену.'));
+        'Лестница здесь не поместится: нужно не меньше ${meters(need.requiredA)} × ${meters(need.requiredB)} м. Выберите комнату побольше или сдвиньте стену.',
+        "Stairs won't fit here: they need at least ${meters(need.requiredA)} × ${meters(need.requiredB)} m. Pick a bigger room or move a wall."));
   }
 }

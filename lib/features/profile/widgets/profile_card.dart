@@ -64,7 +64,8 @@ class ProfileCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                         tr3('· 较久未确认', '· ұзақ расталмаған',
-                            '· давно не обновлял'),
+                            '· давно не обновлял',
+                            '· not updated for a while'),
                         style:
                             TextStyle(fontSize: YFont.caption, color: t.muted)),
                   ],
@@ -73,7 +74,7 @@ class ProfileCard extends StatelessWidget {
                 if (p.refPrices.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                      '${money(p.refPrices.first.amount, unit: p.refPrices.first.unit)} ${tr3('起', 'бастап', 'от')} · ${p.refPrices.first.scope}',
+                      '${money(p.refPrices.first.amount, unit: p.refPrices.first.unit)} ${tr3('起', 'бастап', 'от', 'from')} · ${p.refPrices.first.scope}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: YFont.small)),
@@ -107,10 +108,12 @@ class _TrackRecord extends StatelessWidget {
           final parts = [
             if (p.works.isNotEmpty)
               tr3('${p.works.length} 个作品', '${p.works.length} жұмыс',
-                  'Работ: ${p.works.length}'),
+                  'Работ: ${p.works.length}',
+                  'Jobs: ${p.works.length}'),
             if (onPlatform > 0)
               tr3('$onPlatform 个平台合作', 'Платформада: $onPlatform',
-                  'На платформе: $onPlatform'),
+                  'На платформе: $onPlatform',
+                  'On the platform: $onPlatform'),
           ];
           if (scores.isEmpty && parts.isEmpty) return const SizedBox.shrink();
           return Padding(

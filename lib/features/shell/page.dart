@@ -141,23 +141,23 @@ class _PlatformShellState extends State<PlatformShell>
       (
         const YusalIcon(YIcon.community, mono: true),
         const YusalIcon(YIcon.community),
-        tr3('发现', 'Шолу', 'Обзор')
+        tr3('发现', 'Шолу', 'Обзор', 'Discover')
       ),
       (
         const YusalIcon(YIcon.homeLine, mono: true),
         // Selected, the tab becomes the three-colour Yusal mark.
         const YusalIcon(YIcon.homeActive),
-        tr3('我的房子', 'Үйлерім', 'Мои дома')
+        tr3('我的房子', 'Үйлерім', 'Мои дома', 'My houses')
       ),
       (
         const InboxNavIcon(),
         const InboxNavIcon(selected: true),
-        tr3('消息', 'Хабар', 'Чаты')
+        tr3('消息', 'Хабар', 'Чаты', 'Chats')
       ),
       (
         const YusalIcon(YIcon.profile, mono: true),
         const YusalIcon(YIcon.profile),
-        tr3('我的', 'Менің', 'Профиль')
+        tr3('我的', 'Менің', 'Профиль', 'Profile')
       ),
     ];
     void select(int i) => _select(i);
@@ -169,7 +169,12 @@ class _PlatformShellState extends State<PlatformShell>
         child: ShellNav(
             go: (i, {exploreSegment}) => setState(() {
                   tab = i;
-                  if (exploreSegment != null) segment.value = exploreSegment;
+                  // Cleared first, so asking for the segment it already
+                  // holds still switches Discover back to it.
+                  if (exploreSegment != null) {
+                    segment.value = null;
+                    segment.value = exploreSegment;
+                  }
                 }),
             drafting: drafting,
             newDesign: () {

@@ -24,16 +24,16 @@ Future<void> reportContent(
     BuildContext context, ReportTarget target, String targetId) async {
   if (!await requireLogin(context) || !context.mounted) return;
   final code = await pickOne<String>(
-      context, tr3('举报原因', 'Шағым себебі', 'Причина жалобы'), [
+      context, tr3('举报原因', 'Шағым себебі', 'Причина жалобы', 'Reason for the report'), [
     for (final c in _reportReasons) (c, reasonCodeText(c)),
-    ('other', tr3('其他，自己填写', 'Басқа', 'Другое')),
+    ('other', tr3('其他，自己填写', 'Басқа', 'Другое', 'Other')),
   ]);
   if (code == null || !context.mounted) return;
   var reason = 'code:$code';
   if (code == 'other') {
     final text = await askText(
-        context, tr3('举报原因', 'Шағым себебі', 'Причина жалобы'),
-        hint: tr3('说明发生了什么', 'Не болғанын жазыңыз', 'Опишите, что произошло'));
+        context, tr3('举报原因', 'Шағым себебі', 'Причина жалобы', 'Reason for the report'),
+        hint: tr3('说明发生了什么', 'Не болғанын жазыңыз', 'Опишите, что произошло', 'Describe what happened'));
     if (text == null || !context.mounted) return;
     reason = text;
   }
@@ -43,15 +43,17 @@ Future<void> reportContent(
           .read(moderationRepositoryProvider)
           .report(target, targetId, reason),
       success: tr3('已提交，审核人员会处理并告诉你结果', 'Жіберілді, нәтижесін хабарлаймыз',
-          'Жалоба отправлена, мы сообщим о результате'));
+          'Жалоба отправлена, мы сообщим о результате',
+          "Report sent; we'll let you know the outcome"));
 }
 
 /// Asks the owner why a decision was wrong and files the appeal.
 Future<void> appealDecision(
     BuildContext context, String target, String targetId) async {
-  final text = await askText(context, tr3('申诉', 'Шағымдану', 'Обжаловать'),
+  final text = await askText(context, tr3('申诉', 'Шағымдану', 'Обжаловать', 'Appeal'),
       hint: tr3('说明为什么这个处理有误，审核人员会重新查看', 'Неге қате екенін жазыңыз',
-          'Объясните, почему решение ошибочно'),
+          'Объясните, почему решение ошибочно',
+          'Explain why the decision is wrong'),
       lines: 5);
   if (text == null || !context.mounted) return;
   await attempt(
@@ -60,15 +62,15 @@ Future<void> appealDecision(
           .read(moderationRepositoryProvider)
           .fileAppeal(target, targetId, text),
       success:
-          tr3('申诉已提交，处理后会通知你', 'Шағым жіберілді', 'Обжалование отправлено'));
+          tr3('申诉已提交，处理后会通知你', 'Шағым жіберілді', 'Обжалование отправлено', 'Appeal sent'));
 }
 
 String _appealStatusText(AppealStatus s) => switch (s) {
-      AppealStatus.open => tr3('处理中', 'Қаралуда', 'На рассмотрении'),
+      AppealStatus.open => tr3('处理中', 'Қаралуда', 'На рассмотрении', 'Under review'),
       AppealStatus.accepted =>
-        tr3('已恢复', 'Қалпына келтірілді', 'Восстановлено'),
+        tr3('已恢复', 'Қалпына келтірілді', 'Восстановлено', 'Restored'),
       AppealStatus.rejected =>
-        tr3('维持原处理', 'Шешім өзгеріссіз', 'Решение оставлено'),
+        tr3('维持原处理', 'Шешім өзгеріссіз', 'Решение оставлено', 'Decision upheld'),
     };
 
 /// The appeals I have filed and their answers.
@@ -76,13 +78,13 @@ class MyAppealsPage extends StatelessWidget {
   const MyAppealsPage({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(title: Text(tr3('我的申诉', 'Шағымдарым', 'Мои обжалования'))),
+      appBar: AppBar(title: Text(tr3('我的申诉', 'Шағымдарым', 'Мои обжалования', 'My appeals'))),
       body: Live<List<Appeal>>(
           provider: myAppealsProvider,
           builder: (context, list) => list.isEmpty
               ? EmptyState(
                   icon: Icons.gavel_outlined,
-                  title: tr3('没有申诉记录', 'Шағым жоқ', 'Обжалований нет'))
+                  title: tr3('没有申诉记录', 'Шағым жоқ', 'Обжалований нет', 'No appeals'))
               : ListView(
                   padding: const EdgeInsets.all(YSpace.gutter),
                   children: [
@@ -99,7 +101,8 @@ class MyAppealsPage extends StatelessWidget {
                                         child: Text(
                                             a.targetTitle.isEmpty
                                                 ? tr3('我的账号', 'Аккаунтым',
-                                                    'Мой аккаунт')
+                                                    'Мой аккаунт',
+                                                    'My account')
                                                 : a.targetTitle,
                                             style: YText.bodyStrong)),
                                     StatusPill(_appealStatusText(a.status)),
@@ -127,7 +130,8 @@ class NotificationSettingsPage extends StatelessWidget {
 
   String _quietLabel(String start, String end) => start.isEmpty
       ? tr3('只用平台默认（22:00–08:00）', 'Әдепкі (22:00–08:00)',
-          'По умолчанию (22:00–08:00)')
+          'По умолчанию (22:00–08:00)',
+          'Default (22:00–08:00)')
       : '$start–$end';
 
   Future<void> _save(BuildContext context, NotificationSettings s) => attempt(
@@ -138,7 +142,7 @@ class NotificationSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     return Scaffold(
-        appBar: AppBar(title: Text(tr3('通知设置', 'Хабарламалар', 'Уведомления'))),
+        appBar: AppBar(title: Text(tr3('通知设置', 'Хабарламалар', 'Уведомления', 'Notifications'))),
         body: Live<NotificationSettings>(
             provider: notificationSettingsProvider,
             builder: (context, s) {
@@ -155,22 +159,24 @@ class NotificationSettingsPage extends StatelessWidget {
                   children: [
                     SettingsGroup(
                         title:
-                            tr3('推送到手机', 'Телефонға жіберу', 'Пуш-уведомления'),
+                            tr3('推送到手机', 'Телефонға жіберу', 'Пуш-уведомления', 'Push notifications'),
                         children: [
                           SettingsRow(
                               icon: Icons.handshake_outlined,
                               title: tr3('合作与报名', 'Келісім мен өтінімдер',
-                                  'Сделки и отклики'),
+                                  'Сделки и отклики',
+                                  'Deals and responses'),
                               subtitle: tr3(
                                   '关系到你的约定，总会推送',
                                   'Әрқашан жіберіледі',
-                                  'Касаются ваших договорённостей, всегда'),
+                                  'Касаются ваших договорённостей, всегда',
+                                  'About your agreements, always'),
                               trailing:
                                   const Switch(value: true, onChanged: null)),
                           SettingsRow(
                               icon: Icons.forum_outlined,
                               title: tr3(
-                                  '点赞与点评', 'Ұнату мен пікір', 'Лайки и отзывы'),
+                                  '点赞与点评', 'Ұнату мен пікір', 'Лайки и отзывы', 'Likes and reviews'),
                               trailing: Switch(
                                   value: on(PushCategory.community),
                                   onChanged: (v) => _save(context,
@@ -178,7 +184,7 @@ class NotificationSettingsPage extends StatelessWidget {
                           SettingsRow(
                               icon: Icons.notifications_active_outlined,
                               title: tr3(
-                                  '新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки'),
+                                  '新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки', 'New requests'),
                               trailing: Switch(
                                   value: on(PushCategory.alerts),
                                   onChanged: (v) => _save(context,
@@ -187,11 +193,11 @@ class NotificationSettingsPage extends StatelessWidget {
                     SettingsGroup(children: [
                       SettingsRow(
                           icon: Icons.bedtime_outlined,
-                          title: tr3('免打扰时段', 'Мазаламау', 'Не беспокоить'),
+                          title: tr3('免打扰时段', 'Мазаламау', 'Не беспокоить', 'Do not disturb'),
                           value: _quietLabel(s.quietStart, s.quietEnd),
                           onTap: () async {
                             final v = await pickOne<(String, String)>(context,
-                                tr3('免打扰时段', 'Мазаламау', 'Не беспокоить'), [
+                                tr3('免打扰时段', 'Мазаламау', 'Не беспокоить', 'Do not disturb'), [
                               for (final q in _quiet)
                                 (q, _quietLabel(q.$1, q.$2))
                             ], selected: (
@@ -214,7 +220,8 @@ class NotificationSettingsPage extends StatelessWidget {
                             tr3(
                                 '关掉的通知仍会出现在消息里，只是不推送到手机。',
                                 'Өшірілгендер хабарламалар тізімінде қалады.',
-                                'Отключённые уведомления остаются во входящих.'),
+                                'Отключённые уведомления остаются во входящих.',
+                                'Turned-off notifications stay in your inbox.'),
                             style: YText.caption.copyWith(color: t.muted))),
                   ]);
             }));
@@ -232,10 +239,10 @@ class DemandAlertPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     String all(List<String> names) =>
-        names.isEmpty ? tr3('不限', 'Барлығы', 'Любые') : names.join(listSep);
+        names.isEmpty ? tr3('不限', 'Барлығы', 'Любые', 'Any') : names.join(listSep);
     return Scaffold(
         appBar: AppBar(
-            title: Text(tr3('新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки'))),
+            title: Text(tr3('新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки', 'New requests'))),
         body: Live<DemandAlert>(
             provider: demandAlertProvider,
             builder: (context, a) {
@@ -260,23 +267,24 @@ class DemandAlertPage extends StatelessWidget {
                           title: tr3(
                               '有新需求时提醒我',
                               'Жаңа тапсырыс туралы хабарлау',
-                              'Сообщать о новых заявках'),
+                              'Сообщать о новых заявках',
+                              'Notify me about new requests'),
                           trailing: Switch(
                               value: a.on,
                               onChanged: (v) => _save(context, copy(on: v)))),
                     ]),
                     SettingsGroup(
-                        title: tr3('条件', 'Шарттар', 'Условия'),
+                        title: tr3('条件', 'Шарттар', 'Условия', 'Conditions'),
                         children: [
                           SettingsRow(
                               icon: Icons.place_outlined,
-                              title: tr3('地区', 'Аймақ', 'Регион'),
+                              title: tr3('地区', 'Аймақ', 'Регион', 'Region'),
                               value: all(
                                   [for (final r in a.regions) regionName(r)]),
                               onTap: () async {
                                 final v = await pickMany<String>(
                                     context,
-                                    tr3('地区', 'Аймақ', 'Регион'),
+                                    tr3('地区', 'Аймақ', 'Регион', 'Region'),
                                     [
                                       for (final c in regionCodes)
                                         (c, regionName(c))
@@ -288,13 +296,13 @@ class DemandAlertPage extends StatelessWidget {
                               }),
                           SettingsRow(
                               icon: Icons.handyman_outlined,
-                              title: tr3('工种', 'Мамандық', 'Специальность'),
+                              title: tr3('工种', 'Мамандық', 'Специальность', 'Trade'),
                               value:
                                   all([for (final c in a.trades) tradeName(c)]),
                               onTap: () async {
                                 final v = await pickMany<String>(
                                     context,
-                                    tr3('工种', 'Мамандық', 'Специальность'),
+                                    tr3('工种', 'Мамандық', 'Специальность', 'Trade'),
                                     [
                                       for (final c in tradeCodes)
                                         (c, tradeName(c))
@@ -306,13 +314,13 @@ class DemandAlertPage extends StatelessWidget {
                               }),
                           SettingsRow(
                               icon: Icons.category_outlined,
-                              title: tr3('需求类型', 'Түрі', 'Тип'),
+                              title: tr3('需求类型', 'Түрі', 'Тип', 'Type'),
                               value: all(
                                   [for (final x in a.types) demandTypeName(x)]),
                               onTap: () async {
                                 final v = await pickMany<DemandType>(
                                     context,
-                                    tr3('需求类型', 'Түрі', 'Тип'),
+                                    tr3('需求类型', 'Түрі', 'Тип', 'Type'),
                                     [
                                       for (final x in DemandType.values)
                                         (x, demandTypeName(x))
@@ -329,7 +337,8 @@ class DemandAlertPage extends StatelessWidget {
                             tr3(
                                 '需求通过审核、开始招募时提醒一次。夜间和每天的数量有限制，避免打扰。',
                                 'Тапсырыс ашылғанда бір рет хабарлаймыз.',
-                                'Сообщаем один раз, когда заявка открывается. Ночью и сверх дневного лимита не беспокоим.'),
+                                'Сообщаем один раз, когда заявка открывается. Ночью и сверх дневного лимита не беспокоим.',
+                                'We notify you once, when a request opens. No disturbing at night or beyond the daily limit.'),
                             style: YText.caption.copyWith(color: t.muted))),
                   ]);
             }));
@@ -337,9 +346,9 @@ class DemandAlertPage extends StatelessWidget {
 }
 
 String _verificationStatusText(VerificationStatus s) => switch (s) {
-      VerificationStatus.pending => tr3('审核中', 'Қаралуда', 'На проверке'),
-      VerificationStatus.approved => tr3('已通过', 'Расталды', 'Подтверждено'),
-      VerificationStatus.rejected => tr3('未通过', 'Өтпеді', 'Отклонено'),
+      VerificationStatus.pending => tr3('审核中', 'Қаралуда', 'На проверке', 'Under review'),
+      VerificationStatus.approved => tr3('已通过', 'Расталды', 'Подтверждено', 'Verified'),
+      VerificationStatus.rejected => tr3('未通过', 'Өтпеді', 'Отклонено', 'Rejected'),
     };
 
 /// A worker asks to have a profile verified: phone and site photos.
@@ -369,7 +378,8 @@ class _VerificationPageState extends State<VerificationPage> {
       toast(
           context,
           tr3('请填写手机号并至少上传一张现场照片', 'Телефон мен кемі бір фото қажет',
-              'Нужны телефон и хотя бы одно фото'));
+              'Нужны телефон и хотя бы одно фото',
+              'A phone number and at least one photo are needed'));
       return;
     }
     final v = await attempt(
@@ -379,7 +389,7 @@ class _VerificationPageState extends State<VerificationPage> {
             _phone.text.trim(),
             [for (final p in _photos) Uint8List.fromList(p)],
             note: _note.text.trim()),
-        success: tr3('已提交，审核人员会尽快查看', 'Жіберілді', 'Отправлено'));
+        success: tr3('已提交，审核人员会尽快查看', 'Жіберілді', 'Отправлено', 'Sent'));
     if (v != null && mounted) setState(() => _again = false);
   }
 
@@ -387,7 +397,7 @@ class _VerificationPageState extends State<VerificationPage> {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     return Scaffold(
-        appBar: AppBar(title: Text(tr3('实名核验', 'Тексеру', 'Проверка'))),
+        appBar: AppBar(title: Text(tr3('实名核验', 'Тексеру', 'Проверка', 'Verification'))),
         body: Live<Verification?>(
             provider: myVerificationProvider(widget.profile.id),
             builder: (context, v) {
@@ -401,7 +411,8 @@ class _VerificationPageState extends State<VerificationPage> {
                         tr3(
                             '核验你的手机号和真实施工现场。通过后名片显示“已核验”，代表身份与现场已查看，不代表平台担保施工质量。',
                             'Телефон мен нақты нысандарыңызды тексереміз. Бұл сапаға кепілдік емес.',
-                            'Проверяем телефон и реальные объекты. Это не гарантия качества работ.'),
+                            'Проверяем телефон и реальные объекты. Это не гарантия качества работ.',
+                            "We check your phone and real projects. It's not a guarantee of work quality."),
                         style: YText.body.copyWith(color: t.muted)),
                     const SizedBox(height: YSpace.lg),
                     if (widget.profile.verified)
@@ -410,12 +421,13 @@ class _VerificationPageState extends State<VerificationPage> {
                         const SizedBox(width: YSpace.sm),
                         Text(
                             tr3('这张名片已核验', 'Профиль расталған',
-                                'Профиль проверен'),
+                                'Профиль проверен',
+                                'Profile verified'),
                             style: YText.bodyStrong),
                       ])
                     else if (v != null && !showForm) ...[
                       Row(children: [
-                        Text(tr3('最近一次申请', 'Соңғы өтінім', 'Последняя заявка'),
+                        Text(tr3('最近一次申请', 'Соңғы өтінім', 'Последняя заявка', 'Last request'),
                             style: YText.bodyStrong),
                         const Spacer(),
                         StatusPill(_verificationStatusText(v.status)),
@@ -430,7 +442,7 @@ class _VerificationPageState extends State<VerificationPage> {
                         OutlinedButton(
                             onPressed: () => setState(() => _again = true),
                             child: Text(
-                                tr3('重新申请', 'Қайта жіберу', 'Подать снова'))),
+                                tr3('重新申请', 'Қайта жіберу', 'Подать снова', 'Apply again'))),
                       ],
                     ] else ...[
                       TextField(
@@ -438,14 +450,15 @@ class _VerificationPageState extends State<VerificationPage> {
                           controller: _phone,
                           keyboardType: TextInputType.phone,
                           decoration: InputDecoration(
-                              labelText: tr3('手机号', 'Телефон', 'Телефон'),
+                              labelText: tr3('手机号', 'Телефон', 'Телефон', 'Phone'),
                               hintText: '+7 700 000 00 00')),
                       const SizedBox(height: YSpace.md),
                       Text(
                           tr3(
                               '现场照片（干过的活，最多 6 张）',
                               'Нысан фотолары (6-ға дейін)',
-                              'Фото объектов (до 6)'),
+                              'Фото объектов (до 6)',
+                              'Project photos (up to 6)'),
                           style: YText.bodyStrong),
                       const SizedBox(height: YSpace.sm),
                       PhotoStrip(
@@ -460,7 +473,7 @@ class _VerificationPageState extends State<VerificationPage> {
                             },
                             icon: const Icon(Icons.add_a_photo_outlined),
                             label: Text(
-                                tr3('添加照片', 'Фото қосу', 'Добавить фото'))),
+                                tr3('添加照片', 'Фото қосу', 'Добавить фото', 'Add photos'))),
                       const SizedBox(height: YSpace.md),
                       TextField(
                           controller: _note,
@@ -469,11 +482,12 @@ class _VerificationPageState extends State<VerificationPage> {
                               labelText: tr3(
                                   '补充说明（可选）',
                                   'Қосымша (міндетті емес)',
-                                  'Комментарий (необязательно)'))),
+                                  'Комментарий (необязательно)',
+                                  'Comment (optional)'))),
                       const SizedBox(height: YSpace.lg),
                       BusyButton(
                           key: const Key('verify-send'),
-                          label: tr3('提交核验', 'Жіберу', 'Отправить'),
+                          label: tr3('提交核验', 'Жіберу', 'Отправить', 'Send'),
                           onPressed: _send),
                     ],
                   ]);
@@ -486,15 +500,15 @@ List<Widget> trustRows(BuildContext context, Account account) => [
       SettingsRow(
           key: const Key('me-notification-settings'),
           icon: Icons.notifications_none,
-          title: tr3('通知设置', 'Хабарламалар', 'Уведомления'),
+          title: tr3('通知设置', 'Хабарламалар', 'Уведомления', 'Notifications'),
           onTap: () =>
               pushPage<void>(context, (_) => const NotificationSettingsPage())),
       SettingsRow(
           key: const Key('me-appeals'),
           icon: Icons.gavel_outlined,
-          title: tr3('我的申诉', 'Шағымдарым', 'Мои обжалования'),
+          title: tr3('我的申诉', 'Шағымдарым', 'Мои обжалования', 'My appeals'),
           subtitle: account.restricted
-              ? tr3('账号受限中，可在这里申诉', 'Аккаунт шектелген', 'Аккаунт ограничен')
+              ? tr3('账号受限中，可在这里申诉', 'Аккаунт шектелген', 'Аккаунт ограничен', 'Account restricted')
               : null,
           onTap: () => pushPage<void>(context, (_) => const MyAppealsPage())),
     ];

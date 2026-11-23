@@ -648,6 +648,36 @@ SceneModel _buildScene(HouseDocument doc, DerivedHouse derived,
       final y1 = y0 + o.height / 1000;
       final source = OpeningSource(o.id);
       final inner = p.host?.kind != 'exterior';
+      if (o is! WindowOpening && o.sill == 0) {
+        // The floor runs on under a door: each room's finish to the middle
+        // of the wall, and the room's own all the way under a door to the
+        // outside.
+        final (below, above) = roomsBeside(p, g.base);
+        void threshold(String? id, double from, double to) {
+          final room = floor.rooms.where((r) => r.id == id).firstOrNull;
+          if (room == null || to - from < 1) return;
+          final r = horizontal
+              ? PlanRect(p.start, from, p.end, to)
+              : PlanRect(from, p.start, to, p.end);
+          final wet = room.type == RoomType.kitchen ||
+              room.type == RoomType.bathroom ||
+              room.type == RoomType.custom;
+          faces.add(Face3([
+            Vec3(px(r.left), elevation + 0.002, pz(r.top)),
+            Vec3(px(r.left), elevation + 0.002, pz(r.bottom)),
+            Vec3(px(r.right), elevation + 0.002, pz(r.bottom)),
+            Vec3(px(r.right), elevation + 0.002, pz(r.top)),
+          ], wet ? Mat.tile : Mat.wood,
+              layer: f == 0 ? Layer3.floorSurface : Layer3.sorted,
+              source: RoomSource(room.id),
+              floorIndex: f,
+              castsShadow: false,
+              interior: f != 0));
+        }
+
+        threshold(below ?? above, c0, above == null || below == null ? c1 : c);
+        if (below != null && above != null) threshold(above, c, c1);
+      }
       if (!inner) {
         final hole = horizontal
             ? PlanRect(p.start, c0, p.end, c1)

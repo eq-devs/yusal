@@ -263,14 +263,17 @@ void main() {
             if (e.kind == kind) e.alias: e.title
         };
     try {
-      await t.pumpWidget(MaterialApp(
-          navigatorKey: navigator,
-          builder: (context, child) => VoiceHost(
-              navigator: navigator,
-              repos: voiceRepos(repos),
-              voice: repos,
-              child: child!),
-          home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+      await t.pumpWidget(TestScope(
+          repos: repos,
+          store: store,
+          child: MaterialApp(
+              navigatorKey: navigator,
+              builder: (context, child) => VoiceHost(
+                  navigator: navigator,
+                  repos: voiceRepos(repos),
+                  voice: repos,
+                  child: child!),
+              home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
       await t.pumpAndSettle();
       expect(VoiceScreens.current!.screenId, 'editor.plan');
       final openings = shown('opening').length;

@@ -11,6 +11,8 @@ import 'package:yusal/features/me/repository/trust_repository.dart';
 import 'package:yusal/features/profile/repository/profile_repository.dart';
 import 'package:yusal/features/shared/state/session.dart';
 import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/repository/voice_repository.dart';
+import 'package:yusal/features/voice/state/session.dart';
 
 /// Every repository in one object: what the in-memory fake serves.
 abstract interface class Backend
@@ -32,8 +34,11 @@ abstract interface class Backend
         TrustRepository,
         AdminRepository {}
 
-/// Points the session and every repository provider at [b].
+/// Points the session and every repository provider at [b], and the
+/// assistant too when [b] also scripts it.
 List<Override> mockOverrides(Backend b) => [
+      if (b case final VoiceBackend voice)
+        voiceRepositoryProvider.overrideWithValue(voice),
       sessionProvider.overrideWithValue(b),
       authRepositoryProvider.overrideWithValue(b),
       profileRepositoryProvider.overrideWithValue(b),

@@ -44,7 +44,7 @@ class ProjectsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     watchLang(context);
-    final title = Text(tr3('我的房子', 'Үйлерім', 'Мои дома', 'My houses', ky: 'Менин үйлөрүм', uz: 'Mening uylarim'), style: display());
+    final title = Text(tr3('我的房子', 'Үйлерім', 'Мои дома', 'My houses', ky: 'Үйлөрүм', uz: 'Uylarim'), style: display());
     // The design list owns storage, import, templates and export; this
     // page only draws it.
     return HouseHome(
@@ -81,7 +81,7 @@ class ProjectsPage extends StatelessWidget {
                                   bottom: TabBar(tabs: [
                                     Tab(
                                         text:
-                                            tr3('我的房子', 'Үйлерім', 'Мои дома', 'My houses', ky: 'Менин үйлөрүм', uz: 'Mening uylarim')),
+                                            tr3('我的房子', 'Үйлерім', 'Мои дома', 'My houses', ky: 'Үйлөрүм', uz: 'Uylarim')),
                                     Tab(
                                         text: tr3('我接的活', 'Жұмыстарым',
                                             'Моя работа',

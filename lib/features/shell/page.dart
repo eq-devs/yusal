@@ -147,7 +147,7 @@ class _PlatformShellState extends State<PlatformShell>
         const YusalIcon(YIcon.homeLine, mono: true),
         // Selected, the tab becomes the three-colour Yusal mark.
         const YusalIcon(YIcon.homeActive),
-        tr3('我的房子', 'Үйлерім', 'Мои дома', 'My houses', ky: 'Менин үйлөрүм', uz: 'Mening uylarim')
+        tr3('我的房子', 'Үйлерім', 'Мои дома', 'My houses', ky: 'Үйлөрүм', uz: 'Uylarim')
       ),
       (
         const InboxNavIcon(),

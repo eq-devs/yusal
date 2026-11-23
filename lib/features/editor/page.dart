@@ -183,7 +183,15 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         for (final (i, f) in history.present.floors.indexed)
           Entity('floor', f.id, alias: 'f${i + 1}', title: f.name),
         for (final (i, r) in floor.rooms.indexed)
-          Entity('room', r.id, alias: 'r${i + 1}', title: r.name),
+          Entity('room', r.id,
+              alias: 'r${i + 1}',
+              title: r.name,
+              type: r.type.name,
+              size: base.roomGeometry
+                      .where((g) => g.id == r.id)
+                      .firstOrNull
+                      ?.nominalArea ??
+                  0),
         for (final (i, o) in floor.openings.indexed)
           Entity('opening', o.id,
               alias: 'o${i + 1}', title: openingKindName(o)),

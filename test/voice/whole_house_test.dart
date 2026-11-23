@@ -145,6 +145,18 @@ void main() {
             .code,
         ActionCodes.badArgs);
 
+    // Or by where it goes: the north-east corner of the 10 by 8 m house.
+    final corner = await say('design.add_room',
+        {'type': 'kitchen', 'where': 'northeast', 'w_mm': 3000, 'd_mm': 3000});
+    expect(corner.ok, isTrue, reason: '${corner.say}');
+    await t.pump();
+    expect(VoiceScreens.current!.scene, contains('x7000 y5000 3000x3000'));
+    expect(
+        (await say('design.add_room',
+                {'type': 'kitchen', 'w_mm': 3000, 'd_mm': 3000}))
+            .code,
+        ActionCodes.badArgs);
+
     await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });

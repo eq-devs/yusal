@@ -1144,6 +1144,7 @@ extension _OtherTabs on _HouseEditorState {
       'R11': ('卫生间门对着厨房', 'Дәретхана есігі асүйге ашылады'),
       'R12': ('厨房或客厅没有窗', 'Асүйде не қонақ бөлмеде терезе жоқ'),
       'R13': ('门偏窄', 'Есік тар'),
+      'R14': ('墙没有接上', 'Қабырға жалғанбаған'),
     };
     // Which floor and which room a finding is about: several rooms are
     // often all called "房间", and their messages then read the same.

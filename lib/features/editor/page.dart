@@ -3226,6 +3226,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                                       0.42)!
                                             },
                                             viewportInsets: canvasInsets,
+                                            showGaps: history.present.floors[floorIndex].explicitWalls && drawingEnd == null,
                                             openings: displayOpenings,
                                             below: floorIndex > 0 && showBelow
                                                 ? derived

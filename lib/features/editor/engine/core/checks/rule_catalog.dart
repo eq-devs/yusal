@@ -46,4 +46,6 @@ const ruleCatalog = <RuleSpec>[
   RuleSpec('R12', 'suggestion', 'room',
       'A kitchen or living room has no outside window.'),
   RuleSpec('R13', 'suggestion', 'opening', 'A door is narrower than advised.'),
+  RuleSpec('R14', 'suggestion', 'floor',
+      'A drawn wall stops short of the next wall, so the room is not enclosed.'),
 ];

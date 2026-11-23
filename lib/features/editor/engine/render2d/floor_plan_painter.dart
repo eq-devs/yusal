@@ -4,6 +4,7 @@ import 'package:yusal/constant/tokens.dart';
 import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/geometry/wall_gaps.dart';
 import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
@@ -111,7 +112,8 @@ class FloorPlanPainter extends CustomPainter {
       this.furnitureDraft,
       this.utilities = const [],
       this.selectedUtility,
-      this.showLabels = true})
+      this.showLabels = true,
+      this.showGaps = false})
       : super(repaint: pulse);
   final FloorBase base;
   final PlanRect? focus;
@@ -159,6 +161,10 @@ class FloorPlanPainter extends CustomPainter {
   /// Foundation strips to overlay; null hides the layer.
   final FoundationTakeoff? foundation;
   final List<Sleeve> sleeves;
+
+  /// Marks where a drawn wall stops short of the next one (the room is
+  /// not enclosed): a dashed line across the gap with a warning sign.
+  final bool showGaps;
 
   /// Plan areas to flash (issue locations), with [pulse] 0–1 for the beat.
   final List<PlanRect> highlights;
@@ -907,6 +913,52 @@ class FloorPlanPainter extends CustomPainter {
                         '${dec(((draft!.top - draft!.bottom) / 1000).toStringAsFixed(1))} $unitM'),
             Offset(rect.center.dx, rect.top - 18),
             color: tone);
+      }
+    }
+    if (showGaps) {
+      for (final g in findWallGaps(base)) {
+        final a = point(g.x0, g.y0, size);
+        final b = point(g.x1, g.y1, size);
+        final length = (b - a).distance;
+        if (length < 1) continue;
+        final dir = (b - a) / length;
+        final pen = Paint()
+          ..color = t.warn
+          ..strokeWidth = px(2)
+          ..strokeCap = StrokeCap.round;
+        final dash = px(5);
+        final gap = px(4);
+        for (var d = 0.0; d < length; d += dash + gap) {
+          canvas.drawLine(
+              a + dir * d, a + dir * math.min(length, d + dash), pen);
+        }
+        // A warning triangle at the middle, as CAD marks a wall that
+        // does not connect.
+        final c = (a + b) / 2;
+        final r = px(9);
+        final sign = Path()
+          ..moveTo(c.dx, c.dy - r)
+          ..lineTo(c.dx + r * 0.95, c.dy + r * 0.7)
+          ..lineTo(c.dx - r * 0.95, c.dy + r * 0.7)
+          ..close();
+        canvas
+          ..drawPath(sign, Paint()..color = t.warn)
+          ..drawPath(
+              sign,
+              Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = px(1.5)
+                ..strokeJoin = StrokeJoin.round
+                ..color = t.panel)
+          ..drawLine(
+              c.translate(0, -r * 0.35),
+              c.translate(0, r * 0.2),
+              Paint()
+                ..color = t.panel
+                ..strokeWidth = px(1.6)
+                ..strokeCap = StrokeCap.round)
+          ..drawCircle(
+              c.translate(0, r * 0.45), px(0.9), Paint()..color = t.panel);
       }
     }
     for (final (ga, gb) in guides) {

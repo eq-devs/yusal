@@ -138,6 +138,67 @@ Map<String, Object> measurePlan(UndoableDesignState s,
           benchMeta, (run(kind, args(i)) as Applied).newState)));
 
   final derived = deriveHouse(doc);
+  // Tools that redraw rooms and walls as the finger moves. Each is tried
+  // over the plan until a place is found where the command applies.
+  final base = deriveFloorBase(doc, floor.id);
+  final v = base.axes.v;
+  final h = base.axes.h;
+  final places = [
+    for (var a = 0; a < v.length - 1; a++)
+      for (var b = 0; b < h.length - 1; b++) (v[a].pos, h[b].pos)
+  ];
+  final redraws = <String, (String, Map<String, dynamic> Function(int)?)>{};
+  void redraw(String name, String kind,
+      Iterable<Map<String, dynamic> Function(int)> candidates) {
+    redraws[name] = (
+      kind,
+      candidates
+          .where(
+              (c) => run(kind, c(0)) is Applied && run(kind, c(39)) is Applied)
+          .firstOrNull
+    );
+  }
+
+  redraw('carveRoom', 'CarveRoom', [
+    for (final (x, y) in places)
+      (i) => {
+            'floorId': floor.id,
+            'left': x + 300,
+            'bottom': y + 300,
+            'right': x + 1800 + i % 40 * 10,
+            'top': y + 1800,
+            'roomType': RoomType.storage
+          }
+  ]);
+  redraw('splitSpace', 'SplitSpace', [
+    for (final (x, y) in places)
+      (i) => {
+            'floorId': floor.id,
+            'dir': AxisDir.V,
+            'pos': x + 1500 + i % 40 * 10,
+            'x': x + 1000,
+            'y': y + 1000
+          }
+  ]);
+  redraw('addOpening', 'AddOpening', [
+    for (final w in base.wallSegments)
+      (i) => {
+            'floorId': floor.id,
+            'anchor': w.ref.anchor,
+            'kind': OpeningKind.window,
+            'centerAtTap': true,
+            'tapT': 800 + i % 40
+          }
+  ]);
+  redraw('moveDrawnWall', 'MoveDrawnWall', [
+    for (final w in base.wallSegments.where((w) => w.axis.kind != 'boundary'))
+      for (final side in const [1, -1])
+        (i) => {
+              'floorId': floor.id,
+              'anchor': w.ref.anchor,
+              'pos': w.axis.pos + side * (100 + i % 40)
+            }
+  ]);
   final opening = floor.openings.first;
   final axis = [
     ...s.axes.global.map((a) => (a.id, a.pos)),
@@ -194,6 +255,8 @@ Map<String, Object> measurePlan(UndoableDesignState s,
       // the geometry of its result.
       'dragFrame.resizeOpening': dragFrame('ResizeOpening', resize),
       if (axis != null) 'dragFrame.moveAxis': dragFrame('MoveAxis', moveAxis),
+      for (final MapEntry(key: name, value: (kind, args)) in redraws.entries)
+        if (args != null) 'dragFrame.$name': dragFrame(kind, args),
     },
   };
 }

@@ -74,7 +74,7 @@ EditResult executeDocumentCommand(HouseDocument original, String kind,
     if (objectEdits && objectEditKinds.contains(kind)) {
       HouseDocument? quick;
       try {
-        quick = editDocumentObjects(doc, kind, args);
+        quick = editDocumentObjects(doc, kind, args, newId);
       } catch (_) {
         quick = null;
       }

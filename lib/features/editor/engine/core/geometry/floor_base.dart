@@ -249,6 +249,10 @@ class _FloorShape {
   }
 }
 
+/// Whether a space's clear area is worked out against the walls that
+/// reach it only. A test turns it off to compare with using every wall.
+bool wallsNearSpaceOnly = true;
+
 FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
   final floor = doc.floors.firstWhere((f) => f.id == floorId);
   final axes = resolveFloorAxes(doc, floorId)!;
@@ -436,6 +440,7 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
         ? PlanRect(start, c.low, end, c.high)
         : PlanRect(c.low, start, c.high, end));
   }
+  final allRects = rects;
   SpaceGeometry space(String id) {
     final cells = spaces[id]!;
     PlanRect cellRect(Cell c) => PlanRect(
@@ -444,6 +449,29 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
         axes.v[c.i + 1].pos.toDouble(),
         axes.h[c.j + 1].pos.toDouble());
     final nominal = cells.map(cellRect).toList();
+    // Only the walls that reach this space can take room from it; the
+    // others would cut the grid below finer and change nothing.
+    var rects = allRects;
+    if (wallsNearSpaceOnly && nominal.isNotEmpty) {
+      var left = nominal.first.left;
+      var right = nominal.first.right;
+      var bottom = nominal.first.bottom;
+      var top = nominal.first.top;
+      for (final r in nominal) {
+        left = math.min(left, r.left);
+        right = math.max(right, r.right);
+        bottom = math.min(bottom, r.bottom);
+        top = math.max(top, r.top);
+      }
+      rects = [
+        for (final r in allRects)
+          if (r.left <= right &&
+              r.right >= left &&
+              r.bottom <= top &&
+              r.top >= bottom)
+            r
+      ];
+    }
     final xs = {
       <double>{
         for (final r in nominal) ...[r.left, r.right],

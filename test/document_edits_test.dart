@@ -30,6 +30,24 @@ List<(String, Map<String, dynamic>)> commandsFor(HouseDocument doc) {
   for (final value in [0, 90, 180, 270, 45, '90', null, 90.0]) {
     add('SetNorthAngle', {'value': value});
   }
+  for (final dir in [AxisDir.V, AxisDir.H, 'V', null]) {
+    final size = dir == AxisDir.H ? fp.depth : fp.width;
+    for (final pos in [
+      size ~/ 2 + 137,
+      450,
+      size - 450,
+      100,
+      size + 500,
+      1.5
+    ]) {
+      add('AddAxis', {'dir': dir, 'pos': pos});
+      for (final f in doc.floors.take(2)) {
+        add('AddAxis', {'dir': dir, 'pos': pos, 'floorId': f.id});
+      }
+    }
+  }
+  add('AddAxis', {'dir': AxisDir.V, 'pos': 2000, 'floorId': 'no-such-floor'});
+  add('AddAxis', {'dir': AxisDir.V});
   for (final (id, pos) in [
     ...doc.axes.global.map((a) => (a.id, a.pos)),
     ...doc.axes.floor.map((a) => (a.id, a.pos)),
@@ -215,9 +233,16 @@ void main() {
       final quickDone = <String>{};
       var compared = 0;
       for (final (kind, args) in commandsFor(doc)) {
+        // Each way draws its new ids from a counter of its own, so that
+        // what they make can be compared.
+        String Function() ids() {
+          var n = 0;
+          return () => 'new-${n++}';
+        }
+
         final viaFile =
-            executeDocumentCommand(doc, kind, args, id, objectEdits: false);
-        final viaObjects = executeDocumentCommand(doc, kind, args, id);
+            executeDocumentCommand(doc, kind, args, ids(), objectEdits: false);
+        final viaObjects = executeDocumentCommand(doc, kind, args, ids());
         final what = '$kind $args';
         expect(viaObjects.accepted, viaFile.accepted, reason: what);
         expect(viaObjects.error, viaFile.error, reason: what);
@@ -226,7 +251,7 @@ void main() {
 
         // A refusal never comes from the quick path, and the quick path
         // never accepts what the round trip refuses.
-        final quick = editDocumentObjects(doc, kind, args);
+        final quick = editDocumentObjects(doc, kind, args, ids());
         if (quick != null && validateHouse(quick).isEmpty) {
           expect(viaFile.accepted || viaFile.error != null, isTrue);
           if (viaFile.accepted) {

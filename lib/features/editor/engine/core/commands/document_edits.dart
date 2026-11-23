@@ -7,6 +7,7 @@ import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 const objectEditKinds = {
   'SetFootprintSize',
   'SetNorthAngle',
+  'AddAxis',
   'MoveAxis',
   'SetFloorHeight',
   'RenameFloor',
@@ -29,8 +30,38 @@ const objectEditKinds = {
 /// the command the long way, which is what words every refusal. The
 /// document returned has not been validated.
 HouseDocument? editDocumentObjects(
-    HouseDocument doc, String kind, Map<String, dynamic> args) {
+    HouseDocument doc, String kind, Map<String, dynamic> args,
+    [String Function()? newId]) {
   switch (kind) {
+    case 'AddAxis':
+      final dir = args['dir'];
+      final pos = _int(args['pos']);
+      final floorId = args['floorId'];
+      if (newId == null || dir is! AxisDir || pos == null) return null;
+      if (floorId != null &&
+          (floorId is! String || !doc.floors.any((f) => f.id == floorId))) {
+        return null;
+      }
+      // A line too close to another is refused the long way, which words
+      // it; checked here first so that no id is drawn for it.
+      for (final f in doc.floors) {
+        if (floorId != null && f.id != floorId) continue;
+        final axes = resolveFloorAxes(doc, f.id);
+        if (axes == null) return null;
+        for (final a in dir == AxisDir.V ? axes.v : axes.h) {
+          if ((a.pos - pos).abs() < 300) return null;
+        }
+      }
+      final id = newId();
+      return _document(doc,
+          axes: AxisSystem(global: [
+            ...doc.axes.global,
+            if (floorId == null) GlobalAxis(id: id, dir: dir, pos: pos)
+          ], floor: [
+            ...doc.axes.floor,
+            if (floorId is String)
+              FloorAxis(id: id, floorId: floorId, dir: dir, pos: pos)
+          ]));
     case 'SetFootprintSize':
       var width = doc.footprint.width;
       var depth = doc.footprint.depth;

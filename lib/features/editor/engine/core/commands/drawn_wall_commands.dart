@@ -122,13 +122,16 @@ HouseDocument recognizeWallRooms(
   });
   final used = <String>{};
   final rooms = <Room>[];
+  // Worked out once a room, not once a room for every group.
+  final roomCells = <String, Set<Cell>>{};
   for (final group in groups) {
     Room? prior;
     var best = 0.0;
     var bestSeeds = -1;
     for (final room in floor.rooms) {
       if (used.contains(room.id)) continue;
-      final cells = regionCells(axes, room.regions).cells;
+      final cells =
+          roomCells[room.id] ??= regionCells(axes, room.regions).cells;
       var overlap = 0.0;
       for (final c in group.intersection(cells)) {
         overlap += (axes.v[c.i + 1].pos - axes.v[c.i].pos) *
@@ -169,6 +172,10 @@ HouseDocument recognizeWallRooms(
           outside: floor.outside));
 }
 
+/// Whether [syncRoomWalls] leaves a floor alone when its geometry is the
+/// same as before. A test turns it off to compare the two.
+bool skipUnchangedFloors = true;
+
 /// Keep room-based tools usable after upgrading to physical wall segments.
 /// Preserve unfinished partitions; materialize new boundaries and remove only
 /// the boundaries that a room edit actually merged.
@@ -178,6 +185,10 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
   if (!floor.explicitWalls) return after;
   final old = deriveFloorBase(before, floorId);
   final current = deriveFloorBase(after, floorId);
+  // The same geometry object means nothing this floor's walls and rooms
+  // are made from has changed, so there is nothing to bring in line: an
+  // edit to one floor leaves the others alone.
+  if (skipUnchangedFloors && identical(old, current)) return after;
   final natural = _replaceFloor(
       after,
       Floor(
@@ -216,6 +227,11 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
     }
   }
   final originals = floor.wallOverrides.whereType<SolidWall>().toList();
+  // Where each wall runs, found once instead of for every edge tried
+  // against it.
+  final runs = Map<SolidWall, ResolvedChain?>.identity();
+  ResolvedChain run(SolidWall w) =>
+      (runs[w] ??= resolveAnchor(current.axes, w.anchor).chain)!;
   final used = <String>{};
   final walls = <WallOverride>[
     for (final w in floor.wallOverrides)
@@ -233,7 +249,7 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
     final first = group.first;
     final last = group.last;
     final prior = originals.where((w) {
-      final c = resolveAnchor(current.axes, w.anchor).chain!;
+      final c = run(w);
       return c.carrier.id == first.axis.id &&
           c.startPos <= first.start.pos &&
           c.endPos >= last.end.pos &&
@@ -251,16 +267,19 @@ HouseDocument syncRoomWalls(HouseDocument before, HouseDocument after,
     group = [];
   }
 
+  final owning = <UnitEdge, String?>{};
+  String? originalId(UnitEdge edge) => owning.containsKey(edge)
+      ? owning[edge]
+      : owning[edge] = originals
+          .where((w) {
+            final c = run(w);
+            return c.carrier.id == edge.axis.id &&
+                c.startPos <= edge.start.pos &&
+                c.endPos >= edge.end.pos;
+          })
+          .firstOrNull
+          ?.id;
   for (final e in edges) {
-    String? originalId(UnitEdge edge) => originals
-        .where((w) {
-          final c = resolveAnchor(current.axes, w.anchor).chain!;
-          return c.carrier.id == edge.axis.id &&
-              c.startPos <= edge.start.pos &&
-              c.endPos >= edge.end.pos;
-        })
-        .firstOrNull
-        ?.id;
     if (group.isNotEmpty &&
         (group.last.axis.id != e.axis.id ||
             group.last.end.pos != e.start.pos ||

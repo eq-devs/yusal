@@ -46,6 +46,17 @@ abstract class SceneGpu {
     reason = '$error';
   }
 
+  /// Whether the GPU also draws the house's shadows on itself and darkens
+  /// its corners. Off in a build made with
+  /// `--dart-define=YUSAL_GPU_EFFECTS=false`: the faces are then lit as the
+  /// canvas lights them and no more.
+  static bool effects =
+      const bool.fromEnvironment('YUSAL_GPU_EFFECTS', defaultValue: true);
+
+  /// Whether this renderer draws shadows and darkened corners. It tries
+  /// both on a small scene when it starts and says no where they fail.
+  bool get shades => false;
+
   /// Forgets what [prepare] found; for tests.
   static void reset() {
     _instance = null;

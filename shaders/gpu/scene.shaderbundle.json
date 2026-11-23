@@ -1,4 +1,6 @@
 {
   "SceneVertex": {"type": "vertex", "file": "shaders/gpu/scene.vert"},
-  "SceneFragment": {"type": "fragment", "file": "shaders/gpu/scene.frag"}
+  "SceneFragment": {"type": "fragment", "file": "shaders/gpu/scene.frag"},
+  "DepthVertex": {"type": "vertex", "file": "shaders/gpu/depth.vert"},
+  "DepthFragment": {"type": "fragment", "file": "shaders/gpu/depth.frag"}
 }

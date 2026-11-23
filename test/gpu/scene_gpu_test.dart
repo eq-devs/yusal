@@ -142,6 +142,65 @@ void main() {
     });
   });
 
+  testWidgets('the GPU shades what the sun does not reach, and the corners',
+      (t) async {
+    await t.runAsync(() async {
+      SceneGpu.reset();
+      await SceneGpu.prepare();
+      final gpu = SceneGpu.instance;
+      if (gpu == null) return;
+      addTearDown(() => SceneGpu.effects = true);
+      // The renderer tried a shadow on a small scene when it started.
+      expect(gpu.shades, isTrue);
+      final (camera, settings) = views['white no roof']!;
+      SceneGpu.effects = false;
+      final flat = painter(camera, settings, gpu: gpu);
+      final a = await pixels(flat, 'flat');
+      expect(flat.gpuFrame!.effects, isNull);
+      SceneGpu.effects = true;
+      final shaded = painter(camera, settings, gpu: gpu);
+      final b = await pixels(shaded, 'shaded');
+      expect(shaded.drewOnGpu, isTrue);
+      final effects = shaded.gpuFrame!.effects!;
+      expect(effects.count, greaterThan(1000));
+      expect(effects.sun, 1);
+      // Nothing gets lighter, and a fair part of the house gets darker.
+      var darker = 0;
+      var lighter = 0;
+      for (var i = 0; i < a.length; i += 4) {
+        final d = (a[i] + a[i + 1] + a[i + 2]) - (b[i] + b[i + 1] + b[i + 2]);
+        if (d > 24) darker++;
+        if (d < -24) lighter++;
+      }
+      expect(darker / (a.length / 4), greaterThan(0.03));
+      expect(lighter / (a.length / 4), lessThan(0.002));
+
+      // The solids are gathered once and kept while the house shows the
+      // same; turning the view draws no new shadows, moving the sun does.
+      final (other, _) = views['front']!;
+      final turned = painter(other, settings, gpu: gpu);
+      await pixels(turned, 'shaded turned');
+      final again = turned.gpuFrame!.effects!;
+      expect(identical(again.solids, effects.solids), isTrue);
+      expect(again.lightKey, effects.lightKey);
+      final later =
+          painter(camera, const SceneSettings(roof: false, hour: 16), gpu: gpu);
+      await pixels(later, 'shaded later');
+      expect(later.gpuFrame!.effects!.lightKey, isNot(effects.lightKey));
+      expect(SceneGpu.reason, isNull);
+
+      // No sun at night, and nothing on a line drawing.
+      final night = painter(camera, const SceneSettings(dark: true), gpu: gpu);
+      await pixels(night, 'shaded night');
+      expect(night.gpuFrame!.effects!.sun, 0);
+      final lines = painter(
+          camera, const SceneSettings(style: SceneStyle.lines),
+          gpu: gpu);
+      await pixels(lines, 'shaded lines');
+      expect(lines.gpuFrame!.effects, isNull);
+    });
+  });
+
   testWidgets('a tap finds the same thing on the GPU as on the canvas',
       (t) async {
     await t.runAsync(() async {

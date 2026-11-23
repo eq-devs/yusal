@@ -237,6 +237,9 @@ class ScenePainter extends CustomPainter {
 
   /// Whether the last paint drew its faces on the GPU.
   bool get drewOnGpu => _gpuFrame != null;
+
+  /// What the GPU was last given to draw; null when the canvas drew.
+  GpuFrame? get gpuFrame => _gpuFrame;
   GpuFrame? _gpuFrame;
   Size _gpuSize = Size.zero;
   List<_Item> _items = [];
@@ -506,6 +509,29 @@ class ScenePainter extends CustomPainter {
     }
     return Color.from(alpha: 1, red: r, green: g, blue: b);
   }
+
+  /// The share of its light a face lit as [shade] lights it loses where
+  /// the sun does not reach: what the GPU darkens it by in shadow. Below
+  /// zero for a face turned from the sun, which is in shadow everywhere;
+  /// zero when nothing is lit by the sun.
+  double shadowShare(Face3 f, Vec3 n, Vec3 light) {
+    if (settings.night || settings.style == SceneStyle.lines || f.glow) {
+      return 0;
+    }
+    final up = n.y * 0.5 + 0.5;
+    final el = math.asin(light.y.clamp(-1.0, 1.0));
+    final warm = math.min(1.0, el / 0.6);
+    final toward = n.dot(light);
+    final s = math.max(0.0, toward) * (0.55 + 0.45 * warm);
+    final base = 0.60 + 0.18 * up;
+    final lit = base + 0.24 * s * (0.86 + 0.12 * warm);
+    final share = 1 - (base - shadowDepth) / lit;
+    return toward > 0.02 ? share : -share;
+  }
+
+  /// How much of the sky's light a shadow takes besides the sun's, so that
+  /// it reads as a shadow on a face the sun only grazes.
+  static const shadowDepth = 0.09;
 
   /// The roof shows when switched on and every floor is shown.
   bool get roofOn =>

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/main.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/service/settings/settings.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 class CountingBackend extends MockBackend {
@@ -28,20 +27,19 @@ Future<void> mount(WidgetTester t, CountingBackend backend,
     double scale = 1,
     ThemeChoice theme = ThemeChoice.day}) async {
   SharedPreferences.setMockInitialValues({});
-  AppSettings.instance.lang = lang;
-  AppSettings.instance.theme = theme;
+  appLang = lang;
+  appTheme = theme;
   t.view.physicalSize = Size(width, 1000);
   t.view.devicePixelRatio = 1;
   t.platformDispatcher.textScaleFactorTestValue = scale;
   addTearDown(() {
     t.view.reset();
     t.platformDispatcher.clearTextScaleFactorTestValue();
-    AppSettings.instance.lang = AppLang.zh;
-    AppSettings.instance.theme = ThemeChoice.auto;
+    appLang = AppLang.zh;
+    appTheme = ThemeChoice.auto;
   });
-  await t.pumpWidget(ProviderScope(
-      child: HouseApp(
-          repos: backend, store: ProjectStore(fileSystem: MemoryFiles()))));
+  await t.pumpWidget(
+      testApp(backend, store: ProjectStore(fileSystem: MemoryFiles())));
   await t.pumpAndSettle();
 }
 
@@ -80,12 +78,11 @@ void main() {
     expect(find.text('给父母盖的一层砖房'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
-  testWidgets('mock account does not claim real phone verification', (t) async {
+  testWidgets('the Me tab does not claim real phone verification', (t) async {
     final backend = CountingBackend()..signInAs(SeedIds.owner);
     await mount(t, backend, width: 768);
     await t.tap(find.text('我的').last);
     await t.pumpAndSettle();
-    expect(find.textContaining('演示账号'), findsOneWidget);
     expect(find.textContaining('手机号已验证'), findsNothing);
     expect(find.text('审核后台'), findsNothing);
   });

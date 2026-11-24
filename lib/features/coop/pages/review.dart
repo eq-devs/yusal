@@ -1,0 +1,97 @@
+import 'package:flutter/material.dart';
+import 'package:yusal/features/coop/repository/cooperation_repository.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/localization/l10n.dart';
+import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+
+/// Optional review after a mutually ended cooperation, on a few clear
+/// dimensions. Each dimension can be left out.
+class ReviewPage extends StatefulWidget {
+  const ReviewPage(
+      {super.key,
+      required this.cooperationId,
+      required this.otherName,
+      this.ratingPro = true});
+  final String cooperationId;
+  final String otherName;
+
+  /// The owner rates the pro's work; the pro rates the owner.
+  final bool ratingPro;
+  @override
+  State<ReviewPage> createState() => _ReviewPageState();
+}
+
+class _ReviewPageState extends State<ReviewPage> {
+  final scores = <String, int>{};
+  final text = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    watchLang(context);
+    final t = YTokens.of(context);
+    return PageScaffold(
+        title: tr3('评价', 'Пікір', 'Отзыв', 'Review', ky: 'Пикир', uz: 'Sharh'),
+        bottom: BusyButton(
+            label: tr3('提交评价', 'Жіберу', 'Отправить', 'Send', ky: 'Жөнөтүү', uz: 'Yuborish'),
+            onPressed: scores.isEmpty
+                ? null
+                : () async {
+                    final ok = await attempt(
+                        context,
+                        () => context
+                            .read(reviewRepositoryProvider)
+                            .submitReview(
+                                widget.cooperationId, scores, text.text),
+                        success:
+                            tr3('已提交，双方都提交后公开', 'Жіберілді', 'Отправлено', 'Sent', ky: 'Жөнөтүлдү', uz: 'Yuborildi'));
+                    if (ok != null && context.mounted) Navigator.pop(context);
+                  }),
+        body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text(
+              tr3('评价 ${widget.otherName}', '${widget.otherName} туралы',
+                  'Отзыв о ${widget.otherName}',
+                  'Review of ${widget.otherName}', ky: '${widget.otherName} жөнүндө пикир', uz: '${widget.otherName} haqida sharh'),
+              style: const TextStyle(
+                  fontSize: YFont.title, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text(
+              tr3(
+                  '只评你实际经历的维度。双方都提交或 14 天后同时公开，降低报复性评价。',
+                  'Тек өзіңіз көргенді бағалаңыз. Екеуі де жазғанда ашылады.',
+                  'Оценивайте только то, что видели. Отзывы откроются одновременно.',
+                  'Rate only what you saw. Reviews open at the same time.', ky: 'Көргөнүңүздү гана баалаңыз. Пикирлер бир убакта ачылат.', uz: 'Faqat koʻrganingizni baholang. Sharhlar bir vaqtda ochiladi.'),
+              style: TextStyle(color: t.muted)),
+          const SizedBox(height: 16),
+          for (final d in widget.ratingPro
+              ? proReviewDimensions
+              : ownerReviewDimensions) ...[
+            Text(dimensionName(d),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            Row(children: [
+              for (var i = 1; i <= 5; i++)
+                IconButton(
+                    tooltip: '$i',
+                    onPressed: () => setState(() =>
+                        scores[d] == i ? scores.remove(d) : scores[d] = i),
+                    icon: Icon(
+                        (scores[d] ?? 0) >= i
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        color: (scores[d] ?? 0) >= i ? t.ink : t.faint,
+                        size: 30)),
+            ]),
+            const SizedBox(height: 6),
+          ],
+          TextField(
+              controller: text,
+              minLines: 2,
+              maxLines: 5,
+              decoration: InputDecoration(
+                  labelText:
+                      tr3('说说经历（可选）', 'Пікір (міндетті емес)', 'Комментарий', 'Comment', ky: 'Комментарий', uz: 'Izoh'))),
+        ]));
+  }
+}

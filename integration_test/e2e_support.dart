@@ -1,20 +1,21 @@
 // Helpers for the integration tests that drive the app against a running
 // yusal-api (see backend_flow_test.dart for how to run them).
+import '../test/support/test_scope.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/ui/widgets.dart';
-import 'package:yusal/platform/ui/shell.dart';
-import 'package:yusal/platform/data/http/http_backend.dart';
-import 'package:yusal/platform/ui/demand/demand_detail_page.dart';
-import 'package:yusal/platform/ui/demand/publish_page.dart';
-import 'package:yusal/platform/ui/profile/profile_edit_page.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/features/demand/page.dart';
+import 'package:yusal/features/demand/pages/publish.dart';
+import 'package:yusal/features/profile/pages/edit.dart';
 
-const api = String.fromEnvironment('YUSAL_API');
-const devLogin = bool.fromEnvironment('YUSAL_DEV_LOGIN');
+/// The backend under test: eqserver unless `--dart-define=YUSAL_API=...`.
+const api = String.fromEnvironment('YUSAL_API',
+    defaultValue: 'https://eqserver.tail920a63.ts.net');
 
 /// Where screenshots go. On an iOS simulator this can be a folder on the
 /// Mac, e.g. `--dart-define=E2E_SHOTS=$PWD/test-screens`.
@@ -29,8 +30,6 @@ Directory shotsFolder() => Directory(
 
 void requireBackend() {
   expect(api, isNotEmpty, reason: 'run with --dart-define=YUSAL_API=...');
-  expect(devLogin, isTrue,
-      reason: 'run with --dart-define=YUSAL_DEV_LOGIN=true');
 }
 
 /// Saves what is on screen as `<name>.png`.
@@ -71,9 +70,9 @@ Future<void> tapIt(WidgetTester t, Finder f) async {
   // A toast from the previous step can float over the bottom of the page.
   if (find.byType(SnackBar).evaluate().isNotEmpty) {
     for (final m in find.byType(ScaffoldMessenger).evaluate()) {
-      (m as StatefulElement).state is ScaffoldMessengerState
-          ? (m.state as ScaffoldMessengerState).clearSnackBars()
-          : null;
+      if ((m as StatefulElement).state case final ScaffoldMessengerState s) {
+        s.clearSnackBars();
+      }
     }
     await t.pumpAndSettle();
   }
@@ -101,27 +100,29 @@ Future<void> scrollTo(WidgetTester t, Finder f, {double delta = 300}) async {
 }
 
 Future<void> tab(WidgetTester t, String label) async {
-  await t.tap(find.descendant(
-      of: find.byType(ShellBar), matching: find.text(label)));
+  await t.tap(
+      find.descendant(of: find.byType(ShellBar), matching: find.text(label)));
   await idle(t);
 }
 
 /// Back to the shell's root, whatever is pushed on top.
 Future<void> home(WidgetTester t) async {
-  final nav = t.state<NavigatorState>(find.byType(Navigator).first);
-  nav.popUntil((r) => r.isFirst);
+  t
+      .state<NavigatorState>(find.byType(Navigator).first)
+      .popUntil((r) => r.isFirst);
   await idle(t);
 }
 
 /// Pushes [page] on the root navigator, as the app's own links do.
 Future<void> open(WidgetTester t, Widget page) async {
-  final nav = t.state<NavigatorState>(find.byType(Navigator).first);
-  nav.push(MaterialPageRoute<void>(builder: (_) => page));
+  t
+      .state<NavigatorState>(find.byType(Navigator).first)
+      .push(MaterialPageRoute<void>(builder: (_) => page));
   await idle(t);
 }
 
-Future<void> signIn(WidgetTester t, HttpBackend repos, String name) async {
-  if (repos.currentAccount != null) await signOut(t, repos);
+Future<void> signIn(WidgetTester t, TestHttp repos, String name) async {
+  if (repos.api.currentAccount != null) await signOut(t, repos);
   await home(t);
   await tab(t, '我的');
   // After a sign-out two pages in the tree carry this button; the one on
@@ -132,20 +133,20 @@ Future<void> signIn(WidgetTester t, HttpBackend repos, String name) async {
   await t.enterText(find.byKey(const Key('dev-login-name')), name);
   await tapIt(t, find.byKey(const Key('dev-login')));
   await waitFor(t, find.byTooltip('改称呼'));
-  expect(repos.currentAccount?.displayName, name);
+  expect(repos.api.currentAccount?.displayName, name);
 }
 
-Future<void> signOut(WidgetTester t, HttpBackend repos) async {
+Future<void> signOut(WidgetTester t, TestHttp repos) async {
   await home(t);
   await tab(t, '我的');
   await scrollTap(t, find.byKey(const Key('me-sign-out')));
   // The app asks before signing out.
   await waitFor(t, find.text('退出登录？'));
   await tapIt(t, find.text('退出').last);
-  for (var i = 0; i < 20 && repos.currentAccount != null; i++) {
+  for (var i = 0; i < 20 && repos.api.currentAccount != null; i++) {
     await idle(t, 250);
   }
-  expect(repos.currentAccount, isNull);
+  expect(repos.api.currentAccount, isNull);
 }
 
 /// Types into the text field of the open dialog and presses 确定.

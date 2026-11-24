@@ -42,6 +42,11 @@
                 <data android:scheme="file" android:host="*" android:mimeType="*/*" android:pathPattern=".*\\.house" />
             </intent-filter>
         </activity>
+        <!-- Lets the 3D view draw on the GPU (Flutter GPU). A phone that
+             cannot run it paints the view on the canvas as before. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableFlutterGPU"
+            android:value="true" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

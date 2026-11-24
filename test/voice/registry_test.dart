@@ -1,14 +1,15 @@
 import 'dart:convert';
+import '../support/mock/backend.dart';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_clock.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/registry.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_clock.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/state/registry.dart';
 
-const _name = L3('动作', 'Әрекет', 'Действие');
+const _name = L3('动作', 'Әрекет', 'Действие', 'Action');
 
 AppAction action(String id,
         {L3 title = _name,
@@ -46,8 +47,8 @@ void main() {
   test('problems names every malformed action', () {
     final registry = ActionRegistry([
       action('Pause'),
-      action('a.title', title: const L3('暂停', '', 'Пауза')),
-      action('a.examples', examples: const L3('暂停', 'Тоқтат', ' ')),
+      action('a.title', title: const L3('暂停', '', 'Пауза', 'Pause')),
+      action('a.examples', examples: const L3('暂停', 'Тоқтат', ' ', 'Pause')),
       action('a.param', params: const {'Wall Id': Param.text()}),
       action('a.choice', params: const {'side': Param.choice([])}),
     ]);
@@ -74,10 +75,11 @@ void main() {
     List<String> offered(ActionContext ctx) =>
         [for (final a in registry.offered(ctx)) a.id];
 
-    expect(offered(ActionContext(repos: repos, loggedIn: false)), ['a.always']);
+    expect(offered(ActionContext(repos: voiceRepos(repos), loggedIn: false)),
+        ['a.always']);
     expect(
         offered(ActionContext(
-            repos: repos,
+            repos: voiceRepos(repos),
             loggedIn: true,
             entities: const [Entity('room', 'id', alias: 'r1')])),
         ['a.always', 'a.logged_in', 'a.room']);
@@ -110,7 +112,7 @@ void main() {
 
   // The AI gateway loads docs/voice_tools.json. After changing an action,
   // rewrite it with: UPDATE_VOICE_TOOLS=1 flutter test test/voice/registry_test.dart
-  test('docs/voice_tools.json matches the app\'s actions', () {
+  test("docs/voice_tools.json matches the app's actions", () {
     final file = File('docs/voice_tools.json');
     final now =
         '${const JsonEncoder.withIndent('  ').convert(appActions.tools())}\n';

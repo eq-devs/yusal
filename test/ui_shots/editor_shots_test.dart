@@ -1,21 +1,23 @@
 // Screens of the create-house flow with the voice orb over them, for
 // visual review (not run in CI).
 // SHOTS_OUT=/path flutter test test/ui_shots/editor_shots_test.dart
+import '../support/mock/backend.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/app/tokens.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/features/house_editor.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/session.dart';
-import 'package:yusal/voice/voice_overlay.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/constant/tokens.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/state/session.dart';
+import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 import '../voice/overlay_test.dart' show VoiceMock;
@@ -33,19 +35,19 @@ final shotKey = GlobalKey();
 
 void main() {
   final out = Platform.environment['SHOTS_OUT'];
-  final lang = AppLang.values.byName(Platform.environment['SHOTS_LANG'] ?? 'zh');
+  final lang =
+      AppLang.values.byName(Platform.environment['SHOTS_LANG'] ?? 'zh');
   final introSeen = Platform.environment['SHOTS_INTRO'] != '1';
   final sizeEnv = (Platform.environment['SHOTS_SIZE'] ?? '390x844').split('x');
   final size = Size(double.parse(sizeEnv[0]), double.parse(sizeEnv[1]));
   setUpAll(() async {
-    await loadFont('Onest', [
-      for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Onest-$w.ttf'
+    await loadFont('Inter', [
+      for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Inter-$w.otf'
     ]);
-    await loadFont('Lora',
-        [for (final w in [500, 600, 700]) 'assets/fonts/Lora-$w.ttf']);
-    await loadFont('PlexMono', [
-      'assets/fonts/IBMPlexMono-Regular.ttf',
-      'assets/fonts/IBMPlexMono-SemiBold.ttf'
+    await loadFont('InterDisplay', ['assets/fonts/InterDisplay-600.otf']);
+    await loadFont('JetBrainsMono', [
+      'assets/fonts/JetBrainsMono-Regular.ttf',
+      'assets/fonts/JetBrainsMono-SemiBold.ttf'
     ]);
     final flutter = Platform.environment['FLUTTER_ROOT']!;
     await loadFont('MaterialIcons', [
@@ -65,8 +67,8 @@ void main() {
     addTearDown(t.view.reset);
     SharedPreferences.setMockInitialValues(
         {if (introSeen) 'voice-intro-seen': true});
-    AppSettings.instance.lang = lang;
-    addTearDown(() => AppSettings.instance.lang = AppLang.zh);
+    appLang = lang;
+    addTearDown(() => appLang = AppLang.zh);
 
     var shot = 0;
     Future<void> snap(String name) async {
@@ -83,29 +85,28 @@ void main() {
 
     final navigator = GlobalKey<NavigatorState>();
     final backend = ScriptedBackend([
-      const VoiceTurn(
-          reply: '已经把客厅北墙加了一扇窗。还需要调整别的吗？', options: ['再加一扇', '不用了'])
+      const VoiceTurn(reply: '已经把客厅北墙加了一扇窗。还需要调整别的吗？', options: ['再加一扇', '不用了'])
     ]);
     var n = 0;
     final store = ProjectStore(fileSystem: MemoryFiles());
     final doc = createKazakhTemplate('2026-11-17T00:00:00Z', () => 'id${n++}');
     final id = await store.createProject(doc);
     final direct = size.width > size.height;
-    await t.pumpWidget(RepaintBoundary(
-        key: shotKey,
-        child: MaterialApp(
-            navigatorKey: navigator,
-            debugShowCheckedModeBanner: false,
-            theme: buildTheme(Tokens.light),
-            builder: (context, child) => AppScope(
-                child: VoiceHost(
+    await t.pumpWidget(ProviderScope(
+        child: RepaintBoundary(
+            key: shotKey,
+            child: MaterialApp(
+                navigatorKey: navigator,
+                debugShowCheckedModeBanner: false,
+                theme: buildTheme(Tokens.light),
+                builder: (context, child) => VoiceHost(
                     navigator: navigator,
-                    repos: VoiceMock(backend),
-                    enabled: true,
-                    child: child!)),
-            home: direct
-                ? HouseEditor(entry: ProjectEntry(id, doc), store: store)
-                : HouseHome(store: store))));
+                    repos: voiceRepos(VoiceMock(backend)),
+                    voice: backend,
+                    child: child!),
+                home: direct
+                    ? HouseEditor(entry: ProjectEntry(id, doc), store: store)
+                    : HouseHome(store: store)))));
     await t.pumpAndSettle();
     await snap('home');
 
@@ -126,8 +127,8 @@ void main() {
     final canvas = find.byWidgetPredicate(
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     Offset at(double x, double y) {
-      final painter = t.widget<CustomPaint>(canvas.first).painter!
-          as FloorPlanPainter;
+      final painter =
+          t.widget<CustomPaint>(canvas.first).painter! as FloorPlanPainter;
       return t.getTopLeft(canvas.first) +
           painter.point(x, y, t.getSize(canvas.first));
     }
@@ -148,7 +149,16 @@ void main() {
         await t.pumpAndSettle();
       }
     }
-    for (final tab in ['ext', 'walk', 'det', 'qty', 'cost', 'build', 'iss', 'plan']) {
+    for (final tab in [
+      'ext',
+      'walk',
+      'det',
+      'qty',
+      'cost',
+      'build',
+      'iss',
+      'plan'
+    ]) {
       final f = find.byKey(ValueKey('tab-$tab'));
       if (f.evaluate().isEmpty) continue;
       await t.ensureVisible(f);

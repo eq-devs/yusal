@@ -65,5 +65,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'yusal-web.firebasestorage.app',
     iosBundleId: 'com.yusal.client',
   );
-
 }

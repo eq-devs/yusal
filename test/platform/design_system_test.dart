@@ -5,16 +5,28 @@ import 'package:flutter_test/flutter_test.dart';
 /// Keeps platform pages on the design system: sizes, radii and colours are
 /// named in `theme.dart`, not written as numbers in a page.
 void main() {
-  final pages = Directory('lib/platform/ui')
-      .listSync(recursive: true)
+  // The platform look: the shared UI and every feature except the design
+  // tool (its own drafting look), the voice orb and the dev lab. The brand
+  // palette in features/shared/brand is where colours are named.
+  final pages = [
+    Directory('lib/features/shared/ui'),
+    ...Directory('lib/features').listSync().whereType<Directory>().where((d) =>
+        !const ['/editor', '/voice', '/dev', '/shared'].any(d.path.endsWith)),
+  ]
+      .expand((d) => d.listSync(recursive: true))
       .whereType<File>()
       .where((f) => f.path.endsWith('.dart'))
       .toList();
 
-  Map<String, List<String>> offenders(RegExp pattern, {Set<String> allow = const {}}) {
+  test('finds the platform pages', () {
+    expect(pages.length, greaterThan(40));
+  });
+
+  Map<String, List<String>> offenders(RegExp pattern,
+      {Set<String> allow = const {}}) {
     final out = <String, List<String>>{};
     for (final f in pages) {
-      final name = f.path.split('lib/platform/ui/').last;
+      final name = f.path.split('/').last;
       if (allow.contains(name)) continue;
       final hits = [
         for (final (i, line) in f.readAsLinesSync().indexed)
@@ -27,12 +39,13 @@ void main() {
   }
 
   test('no literal font size in a page', () {
-    expect(offenders(RegExp(r'fontSize:\s*\d'), allow: {'theme.dart'}),
-        isEmpty);
+    expect(
+        offenders(RegExp(r'fontSize:\s*\d'), allow: {'theme.dart'}), isEmpty);
   });
 
   test('no literal corner radius in a page', () {
-    expect(offenders(RegExp(r'[Rr]adius\.circular\(\s*\d'), allow: {'theme.dart'}),
+    expect(
+        offenders(RegExp(r'[Rr]adius\.circular\(\s*\d'), allow: {'theme.dart'}),
         isEmpty);
   });
 

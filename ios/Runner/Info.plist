@@ -113,5 +113,24 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>GIDClientID</key>
+	<string>814743623983-plqg7f66ms92n2pcv1h9t3jju7r3e52u.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>814743623983-61a2issopmf50eilqmjc34qf9l8n4hbk.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>google-sign-in</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.814743623983-plqg7f66ms92n2pcv1h9t3jju7r3e52u</string>
+			</array>
+		</dict>
+	</array>
+	<key>FLTEnableFlutterGPU</key>
+	<true/>
 </dict>
 </plist>

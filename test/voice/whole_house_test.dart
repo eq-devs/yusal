@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import '../support/mock/backend.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/features/house_editor.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_clock.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/actions_design.dart';
-import 'package:yusal/voice/actions_houses.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/screen.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/page.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_clock.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/actions/design.dart';
+import 'package:yusal/features/voice/actions/houses.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/screen.dart';
 
 import '../house_spec_test.dart' show spec;
 import '../storage_test.dart' show MemoryFiles;
@@ -51,7 +53,8 @@ void main() {
       seed: false);
 
   Future<ActionResult> say(String id, [Map<String, Object?> args = const {}]) =>
-      executor.run(id, args, VoiceScreens.context(repos, loggedIn: true),
+      executor.run(
+          id, args, VoiceScreens.context(voiceRepos(repos), loggedIn: true),
           source: Source.voice);
 
   Map<String, String> shown(String kind) => {
@@ -73,18 +76,18 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-14T00:00:00Z',
         newId: () => 'id${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
   }
 
   testWidgets('a whole house replaces the open design and undoes in one step',
       (t) async {
     await editor(t);
-    final host = VoiceScreens.current! as DesignHost;
-    host.beginUndoGroup();
+    final host = VoiceScreens.current! as DesignHost..beginUndoGroup();
     final made = await say('design.create_house', {'spec': spec});
     host.endUndoGroup();
     await t.pump();
@@ -108,7 +111,64 @@ void main() {
     expect(bad.say['errors'], isNotEmpty);
     expect(shown('room'), hasLength(1));
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
+    await t.pumpAndSettle();
+  });
+
+  testWidgets('a house is laid out from what it must have, in several plans',
+      (t) async {
+    await editor(t);
+    final host = VoiceScreens.current! as DesignHost;
+    final made = await say('design.plan_house', {
+      'width_mm': 12000,
+      'depth_mm': 10000,
+      'bedrooms': 3,
+      'entrance': 'north'
+    });
+    await t.pump();
+    expect(made.ok, isTrue);
+    expect(made.say['plan'], 1);
+    expect(made.say['plans'], 3);
+    expect(made.say['entrance'], 'north');
+    expect(host.document.footprint.width, 12000);
+    expect(
+        host.document.floors.single.rooms
+            .where((r) => r.type == RoomType.bedroom),
+        hasLength(3));
+    expect(host.document.mainEntranceOpeningId, isNotNull);
+    final first = made.say['layout'];
+
+    // "Another one" is a different layout of the same house.
+    final other = await say('design.plan_house', {
+      'width_mm': 12000,
+      'depth_mm': 10000,
+      'bedrooms': 3,
+      'entrance': 'north',
+      'plan': 2
+    });
+    expect(other.ok, isTrue);
+    expect(other.say['layout'], isNot(first));
+    expect(
+        (await say('design.plan_house',
+                {'area_sqm': 120, 'bedrooms': 3, 'plan': 9}))
+            .code,
+        ActionCodes.badArgs);
+
+    // An area becomes a width and a depth.
+    final byArea =
+        await say('design.plan_house', {'area_sqm': 120, 'bedrooms': 3});
+    expect(byArea.say['width_mm'], 12000);
+    expect(byArea.say['depth_mm'], 10000);
+
+    // No size is not enough, and a house too small for the rooms says so.
+    expect((await say('design.plan_house', {'bedrooms': 3})).code,
+        ActionCodes.badArgs);
+    final small = await say('design.plan_house',
+        {'width_mm': 6000, 'depth_mm': 6000, 'bedrooms': 5});
+    expect(small.code, tooSmall);
+    expect(host.document.footprint.width, 12000);
+
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 
@@ -142,7 +202,19 @@ void main() {
             .code,
         ActionCodes.badArgs);
 
-    await t.pumpWidget(const SizedBox.shrink());
+    // Or by where it goes: the north-east corner of the 10 by 8 m house.
+    final corner = await say('design.add_room',
+        {'type': 'kitchen', 'where': 'northeast', 'w_mm': 3000, 'd_mm': 3000});
+    expect(corner.ok, isTrue, reason: '${corner.say}');
+    await t.pump();
+    expect(VoiceScreens.current!.scene, contains('x7000 y5000 3000x3000'));
+    expect(
+        (await say('design.add_room',
+                {'type': 'kitchen', 'w_mm': 3000, 'd_mm': 3000}))
+            .code,
+        ActionCodes.badArgs);
+
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 
@@ -150,7 +222,8 @@ void main() {
     final library = HouseLibrary.instance = FakeLibrary();
     addTearDown(() => HouseLibrary.instance = null);
     Future<ActionResult> run(String id, Map<String, Object?> args) =>
-        executor.run(id, args, ActionContext(repos: repos, loggedIn: true),
+        executor.run(
+            id, args, ActionContext(repos: voiceRepos(repos), loggedIn: true),
             source: Source.voice);
 
     expect((await run('houses.open', {'name': 'менің үйім'})).ok, isTrue);

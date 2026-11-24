@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/main.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/data/repositories.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/ui/houses/my_houses_data.dart';
-import 'package:yusal/platform/ui/houses/workspace_page.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/service/settings/settings.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/houses/page.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 import 'mock_backend_test.dart' show backend, terms;
 
@@ -107,7 +105,7 @@ void main() {
   testWidgets('the owner sees a to-do strip and opens a house workspace',
       (t) async {
     SharedPreferences.setMockInitialValues({});
-    AppSettings.instance.lang = AppLang.zh;
+    appLang = AppLang.zh;
     t.view.physicalSize = const Size(1200, 2400);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -115,9 +113,8 @@ void main() {
     final c = await t.runAsync(() => liveContract(b));
     await t.runAsync(() => b.logWork(c!.id, 3));
     b.signInAs(SeedIds.owner);
-    await t.pumpWidget(ProviderScope(
-        child: HouseApp(
-            repos: b, store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t
+        .pumpWidget(testApp(b, store: ProjectStore(fileSystem: MemoryFiles())));
     await t.pumpAndSettle();
     await t.tap(find.text('我的房子').last);
     await t.pumpAndSettle();
@@ -196,8 +193,7 @@ void main() {
 
     test('a taken scope leaves "recruiting" and shows under who builds',
         () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner2);
+      final b = backend()..signInAs(SeedIds.owner2);
       expect((await b.demandsForPost('post_aigerim')).map((d) => d.id),
           contains('dem_wall'));
       await liveContract(b);

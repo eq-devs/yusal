@@ -1,29 +1,27 @@
 import 'package:flutter/material.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/ui/me/admin_page.dart';
-import 'package:yusal/platform/ui/scope.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/service/settings/settings.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/admin/page.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 Future<MockBackend> pumpAdmin(WidgetTester t, String account,
     {AppLang lang = AppLang.zh}) async {
-  AppSettings.instance.lang = lang;
-  addTearDown(() => AppSettings.instance.lang = AppLang.zh);
+  appLang = lang;
+  addTearDown(() => appLang = AppLang.zh);
   t.view.physicalSize = const Size(1200, 2400);
   t.view.devicePixelRatio = 2;
   addTearDown(t.view.reset);
   final b = MockBackend(latency: Duration.zero, autoReviewDelay: null)
     ..signInAs(account);
-  await t.pumpWidget(PlatformScope(
+  await t.pumpWidget(TestScope(
       repos: b,
       store: ProjectStore(fileSystem: MemoryFiles()),
-      child: MaterialApp(
-          builder: (_, child) => AppScope(child: child!),
-          home: const AdminPage())));
+      child: const MaterialApp(home: AdminPage())));
   await t.pumpAndSettle();
   return b;
 }
@@ -66,7 +64,7 @@ void main() {
     expect(find.text('没有后台权限'), findsOneWidget);
   });
 
-  for (final lang in [AppLang.kk, AppLang.ru])
+  for (final lang in [AppLang.kk, AppLang.ru]) {
     testWidgets('in ${lang.name} the back office shows no Chinese', (t) async {
       final b = await pumpAdmin(t, SeedIds.admin, lang: lang);
       // What the seed's users wrote stays as they wrote it.
@@ -88,15 +86,15 @@ void main() {
         await t.pumpAndSettle();
         scan();
       }
-      await t.pumpWidget(PlatformScope(
+      await t.pumpWidget(TestScope(
           repos: b,
           store: ProjectStore(fileSystem: MemoryFiles()),
-          child: MaterialApp(
-              builder: (_, child) => AppScope(child: child!),
-              home: const AccountDetailPage(accountId: SeedIds.mason))));
+          child: const MaterialApp(
+              home: AccountDetailPage(accountId: SeedIds.mason))));
       await t.pumpAndSettle();
       scan();
       expect(found, isEmpty);
       expect(t.takeException(), isNull);
     });
+  }
 }

@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_clock.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/data/repositories.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/ui/houses/my_houses_data.dart';
-import 'package:yusal/storage/project_store.dart';
+import '../support/test_scope.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_clock.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 MockBackend backend() => MockBackend(
@@ -26,7 +26,6 @@ HousePost draft(String snapshotId,
         createdAt: DateTime.utc(2026),
         updatedAt: DateTime.utc(2026),
         area: 120,
-        floors: 1,
         rooms: 4);
 
 void main() {
@@ -56,9 +55,8 @@ void main() {
     expect(await b.demandsForPost('post_dinara'), isEmpty);
   });
 
-  test('publishing needs the owner\'s own snapshot and clean text', () async {
-    final b = backend();
-    b.signInAs(SeedIds.mason);
+  test("publishing needs the owner's own snapshot and clean text", () async {
+    final b = backend()..signInAs(SeedIds.mason);
     expect(
         () => b.publishPost(draft('snap_aigerim')),
         throwsA(isA<ApiFailure>()
@@ -81,8 +79,7 @@ void main() {
   });
 
   test('likes toggle and notify the owner', () async {
-    final b = backend();
-    b.signInAs(SeedIds.roofTeam);
+    final b = backend()..signInAs(SeedIds.roofTeam);
     expect(await b.liked('post_aigerim'), isFalse);
     expect(await b.toggleLike('post_aigerim'), isTrue);
     expect((await b.post('post_aigerim'))!.likeCount, 4);
@@ -95,8 +92,7 @@ void main() {
   });
 
   test('one rating per person; owners cannot rate their own house', () async {
-    final b = backend();
-    b.signInAs(SeedIds.owner);
+    final b = backend()..signInAs(SeedIds.owner);
     expect(
         () => b.comment('post_aigerim', '好', rating: 5),
         throwsA(isA<ApiFailure>()
@@ -120,14 +116,13 @@ void main() {
         throwsA(isA<ApiFailure>()
             .having((f) => f.code, 'code', ApiCodes.invalidInput)));
     expect(
-        () => b.comment('post_aigerim', '', rating: null),
+        () => b.comment('post_aigerim', ''),
         throwsA(isA<ApiFailure>()
             .having((f) => f.code, 'code', ApiCodes.invalidInput)));
   });
 
   test('a comment can be removed by its author or the house owner', () async {
-    final b = backend();
-    b.signInAs(SeedIds.mason);
+    final b = backend()..signInAs(SeedIds.mason);
     expect(
         () => b.deleteComment('cmt2'),
         throwsA(isA<ApiFailure>()
@@ -144,9 +139,10 @@ void main() {
   });
 
   test('comments are rate limited', () async {
-    final b = backend();
-    b.signInAs(SeedIds.mason);
-    for (var i = 0; i < 10; i++) await b.comment('post_dinara', '评论 $i');
+    final b = backend()..signInAs(SeedIds.mason);
+    for (var i = 0; i < 10; i++) {
+      await b.comment('post_dinara', '评论 $i');
+    }
     expect(
         () => b.comment('post_dinara', '再来'),
         throwsA(isA<ApiFailure>()
@@ -155,9 +151,8 @@ void main() {
     await b.comment('post_dinara', '现在可以了');
   });
 
-  test('a blocked person\'s house and comments disappear', () async {
-    final b = backend();
-    b.signInAs(SeedIds.owner2);
+  test("a blocked person's house and comments disappear", () async {
+    final b = backend()..signInAs(SeedIds.owner2);
     await b.block(SeedIds.electrician);
     expect((await b.feed(const FeedFilter())).any((p) => p.id == 'post_erlan'),
         isFalse);

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import '../support/mock/backend.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/features/house_editor.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/actions.dart';
-import 'package:yusal/voice/actions_design.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/screen.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/page.dart';
+import '../support/mock/mock_backend.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/actions/actions.dart';
+import 'package:yusal/features/voice/actions/design.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/screen.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 
@@ -32,10 +34,11 @@ void main() {
         initialRoom: true,
         timestamp: '2026-11-14T00:00:00Z',
         newId: () => 'id${sequence++}');
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(
-            entry: ProjectEntry('project', doc),
-            store: ProjectStore(fileSystem: MemoryFiles()))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(
+                entry: ProjectEntry('project', doc),
+                store: ProjectStore(fileSystem: MemoryFiles())))));
     await t.pumpAndSettle();
     final host = VoiceScreens.current! as DesignHost;
     String scene() => VoiceScreens.current!.scene;
@@ -43,7 +46,7 @@ void main() {
     Future<ActionResult> say(String id,
         [Map<String, Object?> args = const {}]) async {
       final result = await executor.run(
-          id, args, VoiceScreens.context(repos, loggedIn: true),
+          id, args, VoiceScreens.context(voiceRepos(repos), loggedIn: true),
           source: Source.voice);
       await t.pump();
       return result;
@@ -77,6 +80,27 @@ void main() {
             .code,
         outerWall);
 
+    // Or by how much: 4 m and half a metre more, then back.
+    expect(
+        (await say('design.resize_room',
+                {'room': 'r1', 'side': 'east', 'by_mm': 500}))
+            .ok,
+        isTrue);
+    expect(scene(), contains('x0 y0 4500x8000'));
+    expect(
+        (await say('design.resize_room',
+                {'room': 'r1', 'side': 'east', 'by_mm': -500}))
+            .ok,
+        isTrue);
+    expect(scene(), contains('x0 y0 4000x8000'));
+    for (final args in [
+      {'room': 'r1', 'side': 'east'},
+      {'room': 'r1', 'side': 'east', 'size_mm': 5000, 'by_mm': 500},
+    ]) {
+      expect(
+          (await say('design.resize_room', args)).code, ActionCodes.badArgs);
+    }
+
     // A window slides along its wall, and not off it.
     final window = await say('design.add_opening',
         {'room': 'r1', 'side': 'north', 'kind': 'window'});
@@ -89,6 +113,24 @@ void main() {
             .ok,
         isTrue);
     expect(at(), before + 500);
+    // The same as a direction and a distance, along the wall only.
+    expect(
+        (await say('design.move_opening',
+                {'opening': 'o1', 'toward': 'west', 'by_mm': 200}))
+            .ok,
+        isTrue);
+    expect(at(), before + 300);
+    expect(
+        (await say('design.move_opening',
+                {'opening': 'o1', 'toward': 'east', 'by_mm': 200}))
+            .ok,
+        isTrue);
+    expect(at(), before + 500);
+    expect(
+        (await say('design.move_opening',
+                {'opening': 'o1', 'toward': 'north', 'by_mm': 200}))
+            .code,
+        ActionCodes.badArgs);
     final off =
         await say('design.move_opening', {'opening': 'o1', 'shift_mm': 9000});
     expect(off.code, ActionCodes.badArgs);
@@ -99,7 +141,7 @@ void main() {
                 {'opening': 'o1', 'room': 'r2', 'side': 'south'}))
             .ok,
         isTrue);
-    expect(scene(), contains(RegExp(r' r2 .*windows o1 south')));
+    expect(scene(), contains(RegExp(' r2 .*windows o1 south')));
     expect((await say('design.move_opening', {'opening': 'o1'})).code,
         ActionCodes.badArgs);
 
@@ -115,6 +157,20 @@ void main() {
         isTrue);
     var moved = host.document.extras.furniture.single;
     expect((moved.x, moved.y), (bed.x + 300, bed.y - 200));
+    expect(
+        (await say('design.move_furniture',
+                {'furniture': 'u1', 'toward': 'west', 'by_mm': 300}))
+            .ok,
+        isTrue);
+    expect(
+        (await say('design.move_furniture',
+                {'furniture': 'u1', 'toward': 'north', 'by_mm': 200}))
+            .ok,
+        isTrue);
+    moved = host.document.extras.furniture.single;
+    expect((moved.x, moved.y), (bed.x, bed.y));
+    await say('design.move_furniture',
+        {'furniture': 'u1', 'east_mm': 300, 'north_mm': -200});
     expect(
         (await say('design.move_furniture', {'furniture': 'u1', 'turn': true}))
             .ok,
@@ -139,13 +195,25 @@ void main() {
     expect((await say('editor.select', {'opening': 'o1'})).ok, isTrue);
     expect(scene(), contains('selected: o1'));
     expect((await say('editor.select')).code, ActionCodes.badArgs);
+    // A room is also named by its type, and has to be the only one.
+    expect((await say('editor.select', {'room': 'kitchen'})).ok, isTrue);
+    expect(scene(), contains('selected: r2'));
+    await say('design.set_room_type', {'room': 'r1', 'type': 'kitchen'});
+    final which = await say('editor.select', {'room': 'kitchen'});
+    expect(which.code, ActionCodes.ambiguous);
+    expect(which.say['choices'], hasLength(2));
+    // r1 is 4 m of the 10 m, so r2 is the larger.
+    expect((await say('editor.select', {'room': 'kitchen:smallest'})).ok,
+        isTrue);
+    expect(scene(), contains('selected: r1'));
+
     await say('design.add_floor');
     expect(scene(), contains('floor f1 '));
     expect((await say('editor.show_floor', {'floor': 'f2'})).ok, isTrue);
     expect(scene(), contains('floor f2 '));
     expect(scene(), contains('other floor f1 '));
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 }

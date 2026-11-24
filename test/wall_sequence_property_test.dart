@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/geometry/opening_constraints.dart';
-import 'package:yusal/features/wall_attachment_points.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/geometry/opening_constraints.dart';
+import 'package:yusal/features/editor/util/wall_attachment_points.dart';
 
 /// Random sequences of the wall and door edits the editor issues. Every
 /// accepted step must leave a valid document that survives a file round trip,
@@ -19,7 +19,8 @@ void main() {
       Meta(name: '序列', createdAt: ctx.now(), updatedAt: ctx.now()), s);
 
   test('random wall and door edits keep the document consistent', () {
-    var accepted = 0, rejected = 0;
+    var accepted = 0;
+    var rejected = 0;
     final kinds = <String, int>{};
     for (var seed = 0; seed < 30; seed++) {
       final rng = Random(seed);
@@ -128,9 +129,11 @@ void main() {
             .where((o) => o.status == 'ok')
             .map((o) => o.opening.id)
             .toSet();
-        for (final o in documentOpenings(next))
-          if (healthyBefore.contains(o.opening.id))
+        for (final o in documentOpenings(next)) {
+          if (healthyBefore.contains(o.opening.id)) {
             expect(o.status, 'ok', reason: '$reason opening ${o.opening.id}');
+          }
+        }
         expect(result.newState.floors[1], other, reason: reason);
         final roomIds = result.newState.floors.first.rooms.map((r) => r.id);
         expect(roomIds.toSet().length, roomIds.length, reason: reason);
@@ -148,7 +151,9 @@ void main() {
       'UpdateDrawnWall',
       'DeleteDrawnWall',
       'AddOpening'
-    ]) expect(kinds[kind], greaterThan(10), reason: kind);
+    ]) {
+      expect(kinds[kind], greaterThan(10), reason: kind);
+    }
     expect(rejected, greaterThan(0));
   });
 }

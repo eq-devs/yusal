@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/platform/ui/shell.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/main.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_clock.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/ui/components.dart';
-import 'package:yusal/platform/ui/demand/publish_page.dart';
-import 'package:yusal/platform/ui/discover/discover_page.dart';
-import 'package:yusal/platform/ui/home/home_page.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/service/settings/settings.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_clock.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/ui/components.dart';
+import 'package:yusal/features/demand/pages/publish.dart';
+import 'package:yusal/features/discover/page.dart';
+import 'package:yusal/features/home/page.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 
 MockBackend backend() => MockBackend(
@@ -29,22 +28,20 @@ Future<(MockBackend, ProjectStore)> launch(WidgetTester t,
   SharedPreferences.setMockInitialValues({});
   t.binding.platformDispatcher.defaultRouteNameTestValue = route;
   addTearDown(t.binding.platformDispatcher.clearDefaultRouteNameTestValue);
-  AppSettings.instance.lang = lang;
-  addTearDown(() => AppSettings.instance.lang = AppLang.zh);
+  appLang = lang;
+  addTearDown(() => appLang = AppLang.zh);
   t.view.physicalSize = size;
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
   final repos = backend();
   if (as != null) repos.signInAs(as);
   final store = ProjectStore(fileSystem: MemoryFiles());
-  await t
-      .pumpWidget(ProviderScope(child: HouseApp(repos: repos, store: store)));
+  await t.pumpWidget(testApp(repos, store: store));
   await t.pumpAndSettle();
   return (repos, store);
 }
 
-bool showing<T>(WidgetTester t) =>
-    t.widgetList(find.byType(T, skipOffstage: true)).isNotEmpty;
+bool showing<T>(WidgetTester t) => t.widgetList(find.byType(T)).isNotEmpty;
 
 void main() {
   test(
@@ -69,19 +66,21 @@ void main() {
       (t) async {
     await launch(t, size: const Size(412, 915));
     expect(find.byType(NavigationRail), findsNothing);
-    for (final label in ['发现', '我的房子', '消息', '我的'])
+    for (final label in ['发现', '我的房子', '消息', '我的']) {
       expect(find.widgetWithText(ShellBarTab, label), findsOneWidget);
+    }
   });
 
   testWidgets('a wide window has the same four places in a side rail',
       (t) async {
     await launch(t);
     expect(find.byType(ShellBar), findsNothing);
-    for (final label in ['发现', '我的房子', '消息', '我的'])
+    for (final label in ['发现', '我的房子', '消息', '我的']) {
       expect(
           find.descendant(
               of: find.byType(NavigationRail), matching: find.text(label)),
           findsOneWidget);
+    }
     // Switching places works from the rail, and keeps the page state when
     // the window is narrowed to a phone.
     await t.tap(find.descendant(
@@ -90,8 +89,7 @@ void main() {
     t.view.physicalSize = const Size(412, 915);
     await t.pumpAndSettle();
     expect(find.byType(ShellBar), findsOneWidget);
-    expect(t.widget<ShellBar>(find.byType(ShellBar)).selected,
-        3);
+    expect(t.widget<ShellBar>(find.byType(ShellBar)).selected, 3);
   });
 
   testWidgets('visitors open Discover on houses, pros open it on work',
@@ -104,25 +102,24 @@ void main() {
   testWidgets('a pro opens Discover on work and can switch to people',
       (t) async {
     await launch(t, as: SeedIds.mason);
-    final work = find.byWidgetPredicate(
-        (w) => w is DiscoverPage && w.people == false,
-        skipOffstage: true);
+    final work =
+        find.byWidgetPredicate((w) => w is DiscoverPage && w.people == false);
     expect(work, findsOneWidget);
     await t.tap(find.byKey(const Key('explore-seg-2')));
     await t.pumpAndSettle();
-    expect(
-        find.byWidgetPredicate((w) => w is DiscoverPage && w.people == true,
-            skipOffstage: true),
+    expect(find.byWidgetPredicate((w) => w is DiscoverPage && w.people == true),
         findsOneWidget);
   });
 
-  testWidgets('＋ offers three owner ways in plus joining as a pro and "find people" opens the form',
+  testWidgets(
+      '＋ offers three owner ways in plus joining as a pro and "find people" opens the form',
       (t) async {
     await launch(t, as: SeedIds.owner);
     await t.tap(find.byKey(const Key('explore-create')));
     await t.pumpAndSettle();
-    for (var i = 0; i < 4; i++)
+    for (var i = 0; i < 4; i++) {
       expect(find.byKey(Key('create-option-$i')), findsOneWidget);
+    }
     await t.tap(find.byKey(const Key('create-option-2')));
     await t.pumpAndSettle();
     expect(find.byType(PublishPage), findsOneWidget);
@@ -140,8 +137,8 @@ void main() {
   testWidgets('the keyboard shrinks the work tab once, not twice', (t) async {
     // A phone: 448 x 997 dp, with a 330 dp keyboard.
     await launch(t, as: SeedIds.mason, size: const Size(448, 997));
-    final work = find.byWidgetPredicate(
-        (w) => w is DiscoverPage && w.people == false);
+    final work =
+        find.byWidgetPredicate((w) => w is DiscoverPage && w.people == false);
     final top = t.getTopLeft(work).dy;
     await t.tap(find.descendant(of: work, matching: find.byType(SearchField)));
     t.view.viewInsets = const FakeViewPadding(bottom: 330);

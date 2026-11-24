@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/features/house_editor.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/render3d/scene_view.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_view.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
 import 'tabs.dart';
 
@@ -31,13 +32,13 @@ void main() {
     addTearDown(t.view.resetDevicePixelRatio);
     final store = ProjectStore(fileSystem: MemoryFiles());
     final id = await store.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        builder: (context, child) => AppScope(child: child!),
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await t.pumpAndSettle();
     addTearDown(() async {
-      AppSettings.instance.lang = AppLang.zh;
-      await t.pumpWidget(const SizedBox.shrink());
+      appLang = AppLang.zh;
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
     return (store: store, id: id);
@@ -224,7 +225,9 @@ void main() {
     final state = t.state<SceneViewState>(find.byType(SceneView));
     final z0 = state.wz;
     await t.sendKeyDownEvent(LogicalKeyboardKey.keyW);
-    for (var i = 0; i < 30; i++) await t.pump(const Duration(milliseconds: 50));
+    for (var i = 0; i < 30; i++) {
+      await t.pump(const Duration(milliseconds: 50));
+    }
     await t.sendKeyUpEvent(LogicalKeyboardKey.keyW);
     await t.pump(const Duration(milliseconds: 50));
     expect(state.wz, lessThan(z0 - 1), reason: 'walked toward the house');
@@ -232,7 +235,9 @@ void main() {
     state.standAt(2000, -1500, 0, 0);
     await t.pump();
     await t.sendKeyDownEvent(LogicalKeyboardKey.keyW);
-    for (var i = 0; i < 60; i++) await t.pump(const Duration(milliseconds: 50));
+    for (var i = 0; i < 60; i++) {
+      await t.pump(const Duration(milliseconds: 50));
+    }
     await t.sendKeyUpEvent(LogicalKeyboardKey.keyW);
     await t.pump(const Duration(milliseconds: 50));
     expect(state.wz, greaterThan(state.model.depth - 0.05),

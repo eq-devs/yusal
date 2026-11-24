@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/storage/house_import.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/service/storage/house_import.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 
 class MemoryFiles implements ProjectFileSystem {
   final documents = <String, String>{};
@@ -78,8 +78,9 @@ void main() {
       newId: () => 'id${sequence++}');
   test('each account lists only its own designs', () async {
     String? me;
-    final store = ProjectStore(fileSystem: MemoryFiles(), owners: MemoryOwners())
-      ..currentOwner = () => me;
+    final store =
+        ProjectStore(fileSystem: MemoryFiles(), owners: MemoryOwners())
+          ..currentOwner = () => me;
     final guest = await store.createProject(doc);
     me = 'aigerim';
     final mine = await store.createProject(doc);
@@ -96,8 +97,8 @@ void main() {
   });
 
   test('project round trip, index and deletion', () async {
-    final files = MemoryFiles(),
-        store = ProjectStore(fileSystem: MemoryFiles());
+    final files = MemoryFiles();
+    final store = ProjectStore(fileSystem: MemoryFiles());
     final tested = ProjectStore(fileSystem: files);
     final id = await tested.createProject(doc);
     expect(await tested.openProject(id), doc);
@@ -146,7 +147,7 @@ void main() {
     await store.saveProject(id, doc);
     expect((await store.openProject(id)).meta.name, doc.meta.name);
     files.failIndex = false;
-    await store.rebuildIndex();
+    await store.listProjects();
     expect(store.indexWarning, isNull);
   });
   test('two lists loading at once do not warn about the index', () async {

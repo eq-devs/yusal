@@ -4,9 +4,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
-# Same dart-defines for a release and every patch to it: Shorebird refuses a
-# patch whose --dart-define values differ from its release.
-DEFINES="${DEFINES:-$ROOT/config/dart_defines.release.json}"
 # Where finished .aab / .ipa files are copied.
 OUT_DIR="${OUT_DIR:-$HOME/Desktop/eq/yusal/release}"
 
@@ -16,7 +13,6 @@ info() { echo "==> $*"; }
 command -v shorebird >/dev/null || die "未找到 shorebird，先安装: curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash"
 [ -f shorebird.yaml ] || die "缺少 shorebird.yaml，先运行 shorebird init"
 grep -q "^app_id: PENDING" shorebird.yaml && die "shorebird.yaml 还没有 app_id，先 shorebird login 再 shorebird init"
-[ -f "$DEFINES" ] || die "缺少 $DEFINES"
 
 # version: 0.4.0+5  ->  0.4.0+5
 pubspec_version() { sed -n 's/^version: *//p' pubspec.yaml | tr -d '[:space:]'; }

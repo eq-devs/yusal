@@ -12,19 +12,19 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:yusal/app/tokens.dart';
+import 'package:yusal/constant/tokens.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/core/axis/axis_resolver.dart';
-import 'package:yusal/core/commands/command_contract.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/document/house_document.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/platform/snapshot/design_snapshot.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/render2d/planning_names.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/axis/axis_resolver.dart';
+import 'package:yusal/features/editor/engine/core/commands/command_contract.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/shared/model/design_snapshot.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/render2d/planning_names.dart';
 
 const _out = String.fromEnvironment('SEED_OUT', defaultValue: 'houses.json');
 
@@ -43,8 +43,12 @@ class _Spec {
       this.upperName = '2 этаж',
       this.outer = 380,
       this.days = 10});
-  final String key, name, roof, upperName;
-  final List<int> xs, ys; // inner axis positions, mm
+  final String key;
+  final String name;
+  final String roof;
+  final String upperName;
+  final List<int> xs;
+  final List<int> ys; // inner axis positions, mm
   final List<_Room> rooms;
 
   /// Rooms of the upper floor (same grid); null for one storey.
@@ -55,8 +59,6 @@ class _Spec {
   final int outer;
   final int days;
 }
-
-Cell c(int x, int y) => Cell(x, y);
 
 /// Nine houses of the pilot region, sized and laid out like the houses
 /// people around Almaty actually build.
@@ -235,17 +237,17 @@ final _specs = <(_Spec, int, int)>[
 
 void main() {
   test('seed houses', () async {
-    AppSettings.instance.lang = AppLang.ru;
+    appLang = AppLang.ru;
     // Real glyphs on the thumbnail (tests otherwise draw boxes).
     final fonts = FontLoader(fontBody);
     for (final w in [400, 500, 600, 700]) {
-      fonts.addFont(File('assets/fonts/Onest-$w.ttf')
+      fonts.addFont(File('assets/fonts/Inter-$w.otf')
           .readAsBytes()
           .then((b) => ByteData.view(b.buffer)));
     }
     await fonts.load();
-    final mono = FontLoader('PlexMono')
-      ..addFont(File('assets/fonts/IBMPlexMono-Regular.ttf')
+    final mono = FontLoader('JetBrainsMono')
+      ..addFont(File('assets/fonts/JetBrainsMono-Regular.ttf')
           .readAsBytes()
           .then((b) => ByteData.view(b.buffer)));
     await mono.load();
@@ -355,7 +357,9 @@ HouseDocument _build(
     ('innerWallThickness', 200),
     ('slabThickness', 220),
     ('doorWidth', 900),
-  ]) run('SetDefault', {'field': field, 'value': value});
+  ]) {
+    run('SetDefault', {'field': field, 'value': value});
+  }
   run('SetRoof', {
     'roof': switch (s.roof) {
       'flat' => {'type': 'flat', 'parapetHeight': 1000},
@@ -368,8 +372,12 @@ HouseDocument _build(
         },
     }
   });
-  for (final x in s.xs) run('AddAxis', {'dir': AxisDir.V, 'pos': x});
-  for (final y in s.ys) run('AddAxis', {'dir': AxisDir.H, 'pos': y});
+  for (final x in s.xs) {
+    run('AddAxis', {'dir': AxisDir.V, 'pos': x});
+  }
+  for (final y in s.ys) {
+    run('AddAxis', {'dir': AxisDir.H, 'pos': y});
+  }
   final first = doc.floors.first.id;
   run('RenameFloor', {'floorId': first, 'value': '1 этаж'});
 
@@ -382,8 +390,9 @@ HouseDocument _build(
           .firstWhere((f) => f.id == floorId)
           .rooms
           .where((x) => !before.contains(x.id));
-      for (final m in made)
+      for (final m in made) {
         run('RenameRoom', {'roomId': m.id, 'value': r.name});
+      }
     }
   }
 
@@ -467,7 +476,9 @@ HouseDocument _build(
         'kind': kind,
         'centerAtTap': true,
         'tapT': center - w.start.pos
-      })) return false;
+      })) {
+        return false;
+      }
       final id = doc.floors
           .firstWhere((f) => f.id == floor.id)
           .openings
@@ -502,9 +513,11 @@ HouseDocument _build(
         for (final e in edges) {
           if (e.kind != 'exterior') continue;
           final owner = base.owners[e.negative] ?? base.owners[e.positive];
-          if (owner == null || !(rooms[owner]?.name.startsWith(pref) ?? false))
+          if (owner == null ||
+              !(rooms[owner]?.name.startsWith(pref) ?? false)) {
             continue;
-          if (add(e, OpeningKind.door, 1000, 2100, 0, at: 0.5)) {
+          }
+          if (add(e, OpeningKind.door, 1000, 2100, 0)) {
             seen.add('$owner:${e.axis.id}');
             break;
           }
@@ -512,7 +525,8 @@ HouseDocument _build(
       }
     }
     for (final e in edges) {
-      final a = base.owners[e.negative], b = base.owners[e.positive];
+      final a = base.owners[e.negative];
+      final b = base.owners[e.positive];
       if (e.kind == 'exterior') {
         final owner = a ?? b;
         final room = rooms[owner];
@@ -547,14 +561,14 @@ HouseDocument _build(
 /// the image codec plugin is not available outside the app).
 Future<List<int>> _preview(HouseDocument document) async {
   final derived = deriveHouse(document).floors.first;
-  final width = document.footprint.width.toDouble(),
-      depth = document.footprint.depth.toDouble();
+  final width = document.footprint.width.toDouble();
+  final depth = document.footprint.depth.toDouble();
   final size = width >= depth
       ? Size(512, 96 + 416 * depth / width)
       : Size(96 + 416 * width / depth, 512);
   final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder);
-  canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xfff6f7f3));
+  final canvas = Canvas(recorder)
+    ..drawRect(Offset.zero & size, Paint()..color = const Color(0xfff6f7f3));
   final rooms = document.floors.first.rooms;
   FloorPlanPainter(derived.base, {for (final r in rooms) r.id: r.name},
           {for (final r in rooms) r.id: roomColors[r.type]!},

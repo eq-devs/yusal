@@ -1,15 +1,15 @@
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/analysis/build_schedule.dart';
-import 'package:yusal/core/analysis/cost_estimate.dart';
-import 'package:yusal/core/analysis/heat_loss.dart';
-import 'package:yusal/core/analysis/site_analysis.dart';
-import 'package:yusal/core/analysis/utility_plan.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/analysis/build_schedule.dart';
+import 'package:yusal/features/editor/engine/core/analysis/cost_estimate.dart';
+import 'package:yusal/features/editor/engine/core/analysis/heat_loss.dart';
+import 'package:yusal/features/editor/engine/core/analysis/site_analysis.dart';
+import 'package:yusal/features/editor/engine/core/analysis/utility_plan.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 
 void main() {
   var n = 0;
@@ -112,7 +112,8 @@ void main() {
 
   group('cost estimate', () {
     test('every stage of the village house has a price', () {
-      final doc = kz(), derived = deriveHouse(doc);
+      final doc = kz();
+      final derived = deriveHouse(doc);
       final e = estimateCost(doc, derived);
       expect(e.currency, Currency.cny);
       for (final stage in [
@@ -122,7 +123,9 @@ void main() {
         'openings',
         'mep',
         'finish'
-      ]) expect(e.stageMaterials(stage), greaterThan(0), reason: stage);
+      ]) {
+        expect(e.stageMaterials(stage), greaterThan(0), reason: stage);
+      }
       expect(e.stageMaterials('site'), 0);
       expect(e.labour, closeTo(e.materials * 0.35, 1));
       expect(e.total, closeTo((e.materials + e.labour) * 1.10, 1));
@@ -153,7 +156,7 @@ void main() {
       expect(doc.extras.cost.prices, isEmpty);
     });
 
-    test('switching currency starts again from that currency\'s prices', () {
+    test("switching currency starts again from that currency's prices", () {
       var doc = run(kz(), 'SetCost', {'priceKey': 'rebar', 'price': 5000});
       doc = run(doc, 'SetCost', {'currency': Currency.kzt});
       expect(doc.extras.cost.prices, isEmpty);
@@ -199,9 +202,9 @@ void main() {
   });
 
   group('heat loss', () {
-    test('U-values follow the layers and the user\'s conductivity', () {
+    test("U-values follow the layers and the user's conductivity", () {
       // 15 plaster + 100 wool + 270 aerated block + 15 plaster.
-      final r = 15 / 760 + 100 / 40 + 270 / 140 + 15 / 760;
+      const r = 15 / 760 + 100 / 40 + 270 / 140 + 15 / 760;
       expect(wallU(defaultWallLayers), closeTo(1 / (0.13 + r + 0.04), 1e-9));
       final better = [
         for (final l in defaultWallLayers)
@@ -215,7 +218,8 @@ void main() {
     });
 
     test('the village house loses a plausible amount of heat', () {
-      final doc = kz(), loss = heatLoss(doc, deriveHouse(doc));
+      final doc = kz();
+      final loss = heatLoss(doc, deriveHouse(doc));
       expect(loss.deltaT, 45);
       expect(loss.total, greaterThan(0));
       expect(loss.perArea, inInclusiveRange(25, 120));
@@ -240,7 +244,7 @@ void main() {
       expect(roundTrip(doc).extras.heat.outdoor, -40);
     });
 
-    test('changing fuel brings that fuel\'s efficiency', () {
+    test("changing fuel brings that fuel's efficiency", () {
       final doc = run(kz(), 'SetHeat', {'fuel': FuelKind.gas});
       expect(doc.extras.heat.efficiency, 92);
       final loss = heatLoss(doc, deriveHouse(doc));
@@ -263,7 +267,8 @@ void main() {
 
   group('utilities', () {
     test('the first layout lights every room and finds the entrance', () {
-      final doc = kz(), derived = deriveHouse(doc);
+      final doc = kz();
+      final derived = deriveHouse(doc);
       final spots = suggestUtilities(doc, derived, 0);
       int count(UtilityKind k) => spots.where((s) => s.kind == k).length;
       expect(count(UtilityKind.light),

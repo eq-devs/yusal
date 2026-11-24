@@ -1,20 +1,19 @@
 // The app's main pages with the voice orb over them, for visual review
 // (not run in CI).
-// SHOTS_OUT=/path flutter test --dart-define=YUSAL_VOICE=true test/ui_shots/app_shots_test.dart
+// SHOTS_OUT=/path flutter test test/ui_shots/app_shots_test.dart
+import '../support/test_scope.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/main.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_clock.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/ui/shell.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/session.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_clock.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/state/session.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 import 'editor_shots_test.dart' show loadFont;
@@ -43,14 +42,13 @@ class SeededVoice extends MockBackend implements VoiceBackend {
 void main() {
   final out = Platform.environment['SHOTS_OUT'];
   setUpAll(() async {
-    await loadFont('Onest', [
-      for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Onest-$w.ttf'
+    await loadFont('Inter', [
+      for (final w in [400, 500, 600, 700, 800]) 'assets/fonts/Inter-$w.otf'
     ]);
-    await loadFont('Lora',
-        [for (final w in [500, 600, 700]) 'assets/fonts/Lora-$w.ttf']);
-    await loadFont('PlexMono', [
-      'assets/fonts/IBMPlexMono-Regular.ttf',
-      'assets/fonts/IBMPlexMono-SemiBold.ttf'
+    await loadFont('InterDisplay', ['assets/fonts/InterDisplay-600.otf']);
+    await loadFont('JetBrainsMono', [
+      'assets/fonts/JetBrainsMono-Regular.ttf',
+      'assets/fonts/JetBrainsMono-SemiBold.ttf'
     ]);
     final flutter = Platform.environment['FLUTTER_ROOT']!;
     await loadFont('MaterialIcons', [
@@ -72,10 +70,7 @@ void main() {
     final key = GlobalKey();
     await t.pumpWidget(RepaintBoundary(
         key: key,
-        child: ProviderScope(
-            child: HouseApp(
-                repos: repos,
-                store: ProjectStore(fileSystem: MemoryFiles())))));
+        child: testApp(repos, store: ProjectStore(fileSystem: MemoryFiles()))));
     await t.pumpAndSettle();
     var shot = 0;
     Future<void> snap(String name) async {

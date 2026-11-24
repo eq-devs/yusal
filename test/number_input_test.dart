@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/number_input.dart';
+import 'package:yusal/features/editor/engine/core/number_input.dart';
 
 void main() {
   test('reads decimals with a comma or a dot', () {
@@ -20,7 +20,8 @@ void main() {
   });
 
   test('refuses what is not a number', () {
-    for (final bad in ['', 'abc', '3..2', '3+', '+3', '1/0', '2(3)', '3,6,1'])
+    for (final bad in ['', 'abc', '3..2', '3+', '+3', '1/0', '2(3)', '3,6,1']) {
       expect(parseNumber(bad), isNull, reason: bad);
+    }
   });
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/features/house_editor.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
 
 void main() {
@@ -22,8 +23,9 @@ void main() {
         newId: () => 'id${n++}');
     final store = ProjectStore(fileSystem: MemoryFiles());
     final id = await store.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await t.pumpAndSettle();
     await t.tap(find.byTooltip('加房间'));
     await t.pumpAndSettle();
@@ -58,7 +60,7 @@ void main() {
     final r = resolveRect(axes, room.regions.single).rect!;
     expect((r.left, r.bottom, r.right, r.top), (10000, 7600, 12000, 10000));
     expect(t.takeException(), isNull);
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });
 }

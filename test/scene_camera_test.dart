@@ -1,10 +1,11 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/render3d/scene_model.dart';
-import 'package:yusal/render3d/scene_view.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_view.dart';
 
 void main() {
   var n = 0;
@@ -12,16 +13,17 @@ void main() {
   final derived = deriveHouse(doc);
 
   Future<SceneViewState> mount(WidgetTester t) async {
-    await t.pumpWidget(MaterialApp(
-        home: SizedBox(
-            width: 800,
-            height: 600,
-            child: SceneView(
-                doc: doc,
-                derived: derived,
-                roomName: (r) => r.name,
-                settings: const SceneSettings(),
-                walk: false))));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: SizedBox(
+                width: 800,
+                height: 600,
+                child: SceneView(
+                    doc: doc,
+                    derived: derived,
+                    roomName: (r) => r.name,
+                    settings: const SceneSettings(),
+                    walk: false)))));
     return t.state<SceneViewState>(find.byType(SceneView));
   }
 
@@ -51,9 +53,13 @@ void main() {
     }
 
     // The first moves pass the touch slop and start the gesture.
-    for (var i = 1; i <= 3; i++) await step(i);
+    for (var i = 1; i <= 3; i++) {
+      await step(i);
+    }
     final start = screen(s, p);
-    for (var i = 4; i <= 7; i++) await step(i);
+    for (var i = 4; i <= 7; i++) {
+      await step(i);
+    }
     // From then on the point under the fingers moves with them (40, 40).
     final moved = screen(s, p) - start;
     expect(moved.dx, closeTo(40, 1.5));
@@ -63,7 +69,9 @@ void main() {
     await t.pump();
 
     // Zooming about a corner keeps what is under it in place.
-    final yaw = s.yaw, pitch = s.pitch, before = s.distance;
+    final yaw = s.yaw;
+    final pitch = s.pitch;
+    final before = s.distance;
     final cam = orbitCamera(s.target, yaw, pitch, before);
     final f = 300 / math.tan(cam.fov / 2);
     const at = Offset(650, 120);
@@ -105,39 +113,52 @@ void main() {
   test('preset views fit the whole house to any screen shape', () {
     final model = buildScene(doc, derived, const SceneOptions(), (r) => r.name);
     final (lo, hi) = model.bounds;
-    for (final aspect in [390 / 520, 1.5, 2.2])
+    for (final aspect in [390 / 520, 1.5, 2.2]) {
       for (final view in ['iso', 'front', 'back', 'side', 'top']) {
         final pose = viewPose(model, view, aspect: aspect);
-        final cam = orbitCamera(pose.target, pose.yaw, pose.pitch, pose.distance);
-        final tanV = math.tan(cam.fov / 2), tanH = tanV * aspect;
-        var maxX = 0.0, maxY = 0.0;
-        for (final x in [lo.x, hi.x])
-          for (final y in [lo.y, hi.y])
+        final cam =
+            orbitCamera(pose.target, pose.yaw, pose.pitch, pose.distance);
+        final tanV = math.tan(cam.fov / 2);
+        final tanH = tanV * aspect;
+        var maxX = 0.0;
+        var maxY = 0.0;
+        for (final x in [lo.x, hi.x]) {
+          for (final y in [lo.y, hi.y]) {
             for (final z in [lo.z, hi.z]) {
               final c = cam.toCamera(Vec3(x, y, z));
               maxX = math.max(maxX, (c.x / c.z).abs() / tanH);
               maxY = math.max(maxY, (c.y / c.z).abs() / tanV);
             }
+          }
+        }
         final reason = '$view at $aspect';
         expect(math.max(maxX, maxY), lessThanOrEqualTo(0.9), reason: reason);
         // And fills the screen in one direction, not a speck in the middle.
         expect(math.max(maxX, maxY), greaterThan(0.8), reason: reason);
       }
+    }
   });
 
-  testWidgets('zooming in stops before the camera enters the house',
-      (t) async {
+  testWidgets('zooming in stops before the camera enters the house', (t) async {
     final s = await mount(t);
     bool inside(Vec3 e) {
       final (lo, hi) = s.model.bounds;
-      return e.x > lo.x && e.x < hi.x && e.y > lo.y && e.y < hi.y &&
-          e.z > lo.z && e.z < hi.z;
+      return e.x > lo.x &&
+          e.x < hi.x &&
+          e.y > lo.y &&
+          e.y < hi.y &&
+          e.z > lo.z &&
+          e.z < hi.z;
     }
 
     for (final (yaw, pitch) in [(s.yaw, s.pitch), (0.3, 0.12), (2.0, 0.5)]) {
-      s.yaw = yaw;
-      s.pitch = pitch;
-      for (var i = 0; i < 40; i++) s.zoomAt(const Offset(400, 300), s.distance * 0.7);
+      s
+        ..yaw = yaw
+        ..pitch = pitch;
+      for (var i = 0; i < 40; i++) {
+        s.zoomAt(const Offset(400, 300), s.distance * 0.7);
+      }
+      // ignore: invalid_use_of_protected_member
       s.setState(() {});
       await t.pump();
       expect(inside(s.camera.eye), isFalse);

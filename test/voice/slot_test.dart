@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import '../support/mock/backend.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/app/ui.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/features/house_editor.dart';
-import 'package:yusal/motion/motion.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/storage/project_store.dart';
-import 'package:yusal/voice/session.dart';
-import 'package:yusal/voice/voice_overlay.dart';
+import 'package:yusal/features/editor/widgets/editor_kit.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/service/storage/project_store.dart';
+import 'package:yusal/features/voice/state/session.dart';
+import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 import 'overlay_test.dart' show VoiceMock, VoicePage;
@@ -25,18 +26,19 @@ void main() {
     SharedPreferences.setMockInitialValues(
         {if (introSeen) 'voice-intro-seen': true});
     final navigator = GlobalKey<NavigatorState>();
-    await t.pumpWidget(MaterialApp(
-        navigatorKey: navigator,
-        builder: (context, child) => AppScope(
-            child: VoiceHost(
+    final mock = VoiceMock(ScriptedBackend([...script]), signedIn: signedIn);
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            navigatorKey: navigator,
+            builder: (context, child) => VoiceHost(
                 navigator: navigator,
-                repos: VoiceMock(ScriptedBackend([...script]), signedIn: signedIn),
-                enabled: true,
-                child: child!)),
-        home: home));
+                repos: voiceRepos(mock),
+                voice: mock,
+                child: child!),
+            home: home)));
     await t.pumpAndSettle();
     addTearDown(() async {
-      await t.pumpWidget(const SizedBox.shrink());
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
     return navigator;
@@ -46,8 +48,7 @@ void main() {
     final navigator = await pump(
         t,
         const VoicePage(
-            child: Align(
-                alignment: Alignment(0.5, -0.8), child: VoiceSlot(size: 44))),
+            child: Align(alignment: Alignment(0.5, -0.8), child: VoiceSlot())),
         script: [const VoiceTurn(reply: '好的。')],
         introSeen: false);
     final slot = t.getRect(find.byType(VoiceSlot));
@@ -69,8 +70,8 @@ void main() {
     await t.pumpAndSettle();
 
     // Under another page of its own the slot does not count: the corner.
-    navigator.currentState!.push(
-        MaterialPageRoute<void>(builder: (_) => const VoicePage()));
+    navigator.currentState!
+        .push(MaterialPageRoute<void>(builder: (_) => const VoicePage()));
     await t.pumpAndSettle();
     final corner = t.getRect(orb);
     expect(corner.size, const Size(52, 52));
@@ -125,7 +126,7 @@ void main() {
     expect(orb, findsOneWidget);
   });
 
-  testWidgets('the orb is away while the page\'s keyboard is up', (t) async {
+  testWidgets("the orb is away while the page's keyboard is up", (t) async {
     await pump(t, const VoicePage());
     addTearDown(t.view.reset);
     t.view.viewInsets = const FakeViewPadding(bottom: 300);
@@ -179,7 +180,8 @@ void main() {
             entry: ProjectEntry('project', doc),
             store: ProjectStore(fileSystem: MemoryFiles())));
     for (final tab in ['ext', 'walk']) {
-      await t.tap(find.byKey(ValueKey(tab == 'ext' ? 'group-view' : 'tab-walk')));
+      await t
+          .tap(find.byKey(ValueKey(tab == 'ext' ? 'group-view' : 'tab-walk')));
       await t.pump(const Duration(seconds: 1));
       await t.pump(const Duration(seconds: 1));
       await t.pump();
@@ -190,7 +192,7 @@ void main() {
         find.byType(PillToggle),
         find.byType(ActionChip),
         find.byType(Btn),
-      ])
+      ]) {
         for (final e in finder.evaluate()) {
           final box = e.renderObject! as RenderBox;
           var rect = box.localToGlobal(Offset.zero) & box.size;
@@ -202,6 +204,7 @@ void main() {
           expect(rect.overlaps(at.deflate(4)), isFalse,
               reason: '$tab: ${e.widget.runtimeType} at $rect under $at');
         }
+      }
     }
   });
 
@@ -211,7 +214,7 @@ void main() {
     const Size(844, 390),
     const Size(820, 1180),
     const Size(1180, 820)
-  ])
+  ]) {
     testWidgets('in the editor at $size the orb covers no tool', (t) async {
       t.view.physicalSize = size;
       t.view.devicePixelRatio = 1;
@@ -234,18 +237,23 @@ void main() {
         find.byType(TextButton),
         find.byWidgetPredicate(
             (w) => w is CustomPaint && w.painter is FloorPlanPainter),
-      ])
+      ]) {
         for (final e in finder.evaluate()) {
           if (find
-              .ancestor(of: find.byWidget(e.widget), matching: find.byType(VoiceBar))
+              .ancestor(
+                  of: find.byWidget(e.widget), matching: find.byType(VoiceBar))
               .evaluate()
-              .isNotEmpty) continue;
+              .isNotEmpty) {
+            continue;
+          }
           final box = e.renderObject! as RenderBox;
           if (!box.hasSize || box.size.isEmpty) continue;
           final rect = box.localToGlobal(Offset.zero) & box.size;
           expect(rect.overlaps(at.deflate(4)), isFalse,
               reason: '${e.widget.runtimeType} at $rect under the orb $at');
         }
+      }
       expect(t.takeException(), isNull);
     });
+  }
 }

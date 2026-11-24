@@ -30,7 +30,7 @@ A confirmed cooperation's ending is its own small machine, `EndPhase` (`Cooperat
 - `VoicePhase` (`lib/voice/session.dart`): idle → thinking ⇄ acting → done | failed, at most `maxSteps` acting rounds. A sentence said while busy stops the running one and runs next.
 - The orb's microphone, `_Mic` in `lib/voice/voice_overlay.dart`: off → listening → transcribing → off (tapping the pill while listening goes straight to off). One enum, so it cannot be listening and transcribing at once.
 - `_Mood` (the orb's colours) is derived from the two above and never stored.
-- Gateway dialog (yusal-api `internal/gateway/dialog.go`): the house brief gathers size, floors and bedrooms; `design.create_house` is refused until they are known, the user said to decide, or `MaxQuestions` (4) questions were asked. State is the brief and the question count, derived by `missing()`.
+- Gateway dialog (yusal-api `internal/gateway/dialog.go`): the house brief gathers size, floors and bedrooms; `design.plan_house` and `design.create_house` are refused until they are known, the user said to decide, or `MaxQuestions` (4) questions were asked. State is the brief and the question count, derived by `missing()`.
 
 ### Other
 

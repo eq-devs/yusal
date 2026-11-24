@@ -1,15 +1,16 @@
 import 'dart:ui' show Color, Offset;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/render3d/bsp.dart';
-import 'package:yusal/render3d/scene_model.dart';
+import 'package:yusal/features/editor/engine/render3d/bsp.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
 
 Face3 quad(List<Vec3> p, {List<Offset>? uv}) =>
     Face3(p, const Color(0xffffffff), doubleSided: true, uv: uv);
 
 double area(List<Vec3> p) {
   var n = const Vec3(0, 0, 0);
-  for (var i = 1; i < p.length - 1; i++)
+  for (var i = 1; i < p.length - 1; i++) {
     n = n + (p[i] - p[0]).cross(p[i + 1] - p[0]);
+  }
   return n.length / 2;
 }
 
@@ -50,7 +51,7 @@ void main() {
       Vec3(0, 2, 1),
       Vec3(0, 2, -1),
     ], uv: const [
-      Offset(0, 0),
+      Offset.zero,
       Offset(1, 0),
       Offset(1, 1),
       Offset(0, 1),

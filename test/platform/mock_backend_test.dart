@@ -1,13 +1,15 @@
 import 'dart:typed_data';
+import '../support/mock/mock_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/commands/house_templates.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/platform/data/mock/mock_clock.dart';
-import 'package:yusal/platform/data/mock/mock_seed.dart';
-import 'package:yusal/platform/data/repositories.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/domain/rules.dart';
-import 'package:yusal/platform/snapshot/design_snapshot.dart';
+import 'package:yusal/features/editor/engine/core/commands/house_templates.dart';
+import '../support/mock/mock_backend.dart';
+import '../support/mock/mock_clock.dart';
+import '../support/mock/mock_seed.dart';
+import 'package:yusal/service/api/api_failure.dart';
+import 'package:yusal/features/shared/model/admin_models.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/features/shared/model/rules.dart';
+import 'package:yusal/features/shared/model/design_snapshot.dart';
 
 MockBackend backend({bool seed = true}) => MockBackend(
     clock: MockClock(DateTime.utc(2026, 11, 3, 9)),
@@ -39,7 +41,6 @@ ApplicationVersion lumpQuote(int amount,
         createdAt: DateTime.utc(2026),
         scopeText: '全部砌墙',
         materials: materials,
-        pricing: PricingMode.lumpSum,
         lumpSum: amount,
         durationDays: 10);
 
@@ -62,8 +63,7 @@ Future<Demand> publishAsOwner(MockBackend b, {String text = ''}) async {
 }
 
 void main() {
-  test('confirming a builder fills the demand and tells the others',
-      () async {
+  test('confirming a builder fills the demand and tells the others', () async {
     final b = backend();
     final d = await publishAsOwner(b);
     b.signInAs(SeedIds.mason);
@@ -100,7 +100,8 @@ void main() {
             scopeKind: ScopeKind.stages, stages: ['found', 'walls'])),
         [('foundation', 33), ('walls', 67)]);
     expect(
-        plan(const ContractTerms(scopeKind: ScopeKind.stages, stages: ['roof'])),
+        plan(
+            const ContractTerms(scopeKind: ScopeKind.stages, stages: ['roof'])),
         [('roof', 100)]);
   });
 
@@ -131,26 +132,24 @@ void main() {
       await expectLater(
           b.myDemands(),
           throwsA(predicate(
-              (e) => (e as ApiFailure).code == ApiCodes.notSignedIn)));
+              (e) => (e! as ApiFailure).code == ApiCodes.notSignedIn)));
     });
 
     test('the chat phone can be changed, cleared and must look like one',
         () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final a = await b.updatePhone('+7 (701) 555-00-11');
       expect(a.phone, '+77015550011');
       expect(b.currentAccount?.phone, '+77015550011');
       await expectLater(
           b.updatePhone('12345'),
           throwsA(predicate(
-              (e) => (e as ApiFailure).code == ApiCodes.invalidInput)));
+              (e) => (e! as ApiFailure).code == ApiCodes.invalidInput)));
       expect((await b.updatePhone('')).phone, '');
     });
 
     test('deleting an account takes its demands down', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       await b.deleteAccount();
       expect(b.currentAccount, isNull);
       expect(b.demands['dem_wall']!.status, DemandStatus.closed);
@@ -189,8 +188,7 @@ void main() {
     });
 
     test('a demand needs a valid budget but may ask for quotes', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final bad = DemandVersion(
           no: 0,
           title: 'x',
@@ -231,7 +229,7 @@ void main() {
               version: lumpQuote(700000),
               requestId: 'r2'),
           throwsA(predicate(
-              (e) => (e as ApiFailure).code == ApiCodes.notAccepting)));
+              (e) => (e! as ApiFailure).code == ApiCodes.notAccepting)));
       b.signInAs(SeedIds.owner);
       final renewed = await b.renew(d.id);
       expect(renewed.status, DemandStatus.open);
@@ -240,8 +238,9 @@ void main() {
     test('sends the outcome follow-up on day 3 only once', () async {
       final b = backend();
       final d = await publishAsOwner(b);
-      b.advanceTime(const Duration(days: 3, hours: 1));
-      b.advanceTime(const Duration(hours: 1));
+      b
+        ..advanceTime(const Duration(days: 3, hours: 1))
+        ..advanceTime(const Duration(hours: 1));
       final followUps = b.notices.values.where(
           (n) => n.kind == NoticeKind.outcomeFollowUp && n.refId == d.id);
       expect(followUps, hasLength(1));
@@ -277,8 +276,7 @@ void main() {
 
   group('applications and cooperation', () {
     test('a double tap creates one application', () async {
-      final b = backend();
-      b.signInAs(SeedIds.electrician);
+      final b = backend()..signInAs(SeedIds.electrician);
       final p = await b.saveProfile(ServiceProfile(
           id: '',
           ownerId: '',
@@ -300,8 +298,7 @@ void main() {
     });
 
     test('nobody can apply to their own demand', () async {
-      final b = backend();
-      b.signInAs(SeedIds.team);
+      final b = backend()..signInAs(SeedIds.team);
       await expectLater(
           b.submit(
               demandId: 'dem_rebar',
@@ -310,13 +307,12 @@ void main() {
                   no: 0, demandVersionNo: 0, createdAt: DateTime.utc(2026)),
               requestId: 'x'),
           throwsA(
-              predicate((e) => (e as ApiFailure).code == ApiCodes.ownDemand)));
+              predicate((e) => (e! as ApiFailure).code == ApiCodes.ownDemand)));
     });
 
     test('cooperation needs both sides; one side cannot confirm twice',
         () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final coop = await b.invite('app_mason_hire', terms(headcount: 1));
       expect(coop.status, CooperationStatus.pending);
       expect(b.applications['app_mason_hire']!.status,
@@ -336,8 +332,7 @@ void main() {
     });
 
     test('a declined invitation returns the application', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final coop = await b.invite('app_team_wall', terms());
       b.signInAs(SeedIds.team);
       final declined = await b.decline(coop.id);
@@ -350,8 +345,7 @@ void main() {
     });
 
     test('changes need the other side and keep history', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final coop = await b.invite('app_team_wall', terms());
       b.signInAs(SeedIds.team);
       await b.confirm(coop.id);
@@ -366,8 +360,7 @@ void main() {
     });
 
     test('an unanswered end is unilateral and opens no reviews', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final coop = await b.invite('app_team_wall', terms());
       b.signInAs(SeedIds.team);
       await b.confirm(coop.id);
@@ -380,8 +373,7 @@ void main() {
     });
 
     test('mutual end opens hidden reviews until both are in', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final coop = await b.invite('app_team_wall', terms());
       b.signInAs(SeedIds.team);
       await b.confirm(coop.id);
@@ -411,8 +403,7 @@ void main() {
 
   group('chat', () {
     test('blocking stops messages; offline sends fail and retry', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final conv = await b.openConversation(SeedIds.mason);
       b.simulateOffline = true;
       final failed = await b.send(conv.id, MessageKind.text, text: '你好');
@@ -424,12 +415,11 @@ void main() {
       await expectLater(
           b.send(conv.id, MessageKind.text, text: 'x'),
           throwsA(
-              predicate((e) => (e as ApiFailure).code == ApiCodes.blocked)));
+              predicate((e) => (e! as ApiFailure).code == ApiCodes.blocked)));
     });
 
     test('rate limit per minute', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final conv = await b.openConversation(SeedIds.electrician);
       for (var i = 0; i < chatLimitPerMinute; i++) {
         await b.send(conv.id, MessageKind.text, text: '$i');
@@ -437,12 +427,11 @@ void main() {
       await expectLater(
           b.send(conv.id, MessageKind.text, text: 'more'),
           throwsA(predicate(
-              (e) => (e as ApiFailure).code == ApiCodes.rateLimited)));
+              (e) => (e! as ApiFailure).code == ApiCodes.rateLimited)));
     });
 
     test('unread counts follow reading', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       expect(await b.unreadMessages(), greaterThan(0));
       final conv = (await b.conversations()).first;
       await b.markConversationRead(conv.id);
@@ -452,8 +441,7 @@ void main() {
 
   group('backups', () {
     test('a cloud copy changed elsewhere is never overwritten', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       await b.upload(
           projectId: 'p1', name: 'A', houseText: '{}', designUpdatedAt: 't1');
       b.touchBackupFromOtherDevice('p1', '{"x":1}', 't9');
@@ -465,7 +453,7 @@ void main() {
               designUpdatedAt: 't2',
               expectedPreviousUpdatedAt: 't1'),
           throwsA(
-              predicate((e) => (e as ApiFailure).code == ApiCodes.conflict)));
+              predicate((e) => (e! as ApiFailure).code == ApiCodes.conflict)));
       b.simulateOffline = true;
       await expectLater(
           b.upload(
@@ -474,14 +462,13 @@ void main() {
               houseText: '{}',
               designUpdatedAt: 't'),
           throwsA(
-              predicate((e) => (e as ApiFailure).code == ApiCodes.network)));
+              predicate((e) => (e! as ApiFailure).code == ApiCodes.network)));
     });
   });
 
   group('moderation', () {
     test('only moderators review; decisions are audited', () async {
-      final b = backend();
-      b.autoReviewDelay = null;
+      final b = backend()..autoReviewDelay = null;
       final d = await publishAsOwner(b);
       expect(d.status, DemandStatus.pendingReview);
       await expectLater(b.approve(d.id), throwsA(isA<ApiFailure>()));
@@ -497,18 +484,19 @@ void main() {
       expect(last.title, isNotEmpty);
     });
 
-    test('roles: viewers read, only superadmins grant, nobody changes their own',
+    test(
+        'roles: viewers read, only superadmins grant, nobody changes their own',
         () async {
-      final b = backend();
-      b.signInAs(SeedIds.admin);
+      final b = backend()..signInAs(SeedIds.admin);
       expect(b.currentAccount!.role, AdminRoles.superadmin);
       await b.setRole(SeedIds.owner2, AdminRoles.viewer);
-      await expectLater(b.setRole(SeedIds.admin, null), throwsA(isA<ApiFailure>()));
+      await expectLater(
+          b.setRole(SeedIds.admin, null), throwsA(isA<ApiFailure>()));
       b.signInAs(SeedIds.owner2);
       expect((await b.todo()).total, greaterThanOrEqualTo(0));
       await expectLater(b.approve('dem_rebar'), throwsA(isA<ApiFailure>()));
-      await expectLater(
-          b.setRole(SeedIds.owner, AdminRoles.viewer), throwsA(isA<ApiFailure>()));
+      await expectLater(b.setRole(SeedIds.owner, AdminRoles.viewer),
+          throwsA(isA<ApiFailure>()));
       b.signInAs(SeedIds.admin);
       await b.setRole(SeedIds.owner2, null);
       expect(b.accounts[SeedIds.owner2]!.role, isNull);
@@ -516,30 +504,32 @@ void main() {
 
     test('a reported house is hidden, the owner appeals and it comes back',
         () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner2);
+      final b = backend()..signInAs(SeedIds.owner2);
       await b.report(ReportTarget.post, 'post_aigerim', 'code:fake');
       b.signInAs(SeedIds.admin);
       final open = await b.reports(status: ReportStatus.open);
-      final v = open.items.singleWhere((r) => r.report.targetId == 'post_aigerim');
+      final v =
+          open.items.singleWhere((r) => r.report.targetId == 'post_aigerim');
       expect(v.targetOwnerId, SeedIds.owner);
       expect(v.targetTitle, isNotEmpty);
       await b.resolveReport(v.report.id, true, 'code:fake');
       expect(b.posts['post_aigerim']!.status, PostStatus.hidden);
       expect(
           b.notices.values.where((n) =>
-              n.accountId == SeedIds.owner && n.kind == NoticeKind.contentRemoved),
+              n.accountId == SeedIds.owner &&
+              n.kind == NoticeKind.contentRemoved),
           isNotEmpty);
       expect(
           b.notices.values.where((n) =>
-              n.accountId == SeedIds.owner2 && n.kind == NoticeKind.reportResolved),
+              n.accountId == SeedIds.owner2 &&
+              n.kind == NoticeKind.reportResolved),
           isNotEmpty);
 
       b.signInAs(SeedIds.owner);
       final appeal = await b.fileAppeal('post', 'post_aigerim', '是我自己的房子');
       b.signInAs(SeedIds.owner2);
-      await expectLater(
-          b.fileAppeal('post', 'post_aigerim', 'x'), throwsA(isA<ApiFailure>()));
+      await expectLater(b.fileAppeal('post', 'post_aigerim', 'x'),
+          throwsA(isA<ApiFailure>()));
       b.signInAs(SeedIds.admin);
       expect((await b.todo()).appeals.count, 1);
       await b.resolveAppeal(appeal.id, true, '误判');
@@ -555,7 +545,9 @@ void main() {
       b.signInAs(c.authorId == SeedIds.owner2 ? SeedIds.mason : SeedIds.owner2);
       await b.report(ReportTarget.comment, c.id, 'code:abuse');
       b.signInAs(SeedIds.admin);
-      final v = (await b.reports()).items.singleWhere((r) => r.report.targetId == c.id);
+      final v = (await b.reports())
+          .items
+          .singleWhere((r) => r.report.targetId == c.id);
       expect(v.postId, c.postId);
       await b.resolveReport(v.report.id, true, 'code:abuse');
       expect(b.commentsById.containsKey(c.id), isFalse);
@@ -563,31 +555,34 @@ void main() {
     });
 
     test('an upheld profile report keeps it hidden from its owner', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       await b.report(ReportTarget.profile, 'prof_mason', 'code:fake');
       b.signInAs(SeedIds.admin);
-      final v = (await b.reports()).items.singleWhere((r) => r.report.targetId == 'prof_mason');
+      final v = (await b.reports())
+          .items
+          .singleWhere((r) => r.report.targetId == 'prof_mason');
       await b.resolveReport(v.report.id, true, 'code:fake');
       b.signInAs(SeedIds.mason);
       final p = b.profiles['prof_mason']!;
-      final saved = await b.saveProfile(p.copyWith(status: ProfileStatus.active));
+      final saved =
+          await b.saveProfile(p.copyWith(status: ProfileStatus.active));
       expect(saved.status, ProfileStatus.hidden);
     });
 
     test('restriction can be lifted; admins cannot be restricted', () async {
-      final b = backend();
-      b.signInAs(SeedIds.admin);
+      final b = backend()..signInAs(SeedIds.admin);
       await b.setRestriction(SeedIds.mason, true, 'code:spam');
       expect(b.accounts[SeedIds.mason]!.restricted, isTrue);
-      expect((await b.users(restricted: true)).items.map((u) => u.id), [SeedIds.mason]);
+      expect((await b.users(restricted: true)).items.map((u) => u.id),
+          [SeedIds.mason]);
       await b.setRestriction(SeedIds.mason, false, '已核实');
       expect(b.accounts[SeedIds.mason]!.restricted, isFalse);
       await b.setRole(SeedIds.owner2, AdminRoles.moderator);
-      await expectLater(
-          b.setRestriction(SeedIds.owner2, true, 'x'), throwsA(isA<ApiFailure>()));
+      await expectLater(b.setRestriction(SeedIds.owner2, true, 'x'),
+          throwsA(isA<ApiFailure>()));
       final detail = await b.accountDetail(SeedIds.mason);
-      expect(detail.audit.map((e) => e.action), containsAll(['restrict', 'unrestrict']));
+      expect(detail.audit.map((e) => e.action),
+          containsAll(['restrict', 'unrestrict']));
     });
 
     test('a restricted owner cannot show a paused listing again', () async {
@@ -606,14 +601,13 @@ void main() {
         await expectLater(
             f(d.id),
             throwsA(predicate(
-                (e) => (e as ApiFailure).code == ApiCodes.restricted)));
+                (e) => (e! as ApiFailure).code == ApiCodes.restricted)));
       }
       expect(b.demands[d.id]!.status, DemandStatus.paused);
     });
 
     test('a restricted account cannot share its phone in chat', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       final c = await b.openConversation(SeedIds.mason);
       b.signInAs(SeedIds.admin);
       await b.setRestriction(SeedIds.owner, true, 'code:spam');
@@ -621,12 +615,11 @@ void main() {
       await expectLater(
           b.sharePhone(c.id),
           throwsA(predicate(
-              (e) => (e as ApiFailure).code == ApiCodes.restricted)));
+              (e) => (e! as ApiFailure).code == ApiCodes.restricted)));
     });
 
     test('batch decisions report what changed meanwhile', () async {
-      final b = backend();
-      b.autoReviewDelay = null;
+      final b = backend()..autoReviewDelay = null;
       final a = await publishAsOwner(b);
       final c = await publishAsOwner(b, text: '第二个');
       b.signInAs(SeedIds.admin);
@@ -639,10 +632,10 @@ void main() {
 
   group('trust', () {
     test('verification by a moderator marks the profile verified', () async {
-      final b = backend();
-      b.signInAs(SeedIds.mason);
-      final v = await b.requestVerification(
-          'prof_mason', '+77010000000', [Uint8List.fromList([1, 2, 3])]);
+      final b = backend()..signInAs(SeedIds.mason);
+      final v = await b.requestVerification('prof_mason', '+77010000000', [
+        Uint8List.fromList([1, 2, 3])
+      ]);
       expect((await b.myVerification('prof_mason'))!.id, v.id);
       b.signInAs(SeedIds.admin);
       final pending = await b.verifications(status: VerificationStatus.pending);
@@ -655,27 +648,30 @@ void main() {
     });
 
     test('alerts notify matching workers when a demand opens', () async {
-      final b = backend();
-      b.signInAs(SeedIds.mason);
-      await b.saveDemandAlert(const DemandAlert(on: true, types: [DemandType.contract]));
+      final b = backend()..signInAs(SeedIds.mason);
+      await b.saveDemandAlert(
+          const DemandAlert(on: true, types: [DemandType.contract]));
       b.signInAs(SeedIds.electrician);
-      await b.saveDemandAlert(const DemandAlert(on: true, types: [DemandType.hire]));
+      await b.saveDemandAlert(
+          const DemandAlert(on: true, types: [DemandType.hire]));
       final d = await publishAsOwner(b);
       expect(b.demands[d.id]!.status, DemandStatus.open);
       bool told(String who) => b.notices.values.any((n) =>
-          n.accountId == who && n.kind == NoticeKind.newDemandMatch && n.refId == d.id);
+          n.accountId == who &&
+          n.kind == NoticeKind.newDemandMatch &&
+          n.refId == d.id);
       expect(told(SeedIds.mason), isTrue);
       expect(told(SeedIds.electrician), isFalse);
     });
 
     test('only community and alert pushes can be muted', () async {
-      final b = backend();
-      b.signInAs(SeedIds.owner);
+      final b = backend()..signInAs(SeedIds.owner);
       await b.saveNotificationSettings(
           const NotificationSettings(muted: [PushCategory.community]));
       expect((await b.notificationSettings()).muted, [PushCategory.community]);
       await expectLater(
-          b.saveNotificationSettings(const NotificationSettings(muted: ['deals'])),
+          b.saveNotificationSettings(
+              const NotificationSettings(muted: ['deals'])),
           throwsA(isA<ApiFailure>()));
     });
   });

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/app/messages.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/features/house_editor.dart';
-import 'package:yusal/features/wall_snap.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/render2d/furniture_names.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/localization/messages.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/editor/util/wall_snap.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/render2d/furniture_names.dart';
+import 'package:yusal/service/storage/project_store.dart';
 
 import 'storage_test.dart' show MemoryFiles;
 
@@ -50,13 +51,14 @@ void main() {
     t.view.physicalSize = const Size(390, 844);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    final store = ProjectStore(fileSystem: MemoryFiles()),
-        id = await store.createProject(doc);
-    await t.pumpWidget(MaterialApp(
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    final store = ProjectStore(fileSystem: MemoryFiles());
+    final id = await store.createProject(doc);
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await t.pumpAndSettle();
     addTearDown(() async {
-      await t.pumpWidget(const SizedBox.shrink());
+      await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await t.pumpAndSettle();
     });
     return (store, id);

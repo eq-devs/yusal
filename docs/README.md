@@ -16,8 +16,7 @@
 
 ## 开发
 
-- [ux-audit.md](ux-audit.md)、[ux-plan.md](ux-plan.md)：2026-11-09 全应用 UI/UX 审计（27 项问题与截图证据）、分级计划、设计系统与完成状态。前后对比截图在 `screenshots/ux-2026-11-09/`，走查脚本在 `tool/ux/`。
-
-- [MVP_DEV_PLAN.md](MVP_DEV_PLAN.md)：MVP 开发计划书（mock 后端版）、待定事项默认值、领域模型、实施步骤与进度。
-- [BUILD_STATUS.md](BUILD_STATUS.md)：实际做了什么、mock 说明、测试、手机安装与 Web 发布状态、未完成项。
-- [UX_IMPLEMENTATION_PLAN.md](UX_IMPLEMENTATION_PLAN.md)、[DELIVERY_REPORT*.md](DELIVERY_REPORT.md)、[OPTIMIZATION_LOG_v05.md](OPTIMIZATION_LOG_v05.md)：设计工具早期的交付记录。
+- [architecture.md](architecture.md)：代码结构（feature-first）。
+- [STATE_MACHINES.md](STATE_MACHINES.md)、[state_machines.json](state_machines.json)：需求、报价、合作等状态机；和 yusal-api 共用。
+- [voice_tools.json](voice_tools.json)：语音助手能做的动作。
+- [SHOREBIRD.md](SHOREBIRD.md)：热更新发布。

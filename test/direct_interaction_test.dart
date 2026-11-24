@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/core/commands/design_commands.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/features/house_editor.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/design_commands.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
 
 void main() {
@@ -26,15 +27,16 @@ void main() {
       {double textScale = 1}) async {
     final store = ProjectStore(fileSystem: MemoryFiles());
     final id = await store.createProject(doc);
-    await tester.pumpWidget(MaterialApp(
-        builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context)
-                .copyWith(textScaler: TextScaler.linear(textScale)),
-            child: child!),
-        home: HouseEditor(entry: ProjectEntry(id, doc), store: store)));
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(textScaler: TextScaler.linear(textScale)),
+                child: child!),
+            home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await tester.pumpAndSettle();
     addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
       await tester.pumpAndSettle();
     });
     return (store: store, id: id);
@@ -124,9 +126,10 @@ void main() {
       (tester) async {
     var doc = house(columns: 2, rows: 2);
     for (var j = 0; j < 2; j++) {
-      for (var i = 0; i < 2; i++)
+      for (var i = 0; i < 2; i++) {
         doc = paintCells(
             doc, doc.floors.first.id, [Cell(i, j)], RoomType.custom, next);
+      }
     }
     final session = await mount(tester, doc);
     await tester.tapAt(point(tester, 6000, 7500));

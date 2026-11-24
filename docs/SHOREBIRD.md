@@ -20,7 +20,7 @@ Shorebird 让我们在**不重新提交商店审核**的情况下，把 Dart 代
 ## 2. 代码里接入了什么
 
 - `shorebird.yaml`：Shorebird 的 `app_id`，并关闭引擎自带的启动时更新（`auto_update: false`）。
-- `lib/platform/update/code_push.dart`：`CodePush` 在启动时、以及 App 回到前台时（间隔至少 15 分钟）检查补丁并在后台下载，下次冷启动生效。下载失败只打日志，不影响使用。
+- `lib/services/update/code_push.dart`：`CodePush` 在启动时、以及 App 回到前台时（间隔至少 15 分钟）检查补丁并在后台下载，下次冷启动生效。下载失败只打日志，不影响使用。
 - `lib/main.dart`：`runApp` 之后调用 `CodePush().start()`。
 - 依赖 `shorebird_code_push`。用 `flutter run` / `flutter build` 构建时更新器不存在，代码什么也不做，开发调试不受影响。
 - `config/dart_defines.release.json`：正式包的 `--dart-define`（后端地址等）。发布和补丁必须用同一份，脚本会自动带上。

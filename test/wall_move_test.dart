@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/derived_house.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/core/geometry/opening_constraints.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/geometry/opening_constraints.dart';
 
 void main() {
   var ids = 0;
@@ -56,11 +56,12 @@ void main() {
     s = add(s, 6000, 5000, 12000, 5000);
     s = add(s, 0, 3000, 6000, 3000);
     var n = 0;
-    for (final room in s.floors.first.rooms)
+    for (final room in s.floors.first.rooms) {
       s = ok(executeCommand(
           s,
           DesignCommand('RenameRoom', {'roomId': room.id, 'value': '房${n++}'}),
           ctx));
+    }
     return s;
   }
 
@@ -162,7 +163,8 @@ void main() {
             File('test/fixtures/full_two_floor_gable.house').readAsBytesSync())
         .document!;
     expect(v1.schemaVersion, 1);
-    final first = v1.floors.first, second = v1.floors[1];
+    final first = v1.floors.first;
+    final second = v1.floors[1];
     final base = deriveFloorBase(v1, first.id);
     final wall = base.wallSegments.firstWhere((w) =>
         w.axis.kind != 'boundary' &&
@@ -186,8 +188,9 @@ void main() {
     expect(s.floors.first.explicitWalls, isTrue);
     expect(s.floors[1], second, reason: 'other floor untouched');
     expect({for (final r in s.floors.first.rooms) r.id: r.name}, names);
-    for (final o in documentOpenings(moved))
+    for (final o in documentOpenings(moved)) {
       if (healthy.contains(o.opening.id)) expect(o.status, 'ok');
+    }
     expect(validateHouse(moved), isEmpty);
     expect(loadHouse(utf8.encode(encodeHouse(moved))).document, moved);
   });

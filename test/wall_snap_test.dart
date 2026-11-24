@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/core/house_core.dart';
-import 'package:yusal/core/commands/room_commands.dart';
-import 'package:yusal/core/geometry/floor_base.dart';
-import 'package:yusal/features/wall_attachment_points.dart';
-import 'package:yusal/features/wall_snap.dart';
-import 'package:yusal/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/util/wall_attachment_points.dart';
+import 'package:yusal/features/editor/util/wall_snap.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
 
 void main() {
   var ids = 0;
@@ -114,14 +114,14 @@ void main() {
   });
 
   test('short walls keep finger-sized grips apart', () {
-    final long = wallGrips(const Offset(0, 0), const Offset(200, 0), zoom: 1);
+    final long = wallGrips(Offset.zero, const Offset(200, 0), zoom: 1);
     expect(long.middle, const Offset(100, 0));
-    final short = wallGrips(const Offset(0, 0), const Offset(20, 0), zoom: 1);
+    final short = wallGrips(Offset.zero, const Offset(20, 0), zoom: 1);
     expect(short.middle, isNull);
     expect((short.end - short.start).distance, 88);
     // Zooming in makes the same wall long enough on screen.
-    expect(wallGrips(const Offset(0, 0), const Offset(20, 0), zoom: 5).middle,
-        isNotNull);
+    expect(
+        wallGrips(Offset.zero, const Offset(20, 0), zoom: 5).middle, isNotNull);
   });
 
   test('a T junction on the outer wall is a dead end for new walls', () {

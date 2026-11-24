@@ -113,14 +113,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.4.0"
-  cupertino_icons:
-    dependency: "direct main"
-    description:
-      name: cupertino_icons
-      sha256: "41e005c33bd814be4d3096aff55b1908d419fde52ca656c8c47719ec745873cd"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.9"
   cupertino_ui:
     dependency: transitive
     description:
@@ -129,6 +121,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.6"
+  data_assets:
+    dependency: transitive
+    description:
+      name: data_assets
+      sha256: "8bfdbf25ec8a0f4b5a3c993042c4ab9996ba354f0b03d40f4e360f3730d71cae"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.20.0"
   device_info_plus:
     dependency: "direct main"
     description:
@@ -355,6 +355,19 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_gpu:
+    dependency: "direct main"
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  flutter_gpu_shaders:
+    dependency: "direct main"
+    description:
+      name: flutter_gpu_shaders
+      sha256: "1e8c5438c24e79629f5688c7b5dfd2b7cf09b36b443a806bc8c083cd8c04644a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.2"
   flutter_image_compress:
     dependency: "direct main"
     description:
@@ -487,6 +500,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  glob:
+    dependency: transitive
+    description:
+      name: glob
+      sha256: "218aeb56050c714f62a3182775320dfa04602b55074873e24e31bbd39bda96fb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.0"
   google_identity_services_web:
     dependency: transitive
     description:
@@ -535,8 +556,24 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.3"
-  hooks:
+  hive_ce:
     dependency: transitive
+    description:
+      name: hive_ce
+      sha256: "03ac73b673f98f48d7a3c364bb0b646a88f931240453e0f389ffcc0e18c5379f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.24.0"
+  hive_ce_flutter:
+    dependency: "direct main"
+    description:
+      name: hive_ce_flutter
+      sha256: "13f027a0c595ba4d1e705ae211a2d4b714ea00602227c2e6e27139b2510823e2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.6.0"
+  hooks:
+    dependency: "direct main"
     description:
       name: hooks
       sha256: "9a62a50b50b769a737bc0a8ff381f333529df3ab746b2f6b02e83760231455ba"
@@ -588,6 +625,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.20.3"
+  isolate_channel:
+    dependency: transitive
+    description:
+      name: isolate_channel
+      sha256: bd56e1bb2787bed914158c2696943dc7254732bfea2c207aafca6bc930580fd4
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.2"
   jni:
     dependency: transitive
     description:
@@ -612,6 +657,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  json_annotation:
+    dependency: transitive
+    description:
+      name: json_annotation
+      sha256: "2a743920d81b7910627f68ee2c9ac1fc0bfee32b9fc3403587d7c6791ca12f80"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.12.0"
   leak_tracker:
     dependency: transitive
     description:
@@ -685,7 +738,7 @@ packages:
     source: hosted
     version: "1.10.0"
   meta:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: meta
       sha256: "307249ce4ff29d58a18e97f6345f539382eb9c9c29ecda628900f31de0443dd9"
@@ -708,6 +761,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
+  native_toolchain_c:
+    dependency: transitive
+    description:
+      name: native_toolchain_c
+      sha256: a1c26117c48cebe5677b0cf0e33a980a79a7c5577effc86f52e5a0d309cdcb60
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.19.3"
   objective_c:
     dependency: transitive
     description:
@@ -860,6 +921,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.1"
+  qazvoice:
+    dependency: "direct main"
+    description:
+      name: qazvoice
+      sha256: "6ea524a88496775757127ea8f53105af420dc01f6dc0a9d3380c94abd6d94240"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   qr:
     dependency: transitive
     description:
@@ -1162,7 +1231,7 @@ packages:
     source: hosted
     version: "4.6.0"
   vector_math:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: vector_math
       sha256: "92b9910f66ed1057fd4da7b040ae7c74cafacf885bdc81be496928d5049b032d"

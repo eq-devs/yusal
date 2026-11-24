@@ -1,28 +1,31 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/app/messages_ru.dart';
-import 'package:yusal/app/settings.dart';
-import 'package:yusal/core/analysis/build_schedule.dart';
-import 'package:yusal/core/commands/kz_template.dart';
-import 'package:yusal/features/house_editor.dart';
-import 'package:yusal/render2d/furniture_names.dart';
-import 'package:yusal/storage/project_store.dart';
+import 'package:yusal/localization/messages_ru.dart';
+import 'package:yusal/service/settings/settings.dart';
+import 'package:yusal/features/editor/engine/core/analysis/build_schedule.dart';
+import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/editor/engine/render2d/furniture_names.dart';
+import 'package:yusal/service/storage/project_store.dart';
 import 'storage_test.dart' show MemoryFiles;
 import 'tabs.dart';
 
 /// Letters that exist in Kazakh but not in Russian, and Chinese characters:
 /// neither belongs on a Russian screen.
 final _kazakh = RegExp('[ӘәҒғҚқҢңӨөҰұҮүҺһІі]');
-final _chinese = RegExp(r'[一-鿿]');
+final _chinese = RegExp('[一-鿿]');
 
 /// The language switch names each language in itself.
 const _allowed = {
   'Қазақша',
   '中文',
   'Тіл / 语言',
+  'Тіл / 语言 / Language',
+  'Тіл / Язык / 语言 / Language',
   'Тіл / Язык / 语言',
   'Тіл · Язык · 语言'
 };
@@ -52,7 +55,7 @@ List<String> foreign(Set<String> texts) => [
     ];
 
 void main() {
-  tearDown(() => AppSettings.instance.lang = AppLang.zh);
+  tearDown(() => appLang = AppLang.zh);
 
   test('no two-language string is left at a call in the app', () {
     // Strings written at a call carry all three languages (tr3); tr() is
@@ -81,12 +84,12 @@ void main() {
     expect(missing, isEmpty);
   });
 
-  for (final size in [const Size(1280, 900), const Size(390, 844)])
+  for (final size in [const Size(1280, 900), const Size(390, 844)]) {
     testWidgets(
         'in Russian every page of the design tool is Russian at ${size.width}',
         (t) async {
       SharedPreferences.setMockInitialValues({});
-      AppSettings.instance.lang = AppLang.ru;
+      appLang = AppLang.ru;
       t.view.physicalSize = size;
       t.view.devicePixelRatio = 1;
       addTearDown(t.view.reset);
@@ -97,9 +100,9 @@ void main() {
           name: 'Казахский сельский дом', names: kazakhTemplateNames());
       final store = ProjectStore(fileSystem: MemoryFiles());
       final pid = await store.createProject(doc);
-      await t.pumpWidget(MaterialApp(
-          builder: (context, child) => AppScope(child: child!),
-          home: HouseEditor(entry: ProjectEntry(pid, doc), store: store)));
+      await t.pumpWidget(ProviderScope(
+          child: MaterialApp(
+              home: HouseEditor(entry: ProjectEntry(pid, doc), store: store))));
       await t.pumpAndSettle();
 
       final found = <String, List<String>>{};
@@ -147,4 +150,5 @@ void main() {
               .map((e) => '${e.key}: ${e.value.take(12).join(' | ')}')
               .join('\n'));
     });
+  }
 }

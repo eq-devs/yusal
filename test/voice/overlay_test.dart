@@ -1,16 +1,18 @@
 import 'package:flutter/foundation.dart';
+import '../support/mock/backend.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yusal/platform/domain/models.dart';
-import 'package:yusal/platform/data/mock/mock_backend.dart';
-import 'package:yusal/voice/action.dart';
-import 'package:yusal/voice/executor.dart';
-import 'package:yusal/voice/registry.dart';
-import 'package:yusal/voice/screen.dart';
-import 'package:yusal/voice/session.dart';
-import 'package:yusal/voice/speech.dart';
-import 'package:yusal/voice/voice_overlay.dart';
+import 'package:yusal/features/shared/model/models.dart';
+import '../support/mock/mock_backend.dart';
+import 'package:yusal/features/voice/model/action.dart';
+import 'package:yusal/features/voice/state/executor.dart';
+import 'package:yusal/features/voice/state/registry.dart';
+import 'package:yusal/features/voice/state/screen.dart';
+import 'package:yusal/features/voice/state/session.dart';
+import 'package:yusal/features/voice/repository/speech.dart';
+import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 
 import 'session_test.dart' show ScriptedBackend, act;
 
@@ -38,7 +40,7 @@ class VoiceMock extends MockBackend implements VoiceBackend {
         id: 'me',
         phone: '',
         displayName: 'Me',
-        createdAt: DateTime.utc(2026, 11, 1));
+        createdAt: DateTime.utc(2026, 11));
     if (signedIn) signInAs('me');
   }
   final ScriptedBackend inner;
@@ -95,15 +97,17 @@ void main() {
 
   Future<void> pump(WidgetTester t, VoiceMock repos,
           {bool enabled = true, AudioDevice? audio}) =>
-      t.pumpWidget(MaterialApp(
-          navigatorKey: navigator,
-          builder: (context, child) => VoiceHost(
-              navigator: navigator,
-              repos: repos,
-              enabled: enabled,
-              audio: audio,
-              child: child!),
-          home: const VoicePage()));
+      t.pumpWidget(ProviderScope(
+          child: MaterialApp(
+              navigatorKey: navigator,
+              builder: (context, child) => VoiceHost(
+                  navigator: navigator,
+                  repos: voiceRepos(repos),
+                  voice: repos,
+                  enabled: enabled,
+                  audio: audio,
+                  child: child!),
+              home: const VoicePage())));
 
   testWidgets('typing a request shows what was done and the reply', (t) async {
     final backend = ScriptedBackend([
@@ -198,7 +202,7 @@ void main() {
     expect(find.byKey(const Key('voice-input')), findsOneWidget);
     expect(find.byKey(const Key('voice-mic')), findsOneWidget);
 
-    await t.pumpWidget(const SizedBox());
+    await t.pumpWidget(const ProviderScope(child: SizedBox()));
     expect(audio.log.last, 'dispose');
   });
 
@@ -214,7 +218,7 @@ void main() {
     expect(find.text('没听清，请再说一次'), findsOneWidget);
     expect(backend.said, isEmpty);
 
-    await t.pumpWidget(const SizedBox());
+    await t.pumpWidget(const ProviderScope(child: SizedBox()));
     await pump(t, SpeakingMock(backend, 'x'), audio: FakeAudio(allowed: false));
     await t.pump();
     await t.tap(find.byKey(const Key('voice-button')));
@@ -223,7 +227,7 @@ void main() {
     expect(find.byIcon(Icons.stop_rounded), findsNothing);
 
     // No audio device, or a backend without speech: typed only.
-    await t.pumpWidget(const SizedBox());
+    await t.pumpWidget(const ProviderScope(child: SizedBox()));
     await pump(t, SpeakingMock(backend, 'x'));
     await t.pump();
     await t.tap(find.byKey(const Key('voice-button')));
@@ -250,21 +254,23 @@ void main() {
     expect(find.byKey(const Key('voice-button')), findsNothing);
 
     debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-    await t.pumpWidget(const SizedBox());
+    await t.pumpWidget(const ProviderScope(child: SizedBox()));
     await pump(t, VoiceMock(ScriptedBackend([])));
     await t.pump();
     expect(find.byKey(const Key('voice-button')), findsNothing);
     debugDefaultTargetPlatformOverride = null;
 
-    await t.pumpWidget(const SizedBox());
-    await t.pumpWidget(MaterialApp(
-        navigatorKey: navigator,
-        builder: (context, child) => VoiceHost(
-            navigator: navigator,
-            repos: MockBackend(latency: Duration.zero, seed: false),
-            enabled: true,
-            child: child!),
-        home: const Scaffold()));
+    await t.pumpWidget(const ProviderScope(child: SizedBox()));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            navigatorKey: navigator,
+            builder: (context, child) => VoiceHost(
+                navigator: navigator,
+                repos: voiceRepos(
+                    MockBackend(latency: Duration.zero, seed: false)),
+                voice: ScriptedBackend(const []),
+                child: child!),
+            home: const Scaffold())));
     await t.pump();
     expect(find.byKey(const Key('voice-button')), findsNothing);
   });
@@ -304,11 +310,27 @@ void main() {
     expect((await SharedPreferences.getInstance()).getBool('voice-intro-seen'),
         isTrue);
 
-    await t.pumpWidget(const SizedBox.shrink());
+    await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await pump(t, VoiceMock(ScriptedBackend([])));
     await t.pumpAndSettle();
     expect(find.byKey(const Key('voice-button')), findsOneWidget);
     expect(find.byKey(const Key('voice-intro')), findsNothing);
+  });
+
+  testWidgets('the introduction waits while a page is open over the tabs',
+      (t) async {
+    SharedPreferences.setMockInitialValues({});
+    await pump(t, VoiceMock(ScriptedBackend([])));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('voice-intro')), findsOneWidget);
+    // A cooperation or a demand opened from a tab: its buttons stay clear.
+    navigator.currentState!.push(MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('page'))));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('voice-intro')), findsNothing);
+    navigator.currentState!.pop();
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('voice-intro')), findsOneWidget);
   });
 
   testWidgets('the sign-in page has no orb over its buttons', (t) async {
@@ -317,11 +339,11 @@ void main() {
     expect(find.byKey(const Key('voice-button')), findsOneWidget);
 
     // What the sign-in page does while it is open.
-    VoiceBar.hidden.value++;
+    VoiceSlot.hidden.value++;
     await t.pump();
     expect(find.byKey(const Key('voice-button')), findsNothing);
 
-    VoiceBar.hidden.value--;
+    VoiceSlot.hidden.value--;
     await t.pump();
     expect(find.byKey(const Key('voice-button')), findsOneWidget);
   });
@@ -332,21 +354,21 @@ void main() {
     final registry = ActionRegistry([
       AppAction(
           id: 'test.send',
-          title: const L3('发送消息', 'Хабар жіберу', 'Отправить сообщение'),
-          examples: const L3('发送', 'Жібер', 'Отправь'),
+          title: const L3('发送消息', 'Хабар жіберу', 'Отправить сообщение', 'Send a message'),
+          examples: const L3('发送', 'Жібер', 'Отправь', 'Send'),
           risk: Risk.outbound,
           run: (_, __) async {
             ran++;
             return const ActionResult.ok();
           })
     ]);
-    await t.pumpWidget(
-        MaterialApp(navigatorKey: navigator, home: const Scaffold()));
+    await t.pumpWidget(ProviderScope(
+        child: MaterialApp(navigatorKey: navigator, home: const Scaffold())));
     final executor = ActionExecutor(registry,
         confirm: (a, args) =>
             confirmAction(navigator.currentContext!, a, args));
     final ctx = ActionContext(
-        repos: MockBackend(latency: Duration.zero, seed: false),
+        repos: voiceRepos(MockBackend(latency: Duration.zero, seed: false)),
         loggedIn: true);
 
     for (final (button, code, count) in [

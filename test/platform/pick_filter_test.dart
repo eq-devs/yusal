@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yusal/platform/ui/widgets.dart';
+import 'package:yusal/features/shared/ui/widgets.dart';
 
 /// Closing a filter sheet keeps the filter; picking "all" clears it.
 void main() {
   Future<List<(String?,)?>> run(
       WidgetTester tester, Future<void> Function() act) async {
     final results = <(String?,)?>[];
-    await tester.pumpWidget(MaterialApp(
-        home: Scaffold(
-            body: Builder(
-                builder: (context) => TextButton(
-                    onPressed: () async => results.add(
-                        await pickFilter<String>(
-                            context, 'Region', 'All', [('ala', 'Almaty')],
-                            selected: 'ala')),
-                    child: const Text('open'))))));
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(
+                body: Builder(
+                    builder: (context) => TextButton(
+                        onPressed: () async => results.add(
+                            await pickFilter<String>(
+                                context, 'Region', 'All', [('ala', 'Almaty')],
+                                selected: 'ala')),
+                        child: const Text('open')))))));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     await act();

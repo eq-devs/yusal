@@ -1,12 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
-import 'package:yusal/platform/update/code_push.dart';
+import 'package:yusal/service/update/code_push.dart';
 
 class _FakeUpdater implements ShorebirdUpdater {
   _FakeUpdater({this.available = true, this.status = UpdateStatus.outdated});
   final bool available;
   UpdateStatus status;
-  int checks = 0, updates = 0;
+  int checks = 0;
+  int updates = 0;
   bool failUpdate = false;
 
   @override
@@ -42,7 +43,6 @@ void main() {
     await push.check();
     expect(u.checks, 1);
     expect(u.updates, 1);
-    expect(await push.currentPatch(), 3);
   });
 
   test('up to date: no download', () async {
@@ -57,10 +57,9 @@ void main() {
     expect(u.updates, 1);
   });
 
-  test('unavailable updater: start and currentPatch are no-ops', () async {
+  test('unavailable updater: start is a no-op', () async {
     final u = _FakeUpdater(available: false);
     CodePush(u).start();
     expect(u.checks, 0);
-    expect(await CodePush(u).currentPatch(), isNull);
   });
 }

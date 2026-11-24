@@ -31,6 +31,14 @@ extension _SelectionCards on _HouseEditorState {
     return null;
   }
 
+  /// What the selection card is about; a new value is a new selection.
+  String get selectionIdentity =>
+      selectedUtilityId ??
+      selectedFurnitureId ??
+      selectedOpeningId ??
+      selectedRoomId ??
+      '';
+
   bool get wideLayout => !compact && MediaQuery.sizeOf(context).width >= 1000;
 
   /// Card chrome: on phones it floats over the bottom of the plan, can fold

@@ -18,7 +18,11 @@ extension _PlanTab on _HouseEditorState {
             left: 8,
             right: 8,
             bottom: 8,
-            child: LayoutBuilder(builder: (context, c) => card)),
+            // Rises in for each new selection, with the click of a choice.
+            child: RiseIn(
+                key: ValueKey(selectionIdentity),
+                haptic: true,
+                child: LayoutBuilder(builder: (context, c) => card))),
       if (wallMenuCard() case final menu?) menu,
       if (loupe() case final l?) l,
     ]));

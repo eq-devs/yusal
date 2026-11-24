@@ -71,6 +71,7 @@ part 'tools/furniture.dart';
 part 'tabs/other.dart';
 part 'tabs/scene.dart';
 part 'pages/home.dart';
+part 'widgets/start_sheet.dart';
 part 'widgets/compare_card.dart';
 part 'tabs/cost.dart';
 part 'tabs/heat.dart';
@@ -421,6 +422,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   void showTab(String value) {
     if (value == tab) return;
+    HapticFeedback.selectionClick();
     setState(() {
       cancelDrag();
       clearWallSelection();
@@ -460,6 +462,12 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   /// Delete key: the selected wall, furniture or door/window.
   void deleteSelection() {
+    if (editStart != null ||
+        selectedUtilityId != null ||
+        selectedFurnitureId != null ||
+        selectedOpeningId != null) {
+      HapticFeedback.mediumImpact();
+    }
     if (editStart != null) {
       deleteSelectedWall();
     } else if (selectedUtilityId != null) {
@@ -581,6 +589,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                 child: InkWell(
                     borderRadius: BorderRadius.circular(8),
                     onTap: () {
+                      HapticFeedback.selectionClick();
                       cancelDrag();
                       closeWallMenu();
                       spatialDocument = null;
@@ -1218,6 +1227,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   void undo() {
     if (!history.canUndo) return;
+    HapticFeedback.lightImpact();
     setState(() {
       cancelDrag();
       history.undo();
@@ -1233,6 +1243,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   void redo() {
     if (!history.canRedo) return;
+    HapticFeedback.lightImpact();
     setState(() {
       cancelDrag();
       history.redo();
@@ -2771,7 +2782,10 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                       editorHeader(wide),
                                       groupedTabs(),
                                     ],
-                                    Expanded(child: tabBody(wide)),
+                                    Expanded(
+                                        child: FadeOnChange(
+                                            value: tab,
+                                            child: tabBody(wide))),
                                   ])));
                     }))))));
   }

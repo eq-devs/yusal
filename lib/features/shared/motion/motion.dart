@@ -834,3 +834,203 @@ const motionPageTransitions = PageTransitionsTheme(builders: {
   TargetPlatform.windows: MotionPageTransitionsBuilder(),
   TargetPlatform.fuchsia: MotionPageTransitionsBuilder(),
 });
+
+/// Content that replaces other content in place (an editor tab's page):
+/// when [value] changes the child fades in over [Motion.fadeIn]. Nothing of
+/// the old content is kept, so a page that owns global keys can use it.
+class FadeOnChange extends StatefulWidget {
+  const FadeOnChange({super.key, required this.value, required this.child});
+  final Object? value;
+  final Widget child;
+  @override
+  State<FadeOnChange> createState() => _FadeOnChangeState();
+}
+
+class _FadeOnChangeState extends State<FadeOnChange>
+    with SingleTickerProviderStateMixin {
+  late final _c =
+      AnimationController(vsync: this, duration: Motion.fadeIn, value: 1);
+  late final _fade = CurvedAnimation(parent: _c, curve: Curves.easeOut);
+
+  @override
+  void didUpdateWidget(FadeOnChange old) {
+    super.didUpdateWidget(old);
+    if (old.value != widget.value && !Motion.reduced(context)) {
+      _c.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _fade.dispose();
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      FadeTransition(opacity: _fade, child: widget.child);
+}
+
+/// Something that arrives over the page from below (the card of a selected
+/// room): it fades in and settles up [distance] px on [Motion.spring]. Key
+/// it by what it shows, so the next selection rises in again. [haptic]
+/// gives the light click of a choice as it appears.
+class RiseIn extends StatefulWidget {
+  const RiseIn(
+      {super.key,
+      required this.child,
+      this.distance = 16,
+      this.haptic = false});
+  final Widget child;
+  final double distance;
+  final bool haptic;
+  @override
+  State<RiseIn> createState() => _RiseInState();
+}
+
+class _RiseInState extends State<RiseIn> with SingleTickerProviderStateMixin {
+  late final motor.SingleMotionController _c = motor.SingleMotionController(
+      motion: Motion.spring, vsync: this);
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    if (widget.haptic) HapticFeedback.selectionClick();
+    if (Motion.reduced(context)) {
+      _c.value = 1;
+    } else {
+      _c.animateTo(1);
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+      animation: _c,
+      child: widget.child,
+      builder: (context, child) {
+        // A spring rests a hair short of 1; an opacity of exactly 1 costs
+        // no layer, so the settled card is drawn as if it were plain.
+        final done = _c.value > 0.999;
+        final v = done ? 1.0 : _c.value.clamp(0.0, 1.0);
+        return Opacity(
+            opacity: v,
+            child: Transform.translate(
+                offset: Offset(
+                    0, done ? 0 : widget.distance * (1 - _c.value)),
+                child: child));
+      });
+}
+
+/// Where the next [ZoomPageRoute] grows from: the card or picture that was
+/// just touched. A mark goes stale after a few seconds, so a page opened
+/// some other way (by voice, from a link) slides in as usual.
+abstract final class ZoomOrigin {
+  static const _ttl = Duration(seconds: 3);
+  static Rect? _rect;
+  static DateTime? _at;
+
+  /// Marks the box of [context] as the place the next page comes out of.
+  static void mark(BuildContext context) {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return;
+    _rect = box.localToGlobal(Offset.zero) & box.size;
+    _at = DateTime.now();
+  }
+
+  static Rect? _take() {
+    final rect = _rect;
+    final at = _at;
+    _rect = null;
+    _at = null;
+    if (rect == null || at == null) return null;
+    return DateTime.now().difference(at) > _ttl ? null : rect;
+  }
+}
+
+/// A card that opens a full page of the same thing (a design opening in
+/// the editor): touching it marks it as the [ZoomOrigin].
+class ZoomSource extends StatelessWidget {
+  const ZoomSource({super.key, required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => ZoomOrigin.mark(context),
+      child: child);
+}
+
+/// A page that grows out of the card that opened it and shrinks back into
+/// it, as iOS opens a photo or an app: the page is the card, larger. With
+/// no fresh [ZoomOrigin], or under reduce motion, it is the usual slide.
+class ZoomPageRoute<T> extends MaterialPageRoute<T> {
+  ZoomPageRoute({required super.builder, super.settings})
+      : _origin = ZoomOrigin._take();
+  final Rect? _origin;
+
+  bool _zooms(BuildContext context) =>
+      _origin != null && !Motion.reduced(context);
+
+  @override
+  Duration get transitionDuration =>
+      _origin == null ? super.transitionDuration : Motion.slow;
+
+  @override
+  Duration get reverseTransitionDuration =>
+      _origin == null ? super.reverseTransitionDuration : Motion.enter;
+
+  // The page underneath stays where it is: the card grows out of it.
+  @override
+  DelegatedTransitionBuilder? get delegatedTransition =>
+      _origin == null ? super.delegatedTransition : null;
+
+  @override
+  Widget buildTransitions(BuildContext context, Animation<double> animation,
+      Animation<double> secondaryAnimation, Widget child) {
+    if (!_zooms(context)) {
+      return super
+          .buildTransitions(context, animation, secondaryAnimation, child);
+    }
+    final origin = _origin!;
+    final curved = CurvedAnimation(
+        parent: animation,
+        curve: Motion.settle,
+        reverseCurve: Curves.easeInCubic);
+    return LayoutBuilder(builder: (context, constraints) {
+      final full = Offset.zero & constraints.biggest;
+      return AnimatedBuilder(
+          animation: curved,
+          child: child,
+          builder: (context, child) {
+            final v = curved.value;
+            if (v >= 1) return child!;
+            final rect = Rect.lerp(origin, full, v)!;
+            return Stack(children: [
+              Positioned.fromRect(
+                  rect: rect,
+                  child: Opacity(
+                      // Solid early, so the card is seen growing rather
+                      // than a page fading in.
+                      opacity: (v / 0.3).clamp(0.0, 1.0),
+                      child: ClipRRect(
+                          borderRadius:
+                              BorderRadius.circular(ui.lerpDouble(20, 0, v)!),
+                          child: FittedBox(
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                              child: SizedBox.fromSize(
+                                  size: full.size, child: child)))))
+            ]);
+          });
+    });
+  }
+}

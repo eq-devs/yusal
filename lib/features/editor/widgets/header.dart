@@ -243,7 +243,8 @@ extension _EditorHeader on _HouseEditorState {
             button: true,
             selected: key == group,
             child: Material(
-                color: key == group ? t.panel : Colors.transparent,
+                // The thumb behind the row carries the selection.
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
                 child: InkWell(
                     key: ValueKey('group-$key'),
@@ -296,11 +297,36 @@ extension _EditorHeader on _HouseEditorState {
           decoration: BoxDecoration(
               color: Tokens.mix(t.line, 0.55, t.bg),
               borderRadius: BorderRadius.circular(10)),
-          child: Row(children: [
+          child: Stack(children: [
+            // One thumb that slides to the open group, as an iOS segmented
+            // control does, instead of two fills swapping.
+            Positioned.fill(
+                child: AnimatedAlign(
+                    alignment: Alignment(
+                        const {'draw': -1.0, 'view': 0.0, 'build': 1.0}[group]!,
+                        0),
+                    duration:
+                        Motion.reduced(context) ? Duration.zero : Motion.base,
+                    curve: Motion.settle,
+                    child: FractionallySizedBox(
+                        widthFactor: 1 / 3,
+                        heightFactor: 1,
+                        child: DecoratedBox(
+                            decoration: BoxDecoration(
+                                color: t.panel,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black
+                                      .withValues(alpha: t.dark ? 0.3 : 0.08),
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 1))
+                            ]))))),
+            Row(children: [
             segment('draw', tr3('画图', 'Сызу', 'Чертёж', 'Drawing', ky: 'Чийме', uz: 'Chizma')),
             segment('view', tr3('看效果', 'Көрініс', 'Вид', 'View', ky: 'Көрүнүш', uz: 'Koʻrinish')),
             segment('build', tr3('造价与施工', 'Смета, құрылыс', 'Смета и стройка', 'Estimate and build', ky: 'Смета жана курулуш', uz: 'Smeta va qurilish')),
-          ])),
+          ])])),
       Padding(
           padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
           child: Row(children: [

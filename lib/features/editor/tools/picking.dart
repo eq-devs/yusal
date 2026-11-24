@@ -80,7 +80,7 @@ extension _Picking on _HouseEditorState {
           child: Text(text,
               style: TextStyle(
                   fontSize: 12, fontWeight: FontWeight.w600, color: t.muted)));
-      Widget item(String key, IconData icon, String label) => ListTile(
+      Widget item(String key, IconData icon, String label) => ListTile(contentPadding: tilePad, 
           key: ValueKey('wall-sheet-$key'),
           leading: Icon(icon),
           title: Text(label),
@@ -231,7 +231,7 @@ extension _Picking on _HouseEditorState {
                       'Switch the starting side', ky: 'Баштапкы тарапты алмаштыруу', uz: 'Boshlanish tomonini almashtirish'),
                   'delete': tr3('删除楼梯', 'Баспалдақты жою', 'Удалить лестницу', 'Delete the stairs', ky: 'Тепкичти өчүрүү', uz: 'Zinapoyani oʻchirish')
                 }.entries)
-                  ListTile(
+                  ListTile(contentPadding: tilePad, 
                       key: Key('stair-${e.key}'),
                       title: Text(e.value),
                       onTap: () => Navigator.pop(context, e.key))

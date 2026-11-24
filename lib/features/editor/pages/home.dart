@@ -396,7 +396,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                           child: Padding(
                               padding: const EdgeInsets.all(12),
                               child: Row(children: [
-                                Icon(icon, color: t.accent),
+                                Icon(icon, color: t.ink),
                                 const SizedBox(width: 12),
                                 Expanded(
                                     child: Column(
@@ -904,7 +904,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                             Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
                                 child: Sheet(
-                                    child: ListTile(
+                                    child: ListTile(contentPadding: tilePad, 
                                         leading: Icon(Icons.error_outline,
                                             color: t.crit),
                                         title: Text(entry.key),

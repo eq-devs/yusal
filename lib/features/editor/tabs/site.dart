@@ -214,7 +214,7 @@ extension _SiteTab on _HouseEditorState {
         saved.items.where((i) => i.id == selectedSiteId).firstOrNull;
     Widget itemCard(SiteItem i) => InfoCard(
             titleWidget: Row(children: [
-              Icon(siteIcon(i.kind), size: 18, color: t.accent),
+              Icon(siteIcon(i.kind), size: 18, color: t.ink),
               const SizedBox(width: 6),
               Flexible(
                   child: Text(siteItemName(i),

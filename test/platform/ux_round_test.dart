@@ -323,6 +323,8 @@ void main() {
     expect(find.text('Русский'), findsNothing);
     await t.tap(find.byTooltip('更多操作'));
     await t.pumpAndSettle();
+    await t.ensureVisible(find.textContaining('语言'));
+    await t.pumpAndSettle();
     await t.tap(find.textContaining('语言'));
     await t.pumpAndSettle();
     for (final name in ['Қазақша', 'Русский', '中文']) {

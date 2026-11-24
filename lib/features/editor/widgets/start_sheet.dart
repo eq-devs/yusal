@@ -257,12 +257,9 @@ class _NewDesignFormState extends State<_NewDesignForm> {
               ChoiceChip(
                   key: ValueKey('new-roof-$style'),
                   avatar: RoofIcon(style,
-                      size: 14, color: roof == style ? t.accent : t.ink),
+                      size: 14, color: roof == style ? t.panel : t.ink),
                   showCheckmark: false,
-                  selectedColor: t.accent.withValues(alpha: 0.14),
-                  side: BorderSide(color: roof == style ? t.accent : t.line),
-                  label:
-                      Text(roofStyleName(style), style: TextStyle(color: t.ink)),
+                  label: Text(roofStyleName(style)),
                   visualDensity: VisualDensity.compact,
                   selected: roof == style,
                   onSelected: (_) {

@@ -62,13 +62,8 @@ void main() {
   }
 
   Future<void> tool(WidgetTester t, String name) async {
-    // On phones the less common tools sit in the "更多工具" sheet.
-    if (find.byTooltip(name).evaluate().isEmpty) {
-      await t.ensureVisible(find.byTooltip('更多工具'));
-      await t.pumpAndSettle();
-      await t.tap(find.byTooltip('更多工具'));
-      await t.pumpAndSettle();
-    }
+    // On phones the tools are on the add button's sheet.
+    if (find.byTooltip(name).evaluate().isEmpty) await openAdd(t);
     await t.ensureVisible(find.byTooltip(name));
     await t.pumpAndSettle();
     await t.tap(find.byTooltip(name));
@@ -363,7 +358,11 @@ void main() {
       addTearDown(t.view.resetPhysicalSize);
       addTearDown(t.view.resetDevicePixelRatio);
       await mount(t, initial(), scale: 1.8, reduce: true);
-      expect(find.byTooltip('墙体'), findsOneWidget);
+      // A row of tools on the short screen, one add button on the phone.
+      expect(
+          find.byTooltip('墙体').evaluate().length +
+              find.byKey(const Key('plan-add')).evaluate().length,
+          1);
       for (final key in ['ext', 'walk', 'det', 'qty', 'iss', 'plan']) {
         await showTab(t, key);
         await t.pumpAndSettle();

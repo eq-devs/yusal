@@ -1,9 +1,19 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:yusal/constant/tokens.dart';
+import 'package:yusal/features/shared/motion/motion.dart';
 
-/// Small building blocks shared by every screen, after the drafting-table
-/// page: segmented switches, a tab strip, sheets (cards), value grids, pills.
+/// Small building blocks shared by every editor screen: segmented switches,
+/// a tab strip, cards, value grids, pills. One look for all of them: soft
+/// fills with no outline, and selection in ink. The accent is kept for the
+/// screen's main action.
+
+/// Side padding of a row on a sheet.
+const tilePad = EdgeInsets.symmetric(horizontal: 20);
+
+/// The soft fill of a control at rest.
+Color softFill(Tokens t) => Tokens.mix(t.ink, t.dark ? 0.10 : 0.055, t.panel);
 
 class Seg<T> extends StatelessWidget {
   const Seg(
@@ -22,36 +32,52 @@ class Seg<T> extends StatelessWidget {
     return Semantics(
         label: label,
         container: true,
-        child: DecoratedBox(
+        child: Container(
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-                color: t.panel,
-                border: Border.all(color: t.line),
-                borderRadius: BorderRadius.circular(8)),
-            child: ClipRRect(
-                borderRadius: BorderRadius.circular(7),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  for (final (v, text) in items)
-                    Semantics(
-                        button: true,
-                        selected: v == value,
+                color: softFill(t), borderRadius: BorderRadius.circular(12)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              for (final (v, text) in items)
+                Semantics(
+                    button: true,
+                    selected: v == value,
+                    child: AnimatedContainer(
+                        duration: Motion.fast,
+                        decoration: BoxDecoration(
+                            color: v == value ? t.panel : Colors.transparent,
+                            borderRadius: BorderRadius.circular(9),
+                            boxShadow: v == value
+                                ? [
+                                    BoxShadow(
+                                        color: Colors.black.withValues(
+                                            alpha: t.dark ? 0.3 : 0.08),
+                                        blurRadius: 3,
+                                        offset: const Offset(0, 1))
+                                  ]
+                                : null),
                         child: Material(
-                            color: v == value ? t.accent : Colors.transparent,
+                            color: Colors.transparent,
                             child: InkWell(
-                                onTap: () => onChanged(v),
+                                borderRadius: BorderRadius.circular(9),
+                                onTap: () {
+                                  if (v != value) {
+                                    HapticFeedback.selectionClick();
+                                  }
+                                  onChanged(v);
+                                },
                                 child: Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 7),
+                                        horizontal: 12, vertical: 6),
                                     child: Text(text,
                                         style: TextStyle(
                                             fontSize: 13,
                                             height: 1.2,
-                                            color: v == value
-                                                ? t.accentInk
-                                                : t.ink,
+                                            color:
+                                                v == value ? t.ink : t.muted,
                                             fontWeight: v == value
-                                                ? FontWeight.w600
-                                                : FontWeight.w400))))))
-                ]))));
+                                                ? FontWeight.w700
+                                                : FontWeight.w500)))))))
+            ])));
   }
 }
 
@@ -152,33 +178,23 @@ class _TabStripState extends State<TabStrip> {
                           selected: key == current,
                           button: true,
                           child: Material(
-                              color:
-                                  key == current ? t.panel : Colors.transparent,
-                              borderRadius: BorderRadius.circular(6),
+                              color: key == current ? t.ink : Colors.transparent,
+                              borderRadius: BorderRadius.circular(999),
                               child: InkWell(
                                   key: ValueKey('tab-$key'),
-                                  borderRadius: BorderRadius.circular(6),
+                                  borderRadius: BorderRadius.circular(999),
                                   onTap: () => widget.onSelect(key),
                                   child: Container(
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 12, vertical: 8),
-                                      decoration: key == current
-                                          ? BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                              border: Border(
-                                                  bottom: BorderSide(
-                                                      color: t.accent,
-                                                      width: 2)))
-                                          : null,
                                       child: Text(label,
                                           style: TextStyle(
                                               fontSize: 14,
                                               color: key == current
-                                                  ? t.ink
+                                                  ? t.panel
                                                   : t.muted,
                                               fontWeight:
-                                                  key == current ? FontWeight.w600 : FontWeight.w400)))))))
+                                                  key == current ? FontWeight.w700 : FontWeight.w500)))))))
               ])),
           Positioned(
               left: 0,
@@ -195,7 +211,7 @@ class _TabStripState extends State<TabStrip> {
   }
 }
 
-/// White working sheet with a hairline border.
+/// A card: white with a hairline, like the cards of the platform pages.
 class Sheet extends StatelessWidget {
   const Sheet({super.key, required this.child, this.padding});
   final Widget child;
@@ -209,7 +225,7 @@ class Sheet extends StatelessWidget {
         decoration: BoxDecoration(
             color: t.panel,
             border: Border.all(color: t.line),
-            borderRadius: BorderRadius.circular(10)),
+            borderRadius: BorderRadius.circular(20)),
         child: child);
   }
 }
@@ -307,7 +323,7 @@ class KvGrid extends StatelessWidget {
   }
 }
 
-/// Round pill used for layer toggles and modes.
+/// Round pill used for layer toggles and modes: a soft fill, ink when on.
 class PillToggle extends StatelessWidget {
   const PillToggle(
       {super.key,
@@ -326,43 +342,41 @@ class PillToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Tokens.of(context);
+    final fg = selected ? t.panel : t.ink;
     final pill = Semantics(
         button: true,
         toggled: selected,
         label: tooltip ?? label,
         child: Material(
-            color: selected && !checkbox
-                ? Tokens.mix(t.accent, 0.12, t.panel)
-                : t.panel,
-            shape: StadiumBorder(
-                side: BorderSide(
-                    color: selected && !checkbox ? t.accent : t.line,
-                    width: selected && !checkbox ? 1.5 : 1)),
+            color: selected ? t.ink : softFill(t),
+            shape: const StadiumBorder(),
             child: InkWell(
                 customBorder: const StadiumBorder(),
-                onTap: () => onChanged(!selected),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onChanged(!selected);
+                },
                 child: Padding(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                        const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      if (checkbox)
-                        Icon(
-                            selected
-                                ? Icons.check_box
-                                : Icons.check_box_outline_blank,
-                            size: 16,
-                            color: selected ? t.accent : t.muted),
-                      if (icon != null)
-                        Icon(icon,
-                            size: 16, color: selected ? t.accent : t.ink),
-                      const SizedBox(width: 6),
-                      Text(label, style: TextStyle(fontSize: 13, color: t.ink))
+                      if (icon != null) ...[
+                        Icon(icon, size: 16, color: fg),
+                        const SizedBox(width: 6)
+                      ],
+                      Text(label,
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: fg,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500))
                     ])))));
     return tooltip == null ? pill : Tooltip(message: tooltip, child: pill);
   }
 }
 
-/// Bordered compact button.
+/// Compact button: a soft pill; the main one is the accent.
 class Btn extends StatelessWidget {
   const Btn(
       {super.key,
@@ -371,12 +385,16 @@ class Btn extends StatelessWidget {
       this.icon,
       this.tooltip,
       this.danger = false,
+      this.selected = false,
       this.primary = false});
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
   final String? tooltip;
   final bool danger;
+
+  /// The chosen one of a row of choices: ink, as every selection is.
+  final bool selected;
   final bool primary;
   @override
   Widget build(BuildContext context) {
@@ -385,22 +403,26 @@ class Btn extends StatelessWidget {
         ? t.muted.withValues(alpha: 0.5)
         : danger
             ? t.crit
-            : primary
-                ? t.accentInk
-                : t.ink;
+            : selected
+                ? t.panel
+                : primary
+                    ? t.accentInk
+                    : t.ink;
     final button = Material(
-        color: primary ? t.accent : t.panel,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side: BorderSide(color: primary ? t.accent : t.line)),
+        color: selected
+            ? t.ink
+            : primary
+                ? t.accent
+                : softFill(t),
+        shape: const StadiumBorder(),
         child: InkWell(
-            borderRadius: BorderRadius.circular(8),
+            customBorder: const StadiumBorder(),
             onTap: onPressed,
             child: label.isEmpty && icon != null
                 ? Center(child: Icon(icon, size: 17, color: color))
                 : Padding(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+                        const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       if (icon != null) ...[
                         Icon(icon, size: 16, color: color),
@@ -411,10 +433,14 @@ class Btn extends StatelessWidget {
                             child: Text(label,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 13, color: color)))
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: color)))
                     ]))));
     return tooltip == null
-        ? Semantics(button: true, label: label, child: button)
+        ? Semantics(
+            button: true, selected: selected, label: label, child: button)
         : Tooltip(message: tooltip, child: button);
   }
 }
@@ -582,7 +608,8 @@ class PlainTable extends StatelessWidget {
   }
 }
 
-/// Text input dialog returning the edited text, or null when cancelled.
+/// One value typed on a sheet that rises over the keyboard, returning the
+/// edited text, or null when cancelled.
 Future<String?> promptText(BuildContext context,
     {required String title,
     required String initial,
@@ -592,33 +619,52 @@ Future<String?> promptText(BuildContext context,
     bool multiline = false,
     String? suffix}) {
   final controller = TextEditingController(text: initial);
-  return showDialog<String>(
+  controller.selection =
+      TextSelection(baseOffset: 0, extentOffset: initial.length);
+  return showMotionSheet<String>(
       context: context,
-      builder: (context) => AlertDialog(
-              title: Text(title),
-              content: SizedBox(
-                  width: 420,
-                  child: TextField(
-                      controller: controller,
-                      autofocus: true,
-                      minLines: multiline ? 3 : 1,
-                      maxLines: multiline ? 8 : 1,
-                      keyboardType: number
-                          ? const TextInputType.numberWithOptions(decimal: true)
-                          : multiline
-                              ? TextInputType.multiline
-                              : TextInputType.text,
-                      decoration: InputDecoration(suffixText: suffix),
-                      onSubmitted:
-                          multiline ? null : (v) => Navigator.pop(context, v))),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(cancel)),
-                FilledButton(
-                    onPressed: () => Navigator.pop(context, controller.text),
-                    child: Text(ok))
-              ]));
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+          child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                  20, 0, 20, MediaQuery.viewInsetsOf(context).bottom + 16),
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 14),
+                    TextField(
+                        controller: controller,
+                        autofocus: true,
+                        minLines: multiline ? 3 : 1,
+                        maxLines: multiline ? 8 : 1,
+                        keyboardType: number
+                            ? const TextInputType.numberWithOptions(
+                                decimal: true)
+                            : multiline
+                                ? TextInputType.multiline
+                                : TextInputType.text,
+                        decoration: InputDecoration(suffixText: suffix),
+                        onSubmitted: multiline
+                            ? null
+                            : (v) => Navigator.pop(context, v)),
+                    const SizedBox(height: 16),
+                    Row(children: [
+                      Expanded(
+                          child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text(cancel))),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: FilledButton(
+                              onPressed: () =>
+                                  Navigator.pop(context, controller.text),
+                              child: Text(ok)))
+                    ])
+                  ]))));
 }
 
 /// Horizontal bars for one series: a label, a bar from a shared baseline

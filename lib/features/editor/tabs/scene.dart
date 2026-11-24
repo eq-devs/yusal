@@ -331,7 +331,7 @@ extension _SceneTab on _HouseEditorState {
         ])
           Btn(
               label: tr(zh, kk),
-              primary: sceneView == key,
+              selected: sceneView == key,
               onPressed: () => update(() {
                     sceneView = key;
                     sceneViewToken++;
@@ -437,7 +437,8 @@ extension _SceneTab on _HouseEditorState {
             tooltip: tr3('更多设置', 'Басқа баптаулар', 'Другие настройки', 'More settings', ky: 'Дагы жөндөөлөр', uz: 'Qoʻshimcha sozlamalar'),
             onPressed: sceneMoreSheet,
             icon: const YusalIcon(YIcon.settings, size: 20)),
-        const VoiceSlot(),
+        // The phone's bottom bar keeps the assistant's place.
+        if (!phone) const VoiceSlot(),
       ]),
       if (s.cut) cutSlider(170),
     ];
@@ -450,7 +451,7 @@ extension _SceneTab on _HouseEditorState {
     return [
       Row(children: [
         Expanded(child: fadeRow(go.children.skip(1).toList())),
-        const VoiceSlot(),
+        if (!phone) const VoiceSlot(),
       ]),
       if (history.present.floors.length > 1) c[1],
     ];

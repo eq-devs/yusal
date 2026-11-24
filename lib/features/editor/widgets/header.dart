@@ -112,24 +112,7 @@ extension _EditorHeader on _HouseEditorState {
         Icons.save_outlined, save, ky: 'Азыр сактоо', uz: 'Hozir saqlash');
     final more = PopupMenuButton<String>(
         tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия', 'More actions', 'Дагы аракеттер', 'Boshqa amallar'),
-        onSelected: (value) {
-          if (value == 'checks') showTab('iss');
-          if (value == 'roof') chooseRoof();
-          if (value == 'settings') settings();
-          if (value == 'export') export();
-          if (value == 'pdf') exportDrawings();
-          if (value == 'png') exportDrawings(png: true);
-          if (value == 'variant') duplicateAsVariant();
-          if (value == 'compare') {
-            showTab('qty');
-            chooseCompare();
-          }
-          if (value == 'lang') chooseLanguage();
-          if (value == 'theme') {
-            choose.setTheme(ThemeChoice
-                .values[(app.theme.index + 1) % ThemeChoice.values.length]);
-          }
-        },
+        onSelected: menuAction,
         itemBuilder: (context) => [
               PopupMenuItem(
                   value: 'roof',
@@ -269,12 +252,8 @@ extension _EditorHeader on _HouseEditorState {
             button: true,
             selected: key == tab,
             child: Material(
-                color:
-                    key == tab ? Tokens.mix(t.accent, 0.14, t.panel) : t.panel,
-                shape: StadiumBorder(
-                    side: BorderSide(
-                        color: key == tab ? t.accent : t.line,
-                        width: key == tab ? 1.5 : 1)),
+                color: key == tab ? t.ink : softFill(t),
+                shape: const StadiumBorder(),
                 child: InkWell(
                     key: ValueKey('tab-$key'),
                     customBorder: const StadiumBorder(),
@@ -285,10 +264,10 @@ extension _EditorHeader on _HouseEditorState {
                         child: Text(labels[key]!,
                             style: TextStyle(
                                 fontSize: 13,
-                                color: key == tab ? t.accent : t.ink,
+                                color: key == tab ? t.panel : t.ink,
                                 fontWeight: key == tab
                                     ? FontWeight.w700
-                                    : FontWeight.w400)))))));
+                                    : FontWeight.w500)))))));
     final flat = tab == 'plan';
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Container(
@@ -339,21 +318,17 @@ extension _EditorHeader on _HouseEditorState {
                     ]))),
             // Drawing and looking are one tap apart, either way.
             if (group != 'build')
-              FilledButton.tonalIcon(
+              // Quiet: the accent is kept for the page's one main action.
+              Btn(
                   key: ValueKey(
                       flat || group == 'draw' ? 'quick-3d' : 'quick-2d'),
-                  style: FilledButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 12)),
                   onPressed: () => showTab(group == 'draw' ? 'ext' : 'plan'),
-                  icon: Icon(
-                      group == 'draw'
-                          ? Icons.view_in_ar_outlined
-                          : Icons.grid_on_outlined,
-                      size: 16),
-                  label: Text(group == 'draw'
+                  icon: group == 'draw'
+                      ? Icons.view_in_ar_outlined
+                      : Icons.grid_on_outlined,
+                  label: group == 'draw'
                       ? tr3('看 3D', '3D көру', 'В 3D', 'To 3D', ky: '3D көрүнүшкө', uz: '3D ga')
-                      : tr3('回平面', 'Жоспарға', 'К плану', 'To the plan', ky: 'Планга', uz: 'Rejaga'))),
+                      : tr3('回平面', 'Жоспарға', 'К плану', 'To the plan', ky: 'Планга', uz: 'Rejaga')),
           ])),
       Divider(height: 1, color: t.line),
     ]);
@@ -363,7 +338,6 @@ extension _EditorHeader on _HouseEditorState {
   Widget compactBar() {
     final t = Tokens.of(context);
     final app = ref.watch(settingsProvider);
-    final choose = ref.read(settingsProvider.notifier);
     return Container(
         decoration:
             BoxDecoration(border: Border(bottom: BorderSide(color: t.line))),
@@ -396,28 +370,7 @@ extension _EditorHeader on _HouseEditorState {
               onPressed: history.canRedo ? redo : null),
           PopupMenuButton<String>(
               tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия', 'More actions', 'Дагы аракеттер', 'Boshqa amallar'),
-              onSelected: (value) {
-                if (value == 'checks') showTab('iss');
-                if (value == 'roof') chooseRoof();
-                if (value == 'settings') settings();
-                if (value == 'export') export();
-                if (value == 'pdf') exportDrawings();
-                if (value == 'png') exportDrawings(png: true);
-                if (value == 'variant') duplicateAsVariant();
-                if (value == 'compare') {
-                  showTab('qty');
-                  chooseCompare();
-                }
-                if (value == 'save') save();
-                if (value == 'size') footprintOptions();
-                if (value == 'floors') floorOptions();
-                // All three languages; the old toggle skipped Russian.
-                if (value == 'lang') chooseLanguage();
-                if (value == 'theme') {
-                  choose.setTheme(ThemeChoice.values[
-                      (app.theme.index + 1) % ThemeChoice.values.length]);
-                }
-              },
+              onSelected: menuAction,
               itemBuilder: (context) => [
                     PopupMenuItem(
                         value: 'roof',
@@ -467,6 +420,33 @@ extension _EditorHeader on _HouseEditorState {
         ]));
   }
 
+  /// One entry of the "more" menu, whichever layout showed it.
+  void menuAction(String value) {
+    final app = ref.read(settingsProvider);
+    final choose = ref.read(settingsProvider.notifier);
+    if (value.startsWith('tab:')) showTab(value.substring(4));
+    if (value == 'checks') showTab('iss');
+    if (value == 'roof') chooseRoof();
+    if (value == 'settings') settings();
+    if (value == 'export') export();
+    if (value == 'pdf') exportDrawings();
+    if (value == 'png') exportDrawings(png: true);
+    if (value == 'variant') duplicateAsVariant();
+    if (value == 'compare') {
+      showTab('qty');
+      chooseCompare();
+    }
+    if (value == 'save') save();
+    if (value == 'size') footprintOptions();
+    if (value == 'floors') floorOptions();
+    // All the languages; the old toggle skipped Russian.
+    if (value == 'lang') chooseLanguage();
+    if (value == 'theme') {
+      choose.setTheme(ThemeChoice
+          .values[(app.theme.index + 1) % ThemeChoice.values.length]);
+    }
+  }
+
   Future<void> chooseLanguage() async {
     final app = ref.read(settingsProvider);
     final choose = ref.read(settingsProvider.notifier);
@@ -475,7 +455,7 @@ extension _EditorHeader on _HouseEditorState {
         builder: (context) => SafeArea(
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
               for (final (value, label) in languageNames)
-                ListTile(
+                ListTile(contentPadding: tilePad, 
                     title: Text(label),
                     trailing:
                         value == app.lang ? const Icon(Icons.check) : null,

@@ -138,24 +138,20 @@ extension _RoofPicker on _HouseEditorState {
                                             padding: const EdgeInsets.symmetric(
                                                 vertical: 12),
                                             decoration: BoxDecoration(
-                                                color: style == roofStyle
-                                                    ? Tokens.mix(
-                                                        t.accent, 0.12, t.panel)
-                                                    : t.panel,
+                                                color: softFill(t),
                                                 borderRadius:
-                                                    BorderRadius.circular(10),
+                                                    BorderRadius.circular(16),
+                                                // The roof in use: an ink
+                                                // ring, as selection is
+                                                // everywhere.
                                                 border: Border.all(
                                                     color: style == roofStyle
-                                                        ? t.accent
-                                                        : t.line,
-                                                    width: style == roofStyle
-                                                        ? 1.5
-                                                        : 1)),
+                                                        ? t.ink
+                                                        : Colors.transparent,
+                                                    width: 1.5)),
                                             child: Column(children: [
                                               RoofIcon(style,
-                                                  color: style == roofStyle
-                                                      ? t.accent
-                                                      : t.ink),
+                                                  color: t.ink),
                                               const SizedBox(height: 6),
                                               Text(roofStyleName(style),
                                                   style: const TextStyle(

@@ -28,7 +28,7 @@ class FeedbackAsk extends StatelessWidget {
             color: t.surface, borderRadius: BorderRadius.circular(yRadius)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            YusalIcon(YIcon.chat, size: 18, color: t.accent),
+            YusalIcon(YIcon.chat, size: 18, color: t.ink),
             const SizedBox(width: 6),
             Text(tr3('作者在求点评', 'Автор пікір сұрайды', 'Автор просит отзывы', 'The author is asking for feedback', ky: 'Автор пикир сурап жатат', uz: 'Muallif fikr soʻramoqda'),
                 style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -39,7 +39,7 @@ class FeedbackAsk extends StatelessWidget {
               Text(tr3('最想听听：', 'Ең алдымен:', 'Важнее всего:', 'Most important:', ky: 'Эң маанилүүсү:', uz: 'Eng muhimi:'),
                   style: TextStyle(color: t.muted, fontSize: YFont.small)),
               for (final f in post.focus)
-                StatusPill(feedbackTopicName(f), color: t.accent),
+                StatusPill(feedbackTopicName(f)),
             ]),
           ],
         ]));

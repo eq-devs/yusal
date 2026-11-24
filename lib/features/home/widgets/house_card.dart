@@ -222,8 +222,6 @@ class HouseCard extends StatelessWidget {
                                   OutlinedButton.icon(
                                       onPressed: onReuse,
                                       style: OutlinedButton.styleFrom(
-                                          foregroundColor: t.accent,
-                                          side: BorderSide(color: t.accent),
                                           visualDensity: VisualDensity.compact),
                                       icon: const Icon(
                                           Icons.content_copy_outlined,

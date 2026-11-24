@@ -286,10 +286,8 @@ class FilterPill extends StatelessWidget {
                     widthFactor: 1,
                     child: DecoratedBox(
                         decoration: ShapeDecoration(
-                            color: selected ? t.ink : t.card,
-                            shape: StadiumBorder(
-                                side: BorderSide(
-                                    color: selected ? t.ink : t.line))),
+                            color: selected ? t.ink : t.surface,
+                            shape: const StadiumBorder()),
                         child: Padding(
                             padding:
                                 EdgeInsets.fromLTRB(14, 8, menu ? 8 : 14, 8),

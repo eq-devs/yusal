@@ -24,8 +24,8 @@ class SearchField extends StatelessWidget {
     return ListenableBuilder(
         listenable: controller,
         builder: (context, _) => Material(
-            color: t.card,
-            shape: StadiumBorder(side: BorderSide(color: t.line)),
+            color: t.surface,
+            shape: const StadiumBorder(),
             child: Row(children: [
               const SizedBox(width: YSpace.lg),
               YusalIcon(YIcon.search, color: t.muted, size: 22),
@@ -369,9 +369,9 @@ class SignInPrompt extends StatelessWidget {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                      color: t.accentSoft, shape: BoxShape.circle),
+                      color: t.surface, shape: BoxShape.circle),
                   child: Icon(icon ?? Icons.lock_outline,
-                      size: 28, color: t.accent)),
+                      size: 28, color: t.ink)),
               const SizedBox(height: YSpace.lg),
               Text(text, textAlign: TextAlign.center, style: YText.heading),
               if (body != null) ...[

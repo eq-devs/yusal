@@ -305,8 +305,8 @@ class _DesignCard extends StatelessWidget {
                 child: FilledButton(
                     key: Key('design-continue-${entry.id}'),
                     style: FilledButton.styleFrom(
-                        backgroundColor: t.accentSoft,
-                        foregroundColor: t.dark ? t.ink : t.accent,
+                        backgroundColor: t.surface,
+                        foregroundColor: t.ink,
                         minimumSize: const Size(0, yTouch),
                         padding:
                             const EdgeInsets.symmetric(horizontal: YSpace.sm)),
@@ -424,7 +424,7 @@ class _ExampleRow extends StatelessWidget {
             horizontal: YSpace.lg, vertical: YSpace.md),
         onTap: () => list.createFromTemplate('kz'),
         child: Row(children: [
-          Icon(Icons.auto_awesome_mosaic_outlined, color: t.accent),
+          Icon(Icons.auto_awesome_mosaic_outlined, color: t.ink),
           const SizedBox(width: YSpace.md),
           Expanded(
               child: Column(

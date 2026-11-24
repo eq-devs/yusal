@@ -144,7 +144,7 @@ class _PublicPreview extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                     fontSize: YFont.heading)),
             const Spacer(),
-            StatusPill(demandTypeName(v.type), color: t.accent),
+            StatusPill(demandTypeName(v.type)),
           ]),
           const SizedBox(height: 12),
           Text(v.title,

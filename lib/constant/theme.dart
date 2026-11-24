@@ -276,9 +276,10 @@ ThemeData buildPlatformTheme(YTokens t) {
       // iOS-style horizontal slide everywhere, with swipe-back.
       pageTransitionsTheme: motionPageTransitions);
   const pill = StadiumBorder();
+  // A field is a soft fill with no outline, as iOS draws them.
   final hairline = OutlineInputBorder(
       borderRadius: BorderRadius.circular(YRadius.control),
-      borderSide: BorderSide(color: t.line));
+      borderSide: BorderSide.none);
   return base.copyWith(
       textTheme: base.textTheme.apply(bodyColor: t.ink, displayColor: t.ink),
       appBarTheme: AppBarTheme(
@@ -343,8 +344,7 @@ ThemeData buildPlatformTheme(YTokens t) {
           elevation: t.dark ? 0 : 4,
           shadowColor: t.shadow,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(YRadius.card),
-              side: BorderSide(color: t.line))),
+              borderRadius: BorderRadius.circular(YRadius.card))),
       tooltipTheme: TooltipThemeData(
           decoration: BoxDecoration(
               color: t.ink, borderRadius: BorderRadius.circular(YRadius.row)),
@@ -383,11 +383,11 @@ ThemeData buildPlatformTheme(YTokens t) {
               color: t.muted)),
       // A toast floats like a sheet: the elevated surface with ink text.
       snackBarTheme:
-          SnackBarThemeData(backgroundColor: t.elevated, elevation: t.dark ? 0 : 4, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(YRadius.control), side: BorderSide(color: t.line)), contentTextStyle: TextStyle(color: t.ink, fontFamily: fontBody, fontSize: YFont.label), actionTextColor: t.accent),
+          SnackBarThemeData(backgroundColor: t.elevated, elevation: t.dark ? 0 : 4, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(YRadius.control)), contentTextStyle: TextStyle(color: t.ink, fontFamily: fontBody, fontSize: YFont.label), actionTextColor: t.accent),
       filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(backgroundColor: t.accent, foregroundColor: t.accentInk, disabledBackgroundColor: t.line, disabledForegroundColor: t.muted, minimumSize: const Size(64, yButton), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), textStyle: const TextStyle(fontFamily: fontBody, fontFamilyFallback: bodyFallback, fontSize: YFont.button, fontWeight: FontWeight.w700), shape: pill)),
       outlinedButtonTheme: OutlinedButtonThemeData(
-          // The quiet second action: a card-coloured pill with a hairline.
-          style: OutlinedButton.styleFrom(foregroundColor: t.ink, backgroundColor: t.card, minimumSize: const Size(48, yTouch), side: BorderSide(color: t.line), padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8), textStyle: const TextStyle(fontFamily: fontBody, fontFamilyFallback: bodyFallback, fontSize: YFont.label, fontWeight: FontWeight.w600), shape: pill)),
+          // The quiet second action: a soft pill with no outline.
+          style: OutlinedButton.styleFrom(foregroundColor: t.ink, backgroundColor: t.surface, minimumSize: const Size(48, yTouch), side: BorderSide.none, padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8), textStyle: const TextStyle(fontFamily: fontBody, fontFamilyFallback: bodyFallback, fontSize: YFont.label, fontWeight: FontWeight.w600), shape: pill)),
       // Plain buttons are ink with no underline: the accent is kept for
       // the screen's one main action, and on a phone an underline reads as
       // a web link, not as something to press.
@@ -395,14 +395,13 @@ ThemeData buildPlatformTheme(YTokens t) {
       iconButtonTheme: IconButtonThemeData(style: IconButton.styleFrom(foregroundColor: t.ink, minimumSize: const Size(yTouch, yTouch))),
       inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: t.card,
+          fillColor: t.surface,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           labelStyle: TextStyle(color: t.muted),
           hintStyle: TextStyle(color: t.muted),
           helperStyle: TextStyle(color: t.muted),
           floatingLabelStyle: TextStyle(color: t.ink),
-          // A card-coloured field with a hairline; focus is an ink ring
-          // with no glow.
+          // A soft field; focus is an ink ring with no glow.
           border: hairline,
           enabledBorder: hairline,
           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(YRadius.control), borderSide: BorderSide(color: t.ink, width: 1.5)),
@@ -410,7 +409,7 @@ ThemeData buildPlatformTheme(YTokens t) {
           focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(YRadius.control), borderSide: BorderSide(color: t.crit, width: 1.5))),
       // Chips are a soft fill, never a border; a selected one is ink.
       chipTheme: ChipThemeData(backgroundColor: t.surface, selectedColor: t.ink, checkmarkColor: t.bg, secondarySelectedColor: t.ink, side: BorderSide.none, shape: const StadiumBorder(), labelStyle: TextStyle(fontFamily: fontBody, fontFamilyFallback: bodyFallback, color: WidgetStateColor.resolveWith((s) => s.contains(WidgetState.selected) ? t.bg : t.ink), fontSize: YFont.small, fontWeight: FontWeight.w600), secondaryLabelStyle: TextStyle(fontFamily: fontBody, fontFamilyFallback: bodyFallback, color: t.bg, fontSize: YFont.small, fontWeight: FontWeight.w600)),
-      segmentedButtonTheme: SegmentedButtonThemeData(style: ButtonStyle(backgroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.ink : t.surface), foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.bg : t.ink), iconColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.bg : t.ink), side: WidgetStatePropertyAll(BorderSide(color: t.line)))),
+      segmentedButtonTheme: SegmentedButtonThemeData(style: ButtonStyle(backgroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.ink : t.surface), foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.bg : t.ink), iconColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.bg : t.ink), side: const WidgetStatePropertyAll(BorderSide.none))),
       switchTheme: SwitchThemeData(
           thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? t.bg : t.card),
           // On is ink, like every other selection.

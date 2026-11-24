@@ -1933,6 +1933,15 @@
         "value": {
           "type": "number"
         },
+        "type": {
+          "type": "string",
+          "enum": [
+            "strip",
+            "slab",
+            "pile"
+          ],
+          "description": "Strips under the walls, one slab, or piles under beams."
+        },
         "partitions": {
           "type": "boolean",
           "description": "Whether partitions get a footing too."
@@ -2150,6 +2159,54 @@
         },
         "resetPrices": {
           "type": "boolean"
+        },
+        "outerUnit": {
+          "type": "string",
+          "enum": [
+            "aerated",
+            "brick",
+            "cinder"
+          ],
+          "description": "What the outside walls are laid from."
+        },
+        "innerUnit": {
+          "type": "string",
+          "enum": [
+            "aerated",
+            "brick",
+            "cinder"
+          ],
+          "description": "What the inside walls are laid from."
+        },
+        "labourByWork": {
+          "type": "boolean",
+          "description": "Price labour per unit of work instead of as a share of materials."
+        },
+        "labourKey": {
+          "type": "string",
+          "description": "The labour rate to set with labourPrice."
+        },
+        "labourPrice": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Null goes back to the example rate."
+        },
+        "selfStage": {
+          "type": "string",
+          "description": "A stage the family builds itself, so no labour is charged on it."
+        },
+        "self": {
+          "type": "boolean",
+          "description": "False takes selfStage back."
+        },
+        "region": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Where the house is built, for local prices."
         }
       },
       "required": [],

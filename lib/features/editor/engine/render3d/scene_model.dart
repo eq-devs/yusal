@@ -883,6 +883,20 @@ SceneModel _buildScene(HouseDocument doc, DerivedHouse derived,
   if (options.foundation && !options.walk) {
     final takeoff = foundationTakeoff(doc, derived);
     var stirrups = 0;
+    final slabT = spec.slabThickness / 1000;
+    for (final r in takeoff.slabRects) {
+      planBox(r, -slabT, -0.002, Mat.found,
+          alpha: 0.5, layer: Layer3.buried, bottom: true, shadow: false);
+      planBox(r, -slabT - spec.cushion / 1000, -slabT, Mat.cushion,
+          layer: Layer3.buried, bottom: true, shadow: false);
+    }
+    final beam = spec.height / 1000;
+    final pr = spec.pileDia / 2.0;
+    for (final p in takeoff.piles) {
+      planBox(PlanRect(p.x - pr, p.y - pr, p.x + pr, p.y + pr),
+          -beam - spec.pileDepth / 1000, -beam, Mat.found,
+          alpha: 0.5, layer: Layer3.buried, bottom: true, shadow: false);
+    }
     for (final s in takeoff.strips) {
       final hh = s.height / 1000;
       final color = s.exists ? Mat.found : Mat.foundMiss;

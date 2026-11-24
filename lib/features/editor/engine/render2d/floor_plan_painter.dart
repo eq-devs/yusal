@@ -562,6 +562,24 @@ class FloorPlanPainter extends CustomPainter {
     }
 
     if (foundation != null) {
+      for (final slab in foundation!.slabRects) {
+        dashedRect(
+            canvas,
+            rectangle(slab, size),
+            Paint()
+              ..color = t.ok
+              ..strokeWidth = px(1.6),
+            dash: 6);
+      }
+      for (final pile in foundation!.piles) {
+        canvas.drawCircle(
+            point(pile.x, pile.y, size),
+            math.max(px(3), foundation!.pileDia / 2 * s),
+            Paint()
+              ..color = t.ok
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = px(1.6));
+      }
       for (final strip in foundation!.strips) {
         final r = rectangle(strip.rect, size);
         final color = strip.exists ? t.ok : t.crit;

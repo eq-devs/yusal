@@ -413,22 +413,56 @@ extension _OtherTabs on _HouseEditorState {
       if (v != null) action('SetFoundation', {'field': field, 'value': v});
     }
 
+    final slab = f.type == FoundationType.slab;
+    final pile = f.type == FoundationType.pile;
     TableCellData e(String text, String field, String title) =>
         TableCellData(text, numeric: true, onTap: () => edit(field, title));
     final params = <List<TableCellData>>[
       [
         TableCellData(tr3('类型', 'Түрі', 'Тип', 'Type', ky: 'Түрү', uz: 'Turi')),
-        TableCellData(tr3(
-            '整体浇筑钢筋混凝土条形基础',
-            'Монолитті темірбетон таспалы іргетас',
-            'Монолитный железобетонный ленточный фундамент',
-            'Cast-in-place reinforced concrete strip foundation', ky: 'Куйма темир-бетон тасма пайдубал', uz: 'Quyma temir-beton lentali poydevor'))
+        TableCellData(
+            '${foundationTypeName(f.type)} · ${tr3('点此更换', 'ауыстыру үшін басыңыз', 'нажмите, чтобы сменить', 'tap to change', ky: 'алмаштыруу үчүн басыңыз', uz: 'almashtirish uchun bosing')}',
+            onTap: () => action('SetFoundation', {
+                  'type': FoundationType.values[
+                      (f.type.index + 1) % FoundationType.values.length]
+                }))
       ],
+      if (slab) ...[
+        [
+          TableCellData(tr3('板厚 mm', 'Тақта қалыңдығы, мм', 'Толщина плиты, мм', 'Slab thickness, mm', ky: 'Плитанын калыңдыгы, мм', uz: 'Plita qalinligi, mm')),
+          e('${f.slabThickness}', 'slabThickness',
+              tr3('筏板厚度', 'Тақта қалыңдығы', 'Толщина плиты', 'Slab thickness', ky: 'Плитанын калыңдыгы', uz: 'Plita qalinligi'))
+        ],
+        [
+          TableCellData(tr3('双层钢筋网间距 mm', 'Екі қабат тордың қадамы, мм', 'Шаг двух сеток, мм', 'Spacing of the two meshes, mm', ky: 'Эки тордун кадамы, мм', uz: 'Ikki toʻr qadami, mm')),
+          e('${f.slabBarStep}', 'slabBarStep',
+              tr3('钢筋网间距', 'Тор қадамы', 'Шаг сетки', 'Mesh spacing', ky: 'Тордун кадамы', uz: 'Toʻr qadami'))
+        ],
+      ],
+      if (pile) ...[
+        [
+          TableCellData(tr3('桩径 mm', 'Қада диаметрі, мм', 'Диаметр сваи, мм', 'Pile diameter, mm', ky: 'Мамынын диаметри, мм', uz: 'Qoziq diametri, mm')),
+          e('${f.pileDia}', 'pileDia',
+              tr3('桩径', 'Қада диаметрі', 'Диаметр сваи', 'Pile diameter', ky: 'Мамынын диаметри', uz: 'Qoziq diametri'))
+        ],
+        [
+          TableCellData(tr3('桩深 mm', 'Қада тереңдігі, мм', 'Глубина сваи, мм', 'Pile depth, mm', ky: 'Мамынын тереңдиги, мм', uz: 'Qoziq chuqurligi, mm')),
+          e('${f.pileDepth}', 'pileDepth',
+              tr3('桩深', 'Қада тереңдігі', 'Глубина сваи', 'Pile depth', ky: 'Мамынын тереңдиги', uz: 'Qoziq chuqurligi'))
+        ],
+        [
+          TableCellData(tr3('桩距 mm', 'Қада қадамы, мм', 'Шаг свай, мм', 'Pile spacing, mm', ky: 'Мамылардын кадамы, мм', uz: 'Qoziqlar qadami, mm')),
+          e('${f.pileStep}', 'pileStep',
+              tr3('桩距', 'Қада қадамы', 'Шаг свай', 'Pile spacing', ky: 'Мамылардын кадамы', uz: 'Qoziqlar qadami'))
+        ],
+      ],
+      if (!slab)
       [
         TableCellData(tr3('宽 mm', 'Ені, мм', 'Ширина, мм', 'Width, mm', ky: 'Туурасы, мм', uz: 'Eni, mm')),
         e('${f.width}', 'width',
             tr3('基础宽度', 'Іргетас ені', 'Ширина фундамента', 'Foundation width', ky: 'Пайдубалдын туурасы', uz: 'Poydevor eni'))
       ],
+      if (!slab)
       [
         TableCellData(tr3('高 mm', 'Биіктігі, мм', 'Высота, мм', 'Height, mm', ky: 'Бийиктиги, мм', uz: 'Balandligi, mm')),
         e('${f.height}', 'height',
@@ -448,6 +482,7 @@ extension _OtherTabs on _HouseEditorState {
         e('${f.cushion}', 'cushion',
             tr3('垫层厚度', 'Төсеме қалыңдығы', 'Толщина подушки', 'Bed thickness', ky: 'Төшөмөнүн калыңдыгы', uz: 'Toʻshama qalinligi'))
       ],
+      if (!slab)
       [
         TableCellData(tr3('垫层每侧加宽 mm', 'Төсеме кеңейтуі, мм',
             'Уширение подушки с каждой стороны, мм',
@@ -464,12 +499,14 @@ extension _OtherTabs on _HouseEditorState {
           }
         })
       ],
+      if (!slab)
       [
         TableCellData(
             tr3('上部纵筋 根', 'Үстіңгі арматура, дана', 'Верхняя арматура, шт.', 'Top bars, pcs', ky: 'Үстүнкү чыбыктар, даана', uz: 'Yuqori sterjenlar, dona')),
         e('${f.topBars}', 'topBars',
             tr3('上部纵筋根数', 'Үстіңгі арматура саны', 'Число верхних стержней', 'Number of top bars', ky: 'Үстүнкү чыбыктардын саны', uz: 'Yuqori sterjenlar soni'))
       ],
+      if (!slab)
       [
         TableCellData(
             tr3('下部纵筋 根', 'Астыңғы арматура, дана', 'Нижняя арматура, шт.', 'Bottom bars, pcs', ky: 'Астыңкы чыбыктар, даана', uz: 'Pastki sterjenlar, dona')),
@@ -481,6 +518,7 @@ extension _OtherTabs on _HouseEditorState {
         e('${f.barDia}', 'barDia',
             tr3('纵筋直径', 'Арматура диаметрі', 'Диаметр арматуры', 'Rebar diameter', ky: 'Арматуранын диаметри', uz: 'Armatura diametri'))
       ],
+      if (!slab)
       [
         TableCellData(tr3('箍筋 Ø / 间距', 'Қамыт Ø / қадамы', 'Хомуты Ø / шаг', 'Stirrups Ø / spacing', ky: 'Хомут Ø / кадам', uz: 'Xomut Ø / qadam')),
         TableCellData('Ø${f.stirrupDia} @${f.stirrupStep}', numeric: true,
@@ -498,6 +536,7 @@ extension _OtherTabs on _HouseEditorState {
             tr3('保护层 mm', 'Қорғаныш қабаты, мм', 'Защитный слой, мм', 'Cover, mm', ky: 'Коргоочу катмар, мм', uz: 'Himoya qatlami, mm')),
         e('${f.cover}', 'cover', tr3('保护层', 'Қорғаныш қабаты', 'Защитный слой', 'Cover', ky: 'Коргоочу катмар', uz: 'Himoya qatlami'))
       ],
+      if (!slab)
       [
         TableCellData(tr3('承重墙判定 (墙厚 ≥) mm', 'Көтергіш қабырға (≥), мм',
             'Несущая стена (толщина ≥), мм',
@@ -509,6 +548,7 @@ extension _OtherTabs on _HouseEditorState {
                 'Минимальная толщина несущей стены',
                 'Minimum load-bearing wall thickness', ky: 'Көтөрүүчү дубалдын минималдуу калыңдыгы', uz: 'Yuk koʻtaruvchi devorning minimal qalinligi'))
       ],
+      if (!slab)
       [
         TableCellData(
             tr3('隔墙基础', 'Қалқа іргетасы', 'Фундамент под перегородки', 'Foundation under partitions', ky: 'Тосмо дубалдардын астындагы пайдубал', uz: 'Toʻsiq devorlar ostidagi poydevor')),
@@ -527,8 +567,16 @@ extension _OtherTabs on _HouseEditorState {
     final m2 = unitM2;
     final m3 = unitM3;
     final qty = <List<TableCellData>>[
-      [
-        TableCellData(
+      if (pile)
+        [
+          TableCellData(
+              '${tr3('桩', 'Қадалар', 'Сваи', 'Piles', ky: 'Мамылар', uz: 'Qoziqlar')} Ø${f.pileDia} × ${f.pileDepth}'),
+          TableCellData('${q.piles.length}', numeric: true),
+          TableCellData(unitName('pcs'))
+        ],
+      if (q.mainLength > 0)
+        [
+          TableCellData(
             '${tr3('主基础长度', 'Негізгі іргетас ұзындығы', 'Длина основного фундамента', 'Main foundation length', ky: 'Негизги пайдубалдын узундугу', uz: 'Asosiy poydevor uzunligi')} ${f.width}×${f.height}'),
         TableCellData(n1(q.mainLength / 1000), numeric: true),
         TableCellData(m)
@@ -644,7 +692,9 @@ extension _OtherTabs on _HouseEditorState {
     };
     return InfoCard(
         title:
-            '${tr3('条形基础', 'Таспалы іргетас', 'Ленточный фундамент', 'Strip foundation', ky: 'Тасма пайдубал', uz: 'Lentali poydevor')} · ${f.width} × ${f.height}',
+            slab
+                ? '${foundationTypeName(f.type)} · ${f.slabThickness}'
+                : '${foundationTypeName(f.type)} · ${f.width} × ${f.height}',
         subtitle: tr3(
             '参数可以直接点击修改；剖面、用量和平面图“地基”图层会一起更新。',
             'Параметрлерді басып өзгертіңіз; қима, көлем және жоспардағы «Іргетас» қабаты бірге жаңарады.',
@@ -671,9 +721,10 @@ extension _OtherTabs on _HouseEditorState {
         ]),
         children: [
           const SizedBox(height: 8),
-          SectionView(
-              painter: FoundationSectionPainter(
-                  t, f, doc.defaults.outerWallThickness, labels)),
+          if (!slab)
+            SectionView(
+                painter: FoundationSectionPainter(
+                    t, f, doc.defaults.outerWallThickness, labels)),
           const SizedBox(height: 8),
           grid2([
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

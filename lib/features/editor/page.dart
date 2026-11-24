@@ -46,6 +46,8 @@ import 'package:yusal/features/editor/engine/render2d/section_painters.dart';
 import 'package:yusal/features/editor/engine/core/checks/construction_checks.dart';
 import 'package:yusal/features/editor/engine/core/analysis/build_schedule.dart';
 import 'package:yusal/features/editor/engine/core/analysis/cost_estimate.dart';
+import 'package:yusal/features/editor/engine/core/analysis/materials.dart';
+import 'package:yusal/features/editor/repository/price_repository.dart';
 import 'package:yusal/features/editor/engine/core/analysis/heat_loss.dart';
 import 'package:yusal/features/editor/engine/core/analysis/site_analysis.dart';
 import 'package:yusal/features/editor/engine/core/analysis/utility_plan.dart';
@@ -306,6 +308,10 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   late final DesignHistory history;
   late FloorBase base;
   late DerivedHouse derived;
+  /// The price list of the design's region and what it was read for.
+  PriceBook? priceBook;
+  String? priceBookKey;
+
   // The estimate shown beside the plan, worked out once per change.
   HouseDocument? costChipFor;
   String costChip = '';

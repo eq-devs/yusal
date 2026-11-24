@@ -62,7 +62,7 @@ The unit/widget suite includes 10,000 seeded canonicalization cases, byte-for-by
 - `lib/features/editor/engine/core/document/house_extras.dart`, `lib/features/editor/engine/core/commands/extras_commands.dart`: furniture, notes, construction specs and issues (file schema v3, only written when used).
 - `lib/features/editor/engine/core/analysis/`, `lib/features/editor/engine/core/checks/construction_checks.dart`: wall roles, foundation and masonry take-offs, construction remarks.
 - `lib/features/editor/engine/core/commands/kz_template.dart`: the 10 × 13 m village house as an editable template.
-- `lib/features/editor/engine/core/document/extras_planning.dart`, `lib/features/editor/engine/core/analysis/{cost_estimate,heat_loss,utility_plan,site_analysis,build_schedule}.dart`: planning data (file schema v4, only written when used) and its pure-Dart calculations.
+- `lib/features/editor/engine/core/document/extras_planning.dart`, `lib/features/editor/engine/core/analysis/{cost_estimate,materials,heat_loss,utility_plan,site_analysis,build_schedule}.dart`: planning data (file schema v4, only written when used) and its pure-Dart calculations.
 - `lib/features/editor/engine/core/commands/outline_commands.dart`: corner cuts for non-rectangular houses.
 - `lib/features/editor/util/drawing_export.dart`: the PDF/PNG drawing set.
 - `lib/features/editor/engine/render3d/scene_model.dart`, `scene_view.dart`: software 3D with sun, night, cut, foundation and the walk-through.
@@ -83,7 +83,7 @@ This is a runnable implementation candidate. Full acceptance of every matrix in 
 
 ## v0.7 预算、采暖、水电、宅基地与施工
 
-1. **预算**：工程量来自当前设计，乘以单价得出造价；单价有人民币和坚戈两套示例，点单价可改，清空恢复示例。人工按材料比例、另加预备费，可添加自己的费用项。各阶段花费用横条表示。
+1. **预算**：工程量来自当前设计，乘以单价得出造价；单价有人民币和坚戈两套示例，点单价可改，清空恢复示例。人工按材料比例或按工程量逐项计价，自己干的阶段可以不计人工；另加预备费，可添加自己的费用项。各阶段花费用横条表示。总价带区间：示例价越少区间越窄；坚戈可选地区，用后端的地区价格库 (`/client/prices`，来源与日期一并显示)，也可以把自己填的报价分享回去。外墙和内墙可选加气块、砖或炉渣砌块；圈梁、过梁、檐沟、脚手架、运输和接驳各有一行。**材料清单**把工程量换成要买的东西 (含损耗，按整袋、整根、整卷取整)，可复制或分享给建材店，图纸导出里也有一页。
 2. **保温采暖**：按构造层算外墙、屋顶、地面的传热系数 (每种材料的导热系数可改)，算出最冷天的热负荷、各房间所需暖气片、建议锅炉功率和一个采暖季的燃料 (煤、天然气、电、木柴)。保温偏弱时在问题清单里提示。
 3. **水电暖点位**：2D 平面工具栏“水电”可逐个放灯、开关、插座、排气扇、给排水点、暖气片和配电箱，也可“自动布置本层”；打开“水电”图层显示，拖动可移动。预算里的电线和水管长度改按点位实算。
 4. **宅基地**：设置宅基地长宽和房子位置，添加院墙、大门、牲畜棚、澡堂、厕所、水井、菜园等，拖动摆放；自动检查房子离边界、厕所和牲畜棚离房子、水井离污染源的常见间距。3D 外观里也显示院子。

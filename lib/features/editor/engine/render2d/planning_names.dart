@@ -86,10 +86,17 @@ String costStageName(String stage) => switch (stage) {
       'finish' => tr3('地面与装修', 'Еден және әрлеу', 'Полы и отделка', 'Floors and finishes', ky: 'Полдор жана жасалгалоо', uz: 'Pollar va pardozlash'),
       'site' =>
         tr3('院子与附属', 'Аула және қосалқы құрылыс', 'Двор и хозпостройки', 'Yard and outbuildings', ky: 'Короо жана чарба курулуштары', uz: 'Hovli va xoʻjalik binolari'),
+      'general' => tr3('运输与杂项', 'Тасымал және басқа', 'Доставка и прочее', 'Delivery and sundries', ky: 'Жеткирүү жана башкалар', uz: 'Yetkazib berish va boshqalar'),
       _ => tr3('其他', 'Басқа', 'Другое', 'Other', ky: 'Башка', uz: 'Boshqa'),
     };
 
 String costLineName(String key) => switch (key) {
+      'ringBeam' => tr3('圈梁 (含钢筋)', 'Арматураланған белдеу', 'Армопояс (с арматурой)', 'Reinforced belt (with rebar)', ky: 'Арматураланган кур', uz: 'Armaturali belbogʻ'),
+      'lintel' => tr3('门窗过梁', 'Ойық үстіндегі аражабын', 'Перемычки над проёмами', 'Lintels over openings', ky: 'Тешик үстүндөгү устун', uz: 'Teshik ustidagi toʻsin'),
+      'gutter' => tr3('檐沟与落水管', 'Науа мен су ағызғы', 'Водосток', 'Gutters and downpipes', ky: 'Суу агызгыч', uz: 'Suv oqizgich'),
+      'scaffold' => tr3('脚手架租赁', 'Құрылыс мінбесін жалдау', 'Аренда лесов', 'Scaffolding hire', ky: 'Курулуш тепкичин ижарага алуу', uz: 'Havoza ijarasi'),
+      'delivery' => tr3('材料运输 (车次)', 'Материал тасымалы (рейс)', 'Доставка материалов (рейсы)', 'Material delivery (trips)', ky: 'Материал жеткирүү (рейс)', uz: 'Material yetkazish (reys)'),
+      'connection' => tr3('水电气接入与手续', 'Су, электр, газға қосылу және құжаттар', 'Подключение к сетям и оформление', 'Utility connections and paperwork', ky: 'Тармактарга кошулуу жана документтер', uz: 'Tarmoqlarga ulanish va hujjatlar'),
       'excavation' => tr3('挖土', 'Топырақ қазу', 'Выемка грунта', 'Excavation', ky: 'Казуу иштери', uz: 'Qazish ishlari'),
       'cushion' =>
         tr3('砂砾石垫层', 'Құм-қиыршық төсеме', 'Песчано-гравийная подушка', 'Sand and gravel bed', ky: 'Кум-шагыл төшөмө', uz: 'Qum-shagʻal toʻshama'),
@@ -149,6 +156,8 @@ String unitName(String unit) => switch (unit) {
       'm2' => unitM2,
       'm3' => unitM3,
       't' => tr3('吨', 'т', 'т', 't', ky: 'т', uz: 't'),
+      'kg' => tr3('公斤', 'кг', 'кг', 'kg', ky: 'кг', uz: 'kg'),
+      'l' => tr3('升', 'л', 'л', 'l', ky: 'л', uz: 'l'),
       'pcs' => unitPcs,
       _ => unit,
     };
@@ -197,4 +206,98 @@ String statusName(StageStatus s) => switch (s) {
       StageStatus.todo => tr3('未开始', 'Басталмаған', 'Не начато', 'Not started', ky: 'Башталган жок', uz: 'Boshlanmagan'),
       StageStatus.doing => tr3('进行中', 'Жүріп жатыр', 'В работе', 'In progress', ky: 'Аткарылууда', uz: 'Jarayonda'),
       StageStatus.done => tr3('已完成', 'Аяқталды', 'Завершено', 'Finished', ky: 'Бүттү', uz: 'Tugallandi'),
+    };
+
+/// A line of the shopping list; lines copied from the estimate keep the
+/// estimate's name.
+String buyName(String key) => switch (key) {
+      'concrete' => tr3('混凝土', 'Бетон', 'Бетон', 'Concrete', ky: 'Бетон', uz: 'Beton'),
+      'rebar' => tr3('钢筋', 'Арматура', 'Арматура', 'Rebar', ky: 'Арматура', uz: 'Armatura'),
+      'tieWire' => tr3('绑扎丝', 'Байлау сымы', 'Вязальная проволока', 'Tying wire', ky: 'Байлоочу зым', uz: 'Bogʻlash simi'),
+      'gravel' => tr3('砂砾石', 'Құм-қиыршық қоспасы', 'Песчано-гравийная смесь', 'Sand and gravel mix', ky: 'Кум-шагыл аралашмасы', uz: 'Qum-shagʻal aralashmasi'),
+      'formBoard' => tr3('模板', 'Қалып тақтайы', 'Опалубка', 'Formwork', ky: 'Калып', uz: 'Qolip'),
+      'xps' => tr3('XPS 挤塑板', 'XPS плитасы', 'Плиты XPS', 'XPS boards', ky: 'XPS плиталары', uz: 'XPS plitalari'),
+      'bitumenRoll' => tr3('防水卷材', 'Орама гидрооқшау', 'Рулонная гидроизоляция', 'Waterproofing roll', ky: 'Түрмөк гидроизоляция', uz: 'Oʻrama gidroizolyatsiya'),
+      'blockAerated' => tr3('加气混凝土砌块', 'Газоблок', 'Газоблок', 'Aerated concrete block', ky: 'Газоблок', uz: 'Gazoblok'),
+      'brick' => tr3('砖', 'Кірпіш', 'Кирпич', 'Brick', ky: 'Кирпич', uz: 'Gʻisht'),
+      'blockCinder' => tr3('炉渣砌块', 'Шлакоблок', 'Шлакоблок', 'Cinder block', ky: 'Шлакоблок', uz: 'Shlakoblok'),
+      'glue' => tr3('砌块胶', 'Газоблок желімі', 'Клей для газоблока', 'Block adhesive', ky: 'Газоблок желими', uz: 'Gazoblok yelimi'),
+      'cement' => tr3('水泥', 'Цемент', 'Цемент', 'Cement', ky: 'Цемент', uz: 'Sement'),
+      'sand' => tr3('砂', 'Құм', 'Песок', 'Sand', ky: 'Кум', uz: 'Qum'),
+      'insulation' => tr3('保温板', 'Жылытқыш плита', 'Утеплитель', 'Insulation boards', ky: 'Жылуулагыч', uz: 'Issiqlik izolyatsiyasi'),
+      'adhesive' => tr3('保温板粘结砂浆', 'Жылытқыш желімі', 'Клей для утеплителя', 'Insulation adhesive', ky: 'Жылуулагыч желими', uz: 'Izolyatsiya yelimi'),
+      'dowel' => tr3('保温锚栓', 'Жылытқыш дюбелі', 'Дюбели для утеплителя', 'Insulation anchors', ky: 'Жылуулагыч дюбели', uz: 'Izolyatsiya dyubeli'),
+      'mesh' => tr3('网格布', 'Арматуралық тор', 'Армирующая сетка', 'Reinforcing mesh', ky: 'Арматуралык тор', uz: 'Armatura toʻri'),
+      'render' => tr3('外墙饰面砂浆', 'Қасбет сылағы', 'Фасадная штукатурка', 'Facade render', ky: 'Фасад шыбагы', uz: 'Fasad suvogʻi'),
+      'timber' => tr3('木方', 'Ағаш материал', 'Пиломатериал', 'Timber', ky: 'Жыгач материал', uz: 'Yogʻoch material'),
+      'roofMembrane' => tr3('防水透气膜', 'Шатыр мембранасы', 'Кровельная мембрана', 'Roof underlay', ky: 'Чатыр мембранасы', uz: 'Tom membranasi'),
+      'roofSheet' => tr3('屋面板 (金属瓦)', 'Металл жабын', 'Металлочерепица', 'Metal roofing', ky: 'Металл чатыр', uz: 'Metall cherepitsa'),
+      'ridgeCap' => tr3('屋脊瓦', 'Шатыр қыры', 'Конёк', 'Ridge cap', ky: 'Чатыр кыры', uz: 'Tom qirrasi'),
+      'gutter' => tr3('檐沟', 'Науа', 'Водосточный жёлоб', 'Gutter', ky: 'Суу науасы', uz: 'Suv novi'),
+      'downpipe' => tr3('落水管', 'Су ағызғы құбыр', 'Водосточная труба', 'Downpipe', ky: 'Суу түшүрүүчү түтүк', uz: 'Suv tushirish quvuri'),
+      'screw' => tr3('屋面自攻钉', 'Шатыр бұрандасы', 'Кровельные саморезы', 'Roofing screws', ky: 'Чатыр бурамасы', uz: 'Tom burama mixi'),
+      'wool' => tr3('保温棉', 'Минералды мақта', 'Минеральная вата', 'Mineral wool', ky: 'Минералдык кебез', uz: 'Mineral paxta'),
+      'roofRoll' => tr3('屋面防水卷材', 'Шатыр гидрооқшауы', 'Кровельная гидроизоляция', 'Roofing membrane', ky: 'Чатыр гидроизоляциясы', uz: 'Tom gidroizolyatsiyasi'),
+      'window' => tr3('窗', 'Терезе', 'Окно', 'Window', ky: 'Терезе', uz: 'Deraza'),
+      'doorEntry' => tr3('入户门', 'Кіреберіс есік', 'Входная дверь', 'Front door', ky: 'Кире бериш эшик', uz: 'Kirish eshigi'),
+      'doorInt' => tr3('室内门', 'Ішкі есік', 'Межкомнатная дверь', 'Interior door', ky: 'Ички эшик', uz: 'Ichki eshik'),
+      'foam' => tr3('发泡胶', 'Монтаж көбігі', 'Монтажная пена', 'Expanding foam', ky: 'Монтаж көбүгү', uz: 'Montaj koʻpigi'),
+      'plaster' => tr3('内墙抹灰砂浆', 'Ішкі сылақ', 'Штукатурка', 'Plaster', ky: 'Шыбак', uz: 'Suvoq'),
+      'putty' => tr3('腻子', 'Шпаклёвка', 'Шпаклёвка', 'Filler', ky: 'Шпаклёвка', uz: 'Shpaklyovka'),
+      'paint' => tr3('涂料', 'Бояу', 'Краска', 'Paint', ky: 'Боёк', uz: 'Boʻyoq'),
+      'screed' => tr3('地面找平砂浆', 'Еден тегістеу қоспасы', 'Смесь для стяжки', 'Screed mix', ky: 'Пол тегиздөө аралашмасы', uz: 'Pol tekislash aralashmasi'),
+      'tile' => tr3('瓷砖', 'Плитка', 'Плитка', 'Tiles', ky: 'Плитка', uz: 'Plitka'),
+      'tileGlue' => tr3('瓷砖胶', 'Плитка желімі', 'Плиточный клей', 'Tile adhesive', ky: 'Плитка желими', uz: 'Plitka yelimi'),
+      'laminate' => tr3('地板', 'Ламинат', 'Ламинат', 'Laminate flooring', ky: 'Ламинат', uz: 'Laminat'),
+      _ => costLineName(key),
+    };
+
+/// "12 袋" / "12 мешков": whole packs of a shopping list line.
+String packName(String pack) => switch (pack) {
+      'bag' => tr3('袋', 'қап', 'меш.', 'bags', ky: 'кап', uz: 'qop'),
+      'bar' => tr3('根', 'шыбық', 'прут.', 'bars', ky: 'чыбык', uz: 'sterjen'),
+      'roll' => tr3('卷', 'орам', 'рул.', 'rolls', ky: 'түрмөк', uz: 'oʻram'),
+      'sheet' => tr3('张', 'парақ', 'лист.', 'sheets', ky: 'барак', uz: 'list'),
+      'coil' => tr3('盘', 'бухта', 'бухт.', 'coils', ky: 'бухта', uz: 'buxta'),
+      'can' => tr3('桶', 'шелек', 'вёдер', 'cans', ky: 'чака', uz: 'chelak'),
+      'piece' => tr3('根', 'дана', 'шт.', 'pcs', ky: 'даана', uz: 'dona'),
+      'pack' => tr3('盒', 'қорап', 'упак.', 'packs', ky: 'куту', uz: 'quti'),
+      _ => pack,
+    };
+
+String masonryUnitName(MasonryUnit unit) => switch (unit) {
+      MasonryUnit.aerated => tr3('加气块', 'Газоблок', 'Газоблок', 'Aerated block', ky: 'Газоблок', uz: 'Gazoblok'),
+      MasonryUnit.brick => tr3('砖', 'Кірпіш', 'Кирпич', 'Brick', ky: 'Кирпич', uz: 'Gʻisht'),
+      MasonryUnit.cinder => tr3('炉渣砌块', 'Шлакоблок', 'Шлакоблок', 'Cinder block', ky: 'Шлакоблок', uz: 'Shlakoblok'),
+    };
+
+String foundationTypeName(FoundationType type) => switch (type) {
+      FoundationType.strip => tr3('条形基础', 'Таспалы', 'Ленточный', 'Strip', ky: 'Тасма', uz: 'Lentali'),
+      FoundationType.slab => tr3('筏板基础', 'Тұтас плита', 'Плитный', 'Slab', ky: 'Плита', uz: 'Plita'),
+      FoundationType.pile => tr3('桩基础', 'Қадалы', 'Свайный', 'Piles', ky: 'Казык', uz: 'Qoziqli'),
+    };
+
+/// A price region; the first is the whole country.
+String regionName(String region) => switch (region) {
+      'kz' => tr3('哈萨克斯坦 (全国)', 'Қазақстан (жалпы)', 'Казахстан (в среднем)', 'Kazakhstan (average)', ky: 'Казакстан (орточо)', uz: 'Qozogʻiston (oʻrtacha)'),
+      'almaty' => tr3('阿拉木图', 'Алматы', 'Алматы', 'Almaty', ky: 'Алматы', uz: 'Olmaota'),
+      'astana' => tr3('阿斯塔纳', 'Астана', 'Астана', 'Astana', ky: 'Астана', uz: 'Ostona'),
+      'shymkent' => tr3('奇姆肯特', 'Шымкент', 'Шымкент', 'Shymkent', ky: 'Шымкент', uz: 'Chimkent'),
+      'karaganda' => tr3('卡拉干达', 'Қарағанды', 'Караганда', 'Karaganda', ky: 'Караганда', uz: 'Qaragʻanda'),
+      'aktobe' => tr3('阿克托别', 'Ақтөбе', 'Актобе', 'Aktobe', ky: 'Актөбө', uz: 'Oqtoʻba'),
+      'pavlodar' => tr3('巴甫洛达尔', 'Павлодар', 'Павлодар', 'Pavlodar', ky: 'Павлодар', uz: 'Pavlodar'),
+      'kyzylorda' => tr3('克孜勒奥尔达', 'Қызылорда', 'Кызылорда', 'Kyzylorda', ky: 'Кызылордо', uz: 'Qiziloʻrda'),
+      'oral' => tr3('乌拉尔', 'Орал', 'Уральск', 'Oral', ky: 'Орал', uz: 'Uralsk'),
+      'atyrau' => tr3('阿特劳', 'Атырау', 'Атырау', 'Atyrau', ky: 'Атырау', uz: 'Atirau'),
+      'kostanay' => tr3('科斯塔奈', 'Қостанай', 'Костанай', 'Kostanay', ky: 'Костанай', uz: 'Qoʻstanay'),
+      'oskemen' => tr3('厄斯克门', 'Өскемен', 'Усть-Каменогорск', 'Oskemen', ky: 'Өскемен', uz: 'Oskemen'),
+      'taraz' => tr3('塔拉兹', 'Тараз', 'Тараз', 'Taraz', ky: 'Тараз', uz: 'Taroz'),
+      _ => region,
+    };
+
+/// Who a regional price comes from.
+String priceSourceName(String source) => switch (source) {
+      'stat' => tr3('官方统计', 'ресми статистика', 'официальная статистика', 'official statistics', ky: 'расмий статистика', uz: 'rasmiy statistika'),
+      'market' => tr3('用户报价', 'пайдаланушылар бағасы', 'цены пользователей', "users' prices", ky: 'колдонуучулардын баасы', uz: 'foydalanuvchilar narxi'),
+      _ => tr3('平台录入', 'платформа енгізген', 'внесено командой', 'entered by the team', ky: 'команда киргизген', uz: 'jamoa kiritgan'),
     };

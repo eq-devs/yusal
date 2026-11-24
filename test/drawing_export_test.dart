@@ -28,7 +28,7 @@ void main() {
   test('the set grows with the design: utilities and plot add sheets', () {
     var doc = createKazakhTemplate('2026-10-19T00:00:00Z', next);
     final plain = drawingSheetTitles(input(doc));
-    expect(plain, hasLength(8));
+    expect(plain, hasLength(9));
     final spots = suggestUtilities(doc, deriveHouse(doc), 0);
     doc = run(doc, 'AddUtilities', {
       'floorId': doc.floors.first.id,
@@ -38,7 +38,7 @@ void main() {
     });
     doc = run(doc, 'SetSite', {});
     final full = drawingSheetTitles(input(doc));
-    expect(full, hasLength(10));
+    expect(full, hasLength(11));
     expect(full.toSet().length, full.length);
   });
 

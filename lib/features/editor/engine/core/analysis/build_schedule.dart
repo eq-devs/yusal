@@ -85,6 +85,7 @@ const stageChecks = <String, List<(String, String)>>{
 
 /// Cost stages paid within each schedule stage.
 const stageCosts = {
+  'prep': ['general'],
   'found': ['found'],
   'walls': ['walls'],
   'roof': ['roof'],

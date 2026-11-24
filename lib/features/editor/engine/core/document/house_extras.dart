@@ -246,6 +246,12 @@ class FoundationSpec {
     this.partitionStirrupDia = 6,
     this.bearingMin = 240,
     this.concrete = 'B20 (M250) · W6 · F150',
+    this.type = FoundationType.strip,
+    this.slabThickness = 300,
+    this.slabBarStep = 200,
+    this.pileDia = 300,
+    this.pileDepth = 2500,
+    this.pileStep = 2000,
   });
   final int width;
   final int height;
@@ -269,6 +275,19 @@ class FoundationSpec {
   final bool partitions;
   final String concrete;
 
+  /// Strips under the walls, one slab, or piles under the strips. The
+  /// strips of a pile foundation are its ring of beams.
+  final FoundationType type;
+
+  /// A slab's thickness and the spacing of its two meshes of [barDia].
+  final int slabThickness;
+  final int slabBarStep;
+
+  /// Bored piles: diameter, depth below the beams and spacing along them.
+  final int pileDia;
+  final int pileDepth;
+  final int pileStep;
+
   static const fieldsInt = [
     'width',
     'height',
@@ -289,6 +308,15 @@ class FoundationSpec {
     'bearingMin'
   ];
 
+  /// Sizes of the slab and pile foundations, saved only when changed.
+  static const fieldsExtra = [
+    'slabThickness',
+    'slabBarStep',
+    'pileDia',
+    'pileDepth',
+    'pileStep'
+  ];
+
   Map<String, int> get ints => {
         'width': width,
         'height': height,
@@ -307,71 +335,75 @@ class FoundationSpec {
         'partitionBarDia': partitionBarDia,
         'partitionStirrupDia': partitionStirrupDia,
         'bearingMin': bearingMin,
+        'slabThickness': slabThickness,
+        'slabBarStep': slabBarStep,
+        'pileDia': pileDia,
+        'pileDepth': pileDepth,
+        'pileStep': pileStep,
       };
 
-  FoundationSpec withInt(String field, int value) {
-    final m = {...ints, field: value};
-    return FoundationSpec(
-        width: m['width']!,
-        height: m['height']!,
-        plinth: m['plinth']!,
-        cushion: m['cushion']!,
-        cushionExtra: m['cushionExtra']!,
-        cover: m['cover']!,
-        topBars: m['topBars']!,
-        bottomBars: m['bottomBars']!,
-        barDia: m['barDia']!,
-        stirrupDia: m['stirrupDia']!,
-        stirrupStep: m['stirrupStep']!,
-        partitions: partitions,
-        partitionWidth: m['partitionWidth']!,
-        partitionHeight: m['partitionHeight']!,
-        partitionBars: m['partitionBars']!,
-        partitionBarDia: m['partitionBarDia']!,
-        partitionStirrupDia: m['partitionStirrupDia']!,
-        bearingMin: m['bearingMin']!,
-        concrete: concrete);
-  }
+  FoundationSpec _with(Map<String, int> m,
+          {bool? partitions, String? concrete, FoundationType? type}) =>
+      FoundationSpec(
+          width: m['width']!,
+          height: m['height']!,
+          plinth: m['plinth']!,
+          cushion: m['cushion']!,
+          cushionExtra: m['cushionExtra']!,
+          cover: m['cover']!,
+          topBars: m['topBars']!,
+          bottomBars: m['bottomBars']!,
+          barDia: m['barDia']!,
+          stirrupDia: m['stirrupDia']!,
+          stirrupStep: m['stirrupStep']!,
+          partitions: partitions ?? this.partitions,
+          partitionWidth: m['partitionWidth']!,
+          partitionHeight: m['partitionHeight']!,
+          partitionBars: m['partitionBars']!,
+          partitionBarDia: m['partitionBarDia']!,
+          partitionStirrupDia: m['partitionStirrupDia']!,
+          bearingMin: m['bearingMin']!,
+          concrete: concrete ?? this.concrete,
+          type: type ?? this.type,
+          slabThickness: m['slabThickness']!,
+          slabBarStep: m['slabBarStep']!,
+          pileDia: m['pileDia']!,
+          pileDepth: m['pileDepth']!,
+          pileStep: m['pileStep']!);
 
-  FoundationSpec copyWith({bool? partitions, String? concrete}) {
-    final base = withInt('width', width);
-    return FoundationSpec(
-        width: base.width,
-        height: base.height,
-        plinth: base.plinth,
-        cushion: base.cushion,
-        cushionExtra: base.cushionExtra,
-        cover: base.cover,
-        topBars: base.topBars,
-        bottomBars: base.bottomBars,
-        barDia: base.barDia,
-        stirrupDia: base.stirrupDia,
-        stirrupStep: base.stirrupStep,
-        partitions: partitions ?? this.partitions,
-        partitionWidth: base.partitionWidth,
-        partitionHeight: base.partitionHeight,
-        partitionBars: base.partitionBars,
-        partitionBarDia: base.partitionBarDia,
-        partitionStirrupDia: base.partitionStirrupDia,
-        bearingMin: base.bearingMin,
-        concrete: concrete ?? this.concrete);
-  }
+  FoundationSpec withInt(String field, int value) =>
+      _with({...ints, field: value});
 
-  Json toJson() => {
-        ...ints,
-        'partitions': partitions,
-        'concrete': concrete,
-      };
+  FoundationSpec copyWith(
+          {bool? partitions, String? concrete, FoundationType? type}) =>
+      _with(ints, partitions: partitions, concrete: concrete, type: type);
+
+  Json toJson() {
+    const usual = FoundationSpec();
+    final all = ints;
+    return {
+      for (final f in fieldsInt) f: all[f],
+      'partitions': partitions,
+      'concrete': concrete,
+      if (type != FoundationType.strip) 'type': type.name,
+      for (final f in fieldsExtra)
+        if (all[f] != usual.ints[f]) f: all[f],
+    };
+  }
 
   static FoundationSpec fromJson(Object? v, String p, JsonReader r) {
     final m = r.obj(v, p);
     var spec = const FoundationSpec();
-    for (final f in fieldsInt) {
+    for (final f in [...fieldsInt, ...fieldsExtra]) {
       spec = spec.withInt(f, r.integer(m[f], '$p/$f', spec.ints[f]!));
     }
     return spec.copyWith(
         partitions: r.flag(m['partitions'], '$p/partitions', false),
-        concrete: r.text(m['concrete'], '$p/concrete', spec.concrete));
+        concrete: r.text(m['concrete'], '$p/concrete', spec.concrete),
+        type: m['type'] == null
+            ? FoundationType.strip
+            : r.en(m['type'], '$p/type', FoundationType.values,
+                FoundationType.strip));
   }
 
   @override

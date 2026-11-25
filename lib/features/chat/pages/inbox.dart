@@ -74,11 +74,11 @@ class InboxPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     watchLang(context);
-    final title = Text(tr3('消息', 'Хабарлар', 'Сообщения', 'Messages', ky: 'Билдирүүлөр', uz: 'Xabarlar'));
+    final title = Text(tr3('消息', 'Хабарлар', 'Сообщения', 'Messages', ky: 'Билдирүүлөр', uz: 'Xabarlar'), style: display());
     return OnChange(builder: (context) {
       if (context.session.currentAccount == null) {
         return Scaffold(
-            appBar: AppBar(title: title),
+            appBar: AppBar(titleSpacing: YSpace.gutter, title: title),
             body: SignInPrompt(
                 icon: Icons.forum_outlined,
                 text: tr3('登录后查看消息', 'Хабарларды көру үшін кіріңіз',
@@ -94,6 +94,7 @@ class InboxPage extends StatelessWidget {
           length: 2,
           child: Scaffold(
               appBar: AppBar(
+                  titleSpacing: YSpace.gutter,
                   title: title,
                   actions: [
                     IconButton(
@@ -144,8 +145,8 @@ class _Conversations extends StatelessWidget {
                 onRefresh: refresh.call,
                 child: ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: EdgeInsets.fromLTRB(
+                        20, 8, 20, 8 + MediaQuery.paddingOf(context).bottom),
                     itemCount: list.length,
                     separatorBuilder: (_, __) => const Divider(),
                     itemBuilder: (context, i) {
@@ -224,8 +225,8 @@ class _Notices extends StatelessWidget {
                 onRefresh: refresh.call,
                 child: ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: EdgeInsets.fromLTRB(
+                        20, 8, 20, 8 + MediaQuery.paddingOf(context).bottom),
                     itemCount: list.length,
                     separatorBuilder: (_, __) => const Divider(),
                     itemBuilder: (context, i) {

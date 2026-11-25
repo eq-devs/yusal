@@ -315,19 +315,23 @@ class _Chips<T> extends StatelessWidget {
   final T selected;
   final ValueChanged<T> onSelect;
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(
-          horizontal: YSpace.gutter, vertical: YSpace.sm),
-      child: Row(children: [
-        for (final (v, label) in options)
-          Padding(
-              padding: const EdgeInsets.only(right: YSpace.sm),
-              child: FilterPill(
-                  label: label,
-                  selected: v == selected,
-                  onTap: () => onSelect(v))),
-      ]));
+  // Full width: a short row inside a Column was centred, unlike every
+  // other chip row in the app.
+  Widget build(BuildContext context) => SizedBox(
+      width: double.infinity,
+      child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(
+              horizontal: YSpace.gutter, vertical: YSpace.sm),
+          child: Row(children: [
+            for (final (v, label) in options)
+              Padding(
+                  padding: const EdgeInsets.only(right: YSpace.sm),
+                  child: FilterPill(
+                      label: label,
+                      selected: v == selected,
+                      onTap: () => onSelect(v))),
+          ])));
 }
 
 // ─────────────────────────── 工作台 ───────────────────────────
@@ -440,7 +444,7 @@ class _Workbench extends StatelessWidget {
                     Text(tr3('今天', 'Бүгін', 'Сегодня', 'Today', ky: 'Бүгүн', uz: 'Bugun'),
                         style: YText.bodyStrong),
                     const SizedBox(height: YSpace.sm),
-                    Wrap(spacing: YSpace.sm, runSpacing: YSpace.sm, children: [
+                    _StatGrid(children: [
                       for (final (k, label) in [
                         (
                           'active',
@@ -573,6 +577,36 @@ class _TodoTile extends StatelessWidget {
   }
 }
 
+/// The day's numbers in even columns across the width, each row as tall
+/// as its tallest tile: fixed-width tiles left a ragged gap at the right
+/// and a two-line label made its tile taller than its neighbours.
+class _StatGrid extends StatelessWidget {
+  const _StatGrid({required this.children});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, box) {
+        final columns = (box.maxWidth / 110).floor().clamp(2, 4);
+        return Column(children: [
+          for (var i = 0; i < children.length; i += columns)
+            Padding(
+                padding: EdgeInsets.only(top: i == 0 ? 0 : YSpace.sm),
+                child: IntrinsicHeight(
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                      for (var j = i; j < i + columns; j++) ...[
+                        if (j > i) const SizedBox(width: YSpace.sm),
+                        Expanded(
+                            child: j < children.length
+                                ? children[j]
+                                : const SizedBox.shrink()),
+                      ],
+                    ]))),
+        ]);
+      });
+}
+
 class _Stat extends StatelessWidget {
   const _Stat(this.label, this.value);
   final String label;
@@ -581,7 +615,6 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     return Container(
-        width: 104,
         padding: const EdgeInsets.all(YSpace.md),
         decoration: BoxDecoration(
             color: t.card,

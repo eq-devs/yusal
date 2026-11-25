@@ -102,11 +102,14 @@ class _ExplorePageState extends State<ExplorePage> {
   double _logoHeight = 60;
   double _headerHeight = 124;
 
-  bool _onScroll(ScrollNotification n) {
+  /// Each segment reports for itself: a list being left still sends
+  /// notifications while its fling settles, and taken for the open one
+  /// they folded the header over a list that sat at its top.
+  bool _onScroll(int segment, ScrollNotification n) {
     if (n.depth != 0 || n.metrics.axis != Axis.vertical) return false;
     final px = n.metrics.pixels;
-    _offsets[current] = px;
-    _scrolled.value = px;
+    _offsets[segment] = px;
+    if (segment == current) _scrolled.value = px;
     return false;
   }
 
@@ -170,17 +173,18 @@ class _ExplorePageState extends State<ExplorePage> {
             bottom: false,
             child: Stack(children: [
               Positioned.fill(
-                  child: NotificationListener<ScrollNotification>(
-                      onNotification: _onScroll,
-                      child: ExploreInset(
-                          top: _headerHeight,
-                          child: MotionIndexedStack(
-                              index: current,
-                              children: const [
-                                HomePage(embedded: true),
-                                DiscoverPage(embedded: true, people: false),
-                                DiscoverPage(embedded: true, people: true),
-                              ])))),
+                  child: ExploreInset(
+                      top: _headerHeight,
+                      child: MotionIndexedStack(index: current, children: [
+                        for (final (i, page) in const [
+                          HomePage(embedded: true),
+                          DiscoverPage(embedded: true, people: false),
+                          DiscoverPage(embedded: true, people: true),
+                        ].indexed)
+                          NotificationListener<ScrollNotification>(
+                              onNotification: (n) => _onScroll(i, n),
+                              child: page),
+                      ]))),
               // The header floats over the list: the wordmark row scrolls
               // off with the page and the segment bar sticks at the top.
               ValueListenableBuilder<double>(

@@ -66,16 +66,17 @@ class ProjectsPage extends StatelessWidget {
               builder: (context) => Live<bool>(
                   provider: isProProvider,
                   loading: Scaffold(
-                      appBar: AppBar(title: title, actions: actions),
+                      appBar: AppBar(titleSpacing: YSpace.gutter, title: title, actions: actions),
                       body: houses),
                   builder: (context, pro) => !pro
                       ? Scaffold(
-                          appBar: AppBar(title: title, actions: actions),
+                          appBar: AppBar(titleSpacing: YSpace.gutter, title: title, actions: actions),
                           body: houses)
                       : DefaultTabController(
                           length: 2,
                           child: Scaffold(
                               appBar: AppBar(
+                                  titleSpacing: YSpace.gutter,
                                   title: title,
                                   actions: actions,
                                   bottom: TabBar(tabs: [

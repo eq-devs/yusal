@@ -293,8 +293,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                               ],
                               SliverToBoxAdapter(child: filters),
                               SliverPadding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(20, 18, 20, 96),
+                                  padding: EdgeInsets.fromLTRB(20, 18, 20,
+                                      20 + MediaQuery.paddingOf(context).bottom),
                                   sliver: SliverToBoxAdapter(child: list)),
                             ]))))));
   }

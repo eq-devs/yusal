@@ -34,7 +34,8 @@ void main() {
         for (final w in t.widgetList<Text>(find.byType(Text))) w.data ?? ''
       ];
       final trades = profile.trades.map(tradeName).join(sep);
-      expect(texts, contains(trades));
+      // The line opens with the kind of profile, then the trades.
+      expect(texts.where((s) => s.endsWith(trades)), hasLength(1));
       if (lang != AppLang.zh) {
         expect(texts.where((s) => s.contains('、')), isEmpty);
       }

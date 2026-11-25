@@ -73,7 +73,8 @@ class MyJobsView extends StatelessWidget {
                           for (final i in items) _JobCard(item: i, jobs: j),
                         ]);
           return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
+              padding: EdgeInsets.fromLTRB(
+                  20, 4, 20, 40 + MediaQuery.paddingOf(context).bottom),
               children: [
                 group(tr3('待处理', 'Күтуде', 'Ждут вас', 'Waiting for you', ky: 'Сизди күтүүдө', uz: 'Sizni kutmoqda'), waiting, hot: true),
                 group(tr3('进行中', 'Жүріп жатыр', 'В работе', 'In progress', ky: 'Аткарылууда', uz: 'Jarayonda'), working),

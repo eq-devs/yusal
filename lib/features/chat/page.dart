@@ -329,7 +329,7 @@ class _ChatPageState extends State<ChatPage>
                       child: Container(
                           decoration: BoxDecoration(
                               border: Border(top: BorderSide(color: t.line))),
-                          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                          padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
                           child: Row(children: [
                             IconButton(
                                 tooltip: tr3('更多', 'Тағы', 'Ещё', 'More', ky: 'Дагы', uz: 'Yana'),

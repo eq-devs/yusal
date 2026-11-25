@@ -11,8 +11,18 @@ class VoiceSlot extends StatefulWidget {
 
   /// Whether the orb can appear at all: built in and signed in. The voice
   /// feature sets it while its host is mounted.
-  static bool Function() wanted = never;
+  static bool Function() get wanted => _wanted;
+  static set wanted(bool Function() f) {
+    _wanted = f;
+    // Bars built before the voice feature mounted lay out again.
+    WidgetsBinding.instance.addPostFrameCallback((_) => revision.value++);
+  }
+
+  static bool Function() _wanted = never;
   static bool never() => false;
+
+  /// Bumped when [wanted] changes, for bars that keep the orb's place.
+  static final revision = ValueNotifier<int>(0);
 
   /// How many open pages want the orb out of the way (the sign-in page:
   /// its buttons reach the corner where the orb sits).

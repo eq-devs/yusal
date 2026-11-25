@@ -52,7 +52,10 @@ class MePage extends ConsumerWidget {
       final account = context.session.currentAccount;
       return Scaffold(
           body: SafeArea(
-              child: Center(
+              // At the top, not centred: signed out the page is shorter than
+              // the screen and sat halfway down it.
+              child: Align(
+                  alignment: Alignment.topCenter,
                   child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 760),
                       // Built in one go, not lazily: the sections load
@@ -60,10 +63,10 @@ class MePage extends ConsumerWidget {
                       // reloaded) the ones at the edge of its cache over and
                       // over while their height changed.
                       child: SingleChildScrollView(
-                          // Room at the end for the tab bar that floats
-                          // over the page, so the last line clears it.
+                          // The SafeArea already keeps the floating tab
+                          // bar's room at the end.
                           padding: const EdgeInsets.fromLTRB(YSpace.gutter,
-                              YSpace.md, YSpace.gutter, YSpace.huge + 56),
+                              YSpace.md, YSpace.gutter, YSpace.huge),
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -379,7 +382,8 @@ class _MyPosts extends StatelessWidget {
                             padding:
                                 EdgeInsets.only(left: i == 0 ? 0 : YSpace.md),
                             child: SizedBox(
-                                width: 220,
+                                // Wide enough for a city, area, floors and rooms on one line.
+                                width: 260,
                                 child: HouseCard(
                                     compact: true,
                                     post: post,

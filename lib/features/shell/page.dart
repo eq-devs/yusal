@@ -1,4 +1,5 @@
 import 'package:yusal/features/voice/widgets/voice_overlay.dart' show VoiceSlot;
+import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
@@ -67,7 +68,13 @@ class _PlatformShellState extends State<PlatformShell>
   void _onAccount() {
     final id = context.session.currentAccount?.id;
     if (id != _account) {
-      _account = id;
+      // Rebuilt too: the bar keeps a place for the assistant's orb only
+      // for someone signed in, and the account is often restored after
+      // the first frame.
+      setState(() {
+        _account = id;
+        compact = false;
+      });
       reload.bump();
     }
   }
@@ -97,6 +104,9 @@ class _PlatformShellState extends State<PlatformShell>
 
   bool _onScroll(ScrollUpdateNotification n) {
     if (n.metrics.axis != Axis.vertical) return false;
+    // The bounce at either end is not a change of direction: toggling the
+    // bar there relaid the page mid-bounce and threw the list back up.
+    if (n.metrics.outOfRange) return false;
     final delta = n.scrollDelta ?? 0;
     final next = n.metrics.pixels <= 48
         ? false
@@ -127,6 +137,13 @@ class _PlatformShellState extends State<PlatformShell>
       tab = i;
       compact = false;
     });
+  }
+
+  static MediaQueryData _withBar(MediaQueryData data, bool wide) {
+    if (wide) return data;
+    final bottom = math.max(data.padding.bottom, ShellBar.safeMinimum) +
+        ShellBar.extent;
+    return data.copyWith(padding: data.padding.copyWith(bottom: bottom));
   }
 
   /// Keeps the pages' state when the window crosses the wide breakpoint
@@ -211,9 +228,15 @@ class _PlatformShellState extends State<PlatformShell>
                         // has to go again: otherwise each page's own
                         // scaffold shrinks for the keyboard a second time
                         // and the page is cut off under its search field.
+                        // That MediaQuery also lacks the floating bar, so
+                        // its room is added to the bottom padding here, at
+                        // the bar's open height: lists end above the bar,
+                        // and folding the bar does not relay the pages.
                         child: MediaQuery(
-                            data: MediaQuery.of(context)
-                                .removeViewInsets(removeBottom: true),
+                            data: _withBar(
+                                MediaQuery.of(context)
+                                    .removeViewInsets(removeBottom: true),
+                                wide),
                             child: wide
                                 ? Row(children: [
                                     SafeArea(
@@ -247,12 +270,14 @@ class _PlatformShellState extends State<PlatformShell>
                   ]),
                   bottomNavigationBar: wide
                       ? null
-                      : ShellBar(
-                          key: const Key('shell-bar'),
-                          selected: tab,
-                          compact: compact,
-                          onSelect: select,
-                          destinations: destinations));
+                      : ValueListenableBuilder(
+                          valueListenable: VoiceSlot.revision,
+                          builder: (context, _, __) => ShellBar(
+                              key: const Key('shell-bar'),
+                              selected: tab,
+                              compact: compact,
+                              onSelect: select,
+                              destinations: destinations)));
             }))));
   }
 }
@@ -296,6 +321,12 @@ class ShellBar extends StatelessWidget {
   final ValueChanged<int> onSelect;
   final List<(Widget, Widget, String)> destinations;
 
+  /// The bar's open height and the gap under it, above the safe area.
+  static const double extent = 64 + 4;
+
+  /// The least room kept under the bar where the screen has no safe area.
+  static const double safeMinimum = 8;
+
   static const motor.Motion _fold =
       motor.CupertinoMotion.smooth(duration: Duration(milliseconds: 420));
 
@@ -307,7 +338,7 @@ class ShellBar extends StatelessWidget {
     final sections = voice ? destinations.length : destinations.length - 1;
     return SafeArea(
         top: false,
-        minimum: const EdgeInsets.only(bottom: 8),
+        minimum: const EdgeInsets.only(bottom: safeMinimum),
         // Very large system text would break the pill; labels top out a
         // little above normal and fit themselves from there.
         child: MediaQuery.withClampedTextScaling(

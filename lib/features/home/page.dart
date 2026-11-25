@@ -386,7 +386,8 @@ class _HomePageState extends State<HomePage> {
             pushPage<void>(context, (_) => PostPage(postId: p.id, preview: p)));
     if (wide) {
       return SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+          padding: EdgeInsets.fromLTRB(
+              20, 16, 20, 20 + MediaQuery.paddingOf(context).bottom),
           sliver: SliverGrid(
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                   // Larger text needs wider cards, not only taller rows.
@@ -402,7 +403,8 @@ class _HomePageState extends State<HomePage> {
                   childCount: posts.length)));
     }
     return SliverPadding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+        padding: EdgeInsets.fromLTRB(
+              20, 16, 20, 20 + MediaQuery.paddingOf(context).bottom),
         sliver: SliverList.separated(
             itemCount: posts.length,
             separatorBuilder: (_, __) => const SizedBox(height: 28),

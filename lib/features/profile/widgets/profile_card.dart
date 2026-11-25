@@ -28,7 +28,7 @@ class ProfileCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                 Row(children: [
-                  Expanded(
+                  Flexible(
                       child: Text(p.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -36,13 +36,16 @@ class ProfileCard extends StatelessWidget {
                               fontSize: YFont.body,
                               fontWeight: FontWeight.w700))),
                   if (p.verified) ...[
-                    const VerifiedBadge(),
                     const SizedBox(width: 6),
+                    const VerifiedBadge(),
                   ],
-                  StatusPill(profileKindName(p.kind)),
                 ]),
                 const SizedBox(height: 3),
-                Text(p.trades.map(tradeName).join(listSep),
+                // The kind leads the trades line: as a pill beside the
+                // name it left a long name only a few letters.
+                Text(
+                    '${profileKindName(p.kind)} · '
+                    '${p.trades.map(tradeName).join(listSep)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: t.muted)),

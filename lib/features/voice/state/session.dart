@@ -112,12 +112,13 @@ abstract final class VoiceCodes {
 /// here right now. Ids stay in the app.
 Map<String, Object?> voiceContext({List<String> actions = const []}) {
   final screen = VoiceScreens.current;
+  final scene = screen?.scene ?? '';
   return {
     'screen': screen?.screenId,
     'lang': appLang.name,
     'actions': actions,
     if (screen != null && screen.summary.isNotEmpty) 'summary': screen.summary,
-    if (screen != null && screen.scene.isNotEmpty) 'scene': screen.scene,
+    if (scene.isNotEmpty) 'scene': scene,
     'entities': [
       for (final e in screen?.entities ?? const <Entity>[])
         {

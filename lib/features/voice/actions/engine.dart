@@ -144,6 +144,93 @@ final engineActions = <AppAction>[
       });
     },
   ),
+  AppAction(
+    id: 'design.measure_room',
+    title: const L3('测量房间净面积与最窄净宽', 'Бөлменің таза ауданы мен ең тар енін өлшеу', 'Измерить чистую площадь и минимальную ширину комнаты', 'Measure clear room area and minimum span'),
+    examples: const L3('主卧的净面积是多少', 'Жатын бөлменің таза ауданы қанша?', 'Какая чистая площадь спальни?', 'Measure the bedroom'),
+    params: const {'room': Param.entity('room')},
+    when: _inEditor, risk: Risk.read,
+    run: (ctx, args) async {
+      final host = _host!;
+      final id = args.id('room');
+      final geometry = host.floorBase.roomsById[id];
+      if (geometry == null || !host.select(id)) {
+        return const ActionResult.fail(ActionCodes.unknownEntity);
+      }
+      return ActionResult.ok(say: {
+        'clear_area_m2': (geometry.clearArea / 10000).round() / 100,
+        'min_clear_span_mm': geometry.minClearSpan.round(),
+      });
+    },
+  ),
+  AppAction(
+    id: 'design.locate_shared_wall',
+    title: const L3('定位两个房间之间的墙段并读取轴线长度', 'Екі бөлменің ортақ қабырғасын тауып, осьтік ұзындығын өлшеу', 'Найти общую стену комнат и её длину по оси', 'Locate a shared wall and measure its axis length'),
+    examples: const L3('找出厨房与客厅之间的墙', 'Асүй мен қонақ бөлменің арасындағы қабырғаны көрсет', 'Покажи стену между кухней и гостиной', 'Find the wall between kitchen and living room'),
+    params: const {'a': Param.entity('room'), 'b': Param.entity('room')},
+    when: _inEditor, risk: Risk.read,
+    run: (ctx, args) async {
+      final host = _host!;
+      final walls = host.floorBase.wallsBetween(args.id('a'), args.id('b')).toList();
+      if (walls.isEmpty) return const ActionResult.fail('no_shared_wall');
+      final segments = [
+        for (final wall in walls) {
+          'axis': wall.axis.dir.name, 'axis_position_mm': wall.axis.pos,
+          'start_mm': wall.start.pos, 'end_mm': wall.end.pos,
+          'axis_length_mm': wall.end.pos - wall.start.pos,
+        },
+      ];
+      if (walls.length > 1) {
+        return ActionResult.fail('multiple_shared_segments', say: {'segments': segments});
+      }
+      host.showSharedWall(walls.single);
+      return ActionResult.ok(say: segments.single);
+    },
+  ),
+  AppAction(
+    id: 'editor.view',
+    title: const L3('切换平面、外观、漫游或预算', 'Жоспарды, сыртқы көріністі, ішкі көріністі немесе сметаны ашу', 'Открыть план, внешний вид, прогулку или смету', 'Open a design view'),
+    examples: const L3('走进厨房看看', 'Асүйге кіріп көрейік', 'Покажи кухню изнутри', 'Walk into the kitchen'),
+    params: const {'view': Param.choice(['plan','exterior','walk','budget']), 'room': Param.entity('room', optional: true)},
+    when: _inEditor, risk: Risk.read,
+    run: (ctx, args) async {
+      final host = _host!;
+      final view = args.choice('view');
+      if (args.has('room')) {
+        if (view != 'walk' && view != 'plan') return const ActionResult.fail(ActionCodes.badArgs);
+        final id = args.id('room');
+        if (!host.floorBase.roomsById.containsKey(id)) return const ActionResult.fail(ActionCodes.unknownEntity);
+        if (view == 'walk') {
+          host.showRoomWalk(id);
+        } else {
+          host.select(id);
+        }
+      } else {
+        host.showTab(switch(view){'exterior'=>'ext','budget'=>'cost',_=>view});
+      }
+      return ActionResult.ok(say: {'view': view});
+    },
+  ),
+  AppAction(
+    id: 'design.preview_wall_move',
+    title: const L3('预演向相邻房间借空间', 'Ортақ қабырғаны жылжытуды алдын ала көру', 'Предпросмотр переноса общей стены', 'Preview moving a shared wall'),
+    examples: const L3('从客厅借三十厘米加宽厨房，客厅至少留十六平', 'Қабырғаны қонақ бөлмеге қарай 30 см жылжытып, асүйді кеңейт. Қонақ бөлмеде кемінде 16 м² қалсын', 'Расширь кухню за счёт гостиной на 30 см, оставив гостиной минимум 16 м²', 'Preview enlarging the kitchen by 300 mm'),
+    params: const {'grow': Param.entity('room'), 'shrink': Param.entity('room'),
+      'distance_mm': Param.integer(), 'min_remaining_m2': Param.number(optional: true)},
+    when: _inEditor, risk: Risk.read,
+    run: (_, args) async => _host!.previewWallMove(args.id('grow'), args.id('shrink'),
+      args.integer('distance_mm'), minRemainingArea:
+        args.has('min_remaining_m2') ? args.number('min_remaining_m2').toDouble() : null),
+  ),
+  AppAction(
+    id: 'design.finish_wall_preview',
+    title: const L3('按用户决定应用或取消上一轮移墙试改', 'Алдыңғы ұсынысты қолдану немесе одан бас тарту', 'Применить или отменить предложение прошлого хода', 'Apply or cancel the previous turn’s preview'),
+    examples: const L3('就按刚才的预览改', 'Алдыңғы ұсынысты қолдан', 'Примени предыдущий вариант', 'Apply the previous preview'),
+    params: const {'preview_id': Param.text(), 'decision': Param.choice(['apply','cancel'])},
+    when: _inEditor, risk: Risk.undoable,
+    run: (_, args) async => _host!.finishWallPreview(args.text('preview_id'),
+      apply: args.choice('decision') == 'apply'),
+  ),
 ];
 
 Set<String> _ids(HouseDocument d) => {

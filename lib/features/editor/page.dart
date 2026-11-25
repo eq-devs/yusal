@@ -85,6 +85,7 @@ part 'tools/utility.dart';
 part 'tools/outline.dart';
 part 'widgets/dialogs.dart';
 part 'tools/wall.dart';
+part 'tools/voice_wall_preview.dart';
 part 'tools/drag.dart';
 part 'tools/stair.dart';
 part 'tools/picking.dart';
@@ -194,11 +195,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
               alias: 'r${i + 1}',
               title: r.name,
               type: r.type.name,
-              size: base.roomGeometry
-                      .where((g) => g.id == r.id)
-                      .firstOrNull
-                      ?.nominalArea ??
-                  0),
+              size: base.roomsById[r.id]?.nominalArea ?? 0),
         for (final (i, o) in floor.openings.indexed)
           Entity('opening', o.id,
               alias: 'o${i + 1}', title: openingKindName(o)),
@@ -223,7 +220,10 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   /// The tool in hand, so the assistant knows what a tap on the plan does
   /// right now; nothing while browsing.
   @override
-  String get summary => browse ? '' : 'tool: ${tool.name}';
+  String get summary => [
+        if (!browse) 'tool: ${tool.name}',
+        if (_wallTrial != null) 'pending wall preview: ${_wallTrial!.token}'
+      ].join(' ');
 
   @override
   HouseDocument get document => history.present;
@@ -245,10 +245,17 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
       action(kind, args, quiet: true);
 
   @override
-  void beginUndoGroup() => history.beginGroup();
+  void beginUndoGroup() {
+    _inVoiceTurn = true;
+    _confirmableToken = _wallTrial?.token;
+    history.beginGroup();
+  }
 
   @override
-  void endUndoGroup() => history.endGroup();
+  void endUndoGroup() {
+    _inVoiceTurn = false;
+    history.endGroup();
+  }
 
   @override
   void replaceDesign(HouseDocument doc) {
@@ -285,6 +292,41 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     });
     if (room) revealRoom(id);
     return true;
+  }
+
+  @override
+  void showRoomWalk(String roomId) {
+    showTab('walk');
+    walkInto(roomId);
+  }
+
+  @override
+  void showSharedWall(WallSegment wall) {
+    showTab('plan');
+    setState(() {
+      cancelDrag();
+      clearSelection();
+      clearWallSelection();
+      tool = EditorTool.wall;
+      selectedWall = wall;
+    });
+  }
+
+  _WallTrial? _wallTrial;
+  bool _inVoiceTurn = false;
+  String? _confirmableToken;
+
+  @override
+  ActionResult previewWallMove(String grow, String shrink, int distance,
+      {double? minRemainingArea}) =>
+      prepareWallTrial(grow, shrink, distance, minRemainingArea);
+
+  @override
+  ActionResult finishWallPreview(String token, {required bool apply}) {
+    if (apply && _inVoiceTurn && token != _confirmableToken) {
+      return const ActionResult.fail('await_user_confirmation');
+    }
+    return resolveWallTrial(token, apply);
   }
 
   @override
@@ -439,8 +481,10 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   /// The page last open in each group; its group button returns there.
   final lastInGroup = <String, String>{};
 
+  @override
   void showTab(String value) {
     if (value == tab) return;
+    _wallTrial = null;
     HapticFeedback.selectionClick();
     setState(() {
       cancelDrag();
@@ -987,6 +1031,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     floorIndex = floorIndex.clamp(0, history.present.floors.length - 1);
     derived = deriveHouse(history.present);
     base = derived.floors[floorIndex].base;
+    if (_wallTrial?.floorId != floor.id) _wallTrial = null;
   }
 
   @override
@@ -1063,6 +1108,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   }
 
   void changed() {
+    _wallTrial = null;
     focus = null;
     if (highlights.isNotEmpty) flash(const []);
     derive();
@@ -2782,6 +2828,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                 autofocus: true,
                 child: Scaffold(
                     backgroundColor: t.bg,
+                    bottomNavigationBar: _wallTrial == null ? null : wallTrialBar(_wallTrial!),
                     body: SafeArea(
                         child: LayoutBuilder(builder: (context, constraints) {
                       // Short screens (landscape phones) merge the header
@@ -3354,7 +3401,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                             wallAttachments: (tool == EditorTool.drawWall || tool == EditorTool.selectWall) && drawingEnd == null && editPreviewStart == null ? visibleWallAttachments(size) : const [],
                                             handleScale: canvasZoom,
                                             selectedDimension: editingDimension,
-                                            draftLabel: wallDraftLabel,
+                                            draftLabel: _wallTrial?.distanceLabel ?? wallDraftLabel,
                                             draftEnd: tool == EditorTool.drawWall && drawingStrokeActive && drawingEnd != null
                                                 ? drawingEnd
                                                 : wallGrip == 'start'
@@ -3375,10 +3422,10 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                                 g
                                             ],
                                             coach: coachArrow(size),
-                                            draft: tool == EditorTool.drawWall && drawingEnd != null && drawingOrigin != null ? PlanRect(math.min(drawingOrigin!.dx, drawingEnd!.dx), math.min(drawingOrigin!.dy, drawingEnd!.dy), math.max(drawingOrigin!.dx, drawingEnd!.dx), math.max(drawingOrigin!.dy, drawingEnd!.dy)) : spatialPreview,
+                                            draft: _wallTrial?.line ?? (tool == EditorTool.drawWall && drawingEnd != null && drawingOrigin != null ? PlanRect(math.min(drawingOrigin!.dx, drawingEnd!.dx), math.min(drawingOrigin!.dy, drawingEnd!.dy), math.max(drawingOrigin!.dx, drawingEnd!.dx), math.max(drawingOrigin!.dy, drawingEnd!.dy)) : spatialPreview),
                                             showGridDimensions: tool == EditorTool.grid,
                                             draftInvalid: spatialError != null,
-                                            draftIsLine: tool == EditorTool.split || tool == EditorTool.drawWall,
+                                            draftIsLine: _wallTrial != null || tool == EditorTool.split || tool == EditorTool.drawWall,
                                             viewport: draggingAxis?.kind == 'boundary' && dragAttempted && dragCoordinatePainter != null
                                                 ? (
                                                     scale:

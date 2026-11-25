@@ -141,6 +141,7 @@ String costLineName(String key) => switch (key) {
       'boiler' => tr3('锅炉', 'Қазандық', 'Рекомендуемый котёл', 'Recommended boiler', ky: 'Сунушталган казан', uz: 'Tavsiya etilgan qozon'),
       'sanitary' => tr3('洁具', 'Санжабдық', 'Сантехника', 'Plumbing fixtures', ky: 'Сантехника', uz: 'Santexnika'),
       'groundFloor' => tr3('首层地坪', 'Бірінші қабат едені', 'Пол первого этажа', 'Ground floor build-up', ky: 'Биринчи кабаттын полунун катмарлары', uz: 'Birinchi qavat poli qatlamlari'),
+      'finishTileArea' => tr3('室内装修（瓷砖地面）', 'Ішкі әрлеу (плитка)', 'Отделка с плиткой', 'Interior finishes with tile', ky: 'Плиткалуу ички жасалгалоо', uz: 'Plitkali ichki pardozlash'),
       'finishArea' => tr3('室内装修', 'Ішкі әрлеу', 'Внутренняя отделка', 'Interior finishes', ky: 'Ички жасалгалоо', uz: 'Ichki pardozlash'),
       'fence' => tr3('院墙', 'Қоршау', 'Забор', 'Fence', ky: 'Тосмо', uz: 'Panjara'),
       'gate' => tr3('大门', 'Қақпа', 'Ворота', 'Gate', ky: 'Дарбаза', uz: 'Darvoza'),

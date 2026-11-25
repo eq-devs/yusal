@@ -118,7 +118,7 @@ class SpaceGeometry {
 }
 
 class FloorBase {
-  const FloorBase(
+  FloorBase(
       this.axes,
       this.owners,
       this.edges,
@@ -146,9 +146,38 @@ class FloorBase {
   final ResolvedAxes axes;
   final Map<Cell, String?> owners;
   final List<UnitEdge> edges;
+
+  // Preserve edge order for openings whose midpoint falls on a grid joint.
+  late final _edgesByAxis = _indexEdges();
+  Map<String, List<UnitEdge>> _indexEdges() {
+    final result = <String, List<UnitEdge>>{};
+    for (final edge in edges) {
+      (result[edge.axis.id] ??= []).add(edge);
+    }
+    return result;
+  }
+
+  Iterable<UnitEdge> edgesOnAxis(String id) => _edgesByAxis[id] ?? const [];
+
   final List<WallSegment> wallSegments;
   final List<PlanRect> wallRects;
   final List<SpaceGeometry> roomGeometry;
+
+  /// Shared by voice queries and room labels for the lifetime of this floor.
+  late final roomsById = Map<String, SpaceGeometry>.unmodifiable({
+    for (final room in roomGeometry) room.id: room,
+  });
+
+  /// Complete physical wall segments separating these two rooms.
+  Iterable<WallSegment> wallsBetween(String a, String b) sync* {
+    if (a == b) return;
+    for (final segment in wallSegments) {
+      if (segment.edges.isNotEmpty && segment.edges.every((edge) {
+        final left = owners[edge.negative], right = owners[edge.positive];
+        return (left == a && right == b) || (left == b && right == a);
+      })) yield segment;
+    }
+  }
   final List<SpaceGeometry> stairGeometryBase;
   final List<Cell> unassignedCells;
   final double unassignedNominalArea;

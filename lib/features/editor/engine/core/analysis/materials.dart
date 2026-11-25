@@ -300,12 +300,9 @@ List<MaterialLine> materialList(HouseDocument doc, DerivedHouse derived,
   for (var i = 0; i < doc.floors.length; i++) {
     final g = derived.floors[i].base;
     for (final r in doc.floors[i].rooms) {
-      final area = g.roomGeometry
-              .where((s) => s.id == r.id)
-              .fold(0.0, (s, room) => s + room.clearArea) /
-          1e6;
+      final area = (g.roomsById[r.id]?.clearArea ?? 0) / 1e6;
       clear += area;
-      if (r.type == RoomType.kitchen || r.type == RoomType.bathroom) {
+      if (usesTileFinish(r.type)) {
         wet += area;
       }
     }

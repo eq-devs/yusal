@@ -53,6 +53,12 @@ abstract interface class DesignHost {
 
   /// Shows the floor with [floorId]. False when there is none.
   bool showFloor(String floorId);
+  void showTab(String value);
+  void showRoomWalk(String roomId);
+  void showSharedWall(WallSegment wall);
+  ActionResult previewWallMove(String grow, String shrink, int distance,
+      {double? minRemainingArea});
+  ActionResult finishWallPreview(String token, {required bool apply});
 }
 
 /// Failure code of a command that needs the user to choose how to go on.

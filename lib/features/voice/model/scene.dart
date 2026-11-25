@@ -72,11 +72,8 @@ String designScene({
 
   for (final room in floor.rooms) {
     final name = aliases[room.id];
-    final cells = [
-      for (final e in base.owners.entries)
-        if (e.value == room.id) e.key
-    ];
-    if (name == null || cells.isEmpty) continue;
+    final cells = base.roomsById[room.id]?.cells;
+    if (name == null || cells == null || cells.isEmpty) continue;
     final x0 = cells.map((c) => v[c.i].pos).reduce(math.min);
     final y0 = cells.map((c) => h[c.j].pos).reduce(math.min);
     final x1 = cells.map((c) => v[c.i + 1].pos).reduce(math.max);

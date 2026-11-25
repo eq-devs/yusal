@@ -63,8 +63,8 @@ double unionArea(List<PlanRect> rects) {
 /// Room ids on the two sides of an opening (null outside the house).
 (String?, String?) roomsBeside(OpeningPlacement p, FloorBase base) {
   final mid = (p.start + p.end) / 2;
-  for (final e in base.edges) {
-    if (e.axis.id != p.axis.id || e.start.pos > mid || e.end.pos < mid) {
+  for (final e in base.edgesOnAxis(p.axis.id)) {
+    if (e.start.pos > mid || e.end.pos < mid) {
       continue;
     }
     return (
@@ -119,8 +119,7 @@ class RoomStats {
 }
 
 bool openingTouches(OpeningPlacement p, FloorBase base, String roomId) =>
-    base.edges.any((e) =>
-        e.axis.id == p.axis.id &&
+    base.edgesOnAxis(p.axis.id).any((e) =>
         e.start.pos < p.end &&
         p.start < e.end.pos &&
         (base.owners[e.negative] == roomId ||

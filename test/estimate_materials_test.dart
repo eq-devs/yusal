@@ -28,6 +28,14 @@ void main() {
   CostLine line(CostEstimate e, String key) =>
       e.lines.firstWhere((l) => l.key == key);
 
+  test('tile finishes inherit the existing finish quote until overridden', () {
+    final doc = run(kz(), 'SetCost', {'priceKey': 'finishArea', 'price': 18000});
+    expect(line(cost(doc), 'finishTileArea').price, 18000);
+    final own = run(doc, 'SetCost', {'priceKey': 'finishTileArea', 'price': 15500});
+    expect(line(cost(own), 'finishTileArea').price, 15500);
+    expect(line(cost(own), 'finishArea').price, 18000);
+  });
+
   group('lines the estimate used to miss', () {
     test('belts, lintels, gutters, scaffolding, delivery and connections', () {
       final e = cost(kz());

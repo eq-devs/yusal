@@ -58,6 +58,7 @@ const defaultPrices = <Currency, Map<String, int>>{
     'sanitary': 1200,
     'groundFloor': 180,
     'finishArea': 350,
+    'finishTileArea': 390,
     'fence': 150,
     'gate': 2500,
     'outbuilding': 900,
@@ -103,6 +104,7 @@ const defaultPrices = <Currency, Map<String, int>>{
     'sanitary': 80000,
     'groundFloor': 13000,
     'finishArea': 25000,
+    'finishTileArea': 28000,
     'fence': 12000,
     'gate': 180000,
     'outbuilding': 60000,
@@ -117,6 +119,9 @@ const defaultPrices = <Currency, Map<String, int>>{
     'connection': 500000,
   },
 };
+
+bool usesTileFinish(RoomType type) =>
+    type == RoomType.kitchen || type == RoomType.bathroom;
 
 /// Unit of each line: m, m2, m3, t or pcs.
 const costUnits = {
@@ -151,6 +156,7 @@ const costUnits = {
   'sanitary': 'pcs',
   'groundFloor': 'm2',
   'finishArea': 'm2',
+  'finishTileArea': 'm2',
   'fence': 'm',
   'gate': 'pcs',
   'outbuilding': 'm2',
@@ -219,6 +225,7 @@ const defaultLabour = <Currency, Map<String, int>>{
     'sanitary': 200,
     'groundFloor': 50,
     'finishArea': 160,
+    'finishTileArea': 190,
     'fence': 40,
     'gate': 400,
     'outbuilding': 330,
@@ -258,6 +265,7 @@ const defaultLabour = <Currency, Map<String, int>>{
     'sanitary': 15000,
     'groundFloor': 4000,
     'finishArea': 12000,
+    'finishTileArea': 14000,
     'fence': 3000,
     'gate': 30000,
     'outbuilding': 25000,
@@ -433,10 +441,13 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
   void line(String key, String stage, double quantity,
       {bool estimated = false, MasonryUnit unit = MasonryUnit.aerated}) {
     if (quantity <= 0) return;
-    final own = spec.prices[key];
+    // Existing all-room finish quotes also cover tiles until priced separately.
+    final inherited = key == 'finishTileArea' ? 'finishArea' : key;
+    final own = spec.prices[key] ?? spec.prices[inherited];
     final bookKey =
         unit == MasonryUnit.aerated ? key : 'masonry_${unit.name}';
-    final quote = regional?.prices[bookKey];
+    final quote = regional?.prices[bookKey] ??
+        (key == 'finishTileArea' ? regional?.prices[inherited] : null);
     final example =
         unit == MasonryUnit.aerated ? prices[key]! : masonryPrices[cur]![unit]!;
     lines.add(CostLine(
@@ -452,10 +463,12 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
                 : PriceSource.example,
         quote: own == null ? quote : null,
         labourRate: spec.labourPrices[key] ??
+            spec.labourPrices[inherited] ??
             regional?.labour[key]?.price ??
+            regional?.labour[inherited]?.price ??
             labour[key] ??
             0,
-        ownLabour: spec.labourPrices.containsKey(key),
+        ownLabour: spec.labourPrices.containsKey(key) || spec.labourPrices.containsKey(inherited),
         service: serviceLines.contains(key),
         estimated: estimated));
   }
@@ -554,11 +567,15 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
   var wetRooms = 0;
   var windows = 0;
   var clear = 0.0;
+  var tileArea = 0.0;
   for (var i = 0; i < doc.floors.length; i++) {
     final g = derived.floors[i];
     for (final r in doc.floors[i].rooms) {
       rooms++;
-      if (r.type == RoomType.kitchen || r.type == RoomType.bathroom) wetRooms++;
+      if (usesTileFinish(r.type)) {
+        wetRooms++;
+        tileArea += (g.base.roomsById[r.id]?.clearArea ?? 0) / 1e6;
+      }
     }
     for (final s in g.base.roomGeometry) {
       clear += s.clearArea / 1e6;
@@ -600,7 +617,9 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
       .where((wall) => wall.role == WallRole.exterior)
       .fold(0.0, (s, wall) => s + wall.rect.area / 1e6);
   line('groundFloor', 'finish', math.max(0.0, groundArea - outerGround));
-  line('finishArea', 'finish', clear > 0 ? clear : groundArea - outerGround);
+  line('finishArea', 'finish', clear > 0 ? clear - tileArea : groundArea - outerGround);
+
+  line('finishTileArea', 'finish', tileArea);
 
   // The plot.
   final site = x.site;

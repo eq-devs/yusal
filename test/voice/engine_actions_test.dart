@@ -102,6 +102,87 @@ void main() {
     expect(host.document.floors.single.rooms.single.name, isNot('Study'));
   });
 
+  testWidgets('measure, locate and visit rooms without editing the plan', (t) async {
+    final host = await open(t);
+    final before = host.document;
+    final measured = await say('design.measure_room', {'room': 'r1'});
+    expect(measured.ok, isTrue);
+    expect(measured.say['clear_area_m2'], greaterThan(0));
+    expect(measured.say['min_clear_span_mm'], greaterThan(0));
+    expect((await say('editor.view', {'view': 'walk', 'room': 'r1'})).ok, isTrue);
+    expect(VoiceScreens.current!.screenId, 'editor.walk');
+    expect((await say('editor.view', {'view': 'plan', 'room': 'r1'})).ok, isTrue);
+    expect(VoiceScreens.current!.screenId, 'editor.plan');
+    expect(identical(host.document, before), isTrue);
+    expect((await say('design.split_room', {'room': 'r1', 'wall': 'north_south'})).ok, isTrue);
+    final after = host.document;
+    final wall = await say('design.locate_shared_wall', {'a': 'r1', 'b': 'r2'});
+    expect(wall.ok, isTrue, reason: wall.code);
+    expect(wall.say['axis_length_mm'], 8000);
+    expect((await say('design.locate_shared_wall', {'a': 'r1', 'b': 'r1'})).code, 'no_shared_wall');
+    expect(identical(host.document, after), isTrue);
+    expect((await say('editor.undo')).ok, isTrue);
+    expect(host.document.floors.single.rooms, hasLength(1));
+  });
+
+  testWidgets('shared wall trials are constrained, reversible and bound to one revision', (t) async {
+    final host = await open(t);
+    expect((await say('design.split_room', {'room':'r1','wall':'north_south'})).ok,isTrue);
+    final before = host.document;
+    Future<ActionResult> preview([double? min]) => say('design.preview_wall_move', {
+      'grow':'r1','shrink':'r2','distance_mm':300, if(min != null) 'min_remaining_m2':min
+    });
+    Future<ActionResult> finish(String token,String decision) =>
+      say('design.finish_wall_preview', {'preview_id':token,'decision':decision});
+    expect((await preview(99)).code,'minimum_area_conflict');
+    host.beginUndoGroup();
+    final trial = await preview();
+    expect(trial.ok,isTrue,reason:'${trial.code} ${trial.say}');
+    final token = trial.say['preview_id']! as String;
+    expect(trial.say['grow_after_m2'] as num,greaterThan(trial.say['grow_before_m2'] as num));
+    expect(identical(host.document,before),isTrue);
+    expect((await finish(token,'apply')).code,'await_user_confirmation');
+    host.endUndoGroup();
+    await t.pump();
+    expect(find.textContaining(' → '),findsWidgets);
+    expect((await finish(token,'cancel')).ok,isTrue);
+    expect(identical(host.document,before),isTrue);
+    final stale=(await preview()).say['preview_id']! as String;
+    expect((await say('design.rename_room',{'room':'r1','name':'Kitchen'})).ok,isTrue);
+    expect((await finish(stale,'apply')).code,'stale_preview');
+    final fresh=(await preview()).say['preview_id']! as String;
+    final oldArea=host.floorBase.roomsById[host.document.floors.first.rooms.first.id]!.clearArea;
+    expect((await finish(fresh,'apply')).ok,isTrue);
+    expect((await finish(fresh,'apply')).code,'stale_preview');
+    expect((await say('editor.undo')).ok,isTrue);
+    expect(host.document.floors.first.rooms.first.name,'Kitchen');
+    expect(host.floorBase.roomsById[host.document.floors.first.rooms.first.id]!.clearArea,oldArea);
+  });
+
+  testWidgets('wall preview prices the same floor finish and a kitchen substitution', (t) async {
+    await open(t);
+    await say('design.split_room', {'room': 'r1', 'wall': 'north_south'});
+    Future<Map> quote() async {
+      final r = await say('design.preview_wall_move',
+          {'grow': 'r1', 'shrink': 'r2', 'distance_mm': 300});
+      expect(r.ok, isTrue);
+      return r.say['estimate'] as Map;
+    }
+    final same = await quote();
+    expect(same['delta'], 0);
+    expect(same['finish_changes'], isEmpty);
+    await say('design.set_room_type', {'room': 'r1', 'type': 'kitchen'});
+    final mixed = await quote();
+    expect(mixed['delta'], greaterThan(0));
+    final changes = mixed['finish_changes'] as Map;
+    expect(changes['finishTileArea']['area_change_m2'], greaterThan(0));
+    expect(changes['finishArea']['area_change_m2'],
+        closeTo(-(changes['finishTileArea']['area_change_m2'] as num), 0.000001));
+    expect(mixed['delta'], mixed['after'] - mixed['before']);
+    await t.pump();
+    expect(find.textContaining('+'), findsWidgets);
+  });
+
   testWidgets('a command it cannot read comes back with how to write it',
       (t) async {
     final host = await open(t);

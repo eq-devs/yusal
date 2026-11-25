@@ -69,7 +69,7 @@ extension _CostTab on _HouseEditorState {
                   for (final r in priceRegions)
                     SimpleDialogOption(
                         onPressed: () => Navigator.of(context).pop(r),
-                        child: Text(regionName(r),
+                        child: Text(priceRegionName(r),
                             style: TextStyle(
                                 color: t.ink,
                                 fontWeight: r == current
@@ -388,7 +388,7 @@ extension _CostTab on _HouseEditorState {
                               'Pick a region for local prices',
                               ky: 'Аймакты тандап, жергиликтүү бааларды алуу',
                               uz: 'Hududni tanlab, mahalliy narxlarni olish')
-                          : '${tr3('地区', 'Аймақ', 'Регион', 'Region', ky: 'Аймак', uz: 'Hudud')}: ${regionName(spec.region!)}',
+                          : '${tr3('地区', 'Аймақ', 'Регион', 'Region', ky: 'Аймак', uz: 'Hudud')}: ${priceRegionName(spec.region!)}',
                       icon: Icons.place_outlined,
                       onPressed: pickRegion),
                 setting(
@@ -689,12 +689,12 @@ extension _CostTab on _HouseEditorState {
       materials,
       if (regional.isNotEmpty)
         Note(tr3(
-            '◆ 是${regionName(spec.region ?? 'kz')}的地区价，来源：${regional.map((q) => priceSourceName(q.source)).toSet().join('、')}；最新日期 ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}。',
-            '◆ — ${regionName(spec.region ?? 'kz')} аймағының бағасы, дереккөз: ${regional.map((q) => priceSourceName(q.source)).toSet().join(', ')}; соңғы күні ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}.',
-            '◆ — цена региона «${regionName(spec.region ?? 'kz')}», источник: ${regional.map((q) => priceSourceName(q.source)).toSet().join(', ')}; последняя дата ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}.',
-            '◆ marks a price of the region “${regionName(spec.region ?? 'kz')}”, source: ${regional.map((q) => priceSourceName(q.source)).toSet().join(', ')}; latest date ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}.',
-            ky: '◆ — «${regionName(spec.region ?? 'kz')}» аймагынын баасы, булак: ${regional.map((q) => priceSourceName(q.source)).toSet().join(', ')}; акыркы күнү ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}.',
-            uz: '◆ — “${regionName(spec.region ?? 'kz')}” hududi narxi, manba: ${regional.map((q) => priceSourceName(q.source)).toSet().join(', ')}; oxirgi sana ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}.')),
+            '◆ 是${priceRegionName(spec.region ?? 'kz')}的地区价，来源：${regional.map((q) => priceSourceName(q.source)).toSet().join('、')}；最新日期 ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}。',
+            '◆ — ${priceRegionName(spec.region ?? 'kz')} аймағының бағасы, дереккөз: ${regional.map((q) => priceSourceName(q.source)).toSet().join(', ')}; соңғы күні ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}.',
+            '◆ — цена региона «${priceRegionName(spec.region ?? 'kz')}», источник: ${regional.map((q) => priceSourceName(q.source)).toSet().join(', ')}; последняя дата ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}.',
+            '◆ marks a price of the region “${priceRegionName(spec.region ?? 'kz')}”, source: ${regional.map((q) => priceSourceName(q.source)).toSet().join(', ')}; latest date ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}.',
+            ky: '◆ — «${priceRegionName(spec.region ?? 'kz')}» аймагынын баасы, булак: ${regional.map((q) => priceSourceName(q.source)).toSet().join(', ')}; акыркы күнү ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}.',
+            uz: '◆ — “${priceRegionName(spec.region ?? 'kz')}” hududi narxi, manba: ${regional.map((q) => priceSourceName(q.source)).toSet().join(', ')}; oxirgi sana ${regional.map((q) => q.date).reduce((a, b) => a.compareTo(b) >= 0 ? a : b)}.')),
       Note(tr3(
           '数量来自当前设计：改墙、门窗、基础或屋顶后会自动更新。标“估”的行还没有画水电点位，按面积粗估；在 2D 平面“水电”里布置点位后改为实算。点单价可修改，清空恢复示例价。高亮的是你改过的单价。',
           'Көлемдер қазіргі жобадан алынады: қабырға, есік-терезе, іргетас не шатыр өзгерсе, жаңарады. «Шамамен» жолдарда су-электр нүктелері әлі сызылмаған, ауданмен бағаланған; 2D жоспардағы «Су-электр» құралымен нүкте қойсаңыз, нақты есептеледі. Бағаны басып өзгертіңіз, бос қалдырсаңыз мысал баға қайтады. Түсі ерекшеленгені — сіз өзгерткен бағалар.',

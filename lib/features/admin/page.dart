@@ -8,6 +8,19 @@ import 'package:share_plus/share_plus.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/features/admin/state/admin.dart';
+import 'package:yusal/features/editor/engine/core/analysis/cost_estimate.dart'
+    show costUnits, defaultLabour, defaultPrices;
+import 'package:yusal/features/editor/engine/core/document/house_document.dart'
+    show Currency, MasonryUnit;
+import 'package:yusal/features/editor/engine/render2d/planning_names.dart'
+    show
+        costLineName,
+        masonryUnitName,
+        priceRegionName,
+        priceSourceName,
+        unitName;
+import 'package:yusal/features/editor/repository/price_repository.dart'
+    show priceRegions;
 import 'package:yusal/features/shared/model/admin_models.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/shared/ui/components.dart';
@@ -1865,6 +1878,15 @@ class _MoreTab extends StatelessWidget {
                             'To all phones', ky: 'Бардык телефондорго', uz: 'Barcha telefonlarga'),
                         onTap: () => pushPage<void>(
                             context, (_) => const BroadcastPage())),
+                  SettingsRow(
+                      key: const Key('admin-prices'),
+                      icon: Icons.sell_outlined,
+                      title: tr3('地区价格', 'Аймақ бағалары', 'Цены по регионам', 'Regional prices', ky: 'Аймактык баалар', uz: 'Hududiy narxlar'),
+                      subtitle: tr3('预算页按地区使用的单价', 'Сметада аймақ бойынша қолданылатын бағалар',
+                          'Цены, которые смета берёт по региону',
+                          'Prices the estimate uses by region', ky: 'Смета аймак боюнча колдонгон баалар', uz: 'Smeta hudud boʻyicha ishlatadigan narxlar'),
+                      onTap: () =>
+                          pushPage<void>(context, (_) => const PricesPage())),
                   SettingsRow(
                       key: const Key('admin-banned-words'),
                       icon: Icons.block_outlined,

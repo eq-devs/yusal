@@ -278,7 +278,7 @@ String foundationTypeName(FoundationType type) => switch (type) {
     };
 
 /// A price region; the first is the whole country.
-String regionName(String region) => switch (region) {
+String priceRegionName(String region) => switch (region) {
       'kz' => tr3('哈萨克斯坦 (全国)', 'Қазақстан (жалпы)', 'Казахстан (в среднем)', 'Kazakhstan (average)', ky: 'Казакстан (орточо)', uz: 'Qozogʻiston (oʻrtacha)'),
       'almaty' => tr3('阿拉木图', 'Алматы', 'Алматы', 'Almaty', ky: 'Алматы', uz: 'Olmaota'),
       'astana' => tr3('阿斯塔纳', 'Астана', 'Астана', 'Astana', ky: 'Астана', uz: 'Ostona'),

@@ -10,6 +10,7 @@ import 'package:yusal/features/editor/engine/core/analysis/build_schedule.dart';
 import 'package:yusal/features/editor/engine/core/analysis/cost_estimate.dart';
 import 'package:yusal/features/editor/engine/core/analysis/heat_loss.dart';
 import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
+import 'package:yusal/features/editor/engine/core/analysis/materials.dart';
 import 'package:yusal/features/editor/engine/core/analysis/site_analysis.dart';
 import 'package:yusal/features/editor/engine/core/analysis/utility_plan.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
@@ -42,8 +43,12 @@ class DrawingInput {
       required this.roomName,
       required this.floorName,
       required this.openingLabel,
-      required this.date});
+      required this.date,
+      this.book});
   final HouseDocument doc;
+
+  /// The price list of the design's region, when one was read.
+  final PriceBook? book;
   final DerivedHouse derived;
   final String Function(Room room) roomName;
   final String Function(String name) floorName;
@@ -304,7 +309,8 @@ List<_Sheet> _sheets(DrawingInput input) {
   final x = doc.extras;
   final sheets = <_Sheet>[];
   final multi = doc.floors.length > 1;
-  final cost = estimateCost(doc, derived, currency: languageCurrency);
+  final cost = estimateCost(doc, derived,
+      currency: languageCurrency, book: input.book);
   final loss = heatLoss(doc, derived);
   final sym = currencySymbol(cost.currency);
   final roofName = switch (doc.roof.type) {
@@ -749,7 +755,7 @@ List<_Sheet> _sheets(DrawingInput input) {
       _Cell(money(cost.materials), numeric: true, bold: true)
     ],
     [
-      _Cell('${tr3('人工', 'Жұмыс ақысы', 'Оплата работ', 'Labour', ky: 'Жумуш', uz: 'Ish haqi')} ${cost.labourPct}%',
+      _Cell('${tr3('人工', 'Жұмыс ақысы', 'Оплата работ', 'Labour', ky: 'Жумуш', uz: 'Ish haqi')}${cost.labourByWork ? '' : ' ${cost.labourPct}%'}',
           bold: true),
       const _Cell(''),
       const _Cell(''),
@@ -767,6 +773,13 @@ List<_Sheet> _sheets(DrawingInput input) {
       _Cell('${money(cost.perArea)} $sym/$unitM2', numeric: true, muted: true),
       const _Cell(''),
       _Cell(money(cost.total), numeric: true, bold: true)
+    ],
+    [
+      _Cell(tr3('可能的区间', 'Ықтимал аралық', 'Возможный диапазон', 'Likely range', ky: 'Мүмкүн болгон аралык', uz: 'Ehtimoliy oraliq'), muted: true),
+      const _Cell(''),
+      const _Cell(''),
+      _Cell('${money(cost.low)} – ${money(cost.high)}',
+          numeric: true, muted: true)
     ],
   ]);
   const costPerColumn = 31;
@@ -802,6 +815,57 @@ List<_Sheet> _sheets(DrawingInput input) {
           "Prices are approximate or entered by you; quantities come from the model; changes beyond the waste allowance aren't included. For estimates and talks with builders only.", ky: 'Баалар болжолдуу же сиз киргизгенсиз; көлөмдөр моделден алынат; ысырап чегинен ашкан өзгөртүүлөр кирбейт. Эсеп-кысап жана куруучулар менен сүйлөшүү үчүн гана.', uz: 'Narxlar taxminiy yoki siz kiritgansiz; miqdorlar modeldan olinadi; isrof meʼyoridan ortiq oʻzgarishlar kirmaydi. Faqat hisob-kitob va quruvchilar bilan muzokara uchun.');
       _text(c, note, Offset(area.left, area.bottom - 22),
           size: 12, color: _muted, maxWidth: area.width, maxLines: 1);
+    }));
+  }
+
+  // Materials to buy.
+  final buyRows = <List<_Cell>>[];
+  String? buyStage;
+  for (final l in materialList(doc, derived, estimate: cost)) {
+    if (l.stage != buyStage) {
+      buyStage = l.stage;
+      buyRows.add([
+        _Cell(costStageName(l.stage), bold: true),
+        const _Cell(''),
+        const _Cell(''),
+      ]);
+    }
+    buyRows.add([
+      _Cell('   ${buyName(l.key)}${l.detail.isEmpty ? '' : ' ${l.detail}'}',
+          muted: l.estimated),
+      _Cell(
+          '${l.unit == 'pcs' ? '${l.quantity.round()}' : _n(l.quantity, l.quantity >= 100 ? 0 : 2)} ${unitName(l.unit)}',
+          numeric: true),
+      _Cell([
+        if (l.packs != null) '${l.packs} ${packName(l.pack)}',
+        if (l.weight != null) '${_n(l.weight!, 0)} ${unitName('kg')}',
+      ].join(' · '), numeric: true),
+    ]);
+  }
+  final buyColumns = (buyRows.length / costPerColumn).ceil();
+  for (var page = 0; page < (buyColumns / 2).ceil(); page++) {
+    sheets.add(_Sheet(
+        '${tr3('材料清单', 'Материалдар тізімі', 'Список материалов', 'Materials list', ky: 'Материалдардын тизмеси', uz: 'Materiallar roʻyxati')}${buyColumns > 2 ? ' (${page + 1})' : ''}',
+        (c, area) {
+      final colW = (area.width - 30) / 2;
+      for (var k = 0; k < 2; k++) {
+        final chunk = buyRows
+            .skip((page * 2 + k) * costPerColumn)
+            .take(costPerColumn)
+            .toList();
+        if (chunk.isEmpty) continue;
+        _table(
+            c,
+            Rect.fromLTWH(
+                area.left + k * (colW + 30), area.top, colW, area.height),
+            [
+              tr3('材料', 'Материал', 'Материал', 'Material', ky: 'Материал', uz: 'Material'),
+              tr3('要买 (含损耗)', 'Сатып алу (ысыраппен)', 'Купить (с запасом)', 'To buy (with waste)', ky: 'Сатып алуу (ысырап менен)', uz: 'Sotib olish (isrof bilan)'),
+              tr3('整包', 'Тұтас қаптама', 'Упаковок', 'Packs', ky: 'Таңгак', uz: 'Qadoq'),
+            ],
+            chunk,
+            [4, 2.2, 2.2]);
+      }
     }));
   }
 

@@ -181,8 +181,23 @@ class FoundationTakeoff {
     required this.xps,
     required this.blinding,
     required this.waterproofing,
+    this.slabRects = const [],
+    this.piles = const [],
+    this.pileDia = 0,
+    this.pileConcrete = 0,
+    this.pileBarLength = 0,
   });
   final List<FoundationStrip> strips;
+
+  /// A slab foundation's plan, empty for the other kinds.
+  final List<PlanRect> slabRects;
+
+  /// Centres of the piles of a pile foundation, with their concrete (mm³)
+  /// and the length of their bars (mm).
+  final List<({double x, double y})> piles;
+  final int pileDia;
+  final double pileConcrete;
+  final double pileBarLength;
 
   /// Lengths in mm; areas in mm²; volumes in mm³.
   final double mainLength;
@@ -244,6 +259,36 @@ FoundationTakeoff foundationTakeoff(HouseDocument doc, DerivedHouse derived) {
       ? 0.0
       : unionArea([for (final s in partStrips) s.rect]) / spec.partitionWidth;
   const lap = 1.08;
+  final perimeter = outlineLength(derived.floors.first.base);
+  if (spec.type == FoundationType.slab) {
+    // One slab under the whole house, 100 mm proud of the walls, with a
+    // mesh of bars near each face.
+    final rects = [
+      for (final r in insideRects(derived.floors.first.base))
+        PlanRect(r.left - 100, r.bottom - 100, r.right + 100, r.top + 100)
+    ];
+    final area = unionArea(rects);
+    final edge = perimeter + 800;
+    final t = spec.slabThickness.toDouble();
+    return FoundationTakeoff(
+        strips: const [],
+        slabRects: List.unmodifiable(rects),
+        mainLength: 0,
+        partitionLength: 0,
+        concrete: area * t,
+        mainBarLength: area * 4 / math.max(50, spec.slabBarStep) * lap,
+        partitionBarLength: 0,
+        stirrups: 0,
+        stirrupLength: 0,
+        partitionStirrups: 0,
+        partitionStirrupLength: 0,
+        excavation: area * math.max(0, t - spec.plinth + spec.cushion),
+        cushion: area * spec.cushion,
+        formwork: edge * t,
+        xps: area,
+        blinding: perimeter * 1000 + 4 * 1000 * 1000,
+        waterproofing: area);
+  }
   final nSt = (lm / spec.stirrupStep).ceil();
   final nSp = (lp / spec.stirrupStep).ceil();
   final stL = 2 *
@@ -255,13 +300,66 @@ FoundationTakeoff foundationTakeoff(HouseDocument doc, DerivedHouse derived) {
               (spec.partitionHeight - 2 * spec.cover)) +
       150.0;
   final depth = spec.height - spec.plinth + spec.cushion;
-  final perimeter = outlineLength(derived.floors.first.base);
+  final concrete = lm * spec.width * spec.height +
+      lp * spec.partitionWidth * spec.partitionHeight;
+  if (spec.type == FoundationType.pile) {
+    // Bored piles under the load-bearing strips, which become the ring of
+    // beams: one at each end of a strip and then every [pileStep].
+    final piles = <({double x, double y})>[];
+    void pile(double x, double y) {
+      if (!piles.any((p) => (p.x - x).abs() < 300 && (p.y - y).abs() < 300)) {
+        piles.add((x: x, y: y));
+      }
+    }
+
+    final step = math.max(500, spec.pileStep);
+    for (final s in mainStrips) {
+      final r = s.rect;
+      final horizontal = s.wall.horizontal;
+      final a0 = (horizontal ? r.left : r.bottom) + spec.width / 2;
+      final a1 = (horizontal ? r.right : r.top) - spec.width / 2;
+      final c = horizontal ? (r.bottom + r.top) / 2 : (r.left + r.right) / 2;
+      final n = math.max(1, ((a1 - a0) / step).ceil());
+      for (var i = 0; i <= n; i++) {
+        final a = a0 + (a1 - a0) * i / n;
+        horizontal ? pile(a, c) : pile(c, a);
+      }
+    }
+    final radius = spec.pileDia / 2;
+    final pileConcrete =
+        piles.length * math.pi * radius * radius * spec.pileDepth;
+    return FoundationTakeoff(
+        strips: List.unmodifiable(strips),
+        piles: List.unmodifiable(piles),
+        pileDia: spec.pileDia,
+        pileConcrete: pileConcrete,
+        pileBarLength: piles.length * 4 * (spec.pileDepth + 400.0),
+        mainLength: lm,
+        partitionLength: lp,
+        concrete: concrete + pileConcrete,
+        mainBarLength: lm * (spec.topBars + spec.bottomBars) * lap +
+            piles.length * 4 * (spec.pileDepth + 400.0),
+        partitionBarLength: lp * spec.partitionBars * lap,
+        stirrups: nSt,
+        stirrupLength: nSt * stL,
+        partitionStirrups: nSp,
+        partitionStirrupLength: nSp * spL,
+        // The beams sit in a shallow trench; the piles are drilled.
+        excavation: pileConcrete +
+            (lm + lp) *
+                (spec.width + 600) *
+                math.max(0, spec.height - spec.plinth),
+        cushion: 0,
+        formwork: 2 * (lm * spec.height + lp * spec.partitionHeight),
+        xps: perimeter * math.max(0, spec.height - 100),
+        blinding: perimeter * 1000 + 4 * 1000 * 1000,
+        waterproofing: (lm * spec.width + lp * spec.partitionWidth) * 2);
+  }
   return FoundationTakeoff(
       strips: List.unmodifiable(strips),
       mainLength: lm,
       partitionLength: lp,
-      concrete: lm * spec.width * spec.height +
-          lp * spec.partitionWidth * spec.partitionHeight,
+      concrete: concrete,
       mainBarLength: lm * (spec.topBars + spec.bottomBars) * lap,
       partitionBarLength: lp * spec.partitionBars * lap,
       stirrups: nSt,
@@ -359,4 +457,181 @@ WallTakeoff wallTakeoff(HouseDocument doc, DerivedHouse derived) {
       partitionVolume: pv,
       exteriorGross: gross,
       height: height);
+}
+
+/// Thickness of the load-bearing layers of the outside wall, mm: the block
+/// and concrete layers of the build-up, or the wall as drawn without them.
+double structuralThickness(HouseDocument doc) {
+  final layers = doc.extras.wallLayers
+      .where((l) =>
+          l.material == LayerMaterial.block || l.material == LayerMaterial.conc)
+      .fold(0, (s, l) => s + l.thickness);
+  return (layers > 0 ? layers : doc.defaults.outerWallThickness).toDouble();
+}
+
+/// Height of the reinforced belt poured on top of each floor's walls and
+/// of a lintel, and how far a lintel rests on the wall each side, mm.
+const ringBeamHeight = 200;
+const lintelHeight = 200;
+const lintelBearing = 250;
+
+/// Reinforced concrete inside the masonry, and the masonry of the gables.
+class StructureTakeoff {
+  const StructureTakeoff(
+      {required this.beltExterior,
+      required this.beltBearing,
+      required this.beltExteriorVolume,
+      required this.beltBearingVolume,
+      required this.lintels,
+      required this.lintelLength,
+      required this.lintelVolume,
+      required this.gableArea});
+
+  /// Length of the belt over outside and over inner load-bearing walls on
+  /// all floors, mm, and its concrete, mm³.
+  final double beltExterior;
+  final double beltBearing;
+  final double beltExteriorVolume;
+  final double beltBearingVolume;
+  double get beltLength => beltExterior + beltBearing;
+  double get beltVolume => beltExteriorVolume + beltBearingVolume;
+
+  /// Lintels over the openings: their number, total length (mm) and
+  /// concrete (mm³).
+  final int lintels;
+  final double lintelLength;
+  final double lintelVolume;
+
+  /// Wall above the eaves under a gable roof, mm²; zero for other roofs.
+  final double gableArea;
+}
+
+StructureTakeoff structureTakeoff(HouseDocument doc, DerivedHouse derived) {
+  final spec = doc.extras.foundation;
+  final outer = structuralThickness(doc);
+  var be = 0.0;
+  var bb = 0.0;
+  var bbv = 0.0;
+  var n = 0;
+  var ll = 0.0;
+  var lv = 0.0;
+  for (final g in derived.floors) {
+    for (final wall in wallsOf(g.base, spec)) {
+      final along = wall.segment.end.pos - wall.segment.start.pos.toDouble();
+      if (wall.role == WallRole.exterior) {
+        be += along;
+      } else if (wall.role == WallRole.bearing) {
+        bb += along;
+        bbv += along * wall.thickness * ringBeamHeight;
+      }
+    }
+    for (final p in g.openings) {
+      final host = p.host;
+      if (p.status != 'ok' || host == null || host.kind == 'temporary') {
+        continue;
+      }
+      final length = p.opening.width + 2.0 * lintelBearing;
+      n++;
+      ll += length;
+      lv += length *
+          (host.kind == 'exterior' ? outer : host.thickness) *
+          lintelHeight;
+    }
+  }
+  var gable = 0.0;
+  final roof = doc.roof;
+  if (roof.type == RoofType.gable) {
+    final span =
+        (roof.ridgeDir == AxisDir.V ? doc.footprint.width : doc.footprint.depth)
+            .toDouble();
+    gable = span * span / 2 * math.tan(roof.pitchDeg! * math.pi / 180);
+  }
+  return StructureTakeoff(
+      beltExterior: be,
+      beltBearing: bb,
+      beltExteriorVolume: be * outer * ringBeamHeight,
+      beltBearingVolume: bbv,
+      lintels: n,
+      lintelLength: ll,
+      lintelVolume: lv,
+      gableArea: gable);
+}
+
+/// A pitched roof measured for its timber and trim; lengths in metres,
+/// the area in m².
+class RoofTakeoff {
+  const RoofTakeoff(
+      {required this.area,
+      required this.eaves,
+      required this.ridge,
+      required this.hips,
+      required this.verges,
+      required this.slope});
+
+  /// Slope area with the overhangs.
+  final double area;
+
+  /// Eaves, where the gutters hang; the ridge; the four hips of a hip
+  /// roof; and the sloping edges at the gables.
+  final double eaves;
+  final double ridge;
+  final double hips;
+  final double verges;
+
+  /// Length of one rafter from the ridge to the eaves.
+  final double slope;
+
+  /// Rafters every 600 mm and battens every 350 mm, total metres.
+  double get rafterLength => area / 0.6;
+  double get battenLength => area / 0.35;
+}
+
+/// Null for a flat roof.
+RoofTakeoff? roofTakeoff(HouseDocument doc) {
+  final roof = doc.roof;
+  if (!roof.pitched) return null;
+  final o = roof.overhang! / 1000;
+  final w = doc.footprint.width / 1000 + 2 * o;
+  final d = doc.footprint.depth / 1000 + 2 * o;
+  final a = roof.pitchDeg! * math.pi / 180;
+  final area = w * d / math.cos(a);
+  if (roof.type == RoofType.gable) {
+    final vertical = roof.ridgeDir == AxisDir.V;
+    final span = vertical ? w : d;
+    final run = vertical ? d : w;
+    final slope = span / 2 / math.cos(a);
+    return RoofTakeoff(
+        area: area,
+        eaves: 2 * run,
+        ridge: run,
+        hips: 0,
+        verges: 4 * slope,
+        slope: slope);
+  }
+  final short = math.min(w, d);
+  final long = math.max(w, d);
+  final rise = short / 2 * math.tan(a);
+  return RoofTakeoff(
+      area: area,
+      eaves: 2 * (w + d),
+      ridge: long - short,
+      hips: 4 * math.sqrt(short * short / 2 + rise * rise),
+      verges: 0,
+      slope: short / 2 / math.cos(a));
+}
+
+/// Masonry to lay, m³: the outside walls with the gables, and the inner
+/// walls; the reinforced belts take the place of masonry.
+({double exterior, double interior}) masonryVolumes(
+    HouseDocument doc, WallTakeoff wt, StructureTakeoff st) {
+  final net = math.max(0.0, wt.exteriorGross - wt.exteriorOpenings);
+  return (
+    exterior: math.max(
+        0.0,
+        ((net + st.gableArea) * structuralThickness(doc) -
+                st.beltExteriorVolume) /
+            1e9),
+    interior: math.max(0.0,
+        (wt.bearingVolume + wt.partitionVolume - st.beltBearingVolume) / 1e9)
+  );
 }

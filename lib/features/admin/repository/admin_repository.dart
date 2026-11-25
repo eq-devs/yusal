@@ -267,6 +267,43 @@ final class HttpAdminRepository implements AdminRepository {
     return (builtin: list(r['builtin']), words: list(r['words']));
   }
 
+  /// A region's own price entries and the medians of what users reported
+  /// there, in tenge.
+  Future<({List<PriceEntry> entries, List<PriceEntry> reports})> prices(
+      String region) async {
+    final r = await api.request('GET', '/admin/prices',
+        query: {'region': region, 'currency': 'kzt'}) as Map<String, dynamic>;
+    List<PriceEntry> list(Object? v) => [
+          for (final e in (v as List? ?? const []))
+            (
+              labour: (e as Map)['kind'] == 'labour',
+              key: '${e['key']}',
+              price: (e['price'] as num).round(),
+              source: '${e['source'] ?? 'market'}',
+              date: '${e['date'] ?? ''}',
+              reports: (e['reports'] as num?)?.toInt() ?? 0
+            )
+        ];
+    return (entries: list(r['entries']), reports: list(r['reports']));
+  }
+
+  /// Sets the team's price for a line of [region], or removes the entry
+  /// when [price] is null.
+  Future<void> setPrice(String region, String key,
+      {required bool labour, int? price}) async {
+    final line = {
+      'region': region,
+      'currency': 'kzt',
+      'kind': labour ? 'labour' : 'price',
+      'key': key
+    };
+    if (price == null) {
+      await api.request('DELETE', '/admin/prices', query: line);
+    } else {
+      await api.write('PUT', '/admin/prices', body: {...line, 'price': price});
+    }
+  }
+
   Future<List<TrendDay>> trends() async => [
         for (final d in ((await api.request('GET', '/admin/trends')) as List? ??
             const []))
@@ -292,3 +329,14 @@ final class HttpAdminRepository implements AdminRepository {
         'daily_cap': p.dailyCap
       }) as Map<String, dynamic>);
 }
+
+/// One line of a region's price list in the back office: an entry, or the
+/// median of [reports] user reports.
+typedef PriceEntry = ({
+  bool labour,
+  String key,
+  int price,
+  String source,
+  String date,
+  int reports
+});

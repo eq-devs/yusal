@@ -280,6 +280,8 @@ class EngineSession {
       'labour': e.labour.round(),
       'contingency': e.contingency.round(),
       'total': e.total.round(),
+      'low': e.low.round(),
+      'high': e.high.round(),
       'perArea': e.perArea.round(),
       'stages': {
         for (final s in costStages)

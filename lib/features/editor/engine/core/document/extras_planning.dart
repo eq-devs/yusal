@@ -9,6 +9,14 @@ import 'package:yusal/features/editor/engine/core/document/house_extras.dart';
 
 enum Currency { cny, kzt }
 
+/// What a wall is laid from: aerated concrete blocks on thin glue, fired
+/// bricks or cinder blocks on mortar.
+enum MasonryUnit { aerated, brick, cinder }
+
+/// How the house stands on the ground: strips under the walls, one slab
+/// under the whole house, or bored piles under a ring of beams.
+enum FoundationType { strip, slab, pile }
+
 enum FuelKind { coal, gas, electricity, wood }
 
 enum UtilityKind {
@@ -77,35 +85,71 @@ class CostItem {
   }
 }
 
-/// Unit prices and markups. Prices left out use the built-in examples of
-/// [currency]; a null currency follows the interface language.
+/// Unit prices and markups. Prices left out use the prices of [region]
+/// when the app has them, else the built-in examples of [currency]; a null
+/// currency follows the interface language.
 class CostSpec {
   CostSpec(
       {this.currency,
       Map<String, int> prices = const {},
       this.labourPct = 35,
       this.contingencyPct = 10,
-      List<CostItem> items = const []})
+      List<CostItem> items = const [],
+      this.outerUnit = MasonryUnit.aerated,
+      this.innerUnit = MasonryUnit.aerated,
+      this.labourByWork = false,
+      Map<String, int> labourPrices = const {},
+      List<String> selfBuild = const [],
+      this.region})
       : prices = Map.unmodifiable(prices),
-        items = List.unmodifiable(items);
+        items = List.unmodifiable(items),
+        labourPrices = Map.unmodifiable(labourPrices),
+        selfBuild = List.unmodifiable(selfBuild);
   final Currency? currency;
   final Map<String, int> prices;
   final int labourPct;
   final int contingencyPct;
   final List<CostItem> items;
 
+  /// What the outside and the inside walls are laid from.
+  final MasonryUnit outerUnit;
+  final MasonryUnit innerUnit;
+
+  /// Labour priced per unit of work done instead of as a share of the
+  /// materials, with the user's own rates in [labourPrices].
+  final bool labourByWork;
+  final Map<String, int> labourPrices;
+
+  /// Stages the family builds itself: no labour is charged on them.
+  final List<String> selfBuild;
+
+  /// Where the house is built, a key of the price regions.
+  final String? region;
+
   CostSpec copyWith(
           {Currency? currency,
           Map<String, int>? prices,
           int? labourPct,
           int? contingencyPct,
-          List<CostItem>? items}) =>
+          List<CostItem>? items,
+          MasonryUnit? outerUnit,
+          MasonryUnit? innerUnit,
+          bool? labourByWork,
+          Map<String, int>? labourPrices,
+          List<String>? selfBuild,
+          String? Function()? region}) =>
       CostSpec(
           currency: currency ?? this.currency,
           prices: prices ?? this.prices,
           labourPct: labourPct ?? this.labourPct,
           contingencyPct: contingencyPct ?? this.contingencyPct,
-          items: items ?? this.items);
+          items: items ?? this.items,
+          outerUnit: outerUnit ?? this.outerUnit,
+          innerUnit: innerUnit ?? this.innerUnit,
+          labourByWork: labourByWork ?? this.labourByWork,
+          labourPrices: labourPrices ?? this.labourPrices,
+          selfBuild: selfBuild ?? this.selfBuild,
+          region: region == null ? this.region : region());
 
   Json toJson() => {
         if (currency != null) 'currency': currency!.name,
@@ -116,29 +160,59 @@ class CostSpec {
         if (labourPct != 35) 'labourPct': labourPct,
         if (contingencyPct != 10) 'contingencyPct': contingencyPct,
         if (items.isNotEmpty) 'items': [for (final i in items) i.toJson()],
+        if (outerUnit != MasonryUnit.aerated) 'outerUnit': outerUnit.name,
+        if (innerUnit != MasonryUnit.aerated) 'innerUnit': innerUnit.name,
+        if (labourByWork) 'labourByWork': true,
+        if (labourPrices.isNotEmpty)
+          'labourPrices': {
+            for (final k in (labourPrices.keys.toList()..sort()))
+              k: labourPrices[k]
+          },
+        if (selfBuild.isNotEmpty) 'selfBuild': [...selfBuild]..sort(),
+        if (region != null) 'region': region,
       };
   bool get isDefault => toJson().isEmpty;
 
   static CostSpec fromJson(Object? v, String p, JsonReader r) {
     final m = r.obj(v, p);
-    final prices = <String, int>{};
-    if (m['prices'] != null) {
-      for (final e in r.obj(m['prices'], '$p/prices').entries) {
-        prices[e.key] = r.integer(e.value, '$p/prices/${e.key}', 0);
+    Map<String, int> ints(String key) {
+      final out = <String, int>{};
+      if (m[key] != null) {
+        for (final e in r.obj(m[key], '$p/$key').entries) {
+          out[e.key] = r.integer(e.value, '$p/$key/${e.key}', 0);
+        }
       }
+      return out;
     }
+
     final raw = r.list(m['items'], '$p/items');
+    final self = r.list(m['selfBuild'], '$p/selfBuild');
     return CostSpec(
         currency: m['currency'] == null
             ? null
             : r.en(m['currency'], '$p/currency', Currency.values, Currency.cny),
-        prices: prices,
+        prices: ints('prices'),
         labourPct: r.integer(m['labourPct'], '$p/labourPct', 35),
         contingencyPct: r.integer(m['contingencyPct'], '$p/contingencyPct', 10),
         items: [
           for (var i = 0; i < raw.length; i++)
             CostItem.fromJson(raw[i], '$p/items/$i', r)
-        ]);
+        ],
+        outerUnit: m['outerUnit'] == null
+            ? MasonryUnit.aerated
+            : r.en(m['outerUnit'], '$p/outerUnit', MasonryUnit.values,
+                MasonryUnit.aerated),
+        innerUnit: m['innerUnit'] == null
+            ? MasonryUnit.aerated
+            : r.en(m['innerUnit'], '$p/innerUnit', MasonryUnit.values,
+                MasonryUnit.aerated),
+        labourByWork: m['labourByWork'] == true,
+        labourPrices: ints('labourPrices'),
+        selfBuild: [
+          for (var i = 0; i < self.length; i++)
+            r.text(self[i], '$p/selfBuild/$i')
+        ],
+        region: m['region'] == null ? null : r.text(m['region'], '$p/region'));
   }
 }
 
@@ -543,6 +617,19 @@ List<(String, String)> planningProblems(
   }
   if (cost.contingencyPct < 0 || cost.contingencyPct > 100) {
     out.add(('/extras/cost/contingencyPct', '预备费比例超出范围'));
+  }
+  for (final e in cost.labourPrices.entries) {
+    if (e.value < 0 || e.value > 1000000000) {
+      out.add(('/extras/cost/labourPrices/${e.key}', '单价超出范围'));
+    }
+  }
+  if (cost.selfBuild.any((s) => s.isEmpty || s.length > 40) ||
+      cost.selfBuild.toSet().length != cost.selfBuild.length) {
+    out.add(('/extras/cost/selfBuild', '自建阶段无效或重复'));
+  }
+  if (cost.region != null &&
+      (cost.region!.isEmpty || cost.region!.length > 40)) {
+    out.add(('/extras/cost/region', '地区无效'));
   }
   final itemIds = <String>{};
   for (var i = 0; i < cost.items.length; i++) {

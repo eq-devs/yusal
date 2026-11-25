@@ -295,6 +295,143 @@ class BannedWordsPage extends StatelessWidget {
   }
 }
 
+/// The price list of each region that the cost estimate uses: the team's
+/// entries, and beside them the median of what users reported.
+class PricesPage extends StatefulWidget {
+  const PricesPage({super.key});
+  @override
+  State<PricesPage> createState() => _PricesPageState();
+}
+
+class _PricesPageState extends State<PricesPage> {
+  String _region = priceRegions.first;
+  bool _labour = false;
+
+  String _name(String key) => switch (key) {
+        'masonry_brick' => masonryUnitName(MasonryUnit.brick),
+        'masonry_cinder' => masonryUnitName(MasonryUnit.cinder),
+        _ => costLineName(key),
+      };
+
+  Future<void> _edit(BuildContext context, HttpAdminRepository api, String key,
+      PriceEntry? entry) async {
+    final text = await askText(context, '${_name(key)} · ${priceRegionName(_region)}',
+        hint: tr3('坚戈；留空则删除这条', 'Теңге; өшіру үшін бос қалдырыңыз',
+            'Тенге; оставьте пустым, чтобы удалить',
+            'Tenge; leave empty to remove the entry', ky: 'Теңге; өчүрүү үчүн бош калтырыңыз', uz: 'Tenge; oʻchirish uchun boʻsh qoldiring'),
+        initial: entry == null ? '' : '${entry.price}',
+        required: false,
+        lines: 1);
+    if (text == null || !context.mounted) return;
+    final price = int.tryParse(text.replaceAll(RegExp(r'[\s,]'), ''));
+    if (text.trim().isNotEmpty && (price == null || price <= 0)) return;
+    if (price == null && entry == null) return;
+    await attempt(context,
+        () => api.setPrice(_region, key, labour: _labour, price: price),
+        success: tr3('已保存', 'Сақталды', 'Сохранено', 'Saved', ky: 'Сакталды', uz: 'Saqlandi'));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final api = _http(context);
+    final canOperate = _may(context, AdminPerms.operate);
+    final t = YTokens.of(context);
+    final keys = _labour
+        ? defaultLabour[Currency.kzt]!.keys.toList()
+        : [
+            ...defaultPrices[Currency.kzt]!.keys,
+            'masonry_brick',
+            'masonry_cinder'
+          ];
+    return Scaffold(
+        appBar: AppBar(
+            title: Text(tr3('地区价格', 'Аймақ бағалары', 'Цены по регионам', 'Regional prices', ky: 'Аймактык баалар', uz: 'Hududiy narxlar'))),
+        body: api == null
+            ? const SizedBox.shrink()
+            : _Reloading<({List<PriceEntry> entries, List<PriceEntry> reports})>(
+                key: ValueKey(_region),
+                load: () => api.prices(_region),
+                builder: (context, p, reload) {
+                  PriceEntry? of(List<PriceEntry> list, String key) {
+                    for (final e in list) {
+                      if (e.key == key && e.labour == _labour) return e;
+                    }
+                    return null;
+                  }
+
+                  return ListView(
+                      padding: const EdgeInsets.all(YSpace.gutter),
+                      children: [
+                        Text(
+                            tr3(
+                                '预算页先用用户自己填的价，其次是这里的地区价，再次是同地区至少 3 人报价的中位数，然后是全国价，最后才是示例价。',
+                                'Смета алдымен пайдаланушының өз бағасын, сосын осы аймақ бағасын, одан кейін аймақтағы кемінде 3 адам хабарлаған бағаның медианасын, содан соң ел бойынша бағаны, ең соңында мысал бағаны алады.',
+                                'Смета берёт сначала цену самого пользователя, затем цену региона отсюда, затем медиану цен от не менее чем 3 пользователей региона, затем цену по стране и только потом примерную.',
+                                'The estimate uses the user’s own price first, then the region’s price from here, then the median reported by at least 3 users there, then the country’s price, and the example last.', ky: 'Смета адегенде колдонуучунун өз баасын, андан кийин ушул жердеги аймак баасын, андан соң аймактагы кеминде 3 колдонуучу билдирген баанын медианасын, анан өлкө боюнча бааны, эң акырында болжолдуу бааны алат.', uz: 'Smeta avval foydalanuvchining oʻz narxini, soʻng shu yerdagi hudud narxini, keyin hududdagi kamida 3 foydalanuvchi bildirgan narx medianasini, soʻng mamlakat narxini, eng oxirida taxminiy narxni oladi.'),
+                            style: YText.caption.copyWith(color: t.muted)),
+                        const SizedBox(height: 12),
+                        DropdownButton<String>(
+                            key: const Key('admin-prices-region'),
+                            isExpanded: true,
+                            value: _region,
+                            items: [
+                              for (final r in priceRegions)
+                                DropdownMenuItem(
+                                    value: r, child: Text(priceRegionName(r)))
+                            ],
+                            onChanged: (r) {
+                              if (r != null) setState(() => _region = r);
+                            }),
+                        const SizedBox(height: 8),
+                        SegmentedButton<bool>(
+                            segments: [
+                              ButtonSegment(
+                                  value: false,
+                                  label: Text(tr3('材料单价', 'Материал бағасы', 'Цены материалов', 'Material prices', ky: 'Материал баалары', uz: 'Material narxlari'))),
+                              ButtonSegment(
+                                  value: true,
+                                  label: Text(tr3('人工单价', 'Жұмыс бағасы', 'Цены работ', 'Labour rates', ky: 'Жумуш баалары', uz: 'Ish narxlari'))),
+                            ],
+                            selected: {_labour},
+                            onSelectionChanged: (v) =>
+                                setState(() => _labour = v.first)),
+                        const SizedBox(height: 8),
+                        for (final key in keys)
+                          Builder(builder: (context) {
+                            final entry = of(p.entries, key);
+                            final market = of(p.reports, key);
+                            final unit = unitName(costUnits[
+                                    key.startsWith('masonry_')
+                                        ? 'masonryExt'
+                                        : key] ??
+                                '');
+                            return ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text('${_name(key)} · ₸/$unit'),
+                                subtitle: Text([
+                                  if (entry != null)
+                                    '${priceSourceName(entry.source)} · ${entry.date}',
+                                  if (market != null)
+                                    '${tr3('用户报价中位数', 'Пайдаланушылар медианасы', 'Медиана пользователей', 'Users’ median', ky: 'Колдонуучулардын медианасы', uz: 'Foydalanuvchilar medianasi')} ${money(market.price)} (${market.reports})',
+                                ].join('\n')),
+                                trailing: Text(
+                                    entry == null ? '—' : money(entry.price),
+                                    style: YText.body.copyWith(
+                                        color: entry == null
+                                            ? t.muted
+                                            : null)),
+                                onTap: canOperate
+                                    ? () async {
+                                        await _edit(context, api, key, entry);
+                                        reload();
+                                      }
+                                    : null);
+                          }),
+                      ]);
+                }));
+  }
+}
+
 /// New accounts, houses, demands and quotes per day, last 30 days.
 class TrendsPage extends StatelessWidget {
   const TrendsPage({super.key});
@@ -371,7 +508,7 @@ class _TrendBars extends StatelessWidget {
 
 /// Loads once, shows [builder], and loads again on `reload()`.
 class _Reloading<T> extends StatefulWidget {
-  const _Reloading({required this.load, required this.builder});
+  const _Reloading({super.key, required this.load, required this.builder});
   final Future<T> Function() load;
   final Widget Function(BuildContext, T, VoidCallback reload) builder;
   @override

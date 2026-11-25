@@ -127,7 +127,12 @@ void main() {
         expect(e.stageMaterials(stage), greaterThan(0), reason: stage);
       }
       expect(e.stageMaterials('site'), 0);
-      expect(e.labour, closeTo(e.materials * 0.35, 1));
+      // Hired services carry no labour on top.
+      final services = e.lines
+          .where((l) => l.service)
+          .fold(0.0, (sum, l) => sum + l.total);
+      expect(services, greaterThan(0));
+      expect(e.labour, closeTo((e.materials - services) * 0.35, 1));
       expect(e.total, closeTo((e.materials + e.labour) * 1.10, 1));
       // A village house of 130 m²: roughly 1,500–4,000 ¥ per m².
       expect(e.perArea, inInclusiveRange(1500, 4000));
@@ -414,7 +419,8 @@ void main() {
           closeTo((1 + 0.9 / 6) / stageKeys.length, 1e-9));
       final budgets = stageBudgets(estimateCost(loaded, deriveHouse(loaded)));
       expect(budgets['found'], greaterThan(0));
-      expect(budgets.containsKey('prep'), false);
+      // Scaffolding, delivery and connections are paid while preparing.
+      expect(budgets['prep'], greaterThan(0));
     });
 
     test('own stages can be added and removed; built-in ones stay', () {

@@ -157,10 +157,14 @@ SitePlan defaultSitePlan(int width, int depth) {
       var spec = x.foundation;
       if (args['field'] != null) {
         final field = args['field'] as String;
-        if (!FoundationSpec.fieldsInt.contains(field)) {
+        if (!FoundationSpec.fieldsInt.contains(field) &&
+            !FoundationSpec.fieldsExtra.contains(field)) {
           return fail('操作参数无效');
         }
         spec = spec.withInt(field, i('value')!);
+      }
+      if (args['type'] != null) {
+        spec = spec.copyWith(type: args['type'] as FoundationType);
       }
       if (args['partitions'] != null) {
         spec = spec.copyWith(partitions: args['partitions'] as bool);
@@ -261,6 +265,34 @@ SitePlan defaultSitePlan(int width, int depth) {
               ..removeWhere((k, _) => k == key && price == null));
       }
       if (args['resetPrices'] == true) cost = cost.copyWith(prices: const {});
+      if (args['outerUnit'] != null) {
+        cost = cost.copyWith(outerUnit: args['outerUnit'] as MasonryUnit);
+      }
+      if (args['innerUnit'] != null) {
+        cost = cost.copyWith(innerUnit: args['innerUnit'] as MasonryUnit);
+      }
+      if (args['labourByWork'] != null) {
+        cost = cost.copyWith(labourByWork: args['labourByWork'] as bool);
+      }
+      if (args['labourKey'] != null) {
+        final key = args['labourKey'] as String;
+        final price = i('labourPrice');
+        cost = cost.copyWith(
+            labourPrices: {...cost.labourPrices, key: price ?? 0}
+              ..removeWhere((k, _) => k == key && price == null));
+      }
+      if (args['selfStage'] != null) {
+        final stage = args['selfStage'] as String;
+        cost = cost.copyWith(selfBuild: [
+          ...cost.selfBuild.where((s) => s != stage),
+          if (args['self'] != false) stage
+        ]);
+      }
+      if (args.containsKey('region')) {
+        final region = (args['region'] as String?)?.trim();
+        cost = cost.copyWith(
+            region: () => region == null || region.isEmpty ? null : region);
+      }
       return ok(x.copyWith(cost: cost));
     case 'AddCostItem':
       final name = (args['name'] as String? ?? '').trim();

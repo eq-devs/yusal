@@ -591,8 +591,6 @@ class Sleeve {
   }
 }
 
-@immutable
-
 /// Where a room's area is measured to. Builders, sellers and the rules for
 /// living space each count differently, and a plan has to say which it
 /// shows.

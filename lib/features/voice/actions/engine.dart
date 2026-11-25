@@ -216,10 +216,11 @@ final engineActions = <AppAction>[
     title: const L3('预演向相邻房间借空间', 'Ортақ қабырғаны жылжытуды алдын ала көру', 'Предпросмотр переноса общей стены', 'Preview moving a shared wall'),
     examples: const L3('从客厅借三十厘米加宽厨房，客厅至少留十六平', 'Қабырғаны қонақ бөлмеге қарай 30 см жылжытып, асүйді кеңейт. Қонақ бөлмеде кемінде 16 м² қалсын', 'Расширь кухню за счёт гостиной на 30 см, оставив гостиной минимум 16 м²', 'Preview enlarging the kitchen by 300 mm'),
     params: const {'grow': Param.entity('room'), 'shrink': Param.entity('room'),
-      'distance_mm': Param.integer(), 'min_remaining_m2': Param.number(optional: true)},
+      'distance_mm': Param.integer(optional: true), 'target_area_m2': Param.number(optional: true), 'min_remaining_m2': Param.number(optional: true)},
     when: _inEditor, risk: Risk.read,
     run: (_, args) async => _host!.previewWallMove(args.id('grow'), args.id('shrink'),
-      args.integer('distance_mm'), minRemainingArea:
+      args.has('distance_mm') ? args.integer('distance_mm') : null,
+      targetArea: args.has('target_area_m2') ? args.number('target_area_m2').toDouble() : null, minRemainingArea:
         args.has('min_remaining_m2') ? args.number('min_remaining_m2').toDouble() : null),
   ),
   AppAction(

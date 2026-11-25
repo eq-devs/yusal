@@ -54,6 +54,7 @@ extension _DragTool on _HouseEditorState {
       return;
     }
     dragAttempted = true;
+    final previousPosition = dragValid && dragKind == 'MoveLocalWall' ? (dragArguments?['pos']) : null;
     dragValid = false;
     final painter = dragCoordinatePainter ?? interactionPainter();
     final x = painter.worldPoint(point, size).x;
@@ -73,6 +74,10 @@ extension _DragTool on _HouseEditorState {
               originalList[original.index - 1].pos + 300,
               originalList[original.index + 1].pos - 300)
         };
+        if (previousPosition == dragArguments!['pos']) {
+          dragValid = true;
+          return;
+        }
       } else if (axis.kind == 'boundary') {
         dragKind = 'SetFootprintSize';
         dragArguments = {
@@ -156,6 +161,20 @@ extension _DragTool on _HouseEditorState {
       derived =
           deriveHouse(composeDocument(history.present.meta, result.newState));
       base = derived.floors[floorIndex].base;
+      if (dragKind == 'MoveLocalWall' && selectedWall != null) {
+        // The selected wall may have acquired a new axis. Locate the two
+        // rooms on the preview wall at its current position.
+        final moved = base.wallSegments.where((w) => w.axis.dir == selectedWall!.axis.dir &&
+            w.axis.pos == dragArguments!['pos'] && w.start.pos == selectedWall!.start.pos &&
+            w.end.pos == selectedWall!.end.pos).firstOrNull;
+        if (moved != null) {
+          final pair = wallRooms(moved);
+          if (pair != null) {
+            placementHint = floor.rooms.where((r) => r.id == pair.$1 || r.id == pair.$2)
+                .map((r) => '${r.name} ${(base.roomsById[r.id]!.clearArea / 1e6).toStringAsFixed(2)} m²').join(' · ');
+          }
+        }
+      }
     } else if (result is Rejected) {
       derive();
       placementHint = result.message;

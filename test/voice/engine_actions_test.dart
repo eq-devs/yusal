@@ -159,6 +159,69 @@ void main() {
     expect(host.floorBase.roomsById[host.document.floors.first.rooms.first.id]!.clearArea,oldArea);
   });
 
+  testWidgets('target clear area revises from the original and checks constraints', (t) async {
+    final host = await open(t);
+    await say('design.split_room', {'room': 'r1', 'wall': 'north_south'});
+    final before = host.document;
+    final ids = before.floors.first.rooms.map((r) => r.id).toList();
+    final old = host.floorBase.roomsById[ids.first]!.clearArea / 1e6;
+    Future<ActionResult> target(double area, {double? min}) => say('design.preview_wall_move', {
+      'grow':'r1', 'shrink':'r2', 'target_area_m2':area,
+      if(min != null) 'min_remaining_m2':min
+    });
+    final first = await target(old + 4);
+    expect(first.ok,isTrue,reason:first.code);
+    final revised = await target(old + 3);
+    expect(revised.ok,isTrue,reason:revised.code);
+    expect(revised.say['grow_after_m2'],closeTo(old+3,0.011));
+    expect(identical(host.document,before),isTrue);
+    expect((await say('design.finish_wall_preview', {'preview_id':first.say['preview_id'],'decision':'apply'})).code,'stale_preview');
+    expect((await target(old+3,min:100)).code,'minimum_area_conflict');
+    expect((await target(old+300)).ok,isFalse);
+    expect((await say('design.preview_wall_move',{'grow':'r1','shrink':'r2','distance_mm':300,'target_area_m2':old+3})).ok,isFalse);
+
+    // Open the same wall menu used by taps and drive the target picker.
+    final wall = host.floorBase.wallsBetween(ids.first,ids.last).single;
+    final dynamic editor = t.state(find.byType(HouseEditor));
+    editor.update(() => editor.showWallContext(wall, Offset(wall.axis.pos.toDouble(), 4000)));
+    await t.pumpAndSettle();
+    final menuButton = find.byKey(const ValueKey('wall-target-area'));
+    await t.tap(menuButton);
+    await t.pumpAndSettle();
+    await t.tap(find.byType(SimpleDialogOption).first);
+    await t.pumpAndSettle();
+    await t.enterText(find.byType(TextField),(old-3).toStringAsFixed(2));
+    await t.testTextInput.receiveAction(TextInputAction.done);
+    await t.pumpAndSettle();
+    expect(find.textContaining(' → '), findsWidgets);
+    expect(identical(before,host.document),isTrue);
+    await t.tap(find.byKey(const ValueKey('apply-wall-preview')));
+    await t.pumpAndSettle();
+    expect(host.floorBase.roomsById[ids.first]!.clearArea/1e6,closeTo(old-3,0.011));
+  });
+
+  testWidgets('releasing a shared wall handle previews before committing', (t) async {
+    final host = await open(t);
+    await say('design.split_room', {'room':'r1','wall':'north_south'});
+    final doc = host.document;
+    final rooms = doc.floors.first.rooms;
+    final wall = host.floorBase.wallsBetween(rooms.first.id, rooms.last.id).single;
+    host.showSharedWall(wall);
+    await t.pumpAndSettle();
+    final dynamic editor = t.state(find.byType(HouseEditor));
+    final canvas = editor.canvasKey.currentContext.findRenderObject() as RenderBox;
+    final painter = editor.interactionPainter();
+    final center = painter.point(wall.axis.pos.toDouble(), (wall.start.pos + wall.end.pos)/2, canvas.size) as Offset;
+    final drag = await t.startGesture(canvas.localToGlobal(center));
+    await drag.moveBy(const Offset(28,0));
+    await t.pump();
+    expect(identical(doc,host.document),isTrue);
+    await drag.up();
+    await t.pumpAndSettle();
+    expect(identical(doc,host.document),isTrue);
+    expect(find.byKey(const ValueKey('apply-wall-preview')), findsOneWidget);
+  });
+
   testWidgets('wall preview prices the same floor finish and a kitchen substitution', (t) async {
     await open(t);
     await say('design.split_room', {'room': 'r1', 'wall': 'north_south'});

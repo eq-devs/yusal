@@ -56,8 +56,8 @@ abstract interface class DesignHost {
   void showTab(String value);
   void showRoomWalk(String roomId);
   void showSharedWall(WallSegment wall);
-  ActionResult previewWallMove(String grow, String shrink, int distance,
-      {double? minRemainingArea});
+  ActionResult previewWallMove(String grow, String shrink, int? distance,
+      {double? minRemainingArea, double? targetArea});
   ActionResult finishWallPreview(String token, {required bool apply});
 }
 

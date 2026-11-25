@@ -360,6 +360,9 @@ extension _WallTool on _HouseEditorState {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600))),
+                if (inner && wallRooms(wall) != null)
+                  TextButton(key: const ValueKey('wall-target-area'), onPressed: () => wallMenuAction('area'),
+                      child: Text(tr3('面积', 'Аудан', 'Площадь', 'Area', ky: 'Аянт', uz: 'Maydon'))),
                 IconButton(
                     tooltip: tr3('关闭', 'Жабу', 'Закрыть', 'Close', ky: 'Жабуу', uz: 'Yopish'),
                     visualDensity: VisualDensity.compact,

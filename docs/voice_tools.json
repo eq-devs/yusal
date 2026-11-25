@@ -2172,14 +2172,16 @@
         "distance_mm": {
           "type": "integer"
         },
+        "target_area_m2": {
+          "type": "number"
+        },
         "min_remaining_m2": {
           "type": "number"
         }
       },
       "required": [
         "grow",
-        "shrink",
-        "distance_mm"
+        "shrink"
       ]
     }
   },

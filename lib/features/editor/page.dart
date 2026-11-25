@@ -317,9 +317,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   String? _confirmableToken;
 
   @override
-  ActionResult previewWallMove(String grow, String shrink, int distance,
-      {double? minRemainingArea}) =>
-      prepareWallTrial(grow, shrink, distance, minRemainingArea);
+  ActionResult previewWallMove(String grow, String shrink, int? distance,
+      {double? minRemainingArea, double? targetArea}) =>
+      prepareWallTrial(grow, shrink, distance, minRemainingArea, target: targetArea);
 
   @override
   ActionResult finishWallPreview(String token, {required bool apply}) {
@@ -1968,6 +1968,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
       });
       return;
     }
+    if (choice == 'area') return chooseWallTarget(wall);
     if (choice == 'footprint') return footprintOptions();
     if (choice == 'outerThickness') {
       final value = await showDialog<int>(
@@ -3248,6 +3249,23 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                             final valid = dragValid;
                             final message = placementHint;
                             cancelDrag();
+                            final wall = selectedWall;
+                            if (valid && kind == 'MoveLocalWall' && wall != null && arguments != null) {
+                              final pair = wallRooms(wall);
+                              final offset = (arguments['pos'] as int) - wall.axis.pos;
+                              if (pair != null && offset != 0) {
+                                final trial = prepareWallTrial(offset > 0 ? pair.$1 : pair.$2,
+                                    offset > 0 ? pair.$2 : pair.$1, offset.abs(), null);
+                                if (!trial.ok) {
+                                  setState(() {});
+                                  notify(tr3('无法预览此次移墙', 'Бұл өзгерісті алдын ала көру мүмкін емес', 'Не удалось построить предпросмотр', 'Cannot preview this wall move'));
+                                }
+                                pointers.remove(e.pointer);
+                                lastPoint = null;
+                                downPoint = null;
+                                return;
+                              }
+                            }
                             if (valid && kind != null && arguments != null) {
                               action(kind, arguments);
                             } else {

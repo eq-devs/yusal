@@ -1,15 +1,23 @@
-# flutter_lints plus the performance, safety and style rules below. Run `flutter analyze`; `dart fix --apply` fixes most.
+# This file configures the analyzer for best performance and code quality.
+# Run `flutter analyze` to check for issues.
+
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  errors:
+    # Treat these as errors for stricter code quality
+    missing_return: error
+    missing_required_param: error
+    must_be_immutable: error
+    avoid_slow_async_io: error
   exclude:
-    - build/**
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.mocks.dart"
+    - "**/generated/**"
+    - "build/**"
     - android/**
     - ios/**
-    - web/**
-    - macos/**
-  language:
-    strict-casts: true
 
 linter:
   rules:

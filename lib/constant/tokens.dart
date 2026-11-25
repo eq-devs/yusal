@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:yusal/features/shared/motion/motion.dart';
+import 'package:yusal/constant/theme.dart';
 
-/// Drafting-table palette from the Yusal logo book: a warm stone desk,
-/// white sheets, ink wall cuts and one orange accent. Every screen and painter reads colours from here.
+/// Drafting palette from the Yusal logo book: white sheets, ink wall cuts
+/// and one orange accent. The page, panel and hairline colours are those
+/// of the platform pages ([YTokens]), so the design tool and the rest of
+/// the app are one surface; the rest is for the drawing itself.
 @immutable
 class Tokens extends ThemeExtension<Tokens> {
   const Tokens({
@@ -49,11 +51,11 @@ class Tokens extends ThemeExtension<Tokens> {
   final bool dark;
 
   static const light = Tokens(
-      bg: Color(0xffEFEBE5),
+      bg: Color(0xffFBF9F5),
       panel: Color(0xffFFFFFF),
       ink: Color(0xff1E1C19),
       muted: Color(0xff6F665D),
-      line: Color(0xffDCD5CA),
+      line: Color(0xffE4DDD2),
       accent: Color(0xffD86A2B),
       accentInk: Color(0xff1E1C19),
       wall: Color(0xff2A2622),
@@ -71,11 +73,11 @@ class Tokens extends ThemeExtension<Tokens> {
       dark: false);
 
   static const night = Tokens(
-      bg: Color(0xff161411),
-      panel: Color(0xff1E1C19),
+      bg: Color(0xff1E1C19),
+      panel: Color(0xff24211D),
       ink: Color(0xffF7F3EE),
       muted: Color(0xffC2B8AB),
-      line: Color(0xff3A352F),
+      line: Color(0xff34302A),
       accent: Color(0xffD86A2B),
       accentInk: Color(0xff1E1C19),
       wall: Color(0xffE4DDD2),
@@ -137,124 +139,8 @@ TextStyle mono(
         color: color,
         fontFeatures: const [FontFeature.tabularFigures()]);
 
-ThemeData buildTheme(Tokens t) {
-  final scheme = ColorScheme(
-      brightness: t.dark ? Brightness.dark : Brightness.light,
-      primary: t.accent,
-      onPrimary: t.accentInk,
-      secondary: t.chk,
-      onSecondary: t.panel,
-      secondaryContainer: Tokens.mix(t.accent, 0.16, t.panel),
-      onSecondaryContainer: t.ink,
-      primaryContainer: Tokens.mix(t.accent, 0.2, t.panel),
-      onPrimaryContainer: t.ink,
-      error: t.crit,
-      onError: t.panel,
-      surface: t.panel,
-      onSurface: t.ink,
-      onSurfaceVariant: t.muted,
-      outline: t.line,
-      outlineVariant: t.line,
-      surfaceContainerHighest: t.bg,
-      inverseSurface: t.ink,
-      onInverseSurface: t.panel,
-      inversePrimary: t.accent);
-  final base = ThemeData(
-      useMaterial3: true,
-      colorScheme: scheme,
-      fontFamily: fontBody,
-      fontFamilyFallback: bodyFallback,
-      scaffoldBackgroundColor: t.bg,
-      canvasColor: t.panel,
-      dividerColor: t.line,
-      // No Material ripple: a press is a warm bloom from the finger that
-      // settles into one even tint (see PressTint). The highlight stays
-      // clear so it is not drawn twice.
-      splashFactory: PressTint.splashFactory,
-      splashColor: t.accent.withValues(alpha: t.dark ? 0.20 : 0.14),
-      highlightColor: Colors.transparent,
-      extensions: [t],
-      // iOS-style horizontal slide everywhere, with swipe-back.
-      pageTransitionsTheme: motionPageTransitions);
-  final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8), side: BorderSide(color: t.line));
-  return base.copyWith(
-      textTheme: base.textTheme.apply(bodyColor: t.ink, displayColor: t.ink),
-      appBarTheme: AppBarTheme(
-          backgroundColor: t.bg,
-          foregroundColor: t.ink,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          surfaceTintColor: Colors.transparent),
-      cardTheme: CardThemeData(
-          color: t.panel,
-          elevation: 0,
-          margin: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-              side: BorderSide(color: t.line))),
-      dialogTheme: DialogThemeData(
-          backgroundColor: t.panel,
-          // A dialog is a column of text, not a banner: without a cap a
-          // long sentence stretches it across a desktop window.
-          constraints: const BoxConstraints(minWidth: 280, maxWidth: 460),
-          surfaceTintColor: Colors.transparent,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-      bottomSheetTheme: BottomSheetThemeData(
-          backgroundColor: t.panel,
-          surfaceTintColor: Colors.transparent,
-          showDragHandle: true),
-      popupMenuTheme: PopupMenuThemeData(
-          color: t.panel, surfaceTintColor: Colors.transparent),
-      snackBarTheme: SnackBarThemeData(
-          backgroundColor: t.ink,
-          contentTextStyle: TextStyle(color: t.panel, fontFamily: fontBody),
-          actionTextColor: t.accent),
-      filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-              backgroundColor: t.accent,
-              foregroundColor: t.accentInk,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)))),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-              foregroundColor: t.ink,
-              backgroundColor: t.panel,
-              side: BorderSide(color: t.line),
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-              shape: shape)),
-      textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(foregroundColor: t.accent)),
-      inputDecorationTheme: InputDecorationTheme(
-          isDense: true,
-          filled: true,
-          fillColor: t.panel,
-          border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: t.line)),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: t.line)),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: t.accent, width: 2))),
-      chipTheme: ChipThemeData(
-          backgroundColor: t.panel,
-          selectedColor: Tokens.mix(t.accent, 0.14, t.panel),
-          side: BorderSide(color: t.line),
-          shape: const StadiumBorder(),
-          labelStyle: TextStyle(color: t.ink, fontSize: 13)),
-      sliderTheme: SliderThemeData(
-          activeTrackColor: t.accent,
-          thumbColor: t.accent,
-          inactiveTrackColor: t.line),
-      checkboxTheme: CheckboxThemeData(
-          fillColor: WidgetStateProperty.resolveWith((s) =>
-              s.contains(WidgetState.selected) ? t.accent : Colors.transparent),
-          checkColor: WidgetStatePropertyAll(t.accentInk)),
-      tooltipTheme: TooltipThemeData(
-          decoration: BoxDecoration(
-              color: t.ink, borderRadius: BorderRadius.circular(6)),
-          textStyle: TextStyle(color: t.panel, fontSize: 12)));
-}
+/// The app's theme. The design tool and the platform pages share one look
+/// (see [buildPlatformTheme]); the drafting palette above is kept for the
+/// drawing itself.
+ThemeData buildTheme(Tokens t) =>
+    buildPlatformTheme(t.dark ? YTokens.night : YTokens.light);

@@ -118,13 +118,13 @@ class DemandCard extends StatelessWidget {
     // The kind of demand leads the card; a drawing, when there is one, is
     // the only picture. Without a drawing the card is its facts.
     final kind = Row(children: [
-      Icon(demandIcon(demand), size: 18, color: t.accent),
+      Icon(demandIcon(demand), size: 18, color: t.ink),
       const SizedBox(width: 6),
       Expanded(
           child: Text(demandTypeName(demand.type),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: YText.labelStrong.copyWith(color: t.accent))),
+              style: YText.labelStrong.copyWith(color: t.ink))),
       if (heart != null) heart,
     ]);
     return Pressable(

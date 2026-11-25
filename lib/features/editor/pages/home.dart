@@ -264,7 +264,8 @@ class _HouseHomeState extends ConsumerState<HouseHome>
     try {
       final document = await store.openProject(entry.id);
       if (!mounted) return;
-      await Navigator.of(context).push(MaterialPageRoute<void>(
+      // From a touched card the editor grows out of that card.
+      await Navigator.of(context).push(ZoomPageRoute<void>(
           builder: (_) => HouseEditor(
               entry: ProjectEntry(entry.id, document), store: store)));
       await refresh();
@@ -374,11 +375,11 @@ class _HouseHomeState extends ConsumerState<HouseHome>
   /// open with this choice instead of a blank sheet or a bare list).
   @override
   Future<void> createFromTemplate([String? chosen]) async {
-    final key = chosen ??
-        await showMotionSheet<String>(
+    final picked = chosen ??
+        await showMotionSheet<Object>(
             context: context,
             isScrollControlled: true,
-            builder: (context) {
+            builder: (context) => _StartSheet(ways: (context, toSize) {
               final t = Tokens.of(context);
               Widget way(String key, IconData icon, String title, String sub) =>
                   Material(
@@ -388,11 +389,14 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                           side: BorderSide(color: t.line)),
                       child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          onTap: () => Navigator.pop(context, key),
+                          // The size form is the next page of this sheet.
+                          onTap: () => key == 'blank'
+                              ? toSize()
+                              : Navigator.pop(context, key),
                           child: Padding(
                               padding: const EdgeInsets.all(12),
                               child: Row(children: [
-                                Icon(icon, color: t.accent),
+                                Icon(icon, color: t.ink),
                                 const SizedBox(width: 12),
                                 Expanded(
                                     child: Column(
@@ -435,11 +439,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                     Text('${e.value.$3} $unitM',
                                         style: mono(size: 12, color: t.muted)),
                                   ]))));
-              return SafeArea(
-                  child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                          maxHeight: MediaQuery.sizeOf(context).height * 0.88),
-                      child: ListView(
+              return ListView(
                           shrinkWrap: true,
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                           children: [
@@ -524,9 +524,11 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                       SizedBox(width: w, child: template(e)),
                                   ]);
                             }),
-                          ])));
-            });
-    if (key == null || !mounted) return;
+                          ]);
+            }));
+    if (picked == null || !mounted) return;
+    if (picked is _NewDesign) return _createFrom(picked);
+    final key = picked as String;
     if (key == 'blank') return create();
     if (key == 'sketch') return create(sketch: true);
     if (key == 'wizard') {
@@ -581,201 +583,45 @@ class _HouseHomeState extends ConsumerState<HouseHome>
 
   @override
   Future<void> create({bool sketch = false}) async {
-    final name =
-        TextEditingController(text: tr3('我的房屋', 'Менің үйім', 'Мой дом', 'My house', ky: 'Менин үйүм', uz: 'Mening uyim'));
-    final width = TextEditingController(text: '12');
-    final depth = TextEditingController(text: '10');
-    const columns = 1;
-    const rows = 1;
-    String? validation;
-    var sketchRequested = sketch;
-    var roof = 'gable';
-    double? parse(TextEditingController c) {
-      final v = parseNumber(c.text);
-      return v == null || !v.isFinite ? null : v;
-    }
-
-    var doc = sketch
-        ? null
-        : await showDialog<HouseDocument>(
+    final design = sketch
+        ? (
+            name: _defaultHouseName(),
+            width: 0,
+            depth: 0,
+            roof: 'gable',
+            sketch: true
+          )
+        : await showMotionSheet<_NewDesign>(
             context: context,
-            builder: (context) =>
-                StatefulBuilder(builder: (context, setDialog) {
-                  final t = Tokens.of(context);
-                  final w = parse(width);
-                  final d = parse(depth);
-                  Widget size(TextEditingController c, String label) =>
-                      TextField(
-                          controller: c,
-                          onChanged: (_) => setDialog(() => validation = null),
-                          keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true),
-                          decoration: InputDecoration(
-                              labelText: label, suffixText: unitM));
-                  return AlertDialog(
-                      title: Text(tr3('新建设计', 'Жаңа жоба', 'Новый проект', 'New design', ky: 'Жаңы долбоор', uz: 'Yangi loyiha')),
-                      content: SingleChildScrollView(
-                          child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                            TextField(
-                                controller: name,
-                                decoration: InputDecoration(
-                                    labelText: tr3('设计名称', 'Жоба атауы',
-                                        'Название проекта',
-                                        'Design name', ky: 'Долбоордун аталышы', uz: 'Loyiha nomi'))),
-                            const SizedBox(height: 12),
-                            // Live outline: the numbers become a shape.
-                            Center(
-                                child: SizedBox(
-                                    width: 150,
-                                    height: 110,
-                                    child: CustomPaint(
-                                        painter: _SizePreviewPainter(
-                                            w, d, t.accent, t.ink, t.muted)))),
-                            const SizedBox(height: 8),
-                            Wrap(spacing: 6, runSpacing: 6, children: [
-                              for (final (pw, pd) in _sizePresets)
-                                ChoiceChip(
-                                    label: Text('$pw×$pd'),
-                                    visualDensity: VisualDensity.compact,
-                                    selected: w == pw && d == pd,
-                                    onSelected: (_) => setDialog(() {
-                                          width.text = '$pw';
-                                          depth.text = '$pd';
-                                          validation = null;
-                                        })),
-                            ]),
-                            const SizedBox(height: 10),
-                            Row(children: [
-                              Expanded(
-                                  child: size(
-                                      width,
-                                      tr3('面宽（左右）', 'Ені (солдан оңға)',
-                                          'Ширина (слева направо)',
-                                          'Width (left to right)', ky: 'Туурасы (солдон оңго)', uz: 'Eni (chapdan oʻngga)'))),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                  child: size(
-                                      depth,
-                                      tr3('进深（上下）', 'Ұзындығы (жоғары-төмен)',
-                                          'Длина (сверху вниз)',
-                                          'Length (top to bottom)', ky: 'Узундугу (үстүдөн ылдый)', uz: 'Uzunligi (tepadan pastga)'))),
-                            ]),
-                            const SizedBox(height: 12),
-                            // The roof is chosen up front and can be
-                            // changed any time later.
-                            Text(tr3('屋顶', 'Шатыр', 'Крыша', 'Roof', ky: 'Чатыр', uz: 'Tom'),
-                                style:
-                                    TextStyle(fontSize: 12.5, color: t.muted)),
-                            const SizedBox(height: 4),
-                            Wrap(spacing: 6, runSpacing: 6, children: [
-                              for (final style in roofStyles)
-                                ChoiceChip(
-                                    key: ValueKey('new-roof-$style'),
-                                    avatar: RoofIcon(style,
-                                        size: 14,
-                                        color:
-                                            roof == style ? t.accent : t.ink),
-                                    showCheckmark: false,
-                                    selectedColor:
-                                        t.accent.withValues(alpha: 0.14),
-                                    side: BorderSide(
-                                        color:
-                                            roof == style ? t.accent : t.line),
-                                    label: Text(roofStyleName(style),
-                                        style: TextStyle(color: t.ink)),
-                                    visualDensity: VisualDensity.compact,
-                                    selected: roof == style,
-                                    onSelected: (_) =>
-                                        setDialog(() => roof = style)),
-                            ]),
-                            Padding(
-                                padding: const EdgeInsets.only(top: 10),
-                                child: Text(
-                                    tr3(
-                                        '进去后，从墙上的 ＋ 拖出隔墙。',
-                                        'Ішке кірген соң қабырғадағы ＋ белгісінен ішкі қабырға тартыңыз.',
-                                        'Внутри тяните перегородки от значка ＋ на стене.',
-                                        'Inside, drag partitions from the ＋ on a wall.', ky: 'Ичинде тосмолорду дубалдагы ＋ белгисинен сүйрөп чыгарыңыз.', uz: 'Ichkarida toʻsiqlarni devordagi ＋ dan sudrab chiqaring.'),
-                                    style: TextStyle(
-                                        fontSize: 12.5, color: t.muted))),
-                            if (validation != null)
-                              Text(validation!,
-                                  style: TextStyle(
-                                      color:
-                                          Theme.of(context).colorScheme.error))
-                          ])),
-                      actions: [
-                        TextButton.icon(
-                            onPressed: () {
-                              sketchRequested = true;
-                              Navigator.pop(context);
-                            },
-                            icon: const Icon(Icons.gesture),
-                            label: Text(tr3('在画布上拖出外形', 'Пішінді сызып беру',
-                                'Нарисовать контур',
-                                'Draw the outline', ky: 'Контурду чийүү', uz: 'Konturni chizish'))),
-                        TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
-                        FilledButton(
-                            onPressed: () {
-                              final w = parse(width);
-                              final d = parse(depth);
-                              if (w == null ||
-                                  d == null ||
-                                  w < 3 ||
-                                  w > 100 ||
-                                  d < 3 ||
-                                  d > 100 ||
-                                  w * 1000 / columns < 300 ||
-                                  d * 1000 / rows < 300) {
-                                setDialog(() => validation = tr3(
-                                    '宽和长都要在 3 到 100 米之间',
-                                    'Ені мен ұзындығы 3–100 м аралығында болуы керек',
-                                    'Ширина и длина должны быть от 3 до 100 м',
-                                    'Width and length must be 3 to 100 m', ky: 'Туурасы жана узундугу 3 мөн 100 м ортосунда болушу керек', uz: 'Eni va uzunligi 3 dan 100 m gacha boʻlishi kerak'));
-                                return;
-                              }
-                              Navigator.pop(
-                                  context,
-                                  withRoof(
-                                      createHouse(
-                                          name: name.text,
-                                          width: (w * 1000).round(),
-                                          depth: (d * 1000).round(),
-                                          columns: columns,
-                                          rows: rows,
-                                          initialRoom: true,
-                                          timestamp: DateTime.now()
-                                              .toUtc()
-                                              .toIso8601String(),
-                                          newId: () => const Uuid().v4()),
-                                      roof));
-                            },
-                            child: Text(tr3('开始设计', 'Бастау', 'Начать', 'Start', ky: 'Баштоо', uz: 'Boshlash')))
-                      ]);
-                }));
-    // The controllers stay alive until the dialog exit animation completes.
-    if (sketchRequested && mounted) {
+            isScrollControlled: true,
+            builder: (context) => const _StartSheet());
+    if (design == null || !mounted) return;
+    return _createFrom(design);
+  }
+
+  /// Makes the house the size form asked for, or lets it be sketched first,
+  /// and opens it.
+  Future<void> _createFrom(_NewDesign design) async {
+    var width = design.width;
+    var depth = design.depth;
+    if (design.sketch) {
       final dimensions = await Navigator.of(context).push<FootprintDimensions>(
           MaterialPageRoute(builder: (_) => const FootprintSketch()));
       if (dimensions == null) return;
-      doc = withRoof(
-          createHouse(
-              name: name.text,
-              width: dimensions.width,
-              depth: dimensions.depth,
-              columns: 1,
-              rows: 1,
-              initialRoom: true,
-              timestamp: DateTime.now().toUtc().toIso8601String(),
-              newId: () => const Uuid().v4()),
-          roof);
+      width = dimensions.width;
+      depth = dimensions.depth;
     }
-    if (doc == null) return;
+    final doc = withRoof(
+        createHouse(
+            name: design.name,
+            width: width,
+            depth: depth,
+            columns: 1,
+            rows: 1,
+            initialRoom: true,
+            timestamp: DateTime.now().toUtc().toIso8601String(),
+            newId: () => const Uuid().v4()),
+        design.roof);
     try {
       final id = await store.createProject(doc);
       if (mounted) await open(ProjectEntry(id, doc));
@@ -1058,7 +904,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                             Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
                                 child: Sheet(
-                                    child: ListTile(
+                                    child: ListTile(contentPadding: tilePad, 
                                         leading: Icon(Icons.error_outline,
                                             color: t.crit),
                                         title: Text(entry.key),

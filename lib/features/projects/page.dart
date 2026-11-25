@@ -227,7 +227,9 @@ class _DesignCard extends StatelessWidget {
     String m(int mm) => dec((mm / 1000)
         .toStringAsFixed(mm % 1000 == 0 ? 0 : (mm % 100 == 0 ? 1 : 2)));
     final floors = doc.floors.length;
-    return YCard(
+    // Opening a design: the editor grows out of this card.
+    return ZoomSource(
+        child: YCard(
         key: Key('design-card-${entry.id}'),
         padding: const EdgeInsets.all(YSpace.md),
         onTap: () => list.open(entry),
@@ -303,8 +305,8 @@ class _DesignCard extends StatelessWidget {
                 child: FilledButton(
                     key: Key('design-continue-${entry.id}'),
                     style: FilledButton.styleFrom(
-                        backgroundColor: t.accentSoft,
-                        foregroundColor: t.dark ? t.ink : t.accent,
+                        backgroundColor: t.surface,
+                        foregroundColor: t.ink,
                         minimumSize: const Size(0, yTouch),
                         padding:
                             const EdgeInsets.symmetric(horizontal: YSpace.sm)),
@@ -324,7 +326,7 @@ class _DesignCard extends StatelessWidget {
                     child: Text(tr3('找施工方', 'Шебер табу', 'Найти мастеров', 'Find pros', ky: 'Адистерди табуу', uz: 'Mutaxassis topish'),
                         maxLines: 1, overflow: TextOverflow.ellipsis))),
           ]),
-        ]));
+        ])));
   }
 
   static PopupMenuItem<String> _item(String value, IconData icon, String text,
@@ -422,7 +424,7 @@ class _ExampleRow extends StatelessWidget {
             horizontal: YSpace.lg, vertical: YSpace.md),
         onTap: () => list.createFromTemplate('kz'),
         child: Row(children: [
-          Icon(Icons.auto_awesome_mosaic_outlined, color: t.accent),
+          Icon(Icons.auto_awesome_mosaic_outlined, color: t.ink),
           const SizedBox(width: YSpace.md),
           Expanded(
               child: Column(

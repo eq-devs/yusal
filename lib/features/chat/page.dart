@@ -350,12 +350,12 @@ class _ChatPageState extends State<ChatPage>
                                                 horizontal: 16, vertical: 10),
                                         border: OutlineInputBorder(
                                             borderRadius: BorderRadius.circular(
-                                                YRadius.pill)),
+                                                YRadius.pill),
+                                            borderSide: BorderSide.none),
                                         enabledBorder: OutlineInputBorder(
                                             borderRadius: BorderRadius.circular(
                                                 YRadius.pill),
-                                            borderSide:
-                                                BorderSide(color: t.line)),
+                                            borderSide: BorderSide.none),
                                         focusedBorder: OutlineInputBorder(
                                             borderRadius:
                                                 BorderRadius.circular(YRadius.pill),

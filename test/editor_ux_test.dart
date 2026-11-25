@@ -121,19 +121,24 @@ void main() {
     expect(painter(t).guides, isEmpty);
   });
 
-  testWidgets('phones show six tools; the rest open from 更多工具', (t) async {
+  testWidgets('on a phone every plan tool opens from the one add button',
+      (t) async {
     await mount(t, initial(), size: const Size(390, 844));
-    for (final tip in ['墙体', '拖入门', '家具', '更多工具']) {
+    // No tool row over the drawing: one button, and the tools on its sheet.
+    expect(find.byTooltip('墙体'), findsNothing);
+    await t.tap(find.byKey(const Key('plan-add')));
+    await t.pumpAndSettle();
+    for (final tip in ['加房间', '墙体', '拖入门', '拖入窗', '家具', '拖动划房']) {
       expect(find.byTooltip(tip), findsOneWidget, reason: tip);
     }
-    expect(find.byTooltip('拖动划房'), findsNothing);
-    await t.tap(find.byTooltip('更多工具'));
-    await t.pumpAndSettle();
     await t.tap(find.byTooltip('拖动划房'));
     await t.pumpAndSettle();
-    expect(find.text('更多工具'), findsNothing, reason: 'the sheet closed');
-    expect(find.byTooltip('拖动划房'), findsOneWidget,
-        reason: 'the active tool shows in the row');
+    expect(find.byTooltip('拖动划房'), findsNothing, reason: 'the sheet closed');
+    // The tool in hand has its own way back to just looking.
+    await t.tap(find.byKey(const Key('tool-done')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('tool-done')), findsNothing);
+    expect(t.takeException(), isNull);
   });
 
   testWidgets(

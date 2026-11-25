@@ -42,7 +42,7 @@ extension _CompareCard on _HouseEditorState {
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
               for (final p in others)
-                ListTile(
+                ListTile(contentPadding: tilePad, 
                     title: Text(p.document.meta.name),
                     subtitle: Text(
                         '${dec((p.document.footprint.width / 1000).toString())} × ${dec((p.document.footprint.depth / 1000).toString())} $unitM'),

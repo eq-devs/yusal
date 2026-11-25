@@ -150,8 +150,12 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await mount(tester, house(), textScale: 1.8);
+    expect(tester.takeException(), isNull);
+    // On a phone the tools are on the add button's sheet.
+    await tester.tap(find.byKey(const Key('plan-add')));
+    await tester.pumpAndSettle();
     expect(find.byTooltip('拖入门'), findsOneWidget);
-    expect(find.byTooltip('更多工具'), findsOneWidget);
+    expect(find.byTooltip('加房间'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   testWidgets(

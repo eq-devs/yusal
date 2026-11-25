@@ -424,7 +424,7 @@ class _ProBanner extends StatelessWidget {
             decoration: BoxDecoration(
                 color: t.surface, borderRadius: BorderRadius.circular(yRadius)),
             child: Row(children: [
-              YusalIcon(YIcon.hire, color: t.accent),
+              YusalIcon(YIcon.hire, color: t.ink),
               const SizedBox(width: 10),
               Expanded(
                   child: Text(

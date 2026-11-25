@@ -31,6 +31,14 @@ extension _SelectionCards on _HouseEditorState {
     return null;
   }
 
+  /// What the selection card is about; a new value is a new selection.
+  String get selectionIdentity =>
+      selectedUtilityId ??
+      selectedFurnitureId ??
+      selectedOpeningId ??
+      selectedRoomId ??
+      '';
+
   bool get wideLayout => !compact && MediaQuery.sizeOf(context).width >= 1000;
 
   /// Card chrome: on phones it floats over the bottom of the plan, can fold
@@ -63,7 +71,10 @@ extension _SelectionCards on _HouseEditorState {
                 ? tr3('展开', 'Ашу', 'Развернуть', 'Expand', ky: 'Жайып көрсөтүү', uz: 'Yoyish')
                 : tr3('收起', 'Жию', 'Свернуть', 'Collapse', ky: 'Жыйноо', uz: 'Yigʻish'),
             visualDensity: VisualDensity.compact,
-            onPressed: () => update(() => panelCollapsed = !panelCollapsed),
+            onPressed: () => update(() {
+                  panelCollapsed = !panelCollapsed;
+                  panelFull = false;
+                }),
             icon: Icon(panelCollapsed ? Icons.expand_less : Icons.expand_more,
                 size: 20)),
       IconButton(
@@ -77,21 +88,39 @@ extension _SelectionCards on _HouseEditorState {
     final grip = GestureDetector(
         key: const Key('selection-grip'),
         behavior: HitTestBehavior.opaque,
-        onTap: () => update(() => panelCollapsed = !panelCollapsed),
+        onTap: () => update(() {
+              panelCollapsed = !panelCollapsed;
+              panelFull = false;
+            }),
+        // Three stops, as on a map's sheet: one line, the usual card,
+        // and nearly the whole drawing.
         onVerticalDragEnd: (d) {
           final v = d.primaryVelocity ?? 0;
           if (v.abs() < 40) return;
-          update(() => panelCollapsed = v > 0);
+          HapticFeedback.selectionClick();
+          update(() {
+            if (v > 0) {
+              if (panelFull) {
+                panelFull = false;
+              } else {
+                panelCollapsed = true;
+              }
+            } else if (panelCollapsed) {
+              panelCollapsed = false;
+            } else {
+              panelFull = true;
+            }
+          });
         },
         child: Padding(
-            padding: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.only(top: 2, bottom: 6),
             child: Center(
                 child: Container(
-                    width: 36,
-                    height: 4,
+                    width: 40,
+                    height: 5,
                     decoration: BoxDecoration(
                         color: t.line,
-                        borderRadius: BorderRadius.circular(2))))));
+                        borderRadius: BorderRadius.circular(3))))));
     final body = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -116,23 +145,31 @@ extension _SelectionCards on _HouseEditorState {
             Wrap(spacing: 8, runSpacing: 8, children: actions),
         ]);
     final sheet = Container(
-        padding: const EdgeInsets.fromLTRB(16, 8, 8, 12),
+        // On a phone the sheet runs down under the home indicator.
+        padding: EdgeInsets.fromLTRB(
+            16, 8, 8, 12 + (phone ? safeInsets.bottom : 0)),
         decoration: BoxDecoration(
             color: t.panel,
-            border: Border.all(color: t.line),
-            borderRadius: BorderRadius.circular(10),
+            // A card beside the drawing; on a phone a sheet that rises
+            // from the bottom edge.
+            border: wide ? Border.all(color: t.line) : null,
+            borderRadius: phone
+                ? const BorderRadius.vertical(top: Radius.circular(24))
+                : BorderRadius.circular(20),
             boxShadow: wide
                 ? null
                 : [
                     BoxShadow(
                         color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 12)
+                        blurRadius: 16,
+                        offset: const Offset(0, -2))
                   ]),
         child: wide
             ? body
             : ConstrainedBox(
                 constraints: BoxConstraints(
-                    maxHeight: math.max(140, canvasSize.height * 0.58)),
+                    maxHeight: math.max(
+                        140, canvasSize.height * (panelFull ? 0.88 : 0.5))),
                 child: SingleChildScrollView(child: body)));
     return sheet;
   }
@@ -309,7 +346,7 @@ extension _SelectionCards on _HouseEditorState {
                       style: TextStyle(
                           fontSize: 13,
                           height: 1.5,
-                          color: info.note.isEmpty ? t.accent : t.muted)))),
+                          color: info.note.isEmpty ? t.ink : t.muted)))),
           const SizedBox(height: 6),
           Wrap(spacing: 8, runSpacing: 8, children: [
             Btn(
@@ -381,7 +418,7 @@ extension _SelectionCards on _HouseEditorState {
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
               for (final other in adjacent)
-                ListTile(
+                ListTile(contentPadding: tilePad, 
                     title: Text(displayRoomName(other)),
                     onTap: () => Navigator.pop(context, other.id)),
             ])));

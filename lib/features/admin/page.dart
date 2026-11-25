@@ -542,7 +542,7 @@ class _TodoTile extends StatelessWidget {
         child: YCard(
             onTap: onTap,
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(icon, color: t.accent),
+              Icon(icon, color: t.ink),
               const SizedBox(width: YSpace.md),
               Expanded(
                   child: Column(

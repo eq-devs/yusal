@@ -26,7 +26,7 @@ extension _EditorDialogs on _HouseEditorState {
                 'defaults':
                     tr3('默认尺寸', 'Әдепкі өлшемдер', 'Размеры по умолчанию', 'Default dimensions', ky: 'Демейки өлчөмдөр', uz: 'Standart oʻlchamlar')
               }.entries)
-                ListTile(
+                ListTile(contentPadding: tilePad, 
                     title: Text(e.value),
                     onTap: () => Navigator.pop(context, e.key))
             ])));
@@ -82,12 +82,12 @@ extension _EditorDialogs on _HouseEditorState {
           context: context,
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
-                ListTile(
+                ListTile(contentPadding: tilePad, 
                     title: Text(tr3('屋脊沿进深方向', 'Жота тереңдік бойымен',
                         'Конёк вдоль глубины',
                         'Ridge along the depth', ky: 'Кырча тереңдик боюнча', uz: 'Tizma chuqurlik boʻylab')),
                     onTap: () => Navigator.pop(context, 'V')),
-                ListTile(
+                ListTile(contentPadding: tilePad, 
                     title: Text(tr3(
                         '屋脊沿宽度方向', 'Жота ені бойымен', 'Конёк вдоль ширины', 'Ridge along the width', ky: 'Кырча туурасы боюнча', uz: 'Tizma en boʻylab')),
                     onTap: () => Navigator.pop(context, 'H')),
@@ -141,7 +141,7 @@ extension _EditorDialogs on _HouseEditorState {
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 for (final entry in labels.entries)
-                  ListTile(
+                  ListTile(contentPadding: tilePad, 
                       title: Text(entry.value),
                       subtitle: Text(
                           '${dec(((defaults[entry.key] as int) / 1000).toString())} $unitM'),
@@ -161,7 +161,7 @@ extension _EditorDialogs on _HouseEditorState {
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 for (final angle in [0, 90, 180, 270])
-                  ListTile(
+                  ListTile(contentPadding: tilePad, 
                       title: Text(tr3(
                           '正北指向 $angle°',
                           'Солтүстік $angle° бағытта',
@@ -183,19 +183,19 @@ extension _EditorDialogs on _HouseEditorState {
             child: SizedBox(
                 height: 360,
                 child: ListView(children: [
-                  ListTile(
+                  ListTile(contentPadding: tilePad, 
                       title: Text(tr3('新增竖向分隔线', 'Тік бөлу сызығын қосу',
                           'Добавить вертикальную разделительную линию',
                           'Add a vertical dividing line', ky: 'Тик бөлүүчү сызык кошуу', uz: 'Vertikal boʻluvchi chiziq qoʻshish')),
                       onTap: () => Navigator.pop(context, AxisDir.V)),
-                  ListTile(
+                  ListTile(contentPadding: tilePad, 
                       title: Text(tr3('新增横向分隔线', 'Көлденең бөлу сызығын қосу',
                           'Добавить горизонтальную разделительную линию',
                           'Add a horizontal dividing line', ky: 'Туурасынан бөлүүчү сызык кошуу', uz: 'Gorizontal boʻluvchi chiziq qoʻshish')),
                       onTap: () => Navigator.pop(context, AxisDir.H)),
                   for (final axis
                       in base.axes.all.where((a) => a.kind != 'boundary'))
-                    ListTile(
+                    ListTile(contentPadding: tilePad, 
                         title: Text(tr3(
                             '${axis.dir == AxisDir.V ? '竖' : '横'}线 · ${(axis.pos / 1000).toStringAsFixed(2)} 米',
                             '${axis.dir == AxisDir.V ? 'Тік' : 'Көлденең'} сызық · ${m2dp(axis.pos)} м',
@@ -215,10 +215,10 @@ extension _EditorDialogs on _HouseEditorState {
             context: context,
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [
-                  ListTile(
+                  ListTile(contentPadding: tilePad, 
                       title: Text(tr3('所有楼层', 'Барлық қабат', 'Все этажи', 'All floors', ky: 'Бардык кабаттар', uz: 'Barcha qavatlar')),
                       onTap: () => Navigator.pop(context, 'global')),
-                  ListTile(
+                  ListTile(contentPadding: tilePad, 
                       title:
                           Text(tr3('仅本层', 'Тек осы қабат', 'Только этот этаж', 'This floor only', ky: 'Ушул кабат гана', uz: 'Faqat shu qavat')),
                       onTap: () => Navigator.pop(context, 'floor')),
@@ -238,16 +238,16 @@ extension _EditorDialogs on _HouseEditorState {
         context: context,
         builder: (context) => SafeArea(
             child: ListView(shrinkWrap: true, children: [
-          ListTile(
+          ListTile(contentPadding: tilePad, 
               title: Text(tr3('修改位置', 'Орнын өзгерту', 'Изменить положение', 'Change the position', ky: 'Ордун өзгөртүү', uz: 'Joyini oʻzgartirish')),
               onTap: () => Navigator.pop(context, 'move')),
           if (selected.kind == 'floor')
-            ListTile(
+            ListTile(contentPadding: tilePad, 
                 title: Text(tr3('同步到所有楼层', 'Барлық қабатқа тарату',
                     'Применить ко всем этажам',
                     'Apply to all floors', ky: 'Бардык кабаттарга колдонуу', uz: 'Barcha qavatlarga qoʻllash')),
                 onTap: () => Navigator.pop(context, 'promote')),
-          ListTile(
+          ListTile(contentPadding: tilePad, 
               title: Text(tr3('删除分隔线', 'Сызықты жою', 'Удалить линию', 'Delete the line', ky: 'Сызыкты өчүрүү', uz: 'Chiziqni oʻchirish')),
               onTap: () => Navigator.pop(context, 'delete')),
         ])),
@@ -500,15 +500,87 @@ extension _EditorDialogs on _HouseEditorState {
         isScrollControlled: true,
         builder: (context) => SafeArea(
             child: SizedBox(
-                height: math.min(MediaQuery.sizeOf(context).height * 0.7, 500),
+                height: math.min(MediaQuery.sizeOf(context).height * 0.7,
+                    phone ? 560 : 500),
                 child: ListView(children: [
-                  Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                          tr3('更多工具', 'Басқа құралдар', 'Другие инструменты', 'More tools', ky: 'Дагы аспаптар', uz: 'Boshqa asboblar'),
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w600))),
-                  if (phoneTools)
+                  if (phone) ...[
+                    sheetTitle(tr3('添加', 'Қосу', 'Добавить', 'Add', ky: 'Кошуу', uz: 'Qoʻshish')),
+                    Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                        child: LayoutBuilder(builder: (context, c) {
+                          final w = (c.maxWidth - 20) / 3;
+                          return Wrap(spacing: 10, runSpacing: 10, children: [
+                            addTile(context, 'room', Icons.add_home_outlined,
+                                '加房间',
+                                on: stamping && !stampStair, width: w),
+                            addTile(context, 'wall', Icons.add_outlined, '墙体',
+                                on: tool == EditorTool.drawWall, width: w),
+                            addTile(context, 'door',
+                                Icons.door_front_door_outlined, '拖入门',
+                                on: tool == EditorTool.placeOpening &&
+                                    placingOpening == OpeningKind.door,
+                                width: w),
+                            addTile(context, 'window', Icons.window_outlined,
+                                '拖入窗',
+                                on: tool == EditorTool.placeOpening &&
+                                    placingOpening == OpeningKind.window,
+                                width: w),
+                            addTile(context, 'furniture', Icons.chair_outlined,
+                                '家具',
+                                on: tool == EditorTool.placeFurniture,
+                                width: w),
+                            addTile(
+                                context,
+                                'stair',
+                                Icons.stairs_outlined,
+                                tr3('楼梯', 'Баспалдақ', 'Лестница', 'Stairs', ky: 'Тепкич', uz: 'Zinapoya'),
+                                on: stairStamping,
+                                width: w),
+                          ]);
+                        })),
+                    Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                        child: Text(
+                            tr3('更多工具', 'Басқа құралдар', 'Другие инструменты', 'More tools', ky: 'Дагы аспаптар', uz: 'Boshqa asboblar'),
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Tokens.of(context).muted))),
+                    Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                        child: LayoutBuilder(builder: (context, c) {
+                          final w = (c.maxWidth - 20) / 3;
+                          return Wrap(spacing: 10, runSpacing: 10, children: [
+                            addTile(context, 'split',
+                                Icons.vertical_split_outlined, '拉线分房',
+                                on: tool == EditorTool.split, width: w),
+                            addTile(context, 'box', Icons.crop_square, '拖动划房',
+                                on: tool == EditorTool.box && !stamping,
+                                width: w),
+                            addTile(context, 'utility',
+                                Icons.electrical_services_outlined, '水电',
+                                on: tool == EditorTool.placeUtility, width: w),
+                            addTile(context, 'selectWall',
+                                Icons.view_week_outlined, '墙体调整',
+                                on: tool == EditorTool.selectWall ||
+                                    tool == EditorTool.editWall,
+                                width: w),
+                            addTile(context, 'resize', Icons.open_in_full,
+                                '房屋尺寸',
+                                on: tool == EditorTool.resize, width: w),
+                            addTile(context, 'measure', Icons.straighten,
+                                measureLabel,
+                                on: tool == EditorTool.measure, width: w),
+                          ]);
+                        })),
+                  ] else
+                    Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                            tr3('更多工具', 'Басқа құралдар', 'Другие инструменты', 'More tools', ky: 'Дагы аспаптар', uz: 'Boshqa asboblar'),
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.w600))),
+                  if (phoneTools && !phone)
                     Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                         child: Wrap(spacing: 8, runSpacing: 8, children: [
@@ -535,11 +607,17 @@ extension _EditorDialogs on _HouseEditorState {
                       type.name: roomTypeName(type),
                     'erase': tr3('擦除', 'Өшіру', 'Стереть', 'Erase', ky: 'Өчүргүч', uz: 'Oʻchirgʻich')
                   }.entries)
-                    ListTile(
+                    ListTile(contentPadding: tilePad, 
                         title: Text(entry.value),
                         onTap: () => Navigator.pop(context, entry.key)),
                 ]))));
     if (choice == null || !mounted) return;
+    if (choice.startsWith('tool:')) {
+      final key = choice.substring(5);
+      if (key == 'stair') return startStairStamp();
+      if (key == 'measure') return toggleMeasure(true);
+      return pickTool(() => toolBody(key));
+    }
     if (choice == 'fit') {
       canvasTransform.value = Matrix4.identity();
       return;
@@ -563,6 +641,31 @@ extension _EditorDialogs on _HouseEditorState {
         context: context,
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
+              // On a phone the floors themselves are listed here, not in
+              // the header.
+              if (phone) ...[
+                sheetTitle(tr3('楼层', 'Қабат', 'Этаж', 'Floor', ky: 'Кабат', uz: 'Qavat')),
+                for (var i = 0; i < history.present.floors.length; i++)
+                  ListTile(
+                      key: ValueKey('floor-$i'),
+                      contentPadding: tilePad,
+                      title: Text(
+                          displayFloorName(history.present.floors[i].name),
+                          style: TextStyle(
+                              fontWeight: i == floorIndex
+                                  ? FontWeight.w700
+                                  : FontWeight.w400)),
+                      trailing:
+                          i == floorIndex ? const Icon(Icons.check) : null,
+                      onTap: () => Navigator.pop(context, 'floor:$i')),
+                ListTile(
+                    key: const Key('add-floor'),
+                    contentPadding: tilePad,
+                    leading: const Icon(Icons.add),
+                    title: Text(tr3('加一层', 'Қабат қосу', 'Добавить этаж', 'Add a floor', ky: 'Кабат кошуу', uz: 'Qavat qoʻshish')),
+                    onTap: () => Navigator.pop(context, 'above')),
+                const Divider(height: 17, indent: 20, endIndent: 20),
+              ],
               for (final entry in {
                 'AddFloor':
                     tr3('新增空层', 'Бос қабат қосу', 'Добавить пустой этаж', 'Add an empty floor', ky: 'Бош кабат кошуу', uz: 'Boʻsh qavat qoʻshish'),
@@ -571,11 +674,17 @@ extension _EditorDialogs on _HouseEditorState {
                 'SetFloorHeight': tr3('层高', 'Қабат биіктігі', 'Высота этажа', 'Floor height', ky: 'Кабаттын бийиктиги', uz: 'Qavat balandligi'),
                 'DeleteFloor': tr3('删除本层', 'Қабатты жою', 'Удалить этаж', 'Delete the floor', ky: 'Кабатты өчүрүү', uz: 'Qavatni oʻchirish')
               }.entries)
-                ListTile(
+                ListTile(contentPadding: tilePad, 
                     title: Text(entry.value),
                     onTap: () => Navigator.pop(context, entry.key))
             ])));
     if (choice == null) return;
+    if (choice.startsWith('floor:')) {
+      final index = int.parse(choice.substring(6));
+      if (index != floorIndex) selectFloor(index);
+      return;
+    }
+    if (choice == 'above') return addFloorAbove();
     if (choice == 'SetFloorHeight') {
       final value = await length(
           tr3('层高', 'Қабат биіктігі', 'Высота этажа', 'Floor height', ky: 'Кабаттын бийиктиги', uz: 'Qavat balandligi'), floor.height);
@@ -785,11 +894,11 @@ extension _EditorDialogs on _HouseEditorState {
             context: context,
             builder: (context) => SafeArea(
                     child: ListView(shrinkWrap: true, children: [
-                  ListTile(
+                  ListTile(contentPadding: tilePad, 
                       title: Text(tr3(
                           '调整墙厚', 'Қалыңдығын өзгерту', 'Изменить толщину', 'Change thickness', ky: 'Калыңдыгын өзгөртүү', uz: 'Qalinligini oʻzgartirish')),
                       onTap: () => Navigator.pop(context, 'thickness')),
-                  ListTile(
+                  ListTile(contentPadding: tilePad, 
                       title: Text(tr3('恢复默认墙厚', 'Әдепкі қалыңдықты қайтару',
                           'Вернуть толщину по умолчанию',
                           'Restore the default thickness', ky: 'Демейки калыңдыкты калыбына келтирүү', uz: 'Standart qalinlikni tiklash')),

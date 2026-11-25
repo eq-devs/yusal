@@ -13,6 +13,7 @@ import 'package:yusal/features/voice/state/session.dart';
 import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 
 import '../storage_test.dart' show MemoryFiles;
+import '../tabs.dart';
 import 'overlay_test.dart' show VoiceMock, VoicePage;
 import 'session_test.dart' show ScriptedBackend;
 
@@ -180,8 +181,7 @@ void main() {
             entry: ProjectEntry('project', doc),
             store: ProjectStore(fileSystem: MemoryFiles())));
     for (final tab in ['ext', 'walk']) {
-      await t
-          .tap(find.byKey(ValueKey(tab == 'ext' ? 'group-view' : 'tab-walk')));
+      await openTab(t, tab);
       await t.pump(const Duration(seconds: 1));
       await t.pump(const Duration(seconds: 1));
       await t.pump();

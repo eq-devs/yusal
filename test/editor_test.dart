@@ -39,7 +39,11 @@ void main() {
       }
       await tester.tap(find.byTooltip('更多操作'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('设计检查'));
+      // On a phone the checks are the issue list among the pages.
+      final checks = find.text('设计检查');
+      await tester.tap(checks.evaluate().isEmpty
+          ? find.byKey(const ValueKey('tab-iss'))
+          : checks);
       await tester.pumpAndSettle();
       expect(find.textContaining('没有划分成房间'), findsOneWidget);
       expect(tester.takeException(), isNull);

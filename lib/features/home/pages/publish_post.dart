@@ -313,11 +313,11 @@ class _IntentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     return Material(
-        color: selected ? t.accent.withValues(alpha: 0.08) : t.card,
+        color: selected ? t.surface : t.card,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(yRadius),
             side: BorderSide(
-                color: selected ? t.accent : t.line, width: selected ? 2 : 1)),
+                color: selected ? t.ink : t.line, width: selected ? 2 : 1)),
         child: InkWell(
             borderRadius: BorderRadius.circular(yRadius),
             onTap: onTap,
@@ -326,7 +326,7 @@ class _IntentCard extends StatelessWidget {
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(icon, color: selected ? t.accent : t.muted),
+                      Icon(icon, color: selected ? t.ink : t.muted),
                       const SizedBox(height: 6),
                       Text(title,
                           style: const TextStyle(fontWeight: FontWeight.w700)),

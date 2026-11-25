@@ -27,6 +27,8 @@ void main() {
         child: MaterialApp(
             home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('plan-add')));
+    await t.pumpAndSettle();
     await t.tap(find.byTooltip('加房间'));
     await t.pumpAndSettle();
 

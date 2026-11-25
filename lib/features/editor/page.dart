@@ -62,15 +62,18 @@ import 'package:yusal/features/voice/state/session.dart';
 import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 import 'package:yusal/features/editor/model/house_wish.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
+import 'package:yusal/features/shared/ui/widgets.dart' show Frost;
 
 part 'widgets/roof_picker.dart';
 part 'widgets/header.dart';
+part 'widgets/phone_layout.dart';
 part 'tabs/plan.dart';
 part 'widgets/selection_cards.dart';
 part 'tools/furniture.dart';
 part 'tabs/other.dart';
 part 'tabs/scene.dart';
 part 'pages/home.dart';
+part 'widgets/start_sheet.dart';
 part 'widgets/compare_card.dart';
 part 'tabs/cost.dart';
 part 'tabs/heat.dart';
@@ -346,6 +349,17 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   String? expandedStage;
   bool panelCollapsed = false;
 
+  /// The selection card pulled up to its tallest stop.
+  bool panelFull = false;
+
+  /// Phone and upright tablet: the drawing fills the page under floating
+  /// bars. Decided by the last build.
+  bool phone = false;
+
+  /// The screen's own edges (status bar, home indicator), which the
+  /// phone's bars and sheets run under.
+  EdgeInsets safeInsets = EdgeInsets.zero;
+
   /// Short-screen layout, decided by the last build.
   bool compact = false;
   List<Offset> measurePoints = [];
@@ -421,6 +435,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   void showTab(String value) {
     if (value == tab) return;
+    HapticFeedback.selectionClick();
     setState(() {
       cancelDrag();
       clearWallSelection();
@@ -448,6 +463,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
       };
 
   void clearSelection() {
+    panelFull = false;
     selectedRoomId = null;
     selectedOpeningId = null;
     selectedFurnitureId = null;
@@ -460,6 +476,12 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   /// Delete key: the selected wall, furniture or door/window.
   void deleteSelection() {
+    if (editStart != null ||
+        selectedUtilityId != null ||
+        selectedFurnitureId != null ||
+        selectedOpeningId != null) {
+      HapticFeedback.mediumImpact();
+    }
     if (editStart != null) {
       deleteSelectedWall();
     } else if (selectedUtilityId != null) {
@@ -562,6 +584,26 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     return text == null ? label : tr(label, text.$2);
   }
 
+  /// Leaves whatever was in hand and takes up a tool.
+  void pickTool(VoidCallback onTap) {
+    HapticFeedback.selectionClick();
+    cancelDrag();
+    closeWallMenu();
+    spatialDocument = null;
+    spatialBase = null;
+    spatialError = null;
+    spatialStart = null;
+    spatialEnd = null;
+    spatialPreview = null;
+    placementHint = null;
+    placingFurniture = null;
+    placingUtility = null;
+    measurePoints = [];
+    roomStamp = null;
+    onTap();
+    if (mounted) setState(() {});
+  }
+
   Widget basicTool(
       IconData icon, String label, bool selected, VoidCallback onTap) {
     final t = Tokens.of(context);
@@ -572,31 +614,12 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         child: Tooltip(
             message: toolTip(label),
             child: Material(
-                color: selected ? Tokens.mix(t.accent, 0.14, t.panel) : t.panel,
+                color: selected ? t.ink : softFill(t),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(
-                        color: selected ? t.accent : t.line,
-                        width: selected ? 1.5 : 1)),
+                    borderRadius: BorderRadius.circular(12)),
                 child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () {
-                      cancelDrag();
-                      closeWallMenu();
-                      spatialDocument = null;
-                      spatialBase = null;
-                      spatialError = null;
-                      spatialStart = null;
-                      spatialEnd = null;
-                      spatialPreview = null;
-                      placementHint = null;
-                      placingFurniture = null;
-                      placingUtility = null;
-                      measurePoints = [];
-                      roomStamp = null;
-                      onTap();
-                      if (mounted) setState(() {});
-                    },
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => pickTool(onTap),
                     child: SizedBox(
                         // Seven tools fit a phone row at 45 wide.
                         width: math.max(
@@ -611,16 +634,16 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(icon,
-                                  size: 21, color: selected ? t.accent : t.ink),
+                                  size: 21, color: selected ? t.panel : t.ink),
                               const SizedBox(height: 3),
                               Text(toolLabel(label),
                                   maxLines: 1,
                                   style: TextStyle(
                                       fontSize: 11,
-                                      color: selected ? t.accent : t.ink,
+                                      color: selected ? t.panel : t.ink,
                                       fontWeight: selected
                                           ? FontWeight.w600
-                                          : FontWeight.w400))
+                                          : FontWeight.w500))
                             ]))))));
   }
 
@@ -658,18 +681,26 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   static const openingDragAnchor = Offset(36, 104);
   static const openingDropPoint = Offset(36, 76);
 
+  void startOpening(OpeningKind kind) {
+    placingOpening = kind;
+    tool = EditorTool.placeOpening;
+    placementHint = phone
+        ? tr3('点一下墙面放置', 'Қабырғаны басып қойыңыз',
+            'Нажмите на стену, чтобы поставить', 'Tap a wall to place it',
+            ky: 'Коюу үчүн дубалды басыңыз', uz: 'Joylash uchun devorga bosing')
+        : tr3(
+            '点一下墙面放置，也可以从工具栏直接拖入',
+            'Қабырғаны басып қойыңыз, не құралдар жолынан сүйреп әкеліңіз',
+            'Нажмите на стену, чтобы поставить, или перетащите с панели инструментов',
+            'Tap a wall to place it, or drag it from the toolbar', ky: 'Коюу үчүн дубалды басыңыз же аспаптар тилкесинен сүйрөп келиңиз', uz: 'Joylash uchun devorga bosing yoki asboblar panelidan sudrab keling');
+  }
+
   Widget openingTool(OpeningKind kind, IconData icon, String label) {
     final button = basicTool(
-        icon, label, tool == EditorTool.placeOpening && placingOpening == kind,
-        () {
-      placingOpening = kind;
-      tool = EditorTool.placeOpening;
-      placementHint = tr3(
-          '点一下墙面放置，也可以从工具栏直接拖入',
-          'Қабырғаны басып қойыңыз, не құралдар жолынан сүйреп әкеліңіз',
-          'Нажмите на стену, чтобы поставить, или перетащите с панели инструментов',
-          'Tap a wall to place it, or drag it from the toolbar', ky: 'Коюу үчүн дубалды басыңыз же аспаптар тилкесинен сүйрөп келиңиз', uz: 'Joylash uchun devorga bosing yoki asboblar panelidan sudrab keling');
-    });
+        icon,
+        label,
+        tool == EditorTool.placeOpening && placingOpening == kind,
+        () => startOpening(kind));
     return Draggable<OpeningKind>(
         data: kind,
         // Sideways swipes scroll the tool row; dragging up takes the item.
@@ -1218,6 +1249,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   void undo() {
     if (!history.canUndo) return;
+    HapticFeedback.lightImpact();
     setState(() {
       cancelDrag();
       history.undo();
@@ -1233,6 +1265,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   void redo() {
     if (!history.canRedo) return;
+    HapticFeedback.lightImpact();
     setState(() {
       cancelDrag();
       history.redo();
@@ -1272,27 +1305,13 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     return result;
   }
 
-  Future<String?> ask(String label, String value, {bool number = false}) async {
-    final controller = TextEditingController(text: value);
-    return showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-                title: Text(label),
-                content: TextField(
-                    controller: controller,
-                    autofocus: true,
-                    keyboardType: number
-                        ? const TextInputType.numberWithOptions(decimal: true)
-                        : TextInputType.text),
-                actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
-                  FilledButton(
-                      onPressed: () => Navigator.pop(context, controller.text),
-                      child: Text(tr3('确定', 'Жарайды', 'ОК', 'OK', ky: 'OK', uz: 'OK')))
-                ]));
-  }
+  Future<String?> ask(String label, String value, {bool number = false}) =>
+      promptText(context,
+          title: label,
+          initial: value,
+          number: number,
+          cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'),
+          ok: tr3('确定', 'Жарайды', 'ОК', 'OK', ky: 'OK', uz: 'OK'));
 
   Future<int?> length(String label, int value) async {
     final result = await ask(tr3('$label（米）', '$label (м)', '$label (м)', '$label (m)', ky: '$label (м)', uz: '$label (m)'),
@@ -1310,7 +1329,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         context: context,
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
-              ListTile(
+              ListTile(contentPadding: tilePad, 
                   key: const Key('add-floor-empty'),
                   leading: const Icon(Icons.crop_square),
                   title: Text(tr3('空的一层', 'Бос қабат', 'Пустой этаж', 'Empty floor', ky: 'Бош кабат', uz: 'Boʻsh qavat')),
@@ -1320,7 +1339,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                       'Только наружные стены; стены нижнего этажа видны бледно, по ним удобно чертить',
                       'Outer walls only; the floor below shows faintly so you can trace it', ky: 'Сырткы дубалдар гана; астыңкы кабат көмүскө көрүнөт, аны карап чийсеңиз болот', uz: 'Faqat tashqi devorlar; pastki qavat xira koʻrinadi, uni chizib olishingiz mumkin')),
                   onTap: () => Navigator.pop(context, 'AddFloor')),
-              ListTile(
+              ListTile(contentPadding: tilePad, 
                   key: const Key('add-floor-copy'),
                   leading: const Icon(Icons.copy_all_outlined),
                   title: Text(tr3('照楼下复制一层', 'Астыңғы қабатты көшіру',
@@ -1373,9 +1392,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         elevation: 2,
         clipBehavior: Clip.antiAlias,
         shadowColor: Colors.black.withValues(alpha: 0.12),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: BorderSide(color: t.line)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: child);
   }
 
@@ -2724,9 +2742,16 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   Widget buildPage(BuildContext context) {
     watchLang(context);
     final t = Tokens.of(context);
+    safeInsets = MediaQuery.paddingOf(context);
     return PopScope(
-        canPop: !dirty,
+        // On a phone the other pages open over the drawing; back returns
+        // to it before it leaves the design.
+        canPop: !dirty && !phonePage,
         onPopInvokedWithResult: (didPop, result) async {
+          if (!didPop && phonePage) {
+            showTab('plan');
+            return;
+          }
           if (!didPop) {
             await save();
             if (context.mounted && !dirty) Navigator.pop(context);
@@ -2758,6 +2783,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                       compact = constraints.maxHeight < 640 &&
                           constraints.maxWidth > constraints.maxHeight;
                       final wide = !compact && constraints.maxWidth >= 1000;
+                      phone = !compact && !wide;
+                      if (phone) return phoneBody();
                       return Center(
                           child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 1440),
@@ -2771,7 +2798,10 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                       editorHeader(wide),
                                       groupedTabs(),
                                     ],
-                                    Expanded(child: tabBody(wide)),
+                                    Expanded(
+                                        child: FadeOnChange(
+                                            value: tab,
+                                            child: tabBody(wide))),
                                   ])));
                     }))))));
   }
@@ -2792,6 +2822,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                 : deriveOpenings(spatialDocument!, displayBase, floor.id);
             return InteractiveViewer(
                 transformationController: canvasTransform,
+                // On a phone the drawing runs on under the frosted bars.
+                clipBehavior: phone ? Clip.none : Clip.hardEdge,
                 boundaryMargin: const EdgeInsets.all(200),
                 panEnabled: ((browse ||
                             tool == EditorTool.measure ||

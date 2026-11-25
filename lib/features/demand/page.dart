@@ -138,7 +138,7 @@ class _DemandDetailState extends State<_DemandDetail>
                       onTap: () => pushPage<void>(
                           context, (_) => PostPage(postId: post.id)),
                       child: Row(children: [
-                        Icon(Icons.home_outlined, size: 18, color: t.accent),
+                        Icon(Icons.home_outlined, size: 18, color: t.ink),
                         const SizedBox(width: 6),
                         Expanded(
                             child: Text(
@@ -148,12 +148,12 @@ class _DemandDetailState extends State<_DemandDetail>
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                    color: t.accent,
+                                    color: t.ink,
                                     fontWeight: FontWeight.w600))),
-                        Icon(Icons.chevron_right, color: t.accent),
+                        Icon(Icons.chevron_right, color: t.muted),
                       ])))),
       Wrap(spacing: 8, runSpacing: 6, children: [
-        StatusPill(demandTypeName(d.type), color: t.accent),
+        StatusPill(demandTypeName(d.type)),
         StatusPill(demandStatusName(d.status),
             color: demandStatusColor(t, d.status)),
         if (d.publisherRole == PublisherRole.contractor)

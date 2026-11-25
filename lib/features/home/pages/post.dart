@@ -737,7 +737,7 @@ class _FactSheet extends StatelessWidget {
                 color: t.surface,
                 borderRadius: BorderRadius.circular(YRadius.control)),
             child: Column(children: [
-              Icon(icon, color: t.accent),
+              Icon(icon, color: t.ink),
               const SizedBox(height: 4),
               Text(value,
                   style: const TextStyle(
@@ -767,7 +767,7 @@ class _FactSheet extends StatelessWidget {
                 color: t.accentSoft,
                 borderRadius: BorderRadius.circular(YRadius.control)),
             child: Row(children: [
-              YusalIcon(YIcon.budget, color: t.accent),
+              YusalIcon(YIcon.budget, color: t.ink),
               const SizedBox(width: 10),
               Expanded(
                   child: Text(tr3('预估造价', 'Болжамды құн', 'Оценка стоимости', 'Cost estimate', ky: 'Баанын баасы', uz: 'Narx hisobi'),
@@ -1037,7 +1037,6 @@ class _StoryState extends State<_Story> {
   static const _lines = 6;
   @override
   Widget build(BuildContext context) {
-    final t = YTokens.of(context);
     const style = TextStyle(fontSize: YFont.body, height: 1.6);
     return LayoutBuilder(builder: (context, c) {
       final tp = TextPainter(
@@ -1057,8 +1056,7 @@ class _StoryState extends State<_Story> {
           TextButton(
               style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                  foregroundColor: t.accent),
+                  visualDensity: VisualDensity.compact),
               onPressed: () => setState(() => open = !open),
               child: Text(open
                   ? tr3('收起', 'Жию', 'Свернуть', 'Collapse', ky: 'Жыйноо', uz: 'Yigʻish')

@@ -18,7 +18,11 @@ extension _PlanTab on _HouseEditorState {
             left: 8,
             right: 8,
             bottom: 8,
-            child: LayoutBuilder(builder: (context, c) => card)),
+            // Rises in for each new selection, with the click of a choice.
+            child: RiseIn(
+                key: ValueKey(selectionIdentity),
+                haptic: true,
+                child: LayoutBuilder(builder: (context, c) => card))),
       if (wallMenuCard() case final menu?) menu,
       if (loupe() case final l?) l,
     ]));
@@ -347,20 +351,12 @@ extension _PlanTab on _HouseEditorState {
         'split',
         basicTool(
             Icons.vertical_split_outlined, '拉线分房', tool == EditorTool.split,
-            () {
-          view3d = false;
-          tool = EditorTool.split;
-        })
+            () => toolBody('split'))
       ),
       (
         'box',
         basicTool(
-            Icons.crop_square, '拖动划房', tool == EditorTool.box && !stamping, () {
-          view3d = false;
-          tool = EditorTool.box;
-          roomStamp = null;
-          brush = RoomType.custom;
-        })
+            Icons.crop_square, '拖动划房', tool == EditorTool.box && !stamping, () => toolBody('box'))
       ),
       (
         'door',
@@ -380,68 +376,109 @@ extension _PlanTab on _HouseEditorState {
       (
         'selectWall',
         basicTool(Icons.view_week_outlined, '墙体调整',
-            tool == EditorTool.selectWall || tool == EditorTool.editWall, () {
-          view3d = false;
-          tool = EditorTool.selectWall;
-        })
+            tool == EditorTool.selectWall || tool == EditorTool.editWall, () => toolBody('selectWall'))
       ),
       (
         'resize',
-        basicTool(Icons.open_in_full, '房屋尺寸', tool == EditorTool.resize, () {
-          view3d = false;
-          tool = EditorTool.resize;
-        })
+        basicTool(Icons.open_in_full, '房屋尺寸', tool == EditorTool.resize, () => toolBody('resize'))
       ),
       ('more', basicTool(Icons.more_horiz, '更多工具', false, moreTools)),
     ];
   }
 
+  /// What taking up a tool does, for the tools that are one step.
+  void toolBody(String key) {
+    switch (key) {
+      case 'split':
+        view3d = false;
+        tool = EditorTool.split;
+      case 'box':
+        view3d = false;
+        tool = EditorTool.box;
+        roomStamp = null;
+        brush = RoomType.custom;
+      case 'selectWall':
+        view3d = false;
+        tool = EditorTool.selectWall;
+      case 'resize':
+        view3d = false;
+        tool = EditorTool.resize;
+      case 'room':
+        addRoomBySize();
+      case 'wall':
+        startWallDrawing();
+      case 'door':
+        startOpening(OpeningKind.door);
+      case 'window':
+        startOpening(OpeningKind.window);
+      case 'furniture':
+        chooseFurniture();
+      case 'utility':
+        chooseUtility();
+    }
+  }
+
   Widget layerRow() => Wrap(spacing: 8, runSpacing: 6, children: layerChips());
 
+  /// What can be shown on the plan or hidden: name, whether it shows,
+  /// and the switch.
+  List<(String, bool, ValueChanged<bool>)> layerToggles() => [
+        (
+          tr3('家具', 'Жиһаз', 'Мебель', 'Furniture', ky: 'Эмерек', uz: 'Mebel'),
+          showFurniture,
+          (v) => update(() => showFurniture = v)
+        ),
+        (
+          tr3('尺寸', 'Өлшемдер', 'Размеры', 'Dimensions', ky: 'Өлчөмдөр', uz: 'Oʻlchamlar'),
+          showDimensions,
+          (v) => update(() => showDimensions = v)
+        ),
+        (
+          tr3('水电', 'Су-электр', 'Электрика и вода', 'Electrical and water', ky: 'Электр жана суу', uz: 'Elektr va suv'),
+          showUtilities,
+          (v) => update(() {
+                showUtilities = v;
+                if (!v) {
+                  selectedUtilityId = null;
+                  if (tool == EditorTool.placeUtility) {
+                    tool = EditorTool.browse;
+                    placementHint = null;
+                  }
+                }
+              })
+        ),
+        (
+          tr3('地基', 'Іргетас', 'Фундамент', 'Foundation', ky: 'Пайдубал', uz: 'Poydevor'),
+          showFoundation,
+          (v) => update(() {
+                showFoundation = v;
+                if (v && floorIndex != 0) {
+                  floorIndex = 0;
+                  derive();
+                }
+              })
+        ),
+      ];
+
+  String get measureLabel => tr3('测距', 'Қашықтық өлшеу', 'Измерить расстояние', 'Measure distance', ky: 'Аралыкты өлчөө', uz: 'Masofani oʻlchash');
+
+  void toggleMeasure(bool on) => update(() {
+        cancelDrag();
+        clearWallSelection();
+        measurePoints = [];
+        tool = on ? EditorTool.measure : EditorTool.browse;
+        placementHint = null;
+      });
+
   List<Widget> layerChips() => [
+        for (final (label, on, set) in layerToggles())
+          PillToggle(label: label, selected: on, onChanged: set),
         PillToggle(
-            label: tr3('家具', 'Жиһаз', 'Мебель', 'Furniture', ky: 'Эмерек', uz: 'Mebel'),
-            selected: showFurniture,
-            onChanged: (v) => update(() => showFurniture = v)),
-        PillToggle(
-            label: tr3('尺寸', 'Өлшемдер', 'Размеры', 'Dimensions', ky: 'Өлчөмдөр', uz: 'Oʻlchamlar'),
-            selected: showDimensions,
-            onChanged: (v) => update(() => showDimensions = v)),
-        PillToggle(
-            label: tr3('水电', 'Су-электр', 'Электрика и вода', 'Electrical and water', ky: 'Электр жана суу', uz: 'Elektr va suv'),
-            selected: showUtilities,
-            onChanged: (v) => update(() {
-                  showUtilities = v;
-                  if (!v) {
-                    selectedUtilityId = null;
-                    if (tool == EditorTool.placeUtility) {
-                      tool = EditorTool.browse;
-                      placementHint = null;
-                    }
-                  }
-                })),
-        PillToggle(
-            label: tr3('地基', 'Іргетас', 'Фундамент', 'Foundation', ky: 'Пайдубал', uz: 'Poydevor'),
-            selected: showFoundation,
-            onChanged: (v) => update(() {
-                  showFoundation = v;
-                  if (v && floorIndex != 0) {
-                    floorIndex = 0;
-                    derive();
-                  }
-                })),
-        PillToggle(
-            label: tr3('测距', 'Қашықтық өлшеу', 'Измерить расстояние', 'Measure distance', ky: 'Аралыкты өлчөө', uz: 'Masofani oʻlchash'),
+            label: measureLabel,
             icon: Icons.straighten,
             checkbox: false,
             selected: tool == EditorTool.measure,
-            onChanged: (v) => update(() {
-                  cancelDrag();
-                  clearWallSelection();
-                  measurePoints = [];
-                  tool = v ? EditorTool.measure : EditorTool.browse;
-                  placementHint = null;
-                })),
+            onChanged: toggleMeasure),
       ];
 
   Widget hintRow() {
@@ -517,7 +554,7 @@ extension _PlanTab on _HouseEditorState {
               style: TextStyle(
                   fontSize: coach ? 13 : 12,
                   fontWeight: coach ? FontWeight.w600 : FontWeight.w400,
-                  color: coach ? t.accent : t.muted))),
+                  color: coach ? t.ink : t.muted))),
       if (tool == EditorTool.resize)
         TextButton.icon(
             onPressed: footprintOptions,
@@ -557,10 +594,17 @@ extension _PlanTab on _HouseEditorState {
           tool == EditorTool.stair ||
           tool == EditorTool.placeFurniture ||
           tool == EditorTool.placeUtility ||
-          tool == EditorTool.measure)
+          tool == EditorTool.measure ||
+          // No tool row on a phone to go back to browsing with.
+          (phone && !browse && !stamping))
         TextButton(
+            key: const Key('tool-done'),
             onPressed: () => update(() {
                   cancelDrag();
+                  if (tool == EditorTool.selectWall ||
+                      tool == EditorTool.editWall) {
+                    clearWallSelection();
+                  }
                   tool = EditorTool.browse;
                   drawingOrigin = null;
                   drawingEnd = null;

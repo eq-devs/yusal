@@ -10,6 +10,7 @@ import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
 import 'package:yusal/service/storage/project_store.dart';
 
 import 'storage_test.dart' show MemoryFiles;
+import 'tabs.dart';
 
 void main() {
   var sequence = 0;
@@ -149,6 +150,7 @@ void main() {
 
   testWidgets('a room of a set size is slid to a wall and put down', (t) async {
     final session = await mount(t, house());
+    await openAdd(t);
     await t.tap(find.byTooltip('加房间'));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('add-room-kitchen')));
@@ -188,6 +190,7 @@ void main() {
   testWidgets('a wall pulled from the middle of a wall slides along it first',
       (t) async {
     final session = await mount(t, house());
+    await openAdd(t);
     await t.tap(find.byTooltip('墙体'));
     await t.pumpAndSettle();
     // Pressed on the top wall's middle, slid left to 4 m, then pulled down
@@ -220,10 +223,8 @@ void main() {
   });
 
   Future<void> pickStair(WidgetTester t) async {
-    await t.tap(find.byTooltip('更多工具'));
-    await t.pumpAndSettle();
-    await t.ensureVisible(find.text('楼梯'));
-    await t.tap(find.text('楼梯'));
+    await openAdd(t);
+    await t.tap(find.byKey(const ValueKey('add-stair')));
     await t.pump();
     await t.pump(const Duration(milliseconds: 500));
   }
@@ -301,7 +302,9 @@ void main() {
     });
     final session = await mount(t, doc);
     expect(painter(t).below, isNull, reason: 'nothing under the ground floor');
-    await t.ensureVisible(find.byKey(const Key('add-floor')));
+    // The floors are behind the floor's name in the top bar.
+    await t.tap(find.byKey(const Key('floor-pill')));
+    await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('add-floor')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('add-floor-empty')));
@@ -312,7 +315,8 @@ void main() {
     expect(painter(t).below, isNotNull);
     expect(painter(t).belowOpenings, isEmpty);
     // The second floor shows where the stair comes up.
-    await t.ensureVisible(find.text('二楼'));
+    await t.tap(find.byKey(const Key('floor-pill')));
+    await t.pumpAndSettle();
     await t.tap(find.text('二楼'));
     await t.pumpAndSettle();
     expect(painter(t).belowOpenings, hasLength(1));
@@ -321,33 +325,30 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
-  testWidgets('ten pages sit in three groups, 2D and 3D one tap apart',
+  testWidgets(
+      'on a phone the plan and 3D are one tap apart, the other pages in more',
       (t) async {
     await mount(t, house());
-    // Only the drawing group's pages show at first.
-    for (final key in ['plan', 'site', 'iss']) {
-      expect(find.byKey(ValueKey('tab-$key')), findsOneWidget, reason: key);
-    }
+    // The drawing has the page: no rows of tabs over it.
     expect(find.byKey(const ValueKey('tab-cost')), findsNothing);
-    await t.tap(find.byKey(const ValueKey('group-build')));
+    expect(find.byKey(const ValueKey('group-build')), findsNothing);
+    await t.tap(find.byKey(const Key('editor-more')));
     await t.pumpAndSettle();
-    for (final key in ['cost', 'qty', 'build', 'det', 'heat']) {
+    for (final key in [
+      'site', 'iss', 'walk', 'cost', 'qty', 'build', 'det', 'heat' //
+    ]) {
       expect(find.byKey(ValueKey('tab-$key')), findsOneWidget, reason: key);
     }
     await t.tap(find.byKey(const ValueKey('tab-qty')));
     await t.pumpAndSettle();
-    // A group remembers its page.
-    await t.tap(find.byKey(const ValueKey('group-draw')));
+    expect(canvas, findsNothing);
+    expect(find.text('门窗与工程量'), findsOneWidget, reason: 'the page says what it is');
+    // Back returns to the drawing, not out of the design.
+    await t.tap(find.byType(BackButton));
     await t.pumpAndSettle();
     expect(canvas, findsOneWidget);
-    await t.tap(find.byKey(const ValueKey('group-build')));
-    await t.pumpAndSettle();
-    expect(find.byKey(const ValueKey('tab-plan')), findsNothing);
-    await t.tap(find.byKey(const ValueKey('group-draw')));
-    await t.pumpAndSettle();
     await t.tap(find.byKey(const ValueKey('quick-3d')));
     await t.pumpAndSettle();
-    expect(find.byKey(const ValueKey('tab-walk')), findsOneWidget);
     expect(canvas, findsNothing);
     await t.tap(find.byKey(const ValueKey('quick-2d')));
     await t.pumpAndSettle();

@@ -215,7 +215,7 @@ extension _UtilityTool on _HouseEditorState {
     final t = Tokens.of(context);
     return InfoCard(
         titleWidget: Row(children: [
-          Icon(utilityIcon(u.kind), size: 18, color: t.accent),
+          Icon(utilityIcon(u.kind), size: 18, color: t.ink),
           const SizedBox(width: 6),
           Flexible(
               child: Text(u.label ?? utilityName(u.kind),
@@ -235,7 +235,7 @@ extension _UtilityTool on _HouseEditorState {
                   builder: (context) => SafeArea(
                           child: ListView(shrinkWrap: true, children: [
                         for (final k in UtilityKind.values)
-                          ListTile(
+                          ListTile(contentPadding: tilePad, 
                               leading: Icon(utilityIcon(k)),
                               title: Text(utilityName(k)),
                               selected: k == u.kind,

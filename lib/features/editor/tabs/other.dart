@@ -311,7 +311,7 @@ extension _OtherTabs on _HouseEditorState {
           builder: (context) => SafeArea(
                   child: ListView(shrinkWrap: true, children: [
                 for (final m in LayerMaterial.values)
-                  ListTile(
+                  ListTile(contentPadding: tilePad, 
                       leading: SizedBox(
                           width: 28,
                           height: 18,
@@ -916,7 +916,7 @@ extension _OtherTabs on _HouseEditorState {
                 builder: (context) => SafeArea(
                         child: ListView(shrinkWrap: true, children: [
                       for (final k in OpeningKind.values)
-                        ListTile(
+                        ListTile(contentPadding: tilePad, 
                             title: Text(switch (k) {
                               OpeningKind.door =>
                                 tr3('平开门', 'Ашылмалы есік', 'Распашная дверь', 'Hinged door', ky: 'Ачылма эшик', uz: 'Ochiladigan eshik'),

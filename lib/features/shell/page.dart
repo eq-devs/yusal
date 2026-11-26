@@ -17,6 +17,7 @@ import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
 import 'package:yusal/features/voice/actions/nav.dart';
 import 'package:yusal/features/voice/state/screen.dart';
+import 'package:yusal/features/shared/brand/brand.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Tabs of the app shell, in order.
@@ -161,9 +162,9 @@ class _PlatformShellState extends State<PlatformShell>
         tr3('发现', 'Шолу', 'Обзор', 'Discover', ky: 'Ачылыштар', uz: 'Kashf qilish')
       ),
       (
-        const YusalIcon(YIcon.homeLine, mono: true),
+        const YusalMarkIcon(),
         // Selected, the tab becomes the three-colour Yusal mark.
-        const YusalIcon(YIcon.homeActive),
+        const YusalMarkIcon(selected: true),
         tr3('我的房子', 'Үйлерім', 'Мои дома', 'My houses', ky: 'Үйлөрүм', uz: 'Uylarim')
       ),
       (

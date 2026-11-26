@@ -141,6 +141,45 @@ void main() {
     expect(r, isA<Rejected>());
   });
 
+  group('R6: a pitched roof follows the outline', () {
+    List<Point3> roofPoints(UndoableDesignState s) => [
+          for (final e in deriveHouse(composeDocument(meta, s)).scene3d)
+            if (e.kind == 'RoofPlane') ...e.vertices
+        ];
+    UndoableDesignState hip(UndoableDesignState s) => ok(executeCommand(
+        s,
+        DesignCommand('SetRoof', {
+          'roof': {'type': 'hip', 'pitchDeg': 30, 'overhang': 500}
+        }),
+        ctx));
+
+    test('an L-shaped house leaves its cut corner open', () {
+      final l = hip(ok(run(
+          box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000})));
+      final points = roofPoints(l);
+      expect(points, isNotEmpty);
+      // The cut is x 8000-12000, y 7000-10000; the eaves reach 500 into it.
+      expect(points.where((p) => p.x > 8500 && p.y > 7500), isEmpty);
+      // Two wings, each a hip of its own: their ridges are at two heights.
+      expect(points.map((p) => p.z).toSet().length, greaterThan(3));
+    });
+
+    test('a rectangle keeps one roof of four planes', () {
+      final planes = deriveHouse(composeDocument(meta, hip(box())))
+          .scene3d
+          .where((e) => e.kind == 'RoofPlane');
+      expect(planes, hasLength(4));
+    });
+
+    test('the wings of an L are its two largest rectangles', () {
+      expect(
+          outlineRectangles(12000, 10000, const [PlanRect(8000, 7000, 12000, 10000)])
+              .map((r) => (r.left, r.bottom, r.right, r.top))
+              .toSet(),
+          {(0.0, 0.0, 12000.0, 7000.0), (0.0, 0.0, 8000.0, 10000.0)});
+    });
+  });
+
   group('R15: history', () {
     final base = box();
     HouseDocument docWith(String name) => composeDocument(

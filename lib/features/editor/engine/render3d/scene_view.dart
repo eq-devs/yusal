@@ -105,8 +105,8 @@ class SceneSettings {
       maxFloor == other.maxFloor;
 
   @override
-  int get hashCode => Object.hash(roof, style, furniture, foundation, cut,
-      dark, site, cutHeight, hour, maxFloor);
+  int get hashCode => Object.hash(roof, style, furniture, foundation, cut, dark,
+      site, cutHeight, hour, maxFloor);
 }
 
 class Camera {
@@ -357,8 +357,7 @@ class ScenePainter extends CustomPainter {
   /// Whether [edges] for [sectionY] are already worked out. While a
   /// slider moves the cut, a fast frame draws without edges rather than
   /// work them out for every height it passes.
-  bool hasEdges(double sectionY) =>
-      _edgeCache[model]?.$1 == _edgeKey(sectionY);
+  bool hasEdges(double sectionY) => _edgeCache[model]?.$1 == _edgeKey(sectionY);
 
   String _edgeKey(double sectionY) =>
       '$roofOn ${settings.furniture} ${settings.maxFloor} '
@@ -1371,6 +1370,7 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
 
   /// Fingers or buttons down on the view.
   int touching = 0;
+
   /// A finger is on the view, it is still spinning, or the page around it
   /// is changing what it shows (the section slider): frames are drawn fast.
   bool get interacting => touching > 0 || spin.isActive || widget.adjusting;

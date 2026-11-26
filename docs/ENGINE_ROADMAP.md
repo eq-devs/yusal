@@ -82,7 +82,9 @@ exact; faces need rounding).
 - [x] Snap hysteresis and axis lock (U2)
 - [x] Measure snaps to wall corners and faces; shows metres and both sides
 - [x] Free wall start: a drag from any point of a wall starts a wall (U7)
-- [ ] Pitched roof follows the outline (R6)
+- [x] Hip roof follows the outline (R6): a hip over each largest rectangle
+      of the top floor; their upper envelope is the straight-skeleton roof
+      of a right-angled outline. Gable roofs still span the rectangle.
 - [x] PDF tables never cut off silently: a "see schedule" row, and a
       paginated heat-load schedule for large houses (R12)
 - [ ] Scaled vector PDF

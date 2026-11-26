@@ -3,7 +3,16 @@ part of '../page.dart';
 /// The plan's pointer events: one finger draws, edits, drags or taps with
 /// the tool in hand; two fingers always pan and zoom.
 extension _PlanPointer on _HouseEditorState {
+  /// A mouse's middle or right button drags the plan in every tool, as in
+  /// desktop CAD; only the left button draws and picks.
+  bool _mousePans(PointerEvent e) =>
+      e.kind == PointerDeviceKind.mouse && e.buttons & kPrimaryButton == 0;
+
   void planPointerDown(PointerDownEvent e, Size size) {
+    if (_mousePans(e)) {
+      mousePan = e.position;
+      return;
+    }
     if (pointers.isEmpty) {
       cancelledStroke = false;
       wallFromAdjust = false;
@@ -102,6 +111,11 @@ extension _PlanPointer on _HouseEditorState {
   }
 
   void planPointerMove(PointerMoveEvent e, Size size) {
+    if (mousePan != null) {
+      panCanvas(e.position - mousePan!);
+      mousePan = e.position;
+      return;
+    }
     trackLoupe(e);
     if (wallHoldScreen != null && (e.position - wallHoldScreen!).distance > 8) {
       wallHoldTimer?.cancel();
@@ -176,6 +190,10 @@ extension _PlanPointer on _HouseEditorState {
   }
 
   void planPointerCancel(PointerCancelEvent e, Size size) {
+    if (mousePan != null) {
+      mousePan = null;
+      return;
+    }
     loupeAt = null;
     pointers.remove(e.pointer);
     update(() {
@@ -189,6 +207,10 @@ extension _PlanPointer on _HouseEditorState {
   }
 
   void planPointerUp(PointerUpEvent e, Size size) {
+    if (mousePan != null) {
+      mousePan = null;
+      return;
+    }
     if (loupeAt != null) {
       update(() => loupeAt = null);
     }

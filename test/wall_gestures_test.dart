@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -139,6 +140,35 @@ void main() {
     final doc = await session.store.openProject(session.id);
     expect(walls(doc),
         contains((carrier: 3300, lo: 6000, hi: 9200, dir: AxisDir.H)));
+  });
+
+  testWidgets('a right-button mouse drag pans in the wall tool (U8)',
+      (t) async {
+    final session = await mount(t, initial(walls: [
+      [6000, 0, 6000, 10000]
+    ]));
+    await wallTool(t);
+    final before = t
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!
+        .value
+        .clone();
+    final g = await t.startGesture(point(t, 6000, 3300),
+        kind: PointerDeviceKind.mouse, buttons: kSecondaryMouseButton);
+    for (var i = 1; i <= 5; i++) {
+      await g.moveBy(const Offset(20, 10));
+      await t.pump();
+    }
+    await g.up();
+    await t.pumpAndSettle();
+    final after = t
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!
+        .value;
+    expect(after.getTranslation().x, isNot(before.getTranslation().x));
+    await saved(t);
+    final doc = await session.store.openProject(session.id);
+    expect(walls(doc), hasLength(1));
   });
 
   testWidgets('a tap on a wall in the wall tool still builds nothing',

@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart' show PointerDeviceKind;
+import 'package:flutter/gestures.dart' show PointerDeviceKind, kPrimaryButton;
 import 'package:flutter/services.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
@@ -2248,6 +2248,10 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   /// Move the canvas with one finger when a gesture started on nothing
   /// editable. Keeps part of the house on screen so it cannot get lost.
+  /// Where a mouse dragging the plan with its middle or right button was
+  /// last; null when none is.
+  Offset? mousePan;
+
   void panCanvas(Offset delta) {
     final next = Matrix4.translationValues(delta.dx, delta.dy, 0)
       ..multiply(canvasTransform.value);

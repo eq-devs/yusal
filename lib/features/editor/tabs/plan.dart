@@ -194,8 +194,9 @@ extension _PlanTab on _HouseEditorState {
     Widget button(IconData icon, String tip, VoidCallback onTap) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: SizedBox(
-            width: 34,
-            height: 34,
+            // The 44 point touch target of Apple's guidelines.
+            width: 44,
+            height: 44,
             child: Btn(label: '', icon: icon, tooltip: tip, onPressed: onTap)));
     void zoom(double factor) {
       final center = Offset(canvasSize.width / 2, canvasSize.height / 2);

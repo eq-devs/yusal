@@ -183,7 +183,7 @@ void main() {
     });
   });
 
-  test('a door\'s clear distances run to the faces of the walls beside it', () {
+  test("a door's clear distances run to the faces of the walls beside it", () {
     var s = ok(run(box(), 'AddDrawnWall', line(0, 4000, 12000, 4000)));
     s = ok(run(s, 'AddDrawnWall', line(6000, 0, 6000, 4000)));
     final wall = deriveFloorBase(composeDocument(meta, s), s.floors.first.id)

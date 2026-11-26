@@ -154,8 +154,8 @@ void main() {
         ctx));
 
     test('an L-shaped house leaves its cut corner open', () {
-      final l = hip(ok(run(
-          box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000})));
+      final l = hip(ok(run(box(), 'CutOutline',
+          {'corner': 'tr', 'width': 4000, 'depth': 3000})));
       final points = roofPoints(l);
       expect(points, isNotEmpty);
       // The cut is x 8000-12000, y 7000-10000; the eaves reach 500 into it.
@@ -173,7 +173,8 @@ void main() {
 
     test('the wings of an L are its two largest rectangles', () {
       expect(
-          outlineRectangles(12000, 10000, const [PlanRect(8000, 7000, 12000, 10000)])
+          outlineRectangles(
+                  12000, 10000, const [PlanRect(8000, 7000, 12000, 10000)])
               .map((r) => (r.left, r.bottom, r.right, r.top))
               .toSet(),
           {(0.0, 0.0, 12000.0, 7000.0), (0.0, 0.0, 8000.0, 10000.0)});
@@ -226,6 +227,30 @@ void main() {
     });
   });
 
+  test('a floor is checked again only when what it reads changed', () {
+    final s = box();
+    final f = s.floors.first;
+    // A second room over the first one's cells: an overlap.
+    final bad = f.copyWith(rooms: [
+      ...f.rooms,
+      Room(
+          id: 'twin',
+          type: RoomType.bedroom,
+          name: 'Twin',
+          regions: f.rooms.first.regions)
+    ]);
+    final doc = composeDocument(meta, s.withFloor(bad));
+    final first = validateHouse(doc).map((e) => (e.code, e.path)).toList();
+    expect(first, isNotEmpty);
+    // The same floor object in a new document: the same findings.
+    final renamed = composeDocument(
+        const Meta(name: 'Other', createdAt: 'x', updatedAt: 'x'),
+        extractDesignState(doc));
+    expect(validateHouse(renamed).map((e) => (e.code, e.path)).toList(), first);
+    // The fixed floor: none.
+    expect(validateHouse(composeDocument(meta, s.withFloor(f))), isEmpty);
+  });
+
   test('R17: an invalid document is never encoded', () {
     final s = box();
     final bad = composeDocument(
@@ -252,8 +277,15 @@ void main() {
         key = key * 31 + 7;
         final child = node is Map ? node[pick] : (node! as List)[pick! as int];
         if (child is! Map && child is! List || depth == seed % 5) {
-          final damage = [null, -1, 2147483648, 'x', 1.5, <String, Object?>{}, []]
-              [seed % 7];
+          final damage = [
+            null,
+            -1,
+            2147483648,
+            'x',
+            1.5,
+            <String, Object?>{},
+            []
+          ][seed % 7];
           if (node is Map) {
             if (seed % 11 == 0) {
               node.remove(pick);

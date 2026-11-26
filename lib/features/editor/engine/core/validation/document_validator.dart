@@ -35,7 +35,7 @@ abstract final class DocumentLimits {
 
 List<ValidationError> validateHouse(HouseDocument d) {
   final out = <ValidationError>[];
-  void add(
+  void outerAdd(
     int n,
     String path,
     String message, {
@@ -52,6 +52,10 @@ List<ValidationError> validateHouse(HouseDocument d) {
       );
     }
   }
+
+  void add(int n, String path, String message,
+          {List<String> related = const []}) =>
+      outerAdd(n, path, message, related: related);
 
   final first = <String, String>{};
   void id(String value, String path) {
@@ -294,6 +298,23 @@ List<ValidationError> validateHouse(HouseDocument d) {
     final floor = d.floors[f];
     final axes = resolvedFloors[f];
     if (axes.issues.isNotEmpty) continue;
+    // A floor whose own objects and lines are as last checked has the same
+    // findings: an edit to one floor re-checks only that floor.
+    final key = _FloorKey(d, f);
+    final kept = _floorFindings[floor];
+    if (kept != null && kept.key.matches(key)) {
+      for (final e in kept.errors) {
+        outerAdd(e.n, e.path, e.message, related: e.related);
+      }
+      continue;
+    }
+    final found = <_Finding>[];
+    void add(int n, String path, String message,
+        {List<String> related = const []}) {
+      found.add((n: n, path: path, message: message, related: related));
+      outerAdd(n, path, message, related: related);
+    }
+
     final placed = <({String id, String path, Set<Cell> cells})>[];
     final validObjects = <({String id, String path, Set<Cell> cells})>[];
     for (var r = 0; r < floor.rooms.length; r++) {
@@ -352,12 +373,22 @@ List<ValidationError> validateHouse(HouseDocument d) {
         cells: cellsOfRect(resolved.rect!).toSet(),
       ));
     }
+    // Which object placed so far holds each cell: one pass over the cells
+    // instead of every pair of objects.
+    final holder = <Cell, int>{};
     for (final obj in validObjects) {
-      for (final prior in placed) {
-        if (obj.cells.any(prior.cells.contains)) {
-          add(11, obj.path, '对象 ${obj.id} 与 ${prior.id} 占用重叠',
-              related: [prior.path]);
-        }
+      final hits = <int>{};
+      for (final cell in obj.cells) {
+        final h = holder[cell];
+        if (h != null) hits.add(h);
+      }
+      for (final h in hits.toList()..sort()) {
+        final prior = placed[h];
+        add(11, obj.path, '对象 ${obj.id} 与 ${prior.id} 占用重叠',
+            related: [prior.path]);
+      }
+      for (final cell in obj.cells) {
+        holder.putIfAbsent(cell, () => placed.length);
       }
       placed.add(obj);
     }
@@ -387,7 +418,7 @@ List<ValidationError> validateHouse(HouseDocument d) {
     if (cut.isNotEmpty && cut.length >= axes.nx * axes.ny) {
       add(12, '/floors/$f/outside', '不能把整层都设为室外');
     }
-    final spans = <({String axis, int start, int end, String path})>[];
+    final spansOn = <String, List<_Span>>{};
     for (var w = 0; w < floor.wallOverrides.length; w++) {
       final wall = floor.wallOverrides[w];
       final res = resolveAnchor(axes, wall.anchor);
@@ -405,10 +436,8 @@ List<ValidationError> validateHouse(HouseDocument d) {
         continue;
       }
       final c = res.chain!;
-      for (final prev in spans) {
-        if (prev.axis == c.carrier.id &&
-            prev.start < c.endPos &&
-            c.startPos < prev.end) {
+      for (final prev in spansOn[c.carrier.id] ?? const <_Span>[]) {
+        if (prev.start < c.endPos && c.startPos < prev.end) {
           add(
             14,
             '/floors/$f/wallOverrides/$w',
@@ -417,7 +446,7 @@ List<ValidationError> validateHouse(HouseDocument d) {
           );
         }
       }
-      spans.add((
+      (spansOn[c.carrier.id] ??= []).add((
         axis: c.carrier.id,
         start: c.startPos,
         end: c.endPos,
@@ -439,6 +468,45 @@ List<ValidationError> validateHouse(HouseDocument d) {
         }
       }
     }
+    _floorFindings[floor] = (key: key, errors: found);
   }
   return List.unmodifiable(out);
 }
+
+typedef _Finding = ({int n, String path, String message, List<String> related});
+
+final _floorFindings =
+    Expando<({_FloorKey key, List<_Finding> errors})>('floorFindings');
+
+/// What one floor's checks read besides the floor itself: where it is in
+/// the list, the footprint, the shared lines and its own.
+class _FloorKey {
+  _FloorKey(HouseDocument d, this.index)
+      : footprint = d.footprint,
+        global = d.axes.global,
+        local = [
+          for (final a in d.axes.floor)
+            if (a.floorId == d.floors[index].id) a
+        ];
+  final int index;
+  final BuildingFootprint footprint;
+  final List<GlobalAxis> global;
+  final List<FloorAxis> local;
+
+  bool matches(_FloorKey o) =>
+      index == o.index &&
+      footprint == o.footprint &&
+      _same(global, o.global) &&
+      _same(local, o.local);
+
+  static bool _same<T>(List<T> a, List<T> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+}
+
+typedef _Span = ({String axis, int start, int end, String path});

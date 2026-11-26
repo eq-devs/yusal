@@ -74,8 +74,9 @@ exact; faces need rounding).
       walls, and check only those floors' doors and windows
 - [x] The floor geometry cache keys on the shared lines and the floor's
       own, so a line added on one floor keeps the others' geometry
-- [ ] Validate only what a command changed (full validation is ~1.1 ms of
-      a large-plan command)
+- [x] Validate only what a command changed: each floor's findings are
+      kept and reused while it and the lines it reads are unchanged
+      (large-plan rename 1.08 -> 0.55 ms)
 
 ## Phase 3 — design tools
 

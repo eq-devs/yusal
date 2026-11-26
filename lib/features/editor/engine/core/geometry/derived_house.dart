@@ -119,9 +119,13 @@ List<OpeningPlacement> _deriveOpenings(
             e.start.pos < end &&
             start < e.end.pos)
         .toList();
+    // The opening must lie within one wall, not only within its anchor:
+    // a wall can end part way along the anchor (a low wall, a gap).
     final status = start < chain.startPos ||
             end > chain.endPos ||
-            walls.length > 1
+            walls.length > 1 ||
+            (walls.length == 1 &&
+                (start < walls.single.start.pos || end > walls.single.end.pos))
         ? 'tooLong'
         : edges.any((e) => e.kind == 'open')
             ? 'onOpen'

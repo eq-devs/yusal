@@ -296,7 +296,6 @@ void main() {
     await tester.pumpAndSettle();
     final entry = (await ProjectStore().listProjects())
         .firstWhere((p) => p.document.meta.name == '浮层绘墙验收');
-    expect(entry.document.schemaVersion, 2);
     expect(entry.document.floors.first.explicitWalls, true);
     expect(
         entry.document.floors.first.wallOverrides.whereType<SolidWall>().length,

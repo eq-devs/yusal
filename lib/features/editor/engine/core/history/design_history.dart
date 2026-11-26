@@ -1,53 +1,84 @@
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 
+/// Undo and redo over whole-document snapshots.
+///
+/// Snapshots share every unchanged object with their neighbours (documents
+/// are immutable), so a step costs what the edit changed, not the house.
+/// The design's name and dates ([Meta]) are not part of undo: [rename]
+/// changes them without a step, and undo keeps the current ones.
 class DesignHistory {
-  DesignHistory(HouseDocument doc) : present = doc;
-  HouseDocument present;
+  DesignHistory(HouseDocument doc, {this.limit = 100}) : _present = doc;
+
+  /// How many steps back undo reaches.
+  final int limit;
+  HouseDocument _present;
   final List<HouseDocument> _past = [];
   final List<HouseDocument> _future = [];
+
+  /// Whether a group is open, and whether it has taken its one step yet.
+  bool _grouping = false;
+  bool _groupStepped = false;
+
+  HouseDocument get present => _present;
   bool get canUndo => _past.isNotEmpty;
   bool get canRedo => _future.isNotEmpty;
+  int get undoDepth => _past.length;
+
+  /// Makes [next] the present as one undo step. Returns false, and changes
+  /// nothing, when [next] designs the same house.
   bool commit(HouseDocument next) {
-    if (extractDesignState(next) == extractDesignState(present)) return false;
-    _past.add(present);
-    if (_past.length > 100) _past.removeAt(0);
-    present = next;
+    if (extractDesignState(next) == extractDesignState(_present)) return false;
+    if (!(_grouping && _groupStepped)) {
+      _past.add(_present);
+      if (_past.length > limit) _past.removeAt(0);
+      _groupStepped = _grouping;
+    }
+    _present = next;
     _future.clear();
     return true;
   }
 
+  /// Changes the design's name and dates without an undo step.
+  void rename(Meta meta) =>
+      _present = composeDocument(meta, extractDesignState(_present));
+
   void reset(HouseDocument doc) {
-    present = doc;
+    _present = doc;
     _past.clear();
     _future.clear();
-    _groupBase = null;
+    _grouping = false;
+    _groupStepped = false;
   }
-
-  HouseDocument? _groupBase;
 
   /// Starts a group: every commit until [endGroup] undoes as one step.
   /// One spoken sentence can run several commands.
-  void beginGroup() => _groupBase = present;
+  void beginGroup() {
+    _grouping = true;
+    _groupStepped = false;
+  }
 
   void endGroup() {
-    final base = _groupBase;
-    _groupBase = null;
-    if (base == null) return;
-    final start = _past.lastIndexWhere((d) => identical(d, base));
-    if (start >= 0) _past.removeRange(start + 1, _past.length);
+    _grouping = false;
+    _groupStepped = false;
   }
 
   void undo() {
     if (!canUndo) return;
-    _future.add(present);
-    present =
-        composeDocument(present.meta, extractDesignState(_past.removeLast()));
+    endGroup();
+    _future.add(_present);
+    _present = _withCurrentMeta(_past.removeLast());
   }
 
   void redo() {
     if (!canRedo) return;
-    _past.add(present);
-    present =
-        composeDocument(present.meta, extractDesignState(_future.removeLast()));
+    endGroup();
+    _past.add(_present);
+    _present = _withCurrentMeta(_future.removeLast());
   }
+
+  /// [doc] as it was, unless the name changed since: reusing the very
+  /// object keeps every geometry cache keyed on it.
+  HouseDocument _withCurrentMeta(HouseDocument doc) => doc.meta == _present.meta
+      ? doc
+      : composeDocument(_present.meta, extractDesignState(doc));
 }

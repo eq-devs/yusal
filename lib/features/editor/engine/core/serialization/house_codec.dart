@@ -4,7 +4,9 @@ import 'package:yusal/features/editor/engine/core/serialization/schema_validator
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/validation/document_validator.dart';
 
-const currentSchemaVersion = 4;
+/// The version every file is written with. Files of versions 1 to 4 load
+/// with the same decoder: each version only added fields.
+const currentSchemaVersion = 5;
 const maxHouseBytes = 10485760;
 
 class LoadError {
@@ -617,7 +619,6 @@ class _Decoder {
     }
     final ds = arr(m['floors'], '/floors');
     return HouseDocument(
-      schemaVersion: integer(m['schemaVersion'], '/schemaVersion'),
       meta: meta(m['meta'], '/meta'),
       mainEntranceOpeningId: entrance,
       defaults: defaults(m['defaults'], '/defaults'),
@@ -632,7 +633,6 @@ class _Decoder {
   }
 
   HouseDocument _empty() => HouseDocument(
-        schemaVersion: 1,
         meta: const Meta(
           name: '',
           createdAt: '2000-01-01T00:00:00Z',
@@ -771,7 +771,7 @@ String encodeHouse(HouseDocument d) {
         FromEndPosition(:final d) => {'type': 'fromEnd', 'd': d},
       };
   final root = <String, Object?>{
-    'schemaVersion': d.schemaVersion,
+    'schemaVersion': currentSchemaVersion,
     'meta': {
       'name': d.meta.name,
       'createdAt': d.meta.createdAt,

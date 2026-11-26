@@ -179,7 +179,6 @@ EditResult mirrorPlan(HouseDocument doc, {required bool horizontal}) {
   ]);
 
   HouseDocument compose(List<Floor> floors) => HouseDocument(
-      schemaVersion: doc.schemaVersion,
       meta: doc.meta,
       mainEntranceOpeningId: doc.mainEntranceOpeningId,
       defaults: doc.defaults,

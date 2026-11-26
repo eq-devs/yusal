@@ -566,7 +566,8 @@ void seedMockData(MockBackend b) {
         summary: tr3(
             '${facts.width / 1000} × ${facts.depth / 1000} 米 · ${facts.floors} 层 · 建筑面积 ${facts.buildingArea.toStringAsFixed(0)} ㎡',
             '${facts.width / 1000} × ${facts.depth / 1000} м · ${facts.floors} қабат · ${facts.buildingArea.toStringAsFixed(0)} м²',
-            '${facts.width / 1000} × ${facts.depth / 1000} м · этажей: ${facts.floors} · ${facts.buildingArea.toStringAsFixed(0)} м²', null));
+            '${facts.width / 1000} × ${facts.depth / 1000} м · этажей: ${facts.floors} · ${facts.buildingArea.toStringAsFixed(0)} м²',
+            null));
     return DesignSnapshot(
         id: id,
         ownerId: owner,

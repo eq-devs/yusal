@@ -96,7 +96,6 @@ DesignSnapshot buildSnapshot(
         summary: summary,
         preview: preview,
         planJson: encodeHouse(HouseDocument(
-          schemaVersion: doc.schemaVersion,
           meta: doc.meta,
           defaults: doc.defaults,
           footprint: doc.footprint,

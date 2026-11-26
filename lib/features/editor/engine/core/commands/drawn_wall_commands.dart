@@ -15,7 +15,6 @@ HouseDocument _replaceFloor(HouseDocument doc, Floor floor,
         {AxisSystem? axes}) =>
     HouseDocument(
         // Independent walls need 2; a hip roof or cut-outs keep 4.
-        schemaVersion: doc.schemaVersion > 2 ? doc.schemaVersion : 2,
         meta: doc.meta,
         defaults: doc.defaults,
         footprint: doc.footprint,
@@ -639,6 +638,15 @@ EditResult editDrawnWall(HouseDocument original, String kind,
     }
     final errors = validateHouse(doc);
     if (errors.isNotEmpty) return EditResult(null, errors.first.message);
+    if (height != null &&
+        deriveFloorBase(doc, floorId).edges.any((e) =>
+            e.kind == 'exterior' &&
+            e.axis.dir == direction &&
+            e.axis.pos == carrier &&
+            e.start.pos < hi! &&
+            lo! < e.end.pos)) {
+      return const EditResult(null, '外墙上不能做矮墙');
+    }
     // Only this floor's walls, openings and local axes changed, so doors
     // and windows on other floors keep their state by construction.
     final healthy = originalOpenings()
@@ -703,65 +711,65 @@ EditResult setDrawnWallHeight(HouseDocument original, Map<String, dynamic> args,
     int? lo,
     int? hi,
     BoundaryAnchor? anchor) {
-    final opens = <Opening>[];
-    final removed = <String>{};
-    for (final o in floor.openings) {
-      final c = resolveAnchor(oldAxes, o.anchor).chain!;
-      final start = switch (o.position) {
-        CenterPosition() => (c.startPos + c.endPos - o.width) / 2,
-        FromStartPosition(:final d) => c.startPos + d.toDouble(),
-        FromEndPosition(:final d) => c.endPos - d - o.width.toDouble()
-      };
-      final hosted = oldChain != null &&
-          c.carrier.id == oldChain.carrier.id &&
-          start < oldChain.endPos &&
-          start + o.width > oldChain.startPos;
-      if (!hosted) {
-        opens.add(o);
-        continue;
-      }
-      if (kind != 'DeleteDrawnWall' && height != null) {
-        return (openings: opens, removed: removed, error: '矮墙上不能有门窗，请先移走这面墙上的门窗');
-      }
-      if (kind == 'DeleteDrawnWall') {
-        if (!deleteHosted) {
-          return (openings: opens, removed: removed, error: '删除墙体会移除其门窗，请确认后再删除');
-        }
-        removed.add(o.id);
-        continue;
-      }
-      final shift = lo! - oldChain.startPos;
-      final translated = hi! - oldChain.endPos == shift ? shift : 0;
-      final offset = (start + translated - lo).round();
-      if (offset < 0 || offset + o.width > hi - lo) {
-        return (openings: opens, removed: removed, error: '墙体调整后无法容纳已有门窗');
-      }
-      final p = FromStartPosition(offset);
-      opens.add(switch (o) {
-        DoorOpening() => DoorOpening(
-            id: o.id,
-            anchor: anchor!,
-            position: p,
-            width: o.width,
-            height: o.height,
-            sill: o.sill,
-            hinge: o.hinge,
-            opensTo: o.opensTo),
-        WindowOpening() => WindowOpening(
-            id: o.id,
-            anchor: anchor!,
-            position: p,
-            width: o.width,
-            height: o.height,
-            sill: o.sill),
-        SlidingOpening() => SlidingOpening(
-            id: o.id,
-            anchor: anchor!,
-            position: p,
-            width: o.width,
-            height: o.height,
-            sill: o.sill)
-      });
+  final opens = <Opening>[];
+  final removed = <String>{};
+  for (final o in floor.openings) {
+    final c = resolveAnchor(oldAxes, o.anchor).chain!;
+    final start = switch (o.position) {
+      CenterPosition() => (c.startPos + c.endPos - o.width) / 2,
+      FromStartPosition(:final d) => c.startPos + d.toDouble(),
+      FromEndPosition(:final d) => c.endPos - d - o.width.toDouble()
+    };
+    final hosted = oldChain != null &&
+        c.carrier.id == oldChain.carrier.id &&
+        start < oldChain.endPos &&
+        start + o.width > oldChain.startPos;
+    if (!hosted) {
+      opens.add(o);
+      continue;
     }
-    return (openings: opens, removed: removed, error: null);
+    if (kind != 'DeleteDrawnWall' && height != null) {
+      return (openings: opens, removed: removed, error: '矮墙上不能有门窗，请先移走这面墙上的门窗');
+    }
+    if (kind == 'DeleteDrawnWall') {
+      if (!deleteHosted) {
+        return (openings: opens, removed: removed, error: '删除墙体会移除其门窗，请确认后再删除');
+      }
+      removed.add(o.id);
+      continue;
+    }
+    final shift = lo! - oldChain.startPos;
+    final translated = hi! - oldChain.endPos == shift ? shift : 0;
+    final offset = (start + translated - lo).round();
+    if (offset < 0 || offset + o.width > hi - lo) {
+      return (openings: opens, removed: removed, error: '墙体调整后无法容纳已有门窗');
+    }
+    final p = FromStartPosition(offset);
+    opens.add(switch (o) {
+      DoorOpening() => DoorOpening(
+          id: o.id,
+          anchor: anchor!,
+          position: p,
+          width: o.width,
+          height: o.height,
+          sill: o.sill,
+          hinge: o.hinge,
+          opensTo: o.opensTo),
+      WindowOpening() => WindowOpening(
+          id: o.id,
+          anchor: anchor!,
+          position: p,
+          width: o.width,
+          height: o.height,
+          sill: o.sill),
+      SlidingOpening() => SlidingOpening(
+          id: o.id,
+          anchor: anchor!,
+          position: p,
+          width: o.width,
+          height: o.height,
+          sill: o.sill)
+    });
+  }
+  return (openings: opens, removed: removed, error: null);
 }

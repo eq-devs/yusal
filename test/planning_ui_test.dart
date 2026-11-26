@@ -95,7 +95,6 @@ void main() {
     await t.pumpAndSettle();
     final doc = await saved(t, s.store, s.id);
     expect(doc.extras.stages.firstWhere((x) => x.key == 'found').checks, [1]);
-    expect(doc.schemaVersion, 4);
   });
 
   testWidgets('the utilities tool lays out a floor and the layer shows it',

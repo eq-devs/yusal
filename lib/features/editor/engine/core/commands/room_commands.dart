@@ -62,7 +62,6 @@ HouseDocument paintCells(HouseDocument doc, String floorId, List<Cell> stroke,
       stairs: floor.stairs,
       outside: floor.outside);
   final result = HouseDocument(
-      schemaVersion: doc.schemaVersion,
       meta: doc.meta,
       mainEntranceOpeningId: doc.mainEntranceOpeningId,
       defaults: doc.defaults,
@@ -97,7 +96,6 @@ HouseDocument createHouse(
     required String Function() newId}) {
   final floorId = newId();
   return HouseDocument(
-      schemaVersion: 1,
       meta: Meta(name: name, createdAt: timestamp, updatedAt: timestamp),
       defaults: const Defaults(
           outerWallThickness: 240,

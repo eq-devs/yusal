@@ -9,7 +9,7 @@ import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
 
-import 'document_edits_test.dart' show commandsFor;
+import 'support/command_samples.dart';
 import 'perf/engine_bench.dart';
 
 /// Everything in a floor's geometry, as text, so two can be compared.

@@ -92,7 +92,6 @@ void main() {
     final info = doc.extras.rooms[painter(t).selectedRoom]!;
     expect(info.labelArea, 3550);
     expect(info.note, '朝南，冬天暖和');
-    expect(doc.schemaVersion, 3);
     expect(find.text('朝南，冬天暖和'), findsOneWidget);
     expect(t.takeException(), isNull);
   });

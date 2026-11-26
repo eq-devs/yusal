@@ -56,7 +56,6 @@ EditResult moveLocalWall(HouseDocument doc, String floorId,
         id: insertedId, floorId: floorId, dir: wall.axis.dir, pos: position)
   ]);
   HouseDocument rebuild(List<Floor> floors) => HouseDocument(
-      schemaVersion: doc.schemaVersion,
       meta: doc.meta,
       defaults: doc.defaults,
       footprint: doc.footprint,

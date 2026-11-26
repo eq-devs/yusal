@@ -252,7 +252,6 @@ void main() {
     await drag(t, 6000, 8000, 6000, 5000);
     await saved(t);
     var doc = await session.store.openProject(session.id);
-    expect(doc.schemaVersion, 2);
     expect(doc.floors.first.wallOverrides.whereType<SolidWall>().length, 4);
     expect(doc.floors.first.rooms.length, 2);
     await t.tap(find.byTooltip('撤销'));

@@ -34,7 +34,6 @@ void main() {
 
   test('documents without extras keep their schema version and bytes', () {
     final d = initial();
-    expect(d.schemaVersion, 1);
     final text = encodeHouse(d);
     expect(text.contains('extras'), false);
     expect(loadHouse(utf8.encode(text)).document, d);
@@ -60,7 +59,6 @@ void main() {
       'areas': [(0, 0, 10000, 400)]
     });
     final d = doc(s);
-    expect(d.schemaVersion, 3);
     expect(validateHouse(d), isEmpty);
     final loaded = loadHouse(utf8.encode(encodeHouse(d)));
     expect(loaded.isSuccess, true,
@@ -159,7 +157,6 @@ void main() {
     expect(history.present.extras.furniture.single.x, 0);
     history.undo();
     expect(history.present.extras.isEmpty, true);
-    expect(history.present.schemaVersion, 1);
     final rejected = executeCommand(
         s,
         DesignCommand('UpdateFurniture', {'furnitureId': id, 'width': 0}),
@@ -178,12 +175,8 @@ void main() {
     final raw = jsonDecode(encodeHouse(doc(s))) as Map<String, dynamic>;
     ((raw['extras'] as Map)['furniture'] as List).first['width'] = -5;
     expect(loadHouse(utf8.encode(jsonEncode(raw))).isSuccess, false);
-    raw['schemaVersion'] = 2;
     ((raw['extras'] as Map)['furniture'] as List).first['width'] = 100;
-    expect(loadHouse(utf8.encode(jsonEncode(raw))).isSuccess, false,
-        reason: 'extras need version 3');
     (raw['extras'] as Map)['unknown'] = 1;
-    raw['schemaVersion'] = 3;
     expect(loadHouse(utf8.encode(jsonEncode(raw))).isSuccess, false);
   });
 }

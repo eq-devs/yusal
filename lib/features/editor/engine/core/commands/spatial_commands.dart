@@ -37,7 +37,6 @@ EditResult carveRoom(HouseDocument doc, String floorId, int left, int bottom,
   }
 
   HouseDocument rebuild(AxisSystem axes, List<Floor> floors) => HouseDocument(
-      schemaVersion: doc.schemaVersion,
       meta: doc.meta,
       mainEntranceOpeningId: doc.mainEntranceOpeningId,
       defaults: doc.defaults,
@@ -218,7 +217,6 @@ EditResult splitSpace(HouseDocument doc, String floorId, AxisDir dir, int pos,
       stairs: floor.stairs,
       outside: floor.outside);
   final result = HouseDocument(
-      schemaVersion: doc.schemaVersion,
       meta: doc.meta,
       defaults: doc.defaults,
       footprint: doc.footprint,
@@ -244,7 +242,6 @@ EditResult splitSpace(HouseDocument doc, String floorId, AxisDir dir, int pos,
 HouseDocument _with(HouseDocument doc,
         {AxisSystem? axes, List<Floor>? floors}) =>
     HouseDocument(
-        schemaVersion: doc.schemaVersion,
         meta: doc.meta,
         mainEntranceOpeningId: doc.mainEntranceOpeningId,
         defaults: doc.defaults,

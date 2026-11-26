@@ -780,18 +780,6 @@ class HouseExtras {
     };
   }
 
-  /// Whether the saved extras use anything that needs schema version 4.
-  bool get needsVersion4 {
-    final json = toJson();
-    return const ['cost', 'heat', 'utilities', 'site', 'schedule', 'areaBasis']
-            .any(json.containsKey) ||
-        [
-          if (json.containsKey('wallLayers')) ...wallLayers,
-          if (json.containsKey('roofLayers')) ...roofLayers,
-          if (json.containsKey('floorLayers')) ...floorLayers,
-        ].any((l) => l.lambda != null);
-  }
-
   late final String _key = jsonEncode(toJson());
   bool get isEmpty => _key == '{}';
 

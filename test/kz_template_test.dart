@@ -17,7 +17,6 @@ void main() {
   test('the drafting-page house is a valid, editable version 3 design', () {
     final doc = build();
     expect(validateHouse(doc), isEmpty);
-    expect(doc.schemaVersion, 3);
     expect(doc.footprint.width, 10000);
     expect(doc.footprint.depth, 13000);
     final floor = doc.floors.first;

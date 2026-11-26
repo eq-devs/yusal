@@ -7,7 +7,8 @@ import 'package:yusal/features/shared/motion/motion.dart';
 /// used sparingly, selection in ink, flat hairline cards, one shadow tier
 /// for things that float, pill buttons, frosted bars) in the colours of the
 /// Yusal logo book: ink #1E1C19, cream #F7F3EE, stone #C2B8AB and one
-/// orange #D86A2B. Text on orange is ink, which keeps it above 4.5 : 1.
+/// orange #F96A10, the roof of the puzzle-house mark. Text on orange is
+/// ink, which keeps it above 4.5 : 1.
 @immutable
 class YTokens extends ThemeExtension<YTokens> {
   const YTokens({
@@ -62,7 +63,7 @@ class YTokens extends ThemeExtension<YTokens> {
       muted: Color(0xff6F665D),
       faint: Color(0xffB5ACA0),
       line: Color(0xffE4DDD2),
-      accent: Color(0xffD86A2B),
+      accent: Color(0xffF96A10),
       accentInk: Color(0xff1E1C19),
       accentSoft: Color(0xffFBE9DD),
       ok: Color(0xff4F7A3A),
@@ -82,7 +83,7 @@ class YTokens extends ThemeExtension<YTokens> {
       muted: Color(0xffC2B8AB),
       faint: Color(0xff7A7168),
       line: Color(0xff34302A),
-      accent: Color(0xffD86A2B),
+      accent: Color(0xffF96A10),
       accentInk: Color(0xff1E1C19),
       accentSoft: Color(0xff3D2618),
       ok: Color(0xff8CBF6A),

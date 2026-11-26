@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Yusal brand ink, behind the adaptive launcher icon. -->
-    <color name="ic_launcher_background">#1E1C19</color>
+    <!-- White ground behind the adaptive launcher icon (logo book). -->
+    <color name="ic_launcher_background">#FFFFFF</color>
 </resources>

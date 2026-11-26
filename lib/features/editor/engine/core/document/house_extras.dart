@@ -605,6 +605,7 @@ enum AreaBasis {
   outer,
 }
 
+@immutable
 class HouseExtras {
   HouseExtras({
     List<FurnitureItem> furniture = const [],
@@ -777,18 +778,6 @@ class HouseExtras {
         'schedule': [for (final s in schedule) s.toJson()],
       if (areaBasis != AreaBasis.clear) 'areaBasis': areaBasis.name,
     };
-  }
-
-  /// Whether the saved extras use anything that needs schema version 4.
-  bool get needsVersion4 {
-    final json = toJson();
-    return const ['cost', 'heat', 'utilities', 'site', 'schedule', 'areaBasis']
-            .any(json.containsKey) ||
-        [
-          if (json.containsKey('wallLayers')) ...wallLayers,
-          if (json.containsKey('roofLayers')) ...roofLayers,
-          if (json.containsKey('floorLayers')) ...floorLayers,
-        ].any((l) => l.lambda != null);
   }
 
   late final String _key = jsonEncode(toJson());

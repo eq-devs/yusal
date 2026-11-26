@@ -123,6 +123,44 @@ double _text(Canvas c, String text, Offset at,
 const _rowHeight = 27.0;
 const _headHeight = 30.0;
 
+/// Where a sheet's drawing goes: inside the frame, under the title, over
+/// the title block.
+const _sheetArea = Rect.fromLTRB(60, 102, sheetWidth - 60, 1108);
+
+/// A table's rows beyond what its own sheet shows go on sheets of their
+/// own, all of them, so nothing is cut off. A table on a sheet with other
+/// content shows what fits and ends with a row pointing here.
+List<_Sheet> _scheduleSheets(String title, List<String> header,
+    List<List<_Cell>> rows, List<double> flex) {
+  final per = _rowsFitting(_sheetArea.height);
+  final pages = (rows.length / per).ceil();
+  return [
+    for (var p = 0; p < pages; p++)
+      _Sheet(pages == 1 ? title : '$title ${p + 1}/$pages', (c, area) {
+        _table(c, area, header,
+            rows.sublist(p * per, math.min(rows.length, (p + 1) * per)), flex);
+      })
+  ];
+}
+
+/// [rows] as they fit [fit] rows: all of them, or the first ones and a
+/// last row saying the rest are on the schedule sheets.
+List<List<_Cell>> _shown(List<List<_Cell>> rows, int fit, int columns) {
+  if (rows.length <= fit) return rows;
+  final rest = rows.length - (fit - 1);
+  return [
+    ...rows.take(fit - 1),
+    [
+      _Cell(
+          tr3('… 另有 $rest 行，见附表', '… тағы $rest жол, кестені қараңыз',
+              '… ещё строк: $rest, см. ведомость', '… $rest more rows, see the schedule',
+              ky: '… дагы $rest сап, тизмени караңыз', uz: '… yana $rest qator, jadvalga qarang'),
+          muted: true),
+      for (var i = 1; i < columns; i++) const _Cell(''),
+    ]
+  ];
+}
+
 /// Rows of a table that fit [height].
 int _rowsFitting(double height) =>
     math.max(1, ((height - _headHeight) / _rowHeight).floor());
@@ -254,8 +292,7 @@ void _paintSheet(
   }
   _text(c, sheet.title, Offset(frame.left + 24, frame.top + 18),
       size: 26, weight: FontWeight.w700);
-  final area = Rect.fromLTRB(
-      frame.left + 24, frame.top + 66, frame.right - 24, strip.top - 18);
+  const area = _sheetArea;
   c
     ..save()
     ..clipRect(area.inflate(8));
@@ -318,6 +355,25 @@ List<_Sheet> _sheets(DrawingInput input) {
     RoofType.gable => tr3('双坡屋顶', 'Қос беткейлі шатыр', 'Двускатная крыша', 'Gable roof', ky: 'Эки капталдуу чатыр', uz: 'Ikki nishabli tom'),
     RoofType.hip => tr3('四坡屋顶', 'Төрт беткейлі шатыр', 'Вальмовая крыша', 'Hip roof', ky: 'Төрт капталдуу чатыр', uz: 'Toʻrt nishabli tom'),
   };
+
+  // The cover lists what fits; the room schedule further on has them all.
+  final coverRows = <List<_Cell>>[
+    for (var f = 0; f < doc.floors.length; f++)
+      for (final r in doc.floors[f].rooms)
+        [
+          _Cell(input.roomName(r)),
+          if (multi) _Cell(input.floorName(doc.floors[f].name), muted: true),
+          _Cell(
+              '${_n(derived.floors[f].base.roomsById[r.id]!.area(x.areaBasis) / 1e6)} $unitM2',
+              numeric: true),
+        ]
+  ];
+  final roomHeader = [
+    tr3('房间', 'Бөлме', 'Комната', 'Room', ky: 'Бөлмө', uz: 'Xona'),
+    if (multi) tr3('楼层', 'Қабат', 'Этаж', 'Floor', ky: 'Кабат', uz: 'Qavat'),
+    tr3('净面积', 'Таза аудан', 'Площадь нетто', 'Net area', ky: 'Таза аянт', uz: 'Sof maydon')
+  ];
+  final roomFlex = multi ? [3.0, 2.0, 2.0] : [3.0, 2.0];
 
   // 1. Cover: the house in 3D and the main figures.
   sheets.add(_Sheet(
@@ -388,31 +444,11 @@ List<_Sheet> _sheets(DrawingInput input) {
     y += 20;
     _heading(c, Offset(side.left, y), tr3('房间', 'Бөлмелер', 'Комнаты', 'Rooms', ky: 'Бөлмөлөр', uz: 'Xonalar'));
     y += 30;
-    final rows = <List<_Cell>>[];
-    for (var f = 0; f < doc.floors.length; f++) {
-      for (final r in doc.floors[f].rooms) {
-        final g =
-            derived.floors[f].base.roomGeometry.firstWhere((s) => s.id == r.id);
-        rows.add([
-          _Cell(input.roomName(r)),
-          if (multi) _Cell(input.floorName(doc.floors[f].name), muted: true),
-          _Cell('${_n(g.area(doc.extras.areaBasis) / 1e6)} $unitM2',
-              numeric: true),
-        ]);
-      }
-    }
-    final fit = _rowsFitting(side.bottom - y);
-    _table(
-        c,
-        Rect.fromLTRB(side.left, y, side.right, side.bottom),
-        [
-          tr3('房间', 'Бөлме', 'Комната', 'Room', ky: 'Бөлмө', uz: 'Xona'),
-          if (multi) tr3('楼层', 'Қабат', 'Этаж', 'Floor', ky: 'Кабат', uz: 'Qavat'),
-          tr3('净面积', 'Таза аудан', 'Площадь нетто', 'Net area', ky: 'Таза аянт', uz: 'Sof maydon')
-        ],
-        rows.take(fit).toList(),
-        multi ? [3, 2, 2] : [3, 2]);
+    _table(c, Rect.fromLTRB(side.left, y, side.right, side.bottom), roomHeader,
+        _shown(coverRows, _rowsFitting(side.bottom - y), roomHeader.length),
+        roomFlex);
   }));
+
 
   // 2. Floor plans.
   for (var f = 0; f < doc.floors.length; f++) {
@@ -869,6 +905,26 @@ List<_Sheet> _sheets(DrawingInput input) {
     }));
   }
 
+  final heatRows = <List<_Cell>>[
+    for (final s in loss.spaces)
+      if (doc.floors[s.floorIndex].rooms.where((r) => r.id == s.id).firstOrNull
+              case final room?
+          when s.total > 0)
+        [
+          _Cell(input.roomName(room)),
+          _Cell(_n(s.area), numeric: true),
+          _Cell(money(s.total), numeric: true),
+          _Cell('${s.sections}', numeric: true),
+        ]
+  ];
+  final heatHeader = [
+    tr3('房间', 'Бөлме', 'Комната', 'Room', ky: 'Бөлмө', uz: 'Xona'),
+    unitM2,
+    'W',
+    tr3('暖气片 片', 'Секция', 'Секций', 'Sections', ky: 'Кесилиштер', uz: 'Kesimlar')
+  ];
+  const heatFlex = [3.0, 1.5, 1.5, 1.5];
+
   // 8. Heat loss.
   sheets.add(_Sheet(tr3('保温与采暖计算', 'Жылу шығыны есебі', 'Расчёт теплопотерь', 'Heat loss calculation', ky: 'Жылуулук жоготуунун эсеби', uz: 'Issiqlik yoʻqotish hisobi'),
       (c, area) {
@@ -952,30 +1008,18 @@ List<_Sheet> _sheets(DrawingInput input) {
     ]);
     final right =
         Rect.fromLTWH(area.left + colW + 30, area.top, colW, area.height);
-    final rows = <List<_Cell>>[];
-    for (final s in loss.spaces) {
-      final room =
-          doc.floors[s.floorIndex].rooms.where((r) => r.id == s.id).firstOrNull;
-      if (room == null || s.total <= 0) continue;
-      rows.add([
-        _Cell(input.roomName(room)),
-        _Cell(_n(s.area), numeric: true),
-        _Cell(money(s.total), numeric: true),
-        _Cell('${s.sections}', numeric: true),
-      ]);
-    }
-    _table(
-        c,
-        right,
-        [
-          tr3('房间', 'Бөлме', 'Комната', 'Room', ky: 'Бөлмө', uz: 'Xona'),
-          unitM2,
-          'W',
-          tr3('暖气片 片', 'Секция', 'Секций', 'Sections', ky: 'Кесилиштер', uz: 'Kesimlar')
-        ],
-        rows.take(_rowsFitting(right.height)).toList(),
-        [3, 1.5, 1.5, 1.5]);
+    _table(c, right, heatHeader,
+        _shown(heatRows, _rowsFitting(right.height), heatHeader.length),
+        heatFlex);
   }));
+  if (heatRows.length > _rowsFitting(_sheetArea.height) ~/ 2) {
+    sheets.addAll(_scheduleSheets(
+        tr3('房间热负荷表', 'Бөлмелердің жылу жүктемесі', 'Теплопотери по комнатам',
+            'Heat load by room', ky: 'Бөлмөлөрдүн жылуулук жүгү', uz: 'Xonalar boʻyicha issiqlik yuklamasi'),
+        heatHeader,
+        heatRows,
+        heatFlex));
+  }
 
   // 9. Site plan.
   final site = x.site;

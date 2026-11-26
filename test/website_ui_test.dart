@@ -92,7 +92,6 @@ void main() {
     final info = doc.extras.rooms[painter(t).selectedRoom]!;
     expect(info.labelArea, 3550);
     expect(info.note, '朝南，冬天暖和');
-    expect(doc.schemaVersion, 3);
     expect(find.text('朝南，冬天暖和'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
@@ -148,7 +147,7 @@ void main() {
     await t.tapAt(at(t, 4000, 5000));
     await t.pumpAndSettle();
     expect(painter(t).measure, hasLength(2));
-    expect(find.textContaining('5000 mm'), findsOneWidget);
+    expect(find.textContaining('5.000 米 (3.000 × 4.000)'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 

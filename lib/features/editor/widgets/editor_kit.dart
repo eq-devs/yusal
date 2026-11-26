@@ -618,9 +618,8 @@ Future<String?> promptText(BuildContext context,
     bool number = false,
     bool multiline = false,
     String? suffix}) {
-  final controller = TextEditingController(text: initial);
-  controller.selection =
-      TextSelection(baseOffset: 0, extentOffset: initial.length);
+  final controller = TextEditingController(text: initial)
+    ..selection = TextSelection(baseOffset: 0, extentOffset: initial.length);
   return showMotionSheet<String>(
       context: context,
       isScrollControlled: true,

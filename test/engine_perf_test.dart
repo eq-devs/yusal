@@ -86,8 +86,8 @@ void main() {
     expect(perf.timing('scene3d.bsp')!.count, 1);
 
     final report = perf.toJson();
-    expect((report['timings'] as Map).keys, contains('scene3d.build'));
-    expect((report['sizes'] as Map)['scene3d.faces'], model.faces.length);
+    expect((report['timings']! as Map).keys, contains('scene3d.build'));
+    expect((report['sizes']! as Map)['scene3d.faces'], model.faces.length);
   });
 
   test('the frame window keeps the newest frames and counts the long ones', () {

@@ -59,7 +59,6 @@ void main() {
       var doc = run(box(), 'SetRoof', {
         'roof': {'type': 'hip', 'pitchDeg': 30, 'overhang': 500}
       });
-      expect(doc.schemaVersion, 4);
       expect(doc.roof.type, RoofType.hip);
       roundTrip(doc);
       final derived = deriveHouse(doc);
@@ -99,15 +98,6 @@ void main() {
           isNotNull);
     });
 
-    test('a version 3 reader rejects hip roofs it cannot draw', () {
-      final doc = run(box(), 'SetRoof', {
-        'roof': {'type': 'hip', 'pitchDeg': 30, 'overhang': 500}
-      });
-      final raw = jsonDecode(encodeHouse(doc)) as Map<String, dynamic>;
-      raw['schemaVersion'] = 3;
-      final loaded = loadHouse(utf8.encode(jsonEncode(raw)));
-      expect(loaded.isSuccess, false);
-    });
   });
 
   group('cost estimate', () {
@@ -148,7 +138,6 @@ void main() {
       doc = run(doc, 'SetCost', {'labourPct': 40, 'contingencyPct': 5});
       doc = run(doc, 'AddCostItem',
           {'name': '设计费', 'unit': '项', 'quantity': 100, 'price': 3000});
-      expect(doc.schemaVersion, 4);
       final loaded = roundTrip(doc);
       final after = estimateCost(loaded, deriveHouse(loaded));
       expect(after.lines.firstWhere((l) => l.key == 'concrete').total,
@@ -263,7 +252,6 @@ void main() {
           Layer('砖', 'Кірпіш', 370, LayerMaterial.block, lambda: 700)
         ]
       });
-      expect(doc.schemaVersion, 4);
       final checks = heatChecks(doc, heatLoss(doc, deriveHouse(doc)));
       expect(checks.map((c) => c.code), contains('H01'));
       expect(roundTrip(doc).extras.wallLayers.single.lambda, 700);
@@ -299,7 +287,6 @@ void main() {
           for (final s in spots) {'kind': s.kind, 'x': s.x, 'y': s.y}
         ]
       });
-      expect(doc.schemaVersion, 4);
       expect(doc.extras.utilities, hasLength(spots.length));
       // Running it again adds nothing new.
       expect(suggestUtilities(doc, deriveHouse(doc), 0), isEmpty);
@@ -318,7 +305,6 @@ void main() {
       expect(e.lines.firstWhere((l) => l.key == 'cable').estimated, false);
       doc = run(doc, 'ClearUtilities', {'floorId': floorId});
       expect(doc.extras.utilities, isEmpty);
-      expect(doc.schemaVersion, 3);
     });
 
     test('points on a deleted floor go with it', () {
@@ -406,7 +392,6 @@ void main() {
       doc = run(doc, 'SetStage', {'stageKey': 'found', 'toggleCheck': 2});
       doc = run(doc, 'SetStage',
           {'stageKey': 'found', 'status': StageStatus.doing, 'spent': 42000});
-      expect(doc.schemaVersion, 4);
       final loaded = roundTrip(doc);
       final found = loaded.extras.stages[1];
       expect(found.checks, [0]);
@@ -439,7 +424,6 @@ void main() {
 
   test('files without planning content keep version 3 and their bytes', () {
     final doc = kz();
-    expect(doc.schemaVersion, 3);
     expect(encodeHouse(doc).contains('"cost"'), false);
     final again = loadHouse(utf8.encode(encodeHouse(doc))).document!;
     expect(encodeHouse(again), encodeHouse(doc));

@@ -1,0 +1,132 @@
+# Design engine roadmap
+
+Living checklist for the engine and editor work on branch `engine/redesign`
+(started 2026-11-26 from `dev` at `0f78537`). Source: the technical audit
+"Yusal House Design Engine — Technical Audit & Improvement Plan". Ids (R1,
+P3, U2 …) are the audit's.
+
+Baselines from `0f78537` are in `docs/perf/` (compiled engine bench on an
+M-series Mac, and the JIT render baseline). Compare later runs on the same
+machine only.
+
+## Model decision
+
+The document stays an **integer-millimetre orthogonal axis grid**, with
+walls drawn on per-floor local axes and rooms recognised from walls.
+
+Considered: a wall graph with half-edge room detection and free angles.
+
+- What it would buy: angled and curved walls, rotated rooms.
+- What it costs: exact integer arithmetic is lost (wall faces at arbitrary
+  angles need snap rounding or robust predicates). Derivation,
+  canonicalisation, mirror, the validator, 80 commands, the 3D scene, cost,
+  heat and export all read `FloorBase` (29 files outside geometry).
+- Evidence: the audit found no defect caused by the grid itself; the
+  defects were in the editor shell. The target users build rectilinear
+  rural houses. Rectilinear L/T/U footprints, cut corners, local axes and
+  free-standing drawn walls already fit the grid.
+
+So the grid stays, and angled walls are not started. The cheapest later step
+if users need it is 45° walls on integer coordinates (centrelines stay
+exact; faces need rounding).
+
+## Phase 0 — correctness
+
+- [x] Suite green, analyzer clean, CI (`.github/workflows/ci.yml`)
+- [x] AOT crash in `editDrawnWall` under `dart compile exe`
+- [x] R1 opening must lie within its host wall
+- [x] R3 upper bounds for every document number
+- [x] R14 low wall on an outline edge duplicates the exterior wall
+- [x] R15 undo group longer than the history cap
+- [x] R17 encoder validates in release builds too
+- [x] Engine session reports created / removed walls
+- [x] R2 R4 R5 R9 one interaction reset for every mode exit
+      (`resetInteraction`; R2's own trigger is verified by code trace only)
+- [x] R10 success toasts only on success
+- [x] R13 outer-wall sheet title
+- [x] R16 stale opening preview on an invalid drop
+- [x] R7 orbit pitch snap near top-down
+- [x] R8 tap on the roof selects what is underneath
+- [x] One schema version: files are written as version 5; 1–4 load with
+      the same decoder (they only added fields); no version gating
+- [x] One command implementation: object edits only; the JSON file round
+      trip (`_editThroughFile`) and `document_edits.dart` are gone
+- [x] Drop the duplicate schema table (`schema_validator.dart`)
+
+## Phase 1 — architecture
+
+- [x] One screen-tolerance helper for every pick and snap (U1)
+- [x] Typed gesture state: `WallGesture`, `WallGrip`, `FurnitureGrip`
+      (`dragKind` stays a command name, which is what it holds)
+- [ ] Tool controllers with begin / move / end / cancel: not done. The
+      leak bugs it was meant to end are fixed at the root by
+      `resetInteraction`; tools are still extensions sharing one state
+- [~] Split `page.dart`: 3,630 -> 2,982 lines (pointer handlers and the
+      plan canvas in their own part files)
+- [x] Dead code removed: the never-entered stair tool, unreachable
+      outer-wall sheet branches
+
+## Phase 2 — performance
+
+- [x] Static plan layer and overlay layer (P1)
+- [x] Zoom-independent text cache with LRU (P5)
+- [x] Single-floor drag previews, skipped when the command repeats (P2)
+- [x] Section slider draws fast frames until released (P7)
+- [x] One batch for translucent faces (P4)
+- [x] 3D view repaint boundary (P6)
+- [x] Indexes in floor derivation and checks (P8, P9)
+- [x] Commands bring only the floors they changed in line with their
+      walls, and check only those floors' doors and windows
+- [x] The floor geometry cache keys on the shared lines and the floor's
+      own, so a line added on one floor keeps the others' geometry
+- [x] Validate only what a command changed: each floor's findings are
+      kept and reused while it and the lines it reads are unchanged
+      (large-plan rename 1.08 -> 0.55 ms)
+
+## Phase 3 — design tools
+
+- [x] Snap hysteresis and axis lock (U2)
+- [x] Measure snaps to wall corners and faces; shows metres and both sides
+- [x] Free wall start: a drag from any point of a wall starts a wall (U7)
+- [x] Hip roof follows the outline (R6): a hip over each largest rectangle
+      of the top floor; their upper envelope is the straight-skeleton roof
+      of a right-angled outline. Gable roofs still span the rectangle.
+- [x] PDF tables never cut off silently: a "see schedule" row, and a
+      paginated heat-load schedule for large houses (R12)
+- [ ] Scaled vector PDF
+- [x] Temporary dimensions: a selected door or window shows its clear
+      distances to the walls beside it
+- [ ] Static GPU vertex buffers (P3): deferred until device numbers show
+      the frame build matters there (1.5–2.1 ms on the host)
+- [x] Mouse middle/right-button pan in every tool (U8), 44 pt zoom
+      buttons (U9), metres in all feedback (U10), the engine's new
+      refusals in six languages (U11)
+- [ ] One room tool, multi-select, copy and paste, columns and beams,
+      gable roofs over outlines, free furniture rotation
+
+## Phase 5 — safety net
+
+- [x] Regression test per fixed defect (`test/engine_regressions_test.dart`,
+      `test/interaction_reset_test.dart`, wall snap, camera, pick, export)
+- [x] Codec fuzz: 400 damaged files, each a coded failure, never a throw
+- [x] Every sampled command applies to a valid, round-tripping house or is
+      refused
+- [x] Undo/redo property test over random sequences
+      (`test/history_property_test.dart`)
+- [x] Golden pictures of the plan and the 3D view (`test/goldens`)
+- [x] Ratio-based performance test (large against small plan)
+- [ ] One bad document per validator code; area conservation
+
+## Blocked
+
+- Real-device validation: no device attached on 2026-11-26 (`adb devices`
+  empty).
+
+## Status (2026-11-26)
+
+All Phase 0 items are done; most of Phases 1–3 and 5 are. The suite has
+932 passing tests (6 skipped screenshot dumps), the analyzer reports no
+issues, and Android (debug APK), iOS (no codesign) and web build.
+Measurements: `docs/perf/` (compiled engine bench, host render probe,
+macOS profile frames before and after). No phone was attached, so there
+are no device measurements.

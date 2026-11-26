@@ -130,7 +130,7 @@ void main() {
     expect((await say('design.split_room', {'room':'r1','wall':'north_south'})).ok,isTrue);
     final before = host.document;
     Future<ActionResult> preview([double? min]) => say('design.preview_wall_move', {
-      'grow':'r1','shrink':'r2','distance_mm':300, if(min != null) 'min_remaining_m2':min
+      'grow':'r1','shrink':'r2','distance_mm':300, if(min != null) 'min_remaining_sqm':min
     });
     Future<ActionResult> finish(String token,String decision) =>
       say('design.finish_wall_preview', {'preview_id':token,'decision':decision});
@@ -139,7 +139,7 @@ void main() {
     final trial = await preview();
     expect(trial.ok,isTrue,reason:'${trial.code} ${trial.say}');
     final token = trial.say['preview_id']! as String;
-    expect(trial.say['grow_after_m2'] as num,greaterThan(trial.say['grow_before_m2'] as num));
+    expect(trial.say['grow_after_m2']! as num,greaterThan(trial.say['grow_before_m2']! as num));
     expect(identical(host.document,before),isTrue);
     expect((await finish(token,'apply')).code,'await_user_confirmation');
     host.endUndoGroup();
@@ -166,8 +166,8 @@ void main() {
     final ids = before.floors.first.rooms.map((r) => r.id).toList();
     final old = host.floorBase.roomsById[ids.first]!.clearArea / 1e6;
     Future<ActionResult> target(double area, {double? min}) => say('design.preview_wall_move', {
-      'grow':'r1', 'shrink':'r2', 'target_area_m2':area,
-      if(min != null) 'min_remaining_m2':min
+      'grow':'r1', 'shrink':'r2', 'target_area_sqm':area,
+      if(min != null) 'min_remaining_sqm':min
     });
     final first = await target(old + 4);
     expect(first.ok,isTrue,reason:first.code);
@@ -178,7 +178,7 @@ void main() {
     expect((await say('design.finish_wall_preview', {'preview_id':first.say['preview_id'],'decision':'apply'})).code,'stale_preview');
     expect((await target(old+3,min:100)).code,'minimum_area_conflict');
     expect((await target(old+300)).ok,isFalse);
-    expect((await say('design.preview_wall_move',{'grow':'r1','shrink':'r2','distance_mm':300,'target_area_m2':old+3})).ok,isFalse);
+    expect((await say('design.preview_wall_move',{'grow':'r1','shrink':'r2','distance_mm':300,'target_area_sqm':old+3})).ok,isFalse);
 
     // Open the same wall menu used by taps and drive the target picker.
     final wall = host.floorBase.wallsBetween(ids.first,ids.last).single;
@@ -229,7 +229,7 @@ void main() {
       final r = await say('design.preview_wall_move',
           {'grow': 'r1', 'shrink': 'r2', 'distance_mm': 300});
       expect(r.ok, isTrue);
-      return r.say['estimate'] as Map;
+      return r.say['estimate']! as Map;
     }
     final same = await quote();
     expect(same['delta'], 0);

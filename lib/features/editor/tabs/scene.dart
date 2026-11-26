@@ -25,6 +25,7 @@ extension _SceneTab on _HouseEditorState {
               outsideLabel: tr3('室外', 'Сыртта', 'Снаружи', 'Outside', ky: 'Сырты', uz: 'Tashqari'),
               inWallLabel: tr3('墙内', 'Қабырға ішінде', 'Внутри стены', 'Inside the wall', ky: 'Дубалдын ичи', uz: 'Devor ichi'),
               areaUnit: unitM2,
+              adjusting: sceneAdjusting,
               still: sceneStill,
               onPick: walk
                   ? null
@@ -354,6 +355,8 @@ extension _SceneTab on _HouseEditorState {
               min: 0.3,
               max: top,
               value: s.cutHeight.clamp(0.3, top),
+              onChangeStart: (_) => update(() => sceneAdjusting = true),
+              onChangeEnd: (_) => update(() => sceneAdjusting = false),
               onChanged: (v) => setScene(s.copyWith(cutHeight: v, cut: true)))),
       Text('${dec(s.cutHeight.toStringAsFixed(2))} $unitM',
           style: mono(size: 12)),

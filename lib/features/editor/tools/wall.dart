@@ -65,19 +65,29 @@ extension _WallTool on _HouseEditorState {
             '墙停在了半路。可以接着拖，或点「接到对面」',
             'Қабырға жарты жолда тоқтады. Жалғастырып тартыңыз не «Қарсы қабырғаға дейін» басыңыз',
             'Стена остановилась на полпути. Тяните дальше или нажмите «До стены напротив»',
-            'The wall stopped halfway. Keep dragging or tap “To the opposite wall”', ky: 'Дубал жарым жолдо токтоду. Сүйрөй бериңиз же «Карама-каршы дубалга чейин» дегенди басыңыз', uz: 'Devor yarim yoʻlda toʻxtadi. Surishda davom eting yoki “Qarama-qarshi devorgacha” ni bosing')
+            'The wall stopped halfway. Keep dragging or tap “To the opposite wall”',
+            ky:
+                'Дубал жарым жолдо токтоду. Сүйрөй бериңиз же «Карама-каршы дубалга чейин» дегенди басыңыз',
+            uz:
+                'Devor yarim yoʻlda toʻxtadi. Surishda davom eting yoki “Qarama-qarshi devorgacha” ni bosing')
         : tapped
             ? tr3(
                 '按住大 ＋ 拖出新墙 · 也可点尺子输入长度',
                 'Үлкен ＋ белгісін ұстап тартыңыз · не сызғышты басып ұзындық енгізіңіз',
                 'Удерживайте большой ＋ и тяните · или нажмите на линейку и введите длину',
-                'Hold the big ＋ and drag · or tap the ruler and enter a length', ky: 'Чоң ＋ белгисин кармап сүйрөңүз · же сызгычты басып, узундугун киргизиңиз', uz: 'Katta ＋ ni bosib turib suring · yoki chizgʻichga bosib, uzunlikni kiriting')
+                'Hold the big ＋ and drag · or tap the ruler and enter a length',
+                ky:
+                    'Чоң ＋ белгисин кармап сүйрөңүз · же сызгычты басып, узундугун киргизиңиз',
+                uz:
+                    'Katta ＋ ni bosib turib suring · yoki chizgʻichga bosib, uzunlikni kiriting')
             : !accepted && error == null
                 ? tr3(
                     '墙至少 0.30 米，请拖远一些',
                     'Қабырға кемінде 0,30 м, әріректе жіберіңіз',
                     'Стена не короче 0,30 м, протяните дальше',
-                    'Walls are at least 0.30 m; drag further', ky: 'Дубалдар кеминде 0,30 м; андан ары сүйрөңүз', uz: 'Devorlar kamida 0,30 m; yana suring')
+                    'Walls are at least 0.30 m; drag further',
+                    ky: 'Дубалдар кеминде 0,30 м; андан ары сүйрөңүз',
+                    uz: 'Devorlar kamida 0,30 m; yana suring')
                 : null;
     update(() {});
   }
@@ -97,7 +107,7 @@ extension _WallTool on _HouseEditorState {
     final painter = interactionPainter();
     final world = painter.worldPoint(local, size);
     final raw = Offset(world.x, world.y);
-    final pixel = 1 / (painter.scale(size) * canvasZoom);
+    final pixel = mmPerPixel(painter, size);
     final vertical = editStart!.dx == editEnd!.dx;
     final carrier = vertical ? editStart!.dx : editStart!.dy;
     final lo = math.min(vertical ? editStart!.dy : editStart!.dx,
@@ -114,20 +124,21 @@ extension _WallTool on _HouseEditorState {
       if (selectedDrawnId != null) 'wallId': selectedDrawnId,
       if (selectedDrawnId == null) 'anchor': selectedDrawnAnchor,
     };
-    if (wallGrip == 'start' || wallGrip == 'end') {
-      final fixed = wallGrip == 'start' ? editEnd! : editStart!;
-      final moving = wallGrip == 'start' ? editStart! : editEnd!;
-      final snap = snapWallEnd(base, fixed, raw,
+    if (wallGrip == WallGrip.start || wallGrip == WallGrip.end) {
+      final fixed = wallGrip == WallGrip.start ? editEnd! : editStart!;
+      final moving = wallGrip == WallGrip.start ? editStart! : editEnd!;
+      final snap = lastWallSnap = snapWallEnd(base, fixed, raw,
           connectRadius: 22 * pixel,
           alignRadius: 14 * pixel,
           forceHorizontal: !vertical,
           ignore: own,
-          skipAlong: {(vertical ? moving.dy : moving.dx).round()});
+          skipAlong: {(vertical ? moving.dy : moving.dx).round()},
+          previous: lastWallSnap);
       if (snap.connected && !drawConnected) HapticFeedback.selectionClick();
       drawConnected = snap.connected;
       alignGuide = guideFor(snap);
-      editPreviewStart = wallGrip == 'start' ? snap.end : editStart;
-      editPreviewEnd = wallGrip == 'end' ? snap.end : editEnd;
+      editPreviewStart = wallGrip == WallGrip.start ? snap.end : editStart;
+      editPreviewEnd = wallGrip == WallGrip.end ? snap.end : editEnd;
       editCommand = 'UpdateDrawnWall';
       editArgs = wallEditArguments(editPreviewStart!, editPreviewEnd!);
     } else {
@@ -136,7 +147,14 @@ extension _WallTool on _HouseEditorState {
       final along = vertical ? delta.dy : delta.dx;
       drawConnected = false;
       alignGuide = null;
-      if (across.abs() >= along.abs()) {
+      // Moving the wall sideways and sliding it along are two commands:
+      // once one is chosen it holds until the other way clearly wins.
+      final sideways = bodySideways = switch (bodySideways) {
+        true => along.abs() <= across.abs() * 1.5,
+        false => across.abs() > along.abs() * 1.5,
+        null => across.abs() >= along.abs(),
+      };
+      if (sideways) {
         // Sideways: walls that end on this one stretch along with it.
         var position = carrier + across;
         var best = 14 * pixel;
@@ -168,11 +186,13 @@ extension _WallTool on _HouseEditorState {
     }
     schedulePreview(editCommand!, editArgs!,
         ok: tr3('松手完成，支持撤销', 'Жіберіңіз, болдырмауға болады',
-            'Отпустите, действие можно отменить',
-            'Release; you can undo this', ky: 'Коё бериңиз; муну артка кайтарса болот', uz: 'Qoʻyib yuboring; buni bekor qilish mumkin'),
+            'Отпустите, действие можно отменить', 'Release; you can undo this',
+            ky: 'Коё бериңиз; муну артка кайтарса болот',
+            uz: 'Qoʻyib yuboring; buni bekor qilish mumkin'),
         failed: tr3('无法移动这段墙', 'Бұл қабырғаны жылжыту мүмкін емес',
-            'Эту стену нельзя переместить',
-            "This wall can't be moved", ky: 'Бул дубалды жылдырууга болбойт', uz: 'Bu devorni surib boʻlmaydi'));
+            'Эту стену нельзя переместить', "This wall can't be moved",
+            ky: 'Бул дубалды жылдырууга болбойт',
+            uz: 'Bu devorni surib boʻlmaydi'));
   }
 
   /// Ask how high the selected wall stands: to the ceiling, or one of the
@@ -189,24 +209,44 @@ extension _WallTool on _HouseEditorState {
     final picked = await showDialog<int>(
         context: context,
         builder: (context) => SimpleDialog(
-                title: Text(tr3('墙的高度', 'Қабырға биіктігі', 'Высота стены', 'Wall height', ky: 'Дубалдын бийиктиги', uz: 'Devor balandligi')),
+                title: Text(tr3(
+                    '墙的高度', 'Қабырға биіктігі', 'Высота стены', 'Wall height',
+                    ky: 'Дубалдын бийиктиги', uz: 'Devor balandligi')),
                 children: [
                   for (final (value, label) in [
                     (
                       0,
-                      tr3('到顶（分隔房间）', 'Төбеге дейін (бөлмені бөледі)',
-                          'До потолка (делит комнату)', 'To the ceiling (divides the room)', ky: 'Шыпка чейин (бөлмөнү бөлөт)', uz: 'Shiftgacha (xonani ajratadi)')
+                      tr3(
+                          '到顶（分隔房间）',
+                          'Төбеге дейін (бөлмені бөледі)',
+                          'До потолка (делит комнату)',
+                          'To the ceiling (divides the room)',
+                          ky: 'Шыпка чейин (бөлмөнү бөлөт)',
+                          uz: 'Shiftgacha (xonani ajratadi)')
                     ),
-                    (600, tr3('0.6 米 · 矮台', '0,6 м · аласа', '0,6 м · бортик', '0.6 m · ledge', ky: '0,6 м · бортик', uz: '0,6 m · bortik')),
+                    (
+                      600,
+                      tr3('0.6 米 · 矮台', '0,6 м · аласа', '0,6 м · бортик',
+                          '0.6 m · ledge',
+                          ky: '0,6 м · бортик', uz: '0,6 m · bortik')
+                    ),
                     (
                       900,
-                      tr3('0.9 米 · 栏杆', '0,9 м · қоршау', '0,9 м · перила', '0.9 m · railing', ky: '0,9 м · тосмо', uz: '0,9 m · panjara')
+                      tr3('0.9 米 · 栏杆', '0,9 м · қоршау', '0,9 м · перила',
+                          '0.9 m · railing',
+                          ky: '0,9 м · тосмо', uz: '0,9 m · panjara')
                     ),
-                    (1100, tr3('1.1 米 · 吧台', '1,1 м · бар', '1,1 м · стойка', '1.1 m · bar counter', ky: '1,1 м · бар', uz: '1,1 m · bar peshtaxtasi')),
+                    (
+                      1100,
+                      tr3('1.1 米 · 吧台', '1,1 м · бар', '1,1 м · стойка',
+                          '1.1 m · bar counter',
+                          ky: '1,1 м · бар', uz: '1,1 m · bar peshtaxtasi')
+                    ),
                     (
                       1500,
                       tr3('1.5 米 · 半隔断', '1,5 м · жартылай',
-                          '1,5 м · полуперегородка', '1.5 m · half partition', ky: '1,5 м · жарым тосмо', uz: '1,5 m · yarim toʻsiq')
+                          '1,5 м · полуперегородка', '1.5 m · half partition',
+                          ky: '1,5 м · жарым тосмо', uz: '1,5 m · yarim toʻsiq')
                     ),
                   ])
                     SimpleDialogOption(
@@ -361,10 +401,14 @@ extension _WallTool on _HouseEditorState {
                         style: const TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600))),
                 if (inner && wallRooms(wall) != null)
-                  TextButton(key: const ValueKey('wall-target-area'), onPressed: () => wallMenuAction('area'),
-                      child: Text(tr3('面积', 'Аудан', 'Площадь', 'Area', ky: 'Аянт', uz: 'Maydon'))),
+                  TextButton(
+                      key: const ValueKey('wall-target-area'),
+                      onPressed: () => wallMenuAction('area'),
+                      child: Text(tr3('面积', 'Аудан', 'Площадь', 'Area',
+                          ky: 'Аянт', uz: 'Maydon'))),
                 IconButton(
-                    tooltip: tr3('关闭', 'Жабу', 'Закрыть', 'Close', ky: 'Жабуу', uz: 'Yopish'),
+                    tooltip: tr3('关闭', 'Жабу', 'Закрыть', 'Close',
+                        ky: 'Жабуу', uz: 'Yopish'),
                     visualDensity: VisualDensity.compact,
                     onPressed: () => update(closeWallMenu),
                     icon: const Icon(Icons.close, size: 18))
@@ -373,51 +417,98 @@ extension _WallTool on _HouseEditorState {
                 button(
                     'add',
                     Icons.add_circle_outline,
-                    tr3('接墙', 'Жалғау', 'Пристроить', 'Extend', ky: 'Узартуу', uz: 'Uzaytirish'),
-                    '从这里接墙'
-                        .trKey('Осы жерден жалғау', 'Пристроить стену отсюда', 'Extend a wall from here', 'Бул жерден дубал улантуу', 'Shu yerdan devorni davom ettirish'),
+                    tr3('接墙', 'Жалғау', 'Пристроить', 'Extend',
+                        ky: 'Узартуу', uz: 'Uzaytirish'),
+                    '从这里接墙'.trKey(
+                        'Осы жерден жалғау',
+                        'Пристроить стену отсюда',
+                        'Extend a wall from here',
+                        'Бул жерден дубал улантуу',
+                        'Shu yerdan devorni davom ettirish'),
                     enabled: !opening),
                 if (inner) ...[
                   button(
                       'length',
                       Icons.straighten,
-                      tr3('长度', 'Ұзындық', 'Длина', 'Length', ky: 'Узундугу', uz: 'Uzunligi'),
-                      '调整长度'.trKey('Ұзындығын өзгерту', 'Изменить длину', 'Change the length', 'Узундугун өзгөртүү', 'Uzunlikni oʻzgartirish')),
-                  button('move', Icons.open_with, tr3('位置', 'Орны', 'Место', 'Location', ky: 'Жайгашкан жери', uz: 'Joylashuvi'),
-                      '移动墙体'.trKey('Қабырғаны жылжыту', 'Переместить стену', 'Move the wall', 'Дубалды жылдыруу', 'Devorni surish')),
+                      tr3('长度', 'Ұзындық', 'Длина', 'Length',
+                          ky: 'Узундугу', uz: 'Uzunligi'),
+                      '调整长度'.trKey(
+                          'Ұзындығын өзгерту',
+                          'Изменить длину',
+                          'Change the length',
+                          'Узундугун өзгөртүү',
+                          'Uzunlikni oʻzgartirish')),
+                  button(
+                      'move',
+                      Icons.open_with,
+                      tr3('位置', 'Орны', 'Место', 'Location',
+                          ky: 'Жайгашкан жери', uz: 'Joylashuvi'),
+                      '移动墙体'.trKey(
+                          'Қабырғаны жылжыту',
+                          'Переместить стену',
+                          'Move the wall',
+                          'Дубалды жылдыруу',
+                          'Devorni surish')),
                   if (low == null)
                     button(
                         'thickness',
                         Icons.line_weight,
-                        tr3('墙厚', 'Қалыңдық', 'Толщина', 'Thickness', ky: 'Калыңдыгы', uz: 'Qalinligi'),
-                        '修改墙厚'.trKey('Қалыңдығын өзгерту', 'Изменить толщину', 'Change the thickness', 'Калыңдыгын өзгөртүү', 'Qalinlikni oʻzgartirish')),
+                        tr3('墙厚', 'Қалыңдық', 'Толщина', 'Thickness',
+                            ky: 'Калыңдыгы', uz: 'Qalinligi'),
+                        '修改墙厚'.trKey(
+                            'Қалыңдығын өзгерту',
+                            'Изменить толщину',
+                            'Change the thickness',
+                            'Калыңдыгын өзгөртүү',
+                            'Qalinlikni oʻzgartirish')),
                   if (selectedDrawnId != null)
                     button(
                         'height',
                         Icons.height,
-                        tr3('高度', 'Биіктік', 'Высота', 'Height', ky: 'Бийиктиги', uz: 'Balandligi'),
-                        '到顶的墙或矮墙'.trKey('Төбеге дейін немесе аласа қабырға',
-                            'До потолка или низкая стена', 'To the ceiling or a low wall', 'Шыпка чейин же жапыз дубал', 'Shiftgacha yoki past devor')),
+                        tr3('高度', 'Биіктік', 'Высота', 'Height',
+                            ky: 'Бийиктиги', uz: 'Balandligi'),
+                        '到顶的墙或矮墙'.trKey(
+                            'Төбеге дейін немесе аласа қабырға',
+                            'До потолка или низкая стена',
+                            'To the ceiling or a low wall',
+                            'Шыпка чейин же жапыз дубал',
+                            'Shiftgacha yoki past devor')),
                   button(
                       'delete',
                       Icons.delete_outline,
-                      tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
-                      '删除墙体'.trKey('Қабырғаны жою', 'Удалить стену', 'Delete the wall', 'Дубалды өчүрүү', 'Devorni oʻchirish'),
+                      tr3('删除', 'Жою', 'Удалить', 'Delete',
+                          ky: 'Өчүрүү', uz: 'Oʻchirish'),
+                      '删除墙体'.trKey(
+                          'Қабырғаны жою',
+                          'Удалить стену',
+                          'Delete the wall',
+                          'Дубалды өчүрүү',
+                          'Devorni oʻchirish'),
                       danger: true),
                 ] else ...[
                   button(
                       'footprint',
                       Icons.aspect_ratio,
-                      tr3('房屋尺寸', 'Үй өлшемі', 'Размеры дома', 'House dimensions', ky: 'Үйдүн өлчөмдөрү', uz: 'Uy oʻlchamlari'),
+                      tr3('房屋尺寸', 'Үй өлшемі', 'Размеры дома',
+                          'House dimensions',
+                          ky: 'Үйдүн өлчөмдөрү', uz: 'Uy oʻlchamlari'),
                       '调整房屋长宽'.trKey(
-                          'Үй өлшемін өзгерту', 'Изменить размеры дома', 'Change the house size', 'Үйдүн өлчөмүн өзгөртүү', 'Uy oʻlchamini oʻzgartirish')),
+                          'Үй өлшемін өзгерту',
+                          'Изменить размеры дома',
+                          'Change the house size',
+                          'Үйдүн өлчөмүн өзгөртүү',
+                          'Uy oʻlchamini oʻzgartirish')),
                   button(
                       'outerThickness',
                       Icons.line_weight,
-                      tr3('墙厚', 'Қалыңдық', 'Толщина', 'Thickness', ky: 'Калыңдыгы', uz: 'Qalinligi'),
-                      '外墙厚度'.trKey('Сыртқы қабырға қалыңдығы',
+                      tr3('墙厚', 'Қалыңдық', 'Толщина', 'Thickness',
+                          ky: 'Калыңдыгы', uz: 'Qalinligi'),
+                      '外墙厚度'.trKey(
+                          'Сыртқы қабырға қалыңдығы',
                           'Толщина наружной стены',
-                          'Outer wall thickness', 'Сырткы дубалдын калыңдыгы', 'Tashqi devor qalinligi')),
+                          'Outer wall thickness',
+                          'Сырткы дубалдын калыңдыгы',
+                          'Tashqi devor qalinligi')),
                 ]
               ]),
               if (opening)
@@ -428,7 +519,9 @@ extension _WallTool on _HouseEditorState {
                             '这里有门窗，换个位置才能接墙',
                             'Мұнда есік-терезе бар, жалғау үшін басқа жерді таңдаңыз',
                             'Здесь окно или дверь, выберите другое место для стены',
-                            "There's a window or door here; pick another spot for the wall", ky: 'Бул жерде терезе же эшик бар; дубал үчүн башка жер тандаңыз', uz: 'Bu yerda deraza yoki eshik bor; devor uchun boshqa joy tanlang'),
+                            "There's a window or door here; pick another spot for the wall",
+                            ky: 'Бул жерде терезе же эшик бар; дубал үчүн башка жер тандаңыз',
+                            uz: 'Bu yerda deraza yoki eshik bor; devor uchun boshqa joy tanlang'),
                         style: const TextStyle(fontSize: 12))),
             ]))));
   }
@@ -451,19 +544,26 @@ extension _WallTool on _HouseEditorState {
                       '删除墙及其门窗？',
                       'Қабырға мен ондағы есік-терезені жою керек пе?',
                       'Удалить стену вместе с окнами и дверями?',
-                      'Delete the wall with its windows and doors?', ky: 'Дубалды терезе-эшиктери менен өчүрөсүзбү?', uz: 'Devor derazalari va eshiklari bilan oʻchirilsinmi?')),
+                      'Delete the wall with its windows and doors?',
+                      ky: 'Дубалды терезе-эшиктери менен өчүрөсүзбү?',
+                      uz:
+                          'Devor derazalari va eshiklari bilan oʻchirilsinmi?')),
                   content: Text(tr3(
                       '这段墙上的 $hosted 个门窗也会删除，可通过撤销恢复。',
                       'Қабырғадағы $hosted есік-терезе де жойылады, болдырмау арқылы қайтаруға болады.',
                       'Окна и двери на этой стене ($hosted шт.) тоже будут удалены, вернуть их можно отменой.',
-                      'The windows and doors on this wall ($hosted) will be deleted too; undo brings them back.', ky: 'Бул дубалдагы терезелер менен эшиктер ($hosted) да өчүрүлөт; артка кайтаруу аларды кайтарат.', uz: 'Bu devordagi deraza va eshiklar ($hosted) ham oʻchiriladi; bekor qilish ularni qaytaradi.')),
+                      'The windows and doors on this wall ($hosted) will be deleted too; undo brings them back.',
+                      ky: 'Бул дубалдагы терезелер менен эшиктер ($hosted) да өчүрүлөт; артка кайтаруу аларды кайтарат.',
+                      uz: 'Bu devordagi deraza va eshiklar ($hosted) ham oʻchiriladi; bekor qilish ularni qaytaradi.')),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
+                        child: Text(tr3('取消', 'Болдырмау', 'Отмена', 'Cancel',
+                            ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
                     FilledButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: Text(tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish')))
+                        child: Text(tr3('删除', 'Жою', 'Удалить', 'Delete',
+                            ky: 'Өчүрүү', uz: 'Oʻchirish')))
                   ]));
       if (yes != true) return;
     }
@@ -486,8 +586,12 @@ extension _WallTool on _HouseEditorState {
                   '已删除墙体和 $hosted 个门窗',
                   'Қабырға мен $hosted есік-терезе жойылды',
                   'Стена удалена вместе с окнами и дверями ($hosted шт.)',
-                  'Wall deleted with its windows and doors ($hosted)', ky: 'Дубал терезе-эшиктери менен өчүрүлдү ($hosted)', uz: 'Devor derazalari va eshiklari bilan oʻchirildi ($hosted)')
-              : tr3('已删除墙体', 'Қабырға жойылды', 'Стена удалена', 'Wall deleted', ky: 'Дубал өчүрүлдү', uz: 'Devor oʻchirildi'),
+                  'Wall deleted with its windows and doors ($hosted)',
+                  ky: 'Дубал терезе-эшиктери менен өчүрүлдү ($hosted)',
+                  uz:
+                      'Devor derazalari va eshiklari bilan oʻchirildi ($hosted)')
+              : tr3('已删除墙体', 'Қабырға жойылды', 'Стена удалена', 'Wall deleted',
+                  ky: 'Дубал өчүрүлдү', uz: 'Devor oʻchirildi'),
           undo: undo);
     }
   }

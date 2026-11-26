@@ -1,10 +1,11 @@
 import 'dart:convert';
-import 'package:yusal/features/editor/engine/core/serialization/schema_validator.dart';
 
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/validation/document_validator.dart';
 
-const currentSchemaVersion = 4;
+/// The version every file is written with. Files of versions 1 to 4 load
+/// with the same decoder: each version only added fields.
+const currentSchemaVersion = 5;
 const maxHouseBytes = 10485760;
 
 class LoadError {
@@ -617,7 +618,6 @@ class _Decoder {
     }
     final ds = arr(m['floors'], '/floors');
     return HouseDocument(
-      schemaVersion: integer(m['schemaVersion'], '/schemaVersion'),
       meta: meta(m['meta'], '/meta'),
       mainEntranceOpeningId: entrance,
       defaults: defaults(m['defaults'], '/defaults'),
@@ -632,7 +632,6 @@ class _Decoder {
   }
 
   HouseDocument _empty() => HouseDocument(
-        schemaVersion: 1,
         meta: const Meta(
           name: '',
           createdAt: '2000-01-01T00:00:00Z',
@@ -730,10 +729,6 @@ LoadResult loadHouse(List<int> bytes) {
 }
 
 LoadResult decodeV1(Object? raw) {
-  final schemaErrors = validateSchemaV1(raw);
-  if (schemaErrors.isNotEmpty) {
-    return LoadResult.failure(LoadFailure('decode', schemaErrors));
-  }
   final d = _Decoder();
   final doc = d.document(raw);
   if (d.errors.isNotEmpty) {
@@ -752,8 +747,15 @@ LoadResult decodeV1(Object? raw) {
   return LoadResult.success(doc);
 }
 
+/// [d] as a house file. Throws [ArgumentError] for a document that breaks a
+/// rule, in release builds too: no file is ever written that cannot be
+/// read back.
 String encodeHouse(HouseDocument d) {
-  assert(validateHouse(d).isEmpty, 'Only valid documents can be encoded');
+  final errors = validateHouse(d);
+  if (errors.isNotEmpty) {
+    throw ArgumentError.value(
+        d, 'd', 'invalid house: ${errors.first.code} ${errors.first.path}');
+  }
   Map<String, Object?> rect(AxisRectangle r) => {
         'x0': r.x0,
         'x1': r.x1,
@@ -771,7 +773,7 @@ String encodeHouse(HouseDocument d) {
         FromEndPosition(:final d) => {'type': 'fromEnd', 'd': d},
       };
   final root = <String, Object?>{
-    'schemaVersion': d.schemaVersion,
+    'schemaVersion': currentSchemaVersion,
     'meta': {
       'name': d.meta.name,
       'createdAt': d.meta.createdAt,

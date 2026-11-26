@@ -389,11 +389,12 @@ class CostEstimate {
 
   /// Labour of one line; the user's own lines and services are taken as
   /// quoted, and nothing is charged on a stage the family builds itself.
-  double lineLabour(CostLine l) => l.custom || l.service || selfBuild.contains(l.stage)
-      ? 0
-      : labourByWork
-          ? l.quantity * l.labourRate
-          : l.total * labourPct / 100;
+  double lineLabour(CostLine l) =>
+      l.custom || l.service || selfBuild.contains(l.stage)
+          ? 0
+          : labourByWork
+              ? l.quantity * l.labourRate
+              : l.total * labourPct / 100;
   double stageLabour(String stage) => lines
       .where((l) => l.stage == stage)
       .fold(0.0, (s, l) => s + lineLabour(l));
@@ -444,8 +445,7 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
     // Existing all-room finish quotes also cover tiles until priced separately.
     final inherited = key == 'finishTileArea' ? 'finishArea' : key;
     final own = spec.prices[key] ?? spec.prices[inherited];
-    final bookKey =
-        unit == MasonryUnit.aerated ? key : 'masonry_${unit.name}';
+    final bookKey = unit == MasonryUnit.aerated ? key : 'masonry_${unit.name}';
     final quote = regional?.prices[bookKey] ??
         (key == 'finishTileArea' ? regional?.prices[inherited] : null);
     final example =
@@ -468,7 +468,8 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
             regional?.labour[inherited]?.price ??
             labour[key] ??
             0,
-        ownLabour: spec.labourPrices.containsKey(key) || spec.labourPrices.containsKey(inherited),
+        ownLabour: spec.labourPrices.containsKey(key) ||
+            spec.labourPrices.containsKey(inherited),
         service: serviceLines.contains(key),
         estimated: estimated));
   }
@@ -617,7 +618,8 @@ CostEstimate estimateCost(HouseDocument doc, DerivedHouse derived,
       .where((wall) => wall.role == WallRole.exterior)
       .fold(0.0, (s, wall) => s + wall.rect.area / 1e6);
   line('groundFloor', 'finish', math.max(0.0, groundArea - outerGround));
-  line('finishArea', 'finish', clear > 0 ? clear - tileArea : groundArea - outerGround);
+  line('finishArea', 'finish',
+      clear > 0 ? clear - tileArea : groundArea - outerGround);
 
   line('finishTileArea', 'finish', tileArea);
 

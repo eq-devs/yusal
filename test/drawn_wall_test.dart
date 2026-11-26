@@ -64,7 +64,6 @@ void main() {
     expect(s.floors.first.explicitWalls, true);
     expect(s.floors.first.rooms.length, 1);
     expect(s.floors.first.rooms.single.id, before.floors.first.rooms.single.id);
-    expect(doc(s).schemaVersion, 2);
     expect(validateDesignState(s), isEmpty);
     final loaded = loadHouse(utf8.encode(encodeHouse(doc(s))));
     expect(loaded.document, doc(s));
@@ -376,14 +375,11 @@ void main() {
     expect(changed.floors.last, other);
     expect(validateDesignState(changed), isEmpty);
   });
-  test(
-      'version 1 cannot disguise explicit walls and future versions are rejected',
-      () {
+  test('files of a newer version are rejected', () {
     final s = add(initial(), 2000, 3000, 6000, 3000);
     final raw = jsonDecode(encodeHouse(doc(s))) as Map<String, dynamic>;
-    raw['schemaVersion'] = 1;
-    expect(loadHouse(utf8.encode(jsonEncode(raw))).isSuccess, false);
-    raw['schemaVersion'] = 5;
+    expect(raw['schemaVersion'], currentSchemaVersion);
+    raw['schemaVersion'] = currentSchemaVersion + 1;
     expect(loadHouse(utf8.encode(jsonEncode(raw))).failure!.errors.single.code,
         'UNSUPPORTED_NEWER_VERSION');
   });

@@ -1,0 +1,62 @@
+{
+  "typical": {
+    "size": {
+      "floors": 2,
+      "rooms": 16,
+      "openings": 27,
+      "jsonBytes": 20638,
+      "sceneElements": 242
+    },
+    "ms": {
+      "validateHouse": 0.247,
+      "encodeHouse": 0.562,
+      "loadHouse": 0.829,
+      "deriveFloorBase.cold": 0.193,
+      "deriveHouse.cold": 0.814,
+      "runChecks": 0.02,
+      "estimateCost": 0.035,
+      "command.AddFurniture": 0.007,
+      "command.RenameRoom": 0.251,
+      "command.SetFloorHeight": 0.25,
+      "command.ResizeOpening": 0.31,
+      "command.MoveOpening": 0.312,
+      "command.MoveAxis": 0.745,
+      "dragFrame.resizeOpening": 0.65,
+      "dragFrame.moveAxis": 1.254,
+      "dragFrame.carveRoom": 1.333,
+      "dragFrame.splitSpace": 1.266,
+      "dragFrame.addOpening": 0.662,
+      "dragFrame.moveDrawnWall": 2.942
+    }
+  },
+  "large": {
+    "size": {
+      "floors": 2,
+      "rooms": 72,
+      "openings": 60,
+      "jsonBytes": 78326,
+      "sceneElements": 475
+    },
+    "ms": {
+      "validateHouse": 1.065,
+      "encodeHouse": 1.904,
+      "loadHouse": 3.035,
+      "deriveFloorBase.cold": 0.62,
+      "deriveHouse.cold": 2.209,
+      "runChecks": 0.119,
+      "estimateCost": 0.113,
+      "command.AddFurniture": 0.014,
+      "command.RenameRoom": 1.084,
+      "command.SetFloorHeight": 1.086,
+      "command.ResizeOpening": 1.233,
+      "command.MoveOpening": 1.216,
+      "command.MoveAxis": 1.894,
+      "dragFrame.resizeOpening": 1.969,
+      "dragFrame.moveAxis": 2.654,
+      "dragFrame.carveRoom": 6.468,
+      "dragFrame.splitSpace": 6.738,
+      "dragFrame.addOpening": 1.984,
+      "dragFrame.moveDrawnWall": 4.114
+    }
+  }
+}

@@ -12,18 +12,20 @@ extension _DragTool on _HouseEditorState {
     dragAttempted = false;
     dragValid = false;
     final painter = interactionPainter();
-    final scale = painter.scale(size);
+    final mm = mmPerPixel(painter, size);
     dragCoordinatePainter = painter;
     final x = painter.worldPoint(point, size).x;
     final y = painter.worldPoint(point, size).y;
-    final tolerance = 12 / scale;
+    final tolerance = 12 * mm;
     if (tool == EditorTool.wall && selectedWall != null) {
       final wall = selectedWall!;
       final along = (wall.start.pos + wall.end.pos) / 2;
       final center = wall.axis.dir == AxisDir.V
           ? painter.point(wall.axis.pos.toDouble(), along, size)
           : painter.point(along, wall.axis.pos.toDouble(), size);
-      if ((point - center).distance <= 24) draggingAxis = wall.axis;
+      if ((point - center).distance * canvasZoom <= 24) {
+        draggingAxis = wall.axis;
+      }
     } else if (tool == EditorTool.resize) {
       final width = history.present.footprint.width.toDouble();
       final depth = history.present.footprint.depth.toDouble();
@@ -49,12 +51,23 @@ extension _DragTool on _HouseEditorState {
     }
   }
 
+  /// The finger left every wall the opening could go on: show it back
+  /// where it was, and let a release there change nothing.
+  void abandonOpeningPreview() {
+    dragArguments = null;
+    dragKind = null;
+    dragValid = false;
+    spatialDocument = null;
+    spatialBase = null;
+  }
+
   void previewDrag(Offset point, Size size) {
-    if (downPoint == null || (downPoint! - point).distance < 8 && !dragged) {
+    if (downPoint == null ||
+        (downPoint! - point).distance * canvasZoom < 8 && !dragged) {
       return;
     }
     dragAttempted = true;
-    final previousPosition = dragValid && dragKind == 'MoveLocalWall' ? (dragArguments?['pos']) : null;
+    final previous = dragValid ? (dragKind, dragArguments) : null;
     dragValid = false;
     final painter = dragCoordinatePainter ?? interactionPainter();
     final x = painter.worldPoint(point, size).x;
@@ -74,10 +87,6 @@ extension _DragTool on _HouseEditorState {
               originalList[original.index - 1].pos + 300,
               originalList[original.index + 1].pos - 300)
         };
-        if (previousPosition == dragArguments!['pos']) {
-          dragValid = true;
-          return;
-        }
       } else if (axis.kind == 'boundary') {
         dragKind = 'SetFootprintSize';
         dragArguments = {
@@ -101,13 +110,16 @@ extension _DragTool on _HouseEditorState {
         dragKind = 'MoveAxis';
         dragArguments = {
           'axisId': axis.id,
-          'pos': (axis.dir == AxisDir.V ? x : y).round().clamp(low, high)
+          // To the centimetre: finer is not buildable, and every pixel of
+          // the finger would otherwise be a new command.
+          'pos': (((axis.dir == AxisDir.V ? x : y) / 10).round() * 10)
+              .clamp(low, high)
         };
       }
     } else if (draggingOpening != null) {
       final opening = draggingOpening!;
       final originalBase = deriveFloorBase(history.present, floor.id);
-      final tolerance = 28 / painter.scale(size);
+      final tolerance = 28 * mmPerPixel(painter, size);
       final candidates = originalBase.wallSegments.where((wall) {
         final along = wall.axis.dir == AxisDir.H ? x : y;
         final cross = wall.axis.dir == AxisDir.H ? y : x;
@@ -120,19 +132,27 @@ extension _DragTool on _HouseEditorState {
             .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
       final wall = candidates.firstOrNull;
       if (wall == null) {
+        abandonOpeningPreview();
         placementHint = tr3(
             '拖到另一面墙，门窗会自动贴合',
             'Басқа қабырғаға апарыңыз, есік-терезе өзі орнығады',
             'Перетащите на другую стену — окно или дверь встанет на место',
-            'Drag onto another wall and the window or door snaps into place', ky: 'Башка дубалга сүйрөңүз, терезе же эшик өз ордуна түшөт', uz: 'Boshqa devorga suring, deraza yoki eshik oʻz joyiga tushadi');
+            'Drag onto another wall and the window or door snaps into place',
+            ky: 'Башка дубалга сүйрөңүз, терезе же эшик өз ордуна түшөт',
+            uz: 'Boshqa devorga suring, deraza yoki eshik oʻz joyiga tushadi');
         return;
       }
       final along = wall.axis.dir == AxisDir.H ? x : y;
       final available = wall.end.pos - wall.start.pos - opening.opening.width;
       if (available < 0) {
-        placementHint = tr3('这段墙放不下这个门窗', 'Бұл қабырғаға есік-терезе сыймайды',
+        abandonOpeningPreview();
+        placementHint = tr3(
+            '这段墙放不下这个门窗',
+            'Бұл қабырғаға есік-терезе сыймайды',
             'Окно или дверь не помещается на этой стене',
-            "The window or door doesn't fit on this wall", ky: 'Терезе же эшик бул дубалга батпайт', uz: 'Deraza yoki eshik bu devorga sigʻmaydi');
+            "The window or door doesn't fit on this wall",
+            ky: 'Терезе же эшик бул дубалга батпайт',
+            uz: 'Deraza yoki eshik bu devorga sigʻmaydi');
         return;
       }
       dragKind = 'MoveOpening';
@@ -149,6 +169,13 @@ extension _DragTool on _HouseEditorState {
     } else {
       return;
     }
+    // The same command as the last move shows the same preview.
+    if (previous != null &&
+        previous.$1 == dragKind &&
+        sameArguments(previous.$2, dragArguments)) {
+      dragValid = true;
+      return;
+    }
     final result = executeCommand(
         presentState,
         DesignCommand(dragKind!, dragArguments!),
@@ -158,27 +185,54 @@ extension _DragTool on _HouseEditorState {
       placementHint = null;
       dragged = true;
       dragValid = true;
-      derived =
-          deriveHouse(composeDocument(history.present.meta, result.newState));
-      base = derived.floors[floorIndex].base;
+      // Only this floor's plan is shown while the finger moves: the house
+      // is derived once, on release.
+      final preview = spatialDocument =
+          composeDocument(history.present.meta, result.newState);
+      final previewBase = spatialBase = deriveFloorBase(preview, floor.id);
       if (dragKind == 'MoveLocalWall' && selectedWall != null) {
         // The selected wall may have acquired a new axis. Locate the two
         // rooms on the preview wall at its current position.
-        final moved = base.wallSegments.where((w) => w.axis.dir == selectedWall!.axis.dir &&
-            w.axis.pos == dragArguments!['pos'] && w.start.pos == selectedWall!.start.pos &&
-            w.end.pos == selectedWall!.end.pos).firstOrNull;
+        final moved = previewBase.wallSegments
+            .where((w) =>
+                w.axis.dir == selectedWall!.axis.dir &&
+                w.axis.pos == dragArguments!['pos'] &&
+                w.start.pos == selectedWall!.start.pos &&
+                w.end.pos == selectedWall!.end.pos)
+            .firstOrNull;
         if (moved != null) {
           final pair = wallRooms(moved);
           if (pair != null) {
-            placementHint = floor.rooms.where((r) => r.id == pair.$1 || r.id == pair.$2)
-                .map((r) => '${r.name} ${(base.roomsById[r.id]!.clearArea / 1e6).toStringAsFixed(2)} m²').join(' · ');
+            placementHint = floor.rooms
+                .where((r) => r.id == pair.$1 || r.id == pair.$2)
+                .map((r) =>
+                    '${r.name} ${(previewBase.roomsById[r.id]!.clearArea / 1e6).toStringAsFixed(2)} m²')
+                .join(' · ');
           }
         }
       }
     } else if (result is Rejected) {
-      derive();
+      spatialDocument = null;
+      spatialBase = null;
       placementHint = result.message;
     }
+  }
+
+  /// Whether two command arguments say the same: maps and lists by
+  /// content, everything else by `==`.
+  static bool sameArguments(Object? a, Object? b) {
+    if (a is Map && b is Map) {
+      return a.length == b.length &&
+          a.keys.every((k) => b.containsKey(k) && sameArguments(a[k], b[k]));
+    }
+    if (a is List && b is List) {
+      if (a.length != b.length) return false;
+      for (var i = 0; i < a.length; i++) {
+        if (!sameArguments(a[i], b[i])) return false;
+      }
+      return true;
+    }
+    return a == b;
   }
 
   void updateSpatial(Offset point, Size size) {
@@ -186,14 +240,14 @@ extension _DragTool on _HouseEditorState {
     final world = painter.worldPoint(point, size);
     if (stamping) {
       setStamp(world.x - stampGrab.dx, world.y - stampGrab.dy,
-          reach: math.min(14 / painter.scale(size), 250));
+          reach: math.min(14 * mmPerPixel(painter, size), 250));
       return;
     }
     int snap(double value, List<ResolvedAxis> axes) {
       final clamped = value.round().clamp(axes.first.pos, axes.last.pos);
       for (final axis in axes) {
         if ((axis.pos - clamped).abs() <
-            math.min(12 / painter.scale(size), 250)) {
+            math.min(12 * mmPerPixel(painter, size), 250)) {
           return axis.pos;
         }
       }
@@ -291,7 +345,9 @@ extension _DragTool on _HouseEditorState {
               '分房后会得到 $count 个独立空间，松手完成',
               'Бөлгенде $count бөлек кеңістік шығады, жіберіңіз',
               'Получится отдельных помещений: $count, отпустите',
-              'Makes $count separate spaces, release', ky: '$count өзүнчө мейкиндик пайда болот, коё бериңиз', uz: '$count ta alohida boʻshliq hosil boʻladi, qoʻyib yuboring')
+              'Makes $count separate spaces, release',
+              ky: '$count өзүнчө мейкиндик пайда болот, коё бериңиз',
+              uz: '$count ta alohida boʻshliq hosil boʻladi, qoʻyib yuboring')
           : null;
     } else {
       spatialDocument = null;
@@ -382,7 +438,9 @@ extension _DragTool on _HouseEditorState {
           '拖到墙上，门窗会自动贴合',
           'Қабырғаға апарыңыз, есік-терезе өзі орнығады',
           'Перетащите на стену — окно или дверь встанет на место',
-          'Drag onto a wall and the window or door snaps into place', ky: 'Дубалга сүйрөп келиңиз, терезе же эшик өз ордуна түшөт', uz: 'Devorga sudrab keling, deraza yoki eshik oʻz joyiga tushadi');
+          'Drag onto a wall and the window or door snaps into place',
+          ky: 'Дубалга сүйрөп келиңиз, терезе же эшик өз ордуна түшөт',
+          uz: 'Devorga sudrab keling, deraza yoki eshik oʻz joyiga tushadi');
       return;
     }
     final arguments = <String, dynamic>{
@@ -402,12 +460,15 @@ extension _DragTool on _HouseEditorState {
           deriveHouse(composeDocument(history.present.meta, result.newState));
       base = derived.floors[floorIndex].base;
       placementHint = tr3('已贴合墙面，松手放置', 'Қабырғаға орнықты, жіберіңіз',
-          'Привязано к стене, отпустите',
-          'Snapped to the wall, release', ky: 'Дубалга жабышты, коё бериңиз', uz: 'Devorga yopishdi, qoʻyib yuboring');
+          'Привязано к стене, отпустите', 'Snapped to the wall, release',
+          ky: 'Дубалга жабышты, коё бериңиз',
+          uz: 'Devorga yopishdi, qoʻyib yuboring');
     } else {
       placementHint = result is Rejected
           ? result.message
-          : tr3('此处无法放置', 'Мұнда қоюға болмайды', 'Здесь поставить нельзя', "Can't place it here", ky: 'Бул жерге коюуга болбойт', uz: 'Bu yerga qoʻyib boʻlmaydi');
+          : tr3('此处无法放置', 'Мұнда қоюға болмайды', 'Здесь поставить нельзя',
+              "Can't place it here",
+              ky: 'Бул жерге коюуга болбойт', uz: 'Bu yerga qoʻyib boʻlmaydi');
     }
   }
 }

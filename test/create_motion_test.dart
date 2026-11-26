@@ -57,7 +57,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('开始设计'));
     await t.pumpAndSettle();
-    expect((await store.listProjects()), hasLength(1));
+    expect(await store.listProjects(), hasLength(1));
     final route = ModalRoute.of(t.element(find.byType(HouseEditor)));
     expect(route, isA<ZoomPageRoute<void>>());
     expect(t.takeException(), isNull);

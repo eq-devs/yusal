@@ -133,9 +133,9 @@ extension _PlanTab on _HouseEditorState {
     final dragging = !cancelledStroke &&
         pointers.length == 1 &&
         e.kind == PointerDeviceKind.touch &&
-        (wallGesture == 'draw' ||
-            wallGesture == 'edit' ||
-            wallGesture == 'opening' ||
+        (wallGesture == WallGesture.draw ||
+            wallGesture == WallGesture.edit ||
+            wallGesture == WallGesture.opening ||
             draggingAxis != null ||
             draggingOpening != null ||
             furnitureGrip != null ||
@@ -194,8 +194,9 @@ extension _PlanTab on _HouseEditorState {
     Widget button(IconData icon, String tip, VoidCallback onTap) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: SizedBox(
-            width: 34,
-            height: 34,
+            // The 44 point touch target of Apple's guidelines.
+            width: 44,
+            height: 44,
             child: Btn(label: '', icon: icon, tooltip: tip, onPressed: onTap)));
     void zoom(double factor) {
       final center = Offset(canvasSize.width / 2, canvasSize.height / 2);
@@ -452,7 +453,10 @@ extension _PlanTab on _HouseEditorState {
           showFoundation,
           (v) => update(() {
                 showFoundation = v;
+                // The foundation is under the ground floor: going there is
+                // a change of floor like any other.
                 if (v && floorIndex != 0) {
+                  resetInteraction();
                   floorIndex = 0;
                   derive();
                 }
@@ -591,7 +595,6 @@ extension _PlanTab on _HouseEditorState {
             onPressed: drawingOrigin == null ? null : addWallByLength,
             icon: const YusalIcon(YIcon.measure, size: 18)),
       if (tool == EditorTool.drawWall ||
-          tool == EditorTool.stair ||
           tool == EditorTool.placeFurniture ||
           tool == EditorTool.placeUtility ||
           tool == EditorTool.measure ||

@@ -126,7 +126,7 @@ const _exact = {
   '没有可以清除的点位': 'Тазартатын нүкте жоқ',
   '楼梯不能放在顶层': 'Баспалдақты жоғарғы қабатқа қоюға болмайды',
   '层高不得低于 2400 毫米': 'Қабат биіктігі 2400 мм-ден кем болмауы керек',
-  '墙厚必须在 60 到 600 毫米之间': 'Қабырға қалыңдығы 60–600 мм болуы керек',
+  '墙厚必须在 60 到 800 毫米之间': 'Қабырға қалыңдығы 60–800 мм болуы керек',
   '宽度必须大于零': 'Ені нөлден үлкен болуы керек',
   '高度必须大于零': 'Биіктігі нөлден үлкен болуы керек',
   '窗台高度不得为负': 'Терезе алды биіктігі теріс болмауы керек',
@@ -154,8 +154,7 @@ final _patterns = <(
         'Мұнда баспалдақ сыймайды: кемінде ${_d(m[1]!)} × ${_d(m[2]!)} м бос орын керек',
     (m) =>
         'Лестница здесь не поместится: нужно не меньше ${_d(m[1]!)} × ${_d(m[2]!)} м в свету',
-    (m) =>
-        "Stairs won't fit here: you need at least ${m[1]} × ${m[2]} m clear",
+    (m) => "Stairs won't fit here: you need at least ${m[1]} × ${m[2]} m clear",
     (m) =>
         'Бул жерге тепкич батпайт: кеминде ${_d(m[1]!)} × ${_d(m[2]!)} м бош орун керек',
     (m) =>
@@ -178,8 +177,7 @@ final _patterns = <(
     RegExp(r'^(.+)还有 ([\d.]+) ㎡ 没有划分成房间。$'),
     (m) => '${_name(m[1]!)}: ${_d(m[2]!)} м² әлі бөлмеге бөлінбеген.',
     (m) => '${_name(m[1]!)}: ${_d(m[2]!)} м² ещё не разделено на комнаты.',
-    (m) =>
-        "${_name(m[1]!)}: ${m[2]} m² isn't divided into rooms yet.",
+    (m) => "${_name(m[1]!)}: ${m[2]} m² isn't divided into rooms yet.",
     (m) => '${_name(m[1]!)}: ${_d(m[2]!)} м² али бөлмөлөргө бөлүнгөн жок.',
     (m) => '${_name(m[1]!)}: ${_d(m[2]!)} m² hali xonalarga boʻlinmagan.'
   ),
@@ -327,11 +325,134 @@ final _patterns = <(
         'Kesiladigan burchakda ${m[1]} ta deraza-eshik bor, avval ularni suring yoki oʻchiring'
   ),
   (
+    RegExp(r'^外墙上不能做矮墙$'),
+    (m) => 'Сыртқы қабырғаға аласа қабырға салуға болмайды',
+    (m) => 'Низкую стену нельзя ставить на наружную',
+    (m) => 'A low wall cannot stand on an outer wall',
+    (m) => 'Сырткы дубалга жапыз дубал коюуга болбойт',
+    (m) => 'Tashqi devorga past devor qoʻyib boʻlmaydi'
+  ),
+  (
+    RegExp(r'^找不到这一层$'),
+    (m) => 'Бұл қабат табылмады',
+    (m) => 'Этаж не найден',
+    (m) => 'That floor was not found',
+    (m) => 'Бул кабат табылган жок',
+    (m) => 'Bu qavat topilmadi'
+  ),
+  (
+    RegExp(r'^找不到这个房间$'),
+    (m) => 'Бұл бөлме табылмады',
+    (m) => 'Комната не найдена',
+    (m) => 'That room was not found',
+    (m) => 'Бул бөлмө табылган жок',
+    (m) => 'Bu xona topilmadi'
+  ),
+  (
+    RegExp(r'^找不到这个门窗$'),
+    (m) => 'Бұл есік-терезе табылмады',
+    (m) => 'Окно или дверь не найдены',
+    (m) => 'That door or window was not found',
+    (m) => 'Бул эшик-терезе табылган жок',
+    (m) => 'Bu eshik-deraza topilmadi'
+  ),
+  (
+    RegExp(r'^找不到这个楼梯$'),
+    (m) => 'Бұл баспалдақ табылмады',
+    (m) => 'Лестница не найдена',
+    (m) => 'Those stairs were not found',
+    (m) => 'Бул тепкич табылган жок',
+    (m) => 'Bu zinapoya topilmadi'
+  ),
+  (
+    RegExp(r'^找不到这条线$'),
+    (m) => 'Бұл сызық табылмады',
+    (m) => 'Линия не найдена',
+    (m) => 'That line was not found',
+    (m) => 'Бул сызык табылган жок',
+    (m) => 'Bu chiziq topilmadi'
+  ),
+  (
+    RegExp(r'^门窗位置无效$'),
+    (m) => 'Есік-терезенің орны дұрыс емес',
+    (m) => 'Неверное положение окна или двери',
+    (m) => 'The door or window position is not valid',
+    (m) => 'Эшик-терезенин орду туура эмес',
+    (m) => 'Eshik-derazaning joyi notoʻgʻri'
+  ),
+  (
+    RegExp(r'^墙体类型无效$'),
+    (m) => 'Қабырға түрі дұрыс емес',
+    (m) => 'Неверный тип стены',
+    (m) => 'Not a valid kind of wall',
+    (m) => 'Дубалдын түрү туура эмес',
+    (m) => 'Devor turi notoʻgʻri'
+  ),
+  (
+    RegExp(r'^未知屋顶类型$'),
+    (m) => 'Шатыр түрі белгісіз',
+    (m) => 'Неизвестный тип крыши',
+    (m) => 'Unknown kind of roof',
+    (m) => 'Чатырдын түрү белгисиз',
+    (m) => 'Tom turi nomaʼlum'
+  ),
+  (
+    RegExp(r'^层高必须在 (\d+) 到 (\d+) 毫米之间$'),
+    (m) => 'Қабат биіктігі ${m[1]}–${m[2]} мм болуы керек',
+    (m) => 'Высота этажа должна быть от ${m[1]} до ${m[2]} мм',
+    (m) => 'The floor height must be ${m[1]}–${m[2]} mm',
+    (m) => 'Кабаттын бийиктиги ${m[1]}–${m[2]} мм болушу керек',
+    (m) => 'Qavat balandligi ${m[1]}–${m[2]} mm boʻlishi kerak'
+  ),
+  (
+    RegExp(r'^门窗宽度必须在 ([\d.]+) 到 ([\d.]+) 米之间$'),
+    (m) => 'Есік-терезе ені ${_d(m[1]!)}–${_d(m[2]!)} м болуы керек',
+    (m) =>
+        'Ширина окна или двери должна быть от ${_d(m[1]!)} до ${_d(m[2]!)} м',
+    (m) => 'A door or window must be ${m[1]}–${m[2]} m wide',
+    (m) => 'Эшик-терезенин туурасы ${_d(m[1]!)}–${_d(m[2]!)} м болушу керек',
+    (m) => 'Eshik-deraza kengligi ${_d(m[1]!)}–${_d(m[2]!)} m boʻlishi kerak'
+  ),
+  (
+    RegExp(r'^门窗高度必须在 ([\d.]+) 到 ([\d.]+) 米之间$'),
+    (m) => 'Есік-терезе биіктігі ${_d(m[1]!)}–${_d(m[2]!)} м болуы керек',
+    (m) =>
+        'Высота окна или двери должна быть от ${_d(m[1]!)} до ${_d(m[2]!)} м',
+    (m) => 'A door or window must be ${m[1]}–${m[2]} m high',
+    (m) => 'Эшик-терезенин бийиктиги ${_d(m[1]!)}–${_d(m[2]!)} м болушу керек',
+    (m) => 'Eshik-deraza balandligi ${_d(m[1]!)}–${_d(m[2]!)} m boʻlishi kerak'
+  ),
+  (
+    RegExp(r'^窗台高度必须在 ([\d.]+) 到 ([\d.]+) 米之间$'),
+    (m) => 'Терезе алды биіктігі ${_d(m[1]!)}–${_d(m[2]!)} м болуы керек',
+    (m) => 'Высота подоконника должна быть от ${_d(m[1]!)} до ${_d(m[2]!)} м',
+    (m) => 'The sill must be ${m[1]}–${m[2]} m high',
+    (m) => 'Терезе алдынын бийиктиги ${_d(m[1]!)}–${_d(m[2]!)} м болушу керек',
+    (m) =>
+        'Deraza tokchasi balandligi ${_d(m[1]!)}–${_d(m[2]!)} m boʻlishi kerak'
+  ),
+  (
+    RegExp(r'^默认值 (\w+) 必须在 (\d+) 到 (\d+) 毫米之间$'),
+    (m) => 'Әдепкі өлшем (${m[1]}) ${m[2]}–${m[3]} мм болуы керек',
+    (m) =>
+        'Значение по умолчанию (${m[1]}) должно быть от ${m[2]} до ${m[3]} мм',
+    (m) => 'The default ${m[1]} must be ${m[2]}–${m[3]} mm',
+    (m) => 'Демейки өлчөм (${m[1]}) ${m[2]}–${m[3]} мм болушу керек',
+    (m) => 'Standart qiymat (${m[1]}) ${m[2]}–${m[3]} mm boʻlishi kerak'
+  ),
+  (
+    RegExp(r'^最多 (\d+) 层$'),
+    (m) => 'Ең көбі ${m[1]} қабат',
+    (m) => 'Не больше ${m[1]} этажей',
+    (m) => 'At most ${m[1]} floors',
+    (m) => 'Эң көп ${m[1]} кабат',
+    (m) => 'Koʻpi bilan ${m[1]} qavat'
+  ),
+  (
     RegExp(r'^操作无法完成：(.+)$'),
     (m) => 'Әрекет орындалмады: ${coreMessage(m[1]!)}',
     (m) => 'Действие не выполнено: ${coreMessage(m[1]!)}',
-    (m) =>
-        "The action couldn't be done: ${coreMessage(m[1]!)}",
+    (m) => "The action couldn't be done: ${coreMessage(m[1]!)}",
     (m) => 'Аракет аткарылган жок: ${coreMessage(m[1]!)}',
     (m) => 'Amal bajarilmadi: ${coreMessage(m[1]!)}'
   ),
@@ -339,8 +460,7 @@ final _patterns = <(
     RegExp(r'^删除后有冲突：(.+)$'),
     (m) => 'Жойғаннан кейін қақтығыс: ${coreMessage(m[1]!)}',
     (m) => 'После удаления возникает конфликт: ${coreMessage(m[1]!)}',
-    (m) =>
-        'Conflict after deleting: ${coreMessage(m[1]!)}',
+    (m) => 'Conflict after deleting: ${coreMessage(m[1]!)}',
     (m) => 'Өчүргөндөн кийин карама-каршылык: ${coreMessage(m[1]!)}',
     (m) => 'Oʻchirgandan keyin ziddiyat: ${coreMessage(m[1]!)}'
   ),
@@ -348,10 +468,10 @@ final _patterns = <(
     RegExp(r'^此调整影响已有对象：(.+)$'),
     (m) => 'Бұл өзгеріс бар нысандарға әсер етеді: ${coreMessage(m[1]!)}',
     (m) => 'Изменение затрагивает существующие объекты: ${coreMessage(m[1]!)}',
-    (m) =>
-        'This change affects existing items: ${coreMessage(m[1]!)}',
+    (m) => 'This change affects existing items: ${coreMessage(m[1]!)}',
     (m) => 'Бул өзгөртүү бар нерселерге таасир этет: ${coreMessage(m[1]!)}',
-    (m) => 'Bu oʻzgarish mavjud elementlarga taʼsir qiladi: ${coreMessage(m[1]!)}'
+    (m) =>
+        'Bu oʻzgarish mavjud elementlarga taʼsir qiladi: ${coreMessage(m[1]!)}'
   ),
   (
     RegExp(r'^(门窗.+。)可以删除它，或移到其他墙上。$'),
@@ -416,9 +536,13 @@ final _overlap = RegExp(r'^对象 \S+ 与 \S+ 占用重叠$');
 
 String coreMessage(String zh) {
   if (_overlap.hasMatch(zh)) {
-    return tr3('这里已经被占用了，换个位置试试。', 'Бұл жер бос емес, басқа орынды таңдаңыз.',
+    return tr3(
+        '这里已经被占用了，换个位置试试。',
+        'Бұл жер бос емес, басқа орынды таңдаңыз.',
         'Это место уже занято, выберите другое.',
-        'This spot is taken; pick another.', ky: 'Бул орун ээленген; башкасын тандаңыз.', uz: 'Bu joy band; boshqasini tanlang.');
+        'This spot is taken; pick another.',
+        ky: 'Бул орун ээленген; башкасын тандаңыз.',
+        uz: 'Bu joy band; boshqasini tanlang.');
   }
   if (!isWestern) return zh;
   final exact = _exact[zh];

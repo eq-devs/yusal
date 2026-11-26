@@ -90,7 +90,6 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
       global: doc.axes.global.where((a) => a.id != id).toList(),
       floor: doc.axes.floor.where((a) => a.id != id).toList());
   final provisional = HouseDocument(
-      schemaVersion: doc.schemaVersion,
       meta: doc.meta,
       mainEntranceOpeningId: doc.mainEntranceOpeningId,
       defaults: doc.defaults,
@@ -285,7 +284,6 @@ AxisDeletion deleteAxis(HouseDocument doc, String id, String Function() newId,
         outside: [for (final r in floor.outside) rect(r)]));
   }
   final result = HouseDocument(
-      schemaVersion: doc.schemaVersion,
       meta: doc.meta,
       mainEntranceOpeningId: deletedOpenings.contains(doc.mainEntranceOpeningId)
           ? null

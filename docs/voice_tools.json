@@ -2172,10 +2172,10 @@
         "distance_mm": {
           "type": "integer"
         },
-        "target_area_m2": {
+        "target_area_sqm": {
           "type": "number"
         },
-        "min_remaining_m2": {
+        "min_remaining_sqm": {
           "type": "number"
         }
       },

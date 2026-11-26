@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:meta/meta.dart';
 import 'dart:math' as math;
 import 'package:yusal/features/editor/engine/core/perf/engine_perf.dart';
@@ -172,12 +173,17 @@ class FloorBase {
   Iterable<WallSegment> wallsBetween(String a, String b) sync* {
     if (a == b) return;
     for (final segment in wallSegments) {
-      if (segment.edges.isNotEmpty && segment.edges.every((edge) {
-        final left = owners[edge.negative], right = owners[edge.positive];
-        return (left == a && right == b) || (left == b && right == a);
-      })) yield segment;
+      if (segment.edges.isNotEmpty &&
+          segment.edges.every((edge) {
+            final left = owners[edge.negative];
+            final right = owners[edge.positive];
+            return (left == a && right == b) || (left == b && right == a);
+          })) {
+        yield segment;
+      }
     }
   }
+
   final List<SpaceGeometry> stairGeometryBase;
   final List<Cell> unassignedCells;
   final double unassignedNominalArea;
@@ -283,13 +289,18 @@ class _FloorShapeCache {
 /// Everything [_deriveFloorBase] reads of a document for one floor.
 class _FloorShape {
   _FloorShape(HouseDocument doc, this.floor)
-      : axes = doc.axes,
+      : global = doc.axes.global,
+        local = _localAxes(doc, floor.id),
         width = doc.footprint.width,
         depth = doc.footprint.depth,
         outerWall = doc.defaults.outerWallThickness,
         innerWall = doc.defaults.innerWallThickness;
   final Floor floor;
-  final AxisSystem axes;
+
+  /// The lines this floor's geometry is drawn on: the shared ones and its
+  /// own, not other floors' (a line added upstairs leaves this floor be).
+  final List<GlobalAxis> global;
+  final List<FloorAxis> local;
   final int width;
   final int depth;
   final int outerWall;
@@ -304,7 +315,10 @@ class _FloorShape {
         floor.explicitWalls != other.explicitWalls) {
       return false;
     }
-    if (!identical(axes, doc.axes) && axes != doc.axes) return false;
+    if (!_same(global, doc.axes.global) ||
+        !_same(local, _localAxes(doc, other.id))) {
+      return false;
+    }
     if (identical(floor, other)) return true;
     return _same<Room>(floor.rooms, other.rooms,
             (a, b) => a.id == b.id && _same(a.regions, b.regions)) &&
@@ -314,7 +328,13 @@ class _FloorShape {
         _same(floor.outside, other.outside);
   }
 
+  static List<FloorAxis> _localAxes(HouseDocument doc, String floorId) => [
+        for (final a in doc.axes.floor)
+          if (a.floorId == floorId) a
+      ];
+
   static bool _same<T>(List<T> a, List<T> b, [bool Function(T, T)? equal]) {
+    if (identical(a, b)) return true;
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
       final x = a[i];
@@ -435,12 +455,17 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
   /// Which side of an outside wall is outdoors: the negative one or not.
   bool outdoorsBelow(UnitEdge e) =>
       e.negative == null || outside.contains(e.negative);
-  bool junction(UnitEdge a, int position) => edges.any((b) =>
-      b.hasWall &&
-      b.axis.dir != a.axis.dir &&
-      b.axis.pos == position &&
-      b.start.pos <= a.axis.pos &&
-      b.end.pos >= a.axis.pos);
+  // Walled unit edges by the line they lie on, for the junction test.
+  final wallEdgesAt = <(AxisDir, int), List<UnitEdge>>{};
+  for (final e in edges) {
+    if (e.hasWall) (wallEdgesAt[(e.axis.dir, e.axis.pos)] ??= []).add(e);
+  }
+  bool junction(UnitEdge a, int position) => (wallEdgesAt[(
+            a.axis.dir == AxisDir.V ? AxisDir.H : AxisDir.V,
+            position
+          )] ??
+          const [])
+      .any((b) => b.start.pos <= a.axis.pos && b.end.pos >= a.axis.pos);
   final segments = <WallSegment>[];
   var pending = <UnitEdge>[];
   void flush() {
@@ -501,19 +526,26 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
   final rects = <PlanRect>[];
   // The outer half of each outside wall: what lies beyond its middle.
   final outerHalves = <PlanRect>[];
+  final segmentsAt = <(AxisDir, int), List<WallSegment>>{};
+  for (final p in segments) {
+    (segmentsAt[(p.axis.dir, p.axis.pos)] ??= []).add(p);
+  }
   for (final s in segments) {
     final c = cross(s);
     var start = s.start.pos.toDouble();
     var end = s.end.pos.toDouble();
-    for (final p in segments) {
-      if (p.axis.dir == s.axis.dir ||
-          p.start.pos > s.axis.pos ||
-          p.end.pos < s.axis.pos) {
-        continue;
+    // A wall runs on through the walls across its two ends.
+    final across = s.axis.dir == AxisDir.V ? AxisDir.H : AxisDir.V;
+    for (final p
+        in segmentsAt[(across, s.start.pos)] ?? const <WallSegment>[]) {
+      if (p.start.pos <= s.axis.pos && p.end.pos >= s.axis.pos) {
+        start = math.min(start, cross(p).low);
       }
-      final pc = cross(p);
-      if (p.axis.pos == s.start.pos) start = math.min(start, pc.low);
-      if (p.axis.pos == s.end.pos) end = math.max(end, pc.high);
+    }
+    for (final p in segmentsAt[(across, s.end.pos)] ?? const <WallSegment>[]) {
+      if (p.start.pos <= s.axis.pos && p.end.pos >= s.axis.pos) {
+        end = math.max(end, cross(p).high);
+      }
     }
     start = math.max(0, start);
     end = math.min(
@@ -581,17 +613,31 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
       }
     }.first.toList()
       ..sort();
-    final clear = <Cell>{};
-    for (var j = 0; j < ys.length - 1; j++) {
-      for (var i = 0; i < xs.length - 1; i++) {
-        final x = (xs[i] + xs[i + 1]) / 2;
-        final y = (ys[j] + ys[j + 1]) / 2;
-        if (nominal.any((r) => r.contains(x, y)) &&
-            !rects.any((r) => r.contains(x, y))) {
-          clear.add(Cell(i, j));
-        }
+    // Every rectangle's edges are among xs and ys, so each covers a whole
+    // block of the cells between them: paint the room's, then take the
+    // walls' away.
+    final nx = xs.length - 1;
+    final ny = ys.length - 1;
+    final xi = {for (var i = 0; i < xs.length; i++) xs[i]: i};
+    final yi = {for (var j = 0; j < ys.length; j++) ys[j]: j};
+    final grid = Uint8List(math.max(0, nx * ny));
+    void paint(PlanRect r, int value) {
+      for (var j = yi[r.bottom]!; j < yi[r.top]!; j++) {
+        grid.fillRange(j * nx + xi[r.left]!, j * nx + xi[r.right]!, value);
       }
     }
+
+    for (final r in nominal) {
+      paint(r, 1);
+    }
+    for (final r in rects) {
+      paint(r, 0);
+    }
+    final clear = <Cell>{
+      for (var j = 0; j < ny; j++)
+        for (var i = 0; i < nx; i++)
+          if (grid[j * nx + i] == 1) Cell(i, j)
+    };
     // Merge row intervals and identical intervals on consecutive rows.
     final open = <(int, int), ({int j0, int j1})>{};
     final merged = <PlanRect>[];
@@ -658,8 +704,12 @@ FloorBase _deriveFloorBase(HouseDocument doc, String floorId) {
     }
     final collapsed = cells.where((c) {
       final r = cellRect(c);
-      return !clear.any((s) =>
-          r.contains((xs[s.i] + xs[s.i + 1]) / 2, (ys[s.j] + ys[s.j + 1]) / 2));
+      for (var j = yi[r.bottom]!; j < yi[r.top]!; j++) {
+        for (var i = xi[r.left]!; i < xi[r.right]!; i++) {
+          if (grid[j * nx + i] == 1) return false;
+        }
+      }
+      return true;
     }).toList()
       ..sort((a, b) => a.j != b.j ? a.j.compareTo(b.j) : a.i.compareTo(b.i));
     // What the outer halves of the outside walls take from the room.

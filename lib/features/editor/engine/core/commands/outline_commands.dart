@@ -89,7 +89,6 @@ EditResult _cut(HouseDocument doc, List<String> floorIds, String corner,
         outside: [...floor.outside, rect]));
   }
   HouseDocument rebuild(List<Floor> list) => HouseDocument(
-      schemaVersion: 4,
       meta: doc.meta,
       mainEntranceOpeningId: doc.mainEntranceOpeningId,
       defaults: doc.defaults,
@@ -162,7 +161,6 @@ EditResult restoreOutline(HouseDocument doc, List<String> floorIds) {
     return const EditResult(null, '这层已经是完整的矩形');
   }
   final result = HouseDocument(
-      schemaVersion: 4,
       meta: doc.meta,
       mainEntranceOpeningId: doc.mainEntranceOpeningId,
       defaults: doc.defaults,

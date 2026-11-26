@@ -129,14 +129,14 @@ class EngineSession {
   bool undo() {
     if (!canUndo) return false;
     _history.undo();
-    _log.add({'op': 'undo'});
+    _append({'op': 'undo'});
     return true;
   }
 
   bool redo() {
     if (!canRedo) return false;
     _history.redo();
-    _log.add({'op': 'redo'});
+    _append({'op': 'redo'});
     return true;
   }
 
@@ -162,12 +162,20 @@ class EngineSession {
 
   void _note(String op, String kind, Map<String, Object?> arguments,
           SessionResult result) =>
-      _log.add({
+      _append({
         'op': op,
         'kind': kind,
         'arguments': arguments,
         'result': result.toJson(),
       });
+
+  /// The log keeps the last [logLimit] entries.
+  static const logLimit = 500;
+
+  void _append(Map<String, Object?> entry) {
+    _log.add(entry);
+    if (_log.length > logLimit) _log.removeAt(0);
+  }
 
   static Set<String> _ids(HouseDocument d) => {
         for (final a in d.axes.global) a.id,
@@ -177,8 +185,10 @@ class EngineSession {
           for (final r in f.rooms) r.id,
           for (final o in f.openings) o.id,
           for (final s in f.stairs) s.id,
+          for (final w in f.wallOverrides) w.id,
         ],
         for (final f in d.extras.furniture) f.id,
+        for (final u in d.extras.utilities) u.id,
       };
 
   /// The house in facts an assistant can plan from: sizes, the grid lines

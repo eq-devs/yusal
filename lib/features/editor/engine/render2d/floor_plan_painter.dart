@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/constant/tokens.dart';
@@ -32,7 +33,7 @@ const roomColors = {
 /// of a repaint. Keyed by everything that decides the layout, so a hit is
 /// exactly what a fresh layout would give.
 abstract final class _PlanText {
-  static const _capacity = 600;
+  static const _capacity = 1500;
   static final _cache =
       <(String, TextStyle, double?, int?, TextAlign), TextPainter>{};
 
@@ -54,11 +55,11 @@ abstract final class _PlanText {
       PaintingBinding.instance.systemFonts.addListener(_clear);
     }
     final key = (value, style, maxWidth, maxLines, align);
-    final hit = _cache[key];
-    if (hit != null) return hit;
-    // Zooming makes new sizes every frame: start over rather than track
-    // which of them is oldest.
-    if (_cache.length >= _capacity) _clear();
+    final hit = _cache.remove(key);
+    if (hit != null) return _cache[key] = hit;
+    // Least recently used out first: a large floor's labels can outnumber
+    // the cache, and clearing it all would lay every one out again.
+    if (_cache.length >= _capacity) _cache.remove(_cache.keys.first)!.dispose();
     return _cache[key] = TextPainter(
         text: TextSpan(text: value, style: style),
         textDirection: TextDirection.ltr,
@@ -114,8 +115,23 @@ class FloorPlanPainter extends CustomPainter {
       this.selectedUtility,
       this.showLabels = true,
       this.showGaps = false,
-      this.areaBasis = AreaBasis.clear})
-      : super(repaint: pulse);
+      this.areaBasis = AreaBasis.clear,
+      this.selectedOpening,
+      this.layered = false})
+      : super(repaint: layered ? null : pulse);
+
+  /// Whether this painter draws only the plan, and a [PlanOverlayPainter]
+  /// over it the drafts, handles, guides and highlights. The plan then
+  /// repaints only when what it shows changes, not on every move of a
+  /// finger; one painter draws both for pictures and exports.
+  final bool layered;
+
+  /// The door or window selected: the overlay shows how far it is from
+  /// the walls at either side of it, as temporary dimensions do in CAD.
+  final String? selectedOpening;
+
+  /// The language the labels were laid out in: they read it globally.
+  final AppLang _lang = appLang;
   final FloorBase base;
   final PlanRect? focus;
   final PlanRect? draft;
@@ -300,27 +316,32 @@ class FloorPlanPainter extends CustomPainter {
       int? maxLines,
       bool monospace = false,
       Color? halo}) {
+    // Laid out at its size on screen and drawn scaled back, so zooming
+    // reuses the same layout instead of making one for every scale.
     final style = monospace
-        ? mono(size: px(font), weight: weight, color: color ?? tokens.ink)
+        ? mono(size: font, weight: weight, color: color ?? tokens.ink)
         : TextStyle(
             fontFamily: fontBody,
             fontFamilyFallback: bodyFallback,
             color: color ?? tokens.ink,
-            fontSize: px(font),
+            fontSize: font,
             height: 1.25,
             fontWeight: weight);
+    final width = maxWidth == null
+        ? null
+        // In steps of 4 screen pixels: a wrap point moves by less than that.
+        : math.max(4.0, (maxWidth * handleScale / 4).floorToDouble() * 4);
     final t = _PlanText.laidOut(
-        value, style, maxWidth, maxWidth == null ? null : maxLines ?? 3);
+        value, style, width, maxWidth == null ? null : maxLines ?? 3);
     canvas
       ..save()
       ..translate(at.dx, at.dy)
-      ..rotate(angle);
+      ..rotate(angle)
+      ..scale(1 / handleScale);
     if (halo != null) {
       final box = Rect.fromCenter(
-          center: Offset.zero,
-          width: t.width + px(6),
-          height: t.height + px(2));
-      canvas.drawRRect(RRect.fromRectAndRadius(box, Radius.circular(px(3))),
+          center: Offset.zero, width: t.width + 6, height: t.height + 2);
+      canvas.drawRRect(RRect.fromRectAndRadius(box, const Radius.circular(3)),
           Paint()..color = halo);
     }
     t.paint(canvas, Offset(-t.width / 2, -t.height / 2));
@@ -630,7 +651,8 @@ class FloorPlanPainter extends CustomPainter {
       final showSize = room.clearRects.length == 1 &&
           screenWidth >= 110 &&
           screenHeight >= 64;
-      final area = '${dec((room.area(areaBasis) / 1e6).toStringAsFixed(1))} $unitM2';
+      final area =
+          '${dec((room.area(areaBasis) / 1e6).toStringAsFixed(1))} $unitM2';
       final net = largest == null
           ? ''
           : '${tr3('净', 'таза', 'в свету', 'clear', ky: 'таза', uz: 'sof')} ${m2dp(largest.right - largest.left)} × ${m2dp(largest.top - largest.bottom)} $unitM';
@@ -713,8 +735,43 @@ class FloorPlanPainter extends CustomPainter {
 
     // North arrow beside the top-right corner.
     if (showLabels) drawNorth(canvas, size, width, depth);
-    drawOverlays(canvas, size, width, depth);
+    if (!layered) drawOverlays(canvas, size, width, depth);
   }
+
+  /// The clear distances along its wall from the selected opening to the
+  /// faces of the walls that cross that wall on either side, with ticks,
+  /// beside the wall: the figures a builder sets the frame out by.
+  void drawOpeningClearances(Canvas canvas, Size size) {
+    final p = openings
+        .where((o) => o.opening.id == selectedOpening && o.host != null)
+        .firstOrNull;
+    if (p == null) return;
+    final (lo, hi) = openingClearance(base, p);
+    final vertical = p.axis.dir == AxisDir.V;
+    final c = p.axis.pos.toDouble();
+    final pen = Paint()
+      ..color = tokens.accent
+      ..strokeWidth = px(1.5);
+    // Toward the middle of the house, where the plan has room for it.
+    final extent = (vertical ? base.axes.v.last.pos : base.axes.h.last.pos);
+    final off = px(26) / scale(size) * (c > extent / 2 ? -1 : 1);
+    Offset at(double along, double shift) => vertical
+        ? point(c + shift, along, size)
+        : point(along, c + shift, size);
+    for (final (a, b) in [(lo, p.start), (p.end, hi)]) {
+      if (b - a < 1) continue;
+      canvas.drawLine(at(a, off), at(b, off), pen);
+      for (final v in [a, b]) {
+        canvas.drawLine(at(v, off * 0.6), at(v, off * 1.4), pen);
+      }
+      label(canvas, m2dp(b - a), (at(a, off * 1.9) + at(b, off * 1.9)) / 2,
+          font: 11, color: tokens.accent, monospace: true, halo: tokens.panel);
+    }
+  }
+
+  /// What a [PlanOverlayPainter] draws over a [layered] plan.
+  void paintOverlay(Canvas canvas, Size size) => drawOverlays(canvas, size,
+      base.axes.v.last.pos.toDouble(), base.axes.h.last.pos.toDouble());
 
   /// Plan symbol of a utility point, a fixed size on screen.
   void drawUtility(Canvas canvas, Size size, UtilityPoint u,
@@ -823,12 +880,14 @@ class FloorPlanPainter extends CustomPainter {
           center.dy - vector.dy * px(7) - normal.dy * px(5))
       ..close();
     canvas.drawPath(arrow, Paint()..color = t.wall);
-    label(canvas, tr3('北', 'С', 'С', 'N', ky: 'Т', uz: 'Sh'), center + vector * px(20),
+    label(canvas, tr3('北', 'С', 'С', 'N', ky: 'Т', uz: 'Sh'),
+        center + vector * px(20),
         font: 11, weight: FontWeight.w700);
   }
 
   void drawOverlays(Canvas canvas, Size size, double width, double depth) {
     final t = tokens;
+    if (selectedOpening != null) drawOpeningClearances(canvas, size);
 
     if (wallHandle != null) {
       final rect = rectangle(wallHandle!, size);
@@ -946,8 +1005,9 @@ class FloorPlanPainter extends CustomPainter {
             draftLabel ??
                 (draftIsLine
                     ? tr3('松手分房', 'Жіберсеңіз бөлінеді',
-                        'Отпустите, чтобы разделить',
-                        'Release to split', ky: 'Бөлүү үчүн коё бериңиз', uz: 'Boʻlish uchun qoʻyib yuboring')
+                        'Отпустите, чтобы разделить', 'Release to split',
+                        ky: 'Бөлүү үчүн коё бериңиз',
+                        uz: 'Boʻlish uchun qoʻyib yuboring')
                     : '${dec(((draft!.right - draft!.left) / 1000).toStringAsFixed(1))} × '
                         '${dec(((draft!.top - draft!.bottom) / 1000).toStringAsFixed(1))} $unitM'),
             Offset(rect.center.dx, rect.top - 18),
@@ -1158,28 +1218,35 @@ class FloorPlanPainter extends CustomPainter {
                 ..color = t.crit
                 ..strokeWidth = px(2))
           ..drawCircle(b, px(4), dot);
-        final mm = (measure[1] - measure[0]).distance.round();
-        label(canvas, '$mm $unitMm', (a + b) / 2 - Offset(0, px(12)),
+        final mm = (measure[1] - measure[0]).distance;
+        label(canvas, '${(mm / 1000).toStringAsFixed(3)} $unitM',
+            (a + b) / 2 - Offset(0, px(12)),
             color: t.crit, monospace: true, halo: t.panel);
       }
     }
   }
 
+  /// How wide [text] is drawn at [fontSize] in plan pixels (a size given
+  /// through [px]); measured at its size on screen, like [label] lays it
+  /// out, so zooming reuses the measure.
   double textWidth(String text, double fontSize, FontWeight weight,
-          {bool monospace = false}) =>
-      _PlanText.laidOut(
-              text,
-              monospace
-                  ? mono(size: fontSize, weight: weight)
-                  : TextStyle(
-                      fontFamily: fontBody,
-                      fontFamilyFallback: bodyFallback,
-                      fontSize: fontSize,
-                      fontWeight: weight),
-              null,
-              null,
-              align: TextAlign.start)
-          .width;
+      {bool monospace = false}) {
+    final screen = fontSize * handleScale;
+    return _PlanText.laidOut(
+                text,
+                monospace
+                    ? mono(size: screen, weight: weight)
+                    : TextStyle(
+                        fontFamily: fontBody,
+                        fontFamilyFallback: bodyFallback,
+                        fontSize: screen,
+                        fontWeight: weight),
+                null,
+                null,
+                align: TextAlign.start)
+            .width /
+        handleScale;
+  }
 
   /// Rugs big enough to carry their name along the lower edge (like the
   /// drafting page, above 12 m²).
@@ -1610,8 +1677,56 @@ class FloorPlanPainter extends CustomPainter {
     }
   }
 
+  /// A [layered] plan repaints when something it draws changed; the
+  /// overlay fields are [PlanOverlayPainter]'s. Lists and maps are rebuilt
+  /// on every build of the editor, so they compare by content.
   @override
-  bool shouldRepaint(covariant FloorPlanPainter oldDelegate) => true;
+  bool shouldRepaint(covariant FloorPlanPainter o) =>
+      !layered ||
+      !o.layered ||
+      !identical(base, o.base) ||
+      _lang != o._lang ||
+      !identical(tokens, o.tokens) ||
+      !mapEquals(labels, o.labels) ||
+      !mapEquals(colors, o.colors) ||
+      !listEquals(openings, o.openings) ||
+      !listEquals(stairs, o.stairs) ||
+      !listEquals(furniture, o.furniture) ||
+      !listEquals(utilities, o.utilities) ||
+      !listEquals(sleeves, o.sleeves) ||
+      !listEquals(belowOpenings, o.belowOpenings) ||
+      !identical(below, o.below) ||
+      belowLabel != o.belowLabel ||
+      foundation != o.foundation ||
+      selectedFurniture != o.selectedFurniture ||
+      selectedRoom != o.selectedRoom ||
+      selectedUtility != o.selectedUtility ||
+      selectedDimension != o.selectedDimension ||
+      showFurniture != o.showFurniture ||
+      showDimensions != o.showDimensions ||
+      showLabels != o.showLabels ||
+      showGaps != o.showGaps ||
+      showGridDimensions != o.showGridDimensions ||
+      areaBasis != o.areaBasis ||
+      handleScale != o.handleScale ||
+      viewport != o.viewport ||
+      viewportInsets != o.viewportInsets ||
+      northAngleDeg != o.northAngleDeg ||
+      bearingMin != o.bearingMin;
+}
+
+/// The drafts, handles, guides, measurements and highlights over a
+/// [FloorPlanPainter.layered] plan, from the same painter's fields. Cheap,
+/// so it repaints whenever the editor rebuilds.
+class PlanOverlayPainter extends CustomPainter {
+  PlanOverlayPainter(this.plan) : super(repaint: plan.pulse);
+  final FloorPlanPainter plan;
+
+  @override
+  void paint(Canvas canvas, Size size) => plan.paintOverlay(canvas, size);
+
+  @override
+  bool shouldRepaint(covariant PlanOverlayPainter oldDelegate) => true;
 }
 
 /// Screen grips for editing one wall from [a] to [b] (canvas-local pixels).
@@ -1664,4 +1779,29 @@ class DimensionSpan {
       o.overall == overall &&
       (o.a - a).abs() < 1 &&
       (o.b - b).abs() < 1;
+}
+
+/// Along the wall of [p], from the face of the nearest wall crossing that
+/// wall before the opening to the face of the nearest one after it, or the
+/// ends of the wall where nothing crosses: the stretch the opening's
+/// clear distances are measured in.
+(double, double) openingClearance(FloorBase base, OpeningPlacement p) {
+  final host = p.host!;
+  final vertical = p.axis.dir == AxisDir.V;
+  final c = p.axis.pos.toDouble();
+  var lo = host.start.pos.toDouble();
+  var hi = host.end.pos.toDouble();
+  for (var k = 0; k < base.wallSegments.length; k++) {
+    final w = base.wallSegments[k];
+    if ((w.axis.dir == AxisDir.V) == vertical) continue;
+    final r = base.wallRects[k];
+    final crosses =
+        vertical ? r.left <= c && r.right >= c : r.bottom <= c && r.top >= c;
+    if (!crosses) continue;
+    final near = vertical ? r.bottom : r.left;
+    final far = vertical ? r.top : r.right;
+    if (far <= p.start && far > lo) lo = far;
+    if (near >= p.end && near < hi) hi = near;
+  }
+  return (lo, hi);
 }

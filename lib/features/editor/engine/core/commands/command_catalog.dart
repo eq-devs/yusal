@@ -847,7 +847,7 @@ final List<CommandSpec> commandCatalog = List.unmodifiable([
     _may('selfStage', text,
         'A stage the family builds itself, so no labour is charged on it.'),
     _may('self', flag, 'False takes selfStage back.'),
-    CommandArgument('region', text,
+    const CommandArgument('region', text,
         nullable: true, note: 'Where the house is built, for local prices.'),
   ]),
   CommandSpec(

@@ -243,7 +243,9 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
   final shell = p.roofOn && !cutY.isFinite;
   final plain = _Writer();
   final textured = <(Textile, int), _Writer>{};
-  final see = <(double, _Writer)>[];
+  // See-through faces, drawn farthest first. They all go into one buffer
+  // and one draw call: triangles blend in the order they are sent.
+  final see = <(double, List<Vec3>, ui.Color, double)>[];
   final picks = <(List<Vec3>, SourceRef?)>[];
   var faces = 0;
 
@@ -258,11 +260,14 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
   }
 
   // Shadows and corners, where the renderer can and the style has light.
-  final shaded = SceneGpu.effects &&
-      (p.gpu?.shades ?? false) &&
-      settings.style != SceneStyle.lines;
   final solidsKey = '${p.roofOn} ${settings.furniture} ${settings.maxFloor} '
       '$cutY';
+  // A fast frame (a finger or the section slider moving) keeps the
+  // shadows it has but does not gather new ones for every cut it passes.
+  final shaded = SceneGpu.effects &&
+      (p.gpu?.shades ?? false) &&
+      settings.style != SceneStyle.lines &&
+      !(p.fast && _solids[model]?.key != solidsKey);
   var solids = shaded ? _solids[model] : null;
   // Gathered afresh when what is shown of the house has changed.
   final gather = shaded && solids?.key != solidsKey ? <double>[] : null;
@@ -324,7 +329,9 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
     }
     final share = shaded ? p.shadowShare(f, n, light) : 0.0;
     faces++;
-    if (f.source != null) picks.add((pts, f.source));
+    // Faces that belong to nothing (roof, slabs) still hide what is behind
+    // them from a tap; glass only when it is a window that can be picked.
+    if (f.source != null || f.alpha >= 1) picks.add((pts, f.source));
     if (f.textile != null &&
         f.uv != null &&
         !clipped &&
@@ -346,9 +353,7 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
     if (alpha >= 1) {
       fan(plain, pts, color, 1, null, n, share, unlifted);
     } else {
-      final w = _Writer();
-      fan(w, pts, color, alpha);
-      see.add((distance, w));
+      see.add((distance, pts, color, alpha));
     }
   }
   // The cut faces of walls, filled solid as in a drawn section.
@@ -395,14 +400,15 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
     }
   }
   GpuBatch? edges;
-  if (p.drawsEdges) {
+  final edgeY = cutY.isFinite ? cutY + _sectionLift : 0.0;
+  if (p.drawsEdges && (!p.fast || p.hasEdges(edgeY))) {
     final w = _Writer();
     final ink = p.edgeColor;
     final focal = size.height / 2 / math.tan(camera.fov / 2);
     final half = p.edgeWidth / 2 / focal;
     final eye = camera.eye;
     final forward = camera.forward;
-    for (final e in p.edges(cutY.isFinite ? cutY + _sectionLift : 0)) {
+    for (final e in p.edges(edgeY)) {
       var a = e.a;
       var b = e.b;
       if (e.soft) {
@@ -451,6 +457,10 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
     if (w.count > 0) edges = w.batch();
   }
   see.sort((a, b) => b.$1.compareTo(a.$1));
+  final glass = _Writer();
+  for (final (_, pts, color, alpha) in see) {
+    fan(glass, pts, color, alpha);
+  }
   final mvp = gpuCameraMatrix(camera, size);
   GpuEffects? effects;
   if (shaded) {
@@ -501,7 +511,7 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
               image: textileImage(e.key.$1, e.key.$2),
               tiled: e.key.$1 == Textile.kurak || e.key.$1 == Textile.alasha)
       ],
-      [for (final (_, w) in see) w.batch()],
+      [if (glass.count > 0) glass.batch()],
       faces,
       picks,
       edges,

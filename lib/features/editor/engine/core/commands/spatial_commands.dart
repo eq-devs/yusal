@@ -37,7 +37,6 @@ EditResult carveRoom(HouseDocument doc, String floorId, int left, int bottom,
   }
 
   HouseDocument rebuild(AxisSystem axes, List<Floor> floors) => HouseDocument(
-      schemaVersion: doc.schemaVersion,
       meta: doc.meta,
       mainEntranceOpeningId: doc.mainEntranceOpeningId,
       defaults: doc.defaults,
@@ -111,11 +110,11 @@ EditResult carveRoom(HouseDocument doc, String floorId, int left, int bottom,
     if (errors.isNotEmpty) {
       return EditResult(null, '此调整影响已有对象：${errors.first.message}');
     }
-    final healthyOpenings = documentOpenings(doc)
+    final healthyOpenings = documentOpenings(doc, floorId: floorId)
         .where((p) => p.status == 'ok')
         .map((p) => p.opening.id)
         .toSet();
-    if (documentOpenings(result).any(
+    if (documentOpenings(result, floorId: floorId).any(
         (p) => healthyOpenings.contains(p.opening.id) && p.status != 'ok')) {
       return const EditResult(null, '分房会影响已有门窗，请避开门窗位置');
     }
@@ -218,7 +217,6 @@ EditResult splitSpace(HouseDocument doc, String floorId, AxisDir dir, int pos,
       stairs: floor.stairs,
       outside: floor.outside);
   final result = HouseDocument(
-      schemaVersion: doc.schemaVersion,
       meta: doc.meta,
       defaults: doc.defaults,
       footprint: doc.footprint,
@@ -230,11 +228,11 @@ EditResult splitSpace(HouseDocument doc, String floorId, AxisDir dir, int pos,
       ]);
   final errors = validateHouse(result);
   if (errors.isNotEmpty) return EditResult(null, errors.first.message);
-  final healthy = documentOpenings(doc)
+  final healthy = documentOpenings(doc, floorId: floorId)
       .where((p) => p.status == 'ok')
       .map((p) => p.opening.id)
       .toSet();
-  if (documentOpenings(result)
+  if (documentOpenings(result, floorId: floorId)
       .any((p) => healthy.contains(p.opening.id) && p.status != 'ok')) {
     return const EditResult(null, '分隔线影响已有门窗，请换一个位置');
   }
@@ -244,7 +242,6 @@ EditResult splitSpace(HouseDocument doc, String floorId, AxisDir dir, int pos,
 HouseDocument _with(HouseDocument doc,
         {AxisSystem? axes, List<Floor>? floors}) =>
     HouseDocument(
-        schemaVersion: doc.schemaVersion,
         meta: doc.meta,
         mainEntranceOpeningId: doc.mainEntranceOpeningId,
         defaults: doc.defaults,

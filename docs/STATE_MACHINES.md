@@ -34,8 +34,9 @@ A confirmed cooperation's ending is its own small machine, `EndPhase` (`Cooperat
 
 ### Other
 
-- Editor tool, `EditorTool` in `lib/features/house_editor.dart`: the one thing a press on the plan does (browse, drawWall, selectWall, editWall, split, box, resize, placeOpening, placeFurniture, placeUtility, measure, and the advanced wall, opening, grid, room, stair). Browse is the rest state that Esc, the browse button, a tab or a floor change go back to; `browse` is derived from it, not stored. The voice context's `summary` says `tool: <name>` while any other tool is in hand.
-- Editor save status, `_SaveStatus` in `lib/features/house_editor.dart`: saved | indexPending | unsaved | failed (retries every 5 s). An edit makes it unsaved.
+- Editor tool, `EditorTool` in `lib/features/editor/page.dart`: the one thing a press on the plan does (browse, drawWall, selectWall, editWall, split, box, resize, placeOpening, placeFurniture, placeUtility, measure, and the advanced wall, opening, grid, room). Browse is the rest state; `browse` is derived from it, not stored. Every way out of a tool (Esc on a tool, the browse button, another tab, another floor, a new tool) goes through `resetInteraction()`, which clears the gesture, its preview, the selection and the tool's mode together. The voice context's `summary` says `tool: <name>` while any other tool is in hand.
+- What a finger is doing with the wall tools, `WallGesture` (tap, pan, draw, edit, opening, held, fromWall), decided on press and refined as it moves (`lib/features/editor/tools/pointer.dart`); which handle it holds, `WallGrip` (start, middle, end) and `FurnitureGrip` (move, resize, rotate). Esc cancels a gesture first, then the selection, then the tool.
+- Editor save status, `_SaveStatus` in `lib/features/editor/page.dart`: saved | indexPending | unsaved | failed (retries every 5 s). An edit makes it unsaved.
 - `HouseStage` (design → finding → building → done), derived from demands in `house_progress.dart`.
 - `BackupState` (none, inSync, localNewer, cloudNewer, diverged), derived by comparing a design with its backup.
 - `SendState` of a chat message: sending → sent | failed → (retry) sent.

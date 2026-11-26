@@ -16,15 +16,18 @@ extension _StairTool on _HouseEditorState {
                     '楼梯要通到上面一层，现在还没有。',
                     'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
                     'Лестница ведёт на этаж выше, а его пока нет.',
-                    "The stairs lead to the floor above, which doesn't exist yet.", ky: 'Тепкич үстүнкү кабатка алып барат, ал азырынча жок.', uz: 'Zinapoya yuqori qavatga olib boradi, u hali yoʻq.')),
+                    "The stairs lead to the floor above, which doesn't exist yet.",
+                    ky: 'Тепкич үстүнкү кабатка алып барат, ал азырынча жок.',
+                    uz: 'Zinapoya yuqori qavatga olib boradi, u hali yoʻq.')),
                 behavior: SnackBarBehavior.floating,
                 margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
                 duration: const Duration(seconds: 8),
                 persist: false,
                 action: SnackBarAction(
                     label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
-                        'Добавить этаж и лестницу',
-                        'Add a floor and stairs', ky: 'Кабат жана тепкич кошуу', uz: 'Qavat va zinapoya qoʻshish'),
+                        'Добавить этаж и лестницу', 'Add a floor and stairs',
+                        ky: 'Кабат жана тепкич кошуу',
+                        uz: 'Qavat va zinapoya qoʻshish'),
                     onPressed: () {
                       final before = history.present;
                       action('AddFloor', {'floorId': floorId});
@@ -75,123 +78,5 @@ extension _StairTool on _HouseEditorState {
       }
     });
     if (spatialPreview != null) reveal(spatialPreview!);
-  }
-
-  /// A stair over [region] of this floor, in the first shape that fits
-  /// there: straight, then L, then U. Where none fits nothing is placed
-  /// and the message says how much room a stair needs. On the top floor
-  /// the message offers to add the floor the stair would lead to.
-  void placeStair(AxisRectangle region) {
-    final floorId = floor.id;
-    if (floorIndex == history.present.floors.length - 1) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-            SnackBar(
-                key: const Key('stair-needs-floor'),
-                content: Text(tr3(
-                    '楼梯要通到上面一层，现在还没有。',
-                    'Баспалдақ жоғарғы қабатқа апарады, ол әлі жоқ.',
-                    'Лестница ведёт на этаж выше, а его пока нет.',
-                    "The stairs lead to the floor above, which doesn't exist yet.", ky: 'Тепкич үстүнкү кабатка алып барат, ал азырынча жок.', uz: 'Zinapoya yuqori qavatga olib boradi, u hali yoʻq.')),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.fromLTRB(16, 0, 16, snackLift),
-                duration: const Duration(seconds: 8),
-                persist: false,
-                action: SnackBarAction(
-                    label: tr3('加一层并放楼梯', 'Қабат қосып, баспалдақ қою',
-                        'Добавить этаж и лестницу',
-                        'Add a floor and stairs', ky: 'Кабат жана тепкич кошуу', uz: 'Qavat va zinapoya qoʻshish'),
-                    onPressed: () {
-                      final before = history.present;
-                      action('AddFloor', {'floorId': floorId});
-                      if (history.present == before || !mounted) return;
-                      update(derive);
-                      placeStair(region);
-                    })),
-            snackBarAnimationStyle: Motion.toastStyle);
-      return;
-    }
-    final rect = resolveRect(base.axes, region).rect;
-    if (rect != null) {
-      final cells = cellsOfRect(rect).toSet();
-      final taken = floor.stairs.any((s) {
-        final r = resolveRect(base.axes, s.region).rect;
-        return r != null && cellsOfRect(r).any(cells.contains);
-      });
-      if (taken) {
-        update(() => tool = EditorTool.browse);
-        notify(tr3(
-            '这里已经有楼梯了。点一下楼梯可以换样式或删除。',
-            'Мұнда баспалдақ бар. Оны басып түрін өзгертуге не жоюға болады.',
-            'Здесь уже есть лестница. Нажмите на неё, чтобы сменить вид или удалить.',
-            'There are stairs here already. Tap them to change the type or delete them.', ky: 'Бул жерде тепкич бар. Түрүн өзгөртүү же өчүрүү үчүн аны басыңыз.', uz: 'Bu yerda zinapoya bor. Turini oʻzgartirish yoki oʻchirish uchun unga bosing.'));
-        return;
-      }
-    }
-    String? refusal;
-    StairGeometry? tight;
-    for (final type in StairType.values) {
-      final args = {'floorId': floorId, 'type': type, 'region': region};
-      final result = executeCommand(
-          presentState,
-          DesignCommand('AddStair', args),
-          CommandContext(
-              newId: () => const Uuid().v4(),
-              now: () => DateTime.now().toUtc().toIso8601String()));
-      if (result is! Applied) {
-        refusal = result is Rejected
-            ? result.message
-            : (result as NeedsResolution).conflict.message;
-        break;
-      }
-      final next = composeDocument(history.present.meta, result.newState);
-      final known = {for (final s in floor.stairs) s.id};
-      final added = deriveHouse(next)
-          .floors[floorIndex]
-          .stairs
-          .where((s) => !known.contains(s.stairId))
-          .firstOrNull;
-      if (added != null && !added.fits) {
-        tight ??= added;
-        if (added.requiredA * added.requiredB <
-            tight.requiredA * tight.requiredB) {
-          tight = added;
-        }
-        continue;
-      }
-      update(() {
-        if (history.commit(next)) changed();
-        tool = EditorTool.browse;
-        placementHint = null;
-      });
-      notify(
-          switch (type) {
-            StairType.straight => tr3(
-                '已放直梯 · 点楼梯可换样式',
-                'Тік баспалдақ қойылды · түрін өзгерту үшін оны басыңыз',
-                'Прямая лестница поставлена · нажмите на неё, чтобы сменить вид',
-                'Straight stairs placed · tap them to change the type', ky: 'Түз тепкич коюлду · түрүн өзгөртүү үчүн басыңыз', uz: 'Toʻgʻri zinapoya qoʻyildi · turini oʻzgartirish uchun bosing'),
-            StairType.L => tr3(
-                '直梯放不下，已换成 L 型 · 点楼梯可换样式',
-                'Тік баспалдақ сыймады, L тәрізді қойылды · түрін өзгерту үшін оны басыңыз',
-                'Прямая не поместилась, поставлена Г-образная · нажмите на неё, чтобы сменить вид',
-                "Straight stairs didn't fit, L-shaped placed · tap them to change the type", ky: 'Түз тепкич батпады, L түрүндөгүсү коюлду · түрүн өзгөртүү үчүн басыңыз', uz: 'Toʻgʻri zinapoya sigʻmadi, L shaklidagisi qoʻyildi · turini oʻzgartirish uchun bosing'),
-            StairType.U => tr3(
-                '直梯放不下，已换成 U 型 · 点楼梯可换样式',
-                'Тік баспалдақ сыймады, U тәрізді қойылды · түрін өзгерту үшін оны басыңыз',
-                'Прямая не поместилась, поставлена П-образная · нажмите на неё, чтобы сменить вид',
-                "Straight stairs didn't fit, U-shaped placed · tap them to change the type", ky: 'Түз тепкич батпады, U түрүндөгүсү коюлду · түрүн өзгөртүү үчүн басыңыз', uz: 'Toʻgʻri zinapoya sigʻmadi, U shaklidagisi qoʻyildi · turini oʻzgartirish uchun bosing'),
-          },
-          undo: undo);
-      return;
-    }
-    if (refusal != null) return notify(refusal);
-    final need = tight!;
-    notify(tr3(
-        '这里放不下楼梯，至少要 ${meters(need.requiredA)} × ${meters(need.requiredB)} 米。换一个大些的房间，或先把墙挪开。',
-        'Мұнда баспалдақ сыймайды, кемінде ${meters(need.requiredA)} × ${meters(need.requiredB)} м керек. Үлкенірек бөлмені таңдаңыз не қабырғаны жылжытыңыз.',
-        'Лестница здесь не поместится: нужно не меньше ${meters(need.requiredA)} × ${meters(need.requiredB)} м. Выберите комнату побольше или сдвиньте стену.',
-        "Stairs won't fit here: they need at least ${meters(need.requiredA)} × ${meters(need.requiredB)} m. Pick a bigger room or move a wall.", ky: 'Тепкич бул жерге батпайт: кеминде ${meters(need.requiredA)} × ${meters(need.requiredB)} м керек. Чоңураак бөлмө тандаңыз же дубалды жылдырыңыз.', uz: 'Zinapoya bu yerga sigʻmaydi: kamida ${meters(need.requiredA)} × ${meters(need.requiredB)} m kerak. Kattaroq xona tanlang yoki devorni suring.'));
   }
 }

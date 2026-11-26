@@ -17,9 +17,26 @@ class ValidationError {
 
 const maxExplicitAxesPerDirection = 512;
 
+/// The range every number in a document must lie in, in millimetres
+/// (inclusive). Commands reject a result outside them, so the voice
+/// assistant cannot write a house that derives nonsense.
+abstract final class DocumentLimits {
+  // A two-and-a-half-brick wall with insulation is about 640 mm.
+  static const wall = (60, 800);
+  static const slab = (60, 500);
+  static const riser = (100, 250);
+  static const tread = (180, 400);
+  static const stairWidth = (600, 2000);
+  static const floorHeight = (2400, 6000);
+  static const openingWidth = (200, 12000);
+  static const openingHeight = (200, 6000);
+  static const sill = (0, 3000);
+  static const maxFloors = 6;
+}
+
 List<ValidationError> validateHouse(HouseDocument d) {
   final out = <ValidationError>[];
-  void add(
+  void outerAdd(
     int n,
     String path,
     String message, {
@@ -36,6 +53,10 @@ List<ValidationError> validateHouse(HouseDocument d) {
       );
     }
   }
+
+  void add(int n, String path, String message,
+          {List<String> related = const []}) =>
+      outerAdd(n, path, message, related: related);
 
   final first = <String, String>{};
   void id(String value, String path) {
@@ -97,8 +118,10 @@ List<ValidationError> validateHouse(HouseDocument d) {
           : x is SolidWall
               ? x.value
               : null;
-      if (thickness != null && (thickness < 60 || thickness > 600)) {
-        add(13, '/floors/$f/wallOverrides/$w/value', '墙厚必须在 60 到 600 毫米之间');
+      if (thickness != null &&
+          (thickness < DocumentLimits.wall.$1 ||
+              thickness > DocumentLimits.wall.$2)) {
+        add(13, '/floors/$f/wallOverrides/$w/value', '墙厚必须在 60 到 800 毫米之间');
       }
       if (x is SolidWall &&
           x.height != null &&
@@ -107,7 +130,10 @@ List<ValidationError> validateHouse(HouseDocument d) {
             '矮墙高度必须在 0.30 到 2.10 米之间');
       }
     }
-    if (floor.height < 2400) add(15, '/floors/$f/height', '层高不得低于 2400 毫米');
+    if (floor.height < DocumentLimits.floorHeight.$1 ||
+        floor.height > DocumentLimits.floorHeight.$2) {
+      add(15, '/floors/$f/height', '层高必须在 2400 到 6000 毫米之间');
+    }
     if (f == d.floors.length - 1) {
       for (var s = 0; s < floor.stairs.length; s++) {
         add(16, '/floors/$f/stairs/$s', '楼梯不能放在顶层');
@@ -116,9 +142,17 @@ List<ValidationError> validateHouse(HouseDocument d) {
     for (var o = 0; o < floor.openings.length; o++) {
       final x = floor.openings[o];
       final p = '/floors/$f/openings/$o';
-      if (x.width <= 0) add(18, '$p/width', '宽度必须大于零');
-      if (x.height <= 0) add(18, '$p/height', '高度必须大于零');
-      if (x.sill < 0) add(18, '$p/sill', '窗台高度不得为负');
+      if (x.width < DocumentLimits.openingWidth.$1 ||
+          x.width > DocumentLimits.openingWidth.$2) {
+        add(18, '$p/width', '门窗宽度必须在 0.20 到 12 米之间');
+      }
+      if (x.height < DocumentLimits.openingHeight.$1 ||
+          x.height > DocumentLimits.openingHeight.$2) {
+        add(18, '$p/height', '门窗高度必须在 0.20 到 6 米之间');
+      }
+      if (x.sill < DocumentLimits.sill.$1 || x.sill > DocumentLimits.sill.$2) {
+        add(18, '$p/sill', '窗台高度必须在 0 到 3 米之间');
+      }
       if (x.position is FromStartPosition &&
           (x.position as FromStartPosition).d < 0) {
         add(18, '$p/position/d', '定位距离不得为负');
@@ -134,24 +168,26 @@ List<ValidationError> validateHouse(HouseDocument d) {
     add(23, '/footprint/northAngleDeg', '方位角必须在 0 到 359 之间');
   }
   final defs = d.defaults;
-  final positive = {
-    'outerWallThickness': defs.outerWallThickness,
-    'innerWallThickness': defs.innerWallThickness,
-    'slabThickness': defs.slabThickness,
-    'stairRiserMax': defs.stairRiserMax,
-    'stairTread': defs.stairTread,
-    'stairWidthMin': defs.stairWidthMin,
-    'doorWidth': defs.doorWidth,
-    'doorHeight': defs.doorHeight,
-    'windowWidth': defs.windowWidth,
-    'windowHeight': defs.windowHeight,
-  };
-  for (final e in positive.entries) {
-    if (e.value <= 0) add(22, '/defaults/${e.key}', '默认值必须大于零');
+  for (final (key, value, (lo, hi)) in [
+    ('outerWallThickness', defs.outerWallThickness, DocumentLimits.wall),
+    ('innerWallThickness', defs.innerWallThickness, DocumentLimits.wall),
+    ('slabThickness', defs.slabThickness, DocumentLimits.slab),
+    ('stairRiserMax', defs.stairRiserMax, DocumentLimits.riser),
+    ('stairTread', defs.stairTread, DocumentLimits.tread),
+    ('stairWidthMin', defs.stairWidthMin, DocumentLimits.stairWidth),
+    ('floorHeight', defs.floorHeight, DocumentLimits.floorHeight),
+    ('doorWidth', defs.doorWidth, DocumentLimits.openingWidth),
+    ('doorHeight', defs.doorHeight, DocumentLimits.openingHeight),
+    ('windowWidth', defs.windowWidth, DocumentLimits.openingWidth),
+    ('windowHeight', defs.windowHeight, DocumentLimits.openingHeight),
+    ('windowSill', defs.windowSill, DocumentLimits.sill),
+  ]) {
+    if (value < lo || value > hi) {
+      add(22, '/defaults/$key', '默认值 $key 必须在 $lo 到 $hi 毫米之间');
+    }
   }
-  if (defs.windowSill < 0) add(22, '/defaults/windowSill', 'windowSill 不得为负');
-  if (defs.floorHeight < 2400) {
-    add(22, '/defaults/floorHeight', 'floorHeight 不得低于 2400');
+  if (d.floors.length > DocumentLimits.maxFloors) {
+    add(15, '/floors', '最多 ${DocumentLimits.maxFloors} 层');
   }
   if (d.roof.pitched) {
     if (d.roof.pitchDeg! <= 0 || d.roof.pitchDeg! > 60) {
@@ -163,22 +199,8 @@ List<ValidationError> validateHouse(HouseDocument d) {
   } else if (d.roof.parapetHeight! < 0 || d.roof.parapetHeight! > 1500) {
     add(21, '/roof/parapetHeight', '女儿墙高度必须在 0 到 1500 毫米之间');
   }
-  if (d.schemaVersion < 1 || d.schemaVersion > 4) {
-    add(24, '/schemaVersion', '不支持此文件版本');
-  }
-  if (d.schemaVersion < 4 && needsVersion4(d.roof, d.extras, d.floors)) {
-    add(24, '/schemaVersion', '不规则外形、四坡屋顶、预算、采暖、水电、宅基地和施工进度需要文件版本 4');
-  }
-  if (d.schemaVersion < 3 && !d.extras.isEmpty) {
-    add(24, '/schemaVersion', '家具与构造资料需要文件版本 3');
-  }
   for (final (path, message) in d.extras.problems()) {
     add(25, path, message);
-  }
-  if (d.schemaVersion == 1 &&
-      d.floors.any((f) =>
-          f.explicitWalls || f.wallOverrides.any((w) => w is SolidWall))) {
-    add(24, '/schemaVersion', '独立墙段需要文件版本 2');
   }
   for (var i = 0; i < d.floors.length; i++) {
     if (!d.floors[i].explicitWalls &&
@@ -277,6 +299,23 @@ List<ValidationError> validateHouse(HouseDocument d) {
     final floor = d.floors[f];
     final axes = resolvedFloors[f];
     if (axes.issues.isNotEmpty) continue;
+    // A floor whose own objects and lines are as last checked has the same
+    // findings: an edit to one floor re-checks only that floor.
+    final key = _FloorKey(d, f);
+    final kept = _floorFindings[floor];
+    if (kept != null && kept.key.matches(key)) {
+      for (final e in kept.errors) {
+        outerAdd(e.n, e.path, e.message, related: e.related);
+      }
+      continue;
+    }
+    final found = <_Finding>[];
+    void add(int n, String path, String message,
+        {List<String> related = const []}) {
+      found.add((n: n, path: path, message: message, related: related));
+      outerAdd(n, path, message, related: related);
+    }
+
     final placed = <({String id, String path, Set<Cell> cells})>[];
     final validObjects = <({String id, String path, Set<Cell> cells})>[];
     for (var r = 0; r < floor.rooms.length; r++) {
@@ -335,12 +374,22 @@ List<ValidationError> validateHouse(HouseDocument d) {
         cells: cellsOfRect(resolved.rect!).toSet(),
       ));
     }
+    // Which object placed so far holds each cell: one pass over the cells
+    // instead of every pair of objects.
+    final holder = <Cell, int>{};
     for (final obj in validObjects) {
-      for (final prior in placed) {
-        if (obj.cells.any(prior.cells.contains)) {
-          add(11, obj.path, '对象 ${obj.id} 与 ${prior.id} 占用重叠',
-              related: [prior.path]);
-        }
+      final hits = <int>{};
+      for (final cell in obj.cells) {
+        final h = holder[cell];
+        if (h != null) hits.add(h);
+      }
+      for (final h in hits.toList()..sort()) {
+        final prior = placed[h];
+        add(11, obj.path, '对象 ${obj.id} 与 ${prior.id} 占用重叠',
+            related: [prior.path]);
+      }
+      for (final cell in obj.cells) {
+        holder.putIfAbsent(cell, () => placed.length);
       }
       placed.add(obj);
     }
@@ -370,7 +419,7 @@ List<ValidationError> validateHouse(HouseDocument d) {
     if (cut.isNotEmpty && cut.length >= axes.nx * axes.ny) {
       add(12, '/floors/$f/outside', '不能把整层都设为室外');
     }
-    final spans = <({String axis, int start, int end, String path})>[];
+    final spansOn = <String, List<_Span>>{};
     for (var w = 0; w < floor.wallOverrides.length; w++) {
       final wall = floor.wallOverrides[w];
       final res = resolveAnchor(axes, wall.anchor);
@@ -388,10 +437,8 @@ List<ValidationError> validateHouse(HouseDocument d) {
         continue;
       }
       final c = res.chain!;
-      for (final prev in spans) {
-        if (prev.axis == c.carrier.id &&
-            prev.start < c.endPos &&
-            c.startPos < prev.end) {
+      for (final prev in spansOn[c.carrier.id] ?? const <_Span>[]) {
+        if (prev.start < c.endPos && c.startPos < prev.end) {
           add(
             14,
             '/floors/$f/wallOverrides/$w',
@@ -400,7 +447,7 @@ List<ValidationError> validateHouse(HouseDocument d) {
           );
         }
       }
-      spans.add((
+      (spansOn[c.carrier.id] ??= []).add((
         axis: c.carrier.id,
         start: c.startPos,
         end: c.endPos,
@@ -422,6 +469,45 @@ List<ValidationError> validateHouse(HouseDocument d) {
         }
       }
     }
+    _floorFindings[floor] = (key: key, errors: found);
   }
   return List.unmodifiable(out);
 }
+
+typedef _Finding = ({int n, String path, String message, List<String> related});
+
+final _floorFindings =
+    Expando<({_FloorKey key, List<_Finding> errors})>('floorFindings');
+
+/// What one floor's checks read besides the floor itself: where it is in
+/// the list, the footprint, the shared lines and its own.
+class _FloorKey {
+  _FloorKey(HouseDocument d, this.index)
+      : footprint = d.footprint,
+        global = d.axes.global,
+        local = [
+          for (final a in d.axes.floor)
+            if (a.floorId == d.floors[index].id) a
+        ];
+  final int index;
+  final BuildingFootprint footprint;
+  final List<GlobalAxis> global;
+  final List<FloorAxis> local;
+
+  bool matches(_FloorKey o) =>
+      index == o.index &&
+      footprint == o.footprint &&
+      _same(global, o.global) &&
+      _same(local, o.local);
+
+  static bool _same<T>(List<T> a, List<T> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+}
+
+typedef _Span = ({String axis, int start, int end, String path});

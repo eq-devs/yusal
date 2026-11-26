@@ -119,9 +119,13 @@ List<OpeningPlacement> _deriveOpenings(
             e.start.pos < end &&
             start < e.end.pos)
         .toList();
+    // The opening must lie within one wall, not only within its anchor:
+    // a wall can end part way along the anchor (a low wall, a gap).
     final status = start < chain.startPos ||
             end > chain.endPos ||
-            walls.length > 1
+            walls.length > 1 ||
+            (walls.length == 1 &&
+                (start < walls.single.start.pos || end > walls.single.end.pos))
         ? 'tooLong'
         : edges.any((e) => e.kind == 'open')
             ? 'onOpen'
@@ -481,58 +485,22 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
       box('Parapet', -1, null, 'wall', r, elevation, z);
     }
   } else if (roof.type == RoofType.hip) {
-    // Four planes at one pitch: height grows with the distance from the
-    // nearest wall line, so the ridge runs along the longer side (a point
-    // on a square house) and the eaves droop by the overhang.
+    // Four planes at one pitch over each largest rectangle of the top
+    // floor's outline. Where wings overlap the higher plane shows, which
+    // is the roof of an L, T or U house: for an outline of right angles
+    // the height of a straight-skeleton roof is the pitch times the
+    // distance to the outline, the highest of these rectangles' roofs.
     final o = roof.overhang!.toDouble();
     final slope = math.tan(roof.pitchDeg! * math.pi / 180);
-    final half = math.min(width, depth) / 2;
-    final eave = elevation - o * slope;
-    final ridge = elevation + half * slope;
-    final a = (x: half, y: half);
-    final b = width >= depth
-        ? (x: width - half, y: half)
-        : (x: half, y: depth - half);
-    final c00 = (x: -o, y: -o);
-    final c10 = (x: width + o, y: -o);
-    final c11 = (x: width + o, y: depth + o);
-    final c01 = (x: -o, y: depth + o);
-    final planes = width >= depth
-        ? [
-            [c00, c10, b, a],
-            [c11, c01, a, b],
-            [c01, c00, a],
-            [c10, c11, b]
-          ]
-        : [
-            [c00, c10, a],
-            [c11, c01, b],
-            [c01, c00, a, b],
-            [c10, c11, b, a]
-          ];
-    for (final plane in planes) {
-      final top = <({double x, double y})>[];
-      for (final p in plane) {
-        if (top.isEmpty ||
-            (top.last.x - p.x).abs() + (top.last.y - p.y).abs() > 1) {
-          top.add(p);
-        }
-      }
-      if ((top.first.x - top.last.x).abs() + (top.first.y - top.last.y).abs() <=
-          1) {
-        top.removeLast();
-      }
-      if (top.length < 3) continue;
-      double z(({double x, double y}) p) => p == a || p == b ? ridge : eave;
-      final n = top.length;
-      mesh('RoofPlane', -1, null, 'roof', [
-        for (final p in top) (x: p.x, y: p.y, z: z(p)),
-        for (final p in top) (x: p.x, y: p.y, z: z(p) - slab),
-      ], [
-        [for (var i = 0; i < n; i++) i],
-        [for (var i = n - 1; i >= 0; i--) n + i],
-        for (var i = 0; i < n; i++) [i, n + i, n + (i + 1) % n, (i + 1) % n],
-      ]);
+    final top = doc.floors.last;
+    final cuts = [
+      for (final r in top.outside)
+        if (resolveRect(floors.last.base.axes, r).rect case final c?)
+          PlanRect(c.left.toDouble(), c.bottom.toDouble(), c.right.toDouble(),
+              c.top.toDouble())
+    ];
+    for (final wing in outlineRectangles(width, depth, cuts)) {
+      _hipRoof(wing, o, slope, elevation, slab, mesh);
     }
   } else {
     final overhang = roof.overhang!.toDouble();
@@ -606,4 +574,120 @@ DerivedHouse _deriveHouse(HouseDocument doc) {
       .fold(elevation, (double top, p) => math.max(top, p.z));
   return DerivedHouse(List.unmodifiable(floors), List.unmodifiable(elements),
       width, depth, height);
+}
+
+/// The largest rectangles inside the outline of a [width] × [depth]
+/// footprint with [cuts] taken out: every rectangle of the outline that
+/// no larger one contains. Together they cover the outline; they overlap
+/// where wings meet. Just the footprint when nothing is cut.
+List<PlanRect> outlineRectangles(
+    double width, double depth, List<PlanRect> cuts) {
+  if (cuts.isEmpty) return [PlanRect(0, 0, width, depth)];
+  final xs = <double>{
+    0,
+    width,
+    for (final c in cuts) ...[c.left, c.right]
+  }.where((v) => v >= 0 && v <= width).toList()
+    ..sort();
+  final ys = <double>{
+    0,
+    depth,
+    for (final c in cuts) ...[c.bottom, c.top]
+  }.where((v) => v >= 0 && v <= depth).toList()
+    ..sort();
+  bool inside(int i, int j) {
+    final x = (xs[i] + xs[i + 1]) / 2;
+    final y = (ys[j] + ys[j + 1]) / 2;
+    return !cuts.any((c) => c.contains(x, y));
+  }
+
+  final nx = xs.length - 1;
+  final ny = ys.length - 1;
+  final all = <(int, int, int, int)>[];
+  for (var i0 = 0; i0 < nx; i0++) {
+    for (var j0 = 0; j0 < ny; j0++) {
+      for (var i1 = i0 + 1; i1 <= nx; i1++) {
+        if (!inside(i1 - 1, j0)) break;
+        for (var j1 = j0 + 1; j1 <= ny; j1++) {
+          var full = true;
+          for (var i = i0; i < i1 && full; i++) {
+            full = inside(i, j1 - 1);
+          }
+          if (!full) break;
+          all.add((i0, j0, i1, j1));
+        }
+      }
+    }
+  }
+  bool within((int, int, int, int) a, (int, int, int, int) b) =>
+      a != b && b.$1 <= a.$1 && b.$2 <= a.$2 && b.$3 >= a.$3 && b.$4 >= a.$4;
+  return [
+    for (final r in all)
+      if (!all.any((other) => within(r, other)))
+        PlanRect(xs[r.$1], ys[r.$2], xs[r.$3], ys[r.$4])
+  ];
+}
+
+/// A hip roof over [r]: four planes at [slope] rising from eaves [o]
+/// beyond the walls, the ridge along the longer side (a point over a
+/// square).
+void _hipRoof(
+    PlanRect r,
+    double o,
+    double slope,
+    double elevation,
+    double slab,
+    void Function(
+            String, int, SourceRef?, String, List<Point3>, List<List<int>>)
+        mesh) {
+  final width = r.right - r.left;
+  final depth = r.top - r.bottom;
+  final half = math.min(width, depth) / 2;
+  final eave = elevation - o * slope;
+  final ridge = elevation + half * slope;
+  final a = (x: r.left + half, y: r.bottom + half);
+  final b = width >= depth
+      ? (x: r.right - half, y: r.bottom + half)
+      : (x: r.left + half, y: r.top - half);
+  final c00 = (x: r.left - o, y: r.bottom - o);
+  final c10 = (x: r.right + o, y: r.bottom - o);
+  final c11 = (x: r.right + o, y: r.top + o);
+  final c01 = (x: r.left - o, y: r.top + o);
+  final planes = width >= depth
+      ? [
+          [c00, c10, b, a],
+          [c11, c01, a, b],
+          [c01, c00, a],
+          [c10, c11, b]
+        ]
+      : [
+          [c00, c10, a],
+          [c11, c01, b],
+          [c01, c00, a, b],
+          [c10, c11, b, a]
+        ];
+  for (final plane in planes) {
+    final top = <({double x, double y})>[];
+    for (final p in plane) {
+      if (top.isEmpty ||
+          (top.last.x - p.x).abs() + (top.last.y - p.y).abs() > 1) {
+        top.add(p);
+      }
+    }
+    if ((top.first.x - top.last.x).abs() + (top.first.y - top.last.y).abs() <=
+        1) {
+      top.removeLast();
+    }
+    if (top.length < 3) continue;
+    double z(({double x, double y}) p) => p == a || p == b ? ridge : eave;
+    final n = top.length;
+    mesh('RoofPlane', -1, null, 'roof', [
+      for (final p in top) (x: p.x, y: p.y, z: z(p)),
+      for (final p in top) (x: p.x, y: p.y, z: z(p) - slab),
+    ], [
+      [for (var i = 0; i < n; i++) i],
+      [for (var i = n - 1; i >= 0; i--) n + i],
+      for (var i = 0; i < n; i++) [i, n + i, n + (i + 1) % n, (i + 1) % n],
+    ]);
+  }
 }

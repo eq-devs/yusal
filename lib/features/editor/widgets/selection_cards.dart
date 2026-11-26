@@ -673,7 +673,9 @@ extension _SelectionCards on _HouseEditorState {
         deleteLabel: tr3('删除$name', '$name жою', 'Удалить: $name', 'Delete: $name', ky: 'Өчүрүү: $name', uz: 'Oʻchirish: $name'),
         onDelete: () {
           update(clearSelection);
-          action('DeleteFurniture', {'furnitureId': f.id});
+          if (action('DeleteFurniture', {'furnitureId': f.id}) is! Applied) {
+            return;
+          }
           notify(tr3('已删除$name', '$name жойылды', 'Удалено: $name', 'Deleted: $name', ky: 'Өчүрүлдү: $name', uz: 'Oʻchirildi: $name'),
               undo: undo);
         },

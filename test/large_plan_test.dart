@@ -114,10 +114,37 @@ void main() {
     print('large plan: derive ${derive.inMilliseconds} ms, '
         'draw preview ${draw.inMilliseconds} ms, '
         'move preview ${move.inMilliseconds} ms');
-    // Generous bounds for a debug VM; they only catch order-of-magnitude
-    // regressions. Browser timings are recorded separately.
-    expect(draw.inMilliseconds, lessThan(1000));
-    expect(move.inMilliseconds, lessThan(2000));
+    // The same preview on a one-room house, measured in this run: the
+    // ratio holds on any machine, and a step that turns quadratic in the
+    // size of the plan breaks it.
+    final small = extractDesignState(createHouse(
+        name: 'S',
+        width: 12000,
+        depth: 10000,
+        columns: 1,
+        rows: 1,
+        initialRoom: true,
+        timestamp: ctx.now(),
+        newId: ctx.newId));
+    final smallDraw = time(() => executeCommand(
+        small,
+        DesignCommand('AddDrawnWall', {
+          'floorId': small.floors.first.id,
+          'x0': 2500,
+          'y0': 0,
+          'x1': 2500,
+          'y1': 2000
+        }),
+        ctx));
+    final ratio = draw.inMicroseconds / smallDraw.inMicroseconds;
+    // ignore: avoid_print
+    print('large / small draw preview: ${ratio.toStringAsFixed(1)}');
+    expect(ratio, lessThan(_drawRatioLimit));
+    expect(move.inMicroseconds, lessThan(draw.inMicroseconds * 4));
     expect(loadHouse(utf8.encode(encodeHouse(doc))).document, doc);
   });
 }
+
+/// About three times the ratio measured when it was set (62, 2026-11-26):
+/// linear growth with the 72 rooms; a quadratic step would be thousands.
+const _drawRatioLimit = 200.0;

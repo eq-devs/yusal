@@ -162,7 +162,6 @@ void main() {
     final v1 = loadHouse(
             File('test/fixtures/full_two_floor_gable.house').readAsBytesSync())
         .document!;
-    expect(v1.schemaVersion, 1);
     final first = v1.floors.first;
     final second = v1.floors[1];
     final base = deriveFloorBase(v1, first.id);
@@ -184,7 +183,6 @@ void main() {
         ctx);
     final s = ok(r);
     final moved = composeDocument(v1.meta, s);
-    expect(moved.schemaVersion, 2);
     expect(s.floors.first.explicitWalls, isTrue);
     expect(s.floors[1], second, reason: 'other floor untouched');
     expect({for (final r in s.floors.first.rooms) r.id: r.name}, names);

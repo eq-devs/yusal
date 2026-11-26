@@ -187,8 +187,7 @@ class _ImpellerScene extends SceneGpu {
   }
 
   gpu.Texture _map(int width, int height) =>
-      context.createTexture(gpu.StorageMode.hostVisible, width, height,
-          format: gpu.PixelFormat.r8g8b8a8UNormInt);
+      context.createTexture(gpu.StorageMode.hostVisible, width, height);
 
   gpu.Texture _mapDepth(int width, int height) =>
       context.createTexture(gpu.StorageMode.deviceTransient, width, height,

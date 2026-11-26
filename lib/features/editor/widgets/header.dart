@@ -465,15 +465,8 @@ extension _EditorHeader on _HouseEditorState {
   }
 
   void selectFloor(int value) => update(() {
-        cancelDrag();
-        clearWallSelection();
-        clearSelection();
+        resetInteraction();
         floorIndex = value;
-        tool = EditorTool.browse;
-        selectedWall = null;
-        drawingOrigin = null;
-        drawingEnd = null;
-        measurePoints = [];
         derive();
       });
 
@@ -486,12 +479,10 @@ extension _EditorHeader on _HouseEditorState {
     if (value == null || value.trim().isEmpty || !mounted) return;
     final meta = history.present.meta;
     update(() {
-      history.present = composeDocument(
-          Meta(
-              name: value.trim(),
-              createdAt: meta.createdAt,
-              updatedAt: DateTime.now().toUtc().toIso8601String()),
-          extractDesignState(history.present));
+      history.rename(Meta(
+          name: value.trim(),
+          createdAt: meta.createdAt,
+          updatedAt: DateTime.now().toUtc().toIso8601String()));
       dirty = true;
       status = _SaveStatus.unsaved;
       timer?.cancel();

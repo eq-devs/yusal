@@ -15,7 +15,10 @@ extension _FurnitureTool on _HouseEditorState {
                 child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     children: [
-                      Text(tr3('选择家具', 'Жиһаз таңдау', 'Выбрать мебель', 'Pick furniture', ky: 'Эмерек тандоо', uz: 'Mebel tanlash'),
+                      Text(
+                          tr3('选择家具', 'Жиһаз таңдау', 'Выбрать мебель',
+                              'Pick furniture',
+                              ky: 'Эмерек тандоо', uz: 'Mebel tanlash'),
                           style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w700)),
                       for (final (group, kinds) in furnitureGroups()) ...[
@@ -49,7 +52,9 @@ extension _FurnitureTool on _HouseEditorState {
           '点平面放置「${furnitureName(kind)}」，可连续放置',
           '«${furnitureName(kind)}» қою үшін жоспарды басыңыз, бірнеше рет қоюға болады',
           'Нажмите на план, чтобы поставить «${furnitureName(kind)}»; можно ставить несколько раз подряд',
-          'Tap the plan to place “${furnitureName(kind)}”; you can place several in a row', ky: '«${furnitureName(kind)}» коюу үчүн планды басыңыз; катары менен бир нечесин койсоңуз болот', uz: '“${furnitureName(kind)}” ni joylash uchun rejaga bosing; ketma-ket bir nechtasini qoʻyish mumkin');
+          'Tap the plan to place “${furnitureName(kind)}”; you can place several in a row',
+          ky: '«${furnitureName(kind)}» коюу үчүн планды басыңыз; катары менен бир нечесин койсоңуз болот',
+          uz: '“${furnitureName(kind)}” ni joylash uchun rejaga bosing; ketma-ket bir nechtasini qoʻyish mumkin');
     });
   }
 
@@ -117,13 +122,13 @@ extension _FurnitureTool on _HouseEditorState {
     final zoom = canvasZoom;
     final corner = r.bottomRight;
     final turn = Offset(r.center.dx, r.top - 18 / zoom);
-    String? grip;
+    FurnitureGrip? grip;
     if ((local - turn).distance * zoom <= 22) {
-      grip = 'rotate';
+      grip = FurnitureGrip.rotate;
     } else if ((local - corner).distance * zoom <= 22) {
-      grip = 'resize';
+      grip = FurnitureGrip.resize;
     } else if (r.inflate(4 / zoom).contains(local)) {
-      grip = 'move';
+      grip = FurnitureGrip.move;
     }
     if (grip == null) return false;
     furnitureGrip = grip;
@@ -144,20 +149,21 @@ extension _FurnitureTool on _HouseEditorState {
     final p = worldAt(local, size);
     final delta = p - furnitureDown!;
     switch (furnitureGrip) {
-      case 'move':
+      case FurnitureGrip.move:
         // Close to a wall it goes flush against it.
         furnitureDraft = snapToWalls(
             f.copyWith(x: snap50(f.x + delta.dx), y: snap50(f.y + delta.dy)),
             [for (final r in base.roomGeometry) r.clearRects]);
-        placementHint =
-            tr3('松手放下', 'Жіберіп қойыңыз', 'Отпустите, чтобы поставить', 'Release to place', ky: 'Коюу үчүн коё бериңиз', uz: 'Joylash uchun qoʻyib yuboring');
-      case 'resize':
+        placementHint = tr3('松手放下', 'Жіберіп қойыңыз',
+            'Отпустите, чтобы поставить', 'Release to place',
+            ky: 'Коюу үчүн коё бериңиз', uz: 'Joylash uchun qoʻyib yuboring');
+      case FurnitureGrip.resize:
         final right = math.max(f.x + 100, snap50(p.dx));
         final bottom = math.min(f.top - 100, snap50(p.dy));
         furnitureDraft =
             f.copyWith(width: right - f.x, y: bottom, depth: f.top - bottom);
         placementHint =
-            '${furnitureDraft!.width} × ${furnitureDraft!.depth} $unitMm';
+            '${m2dp(furnitureDraft!.width)} × ${m2dp(furnitureDraft!.depth)} $unitM';
       default:
         furnitureDraft = f;
     }
@@ -173,7 +179,7 @@ extension _FurnitureTool on _HouseEditorState {
     furnitureDown = null;
     placementHint = null;
     if (f == null) return;
-    if (grip == 'rotate') {
+    if (grip == FurnitureGrip.rotate) {
       action('RotateFurniture', {'furnitureId': f.id});
       return;
     }
@@ -194,15 +200,30 @@ extension _FurnitureTool on _HouseEditorState {
     });
   }
 
+  /// A measured distance in metres, to the millimetre, with its two
+  /// sides when it is not straight across.
+  String measureText(Offset a, Offset b) {
+    String m(double mm) => dec((mm / 1000).toStringAsFixed(3));
+    final d = b - a;
+    final total = '${m(d.distance)} $unitM';
+    if (d.dx == 0 || d.dy == 0) return total;
+    return '$total (${m(d.dx.abs())} × ${m(d.dy.abs())})';
+  }
+
   void addMeasurePoint(Offset local, Size size) {
     final p = worldAt(local, size);
-    final q = Offset(snap50(p.dx).toDouble(), snap50(p.dy).toDouble());
+    final q = snapMeasurePoint([
+      ...base.wallRects,
+      for (final w in base.lowWalls) w.rect,
+    ], p, 16 * mmPerPixel(interactionPainter(), size));
     update(() {
       if (measurePoints.length >= 2) measurePoints = [];
       measurePoints = [...measurePoints, q];
       placementHint = measurePoints.length == 1
-          ? tr3('再点第二个点', 'Екінші нүктені басыңыз', 'Укажите вторую точку', 'Set the second point', ky: 'Экинчи чекитти коюңуз', uz: 'Ikkinchi nuqtani belgilang')
-          : '${(measurePoints[1] - measurePoints[0]).distance.round()} $unitMm · ${tr3('再点一次重新开始', 'Қайта бастау үшін тағы басыңыз', 'Нажмите ещё раз, чтобы начать заново', 'Tap again to start over', ky: 'Кайра баштоо үчүн дагы басыңыз', uz: 'Qaytadan boshlash uchun yana bosing')}';
+          ? tr3('再点第二个点', 'Екінші нүктені басыңыз', 'Укажите вторую точку',
+              'Set the second point',
+              ky: 'Экинчи чекитти коюңуз', uz: 'Ikkinchi nuqtani belgilang')
+          : '${measureText(measurePoints[0], measurePoints[1])} · ${tr3('再点一次重新开始', 'Қайта бастау үшін тағы басыңыз', 'Нажмите ещё раз, чтобы начать заново', 'Tap again to start over', ky: 'Кайра баштоо үчүн дагы басыңыз', uz: 'Qaytadan boshlash uchun yana bosing')}';
     });
   }
 

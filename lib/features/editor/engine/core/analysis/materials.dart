@@ -175,7 +175,8 @@ List<MaterialLine> materialList(HouseDocument doc, DerivedHouse derived,
   var innerFace = 0.0;
   for (final e in inner.entries) {
     // The belts come out of each thickness in proportion.
-    masonry(spec.innerUnit,
+    masonry(
+        spec.innerUnit,
         innerSum <= 0 ? 0 : e.value / 1e9 * volumes.interior / innerSum,
         e.key.toDouble());
     innerFace += e.value / e.key / 1e6;
@@ -307,28 +308,20 @@ List<MaterialLine> materialList(HouseDocument doc, DerivedHouse derived,
       }
     }
   }
-  int layer(List<Layer> layers, LayerMaterial m, int usual) =>
-      layers.lastWhere((l) => l.material == m,
-          orElse: () => Layer('', '', usual, m)).thickness;
+  int layer(List<Layer> layers, LayerMaterial m, int usual) => layers
+      .lastWhere((l) => l.material == m, orElse: () => Layer('', '', usual, m))
+      .thickness;
   final faces = net + 2 * innerFace;
   if (clear > 0) {
-    add(
-        'plaster',
-        'finish',
-        faces * layer(x.wallLayers, LayerMaterial.plaster, 15) * 0.85,
-        'kg',
-        packSize: 30,
-        pack: 'bag');
+    add('plaster', 'finish',
+        faces * layer(x.wallLayers, LayerMaterial.plaster, 15) * 0.85, 'kg',
+        packSize: 30, pack: 'bag');
     add('putty', 'finish', faces * 1.2, 'kg', packSize: 20, pack: 'bag');
     add('paint', 'finish', (faces + clear) * 0.3, 'l',
         packSize: 10, pack: 'can');
-    add(
-        'screed',
-        'finish',
-        clear * layer(x.floorLayers, LayerMaterial.plaster, 50) * 2,
-        'kg',
-        packSize: 40,
-        pack: 'bag');
+    add('screed', 'finish',
+        clear * layer(x.floorLayers, LayerMaterial.plaster, 50) * 2, 'kg',
+        packSize: 40, pack: 'bag');
     add('tile', 'finish', wet, 'm2', waste: 10);
     add('tileGlue', 'finish', wet * 5, 'kg', packSize: 25, pack: 'bag');
     add('laminate', 'finish', clear - wet, 'm2', waste: 7);
@@ -340,9 +333,8 @@ List<MaterialLine> materialList(HouseDocument doc, DerivedHouse derived,
     final (stage, key, detail) = entry.key;
     final r = entry.value;
     final quantity = r.net * (1 + r.waste / 100);
-    final packs = r.packSize == null
-        ? null
-        : (quantity / r.packSize! - 1e-9).ceil();
+    final packs =
+        r.packSize == null ? null : (quantity / r.packSize! - 1e-9).ceil();
     // Whole bars are bought, so their weight is that of whole bars.
     final weight = r.weightPer == null
         ? null

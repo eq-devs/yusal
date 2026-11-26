@@ -592,6 +592,27 @@ class Floor {
   /// floor (an L-shaped house, a terrace over the floor below). Walls run
   /// along their edges as outside walls (version 4).
   final List<AxisRectangle> outside;
+
+  Floor copyWith({
+    String? name,
+    int? height,
+    bool? explicitWalls,
+    List<Room>? rooms,
+    List<WallOverride>? wallOverrides,
+    List<Opening>? openings,
+    List<Stair>? stairs,
+    List<AxisRectangle>? outside,
+  }) =>
+      Floor(
+          id: id,
+          name: name ?? this.name,
+          height: height ?? this.height,
+          explicitWalls: explicitWalls ?? this.explicitWalls,
+          rooms: rooms ?? this.rooms,
+          wallOverrides: wallOverrides ?? this.wallOverrides,
+          openings: openings ?? this.openings,
+          stairs: stairs ?? this.stairs,
+          outside: outside ?? this.outside);
   @override
   bool operator ==(Object other) =>
       other is Floor &&
@@ -620,7 +641,6 @@ class Floor {
 @immutable
 class HouseDocument {
   HouseDocument({
-    required this.schemaVersion,
     required this.meta,
     this.mainEntranceOpeningId,
     required this.defaults,
@@ -631,7 +651,6 @@ class HouseDocument {
     HouseExtras? extras,
   })  : floors = List.unmodifiable(floors),
         extras = extras ?? HouseExtras.empty;
-  final int schemaVersion;
   final Meta meta;
   final String? mainEntranceOpeningId;
   final Defaults defaults;
@@ -644,19 +663,18 @@ class HouseDocument {
   final HouseExtras extras;
   @override
   bool operator ==(Object other) =>
+      identical(this, other) ||
       other is HouseDocument &&
-      schemaVersion == other.schemaVersion &&
-      meta == other.meta &&
-      mainEntranceOpeningId == other.mainEntranceOpeningId &&
-      defaults == other.defaults &&
-      footprint == other.footprint &&
-      axes == other.axes &&
-      _listEquals(floors, other.floors) &&
-      roof == other.roof &&
-      extras == other.extras;
+          meta == other.meta &&
+          mainEntranceOpeningId == other.mainEntranceOpeningId &&
+          defaults == other.defaults &&
+          footprint == other.footprint &&
+          axes == other.axes &&
+          _listEquals(floors, other.floors) &&
+          roof == other.roof &&
+          extras == other.extras;
   @override
   int get hashCode => Object.hash(
-        schemaVersion,
         meta,
         mainEntranceOpeningId,
         defaults,
@@ -703,14 +721,29 @@ class UndoableDesignState {
   int get hashCode => Object.hash(defaults, footprint, axes, roof,
       mainEntranceOpeningId, extras, Object.hashAll(floors));
 
-  UndoableDesignState withExtras(HouseExtras value) => UndoableDesignState(
-      defaults: defaults,
-      footprint: footprint,
-      axes: axes,
-      floors: floors,
-      roof: roof,
-      mainEntranceOpeningId: mainEntranceOpeningId,
-      extras: value);
+  UndoableDesignState withExtras(HouseExtras value) => copyWith(extras: value);
+
+  UndoableDesignState copyWith({
+    Defaults? defaults,
+    BuildingFootprint? footprint,
+    AxisSystem? axes,
+    List<Floor>? floors,
+    Roof? roof,
+    HouseExtras? extras,
+  }) =>
+      UndoableDesignState(
+          defaults: defaults ?? this.defaults,
+          footprint: footprint ?? this.footprint,
+          axes: axes ?? this.axes,
+          floors: floors ?? this.floors,
+          roof: roof ?? this.roof,
+          mainEntranceOpeningId: mainEntranceOpeningId,
+          extras: extras ?? this.extras);
+
+  /// This state with the floor of the same id as [floor] replaced by it.
+  UndoableDesignState withFloor(Floor floor) => copyWith(floors: [
+        for (final f in floors) f.id == floor.id ? floor : f,
+      ]);
 }
 
 UndoableDesignState extractDesignState(HouseDocument doc) =>
@@ -736,24 +769,27 @@ HouseExtras prunedExtras(HouseExtras extras, List<Floor> floors) =>
         for (final o in f.openings) o.id
     });
 
-/// Whether a design uses anything only schema version 4 can hold.
-bool needsVersion4(Roof roof, HouseExtras extras, List<Floor> floors) =>
-    roof.type == RoofType.hip ||
-    extras.needsVersion4 ||
-    floors.any((f) => f.outside.isNotEmpty);
+/// Whether everything the plan of floor [floorId] is made from is the same
+/// in [a] and [b]: its own objects and lines, the shared lines, the
+/// footprint and the default sizes. Checks by identity first, so it is
+/// cheap after an edit that left the floor alone.
+bool sameFloorInputs(HouseDocument a, HouseDocument b, String floorId) {
+  if (identical(a, b)) return true;
+  final fa = a.floors.where((f) => f.id == floorId).firstOrNull;
+  final fb = b.floors.where((f) => f.id == floorId).firstOrNull;
+  if (fa == null || fb == null) return false;
+  bool local(FloorAxis x) => x.floorId == floorId;
+  return (identical(fa, fb) || fa == fb) &&
+      a.footprint == b.footprint &&
+      a.defaults == b.defaults &&
+      _listEquals(a.axes.global, b.axes.global) &&
+      _listEquals(a.axes.floor.where(local).toList(),
+          b.axes.floor.where(local).toList());
+}
 
 HouseDocument composeDocument(Meta meta, UndoableDesignState state) {
   final extras = prunedExtras(state.extras, state.floors);
   return HouseDocument(
-    schemaVersion: needsVersion4(state.roof, extras, state.floors)
-        ? 4
-        : !extras.isEmpty
-            ? 3
-            : state.floors.any((f) =>
-                    f.explicitWalls ||
-                    f.wallOverrides.any((w) => w is SolidWall))
-                ? 2
-                : 1,
     meta: meta,
     mainEntranceOpeningId: state.mainEntranceOpeningId,
     defaults: state.defaults,

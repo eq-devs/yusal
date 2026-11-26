@@ -63,7 +63,6 @@ void main() {
   test('cutting a corner makes an L-shaped house with walls along the cut', () {
     var doc = run(
         box(), 'CutOutline', {'corner': 'tr', 'width': 4000, 'depth': 3000});
-    expect(doc.schemaVersion, 4);
     roundTrip(doc);
     final base = deriveHouse(doc).floors.first.base;
     expect(footprintArea(base), 10000 * 8000 - 4000 * 3000);
@@ -252,7 +251,6 @@ void main() {
       'floorIds': [upper]
     });
     expect(doc.floors.last.outside, isEmpty);
-    expect(doc.schemaVersion, lessThan(4));
     expect(deriveHouse(doc).floors.last.base.unassignedCells, isNotEmpty);
     expect(reject(doc, 'RestoreOutline', {}), isNotNull);
   });
@@ -282,7 +280,6 @@ void main() {
       'x1': 4000,
       'y1': 8000
     });
-    expect(doc.schemaVersion, 4);
     roundTrip(doc);
   });
 

@@ -264,7 +264,7 @@ Map<String, Object> measurePlan(UndoableDesignState s,
 String benchTable(Map<String, Object?> report) {
   final out = StringBuffer();
   for (final plan in report.entries) {
-    final data = plan.value as Map;
+    final data = plan.value! as Map;
     out.writeln('== ${plan.key}  ${data['size']}');
     for (final group in data.entries.where((e) => e.key != 'size')) {
       for (final row in (group.value as Map).entries) {

@@ -39,6 +39,7 @@ enum SceneStyle {
   bool get materials => this == shaded || this == plain;
 }
 
+@immutable
 class SceneSettings {
   const SceneSettings(
       {this.roof = true,
@@ -88,12 +89,33 @@ class SceneSettings {
 
   /// The white model and the line drawing are always shown by day.
   bool get night => style.materials && (dark || hour < 6 || hour > 20.5);
+
+  @override
+  bool operator ==(Object other) =>
+      other is SceneSettings &&
+      roof == other.roof &&
+      style == other.style &&
+      furniture == other.furniture &&
+      foundation == other.foundation &&
+      cut == other.cut &&
+      dark == other.dark &&
+      site == other.site &&
+      cutHeight == other.cutHeight &&
+      hour == other.hour &&
+      maxFloor == other.maxFloor;
+
+  @override
+  int get hashCode => Object.hash(roof, style, furniture, foundation, cut, dark,
+      site, cutHeight, hour, maxFloor);
 }
 
 class Camera {
-  Camera(this.eye, this.forward, this.fov) {
-    final up0 =
-        forward.y.abs() > 0.999 ? const Vec3(0, 0, -1) : const Vec3(0, 1, 0);
+  /// [upHint] is which way is up on screen; it must not be parallel to
+  /// [forward]. Without one, world up is used, and the plan's far side
+  /// when looking straight down.
+  Camera(this.eye, this.forward, this.fov, {Vec3? upHint}) {
+    final up0 = upHint ??
+        (forward.y.abs() > 0.999 ? const Vec3(0, 0, -1) : const Vec3(0, 1, 0));
     right = forward.cross(up0).unit;
     up = right.cross(forward).unit;
   }
@@ -158,7 +180,11 @@ Camera orbitCamera(Vec3 target, double yaw, double pitch, double distance) {
       Vec3(math.cos(pitch) * math.sin(yaw), math.sin(pitch),
               math.cos(pitch) * math.cos(yaw)) *
           distance;
-  return Camera(eye, (target - eye).unit, 42 * math.pi / 180);
+  // The orbit's own up: it turns smoothly from world up to the far side
+  // as the camera rises, so looking down never flips the picture.
+  final up = Vec3(-math.sin(pitch) * math.sin(yaw), math.cos(pitch),
+      -math.sin(pitch) * math.cos(yaw));
+  return Camera(eye, (target - eye).unit, 42 * math.pi / 180, upHint: up);
 }
 
 class _Item {
@@ -328,10 +354,18 @@ class ScenePainter extends CustomPainter {
     return index;
   }
 
+  /// Whether [edges] for [sectionY] are already worked out. While a
+  /// slider moves the cut, a fast frame draws without edges rather than
+  /// work them out for every height it passes.
+  bool hasEdges(double sectionY) => _edgeCache[model]?.$1 == _edgeKey(sectionY);
+
+  String _edgeKey(double sectionY) =>
+      '$roofOn ${settings.furniture} ${settings.maxFloor} '
+      '${settings.cut ? settings.cutHeight : double.infinity} $sectionY';
+
   (String, List<SceneEdge>, EdgeIndex?) _edgesFor(double sectionY) {
     final cutY = settings.cut ? settings.cutHeight : double.infinity;
-    final key = '$roofOn ${settings.furniture} ${settings.maxFloor} '
-        '$cutY $sectionY';
+    final key = _edgeKey(sectionY);
     final kept = _edgeCache[model];
     if (kept != null && kept.$1 == key) return kept;
     final shell = roofOn && !cutY.isFinite;
@@ -407,16 +441,18 @@ class ScenePainter extends CustomPainter {
   SourceRef? pick(Offset p) {
     final frame = _gpuFrame;
     if (frame != null) return _pickRay(frame, p);
+    // Front to back: the first opaque face under the finger decides, even
+    // one that belongs to nothing (a roof hides the rooms under it).
     for (final i in _items.reversed) {
-      if (i.stroke == 0 && i.source != null && i.path.contains(p)) {
-        return i.source;
-      }
+      if (i.stroke != 0 || !i.path.contains(p)) continue;
+      if (i.source != null) return i.source;
+      if (i.color.a >= 1) return null;
     }
     return null;
   }
 
-  /// What the GPU drew under [p]: the nearest face along the line of sight
-  /// that belongs to something, as the canvas painter answers from its
+  /// What the GPU drew under [p]: what the nearest face along the line of
+  /// sight belongs to, if anything, as the canvas painter answers from its
   /// paths.
   SourceRef? _pickRay(GpuFrame frame, Offset p) {
     final size = _gpuSize;
@@ -1225,8 +1261,28 @@ class ScenePainter extends CustomPainter {
     t.paint(canvas, box.topLeft + const Offset(8, 4));
   }
 
+  /// Repaints only when what it shows changed: a rebuild of the editor
+  /// around the view (a button's ripple, the perf meter) costs nothing.
   @override
-  bool shouldRepaint(covariant ScenePainter old) => true;
+  bool shouldRepaint(covariant ScenePainter old) =>
+      !identical(model, old.model) ||
+      !_sameCamera(camera, old.camera) ||
+      settings != old.settings ||
+      northAngleDeg != old.northAngleDeg ||
+      walk != old.walk ||
+      labels != old.labels ||
+      selected != old.selected ||
+      fast != old.fast ||
+      !identical(gpu, old.gpu) ||
+      pixelRatio != old.pixelRatio;
+
+  static bool _same(Vec3 a, Vec3 b) => a.x == b.x && a.y == b.y && a.z == b.z;
+  static bool _sameCamera(Camera a, Camera b) =>
+      identical(a, b) ||
+      _same(a.eye, b.eye) &&
+          _same(a.forward, b.forward) &&
+          _same(a.up, b.up) &&
+          a.fov == b.fov;
 }
 
 /// Orbit and walk-through views of the house.
@@ -1257,7 +1313,12 @@ class SceneView extends StatefulWidget {
       this.outsideLabel = 'outside',
       this.inWallLabel = 'wall',
       this.areaUnit = 'm²',
+      this.adjusting = false,
       this.still});
+
+  /// Whether the page is moving a setting continuously, such as the
+  /// section height; frames are drawn as while orbiting.
+  final bool adjusting;
 
   /// Takes pictures of this view for whoever holds it.
   final SceneStill? still;
@@ -1309,7 +1370,10 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
 
   /// Fingers or buttons down on the view.
   int touching = 0;
-  bool get interacting => touching > 0 || spin.isActive;
+
+  /// A finger is on the view, it is still spinning, or the page around it
+  /// is changing what it shows (the section slider): frames are drawn fast.
+  bool get interacting => touching > 0 || spin.isActive || widget.adjusting;
   Duration spinLast = Duration.zero;
 
   // Walk state: world position, look angles.
@@ -1721,7 +1785,8 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
                   painter = painter!.withCamera(camera);
                 }
               }
-              return CustomPaint(painter: painter, size: Size.infinite);
+              return RepaintBoundary(
+                  child: CustomPaint(painter: painter, size: Size.infinite));
             })));
     return KeyboardListener(
         focusNode: focusNode,

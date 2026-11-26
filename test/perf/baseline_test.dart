@@ -106,13 +106,13 @@ void main() {
 
     final typical = report['typical']!;
     final large = report['large']!;
-    expect((typical['size'] as Map)['floors'], 2);
-    expect((large['size'] as Map)['rooms'], 72);
+    expect((typical['size']! as Map)['floors'], 2);
+    expect((large['size']! as Map)['rooms'], 72);
     for (final plan in [typical, large]) {
-      expect((plan['size3d'] as Map)['faces'], greaterThan(0));
-      expect((plan['size3d'] as Map)['drawnItems'], greaterThan(0));
+      expect((plan['size3d']! as Map)['faces'], greaterThan(0));
+      expect((plan['size3d']! as Map)['drawnItems'], greaterThan(0));
       for (final group in ['ms', 'ms3d', 'ms2d']) {
-        for (final row in (plan[group] as Map).entries) {
+        for (final row in (plan[group]! as Map).entries) {
           expect(row.value, greaterThan(0), reason: '${row.key}');
         }
       }

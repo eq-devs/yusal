@@ -56,10 +56,15 @@ exact; faces need rounding).
 ## Phase 1 — architecture
 
 - [x] One screen-tolerance helper for every pick and snap (U1)
-- [~] Typed gesture state: `WallGesture` enum done; `dragKind`, `wallGrip`,
-      `furnitureGrip` are still strings
-- [ ] Tool controllers with begin / move / end / cancel
-- [ ] Split `page.dart`
+- [x] Typed gesture state: `WallGesture`, `WallGrip`, `FurnitureGrip`
+      (`dragKind` stays a command name, which is what it holds)
+- [ ] Tool controllers with begin / move / end / cancel: not done. The
+      leak bugs it was meant to end are fixed at the root by
+      `resetInteraction`; tools are still extensions sharing one state
+- [~] Split `page.dart`: 3,630 -> 2,982 lines (pointer handlers and the
+      plan canvas in their own part files)
+- [x] Dead code removed: the never-entered stair tool, unreachable
+      outer-wall sheet branches
 
 ## Phase 2 — performance
 
@@ -89,29 +94,39 @@ exact; faces need rounding).
 - [x] PDF tables never cut off silently: a "see schedule" row, and a
       paginated heat-load schedule for large houses (R12)
 - [ ] Scaled vector PDF
-
 - [x] Temporary dimensions: a selected door or window shows its clear
       distances to the walls beside it
 - [ ] Static GPU vertex buffers (P3): deferred until device numbers show
       the frame build matters there (1.5–2.1 ms on the host)
+- [x] Mouse middle/right-button pan in every tool (U8), 44 pt zoom
+      buttons (U9), metres in all feedback (U10), the engine's new
+      refusals in six languages (U11)
+- [ ] One room tool, multi-select, copy and paste, columns and beams,
+      gable roofs over outlines, free furniture rotation
+
+## Phase 5 — safety net
+
+- [x] Regression test per fixed defect (`test/engine_regressions_test.dart`,
+      `test/interaction_reset_test.dart`, wall snap, camera, pick, export)
+- [x] Codec fuzz: 400 damaged files, each a coded failure, never a throw
+- [x] Every sampled command applies to a valid, round-tripping house or is
+      refused
+- [x] Undo/redo property test over random sequences
+      (`test/history_property_test.dart`)
+- [x] Golden pictures of the plan and the 3D view (`test/goldens`)
+- [x] Ratio-based performance test (large against small plan)
+- [ ] One bad document per validator code; area conservation
 
 ## Blocked
 
 - Real-device validation: no device attached on 2026-11-26 (`adb devices`
   empty).
 
-## Status at pause (2026-11-26)
+## Status (2026-11-26)
 
-Done and committed on `engine/redesign`: Phase 0 (all items), and from
-Phases 1–2 the tolerance helper, plan layers, text cache, glass batching,
-3D repaint boundary, derivation and check indexes, single-floor drag
-previews and the fast section slider. Suite: 910 passed, 6 skipped;
-analyzer clean.
-
-Not started yet:
-
-- Typed gesture state, tool controllers, splitting `page.dart`
-- Static GPU vertex buffers (P3), incremental validation
-- Snap hysteresis and axis lock, measure snapping, free wall start
-- Roof following the outline, scaled vector PDF
-- Real-device measurements (no device was attached)
+All Phase 0 items are done; most of Phases 1–3 and 5 are. The suite has
+932 passing tests (6 skipped screenshot dumps), the analyzer reports no
+issues, and Android (debug APK), iOS (no codesign) and web build.
+Measurements: `docs/perf/` (compiled engine bench, host render probe,
+macOS profile frames before and after). No phone was attached, so there
+are no device measurements.

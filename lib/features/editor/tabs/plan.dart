@@ -452,7 +452,10 @@ extension _PlanTab on _HouseEditorState {
           showFoundation,
           (v) => update(() {
                 showFoundation = v;
+                // The foundation is under the ground floor: going there is
+                // a change of floor like any other.
                 if (v && floorIndex != 0) {
+                  resetInteraction();
                   floorIndex = 0;
                   derive();
                 }

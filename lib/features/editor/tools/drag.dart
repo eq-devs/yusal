@@ -12,18 +12,20 @@ extension _DragTool on _HouseEditorState {
     dragAttempted = false;
     dragValid = false;
     final painter = interactionPainter();
-    final scale = painter.scale(size);
+    final mm = mmPerPixel(painter, size);
     dragCoordinatePainter = painter;
     final x = painter.worldPoint(point, size).x;
     final y = painter.worldPoint(point, size).y;
-    final tolerance = 12 / scale;
+    final tolerance = 12 * mm;
     if (tool == EditorTool.wall && selectedWall != null) {
       final wall = selectedWall!;
       final along = (wall.start.pos + wall.end.pos) / 2;
       final center = wall.axis.dir == AxisDir.V
           ? painter.point(wall.axis.pos.toDouble(), along, size)
           : painter.point(along, wall.axis.pos.toDouble(), size);
-      if ((point - center).distance <= 24) draggingAxis = wall.axis;
+      if ((point - center).distance * canvasZoom <= 24) {
+        draggingAxis = wall.axis;
+      }
     } else if (tool == EditorTool.resize) {
       final width = history.present.footprint.width.toDouble();
       final depth = history.present.footprint.depth.toDouble();
@@ -49,8 +51,19 @@ extension _DragTool on _HouseEditorState {
     }
   }
 
+  /// The finger left every wall the opening could go on: show it back
+  /// where it was, and let a release there change nothing.
+  void abandonOpeningPreview() {
+    if (dragArguments == null) return;
+    dragArguments = null;
+    dragKind = null;
+    dragValid = false;
+    derive();
+  }
+
   void previewDrag(Offset point, Size size) {
-    if (downPoint == null || (downPoint! - point).distance < 8 && !dragged) {
+    if (downPoint == null ||
+        (downPoint! - point).distance * canvasZoom < 8 && !dragged) {
       return;
     }
     dragAttempted = true;
@@ -107,7 +120,7 @@ extension _DragTool on _HouseEditorState {
     } else if (draggingOpening != null) {
       final opening = draggingOpening!;
       final originalBase = deriveFloorBase(history.present, floor.id);
-      final tolerance = 28 / painter.scale(size);
+      final tolerance = 28 * mmPerPixel(painter, size);
       final candidates = originalBase.wallSegments.where((wall) {
         final along = wall.axis.dir == AxisDir.H ? x : y;
         final cross = wall.axis.dir == AxisDir.H ? y : x;
@@ -120,6 +133,7 @@ extension _DragTool on _HouseEditorState {
             .compareTo(((b.axis.dir == AxisDir.H ? y : x) - b.axis.pos).abs()));
       final wall = candidates.firstOrNull;
       if (wall == null) {
+        abandonOpeningPreview();
         placementHint = tr3(
             '拖到另一面墙，门窗会自动贴合',
             'Басқа қабырғаға апарыңыз, есік-терезе өзі орнығады',
@@ -130,6 +144,7 @@ extension _DragTool on _HouseEditorState {
       final along = wall.axis.dir == AxisDir.H ? x : y;
       final available = wall.end.pos - wall.start.pos - opening.opening.width;
       if (available < 0) {
+        abandonOpeningPreview();
         placementHint = tr3('这段墙放不下这个门窗', 'Бұл қабырғаға есік-терезе сыймайды',
             'Окно или дверь не помещается на этой стене',
             "The window or door doesn't fit on this wall", ky: 'Терезе же эшик бул дубалга батпайт', uz: 'Deraza yoki eshik bu devorga sigʻmaydi');
@@ -186,14 +201,14 @@ extension _DragTool on _HouseEditorState {
     final world = painter.worldPoint(point, size);
     if (stamping) {
       setStamp(world.x - stampGrab.dx, world.y - stampGrab.dy,
-          reach: math.min(14 / painter.scale(size), 250));
+          reach: math.min(14 * mmPerPixel(painter, size), 250));
       return;
     }
     int snap(double value, List<ResolvedAxis> axes) {
       final clamped = value.round().clamp(axes.first.pos, axes.last.pos);
       for (final axis in axes) {
         if ((axis.pos - clamped).abs() <
-            math.min(12 / painter.scale(size), 250)) {
+            math.min(12 * mmPerPixel(painter, size), 250)) {
           return axis.pos;
         }
       }

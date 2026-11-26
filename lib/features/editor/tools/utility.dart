@@ -81,7 +81,7 @@ extension _UtilityTool on _HouseEditorState {
     }
     if (choice == 'clear') {
       final ids = floorUtilities.length;
-      action('ClearUtilities', {'floorId': floor.id});
+      if (action('ClearUtilities', {'floorId': floor.id}) is! Applied) return;
       notify(
           tr3('已清除本层 $ids 个点位', 'Қабаттағы $ids нүкте өшірілді',
               'Удалено точек на этаже: $ids',
@@ -116,12 +116,13 @@ extension _UtilityTool on _HouseEditorState {
       return;
     }
     update(() => showUtilities = true);
-    action('AddUtilities', {
+    final placed = action('AddUtilities', {
       'floorId': floor.id,
       'points': [
         for (final s in spots) {'kind': s.kind, 'x': s.x, 'y': s.y}
       ]
     });
+    if (placed is! Applied) return;
     notify(
         tr3(
             '已布置 ${spots.length} 个点位，可拖动调整',

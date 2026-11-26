@@ -16,7 +16,7 @@ extension _Picking on _HouseEditorState {
     // Tolerances are screen pixels, so they stay finger-sized at any zoom.
     final x = painter.worldPoint(point, size).x;
     final y = painter.worldPoint(point, size).y;
-    final tolerance = 14 / (painter.scale(size) * canvasZoom);
+    final tolerance = 14 * mmPerPixel(painter, size);
     final placements = derived.floors[floorIndex].openings.where((p) {
       final along = p.axis.dir == AxisDir.H ? x : y;
       final cross = p.axis.dir == AxisDir.H ? y : x;
@@ -93,7 +93,7 @@ extension _Picking on _HouseEditorState {
                 Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
-                        '${tr3('外墙', 'Сыртқы қабырға', 'Толщина наружной стены', 'Outer wall thickness', ky: 'Сырткы дубалдын калыңдыгы', uz: 'Tashqi devor qalinligi')} · ${dec(((wall.end.pos - wall.start.pos) / 1000).toStringAsFixed(2))} $unitM',
+                        '${tr3('外墙', 'Сыртқы қабырға', 'Наружная стена', 'Outer wall', ky: 'Сырткы дубал', uz: 'Tashqi devor')} · ${dec(((wall.end.pos - wall.start.pos) / 1000).toStringAsFixed(2))} $unitM',
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w700))),
                 heading(tr3('在点的位置加', 'Осы жерге қосу', 'Добавить здесь', 'Add here', ky: 'Бул жерге кошуу', uz: 'Shu yerga qoʻshish')),

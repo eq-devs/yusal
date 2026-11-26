@@ -334,9 +334,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     final index = history.present.floors.indexWhere((f) => f.id == floorId);
     if (index < 0) return false;
     setState(() {
-      cancelDrag();
-      clearSelection();
-      clearWallSelection();
+      resetInteraction();
       floorIndex = index;
       derive();
     });
@@ -487,16 +485,11 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     _wallTrial = null;
     HapticFeedback.selectionClick();
     setState(() {
-      cancelDrag();
-      clearWallSelection();
+      // What was selected or in hand on the plan stays there: a key press
+      // on another tab must not act on something no longer on screen.
+      resetInteraction();
       tab = value;
       lastInGroup[tabGroup] = value;
-      if (value != 'plan') {
-        tool = EditorTool.browse;
-        drawingOrigin = null;
-        drawingEnd = null;
-        placementHint = null;
-      }
     });
   }
 
@@ -526,6 +519,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   /// Delete key: the selected wall, furniture or door/window.
   void deleteSelection() {
+    if (tab != 'plan') return;
     if (editStart != null ||
         selectedUtilityId != null ||
         selectedFurnitureId != null ||
@@ -637,19 +631,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   /// Leaves whatever was in hand and takes up a tool.
   void pickTool(VoidCallback onTap) {
     HapticFeedback.selectionClick();
-    cancelDrag();
-    closeWallMenu();
-    spatialDocument = null;
-    spatialBase = null;
-    spatialError = null;
-    spatialStart = null;
-    spatialEnd = null;
-    spatialPreview = null;
-    placementHint = null;
-    placingFurniture = null;
-    placingUtility = null;
-    measurePoints = [];
-    roomStamp = null;
+    resetInteraction(to: tool);
     onTap();
     if (mounted) setState(() {});
   }
@@ -1123,7 +1105,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   OpeningPlacement? openingAt(Offset local, Size size) {
     final painter = interactionPainter();
     final world = painter.worldPoint(local, size);
-    final tolerance = 14 / (painter.scale(size) * canvasZoom);
+    final tolerance = 14 * mmPerPixel(painter, size);
     final hits = derived.floors[floorIndex].openings.where((p) {
       final along = p.axis.dir == AxisDir.H ? world.x : world.y;
       final cross = p.axis.dir == AxisDir.H ? world.y : world.x;
@@ -1190,7 +1172,40 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     furnitureDraft = null;
     furnitureGrip = null;
     furnitureDown = null;
+    utilityDraft = null;
+    utilityDown = null;
     derive();
+  }
+
+  /// Leaves everything transient: the gesture in progress and its preview,
+  /// the selection, the wall menu and the tool's mode, and goes back to
+  /// browsing. Every way out of what the user was doing (another tab,
+  /// another floor, Esc on a tool, a new tool) goes through here, so no
+  /// tool's state outlives it.
+  void resetInteraction({EditorTool to = EditorTool.browse}) {
+    cancelDrag();
+    clearSelection();
+    clearWallSelection();
+    spatialDocument = null;
+    spatialBase = null;
+    spatialError = null;
+    spatialStart = null;
+    spatialEnd = null;
+    spatialPreview = null;
+    placementHint = null;
+    placingFurniture = null;
+    placingUtility = null;
+    placingOpening = null;
+    openingDrop = null;
+    measurePoints = [];
+    roomStamp = null;
+    stampStair = false;
+    movingStairId = null;
+    drawingOrigin = null;
+    drawingEnd = null;
+    placingWallStart = false;
+    wallFromAdjust = false;
+    tool = to;
   }
 
   void sample(Offset p, Size size) {
@@ -1802,6 +1817,13 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   Offset? wallHoldScreen;
   double get canvasZoom => canvasTransform.value.getMaxScaleOnAxis();
 
+  /// Plan millimetres that one screen pixel covers at the current zoom,
+  /// for [painter]'s fit of the plan. Every pick and snap radius is written
+  /// in screen pixels and multiplied by this, so it stays one finger wide
+  /// whether the plan is zoomed in or out.
+  double mmPerPixel(FloorPlanPainter painter, Size size) =>
+      1 / (painter.scale(size) * canvasZoom);
+
   /// Same inputs, same pluses: build, hit tests and hover all ask for them.
   (
     FloorBase,
@@ -1887,7 +1909,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     final painter = interactionPainter();
     final world = painter.worldPoint(local, size);
     return nearestWall(base, Offset(world.x, world.y),
-        radius / (painter.scale(size) * canvasZoom));
+        radius * mmPerPixel(painter, size));
   }
 
   Offset attachmentOnWall(WallSegment wall, Offset local, Size size) {
@@ -1996,7 +2018,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   void wallToolTap(Offset local, Size size) {
     final painter = interactionPainter();
     final world = painter.worldPoint(local, size);
-    final tolerance = 14 / (painter.scale(size) * canvasZoom);
+    final tolerance = 14 * mmPerPixel(painter, size);
     final opening = derived.floors[floorIndex].openings.where((p) {
       final along = p.axis.dir == AxisDir.H ? world.x : world.y;
       final cross = p.axis.dir == AxisDir.H ? world.y : world.x;
@@ -2101,7 +2123,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   Offset wallPoint(Offset local, Size size) {
     final painter = interactionPainter();
     final world = painter.worldPoint(local, size);
-    final tolerance = 14 / (painter.scale(size) * canvasZoom);
+    final tolerance = 14 * mmPerPixel(painter, size);
     double snap(double value, List<ResolvedAxis> axes) {
       ResolvedAxis? best;
       var distance = tolerance;
@@ -2290,7 +2312,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     }
     final painter = interactionPainter();
     final world = painter.worldPoint(local, size);
-    final pixel = 1 / (painter.scale(size) * canvasZoom);
+    final pixel = mmPerPixel(painter, size);
     slideNote = null;
     slideFoot(world.x, world.y);
     final snap = snapWallEnd(base, drawingOrigin!, Offset(world.x, world.y),
@@ -2766,24 +2788,31 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         ])));
   }
 
-  /// Esc steps back one level: an unfinished drag, the menu, the
-  /// selection, then the active tool.
+  /// Esc steps back one level: an unfinished gesture, then the selection
+  /// or menu, then the tool.
   void escape() {
     setState(() {
-      if (drawingStrokeActive || wallGrip != null || dragAttempted) {
+      final busy = drawingStrokeActive ||
+          wallGrip != null ||
+          dragAttempted ||
+          spatialStart != null ||
+          furnitureGrip != null ||
+          utilityDown != null ||
+          draggingOpening != null;
+      final selected = menuWall != null ||
+          editStart != null ||
+          selectedRoomId != null ||
+          selectedOpeningId != null ||
+          selectedFurnitureId != null ||
+          selectedUtilityId != null;
+      if (busy) {
         cancelDrag();
-      } else if (menuWall != null || editStart != null) {
+      } else if (selected) {
+        clearSelection();
         clearWallSelection();
-        if (tool == EditorTool.editWall) {
-          tool = EditorTool.browse;
-        }
-      } else if (tool != EditorTool.browse) {
-        tool = EditorTool.browse;
-        drawingOrigin = null;
-        placingWallStart = false;
-        placingUtility = null;
-      } else if (selectedUtilityId != null) {
-        selectedUtilityId = null;
+        if (tool == EditorTool.editWall) tool = EditorTool.browse;
+      } else {
+        resetInteraction();
       }
       placementHint = null;
     });
@@ -3212,7 +3241,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                               !cancelledStroke &&
                               pointers.length == 1 &&
                               downPoint != null &&
-                              (downPoint! - e.localPosition).distance < 8) {
+                              (downPoint! - e.localPosition).distance * canvasZoom <
+                                  8) {
                             final box = canvasKey.currentContext!
                                 .findRenderObject()! as RenderBox;
                             previewOpening(placingOpening!,
@@ -3295,7 +3325,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                               !cancelledStroke &&
                               pointers.length == 1 &&
                               downPoint != null &&
-                              (downPoint! - e.localPosition).distance < 8) {
+                              (downPoint! - e.localPosition).distance * canvasZoom <
+                                  8) {
                             tapObject(e.localPosition, size);
                           }
                           if (tool == EditorTool.stair &&

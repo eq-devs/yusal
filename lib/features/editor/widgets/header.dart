@@ -465,15 +465,8 @@ extension _EditorHeader on _HouseEditorState {
   }
 
   void selectFloor(int value) => update(() {
-        cancelDrag();
-        clearWallSelection();
-        clearSelection();
+        resetInteraction();
         floorIndex = value;
-        tool = EditorTool.browse;
-        selectedWall = null;
-        drawingOrigin = null;
-        drawingEnd = null;
-        measurePoints = [];
         derive();
       });
 

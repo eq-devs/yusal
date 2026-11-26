@@ -137,7 +137,9 @@ extension _OutlineTool on _HouseEditorState {
                             return;
                           }
                           Navigator.pop(context);
-                          action('CutOutline', args);
+                          if (action('CutOutline', args) is! Applied) {
+                            return;
+                          }
                           notify(
                               tr3(
                                   '已切出缺角，切口处是外墙；坡屋顶仍盖住整个矩形，缺角处成为有顶的门廊',
@@ -152,7 +154,7 @@ extension _OutlineTool on _HouseEditorState {
   }
 
   void restoreOutlineAction() {
-    action('RestoreOutline', {});
+    if (action('RestoreOutline', {}) is! Applied) return;
     notify(
         tr3(
             '已恢复矩形外形，恢复出的部分还没有分房',

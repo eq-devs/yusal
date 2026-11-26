@@ -97,7 +97,7 @@ extension _WallTool on _HouseEditorState {
     final painter = interactionPainter();
     final world = painter.worldPoint(local, size);
     final raw = Offset(world.x, world.y);
-    final pixel = 1 / (painter.scale(size) * canvasZoom);
+    final pixel = mmPerPixel(painter, size);
     final vertical = editStart!.dx == editEnd!.dx;
     final carrier = vertical ? editStart!.dx : editStart!.dy;
     final lo = math.min(vertical ? editStart!.dy : editStart!.dx,

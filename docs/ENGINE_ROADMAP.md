@@ -40,10 +40,11 @@ exact; faces need rounding).
 - [x] R15 undo group longer than the history cap
 - [x] R17 encoder validates in release builds too
 - [x] Engine session reports created / removed walls
-- [ ] R2 R4 R5 R9 one interaction reset for every mode exit
-- [ ] R10 success toasts only on success
-- [ ] R13 outer-wall sheet title
-- [ ] R16 stale opening preview on an invalid drop
+- [x] R2 R4 R5 R9 one interaction reset for every mode exit
+      (`resetInteraction`; R2's own trigger is verified by code trace only)
+- [x] R10 success toasts only on success
+- [x] R13 outer-wall sheet title
+- [x] R16 stale opening preview on an invalid drop
 - [ ] R7 orbit pitch snap near top-down
 - [ ] R8 tap on the roof selects what is underneath
 - [x] One schema version: files are written as version 5; 1–4 load with
@@ -54,7 +55,7 @@ exact; faces need rounding).
 
 ## Phase 1 — architecture
 
-- [ ] One screen-tolerance helper for every pick and snap (U1)
+- [x] One screen-tolerance helper for every pick and snap (U1)
 - [ ] Typed gesture state instead of strings
 - [ ] Tool controllers with begin / move / end / cancel
 - [ ] Split `page.dart`

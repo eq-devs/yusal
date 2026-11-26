@@ -287,7 +287,7 @@ extension _CostTab on _HouseEditorState {
         items: [for (final c in Currency.values) (c, currencyName(c))],
         onChanged: (c) {
           if (c == e.currency) return;
-          action('SetCost', {'currency': c});
+          if (action('SetCost', {'currency': c}) is! Applied) return;
           notify(tr3(
               '已换成${currencyName(c)}，单价改用该货币的示例价格',
               '${currencyName(c)} таңдалды, бағалар осы валютадағы мысалға ауысты',

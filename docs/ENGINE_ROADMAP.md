@@ -88,3 +88,19 @@ exact; faces need rounding).
 
 - Real-device validation: no device attached on 2026-11-26 (`adb devices`
   empty).
+
+## Status at pause (2026-11-26)
+
+Done and committed on `engine/redesign`: Phase 0 (all items), and from
+Phases 1–2 the tolerance helper, plan layers, text cache, glass batching,
+3D repaint boundary, derivation and check indexes, single-floor drag
+previews and the fast section slider. Suite: 910 passed, 6 skipped;
+analyzer clean.
+
+Not started yet:
+
+- Typed gesture state, tool controllers, splitting `page.dart`
+- Static GPU vertex buffers (P3), incremental validation
+- Snap hysteresis and axis lock, measure snapping, free wall start
+- Roof following the outline, scaled vector PDF
+- Real-device measurements (no device was attached)

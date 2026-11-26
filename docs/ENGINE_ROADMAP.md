@@ -64,7 +64,8 @@ exact; faces need rounding).
 
 - [x] Static plan layer and overlay layer (P1)
 - [x] Zoom-independent text cache with LRU (P5)
-- [ ] Throttled, single-floor drag previews (P2)
+- [x] Single-floor drag previews, skipped when the command repeats (P2)
+- [x] Section slider draws fast frames until released (P7)
 - [x] One batch for translucent faces (P4)
 - [x] 3D view repaint boundary (P6)
 - [x] Indexes in floor derivation and checks (P8, P9)

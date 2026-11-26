@@ -428,6 +428,10 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   /// 3D page state, kept while switching pages.
   SceneSettings sceneSettings = const SceneSettings();
+
+  /// Whether the section slider is being dragged: the 3D view draws fast
+  /// frames until it is let go.
+  bool sceneAdjusting = false;
   String sceneView = 'iso';
   int sceneViewToken = 0;
 

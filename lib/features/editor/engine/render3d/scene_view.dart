@@ -354,10 +354,19 @@ class ScenePainter extends CustomPainter {
     return index;
   }
 
+  /// Whether [edges] for [sectionY] are already worked out. While a
+  /// slider moves the cut, a fast frame draws without edges rather than
+  /// work them out for every height it passes.
+  bool hasEdges(double sectionY) =>
+      _edgeCache[model]?.$1 == _edgeKey(sectionY);
+
+  String _edgeKey(double sectionY) =>
+      '$roofOn ${settings.furniture} ${settings.maxFloor} '
+      '${settings.cut ? settings.cutHeight : double.infinity} $sectionY';
+
   (String, List<SceneEdge>, EdgeIndex?) _edgesFor(double sectionY) {
     final cutY = settings.cut ? settings.cutHeight : double.infinity;
-    final key = '$roofOn ${settings.furniture} ${settings.maxFloor} '
-        '$cutY $sectionY';
+    final key = _edgeKey(sectionY);
     final kept = _edgeCache[model];
     if (kept != null && kept.$1 == key) return kept;
     final shell = roofOn && !cutY.isFinite;
@@ -1305,7 +1314,12 @@ class SceneView extends StatefulWidget {
       this.outsideLabel = 'outside',
       this.inWallLabel = 'wall',
       this.areaUnit = 'm²',
+      this.adjusting = false,
       this.still});
+
+  /// Whether the page is moving a setting continuously, such as the
+  /// section height; frames are drawn as while orbiting.
+  final bool adjusting;
 
   /// Takes pictures of this view for whoever holds it.
   final SceneStill? still;
@@ -1357,7 +1371,9 @@ class SceneViewState extends State<SceneView> with TickerProviderStateMixin {
 
   /// Fingers or buttons down on the view.
   int touching = 0;
-  bool get interacting => touching > 0 || spin.isActive;
+  /// A finger is on the view, it is still spinning, or the page around it
+  /// is changing what it shows (the section slider): frames are drawn fast.
+  bool get interacting => touching > 0 || spin.isActive || widget.adjusting;
   Duration spinLast = Duration.zero;
 
   // Walk state: world position, look angles.

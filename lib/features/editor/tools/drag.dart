@@ -54,11 +54,11 @@ extension _DragTool on _HouseEditorState {
   /// The finger left every wall the opening could go on: show it back
   /// where it was, and let a release there change nothing.
   void abandonOpeningPreview() {
-    if (dragArguments == null) return;
     dragArguments = null;
     dragKind = null;
     dragValid = false;
-    derive();
+    spatialDocument = null;
+    spatialBase = null;
   }
 
   void previewDrag(Offset point, Size size) {
@@ -67,7 +67,7 @@ extension _DragTool on _HouseEditorState {
       return;
     }
     dragAttempted = true;
-    final previousPosition = dragValid && dragKind == 'MoveLocalWall' ? (dragArguments?['pos']) : null;
+    final previous = dragValid ? (dragKind, dragArguments) : null;
     dragValid = false;
     final painter = dragCoordinatePainter ?? interactionPainter();
     final x = painter.worldPoint(point, size).x;
@@ -87,10 +87,6 @@ extension _DragTool on _HouseEditorState {
               originalList[original.index - 1].pos + 300,
               originalList[original.index + 1].pos - 300)
         };
-        if (previousPosition == dragArguments!['pos']) {
-          dragValid = true;
-          return;
-        }
       } else if (axis.kind == 'boundary') {
         dragKind = 'SetFootprintSize';
         dragArguments = {
@@ -114,7 +110,10 @@ extension _DragTool on _HouseEditorState {
         dragKind = 'MoveAxis';
         dragArguments = {
           'axisId': axis.id,
-          'pos': (axis.dir == AxisDir.V ? x : y).round().clamp(low, high)
+          // To the centimetre: finer is not buildable, and every pixel of
+          // the finger would otherwise be a new command.
+          'pos': (((axis.dir == AxisDir.V ? x : y) / 10).round() * 10)
+              .clamp(low, high)
         };
       }
     } else if (draggingOpening != null) {
@@ -164,6 +163,13 @@ extension _DragTool on _HouseEditorState {
     } else {
       return;
     }
+    // The same command as the last move shows the same preview.
+    if (previous != null &&
+        previous.$1 == dragKind &&
+        sameArguments(previous.$2, dragArguments)) {
+      dragValid = true;
+      return;
+    }
     final result = executeCommand(
         presentState,
         DesignCommand(dragKind!, dragArguments!),
@@ -173,27 +179,47 @@ extension _DragTool on _HouseEditorState {
       placementHint = null;
       dragged = true;
       dragValid = true;
-      derived =
-          deriveHouse(composeDocument(history.present.meta, result.newState));
-      base = derived.floors[floorIndex].base;
+      // Only this floor's plan is shown while the finger moves: the house
+      // is derived once, on release.
+      final preview = spatialDocument =
+          composeDocument(history.present.meta, result.newState);
+      final previewBase = spatialBase = deriveFloorBase(preview, floor.id);
       if (dragKind == 'MoveLocalWall' && selectedWall != null) {
         // The selected wall may have acquired a new axis. Locate the two
         // rooms on the preview wall at its current position.
-        final moved = base.wallSegments.where((w) => w.axis.dir == selectedWall!.axis.dir &&
+        final moved = previewBase.wallSegments.where((w) => w.axis.dir == selectedWall!.axis.dir &&
             w.axis.pos == dragArguments!['pos'] && w.start.pos == selectedWall!.start.pos &&
             w.end.pos == selectedWall!.end.pos).firstOrNull;
         if (moved != null) {
           final pair = wallRooms(moved);
           if (pair != null) {
             placementHint = floor.rooms.where((r) => r.id == pair.$1 || r.id == pair.$2)
-                .map((r) => '${r.name} ${(base.roomsById[r.id]!.clearArea / 1e6).toStringAsFixed(2)} m²').join(' · ');
+                .map((r) => '${r.name} ${(previewBase.roomsById[r.id]!.clearArea / 1e6).toStringAsFixed(2)} m²').join(' · ');
           }
         }
       }
     } else if (result is Rejected) {
-      derive();
+      spatialDocument = null;
+      spatialBase = null;
       placementHint = result.message;
     }
+  }
+
+  /// Whether two command arguments say the same: maps and lists by
+  /// content, everything else by `==`.
+  static bool sameArguments(Object? a, Object? b) {
+    if (a is Map && b is Map) {
+      return a.length == b.length &&
+          a.keys.every((k) => b.containsKey(k) && sameArguments(a[k], b[k]));
+    }
+    if (a is List && b is List) {
+      if (a.length != b.length) return false;
+      for (var i = 0; i < a.length; i++) {
+        if (!sameArguments(a[i], b[i])) return false;
+      }
+      return true;
+    }
+    return a == b;
   }
 
   void updateSpatial(Offset point, Size size) {

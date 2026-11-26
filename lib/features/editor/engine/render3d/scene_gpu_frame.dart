@@ -260,11 +260,14 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
   }
 
   // Shadows and corners, where the renderer can and the style has light.
-  final shaded = SceneGpu.effects &&
-      (p.gpu?.shades ?? false) &&
-      settings.style != SceneStyle.lines;
   final solidsKey = '${p.roofOn} ${settings.furniture} ${settings.maxFloor} '
       '$cutY';
+  // A fast frame (a finger or the section slider moving) keeps the
+  // shadows it has but does not gather new ones for every cut it passes.
+  final shaded = SceneGpu.effects &&
+      (p.gpu?.shades ?? false) &&
+      settings.style != SceneStyle.lines &&
+      !(p.fast && _solids[model]?.key != solidsKey);
   var solids = shaded ? _solids[model] : null;
   // Gathered afresh when what is shown of the house has changed.
   final gather = shaded && solids?.key != solidsKey ? <double>[] : null;
@@ -397,14 +400,15 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
     }
   }
   GpuBatch? edges;
-  if (p.drawsEdges) {
+  final edgeY = cutY.isFinite ? cutY + _sectionLift : 0.0;
+  if (p.drawsEdges && (!p.fast || p.hasEdges(edgeY))) {
     final w = _Writer();
     final ink = p.edgeColor;
     final focal = size.height / 2 / math.tan(camera.fov / 2);
     final half = p.edgeWidth / 2 / focal;
     final eye = camera.eye;
     final forward = camera.forward;
-    for (final e in p.edges(cutY.isFinite ? cutY + _sectionLift : 0)) {
+    for (final e in p.edges(edgeY)) {
       var a = e.a;
       var b = e.b;
       if (e.soft) {

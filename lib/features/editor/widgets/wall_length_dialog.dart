@@ -102,12 +102,13 @@ class _WallThicknessDialogState extends State<WallThicknessDialog> {
 
   void submit() {
     final meters = parseNumber(controller.text);
-    if (meters == null || !meters.isFinite || meters < 0.05 || meters > 1) {
+    // The engine's limits (DocumentLimits.wall): 60 to 600 mm.
+    if (meters == null || !meters.isFinite || meters < 0.06 || meters > 0.6) {
       setState(() => error = tr3(
-          '请输入 0.05 到 1.00 米',
-          '0,05–1,00 м аралығында енгізіңіз',
-          'Введите значение от 0,05 до 1,00 м',
-          'Enter a value from 0.05 to 1.00 m', ky: '0,05тен 1,00 мге чейинки маани киргизиңиз', uz: '0,05 dan 1,00 m gacha qiymat kiriting'));
+          '请输入 0.06 到 0.60 米',
+          '0,06–0,60 м аралығында енгізіңіз',
+          'Введите значение от 0,06 до 0,60 м',
+          'Enter a value from 0.06 to 0.60 m', ky: '0,06дан 0,60 мге чейинки маани киргизиңиз', uz: '0,06 dan 0,60 m gacha qiymat kiriting'));
       return;
     }
     Navigator.pop(context, (meters * 1000).round());

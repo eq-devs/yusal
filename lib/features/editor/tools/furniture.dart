@@ -280,6 +280,35 @@ extension _FurnitureTool on _HouseEditorState {
     return (x: best.x, y: best.y, yaw: yaw);
   }
 
+  /// The walk-through from the view switch: where the walker last stood,
+  /// else in the selected room, else the living room or the largest room
+  /// of this floor; outside the front door when the floor has no rooms.
+  void walkHere() {
+    if (walkStart != null || tab == 'walk') {
+      showTab('walk');
+      return;
+    }
+    final rooms = derived.floors[floorIndex].base.roomGeometry;
+    final types = {for (final r in floor.rooms) r.id: r.type};
+    final picked = rooms.where((r) => r.id == selectedRoomId).firstOrNull ??
+        rooms.fold<SpaceGeometry?>(null, (best, r) {
+          if (best == null) return r;
+          final living = types[r.id] == RoomType.living;
+          final bestLiving = types[best.id] == RoomType.living;
+          if (living != bestLiving) return living ? r : best;
+          return r.clearArea > best.clearArea ? r : best;
+        });
+    if (picked == null) {
+      showTab('walk');
+      return;
+    }
+    _wallTrial = null;
+    HapticFeedback.selectionClick();
+    resetInteraction();
+    lastInGroup['view'] = 'walk';
+    walkInto(picked.id);
+  }
+
   /// Go to the walk-through, standing in [roomId].
   void walkInto(String roomId) {
     final g = derived.floors[floorIndex].base.roomGeometry

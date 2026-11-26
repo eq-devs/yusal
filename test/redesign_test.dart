@@ -6,6 +6,7 @@ import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/editor/widgets/dock_sheet.dart';
 import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
 import 'package:yusal/service/storage/project_store.dart';
 
@@ -92,11 +93,7 @@ void main() {
     expect(find.byKey(const Key('room-door')), findsOneWidget);
     // Folded: the list of uses is not on screen yet.
     expect(find.widgetWithText(ChoiceChip, '厨房'), findsNothing);
-    final card = t.getRect(find
-        .ancestor(
-            of: find.byKey(const Key('selection-grip')),
-            matching: find.byType(Container))
-        .first);
+    final card = t.getRect(find.byType(DockSheet));
     expect(card.height, lessThan(160));
     // The room's centre is above the card.
     final p = painter(t);

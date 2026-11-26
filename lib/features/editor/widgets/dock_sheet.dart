@@ -260,9 +260,7 @@ class _DockSheetState extends State<DockSheet>
         onDragUpdate: _dragUpdate,
         onDragEnd: _dragEnd);
     final switcher = AnimatedSwitcher(
-        duration: widget.reduceMotion
-            ? Duration.zero
-            : const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 180),
         switchInCurve: Curves.easeOut,
         switchOutCurve: Curves.easeIn,
         layoutBuilder: (current, previous) => Stack(
@@ -284,7 +282,10 @@ class _DockSheetState extends State<DockSheet>
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       drag,
-                      Expanded(child: ClipRect(child: switcher)),
+                      // Reduce motion: new content is simply there.
+                      Expanded(
+                          child: ClipRect(
+                              child: widget.reduceMotion ? content : switcher)),
                       SizedBox(height: widget.bottomPadding),
                     ]))));
   }

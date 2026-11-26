@@ -125,9 +125,12 @@ extension _PhoneLayout on _HouseEditorState {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AnimatedSwitcher(
-              duration: Motion.reduced(context) ? Duration.zero : Motion.fast,
-              child: above ?? const SizedBox.shrink()),
+          if (Motion.reduced(context))
+            above ?? const SizedBox.shrink()
+          else
+            AnimatedSwitcher(
+                duration: Motion.fast,
+                child: above ?? const SizedBox.shrink()),
           sheet,
         ]);
   }
@@ -657,11 +660,13 @@ extension _PhoneLayout on _HouseEditorState {
                   style: const TextStyle(
                       fontSize: 17, fontWeight: FontWeight.w700)),
             ])));
+    final page = dockPage == 'furniture' ? furniture : tools;
+    if (Motion.reduced(context)) return page;
     return AnimatedSwitcher(
-        duration: Motion.reduced(context) ? Duration.zero : Motion.fast,
+        duration: Motion.fast,
         layoutBuilder: (current, previous) => Stack(
             alignment: Alignment.topCenter,
             children: [...previous, if (current != null) current]),
-        child: dockPage == 'furniture' ? furniture : tools);
+        child: page);
   }
 }

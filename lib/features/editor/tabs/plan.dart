@@ -133,9 +133,9 @@ extension _PlanTab on _HouseEditorState {
     final dragging = !cancelledStroke &&
         pointers.length == 1 &&
         e.kind == PointerDeviceKind.touch &&
-        (wallGesture == 'draw' ||
-            wallGesture == 'edit' ||
-            wallGesture == 'opening' ||
+        (wallGesture == WallGesture.draw ||
+            wallGesture == WallGesture.edit ||
+            wallGesture == WallGesture.opening ||
             draggingAxis != null ||
             draggingOpening != null ||
             furnitureGrip != null ||

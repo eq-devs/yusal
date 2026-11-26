@@ -178,6 +178,30 @@ enum _SaveStatus {
   final String label;
 }
 
+/// What a finger on the plan is doing with the wall tools, decided on
+/// press and refined as it moves.
+enum WallGesture {
+  /// Not yet anything: a release selects, a move pans.
+  tap,
+  pan,
+
+  /// Drawing a new wall from its start.
+  draw,
+
+  /// Dragging a grip or the body of the selected wall.
+  edit,
+
+  /// Dragging a door or window along or off its wall.
+  opening,
+
+  /// Held still long enough to open the wall menu.
+  held,
+
+  /// Pressed on a wall's line: a move pulls a new wall out of it, a
+  /// release selects it.
+  fromWall,
+}
+
 class _HouseEditorState extends ConsumerState<HouseEditor>
     with WidgetsBindingObserver, TickerProviderStateMixin, VoiceScreen
     implements DesignHost {
@@ -1486,7 +1510,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   /// Current single-finger gesture in the wall tools: 'draw' from a plus,
   /// 'edit' on the selected wall, 'tap' until it moves, then 'pan'.
-  String? wallGesture;
+  WallGesture? wallGesture;
   Offset? gestureScreen;
   bool drawConnected = false;
 
@@ -1965,7 +1989,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
       final point = attachmentOnWall(wall, local, size);
       setState(() {
         cancelDrag();
-        wallGesture = 'held';
+        wallGesture = WallGesture.held;
         showWallContext(wall, point);
       });
     });
@@ -2162,24 +2186,63 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
       beginWallEdit(local, size);
       // The selected wall wins, even where a door sits on it.
       if (wallGrip != null) {
-        wallGesture = 'edit';
+        wallGesture = WallGesture.edit;
         closeWallMenu();
         return;
       }
       wallGrip = null;
     }
     if (beginOpeningDrag(local, size)) {
-      wallGesture = 'opening';
+      wallGesture = WallGesture.opening;
       clearWallSelection();
       return;
     }
     if (attachmentAt(local, size) != null || placingWallStart) {
       clearWallSelection();
-      wallGesture = 'draw';
+      wallGesture = WallGesture.draw;
       beginWallStroke(local, size);
       return;
     }
-    wallGesture = 'tap';
+    // Anywhere on a wall's line, not only on a plus: a drag pulls a new
+    // wall out of it, a tap still selects it.
+    final painter = interactionPainter();
+    final world = painter.worldPoint(local, size);
+    final wall = nearestWall(
+        base, Offset(world.x, world.y), 18 * mmPerPixel(painter, size));
+    if (wall != null && wall.kind != 'low') {
+      pressedWall = wall;
+      wallGesture = WallGesture.fromWall;
+      return;
+    }
+    wallGesture = WallGesture.tap;
+  }
+
+  /// The wall a press in the wall tool landed on, until the finger moves.
+  WallSegment? pressedWall;
+
+  /// Starts a new wall out of [wall] at the point of it nearest [local],
+  /// as a stroke from a plus there would. False where no wall can start
+  /// (too near an end, or on a door or window): the drag then pans.
+  bool pullWallFrom(WallSegment wall, Offset local, Size size) {
+    final world = interactionPainter().worldPoint(local, size);
+    final vertical = wall.axis.dir == AxisDir.V;
+    final lo = wall.start.pos + 300.0;
+    final hi = wall.end.pos - 300.0;
+    if (hi <= lo) return false;
+    final along =
+        (((vertical ? world.y : world.x) / 100).round() * 100.0).clamp(lo, hi);
+    final foot = vertical
+        ? Offset(wall.axis.pos.toDouble(), along)
+        : Offset(along, wall.axis.pos.toDouble());
+    if (!canExtendWallFrom(base, derived.floors[floorIndex].openings, foot)) {
+      return false;
+    }
+    clearWallSelection();
+    beginWallStroke(local, size);
+    strokeFromAttachment = true;
+    drawingOrigin = foot;
+    slideHost = wall;
+    return true;
   }
 
   /// A tap on the already selected wall shows its menu again.
@@ -2972,14 +3035,14 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                 setState(() {
                                   tool = EditorTool.drawWall;
                                   wallFromAdjust = true;
-                                  wallGesture = 'draw';
+                                  wallGesture = WallGesture.draw;
                                   clearWallSelection();
                                   beginWallStroke(e.localPosition, size);
                                 });
                               } else {
                                 // 改墙 selects walls even where
                                 // a door sits on them.
-                                wallGesture = 'tap';
+                                wallGesture = WallGesture.tap;
                               }
                             } else if (tool == EditorTool.drawWall) {
                               setState(
@@ -2990,10 +3053,11 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                 if (wallGrip == null &&
                                     beginOpeningDrag(e.localPosition, size)) {
                                   wallGrip = null;
-                                  wallGesture = 'opening';
+                                  wallGesture = WallGesture.opening;
                                 } else {
-                                  wallGesture =
-                                      wallGrip != null ? 'edit' : 'tap';
+                                  wallGesture = wallGrip != null
+                                      ? WallGesture.edit
+                                      : WallGesture.tap;
                                 }
                                 if (wallGrip != null) {
                                   closeWallMenu();
@@ -3071,20 +3135,37 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                             return;
                           }
                           if (single &&
-                              (wallGesture == 'tap' || wallGesture == 'pan')) {
-                            if (wallGesture == 'tap' &&
+                              wallGesture == WallGesture.fromWall &&
+                              gestureScreen != null &&
+                              (e.position - gestureScreen!).distance > 8) {
+                            final wall = pressedWall!;
+                            setState(() {
+                              if (pullWallFrom(wall, downPoint!, size)) {
+                                wallGesture = WallGesture.draw;
+                                wallHoldTimer?.cancel();
+                                previewWallStroke(e.localPosition, size);
+                              } else {
+                                wallGesture = WallGesture.pan;
+                                panCanvas(e.position - gestureScreen!);
+                              }
+                            });
+                            return;
+                          }
+                          if (single &&
+                              (wallGesture == WallGesture.tap || wallGesture == WallGesture.pan)) {
+                            if (wallGesture == WallGesture.tap &&
                                 gestureScreen != null &&
                                 (e.position - gestureScreen!).distance > 8) {
-                              wallGesture = 'pan';
+                              wallGesture = WallGesture.pan;
                               wallHoldTimer?.cancel();
                               panCanvas(e.position - gestureScreen!);
-                            } else if (wallGesture == 'pan') {
+                            } else if (wallGesture == WallGesture.pan) {
                               panCanvas(e.delta);
                             }
-                          } else if (single && wallGesture == 'edit') {
+                          } else if (single && wallGesture == WallGesture.edit) {
                             setState(
                                 () => previewWallEdit(e.localPosition, size));
-                          } else if (single && wallGesture == 'draw') {
+                          } else if (single && wallGesture == WallGesture.draw) {
                             setState(
                                 () => previewWallStroke(e.localPosition, size));
                           }
@@ -3139,7 +3220,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                           wallGesture = null;
                           final single =
                               !cancelledStroke && pointers.length == 1;
-                          if (single && gesture == 'pan') {
+                          if (single && gesture == WallGesture.pan) {
                             pointers.remove(e.pointer);
                             downPoint = null;
                             return;
@@ -3191,7 +3272,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                             return;
                           }
                           if (single &&
-                              gesture == 'opening' &&
+                              gesture == WallGesture.opening &&
                               !dragAttempted) {
                             final opening = draggingOpening;
                             setState(cancelDrag);
@@ -3202,7 +3283,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                             downPoint = null;
                             return;
                           }
-                          if (single && gesture == 'edit') {
+                          if (single && gesture == WallGesture.edit) {
                             final moved = editPreviewStart != null;
                             finishWallEdit();
                             if (!moved) {
@@ -3215,7 +3296,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                           }
                           if (tool == EditorTool.drawWall &&
                               single &&
-                              gesture == 'tap') {
+                              (gesture == WallGesture.tap ||
+                                  gesture == WallGesture.fromWall)) {
                             wallToolTap(e.localPosition, size);
                             pointers.remove(e.pointer);
                             downPoint = null;
@@ -3223,7 +3305,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                           }
                           if (tool == EditorTool.drawWall &&
                               single &&
-                              gesture == 'draw' &&
+                              gesture == WallGesture.draw &&
                               !wallFromAdjust &&
                               strokeFromAttachment &&
                               drawingEnd == null) {
@@ -3238,7 +3320,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                           }
                           if (tool == EditorTool.drawWall &&
                               single &&
-                              gesture == 'draw') {
+                              gesture == WallGesture.draw) {
                             final tapFromAdjust = wallFromAdjust &&
                                 downPoint != null &&
                                 (downPoint! - e.localPosition).distance *

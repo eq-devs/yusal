@@ -56,7 +56,8 @@ exact; faces need rounding).
 ## Phase 1 — architecture
 
 - [x] One screen-tolerance helper for every pick and snap (U1)
-- [ ] Typed gesture state instead of strings
+- [~] Typed gesture state: `WallGesture` enum done; `dragKind`, `wallGrip`,
+      `furnitureGrip` are still strings
 - [ ] Tool controllers with begin / move / end / cancel
 - [ ] Split `page.dart`
 
@@ -80,7 +81,7 @@ exact; faces need rounding).
 
 - [x] Snap hysteresis and axis lock (U2)
 - [x] Measure snaps to wall corners and faces; shows metres and both sides
-- [ ] Free wall start (U7)
+- [x] Free wall start: a drag from any point of a wall starts a wall (U7)
 - [ ] Pitched roof follows the outline (R6)
 - [ ] Scaled vector PDF with paginated tables (R12)
 

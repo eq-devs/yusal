@@ -121,6 +121,39 @@ void main() {
     expect(find.textContaining('按住橙色'), findsNothing);
   });
 
+  testWidgets('a wall pulls out of any point of a wall, not only a plus (U7)',
+      (t) async {
+    final session = await mount(t, initial(walls: [
+      [6000, 0, 6000, 10000]
+    ]));
+    await wallTool(t);
+    // 3.3 m up the wall: no plus there, the pluses sit at ends and middles.
+    final g = await t.startGesture(point(t, 6000, 3300));
+    await t.pump();
+    for (var i = 1; i <= 8; i++) {
+      await g.moveTo(point(t, 6000 + i * 400.0, 3300));
+      await t.pump();
+    }
+    await g.up();
+    await saved(t);
+    final doc = await session.store.openProject(session.id);
+    expect(walls(doc),
+        contains((carrier: 3300, lo: 6000, hi: 9200, dir: AxisDir.H)));
+  });
+
+  testWidgets('a tap on a wall in the wall tool still builds nothing',
+      (t) async {
+    final session = await mount(t, initial(walls: [
+      [6000, 0, 6000, 10000]
+    ]));
+    await wallTool(t);
+    await t.tapAt(point(t, 6000, 3300));
+    await t.pumpAndSettle();
+    await saved(t);
+    final doc = await session.store.openProject(session.id);
+    expect(walls(doc), hasLength(1));
+  });
+
   testWidgets('dragging empty space in the wall tool pans and builds nothing',
       (t) async {
     final doc = initial();

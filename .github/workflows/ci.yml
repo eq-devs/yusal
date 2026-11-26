@@ -26,10 +26,13 @@ jobs:
       - run: flutter pub get
       - name: Format of the engine
         run: dart format --output=none --set-exit-if-changed lib/features/editor/engine
-      - name: Analyze
-        run: flutter analyze --fatal-infos
+      # Tests first: their build hook compiles the GPU shaders into
+      # build/shaderbundles, an asset pubspec.yaml lists, which the
+      # analyzer reports as missing on a fresh checkout.
       - name: Tests
         run: flutter test --no-pub --reporter github
+      - name: Analyze
+        run: flutter analyze --fatal-infos
       - name: Engine benchmark (compiled)
         run: |
           dart compile exe test/perf/engine_bench.dart -o build/engine_bench

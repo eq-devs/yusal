@@ -1181,8 +1181,9 @@ class FloorPlanPainter extends CustomPainter {
                 ..color = t.crit
                 ..strokeWidth = px(2))
           ..drawCircle(b, px(4), dot);
-        final mm = (measure[1] - measure[0]).distance.round();
-        label(canvas, '$mm $unitMm', (a + b) / 2 - Offset(0, px(12)),
+        final mm = (measure[1] - measure[0]).distance;
+        label(canvas, '${(mm / 1000).toStringAsFixed(3)} $unitM',
+            (a + b) / 2 - Offset(0, px(12)),
             color: t.crit, monospace: true, halo: t.panel);
       }
     }

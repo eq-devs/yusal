@@ -194,15 +194,28 @@ extension _FurnitureTool on _HouseEditorState {
     });
   }
 
+  /// A measured distance in metres, to the millimetre, with its two
+  /// sides when it is not straight across.
+  String measureText(Offset a, Offset b) {
+    String m(double mm) => dec((mm / 1000).toStringAsFixed(3));
+    final d = b - a;
+    final total = '${m(d.distance)} $unitM';
+    if (d.dx == 0 || d.dy == 0) return total;
+    return '$total (${m(d.dx.abs())} × ${m(d.dy.abs())})';
+  }
+
   void addMeasurePoint(Offset local, Size size) {
     final p = worldAt(local, size);
-    final q = Offset(snap50(p.dx).toDouble(), snap50(p.dy).toDouble());
+    final q = snapMeasurePoint([
+      ...base.wallRects,
+      for (final w in base.lowWalls) w.rect,
+    ], p, 16 * mmPerPixel(interactionPainter(), size));
     update(() {
       if (measurePoints.length >= 2) measurePoints = [];
       measurePoints = [...measurePoints, q];
       placementHint = measurePoints.length == 1
           ? tr3('再点第二个点', 'Екінші нүктені басыңыз', 'Укажите вторую точку', 'Set the second point', ky: 'Экинчи чекитти коюңуз', uz: 'Ikkinchi nuqtani belgilang')
-          : '${(measurePoints[1] - measurePoints[0]).distance.round()} $unitMm · ${tr3('再点一次重新开始', 'Қайта бастау үшін тағы басыңыз', 'Нажмите ещё раз, чтобы начать заново', 'Tap again to start over', ky: 'Кайра баштоо үчүн дагы басыңыз', uz: 'Qaytadan boshlash uchun yana bosing')}';
+          : '${measureText(measurePoints[0], measurePoints[1])} · ${tr3('再点一次重新开始', 'Қайта бастау үшін тағы басыңыз', 'Нажмите ещё раз, чтобы начать заново', 'Tap again to start over', ky: 'Кайра баштоо үчүн дагы басыңыз', uz: 'Qaytadan boshlash uchun yana bosing')}';
     });
   }
 

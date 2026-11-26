@@ -165,4 +165,22 @@ void main() {
       expect(snap(const Offset(3000, 8000), across).horizontal, isFalse);
     });
   });
+
+  group('measuring', () {
+    const walls = [PlanRect(5940, 0, 6060, 10000)];
+    test('a point near a wall corner lands on it', () {
+      expect(snapMeasurePoint(walls, const Offset(5930, 30), 100),
+          const Offset(5940, 0));
+    });
+    test('a point near a wall face lands on the face', () {
+      expect(snapMeasurePoint(walls, const Offset(5900, 4003), 100),
+          const Offset(5940, 4000));
+      expect(snapMeasurePoint(walls, const Offset(6110, 4003), 100),
+          const Offset(6060, 4000));
+    });
+    test('away from walls it keeps to the 50 mm grid', () {
+      expect(snapMeasurePoint(walls, const Offset(2012, 3038), 100),
+          const Offset(2000, 3050));
+    });
+  });
 }

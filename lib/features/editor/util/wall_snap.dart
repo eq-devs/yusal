@@ -204,6 +204,59 @@ WallSegment? nearestWall(FloorBase base, Offset p, double tolerance,
   return best;
 }
 
+/// Where a measuring point at [p] (world millimetres) lands: on a wall
+/// corner within [radius], else on the nearest wall face within [radius]
+/// (so measuring between two faces gives a room's clear size), else on
+/// the 50 mm grid. [rects] are the wall rectangles of the floor, low walls
+/// included.
+Offset snapMeasurePoint(List<PlanRect> rects, Offset p, double radius) {
+  Offset? corner;
+  var cornerDistance = radius;
+  for (final r in rects) {
+    for (final c in [
+      Offset(r.left, r.bottom),
+      Offset(r.right, r.bottom),
+      Offset(r.left, r.top),
+      Offset(r.right, r.top),
+    ]) {
+      final d = (c - p).distance;
+      if (d <= cornerDistance) {
+        corner = c;
+        cornerDistance = d;
+      }
+    }
+  }
+  if (corner != null) return corner;
+  Offset? face;
+  var faceDistance = radius;
+  void consider(Offset q) {
+    final d = (q - p).distance;
+    if (d <= faceDistance) {
+      face = q;
+      faceDistance = d;
+    }
+  }
+
+  for (final r in rects) {
+    final x = p.dx.clamp(r.left, r.right);
+    final y = p.dy.clamp(r.bottom, r.top);
+    consider(Offset(r.left, y));
+    consider(Offset(r.right, y));
+    consider(Offset(x, r.bottom));
+    consider(Offset(x, r.top));
+  }
+  if (face != null) {
+    // Along the face, to the 10 mm: the face itself fixes the other axis.
+    final f = face!;
+    final onVertical = rects.any((r) =>
+        (f.dx == r.left || f.dx == r.right) && f.dy > r.bottom && f.dy < r.top);
+    return onVertical
+        ? Offset(f.dx, (f.dy / 10).roundToDouble() * 10)
+        : Offset((f.dx / 10).roundToDouble() * 10, f.dy);
+  }
+  return Offset((p.dx / 50).roundToDouble() * 50, (p.dy / 50).roundToDouble() * 50);
+}
+
 /// Distance in canvas-local pixels from [p] to the segment [a]–[b].
 double distanceToSegment(Offset p, Offset a, Offset b) {
   final ab = b - a;

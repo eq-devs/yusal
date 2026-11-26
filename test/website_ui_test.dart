@@ -147,7 +147,7 @@ void main() {
     await t.tapAt(at(t, 4000, 5000));
     await t.pumpAndSettle();
     expect(painter(t).measure, hasLength(2));
-    expect(find.textContaining('5000 mm'), findsOneWidget);
+    expect(find.textContaining('5.000 米 (3.000 × 4.000)'), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 

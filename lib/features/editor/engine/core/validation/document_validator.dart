@@ -21,7 +21,8 @@ const maxExplicitAxesPerDirection = 512;
 /// (inclusive). Commands reject a result outside them, so the voice
 /// assistant cannot write a house that derives nonsense.
 abstract final class DocumentLimits {
-  static const wall = (60, 600);
+  // A two-and-a-half-brick wall with insulation is about 640 mm.
+  static const wall = (60, 800);
   static const slab = (60, 500);
   static const riser = (100, 250);
   static const tread = (180, 400);
@@ -120,7 +121,7 @@ List<ValidationError> validateHouse(HouseDocument d) {
       if (thickness != null &&
           (thickness < DocumentLimits.wall.$1 ||
               thickness > DocumentLimits.wall.$2)) {
-        add(13, '/floors/$f/wallOverrides/$w/value', '墙厚必须在 60 到 600 毫米之间');
+        add(13, '/floors/$f/wallOverrides/$w/value', '墙厚必须在 60 到 800 毫米之间');
       }
       if (x is SolidWall &&
           x.height != null &&

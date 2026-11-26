@@ -350,8 +350,8 @@ const _enByKk = <String, String>{
   'Тазартатын нүкте жоқ': 'No points to delete',
   'Қабат биіктігі 2400 мм-ден кем болмауы керек':
       "Floor height can't be less than 2400 mm",
-  'Қабырға қалыңдығы 60–600 мм болуы керек':
-      'Wall thickness must be 60 to 600 mm',
+  'Қабырға қалыңдығы 60–800 мм болуы керек':
+      'Wall thickness must be 60 to 800 mm',
   'Ені нөлден үлкен болуы керек': 'Width must be greater than zero',
   'Биіктігі нөлден үлкен болуы керек': 'Height must be greater than zero',
   'Терезе алды биіктігі теріс болмауы керек': "Sill height can't be negative",

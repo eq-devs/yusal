@@ -178,6 +178,12 @@ enum _SaveStatus {
   final String label;
 }
 
+/// Which handle of the selected wall a finger holds; [middle] is the body.
+enum WallGrip { start, middle, end }
+
+/// Which handle of the selected piece of furniture a finger holds.
+enum FurnitureGrip { move, resize, rotate }
+
 /// What a finger on the plan is doing with the wall tools, decided on
 /// press and refined as it moves.
 enum WallGesture {
@@ -441,7 +447,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   /// Furniture being moved, resized or turned: the live preview, the grip
   /// and where the press started (plan millimetres).
   FurnitureItem? furnitureDraft;
-  String? furnitureGrip;
+  FurnitureGrip? furnitureGrip;
   Offset? furnitureDown;
   List<PlanRect> highlights = [];
   Level? issueFilter;
@@ -1501,7 +1507,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   Offset? editPreviewStart;
   Offset? editPreviewEnd;
   Offset? editDown;
-  String? wallGrip;
+  WallGrip? wallGrip;
 
   /// Command and arguments of the wall edit being previewed, so release
   /// commits exactly what the preview showed.
@@ -1610,9 +1616,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     final b = painter.point(editEnd!.dx, editEnd!.dy, size);
     final grips = wallGrips(a, b, zoom: canvasZoom);
     final handles = {
-      if (grips.middle != null) 'middle': grips.middle!,
-      'start': grips.start,
-      'end': grips.end
+      if (grips.middle != null) WallGrip.middle: grips.middle!,
+      WallGrip.start: grips.start,
+      WallGrip.end: grips.end
     }.entries.toList()
       ..sort((x, y) =>
           (local - x.value).distance.compareTo((local - y.value).distance));
@@ -1620,7 +1626,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
       wallGrip = handles.first.key;
     } else if (distanceToSegment(local, a, b) * canvasZoom <= 18) {
       // The whole wall body moves the wall; easier than a small middle grip.
-      wallGrip = 'middle';
+      wallGrip = WallGrip.middle;
     }
     final world = painter.worldPoint(local, size);
     editDown = Offset(world.x, world.y);
@@ -2529,7 +2535,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
       return null;
     }
     if (editCommand == 'MoveDrawnWall' ||
-        (wallGrip == 'middle' && editStart != null)) {
+        (wallGrip == WallGrip.middle && editStart != null)) {
       return tr3(
           '移动 ${meters((editPreviewStart! - editStart!).distance)} 米',
           'Жылжыту ${meters((editPreviewStart! - editStart!).distance)} м',
@@ -2673,7 +2679,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
           color: good
         );
       }
-      if (wallGrip == 'middle') {
+      if (wallGrip == WallGrip.middle) {
         return (text: wallDraftLabel!, icon: Icons.open_with, color: good);
       }
       return drawConnected
@@ -3236,7 +3242,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                           }
                           if (single && furnitureGrip != null) {
                             final tap = furnitureDraft == null &&
-                                furnitureGrip != 'rotate';
+                                furnitureGrip != FurnitureGrip.rotate;
                             finishFurniture();
                             pointers.remove(e.pointer);
                             final at = downPoint;
@@ -3552,9 +3558,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                             draftLabel: _wallTrial?.distanceLabel ?? wallDraftLabel,
                                             draftEnd: tool == EditorTool.drawWall && drawingStrokeActive && drawingEnd != null
                                                 ? drawingEnd
-                                                : wallGrip == 'start'
+                                                : wallGrip == WallGrip.start
                                                     ? editPreviewStart
-                                                    : wallGrip == 'end'
+                                                    : wallGrip == WallGrip.end
                                                         ? editPreviewEnd
                                                         : null,
                                             draftConnected: drawConnected,
@@ -3565,8 +3571,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                                                   .drawWall &&
                                                           drawingStrokeActive &&
                                                           drawingEnd != null) ||
-                                                      wallGrip == 'start' ||
-                                                      wallGrip == 'end')
+                                                      wallGrip == WallGrip.start ||
+                                                      wallGrip == WallGrip.end)
                                                 g
                                             ],
                                             coach: coachArrow(size),

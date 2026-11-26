@@ -114,9 +114,9 @@ extension _WallTool on _HouseEditorState {
       if (selectedDrawnId != null) 'wallId': selectedDrawnId,
       if (selectedDrawnId == null) 'anchor': selectedDrawnAnchor,
     };
-    if (wallGrip == 'start' || wallGrip == 'end') {
-      final fixed = wallGrip == 'start' ? editEnd! : editStart!;
-      final moving = wallGrip == 'start' ? editStart! : editEnd!;
+    if (wallGrip == WallGrip.start || wallGrip == WallGrip.end) {
+      final fixed = wallGrip == WallGrip.start ? editEnd! : editStart!;
+      final moving = wallGrip == WallGrip.start ? editStart! : editEnd!;
       final snap = lastWallSnap = snapWallEnd(base, fixed, raw,
           connectRadius: 22 * pixel,
           alignRadius: 14 * pixel,
@@ -127,8 +127,8 @@ extension _WallTool on _HouseEditorState {
       if (snap.connected && !drawConnected) HapticFeedback.selectionClick();
       drawConnected = snap.connected;
       alignGuide = guideFor(snap);
-      editPreviewStart = wallGrip == 'start' ? snap.end : editStart;
-      editPreviewEnd = wallGrip == 'end' ? snap.end : editEnd;
+      editPreviewStart = wallGrip == WallGrip.start ? snap.end : editStart;
+      editPreviewEnd = wallGrip == WallGrip.end ? snap.end : editEnd;
       editCommand = 'UpdateDrawnWall';
       editArgs = wallEditArguments(editPreviewStart!, editPreviewEnd!);
     } else {

@@ -117,13 +117,13 @@ extension _FurnitureTool on _HouseEditorState {
     final zoom = canvasZoom;
     final corner = r.bottomRight;
     final turn = Offset(r.center.dx, r.top - 18 / zoom);
-    String? grip;
+    FurnitureGrip? grip;
     if ((local - turn).distance * zoom <= 22) {
-      grip = 'rotate';
+      grip = FurnitureGrip.rotate;
     } else if ((local - corner).distance * zoom <= 22) {
-      grip = 'resize';
+      grip = FurnitureGrip.resize;
     } else if (r.inflate(4 / zoom).contains(local)) {
-      grip = 'move';
+      grip = FurnitureGrip.move;
     }
     if (grip == null) return false;
     furnitureGrip = grip;
@@ -144,14 +144,14 @@ extension _FurnitureTool on _HouseEditorState {
     final p = worldAt(local, size);
     final delta = p - furnitureDown!;
     switch (furnitureGrip) {
-      case 'move':
+      case FurnitureGrip.move:
         // Close to a wall it goes flush against it.
         furnitureDraft = snapToWalls(
             f.copyWith(x: snap50(f.x + delta.dx), y: snap50(f.y + delta.dy)),
             [for (final r in base.roomGeometry) r.clearRects]);
         placementHint =
             tr3('松手放下', 'Жіберіп қойыңыз', 'Отпустите, чтобы поставить', 'Release to place', ky: 'Коюу үчүн коё бериңиз', uz: 'Joylash uchun qoʻyib yuboring');
-      case 'resize':
+      case FurnitureGrip.resize:
         final right = math.max(f.x + 100, snap50(p.dx));
         final bottom = math.min(f.top - 100, snap50(p.dy));
         furnitureDraft =
@@ -173,7 +173,7 @@ extension _FurnitureTool on _HouseEditorState {
     furnitureDown = null;
     placementHint = null;
     if (f == null) return;
-    if (grip == 'rotate') {
+    if (grip == FurnitureGrip.rotate) {
       action('RotateFurniture', {'furnitureId': f.id});
       return;
     }

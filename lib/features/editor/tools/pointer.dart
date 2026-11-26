@@ -398,23 +398,6 @@ extension _PlanPointer on _HouseEditorState {
         (downPoint! - e.localPosition).distance * canvasZoom < 8) {
       tapObject(e.localPosition, size);
     }
-    if (tool == EditorTool.stair &&
-        !cancelledStroke &&
-        stroke.isNotEmpty &&
-        pointers.length == 1) {
-      final first = stroke.first;
-      final last = stroke.last;
-      final i0 = math.min(first.i, last.i);
-      final i1 = math.max(first.i, last.i) + 1;
-      final j0 = math.min(first.j, last.j);
-      final j1 = math.max(first.j, last.j) + 1;
-      placeStair(AxisRectangle(
-          x0: base.axes.v[i0].id,
-          x1: base.axes.v[i1].id,
-          y0: base.axes.h[j0].id,
-          y1: base.axes.h[j1].id));
-      stroke.clear();
-    }
     if (tool == EditorTool.room &&
         !browse &&
         !cancelledStroke &&

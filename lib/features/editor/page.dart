@@ -159,9 +159,6 @@ enum EditorTool {
 
   /// Paint or erase rooms over grid cells (advanced, see `erase`).
   room,
-
-  /// Place a stair (advanced).
-  stair,
 }
 
 /// The open design's state on disk. An edit makes it unsaved; a save
@@ -238,7 +235,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
               alias: 'u${i + 1}', title: furnitureName(f.kind)),
         for (final (i, s) in floor.stairs.indexed)
           Entity('stair', s.id,
-              alias: 's${i + 1}', title: tr3('楼梯', 'Баспалдақ', 'Лестница', 'Stairs', ky: 'Тепкич', uz: 'Zinapoya')),
+              alias: 's${i + 1}',
+              title: tr3('楼梯', 'Баспалдақ', 'Лестница', 'Stairs',
+                  ky: 'Тепкич', uz: 'Zinapoya')),
       ];
 
   @override
@@ -350,8 +349,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   @override
   ActionResult previewWallMove(String grow, String shrink, int? distance,
-      {double? minRemainingArea, double? targetArea}) =>
-      prepareWallTrial(grow, shrink, distance, minRemainingArea, target: targetArea);
+          {double? minRemainingArea, double? targetArea}) =>
+      prepareWallTrial(grow, shrink, distance, minRemainingArea,
+          target: targetArea);
 
   @override
   ActionResult finishWallPreview(String token, {required bool apply}) {
@@ -383,6 +383,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   late final DesignHistory history;
   late FloorBase base;
   late DerivedHouse derived;
+
   /// The price list of the design's region and what it was read for.
   PriceBook? priceBook;
   String? priceBookKey;
@@ -487,19 +488,57 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   /// The ten pages in the order of their three groups.
   List<(String, String)> get editorTabs => [
-        ('plan', tr3('2D 平面', '2D жоспар', '2D-план', '2D plan', ky: '2D план', uz: '2D reja')),
-        ('site', tr3('宅基地', 'Учаске', 'Участок', 'Site', ky: 'Участок', uz: 'Uchastka')),
-        ('iss', tr3('问题清单', 'Мәселелер тізімі', 'Список замечаний', 'Issue list', ky: 'Маселелер тизмеси', uz: 'Muammolar roʻyxati')),
-        ('ext', tr3('3D 外观', '3D сыртқы көрініс', '3D-вид снаружи', '3D exterior', ky: '3D сырткы көрүнүш', uz: '3D tashqi koʻrinish')),
-        ('walk', tr3('室内漫游', 'Ішкі серуен', 'Прогулка по дому', 'Walk through the house', ky: 'Үйдүн ичин кыдыруу', uz: 'Uy ichini aylanish')),
-        ('cost', tr3('预算', 'Смета', 'Смета', 'Estimate', ky: 'Смета', uz: 'Smeta')),
+        (
+          'plan',
+          tr3('2D 平面', '2D жоспар', '2D-план', '2D plan',
+              ky: '2D план', uz: '2D reja')
+        ),
+        (
+          'site',
+          tr3('宅基地', 'Учаске', 'Участок', 'Site', ky: 'Участок', uz: 'Uchastka')
+        ),
+        (
+          'iss',
+          tr3('问题清单', 'Мәселелер тізімі', 'Список замечаний', 'Issue list',
+              ky: 'Маселелер тизмеси', uz: 'Muammolar roʻyxati')
+        ),
+        (
+          'ext',
+          tr3('3D 外观', '3D сыртқы көрініс', '3D-вид снаружи', '3D exterior',
+              ky: '3D сырткы көрүнүш', uz: '3D tashqi koʻrinish')
+        ),
+        (
+          'walk',
+          tr3('室内漫游', 'Ішкі серуен', 'Прогулка по дому',
+              'Walk through the house',
+              ky: 'Үйдүн ичин кыдыруу', uz: 'Uy ichini aylanish')
+        ),
+        (
+          'cost',
+          tr3('预算', 'Смета', 'Смета', 'Estimate', ky: 'Смета', uz: 'Smeta')
+        ),
         (
           'qty',
-          tr3('门窗与工程量', 'Есік-терезе және көлем', 'Проёмы и объёмы работ', 'Openings and quantities', ky: 'Эшик-терезе жана көлөмдөр', uz: 'Eshik-derazalar va hajmlar')
+          tr3('门窗与工程量', 'Есік-терезе және көлем', 'Проёмы и объёмы работ',
+              'Openings and quantities',
+              ky: 'Эшик-терезе жана көлөмдөр', uz: 'Eshik-derazalar va hajmlar')
         ),
-        ('build', tr3('施工进度', 'Құрылыс кестесі', 'График строительства', 'Build schedule', ky: 'Курулуш графиги', uz: 'Qurilish jadvali')),
-        ('det', tr3('构造细节', 'Құрылым бөлшектері', 'Детали конструкции', 'Construction details', ky: 'Конструкция деталдары', uz: 'Konstruksiya tafsilotlari')),
-        ('heat', tr3('保温采暖', 'Жылу', 'Тепло', 'Heating', ky: 'Жылытуу', uz: 'Isitish')),
+        (
+          'build',
+          tr3('施工进度', 'Құрылыс кестесі', 'График строительства',
+              'Build schedule',
+              ky: 'Курулуш графиги', uz: 'Qurilish jadvali')
+        ),
+        (
+          'det',
+          tr3('构造细节', 'Құрылым бөлшектері', 'Детали конструкции',
+              'Construction details',
+              ky: 'Конструкция деталдары', uz: 'Konstruksiya tafsilotlari')
+        ),
+        (
+          'heat',
+          tr3('保温采暖', 'Жылу', 'Тепло', 'Heating', ky: 'Жылытуу', uz: 'Isitish')
+        ),
       ];
 
   /// Ten pages are too many to choose from in one row, so they sit in
@@ -732,15 +771,23 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   OpeningKind? draggingNewOpening;
 
   String openingName(Opening o) => switch (o) {
-        DoorOpening() => tr3('门', 'есік', 'дверь', 'door', ky: 'эшик', uz: 'eshik'),
-        WindowOpening() => tr3('窗', 'терезе', 'окно', 'window', ky: 'терезе', uz: 'deraza'),
-        SlidingOpening() => tr3('推拉门', 'сырғымалы есік', 'раздвижная дверь', 'sliding door', ky: 'жылма эшик', uz: 'surma eshik')
+        DoorOpening() =>
+          tr3('门', 'есік', 'дверь', 'door', ky: 'эшик', uz: 'eshik'),
+        WindowOpening() =>
+          tr3('窗', 'терезе', 'окно', 'window', ky: 'терезе', uz: 'deraza'),
+        SlidingOpening() => tr3(
+            '推拉门', 'сырғымалы есік', 'раздвижная дверь', 'sliding door',
+            ky: 'жылма эшик', uz: 'surma eshik')
       };
 
   Map<OpeningKind, String> get openingNames => {
-        OpeningKind.door: tr3('门', 'есік', 'дверь', 'door', ky: 'эшик', uz: 'eshik'),
-        OpeningKind.window: tr3('窗', 'терезе', 'окно', 'window', ky: 'терезе', uz: 'deraza'),
-        OpeningKind.sliding: tr3('推拉门', 'сырғымалы есік', 'раздвижная дверь', 'sliding door', ky: 'жылма эшик', uz: 'surma eshik')
+        OpeningKind.door:
+            tr3('门', 'есік', 'дверь', 'door', ky: 'эшик', uz: 'eshik'),
+        OpeningKind.window:
+            tr3('窗', 'терезе', 'окно', 'window', ky: 'терезе', uz: 'deraza'),
+        OpeningKind.sliding: tr3(
+            '推拉门', 'сырғымалы есік', 'раздвижная дверь', 'sliding door',
+            ky: 'жылма эшик', uz: 'surma eshik')
       };
 
   /// The dragged door or window floats above the finger so the snapped
@@ -760,7 +807,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
             '点一下墙面放置，也可以从工具栏直接拖入',
             'Қабырғаны басып қойыңыз, не құралдар жолынан сүйреп әкеліңіз',
             'Нажмите на стену, чтобы поставить, или перетащите с панели инструментов',
-            'Tap a wall to place it, or drag it from the toolbar', ky: 'Коюу үчүн дубалды басыңыз же аспаптар тилкесинен сүйрөп келиңиз', uz: 'Joylash uchun devorga bosing yoki asboblar panelidan sudrab keling');
+            'Tap a wall to place it, or drag it from the toolbar',
+            ky: 'Коюу үчүн дубалды басыңыз же аспаптар тилкесинен сүйрөп келиңиз',
+            uz: 'Joylash uchun devorga bosing yoki asboblar panelidan sudrab keling');
   }
 
   Widget openingTool(OpeningKind kind, IconData icon, String label) {
@@ -830,14 +879,15 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     if (at == null) return;
     final w = await length(
         tr3('楼梯间的宽（米）', 'Баспалдақ орнының ені (м)',
-            'Ширина места под лестницу (м)',
-            'Stair space width (m)', ky: 'Тепкич ордунун туурасы (м)', uz: 'Zinapoya joyining eni (m)'),
+            'Ширина места под лестницу (м)', 'Stair space width (m)',
+            ky: 'Тепкич ордунун туурасы (м)', uz: 'Zinapoya joyining eni (m)'),
         at.right - at.left);
     if (w == null || !mounted) return;
     final d = await length(
         tr3('楼梯间的长（米）', 'Баспалдақ орнының ұзындығы (м)',
-            'Длина места под лестницу (м)',
-            'Stair space length (m)', ky: 'Тепкич ордунун узундугу (м)', uz: 'Zinapoya joyining uzunligi (m)'),
+            'Длина места под лестницу (м)', 'Stair space length (m)',
+            ky: 'Тепкич ордунун узундугу (м)',
+            uz: 'Zinapoya joyining uzunligi (m)'),
         at.top - at.bottom);
     if (d == null || !mounted) return;
     startStairStamp(moving: stair, size: (w: w, d: d));
@@ -933,12 +983,16 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
       if (history.present != before) {
         notify(
             moving != null
-                ? tr3('楼梯已挪好', 'Баспалдақ жылжытылды', 'Лестница перенесена', 'Stairs moved', ky: 'Тепкич жылдырылды', uz: 'Zinapoya surildi')
+                ? tr3('楼梯已挪好', 'Баспалдақ жылжытылды', 'Лестница перенесена',
+                    'Stairs moved',
+                    ky: 'Тепкич жылдырылды', uz: 'Zinapoya surildi')
                 : tr3(
                     '楼梯已放好，楼上自动留出洞口 · 点楼梯可以挪动或换样式',
                     'Баспалдақ қойылды, жоғарғы қабатта ойық қалдырылды · оны басып жылжытуға не түрін өзгертуге болады',
                     'Лестница поставлена, проём наверху оставлен · нажмите на неё, чтобы передвинуть или сменить вид',
-                    'Stairs placed with an opening above · tap them to move or change the type', ky: 'Тепкич коюлду, үстүнкү кабатта оюк калтырылды · жылдыруу же түрүн өзгөртүү үчүн басыңыз', uz: 'Zinapoya qoʻyildi, yuqorida ochiq joy qoldirildi · surish yoki turini oʻzgartirish uchun bosing'),
+                    'Stairs placed with an opening above · tap them to move or change the type',
+                    ky: 'Тепкич коюлду, үстүнкү кабатта оюк калтырылды · жылдыруу же түрүн өзгөртүү үчүн басыңыз',
+                    uz: 'Zinapoya qoʻyildi, yuqorida ochiq joy qoldirildi · surish yoki turini oʻzgartirish uchun bosing'),
             undo: undo);
       }
       return;
@@ -1112,7 +1166,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
               '没能保存到本机，请检查存储空间；稍后会自动重试，也可导出备份',
               'Құрылғыға сақталмады, жадты тексеріңіз; кейін қайталанады, файлды экспорттауға болады',
               'Не удалось сохранить. Проверьте место; повторим автоматически. Можно экспортировать файл',
-              "Couldn't save. Check storage space; we'll retry automatically. You can export the file", ky: 'Сакталган жок. Эстутумду текшериңиз; кайра автоматтык түрдө аракет кылабыз. Файлды экспорттосоңуз болот', uz: 'Saqlanmadi. Xotirani tekshiring; avtomatik qayta urinamiz. Faylni eksport qilishingiz mumkin'));
+              "Couldn't save. Check storage space; we'll retry automatically. You can export the file",
+              ky: 'Сакталган жок. Эстутумду текшериңиз; кайра автоматтык түрдө аракет кылабыз. Файлды экспорттосоңуз болот',
+              uz: 'Saqlanmadi. Xotirani tekshiring; avtomatik qayta urinamiz. Faylni eksport qilishingiz mumkin'));
         }
       }
     } finally {
@@ -1294,9 +1350,13 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                 : box.localToGlobal(Offset.zero) & box.size));
       }
     } catch (_) {
-      notify(tr3('暂时无法导出这个设计', 'Жобаны қазір шығару мүмкін емес',
+      notify(tr3(
+          '暂时无法导出这个设计',
+          'Жобаны қазір шығару мүмкін емес',
           'Сейчас не удаётся экспортировать проект',
-          "Can't export the design right now", ky: 'Долбоорду азыр экспорттоо мүмкүн эмес', uz: 'Loyihani hozir eksport qilib boʻlmaydi'));
+          "Can't export the design right now",
+          ky: 'Долбоорду азыр экспорттоо мүмкүн эмес',
+          uz: 'Loyihani hozir eksport qilib boʻlmaydi'));
     }
   }
 
@@ -1313,7 +1373,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
             '已放置${openingNames[arguments['kind']]} · 可以直接拖动它调整位置',
             '${openingNames[arguments['kind']]} қойылды · оны сүйреп жылжытуға болады',
             'Добавлено: ${openingNames[arguments['kind']]} · можно перетащить, чтобы изменить положение',
-            'Added: ${openingNames[arguments['kind']]} · drag to change its position', ky: 'Кошулду: ${openingNames[arguments['kind']]} · ордун өзгөртүү үчүн сүйрөңүз', uz: 'Qoʻshildi: ${openingNames[arguments['kind']]} · joyini oʻzgartirish uchun suring'),
+            'Added: ${openingNames[arguments['kind']]} · drag to change its position',
+            ky: 'Кошулду: ${openingNames[arguments['kind']]} · ордун өзгөртүү үчүн сүйрөңүз',
+            uz: 'Qoʻshildi: ${openingNames[arguments['kind']]} · joyini oʻzgartirish uchun suring'),
         undo: undo);
   }
 
@@ -1333,7 +1395,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
               action: undo == null
                   ? null
                   : SnackBarAction(
-                      label: tr3('撤销', 'Болдырмау', 'Отменить', 'Undo', ky: 'Артка кайтаруу', uz: 'Bekor qilish'),
+                      label: tr3('撤销', 'Болдырмау', 'Отменить', 'Undo',
+                          ky: 'Артка кайтаруу', uz: 'Bekor qilish'),
                       onPressed: undo)),
           snackBarAnimationStyle: Motion.toastStyle);
   }
@@ -1364,8 +1427,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         tool = EditorTool.browse;
       }
     });
-    notify(tr3(
-        '已撤销上一步', 'Соңғы әрекет болдырылмады', 'Последнее действие отменено', 'Last action undone', ky: 'Акыркы аракет жокко чыгарылды', uz: 'Oxirgi amal bekor qilindi'));
+    notify(tr3('已撤销上一步', 'Соңғы әрекет болдырылмады',
+        'Последнее действие отменено', 'Last action undone',
+        ky: 'Акыркы аракет жокко чыгарылды', uz: 'Oxirgi amal bekor qilindi'));
   }
 
   void redo() {
@@ -1380,7 +1444,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         tool = EditorTool.browse;
       }
     });
-    notify(tr3('已重做', 'Қайталанды', 'Действие повторено', 'Action redone', ky: 'Аракет кайра аткарылды', uz: 'Amal qayta bajarildi'));
+    notify(tr3('已重做', 'Қайталанды', 'Действие повторено', 'Action redone',
+        ky: 'Аракет кайра аткарылды', uz: 'Amal qayta bajarildi'));
   }
 
   /// Runs a design command and returns what came of it. A failure is
@@ -1415,11 +1480,14 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
           title: label,
           initial: value,
           number: number,
-          cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'),
+          cancel: tr3('取消', 'Болдырмау', 'Отмена', 'Cancel',
+              ky: 'Жокко чыгаруу', uz: 'Bekor qilish'),
           ok: tr3('确定', 'Жарайды', 'ОК', 'OK', ky: 'OK', uz: 'OK'));
 
   Future<int?> length(String label, int value) async {
-    final result = await ask(tr3('$label（米）', '$label (м)', '$label (м)', '$label (m)', ky: '$label (м)', uz: '$label (m)'),
+    final result = await ask(
+        tr3('$label（米）', '$label (м)', '$label (м)', '$label (m)',
+            ky: '$label (м)', uz: '$label (m)'),
         (value / 1000).toStringAsFixed(2),
         number: true);
     final parsed = parseNumber(result ?? '');
@@ -1434,27 +1502,36 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         context: context,
         builder: (context) => SafeArea(
                 child: ListView(shrinkWrap: true, children: [
-              ListTile(contentPadding: tilePad, 
+              ListTile(
+                  contentPadding: tilePad,
                   key: const Key('add-floor-empty'),
                   leading: const Icon(Icons.crop_square),
-                  title: Text(tr3('空的一层', 'Бос қабат', 'Пустой этаж', 'Empty floor', ky: 'Бош кабат', uz: 'Boʻsh qavat')),
+                  title: Text(tr3(
+                      '空的一层', 'Бос қабат', 'Пустой этаж', 'Empty floor',
+                      ky: 'Бош кабат', uz: 'Boʻsh qavat')),
                   subtitle: Text(tr3(
                       '只带外墙，楼下的墙会淡淡地显示出来，照着画',
                       'Тек сыртқы қабырғалар; астыңғы қабаттың қабырғалары бозғылт көрінеді',
                       'Только наружные стены; стены нижнего этажа видны бледно, по ним удобно чертить',
-                      'Outer walls only; the floor below shows faintly so you can trace it', ky: 'Сырткы дубалдар гана; астыңкы кабат көмүскө көрүнөт, аны карап чийсеңиз болот', uz: 'Faqat tashqi devorlar; pastki qavat xira koʻrinadi, uni chizib olishingiz mumkin')),
+                      'Outer walls only; the floor below shows faintly so you can trace it',
+                      ky: 'Сырткы дубалдар гана; астыңкы кабат көмүскө көрүнөт, аны карап чийсеңиз болот',
+                      uz: 'Faqat tashqi devorlar; pastki qavat xira koʻrinadi, uni chizib olishingiz mumkin')),
                   onTap: () => Navigator.pop(context, 'AddFloor')),
-              ListTile(contentPadding: tilePad, 
+              ListTile(
+                  contentPadding: tilePad,
                   key: const Key('add-floor-copy'),
                   leading: const Icon(Icons.copy_all_outlined),
                   title: Text(tr3('照楼下复制一层', 'Астыңғы қабатты көшіру',
-                      'Скопировать нижний этаж',
-                      'Copy the floor below', ky: 'Астыңкы кабатты көчүрүү', uz: 'Pastki qavatdan nusxa olish')),
+                      'Скопировать нижний этаж', 'Copy the floor below',
+                      ky: 'Астыңкы кабатты көчүрүү',
+                      uz: 'Pastki qavatdan nusxa olish')),
                   subtitle: Text(tr3(
                       '房间、墙和门窗都一样，再改不一样的地方',
                       'Бөлмелер, қабырғалар, есік-терезелер бірдей; кейін өзгертесіз',
                       'Те же комнаты, стены, окна и двери; потом измените, что нужно',
-                      'Same rooms, walls, windows and doors; change what you need afterwards', ky: 'Ошол эле бөлмөлөр, дубалдар, терезелер жана эшиктер; кийин керегин өзгөртөсүз', uz: 'Xuddi shu xonalar, devorlar, derazalar va eshiklar; keyin keraklisini oʻzgartirasiz')),
+                      'Same rooms, walls, windows and doors; change what you need afterwards',
+                      ky: 'Ошол эле бөлмөлөр, дубалдар, терезелер жана эшиктер; кийин керегин өзгөртөсүз',
+                      uz: 'Xuddi shu xonalar, devorlar, derazalar va eshiklar; keyin keraklisini oʻzgartirasiz')),
                   onTap: () => Navigator.pop(context, 'CopyFloor')),
             ])));
     if (choice == null || !mounted) return;
@@ -1474,7 +1551,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
             '已加上「${displayFloorName(floor.name)}」，现在画的是这一层',
             '«${displayFloorName(floor.name)}» қосылды, енді осы қабатты сызасыз',
             'Добавлен «${displayFloorName(floor.name)}», теперь вы чертите этот этаж',
-            "Added “${displayFloorName(floor.name)}”; you're now drawing this floor", ky: '«${displayFloorName(floor.name)}» кошулду; азыр ушул кабатты чийип жатасыз', uz: '“${displayFloorName(floor.name)}” qoʻshildi; endi shu qavatni chizyapsiz'),
+            "Added “${displayFloorName(floor.name)}”; you're now drawing this floor",
+            ky: '«${displayFloorName(floor.name)}» кошулду; азыр ушул кабатты чийип жатасыз',
+            uz: '“${displayFloorName(floor.name)}” qoʻshildi; endi shu qavatni chizyapsiz'),
         undo: undo);
   }
 
@@ -1497,8 +1576,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         elevation: 2,
         clipBehavior: Clip.antiAlias,
         shadowColor: Colors.black.withValues(alpha: 0.12),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: child);
   }
 
@@ -1593,7 +1671,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
           '拖两端改长度 · 拖墙身移动',
           'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз',
           'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить',
-          'Drag the ends to change the length, or the wall itself to move it', ky: 'Узундугун өзгөртүү үчүн учтарын, жылдыруу үчүн дубалдын өзүн сүйрөңүз', uz: 'Uzunlikni oʻzgartirish uchun uchlarini, surish uchun devorning oʻzini suring');
+          'Drag the ends to change the length, or the wall itself to move it',
+          ky: 'Узундугун өзгөртүү үчүн учтарын, жылдыруу үчүн дубалдын өзүн сүйрөңүз',
+          uz: 'Uzunlikni oʻzgartirish uchun uchlarini, surish uchun devorning oʻzini suring');
     });
   }
 
@@ -1777,7 +1857,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         '拖两端改长度 · 拖墙身移动',
         'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз',
         'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить',
-        'Drag the ends to change the length, or the wall itself to move it', ky: 'Узундугун өзгөртүү үчүн учтарын, жылдыруу үчүн дубалдын өзүн сүйрөңүз', uz: 'Uzunlikni oʻzgartirish uchun uchlarini, surish uchun devorning oʻzini suring');
+        'Drag the ends to change the length, or the wall itself to move it',
+        ky: 'Узундугун өзгөртүү үчүн учтарын, жылдыруу үчүн дубалдын өзүн сүйрөңүз',
+        uz: 'Uzunlikni oʻzgartirish uchun uchlarini, surish uchun devorning oʻzini suring');
     setState(() {});
   }
 
@@ -1822,7 +1904,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
           '墙长已改为 ${(value / 1000).toStringAsFixed(2)} 米',
           'Қабырға ұзындығы ${m2dp(value)} м болды',
           'Длина стены теперь ${m2dp(value)} м',
-          'Wall length is now ${m2dp(value)} m', ky: 'Дубалдын узундугу эми ${m2dp(value)} м', uz: 'Devor uzunligi endi ${m2dp(value)} m'));
+          'Wall length is now ${m2dp(value)} m',
+          ky: 'Дубалдын узундугу эми ${m2dp(value)} м',
+          uz: 'Devor uzunligi endi ${m2dp(value)} m'));
     }
   }
 
@@ -1831,12 +1915,20 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     final vertical = editStart!.dx == editEnd!.dx;
     final value = await length(
         vertical
-            ? tr3('墙到左侧外墙的距离', 'Сол сыртқы қабырғаға дейінгі қашықтық',
+            ? tr3(
+                '墙到左侧外墙的距离',
+                'Сол сыртқы қабырғаға дейінгі қашықтық',
                 'Расстояние до левой наружной стены',
-                'Distance to the left outer wall', ky: 'Сол сырткы дубалга чейинки аралык', uz: 'Chap tashqi devorgacha masofa')
-            : tr3('墙到下侧外墙的距离', 'Төменгі сыртқы қабырғаға дейінгі қашықтық',
+                'Distance to the left outer wall',
+                ky: 'Сол сырткы дубалга чейинки аралык',
+                uz: 'Chap tashqi devorgacha masofa')
+            : tr3(
+                '墙到下侧外墙的距离',
+                'Төменгі сыртқы қабырғаға дейінгі қашықтық',
                 'Расстояние до нижней наружной стены',
-                'Distance to the bottom outer wall', ky: 'Ылдыйкы сырткы дубалга чейинки аралык', uz: 'Pastki tashqi devorgacha masofa'),
+                'Distance to the bottom outer wall',
+                ky: 'Ылдыйкы сырткы дубалга чейинки аралык',
+                uz: 'Pastki tashqi devorgacha masofa'),
         (vertical ? editStart!.dx : editStart!.dy).round());
     if (value == null || !mounted) return;
     final start = vertical
@@ -1956,8 +2048,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   WallSegment? wallAtPoint(Offset local, Size size, {double radius = 18}) {
     final painter = interactionPainter();
     final world = painter.worldPoint(local, size);
-    return nearestWall(base, Offset(world.x, world.y),
-        radius * mmPerPixel(painter, size));
+    return nearestWall(
+        base, Offset(world.x, world.y), radius * mmPerPixel(painter, size));
   }
 
   Offset attachmentOnWall(WallSegment wall, Offset local, Size size) {
@@ -2034,7 +2126,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
             '按住大 ＋ 拖出新墙',
             'Үлкен ＋ белгісін ұстап, жаңа қабырға тартыңыз',
             'Удерживайте большой ＋ и протяните новую стену',
-            'Hold the big ＋ and drag out a new wall', ky: 'Чоң ＋ белгисин басып кармап, жаңы дубалды сүйрөп чыгарыңыз', uz: 'Katta ＋ ni bosib turing va yangi devorni sudrab chiqaring');
+            'Hold the big ＋ and drag out a new wall',
+            ky: 'Чоң ＋ белгисин басып кармап, жаңы дубалды сүйрөп чыгарыңыз',
+            uz: 'Katta ＋ ni bosib turing va yangi devorni sudrab chiqaring');
       });
       return;
     }
@@ -2346,12 +2440,16 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
             '下边 ${m2dp(a)} 米 · 上边 ${m2dp(b)} 米',
             'Төменде ${m2dp(a)} м · жоғарыда ${m2dp(b)} м',
             'Снизу ${m2dp(a)} м · сверху ${m2dp(b)} м',
-            'Bottom ${m2dp(a)} m · top ${m2dp(b)} m', ky: 'Ылдыйда ${m2dp(a)} м · өйдөдө ${m2dp(b)} м', uz: 'Pastda ${m2dp(a)} m · tepada ${m2dp(b)} m')
+            'Bottom ${m2dp(a)} m · top ${m2dp(b)} m',
+            ky: 'Ылдыйда ${m2dp(a)} м · өйдөдө ${m2dp(b)} м',
+            uz: 'Pastda ${m2dp(a)} m · tepada ${m2dp(b)} m')
         : tr3(
             '左边 ${m2dp(a)} 米 · 右边 ${m2dp(b)} 米',
             'Сол жақта ${m2dp(a)} м · оң жақта ${m2dp(b)} м',
             'Слева ${m2dp(a)} м · справа ${m2dp(b)} м',
-            'Left ${m2dp(a)} m · right ${m2dp(b)} m', ky: 'Солдо ${m2dp(a)} м · оңдо ${m2dp(b)} м', uz: 'Chapda ${m2dp(a)} m · oʻngda ${m2dp(b)} m');
+            'Left ${m2dp(a)} m · right ${m2dp(b)} m',
+            ky: 'Солдо ${m2dp(a)} м · оңдо ${m2dp(b)} м',
+            uz: 'Chapda ${m2dp(a)} m · oʻngda ${m2dp(b)} m');
   }
 
   void beginWallStroke(Offset local, Size size) {
@@ -2422,8 +2520,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
       // Still on the wall: say where the new wall would stand.
       if (slideNote != null) {
         placementHint = tr3('$slideNote · 往里拖出墙', '$slideNote · ішке тартыңыз',
-            '$slideNote · тяните внутрь',
-            '$slideNote · drag inward', ky: '$slideNote · ичкери сүйрөңүз', uz: '$slideNote · ichkariga suring');
+            '$slideNote · тяните внутрь', '$slideNote · drag inward',
+            ky: '$slideNote · ичкери сүйрөңүз',
+            uz: '$slideNote · ichkariga suring');
       }
       return;
     }
@@ -2431,14 +2530,17 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         '松手建墙，末端可以继续拖',
         'Жіберсеңіз қабырға салынады, ұшынан жалғастыруға болады',
         'Отпустите, чтобы построить стену; от её конца можно продолжить',
-        'Release to build the wall; you can continue from its end', ky: 'Дубалды куруу үчүн коё бериңиз; анын учунан уланта аласыз', uz: 'Devorni qurish uchun qoʻyib yuboring; uning uchidan davom ettirishingiz mumkin');
+        'Release to build the wall; you can continue from its end',
+        ky: 'Дубалды куруу үчүн коё бериңиз; анын учунан уланта аласыз',
+        uz: 'Devorni qurish uchun qoʻyib yuboring; uning uchidan davom ettirishingiz mumkin');
     schedulePreview('AddDrawnWall', drawingArguments,
         ok: slideNote == null
             ? ok
             : '$slideNote · ${tr3('松手建墙', 'жіберіңіз', 'отпустите', 'release', ky: 'коё бериңиз', uz: 'qoʻyib yuboring')}',
         failed: tr3('此处无法建墙', 'Мұнда қабырға салу мүмкін емес',
-            'Здесь нельзя построить стену',
-            "Can't build a wall here", ky: 'Бул жерге дубал куруу мүмкүн эмес', uz: 'Bu yerga devor qurib boʻlmaydi'));
+            'Здесь нельзя построить стену', "Can't build a wall here",
+            ky: 'Бул жерге дубал куруу мүмкүн эмес',
+            uz: 'Bu yerga devor qurib boʻlmaydi'));
   }
 
   Future<void> addWallByLength() async {
@@ -2471,7 +2573,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
       '拖到墙上，门窗会自动贴合',
       'Қабырғаға апарыңыз, есік-терезе өзі орнығады',
       'Перетащите на стену — окно или дверь встанет на место',
-      'Drag onto a wall and the window or door snaps into place', ky: 'Дубалга сүйрөп келиңиз, терезе же эшик өз ордуна түшөт', uz: 'Devorga sudrab keling, deraza yoki eshik oʻz joyiga tushadi');
+      'Drag onto a wall and the window or door snaps into place',
+      ky: 'Дубалга сүйрөп келиңиз, терезе же эшик өз ордуна түшөт',
+      uz: 'Devorga sudrab keling, deraza yoki eshik oʻz joyiga tushadi');
 
   bool get floorHasInnerWalls =>
       base.wallSegments.any((w) => w.axis.kind != 'boundary');
@@ -2496,13 +2600,19 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
           '按住橙色 ＋ 往里拖，松手就建好一面墙',
           'Сары ＋ белгісін ішке қарай тартыңыз, жіберсеңіз қабырға салынады',
           'Удерживайте оранжевый ＋ и тяните внутрь: отпустите, и стена построена',
-          'Hold the orange ＋ and drag inward: release and the wall is built', ky: 'Кызгылт сары ＋ белгисин кармап, ичкери сүйрөңүз: коё берсеңиз, дубал курулат', uz: 'Toʻq sariq ＋ ni bosib turib ichkariga suring: qoʻyib yuborsangiz, devor quriladi')
+          'Hold the orange ＋ and drag inward: release and the wall is built',
+          ky:
+              'Кызгылт сары ＋ белгисин кармап, ичкери сүйрөңүз: коё берсеңиз, дубал курулат',
+          uz:
+              'Toʻq sariq ＋ ni bosib turib ichkariga suring: qoʻyib yuborsangiz, devor quriladi')
       : showStartCoach
           ? tr3(
               '先点「墙体」，再按住 ＋ 往里拖',
               'Алдымен «Қабырға» батырмасын, сосын ＋ белгісін ішке тартыңыз',
               'Сначала нажмите «Стена», затем зажмите ＋ и тяните внутрь',
-              'First tap “Wall”, then hold ＋ and drag inward', ky: 'Алгач «Дубал» дегенди басып, анан ＋ белгисин кармап ичкери сүйрөңүз', uz: 'Avval “Devor” ni bosing, keyin ＋ ni bosib turib ichkariga suring')
+              'First tap “Wall”, then hold ＋ and drag inward',
+              ky: 'Алгач «Дубал» дегенди басып, анан ＋ белгисин кармап ичкери сүйрөңүз',
+              uz: 'Avval “Devor” ni bosing, keyin ＋ ni bosib turib ichkariga suring')
           : null;
 
   /// Dashed arrow from one outer plus into the house for the first wall.
@@ -2542,7 +2652,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
           '移动 ${meters((editPreviewStart! - editStart!).distance)} 米',
           'Жылжыту ${meters((editPreviewStart! - editStart!).distance)} м',
           'Сдвиг на ${meters((editPreviewStart! - editStart!).distance)} м',
-          'Moved ${meters((editPreviewStart! - editStart!).distance)} m', ky: '${meters((editPreviewStart! - editStart!).distance)} м жылдырылды', uz: '${meters((editPreviewStart! - editStart!).distance)} m surildi');
+          'Moved ${meters((editPreviewStart! - editStart!).distance)} m',
+          ky: '${meters((editPreviewStart! - editStart!).distance)} м жылдырылды',
+          uz: '${meters((editPreviewStart! - editStart!).distance)} m surildi');
     }
     return '${meters((editPreviewEnd! - editPreviewStart!).distance)} $unitM';
   }
@@ -2564,7 +2676,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
               '继续拖动 · 墙至少 0.30 米',
               'Тарта беріңіз · қабырға кемінде 0,30 м',
               'Тяните дальше · стена не короче 0,30 м',
-              'Keep dragging · walls are at least 0.30 m', ky: 'Сүйрөй бериңиз · дубалдар кеминде 0,30 м', uz: 'Surishda davom eting · devorlar kamida 0,30 m'),
+              'Keep dragging · walls are at least 0.30 m',
+              ky: 'Сүйрөй бериңиз · дубалдар кеминде 0,30 м',
+              uz: 'Surishda davom eting · devorlar kamida 0,30 m'),
           icon: Icons.straighten,
           color: info
         );
@@ -2573,15 +2687,19 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
         return (text: spatialError!, icon: Icons.block, color: bad);
       }
       final direction = drawingEnd!.dy == drawingOrigin!.dy
-          ? tr3('横墙', 'Көлденең қабырға', 'Горизонтальная стена', 'Horizontal wall', ky: 'Туурасынан дубал', uz: 'Gorizontal devor')
-          : tr3('竖墙', 'Тік қабырға', 'Вертикальная стена', 'Vertical wall', ky: 'Тикесинен дубал', uz: 'Vertikal devor');
+          ? tr3('横墙', 'Көлденең қабырға', 'Горизонтальная стена',
+              'Horizontal wall', ky: 'Туурасынан дубал', uz: 'Gorizontal devor')
+          : tr3('竖墙', 'Тік қабырға', 'Вертикальная стена', 'Vertical wall',
+              ky: 'Тикесинен дубал', uz: 'Vertikal devor');
       return drawConnected
           ? (
               text: tr3(
                   '$direction ${meters(length)} 米 · 已连到墙',
                   '$direction ${meters(length)} м · қабырғаға жалғанды',
                   '$direction ${meters(length)} м · соединена со стеной',
-                  '$direction ${meters(length)} m · joined to a wall', ky: '$direction ${meters(length)} м · дубалга туташкан', uz: '$direction ${meters(length)} m · devorga ulangan'),
+                  '$direction ${meters(length)} m · joined to a wall',
+                  ky: '$direction ${meters(length)} м · дубалга туташкан',
+                  uz: '$direction ${meters(length)} m · devorga ulangan'),
               icon: Icons.link,
               color: good
             )
@@ -2590,7 +2708,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                   '$direction ${meters(length)} 米 · 末端没连墙',
                   '$direction ${meters(length)} м · ұшы жалғанбаған',
                   '$direction ${meters(length)} м · конец не соединён',
-                  '$direction ${meters(length)} m · end not joined', ky: '$direction ${meters(length)} м · учу туташкан эмес', uz: '$direction ${meters(length)} m · uchi ulanmagan'),
+                  '$direction ${meters(length)} m · end not joined',
+                  ky: '$direction ${meters(length)} м · учу туташкан эмес',
+                  uz: '$direction ${meters(length)} m · uchi ulanmagan'),
               icon: Icons.link_off,
               color: warn
             );
@@ -2605,12 +2725,18 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                       '房屋宽 ${meters(width)} 米 · 所有楼层一起改',
                       'Үй ені ${meters(width)} м · барлық қабат бірге өзгереді',
                       'Ширина дома ${meters(width)} м · меняются все этажи',
-                      'House width ${meters(width)} m · all floors change', ky: 'Үйдүн туурасы ${meters(width)} м · бардык кабаттар өзгөрөт', uz: 'Uy eni ${meters(width)} m · barcha qavatlar oʻzgaradi')
+                      'House width ${meters(width)} m · all floors change',
+                      ky:
+                          'Үйдүн туурасы ${meters(width)} м · бардык кабаттар өзгөрөт',
+                      uz:
+                          'Uy eni ${meters(width)} m · barcha qavatlar oʻzgaradi')
                   : tr3(
                       '房屋长 ${meters(depth!)} 米 · 所有楼层一起改',
                       'Үй ұзындығы ${meters(depth)} м · барлық қабат бірге өзгереді',
                       'Длина дома ${meters(depth)} м · меняются все этажи',
-                      'House length ${meters(depth)} m · all floors change', ky: 'Үйдүн узундугу ${meters(depth)} м · бардык кабаттар өзгөрөт', uz: 'Uy uzunligi ${meters(depth)} m · barcha qavatlar oʻzgaradi'),
+                      'House length ${meters(depth)} m · all floors change',
+                      ky: 'Үйдүн узундугу ${meters(depth)} м · бардык кабаттар өзгөрөт',
+                      uz: 'Uy uzunligi ${meters(depth)} m · barcha qavatlar oʻzgaradi'),
               icon: Icons.open_in_full,
               color: good
             )
@@ -2620,7 +2746,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                       '这个尺寸放不下已有的墙或房间',
                       'Бұл өлшемге бар қабырға не бөлме сыймайды',
                       'В этот размер не помещаются существующие стены или комнаты',
-                      "Existing walls or rooms don't fit this size", ky: 'Бар дубалдар же бөлмөлөр бул өлчөмгө батпайт', uz: 'Mavjud devorlar yoki xonalar bu oʻlchamga sigʻmaydi'),
+                      "Existing walls or rooms don't fit this size",
+                      ky: 'Бар дубалдар же бөлмөлөр бул өлчөмгө батпайт',
+                      uz: 'Mavjud devorlar yoki xonalar bu oʻlchamga sigʻmaydi'),
               icon: Icons.block,
               color: bad
             );
@@ -2629,17 +2757,22 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
       final name = openingName(draggingOpening!.opening);
       return dragValid
           ? (
-              text: tr3('松手把$name放在这里', '$name осында қою үшін жіберіңіз',
+              text: tr3(
+                  '松手把$name放在这里',
+                  '$name осында қою үшін жіберіңіз',
                   'Отпустите, чтобы поставить здесь: $name',
-                  'Release to place here: $name', ky: 'Бул жерге коюу үчүн коё бериңиз: $name', uz: 'Bu yerga qoʻyish uchun qoʻyib yuboring: $name'),
+                  'Release to place here: $name',
+                  ky: 'Бул жерге коюу үчүн коё бериңиз: $name',
+                  uz: 'Bu yerga qoʻyish uchun qoʻyib yuboring: $name'),
               icon: Icons.check_circle_outline,
               color: good
             )
           : (
               text: placementHint ??
                   tr3('这里放不下$name', '$name мұнда сыймайды',
-                      'Здесь не помещается: $name',
-                      "Doesn't fit here: $name", ky: 'Бул жерге батпайт: $name', uz: 'Bu yerga sigʻmaydi: $name'),
+                      'Здесь не помещается: $name', "Doesn't fit here: $name",
+                      ky: 'Бул жерге батпайт: $name',
+                      uz: 'Bu yerga sigʻmaydi: $name'),
               icon: Icons.block,
               color: bad
             );
@@ -2651,7 +2784,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                   '已贴合墙面，松手放下${openingNames[draggingNewOpening]}',
                   'Қабырғаға орнықты, ${openingNames[draggingNewOpening]} қою үшін жіберіңіз',
                   'Привязано к стене, отпустите, чтобы поставить: ${openingNames[draggingNewOpening]}',
-                  'Snapped to the wall, release to place: ${openingNames[draggingNewOpening]}', ky: 'Дубалга жабышты, коюу үчүн коё бериңиз: ${openingNames[draggingNewOpening]}', uz: 'Devorga yopishdi, qoʻyish uchun qoʻyib yuboring: ${openingNames[draggingNewOpening]}'),
+                  'Snapped to the wall, release to place: ${openingNames[draggingNewOpening]}',
+                  ky: 'Дубалга жабышты, коюу үчүн коё бериңиз: ${openingNames[draggingNewOpening]}',
+                  uz: 'Devorga yopishdi, qoʻyish uchun qoʻyib yuboring: ${openingNames[draggingNewOpening]}'),
               icon: Icons.check_circle_outline,
               color: good
             )
@@ -2661,7 +2796,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                       '拖到墙上，门窗会自动贴合',
                       'Қабырғаға апарыңыз, есік-терезе өзі орнығады',
                       'Перетащите на стену — окно или дверь встанет на место',
-                      'Drag onto a wall and the window or door snaps into place', ky: 'Дубалга сүйрөп келиңиз, терезе же эшик өз ордуна түшөт', uz: 'Devorga sudrab keling, deraza yoki eshik oʻz joyiga tushadi'),
+                      'Drag onto a wall and the window or door snaps into place',
+                      ky: 'Дубалга сүйрөп келиңиз, терезе же эшик өз ордуна түшөт',
+                      uz: 'Devorga sudrab keling, deraza yoki eshik oʻz joyiga tushadi'),
               icon: Icons.touch_app_outlined,
               color: warn
             );
@@ -2676,7 +2813,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
               '${wallDraftLabel!} · 相连的墙会跟着伸缩',
               '${wallDraftLabel!} · жалғас қабырғалар бірге созылады',
               '${wallDraftLabel!} · соединённые стены изменятся вместе',
-              '${wallDraftLabel!} · joined walls change together', ky: '${wallDraftLabel!} · туташкан дубалдар бирге өзгөрөт', uz: '${wallDraftLabel!} · ulangan devorlar birga oʻzgaradi'),
+              '${wallDraftLabel!} · joined walls change together',
+              ky: '${wallDraftLabel!} · туташкан дубалдар бирге өзгөрөт',
+              uz: '${wallDraftLabel!} · ulangan devorlar birga oʻzgaradi'),
           icon: Icons.open_with,
           color: good
         );
@@ -2690,7 +2829,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                   '墙长 ${wallDraftLabel!} · 已连到墙',
                   'Қабырға ${wallDraftLabel!} · қабырғаға жалғанды',
                   'Стена ${wallDraftLabel!} · соединена со стеной',
-                  'Wall ${wallDraftLabel!} · joined to a wall', ky: 'Дубал ${wallDraftLabel!} · дубалга туташкан', uz: 'Devor ${wallDraftLabel!} · devorga ulangan'),
+                  'Wall ${wallDraftLabel!} · joined to a wall',
+                  ky: 'Дубал ${wallDraftLabel!} · дубалга туташкан',
+                  uz: 'Devor ${wallDraftLabel!} · devorga ulangan'),
               icon: Icons.link,
               color: good
             )
@@ -2699,7 +2840,9 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                   '墙长 ${wallDraftLabel!} · 这一端没连墙',
                   'Қабырға ${wallDraftLabel!} · бұл ұшы жалғанбаған',
                   'Стена ${wallDraftLabel!} · этот конец не соединён',
-                  "Wall ${wallDraftLabel!} · this end isn't joined", ky: 'Дубал ${wallDraftLabel!} · бул учу туташкан эмес', uz: 'Devor ${wallDraftLabel!} · bu uchi ulanmagan'),
+                  "Wall ${wallDraftLabel!} · this end isn't joined",
+                  ky: 'Дубал ${wallDraftLabel!} · бул учу туташкан эмес',
+                  uz: 'Devor ${wallDraftLabel!} · bu uchi ulanmagan'),
               icon: Icons.link_off,
               color: warn
             );
@@ -2744,44 +2887,46 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
               '按住 ＋ 拖出新墙 · 点墙修改 · 拖空白处移动画布',
               '＋ белгісін ұстап қабырға тартыңыз · қабырғаны басып өзгертіңіз · бос жерді сүйреп жылжытыңыз',
               'Зажмите ＋ и вытяните стену · нажмите на стену, чтобы изменить · тяните пустое место, чтобы сдвинуть чертёж',
-              'Hold ＋ and drag out a wall · tap a wall to edit · drag empty space to pan the drawing', ky: '＋ белгисин кармап дубал сүйрөңүз · түзөтүү үчүн дубалды басыңыз · чиймени жылдыруу үчүн бош жерди сүйрөңүз', uz: '＋ ni bosib turib devor chizing · tahrirlash uchun devorga bosing · chizmani surish uchun boʻsh joyni suring')
+              'Hold ＋ and drag out a wall · tap a wall to edit · drag empty space to pan the drawing',
+              ky:
+                  '＋ белгисин кармап дубал сүйрөңүз · түзөтүү үчүн дубалды басыңыз · чиймени жылдыруу үчүн бош жерди сүйрөңүз',
+              uz:
+                  '＋ ni bosib turib devor chizing · tahrirlash uchun devorga bosing · chizmani surish uchun boʻsh joyni suring')
           : tool == EditorTool.selectWall
               ? tr3(
                   '点墙修改 · 拖 ＋ 接墙 · 拖空白处移动画布',
                   'Қабырғаны басып өзгертіңіз · ＋ белгісінен жалғаңыз · бос жерді сүйреп жылжытыңыз',
                   'Нажмите на стену, чтобы изменить · тяните ＋, чтобы пристроить стену · тяните пустое место, чтобы сдвинуть чертёж',
-                  'Tap a wall to edit · drag ＋ to add a wall · drag empty space to pan the drawing', ky: 'Түзөтүү үчүн дубалды басыңыз · дубал кошуу үчүн ＋ белгисин сүйрөңүз · чиймени жылдыруу үчүн бош жерди сүйрөңүз', uz: 'Tahrirlash uchun devorga bosing · devor qoʻshish uchun ＋ ni suring · chizmani surish uchun boʻsh joyni suring')
+                  'Tap a wall to edit · drag ＋ to add a wall · drag empty space to pan the drawing',
+                  ky:
+                      'Түзөтүү үчүн дубалды басыңыз · дубал кошуу үчүн ＋ белгисин сүйрөңүз · чиймени жылдыруу үчүн бош жерди сүйрөңүз',
+                  uz:
+                      'Tahrirlash uchun devorga bosing · devor qoʻshish uchun ＋ ni suring · chizmani surish uchun boʻsh joyni suring')
               : tool == EditorTool.editWall
                   ? tr3(
                       '拖两端改长度 · 拖墙身移动',
                       'Ұштарын сүйреп ұзындығын, денесін сүйреп орнын өзгертіңіз',
                       'Перетащите концы, чтобы изменить длину, или саму стену, чтобы переместить',
-                      'Drag the ends to change the length, or the wall itself to move it', ky: 'Узундугун өзгөртүү үчүн учтарын, жылдыруу үчүн дубалдын өзүн сүйрөңүз', uz: 'Uzunlikni oʻzgartirish uchun uchlarini, surish uchun devorning oʻzini suring')
-                  : tool == EditorTool.stair
+                      'Drag the ends to change the length, or the wall itself to move it',
+                      ky:
+                          'Узундугун өзгөртүү үчүн учтарын, жылдыруу үчүн дубалдын өзүн сүйрөңүз',
+                      uz:
+                          'Uzunlikni oʻzgartirish uchun uchlarini, surish uchun devorning oʻzini suring')
+                  : stairStamping
                       ? tr3(
-                          '在放楼梯的房间里点一下，或拖过几个格子',
-                          'Баспалдақ тұратын бөлмені басыңыз не бірнеше ұяшықты сүйреңіз',
-                          'Нажмите в комнате, где будет лестница, или проведите по нескольким клеткам',
-                          'Tap the room where the stairs go, or swipe across several cells', ky: 'Тепкич боло турган бөлмөнү басыңыз же бир нече уячаны сүрүп өтүңүз', uz: 'Zinapoya boʻladigan xonaga bosing yoki bir nechta katakni surib oʻting')
-                      : stairStamping
-                          ? tr3(
-                              '拖动楼梯到想要的位置，一般靠墙角放',
-                              'Баспалдақты керек жерге сүйреңіз, әдетте бұрышқа қойылады',
-                              'Перетащите лестницу на место, обычно её ставят в угол',
-                              'Drag the stairs into place; they usually go in a corner', ky: 'Тепкичти ордуна сүйрөңүз; адатта ал бурчта болот', uz: 'Zinapoyani joyiga suring; odatda u burchakda boʻladi')
-                          : stamping
-                              ? tr3(
-                                  '拖动房间到想要的位置，靠近墙会自动贴上',
-                                  'Бөлмені керек жерге сүйреңіз, қабырғаға жақындаса өзі жабысады',
-                                  'Перетащите комнату на место: у стены она прилипнет сама',
-                                  'Drag the room into place: it snaps to walls by itself', ky: 'Бөлмөнү ордуна сүйрөңүз: ал дубалдарга өзү жабышат', uz: 'Xonani joyiga suring: u devorlarga oʻzi yopishadi')
-                              : spatialTool
-                                  ? (tool == EditorTool.split
-                                      ? tr3('拉一条横线或竖线，松手分房', 'Көлденең не тік сызық тартып, жіберсеңіз бөлінеді', 'Проведите горизонтальную или вертикальную линию и отпустите — комната разделится', 'Draw a horizontal or vertical line and release to split the room', ky: 'Туурасынан же тикесинен сызык чийип, бөлмөнү бөлүү үчүн коё бериңиз', uz: 'Gorizontal yoki vertikal chiziq torting va xonani boʻlish uchun qoʻyib yuboring')
-                                      : tr3('从一角拖到另一角，松手创建房间', 'Бір бұрыштан екіншісіне тартып жіберсеңіз, бөлме жасалады', 'Протяните от одного угла к другому и отпустите — комната будет создана', 'Drag from one corner to the other and release to create the room', ky: 'Бир бурчтан экинчисине чейин сүйрөп, бөлмө түзүү үчүн коё бериңиз', uz: 'Bir burchakdan ikkinchisigacha suring va xona yaratish uchun qoʻyib yuboring'))
-                                  : tool == EditorTool.resize
-                                      ? tr3('拖右边或上边的圆形手柄改长宽 · 所有楼层一起改', 'Оң не жоғарғы дөңгелек тұтқаны сүйреп өлшемін өзгертіңіз · барлық қабат бірге өзгереді', 'Тяните круглую ручку справа или сверху, чтобы изменить размер · меняются все этажи', 'Drag the round handle on the right or top to resize · all floors change', ky: 'Өлчөмүн өзгөртүү үчүн оңдогу же үстүдөгү тегерек туткаянды сүйрөңүз · бардык кабаттар өзгөрөт', uz: 'Oʻlchamni oʻzgartirish uchun oʻngdagi yoki tepadagi yumaloq tutqichni suring · barcha qavatlar oʻzgaradi')
-                                      : tr3('拖动画布 · 点选对象调整 · 双指缩放', 'Сызбаны сүйреп жылжытыңыз · нысанды басып өзгертіңіз · екі саусақпен үлкейтіңіз', 'Тяните, чтобы сдвинуть чертёж · нажмите на объект, чтобы изменить · масштаб двумя пальцами', 'Drag to pan the drawing · tap an item to edit · pinch to zoom', ky: 'Чиймени жылдыруу үчүн сүйрөңүз · түзөтүү үчүн нерсени басыңыз · чоңойтуу үчүн эки манжа менен кыпчыңыз', uz: 'Chizmani surish uchun suring · tahrirlash uchun elementga bosing · kattalashtirish uchun ikki barmoq bilan qisib-oching'));
+                          '拖动楼梯到想要的位置，一般靠墙角放',
+                          'Баспалдақты керек жерге сүйреңіз, әдетте бұрышқа қойылады',
+                          'Перетащите лестницу на место, обычно её ставят в угол',
+                          'Drag the stairs into place; they usually go in a corner',
+                          ky: 'Тепкичти ордуна сүйрөңүз; адатта ал бурчта болот',
+                          uz: 'Zinapoyani joyiga suring; odatda u burchakda boʻladi')
+                      : stamping
+                          ? tr3('拖动房间到想要的位置，靠近墙会自动贴上', 'Бөлмені керек жерге сүйреңіз, қабырғаға жақындаса өзі жабысады', 'Перетащите комнату на место: у стены она прилипнет сама', 'Drag the room into place: it snaps to walls by itself', ky: 'Бөлмөнү ордуна сүйрөңүз: ал дубалдарга өзү жабышат', uz: 'Xonani joyiga suring: u devorlarga oʻzi yopishadi')
+                          : spatialTool
+                              ? (tool == EditorTool.split ? tr3('拉一条横线或竖线，松手分房', 'Көлденең не тік сызық тартып, жіберсеңіз бөлінеді', 'Проведите горизонтальную или вертикальную линию и отпустите — комната разделится', 'Draw a horizontal or vertical line and release to split the room', ky: 'Туурасынан же тикесинен сызык чийип, бөлмөнү бөлүү үчүн коё бериңиз', uz: 'Gorizontal yoki vertikal chiziq torting va xonani boʻlish uchun qoʻyib yuboring') : tr3('从一角拖到另一角，松手创建房间', 'Бір бұрыштан екіншісіне тартып жіберсеңіз, бөлме жасалады', 'Протяните от одного угла к другому и отпустите — комната будет создана', 'Drag from one corner to the other and release to create the room', ky: 'Бир бурчтан экинчисине чейин сүйрөп, бөлмө түзүү үчүн коё бериңиз', uz: 'Bir burchakdan ikkinchisigacha suring va xona yaratish uchun qoʻyib yuboring'))
+                              : tool == EditorTool.resize
+                                  ? tr3('拖右边或上边的圆形手柄改长宽 · 所有楼层一起改', 'Оң не жоғарғы дөңгелек тұтқаны сүйреп өлшемін өзгертіңіз · барлық қабат бірге өзгереді', 'Тяните круглую ручку справа или сверху, чтобы изменить размер · меняются все этажи', 'Drag the round handle on the right or top to resize · all floors change', ky: 'Өлчөмүн өзгөртүү үчүн оңдогу же үстүдөгү тегерек туткаянды сүйрөңүз · бардык кабаттар өзгөрөт', uz: 'Oʻlchamni oʻzgartirish uchun oʻngdagi yoki tepadagi yumaloq tutqichni suring · barcha qavatlar oʻzgaradi')
+                                  : tr3('拖动画布 · 点选对象调整 · 双指缩放', 'Сызбаны сүйреп жылжытыңыз · нысанды басып өзгертіңіз · екі саусақпен үлкейтіңіз', 'Тяните, чтобы сдвинуть чертёж · нажмите на объект, чтобы изменить · масштаб двумя пальцами', 'Drag to pan the drawing · tap an item to edit · pinch to zoom', ky: 'Чиймени жылдыруу үчүн сүйрөңүз · түзөтүү үчүн нерсени басыңыз · чоңойтуу үчүн эки манжа менен кыпчыңыз', uz: 'Chizmani surish uchun suring · tahrirlash uchun elementga bosing · kattalashtirish uchun ikki barmoq bilan qisib-oching'));
 
   MouseCursor canvasCursor = MouseCursor.defer;
 
@@ -2859,19 +3004,26 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
           Flexible(
               child: Text(
                   saving
-                      ? tr3('保存中', 'Сақталуда', 'Сохранение', 'Saving', ky: 'Сакталууда', uz: 'Saqlanmoqda')
+                      ? tr3('保存中', 'Сақталуда', 'Сохранение', 'Saving',
+                          ky: 'Сакталууда', uz: 'Saqlanmoqda')
                       : switch (status) {
-                          _SaveStatus.saved =>
-                            tr3('已保存', 'Сақталды', 'Сохранено', 'Saved', ky: 'Сакталды', uz: 'Saqlandi'),
+                          _SaveStatus.saved => tr3(
+                              '已保存', 'Сақталды', 'Сохранено', 'Saved',
+                              ky: 'Сакталды', uz: 'Saqlandi'),
                           _SaveStatus.indexPending => tr3(
                               '设计已保存，索引待恢复',
                               'Жоба сақталды, индекс қалпына келеді',
                               'Проект сохранён, индекс требует восстановления',
-                              'Design saved; the index needs repair', ky: 'Долбоор сакталды; индексти оңдоо керек', uz: 'Loyiha saqlandi; indeksni tuzatish kerak'),
-                          _SaveStatus.unsaved =>
-                            tr3('未保存', 'Сақталмаған', 'Не сохранено', 'Not saved', ky: 'Сакталган жок', uz: 'Saqlanmagan'),
-                          _SaveStatus.failed =>
-                            tr3('保存失败', 'Сақталмады', 'Ошибка сохранения', 'Save failed', ky: 'Сактоо ишке ашкан жок', uz: 'Saqlab boʻlmadi'),
+                              'Design saved; the index needs repair',
+                              ky: 'Долбоор сакталды; индексти оңдоо керек',
+                              uz: 'Loyiha saqlandi; indeksni tuzatish kerak'),
+                          _SaveStatus.unsaved => tr3(
+                              '未保存', 'Сақталмаған', 'Не сохранено', 'Not saved',
+                              ky: 'Сакталган жок', uz: 'Saqlanmagan'),
+                          _SaveStatus.failed => tr3('保存失败', 'Сақталмады',
+                              'Ошибка сохранения', 'Save failed',
+                              ky: 'Сактоо ишке ашкан жок',
+                              uz: 'Saqlab boʻlmadi'),
                         },
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -2949,7 +3101,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                 autofocus: true,
                 child: Scaffold(
                     backgroundColor: t.bg,
-                    bottomNavigationBar: _wallTrial == null ? null : wallTrialBar(_wallTrial!),
+                    bottomNavigationBar:
+                        _wallTrial == null ? null : wallTrialBar(_wallTrial!),
                     body: SafeArea(
                         child: LayoutBuilder(builder: (context, constraints) {
                       // Short screens (landscape phones) merge the header
@@ -2974,8 +3127,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                     ],
                                     Expanded(
                                         child: FadeOnChange(
-                                            value: tab,
-                                            child: tabBody(wide))),
+                                            value: tab, child: tabBody(wide))),
                                   ])));
                     }))))));
   }

@@ -238,7 +238,8 @@ extension _VoiceWallPreview on _HouseEditorState {
               SimpleDialogOption(
                   onPressed: () => Navigator.pop(ctx, ''),
                   child: Text(tr3('手动拖墙', 'Қабырғаны сүйреу',
-                      'Перетащить стену', 'Drag wall', ky: 'Дубалды сүйрөө', uz: 'Devorni surish')))
+                      'Перетащить стену', 'Drag wall',
+                      ky: 'Дубалды сүйрөө', uz: 'Devorni surish')))
             ]));
     if (!mounted || !current() || room == null) return;
     if (room.isEmpty) {
@@ -249,8 +250,10 @@ extension _VoiceWallPreview on _HouseEditorState {
     final value = await promptText(context,
         title: '$title · ${rooms.firstWhere((r) => r.id == room).name}',
         initial: area.toStringAsFixed(2),
-        cancel: tr3('取消', 'Бас тарту', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'),
-        ok: tr3('预览', 'Алдын ала көру', 'Предпросмотр', 'Preview', ky: 'Алдын ала көрүү', uz: 'Oldindan koʻrish'),
+        cancel: tr3('取消', 'Бас тарту', 'Отмена', 'Cancel',
+            ky: 'Жокко чыгаруу', uz: 'Bekor qilish'),
+        ok: tr3('预览', 'Алдын ала көру', 'Предпросмотр', 'Preview',
+            ky: 'Алдын ала көрүү', uz: 'Oldindan koʻrish'),
         number: true,
         suffix: 'm²');
     if (!current() || value == null) return;
@@ -265,7 +268,9 @@ extension _VoiceWallPreview on _HouseEditorState {
         target: target, targetShrinking: !grows);
     if (!result.ok) {
       notify(tr3('这面墙无法达到该面积，请调整目标', 'Бұл ауданға жету мүмкін емес',
-          'Такая площадь недостижима', 'This wall cannot reach that area', ky: 'Бул аянтка жетүү мүмкүн эмес', uz: 'Bu maydonga yetib boʻlmaydi'));
+          'Такая площадь недостижима', 'This wall cannot reach that area',
+          ky: 'Бул аянтка жетүү мүмкүн эмес',
+          uz: 'Bu maydonga yetib boʻlmaydi'));
     }
   }
 
@@ -312,12 +317,13 @@ extension _VoiceWallPreview on _HouseEditorState {
                                 ]))),
                 TextButton(
                     onPressed: () => resolveWallTrial(trial.token, false),
-                    child:
-                        Text(tr3('取消试改', 'Бас тарту', 'Отменить', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
+                    child: Text(tr3('取消试改', 'Бас тарту', 'Отменить', 'Cancel',
+                        ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
                 FilledButton(
                     key: const ValueKey('apply-wall-preview'),
                     onPressed: () => resolveWallTrial(trial.token, true),
-                    child: Text(
-                        tr3('应用移墙', 'Қолдану', 'Применить', 'Apply move', ky: 'Колдонуу', uz: 'Qoʻllash'))),
+                    child: Text(tr3(
+                        '应用移墙', 'Қолдану', 'Применить', 'Apply move',
+                        ky: 'Колдонуу', uz: 'Qoʻllash'))),
               ])));
 }

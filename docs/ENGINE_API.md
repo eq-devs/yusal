@@ -39,7 +39,7 @@ in `created` and `removed`. The codes:
 
 | what | where | as JSON |
 | --- | --- | --- |
-| the 79 commands and their arguments | `commands/command_catalog.dart` | `describeCommands()`, kept in `docs/engine_commands.json` |
+| the commands and their arguments | `commands/command_catalog.dart` | `describeCommands()`, kept in `docs/engine_commands.json` |
 | the 14 layout rules | `checks/rule_catalog.dart` | `ruleCatalog` |
 | room types, furniture kinds and sizes, and the other kinds | `commands/object_catalog.dart` | `describeObjects()` |
 

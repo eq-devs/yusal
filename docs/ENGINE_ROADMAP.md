@@ -83,7 +83,9 @@ exact; faces need rounding).
 - [x] Measure snaps to wall corners and faces; shows metres and both sides
 - [x] Free wall start: a drag from any point of a wall starts a wall (U7)
 - [ ] Pitched roof follows the outline (R6)
-- [ ] Scaled vector PDF with paginated tables (R12)
+- [x] PDF tables never cut off silently: a "see schedule" row, and a
+      paginated heat-load schedule for large houses (R12)
+- [ ] Scaled vector PDF
 
 ## Blocked
 

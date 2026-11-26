@@ -6,6 +6,8 @@ import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/editor/util/drawing_export.dart';
 
+import 'perf/engine_bench.dart' show largePlan;
+
 void main() {
   var n = 0;
   String next() => 'dx${n++}';
@@ -55,5 +57,13 @@ void main() {
       final png = await buildPlanPng(input(doc), 0);
       expect(png.sublist(1, 4), [0x50, 0x4E, 0x47]);
     });
+  });
+
+  test('a house too big for the heat sheet gets a heat schedule (R12)', () {
+    final doc = composeDocument(
+        const Meta(name: 'L', createdAt: 'x', updatedAt: 'x'), largePlan());
+    final titles = drawingSheetTitles(input(doc));
+    expect(titles.where((t) => t.startsWith('房间热负荷表')), isNotEmpty);
+    expect(titles.toSet().length, titles.length);
   });
 }

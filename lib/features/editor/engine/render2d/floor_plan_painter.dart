@@ -116,6 +116,7 @@ class FloorPlanPainter extends CustomPainter {
       this.showLabels = true,
       this.showGaps = false,
       this.areaBasis = AreaBasis.clear,
+      this.selectedOpening,
       this.layered = false})
       : super(repaint: layered ? null : pulse);
 
@@ -124,6 +125,10 @@ class FloorPlanPainter extends CustomPainter {
   /// repaints only when what it shows changes, not on every move of a
   /// finger; one painter draws both for pictures and exports.
   final bool layered;
+
+  /// The door or window selected: the overlay shows how far it is from
+  /// the walls at either side of it, as temporary dimensions do in CAD.
+  final String? selectedOpening;
 
   /// The language the labels were laid out in: they read it globally.
   final AppLang _lang = appLang;
@@ -733,6 +738,37 @@ class FloorPlanPainter extends CustomPainter {
     if (!layered) drawOverlays(canvas, size, width, depth);
   }
 
+  /// The clear distances along its wall from the selected opening to the
+  /// faces of the walls that cross that wall on either side, with ticks,
+  /// beside the wall: the figures a builder sets the frame out by.
+  void drawOpeningClearances(Canvas canvas, Size size) {
+    final p = openings
+        .where((o) => o.opening.id == selectedOpening && o.host != null)
+        .firstOrNull;
+    if (p == null) return;
+    final (lo, hi) = openingClearance(base, p);
+    final vertical = p.axis.dir == AxisDir.V;
+    final c = p.axis.pos.toDouble();
+    final pen = Paint()
+      ..color = tokens.accent
+      ..strokeWidth = px(1.5);
+    // Toward the middle of the house, where the plan has room for it.
+    final extent = (vertical ? base.axes.v.last.pos : base.axes.h.last.pos);
+    final off = px(26) / scale(size) * (c > extent / 2 ? -1 : 1);
+    Offset at(double along, double shift) => vertical
+        ? point(c + shift, along, size)
+        : point(along, c + shift, size);
+    for (final (a, b) in [(lo, p.start), (p.end, hi)]) {
+      if (b - a < 1) continue;
+      canvas.drawLine(at(a, off), at(b, off), pen);
+      for (final v in [a, b]) {
+        canvas.drawLine(at(v, off * 0.6), at(v, off * 1.4), pen);
+      }
+      label(canvas, m2dp(b - a), (at(a, off * 1.9) + at(b, off * 1.9)) / 2,
+          font: 11, color: tokens.accent, monospace: true, halo: tokens.panel);
+    }
+  }
+
   /// What a [PlanOverlayPainter] draws over a [layered] plan.
   void paintOverlay(Canvas canvas, Size size) => drawOverlays(canvas, size,
       base.axes.v.last.pos.toDouble(), base.axes.h.last.pos.toDouble());
@@ -851,6 +887,7 @@ class FloorPlanPainter extends CustomPainter {
 
   void drawOverlays(Canvas canvas, Size size, double width, double depth) {
     final t = tokens;
+    if (selectedOpening != null) drawOpeningClearances(canvas, size);
 
     if (wallHandle != null) {
       final rect = rectangle(wallHandle!, size);
@@ -1742,4 +1779,29 @@ class DimensionSpan {
       o.overall == overall &&
       (o.a - a).abs() < 1 &&
       (o.b - b).abs() < 1;
+}
+
+/// Along the wall of [p], from the face of the nearest wall crossing that
+/// wall before the opening to the face of the nearest one after it, or the
+/// ends of the wall where nothing crosses: the stretch the opening's
+/// clear distances are measured in.
+(double, double) openingClearance(FloorBase base, OpeningPlacement p) {
+  final host = p.host!;
+  final vertical = p.axis.dir == AxisDir.V;
+  final c = p.axis.pos.toDouble();
+  var lo = host.start.pos.toDouble();
+  var hi = host.end.pos.toDouble();
+  for (var k = 0; k < base.wallSegments.length; k++) {
+    final w = base.wallSegments[k];
+    if ((w.axis.dir == AxisDir.V) == vertical) continue;
+    final r = base.wallRects[k];
+    final crosses =
+        vertical ? r.left <= c && r.right >= c : r.bottom <= c && r.top >= c;
+    if (!crosses) continue;
+    final near = vertical ? r.bottom : r.left;
+    final far = vertical ? r.top : r.right;
+    if (far <= p.start && far > lo) lo = far;
+    if (near >= p.end && near < hi) hi = near;
+  }
+  return (lo, hi);
 }

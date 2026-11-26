@@ -188,6 +188,7 @@ extension _PlanCanvas on _HouseEditorState {
                                   utilities: showUtilities ? [for (final u in floorUtilities) u.id == utilityDraft?.id ? utilityDraft! : u] : const [],
                                   selectedUtility: selectedUtilityId,
                                   selectedFurniture: selectedFurnitureId,
+                                  selectedOpening: selectedOpeningId,
                                   selectedRoom: selectedRoomId,
                                   showFurniture: showFurniture,
                                   showDimensions: showDimensions,

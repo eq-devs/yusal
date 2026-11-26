@@ -8,6 +8,8 @@ import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 import 'package:yusal/features/editor/engine/core/history/design_history.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
+import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart'
+    show openingClearance;
 
 import 'support/command_samples.dart';
 
@@ -179,6 +181,27 @@ void main() {
               .toSet(),
           {(0.0, 0.0, 12000.0, 7000.0), (0.0, 0.0, 8000.0, 10000.0)});
     });
+  });
+
+  test('a door\'s clear distances run to the faces of the walls beside it', () {
+    var s = ok(run(box(), 'AddDrawnWall', line(0, 4000, 12000, 4000)));
+    s = ok(run(s, 'AddDrawnWall', line(6000, 0, 6000, 4000)));
+    final wall = deriveFloorBase(composeDocument(meta, s), s.floors.first.id)
+        .wallSegments
+        .firstWhere((w) =>
+            w.axis.dir == AxisDir.H && w.axis.pos == 4000 && w.start.pos == 0);
+    s = ok(run(s, 'AddOpening', {
+      'anchor': wall.ref.anchor,
+      'kind': OpeningKind.door,
+      'tapT': 3000,
+      'centerAtTap': true
+    }));
+    final doc = composeDocument(meta, s);
+    final base = deriveFloorBase(doc, doc.floors.first.id);
+    final door = deriveOpenings(doc, base, doc.floors.first.id).single;
+    expect((door.start, door.end), (2550.0, 3450.0));
+    // The outer wall's inner face at 240, the partition's face at 5940.
+    expect(openingClearance(base, door), (240.0, 5940.0));
   });
 
   group('R15: history', () {

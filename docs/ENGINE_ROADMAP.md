@@ -90,6 +90,11 @@ exact; faces need rounding).
       paginated heat-load schedule for large houses (R12)
 - [ ] Scaled vector PDF
 
+- [x] Temporary dimensions: a selected door or window shows its clear
+      distances to the walls beside it
+- [ ] Static GPU vertex buffers (P3): deferred until device numbers show
+      the frame build matters there (1.5–2.1 ms on the host)
+
 ## Blocked
 
 - Real-device validation: no device attached on 2026-11-26 (`adb devices`

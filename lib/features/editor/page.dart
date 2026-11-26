@@ -3394,15 +3394,12 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                     : message);
                               }
                             },
-                            // Its own layer: panning the
-                            // sheet moves the cached picture
-                            // instead of redrawing the plan.
-                            builder: (context, candidates, rejected) =>
-                                RepaintBoundary(
-                                    child: CustomPaint(
-                                        key: canvasKey,
-                                        size: size,
-                                        painter: FloorPlanPainter(
+                            // The plan in its own layer: panning moves the
+                            // cached picture, and a drag repaints only the
+                            // overlay above it unless the plan changed.
+                            builder: (context, candidates, rejected) {
+                              final plan = FloorPlanPainter(
+                                            layered: true,
                                             areaBasis: history
                                                 .present.extras.areaBasis,
                                             displayBase,
@@ -3508,6 +3505,18 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                             highlights: highlights,
                                             pulse: pulse,
                                             measure: measurePoints,
-                                            preview: List.of(stroke))))))));
+                                            preview: List.of(stroke));
+                              return Stack(children: [
+                                RepaintBoundary(
+                                    child: CustomPaint(
+                                        key: canvasKey,
+                                        size: size,
+                                        painter: plan)),
+                                IgnorePointer(
+                                    child: CustomPaint(
+                                        size: size,
+                                        painter: PlanOverlayPainter(plan))),
+                              ]);
+                            }))));
           }));
 }

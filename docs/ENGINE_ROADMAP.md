@@ -62,8 +62,8 @@ exact; faces need rounding).
 
 ## Phase 2 — performance
 
-- [ ] Static plan layer and overlay layer (P1)
-- [ ] Zoom-independent text cache with LRU (P5)
+- [x] Static plan layer and overlay layer (P1)
+- [x] Zoom-independent text cache with LRU (P5)
 - [ ] Throttled, single-floor drag previews (P2)
 - [x] One batch for translucent faces (P4)
 - [x] 3D view repaint boundary (P6)

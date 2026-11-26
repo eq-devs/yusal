@@ -219,7 +219,15 @@ class FoundationTakeoff {
 /// Weight of reinforcing bar per metre, kg: 0.00617 × d².
 double barKgPerM(int diameter) => 0.00617 * diameter * diameter;
 
-FoundationTakeoff foundationTakeoff(HouseDocument doc, DerivedHouse derived) {
+final _takeoffs = Expando<FoundationTakeoff>('foundationTakeoff');
+
+/// [computeFoundationTakeoff] for [doc] (with [derived] its geometry),
+/// worked out once per document: the plan asks for it on every build.
+FoundationTakeoff foundationTakeoff(HouseDocument doc, DerivedHouse derived) =>
+    _takeoffs[doc] ??= computeFoundationTakeoff(doc, derived);
+
+FoundationTakeoff computeFoundationTakeoff(
+    HouseDocument doc, DerivedHouse derived) {
   final spec = doc.extras.foundation;
   final w = doc.footprint.width.toDouble();
   final d = doc.footprint.depth.toDouble();

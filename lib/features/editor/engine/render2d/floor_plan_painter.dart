@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/constant/tokens.dart';
@@ -32,7 +33,7 @@ const roomColors = {
 /// of a repaint. Keyed by everything that decides the layout, so a hit is
 /// exactly what a fresh layout would give.
 abstract final class _PlanText {
-  static const _capacity = 600;
+  static const _capacity = 1500;
   static final _cache =
       <(String, TextStyle, double?, int?, TextAlign), TextPainter>{};
 
@@ -54,11 +55,11 @@ abstract final class _PlanText {
       PaintingBinding.instance.systemFonts.addListener(_clear);
     }
     final key = (value, style, maxWidth, maxLines, align);
-    final hit = _cache[key];
-    if (hit != null) return hit;
-    // Zooming makes new sizes every frame: start over rather than track
-    // which of them is oldest.
-    if (_cache.length >= _capacity) _clear();
+    final hit = _cache.remove(key);
+    if (hit != null) return _cache[key] = hit;
+    // Least recently used out first: a large floor's labels can outnumber
+    // the cache, and clearing it all would lay every one out again.
+    if (_cache.length >= _capacity) _cache.remove(_cache.keys.first)!.dispose();
     return _cache[key] = TextPainter(
         text: TextSpan(text: value, style: style),
         textDirection: TextDirection.ltr,
@@ -114,8 +115,18 @@ class FloorPlanPainter extends CustomPainter {
       this.selectedUtility,
       this.showLabels = true,
       this.showGaps = false,
-      this.areaBasis = AreaBasis.clear})
-      : super(repaint: pulse);
+      this.areaBasis = AreaBasis.clear,
+      this.layered = false})
+      : super(repaint: layered ? null : pulse);
+
+  /// Whether this painter draws only the plan, and a [PlanOverlayPainter]
+  /// over it the drafts, handles, guides and highlights. The plan then
+  /// repaints only when what it shows changes, not on every move of a
+  /// finger; one painter draws both for pictures and exports.
+  final bool layered;
+
+  /// The language the labels were laid out in: they read it globally.
+  final AppLang _lang = appLang;
   final FloorBase base;
   final PlanRect? focus;
   final PlanRect? draft;
@@ -300,27 +311,32 @@ class FloorPlanPainter extends CustomPainter {
       int? maxLines,
       bool monospace = false,
       Color? halo}) {
+    // Laid out at its size on screen and drawn scaled back, so zooming
+    // reuses the same layout instead of making one for every scale.
     final style = monospace
-        ? mono(size: px(font), weight: weight, color: color ?? tokens.ink)
+        ? mono(size: font, weight: weight, color: color ?? tokens.ink)
         : TextStyle(
             fontFamily: fontBody,
             fontFamilyFallback: bodyFallback,
             color: color ?? tokens.ink,
-            fontSize: px(font),
+            fontSize: font,
             height: 1.25,
             fontWeight: weight);
+    final width = maxWidth == null
+        ? null
+        // In steps of 4 screen pixels: a wrap point moves by less than that.
+        : math.max(4.0, (maxWidth * handleScale / 4).floorToDouble() * 4);
     final t = _PlanText.laidOut(
-        value, style, maxWidth, maxWidth == null ? null : maxLines ?? 3);
+        value, style, width, maxWidth == null ? null : maxLines ?? 3);
     canvas
       ..save()
       ..translate(at.dx, at.dy)
-      ..rotate(angle);
+      ..rotate(angle)
+      ..scale(1 / handleScale);
     if (halo != null) {
       final box = Rect.fromCenter(
-          center: Offset.zero,
-          width: t.width + px(6),
-          height: t.height + px(2));
-      canvas.drawRRect(RRect.fromRectAndRadius(box, Radius.circular(px(3))),
+          center: Offset.zero, width: t.width + 6, height: t.height + 2);
+      canvas.drawRRect(RRect.fromRectAndRadius(box, const Radius.circular(3)),
           Paint()..color = halo);
     }
     t.paint(canvas, Offset(-t.width / 2, -t.height / 2));
@@ -714,8 +730,12 @@ class FloorPlanPainter extends CustomPainter {
 
     // North arrow beside the top-right corner.
     if (showLabels) drawNorth(canvas, size, width, depth);
-    drawOverlays(canvas, size, width, depth);
+    if (!layered) drawOverlays(canvas, size, width, depth);
   }
+
+  /// What a [PlanOverlayPainter] draws over a [layered] plan.
+  void paintOverlay(Canvas canvas, Size size) => drawOverlays(canvas, size,
+      base.axes.v.last.pos.toDouble(), base.axes.h.last.pos.toDouble());
 
   /// Plan symbol of a utility point, a fixed size on screen.
   void drawUtility(Canvas canvas, Size size, UtilityPoint u,
@@ -1168,21 +1188,27 @@ class FloorPlanPainter extends CustomPainter {
     }
   }
 
+  /// How wide [text] is drawn at [fontSize] in plan pixels (a size given
+  /// through [px]); measured at its size on screen, like [label] lays it
+  /// out, so zooming reuses the measure.
   double textWidth(String text, double fontSize, FontWeight weight,
-          {bool monospace = false}) =>
-      _PlanText.laidOut(
-              text,
-              monospace
-                  ? mono(size: fontSize, weight: weight)
-                  : TextStyle(
-                      fontFamily: fontBody,
-                      fontFamilyFallback: bodyFallback,
-                      fontSize: fontSize,
-                      fontWeight: weight),
-              null,
-              null,
-              align: TextAlign.start)
-          .width;
+      {bool monospace = false}) {
+    final screen = fontSize * handleScale;
+    return _PlanText.laidOut(
+                text,
+                monospace
+                    ? mono(size: screen, weight: weight)
+                    : TextStyle(
+                        fontFamily: fontBody,
+                        fontFamilyFallback: bodyFallback,
+                        fontSize: screen,
+                        fontWeight: weight),
+                null,
+                null,
+                align: TextAlign.start)
+            .width /
+        handleScale;
+  }
 
   /// Rugs big enough to carry their name along the lower edge (like the
   /// drafting page, above 12 m²).
@@ -1613,8 +1639,56 @@ class FloorPlanPainter extends CustomPainter {
     }
   }
 
+  /// A [layered] plan repaints when something it draws changed; the
+  /// overlay fields are [PlanOverlayPainter]'s. Lists and maps are rebuilt
+  /// on every build of the editor, so they compare by content.
   @override
-  bool shouldRepaint(covariant FloorPlanPainter oldDelegate) => true;
+  bool shouldRepaint(covariant FloorPlanPainter o) =>
+      !layered ||
+      !o.layered ||
+      !identical(base, o.base) ||
+      _lang != o._lang ||
+      !identical(tokens, o.tokens) ||
+      !mapEquals(labels, o.labels) ||
+      !mapEquals(colors, o.colors) ||
+      !listEquals(openings, o.openings) ||
+      !listEquals(stairs, o.stairs) ||
+      !listEquals(furniture, o.furniture) ||
+      !listEquals(utilities, o.utilities) ||
+      !listEquals(sleeves, o.sleeves) ||
+      !listEquals(belowOpenings, o.belowOpenings) ||
+      !identical(below, o.below) ||
+      belowLabel != o.belowLabel ||
+      foundation != o.foundation ||
+      selectedFurniture != o.selectedFurniture ||
+      selectedRoom != o.selectedRoom ||
+      selectedUtility != o.selectedUtility ||
+      selectedDimension != o.selectedDimension ||
+      showFurniture != o.showFurniture ||
+      showDimensions != o.showDimensions ||
+      showLabels != o.showLabels ||
+      showGaps != o.showGaps ||
+      showGridDimensions != o.showGridDimensions ||
+      areaBasis != o.areaBasis ||
+      handleScale != o.handleScale ||
+      viewport != o.viewport ||
+      viewportInsets != o.viewportInsets ||
+      northAngleDeg != o.northAngleDeg ||
+      bearingMin != o.bearingMin;
+}
+
+/// The drafts, handles, guides, measurements and highlights over a
+/// [FloorPlanPainter.layered] plan, from the same painter's fields. Cheap,
+/// so it repaints whenever the editor rebuilds.
+class PlanOverlayPainter extends CustomPainter {
+  PlanOverlayPainter(this.plan) : super(repaint: plan.pulse);
+  final FloorPlanPainter plan;
+
+  @override
+  void paint(Canvas canvas, Size size) => plan.paintOverlay(canvas, size);
+
+  @override
+  bool shouldRepaint(covariant PlanOverlayPainter oldDelegate) => true;
 }
 
 /// Screen grips for editing one wall from [a] to [b] (canvas-local pixels).

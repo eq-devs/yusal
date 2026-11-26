@@ -132,4 +132,37 @@ void main() {
     expect(canExtendWallFrom(b, const [], const Offset(6000, 0)), isFalse);
     expect(canExtendWallFrom(b, const [], const Offset(6000, 5000)), isTrue);
   });
+
+  group('hysteresis', () {
+    // A vertical wall at x = 6000 to join.
+    final b = base(house([
+      [6000, 0, 6000, 10000]
+    ]));
+    const origin = Offset(2000, 5000);
+    WallEndSnap snap(Offset raw, [WallEndSnap? previous]) => snapWallEnd(
+        b, origin, raw,
+        connectRadius: 220, alignRadius: 140, previous: previous);
+
+    test('a join holds until the finger is well past its radius', () {
+      final joined = snap(const Offset(5900, 5000));
+      expect(joined.connected, isTrue);
+      expect(joined.end.dx, 6000);
+      // 260 mm off: outside the 220 mm radius, inside 1.5 times it.
+      expect(snap(const Offset(5740, 5000)).end.dx, isNot(6000));
+      expect(snap(const Offset(5740, 5000), joined).end.dx, 6000);
+      // 400 mm off lets go.
+      expect(snap(const Offset(5600, 5000), joined).end.dx, isNot(6000));
+    });
+
+    test('the direction holds near the diagonal', () {
+      final across = snap(const Offset(4000, 5100));
+      expect(across.horizontal, isTrue);
+      // Slightly more up than across: a fresh snap turns, a held one not.
+      const raw = Offset(4000, 7100);
+      expect(snap(raw).horizontal, isFalse);
+      expect(snap(raw, across).horizontal, isTrue);
+      // Clearly up turns it.
+      expect(snap(const Offset(3000, 8000), across).horizontal, isFalse);
+    });
+  });
 }

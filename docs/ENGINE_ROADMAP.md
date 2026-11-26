@@ -78,7 +78,7 @@ exact; faces need rounding).
 
 ## Phase 3 — design tools
 
-- [ ] Snap hysteresis and axis lock (U2)
+- [x] Snap hysteresis and axis lock (U2)
 - [ ] Measure snaps to walls and corners
 - [ ] Free wall start (U7)
 - [ ] Pitched roof follows the outline (R6)

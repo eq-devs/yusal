@@ -1162,6 +1162,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     editCommand = null;
     editArgs = null;
     drawConnected = false;
+    lastWallSnap = null;
+    bodySideways = null;
     alignGuide = null;
     resetPreview();
     spatialDocument = null;
@@ -1488,6 +1490,14 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   Offset? gestureScreen;
   bool drawConnected = false;
 
+  /// The last snap of the wall end being drawn or dragged, so the next
+  /// move of the same stroke can hold on to it.
+  WallEndSnap? lastWallSnap;
+
+  /// Whether the wall being dragged by its middle moves sideways (true) or
+  /// slides along its line (false); null until the drag picks one.
+  bool? bodySideways;
+
   /// Dashed alignment guide for the end being dragged (world mm).
   (Offset, Offset)? alignGuide;
 
@@ -1568,6 +1578,8 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
   void beginWallEdit(Offset local, Size size) {
     wallGrip = null;
     editDown = null;
+    lastWallSnap = null;
+    bodySideways = null;
     if (editStart == null || editEnd == null) return;
     final painter = interactionPainter();
     final a = painter.point(editStart!.dx, editStart!.dy, size);
@@ -2273,6 +2285,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   void beginWallStroke(Offset local, Size size) {
     drawingStrokeActive = true;
+    lastWallSnap = null;
     drawingBefore = drawingOrigin;
     final hit = attachmentAt(local, size);
     strokeFromAttachment = hit != null;
@@ -2319,8 +2332,11 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     final pixel = mmPerPixel(painter, size);
     slideNote = null;
     slideFoot(world.x, world.y);
-    final snap = snapWallEnd(base, drawingOrigin!, Offset(world.x, world.y),
-        connectRadius: 22 * pixel, alignRadius: 14 * pixel);
+    final snap = lastWallSnap = snapWallEnd(
+        base, drawingOrigin!, Offset(world.x, world.y),
+        connectRadius: 22 * pixel,
+        alignRadius: 14 * pixel,
+        previous: lastWallSnap);
     if (snap.end != drawingEnd && snap.connected && !drawConnected) {
       HapticFeedback.selectionClick();
     }

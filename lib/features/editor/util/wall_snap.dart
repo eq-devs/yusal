@@ -49,14 +49,28 @@ bool endJoinsWall(FloorBase base, Offset p,
 /// within [alignRadius], then a 100 mm grid. Radii are world millimetres so
 /// callers can derive them from a constant on-screen distance. The result is
 /// clamped to the footprint so dragging past the house stops on the outer wall.
+///
+/// [previous] is the snap of the last move of the same stroke. It makes the
+/// snap sticky, as CAD inference is: the direction stays until the other
+/// component is [release] times larger, and a join or alignment holds
+/// until the finger is [release] times its radius away, so the end does
+/// not flicker between candidates near a boundary.
 WallEndSnap snapWallEnd(FloorBase base, Offset origin, Offset raw,
     {required double connectRadius,
     required double alignRadius,
     bool? forceHorizontal,
     bool Function(WallSegment)? ignore,
-    Set<int> skipAlong = const {}}) {
+    Set<int> skipAlong = const {},
+    WallEndSnap? previous,
+    double release = 1.5}) {
+  final dx = (raw.dx - origin.dx).abs();
+  final dy = (raw.dy - origin.dy).abs();
   final horizontal = forceHorizontal ??
-      (raw.dx - origin.dx).abs() >= (raw.dy - origin.dy).abs();
+      switch (previous?.horizontal) {
+        true => dy <= dx * release,
+        false => dx > dy * release,
+        null => dx >= dy,
+      };
   final carrier = horizontal ? origin.dy : origin.dx;
   final start = horizontal ? origin.dx : origin.dy;
   final limit =
@@ -64,6 +78,24 @@ WallEndSnap snapWallEnd(FloorBase base, Offset origin, Offset raw,
   final along = (horizontal ? raw.dx : raw.dy).clamp(0.0, limit);
   Offset at(double value) =>
       horizontal ? Offset(value, carrier) : Offset(carrier, value);
+
+  // Hold on to what the end snapped to while the finger stays near it.
+  if (previous != null &&
+      previous.horizontal == horizontal &&
+      (previous.connected || previous.aligned != null) &&
+      (horizontal ? previous.end.dy : previous.end.dx) == carrier) {
+    final held = horizontal ? previous.end.dx : previous.end.dy;
+    final reach =
+        (previous.connected ? connectRadius : alignRadius) * release;
+    if (held != start && (held - along).abs() <= reach) {
+      final end = at(held);
+      return WallEndSnap(end,
+          horizontal: horizontal,
+          connected:
+              endJoinsWall(base, end, horizontal: horizontal, ignore: ignore),
+          aligned: previous.aligned);
+    }
+  }
 
   double? best;
   var bestDistance = connectRadius;

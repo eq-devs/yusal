@@ -117,12 +117,13 @@ extension _WallTool on _HouseEditorState {
     if (wallGrip == 'start' || wallGrip == 'end') {
       final fixed = wallGrip == 'start' ? editEnd! : editStart!;
       final moving = wallGrip == 'start' ? editStart! : editEnd!;
-      final snap = snapWallEnd(base, fixed, raw,
+      final snap = lastWallSnap = snapWallEnd(base, fixed, raw,
           connectRadius: 22 * pixel,
           alignRadius: 14 * pixel,
           forceHorizontal: !vertical,
           ignore: own,
-          skipAlong: {(vertical ? moving.dy : moving.dx).round()});
+          skipAlong: {(vertical ? moving.dy : moving.dx).round()},
+          previous: lastWallSnap);
       if (snap.connected && !drawConnected) HapticFeedback.selectionClick();
       drawConnected = snap.connected;
       alignGuide = guideFor(snap);
@@ -136,7 +137,14 @@ extension _WallTool on _HouseEditorState {
       final along = vertical ? delta.dy : delta.dx;
       drawConnected = false;
       alignGuide = null;
-      if (across.abs() >= along.abs()) {
+      // Moving the wall sideways and sliding it along are two commands:
+      // once one is chosen it holds until the other way clearly wins.
+      final sideways = bodySideways = switch (bodySideways) {
+        true => along.abs() <= across.abs() * 1.5,
+        false => across.abs() > along.abs() * 1.5,
+        null => across.abs() >= along.abs(),
+      };
+      if (sideways) {
         // Sideways: walls that end on this one stretch along with it.
         var position = carrier + across;
         var best = 14 * pixel;

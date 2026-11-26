@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:yusal/features/editor/engine/core/serialization/schema_validator.dart';
 
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/validation/document_validator.dart';
@@ -730,10 +729,6 @@ LoadResult loadHouse(List<int> bytes) {
 }
 
 LoadResult decodeV1(Object? raw) {
-  final schemaErrors = validateSchemaV1(raw);
-  if (schemaErrors.isNotEmpty) {
-    return LoadResult.failure(LoadFailure('decode', schemaErrors));
-  }
   final d = _Decoder();
   final doc = d.document(raw);
   if (d.errors.isNotEmpty) {
@@ -752,8 +747,15 @@ LoadResult decodeV1(Object? raw) {
   return LoadResult.success(doc);
 }
 
+/// [d] as a house file. Throws [ArgumentError] for a document that breaks a
+/// rule, in release builds too: no file is ever written that cannot be
+/// read back.
 String encodeHouse(HouseDocument d) {
-  assert(validateHouse(d).isEmpty, 'Only valid documents can be encoded');
+  final errors = validateHouse(d);
+  if (errors.isNotEmpty) {
+    throw ArgumentError.value(
+        d, 'd', 'invalid house: ${errors.first.code} ${errors.first.path}');
+  }
   Map<String, Object?> rect(AxisRectangle r) => {
         'x0': r.x0,
         'x1': r.x1,

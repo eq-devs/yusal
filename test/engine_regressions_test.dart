@@ -187,6 +187,55 @@ void main() {
     });
   });
 
+  test('R17: an invalid document is never encoded', () {
+    final s = box();
+    final bad = composeDocument(
+        meta, s.withFloor(s.floors.first.copyWith(height: 100)));
+    expect(() => encodeHouse(bad), throwsArgumentError);
+  });
+
+  test('a damaged file fails to load with a code, never with a throw', () {
+    final raw = encodeHouse(composeDocument(meta, box()));
+    final seeds = [for (var i = 0; i < 400; i++) i];
+    for (final seed in seeds) {
+      final json = jsonDecode(raw);
+      // Walk to a pseudo-random node and damage it.
+      Object? node = json;
+      var key = seed;
+      for (var depth = 0; depth < 6; depth++) {
+        final children = node is Map
+            ? node.keys.toList()
+            : node is List
+                ? [for (var i = 0; i < node.length; i++) i]
+                : const [];
+        if (children.isEmpty) break;
+        final pick = children[key % children.length];
+        key = key * 31 + 7;
+        final child = node is Map ? node[pick] : (node! as List)[pick! as int];
+        if (child is! Map && child is! List || depth == seed % 5) {
+          final damage = [null, -1, 2147483648, 'x', 1.5, <String, Object?>{}, []]
+              [seed % 7];
+          if (node is Map) {
+            if (seed % 11 == 0) {
+              node.remove(pick);
+            } else {
+              node[pick] = damage;
+            }
+          } else {
+            (node! as List)[pick! as int] = damage;
+          }
+          break;
+        }
+        node = child;
+      }
+      final loaded = loadHouse(utf8.encode(jsonEncode(json)));
+      if (!loaded.isSuccess) {
+        expect(loaded.failure!.errors, isNotEmpty);
+        expect(loaded.failure!.errors.first.code, isNotEmpty);
+      }
+    }
+  });
+
   test('every sampled command applies to a valid house or is refused', () {
     final docs = [
       composeDocument(meta, box()),

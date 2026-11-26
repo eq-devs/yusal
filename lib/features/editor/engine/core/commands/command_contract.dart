@@ -55,6 +55,25 @@ class CommandConflict {
   final List<String> objectIds;
 }
 
+/// Whether a door or window on one of [floorIds] that sat well on its
+/// wall in [before] no longer does in [after].
+bool _breaksOpenings(
+    HouseDocument before, HouseDocument after, List<String> floorIds) {
+  for (final id in floorIds) {
+    if (!before.floors.any((f) => f.id == id)) continue;
+    final healthy = documentOpenings(before, floorId: id)
+        .where((p) => p.status == 'ok')
+        .map((p) => p.opening.id)
+        .toSet();
+    if (healthy.isEmpty) continue;
+    if (documentOpenings(after, floorId: id)
+        .any((p) => healthy.contains(p.opening.id) && p.status != 'ok')) {
+      return true;
+    }
+  }
+  return false;
+}
+
 HouseDocument _document(UndoableDesignState state) => composeDocument(
     const Meta(
         name: '',
@@ -96,18 +115,20 @@ CommandResult _executeCommand(
       'CutOutline',
       'RestoreOutline'
     ].contains(command.kind)) {
-      for (final floor in document.floors.where((f) => f.explicitWalls)) {
-        document = syncRoomWalls(doc, document, floor.id, context.newId);
-      }
-      if (command.kind != 'MergeRooms') {
-        final healthy = documentOpenings(doc)
-            .where((p) => p.status == 'ok')
-            .map((p) => p.opening.id)
-            .toSet();
-        if (documentOpenings(document)
-            .any((p) => healthy.contains(p.opening.id) && p.status != 'ok')) {
-          return const Rejected('HOST_CONFLICT', '此调整会影响已有门窗，请避开门窗位置');
+      // Only floors the command changed need their walls brought in line
+      // and their doors and windows checked.
+      final changed = [
+        for (final f in document.floors)
+          if (!sameFloorInputs(doc, document, f.id)) f.id
+      ];
+      for (final id in changed) {
+        if (document.floors.firstWhere((f) => f.id == id).explicitWalls) {
+          document = syncRoomWalls(doc, document, id, context.newId);
         }
+      }
+      if (command.kind != 'MergeRooms' &&
+          _breaksOpenings(doc, document, changed)) {
+        return const Rejected('HOST_CONFLICT', '此调整会影响已有门窗，请避开门窗位置');
       }
     }
     // Geometry operations build documents without extras; carry them over.

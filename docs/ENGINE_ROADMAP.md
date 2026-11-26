@@ -38,8 +38,8 @@ exact; faces need rounding).
 - [x] R3 upper bounds for every document number
 - [x] R14 low wall on an outline edge duplicates the exterior wall
 - [x] R15 undo group longer than the history cap
-- [ ] R17 encoder validates in release builds too
-- [ ] Engine session reports created / removed walls
+- [x] R17 encoder validates in release builds too
+- [x] Engine session reports created / removed walls
 - [ ] R2 R4 R5 R9 one interaction reset for every mode exit
 - [ ] R10 success toasts only on success
 - [ ] R13 outer-wall sheet title
@@ -50,7 +50,7 @@ exact; faces need rounding).
       the same decoder (they only added fields); no version gating
 - [x] One command implementation: object edits only; the JSON file round
       trip (`_editThroughFile`) and `document_edits.dart` are gone
-- [ ] Drop the duplicate schema table (`schema_validator.dart`)
+- [x] Drop the duplicate schema table (`schema_validator.dart`)
 
 ## Phase 1 — architecture
 
@@ -66,7 +66,13 @@ exact; faces need rounding).
 - [ ] Throttled, single-floor drag previews (P2)
 - [ ] One batch for translucent faces (P4)
 - [ ] 3D view repaint boundary (P6)
-- [ ] Indexes in floor derivation and checks (P8, P9)
+- [x] Indexes in floor derivation and checks (P8, P9)
+- [x] Commands bring only the floors they changed in line with their
+      walls, and check only those floors' doors and windows
+- [x] The floor geometry cache keys on the shared lines and the floor's
+      own, so a line added on one floor keeps the others' geometry
+- [ ] Validate only what a command changed (full validation is ~1.1 ms of
+      a large-plan command)
 
 ## Phase 3 — design tools
 

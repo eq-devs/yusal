@@ -769,6 +769,24 @@ HouseExtras prunedExtras(HouseExtras extras, List<Floor> floors) =>
         for (final o in f.openings) o.id
     });
 
+/// Whether everything the plan of floor [floorId] is made from is the same
+/// in [a] and [b]: its own objects and lines, the shared lines, the
+/// footprint and the default sizes. Checks by identity first, so it is
+/// cheap after an edit that left the floor alone.
+bool sameFloorInputs(HouseDocument a, HouseDocument b, String floorId) {
+  if (identical(a, b)) return true;
+  final fa = a.floors.where((f) => f.id == floorId).firstOrNull;
+  final fb = b.floors.where((f) => f.id == floorId).firstOrNull;
+  if (fa == null || fb == null) return false;
+  bool local(FloorAxis x) => x.floorId == floorId;
+  return (identical(fa, fb) || fa == fb) &&
+      a.footprint == b.footprint &&
+      a.defaults == b.defaults &&
+      _listEquals(a.axes.global, b.axes.global) &&
+      _listEquals(a.axes.floor.where(local).toList(),
+          b.axes.floor.where(local).toList());
+}
+
 HouseDocument composeDocument(Meta meta, UndoableDesignState state) {
   final extras = prunedExtras(state.extras, state.floors);
   return HouseDocument(

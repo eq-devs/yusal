@@ -69,13 +69,14 @@ List<CheckResult> runChecks(HouseDocument doc, DerivedHouse derived) {
   for (var f = 0; f < doc.floors.length; f++) {
     final floor = doc.floors[f];
     final g = derived.floors[f];
-    bool touches(OpeningPlacement p, String id) => g.base.edges.any((e) =>
-        e.axis.id == p.axis.id &&
-        e.start.pos < p.end &&
-        p.start < e.end.pos &&
-        (g.base.owners[e.negative] == id || g.base.owners[e.positive] == id));
+    bool touches(OpeningPlacement p, String id) =>
+        g.base.edgesOnAxis(p.axis.id).any((e) =>
+            e.start.pos < p.end &&
+            p.start < e.end.pos &&
+            (g.base.owners[e.negative] == id ||
+                g.base.owners[e.positive] == id));
     for (final room in floor.rooms) {
-      final geometry = g.base.roomGeometry.firstWhere((r) => r.id == room.id);
+      final geometry = g.base.roomsById[room.id]!;
       final min = room.type == RoomType.bedroom
           ? 2700
           : room.type == RoomType.living

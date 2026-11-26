@@ -45,8 +45,8 @@ exact; faces need rounding).
 - [x] R10 success toasts only on success
 - [x] R13 outer-wall sheet title
 - [x] R16 stale opening preview on an invalid drop
-- [ ] R7 orbit pitch snap near top-down
-- [ ] R8 tap on the roof selects what is underneath
+- [x] R7 orbit pitch snap near top-down
+- [x] R8 tap on the roof selects what is underneath
 - [x] One schema version: files are written as version 5; 1–4 load with
       the same decoder (they only added fields); no version gating
 - [x] One command implementation: object edits only; the JSON file round
@@ -65,8 +65,8 @@ exact; faces need rounding).
 - [ ] Static plan layer and overlay layer (P1)
 - [ ] Zoom-independent text cache with LRU (P5)
 - [ ] Throttled, single-floor drag previews (P2)
-- [ ] One batch for translucent faces (P4)
-- [ ] 3D view repaint boundary (P6)
+- [x] One batch for translucent faces (P4)
+- [x] 3D view repaint boundary (P6)
 - [x] Indexes in floor derivation and checks (P8, P9)
 - [x] Commands bring only the floors they changed in line with their
       walls, and check only those floors' doors and windows

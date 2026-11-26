@@ -243,7 +243,9 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
   final shell = p.roofOn && !cutY.isFinite;
   final plain = _Writer();
   final textured = <(Textile, int), _Writer>{};
-  final see = <(double, _Writer)>[];
+  // See-through faces, drawn farthest first. They all go into one buffer
+  // and one draw call: triangles blend in the order they are sent.
+  final see = <(double, List<Vec3>, ui.Color, double)>[];
   final picks = <(List<Vec3>, SourceRef?)>[];
   var faces = 0;
 
@@ -324,7 +326,9 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
     }
     final share = shaded ? p.shadowShare(f, n, light) : 0.0;
     faces++;
-    if (f.source != null) picks.add((pts, f.source));
+    // Faces that belong to nothing (roof, slabs) still hide what is behind
+    // them from a tap; glass only when it is a window that can be picked.
+    if (f.source != null || f.alpha >= 1) picks.add((pts, f.source));
     if (f.textile != null &&
         f.uv != null &&
         !clipped &&
@@ -346,9 +350,7 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
     if (alpha >= 1) {
       fan(plain, pts, color, 1, null, n, share, unlifted);
     } else {
-      final w = _Writer();
-      fan(w, pts, color, alpha);
-      see.add((distance, w));
+      see.add((distance, pts, color, alpha));
     }
   }
   // The cut faces of walls, filled solid as in a drawn section.
@@ -451,6 +453,10 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
     if (w.count > 0) edges = w.batch();
   }
   see.sort((a, b) => b.$1.compareTo(a.$1));
+  final glass = _Writer();
+  for (final (_, pts, color, alpha) in see) {
+    fan(glass, pts, color, alpha);
+  }
   final mvp = gpuCameraMatrix(camera, size);
   GpuEffects? effects;
   if (shaded) {
@@ -501,7 +507,7 @@ GpuFrame buildGpuFrame(ScenePainter p, ui.Size size) {
               image: textileImage(e.key.$1, e.key.$2),
               tiled: e.key.$1 == Textile.kurak || e.key.$1 == Textile.alasha)
       ],
-      [for (final (_, w) in see) w.batch()],
+      [if (glass.count > 0) glass.batch()],
       faces,
       picks,
       edges,

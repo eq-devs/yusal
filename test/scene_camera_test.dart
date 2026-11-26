@@ -165,4 +165,19 @@ void main() {
       expect(s.distance, greaterThan(3));
     }
   });
+
+  test('orbiting up to straight down never flips the picture (R7)', () {
+    const target = Vec3(0, 0, 0);
+    for (final yaw in [0.0, 0.7, math.pi / 2, 2.5, -1.2]) {
+      Vec3? last;
+      for (var deg = 80.0; deg <= 89.5; deg += 0.25) {
+        final up = orbitCamera(target, yaw, deg * math.pi / 180, 20).up;
+        if (last != null) {
+          expect(up.dot(last), greaterThan(0.99),
+              reason: 'yaw $yaw at $deg degrees');
+        }
+        last = up;
+      }
+    }
+  });
 }

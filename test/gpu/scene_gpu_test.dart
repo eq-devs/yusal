@@ -231,6 +231,27 @@ void main() {
     });
   });
 
+  testWidgets('a tap on the roof picks no room under it (R8)', (t) async {
+    await t.runAsync(() async {
+      SceneGpu.reset();
+      await SceneGpu.prepare();
+      final (camera, settings) = views['above']!;
+      final centre = Offset(size.width / 2, size.height / 2);
+      final onCanvas = painter(camera, settings);
+      await pixels(onCanvas, 'roof canvas');
+      expect(onCanvas.pick(centre), isNot(isA<RoomSource>()));
+      // With the roof off, the same tap reaches what is under it.
+      final open = painter(camera, const SceneSettings(roof: false));
+      await pixels(open, 'no roof canvas');
+      expect(open.pick(centre), isNotNull);
+      final gpu = SceneGpu.instance;
+      if (gpu == null) return;
+      final onGpu = painter(camera, settings, gpu: gpu);
+      await pixels(onGpu, 'roof gpu');
+      expect(onGpu.pick(centre), isNot(isA<RoomSource>()));
+    });
+  });
+
   testWidgets('a tap finds the same thing on the GPU as on the canvas',
       (t) async {
     await t.runAsync(() async {

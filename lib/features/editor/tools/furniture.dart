@@ -163,7 +163,7 @@ extension _FurnitureTool on _HouseEditorState {
         furnitureDraft =
             f.copyWith(width: right - f.x, y: bottom, depth: f.top - bottom);
         placementHint =
-            '${furnitureDraft!.width} × ${furnitureDraft!.depth} $unitMm';
+            '${m2dp(furnitureDraft!.width)} × ${m2dp(furnitureDraft!.depth)} $unitM';
       default:
         furnitureDraft = f;
     }

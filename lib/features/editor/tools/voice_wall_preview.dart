@@ -168,7 +168,7 @@ extension _VoiceWallPreview on _HouseEditorState {
         wall.axis.dir == AxisDir.V
             ? PlanRect(p, lo, p, hi)
             : PlanRect(lo, p, hi, p),
-        '$distance mm',
+        '${m2dp(distance)} $unitM',
         areas.join('   ·   '),
         budgetLabel,
         details.join('\n'));

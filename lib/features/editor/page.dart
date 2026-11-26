@@ -3258,7 +3258,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                                     offset > 0 ? pair.$2 : pair.$1, offset.abs(), null);
                                 if (!trial.ok) {
                                   setState(() {});
-                                  notify(tr3('无法预览此次移墙', 'Бұл өзгерісті алдын ала көру мүмкін емес', 'Не удалось построить предпросмотр', 'Cannot preview this wall move'));
+                                  notify(tr3('无法预览此次移墙', 'Бұл өзгерісті алдын ала көру мүмкін емес', 'Не удалось построить предпросмотр', 'Cannot preview this wall move', ky: 'Алдын ала көрүү мүмкүн эмес', uz: 'Oldindan koʻrib boʻlmaydi'));
                                 }
                                 pointers.remove(e.pointer);
                                 lastPoint = null;

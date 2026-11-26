@@ -7,7 +7,6 @@ import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
 import 'package:yusal/features/editor/engine/core/commands/command_catalog.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
-import 'package:yusal/features/editor/engine/core/geometry/source_ref.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/editor/engine/render3d/scene_model.dart';
 

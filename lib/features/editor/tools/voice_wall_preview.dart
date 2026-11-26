@@ -11,22 +11,24 @@ class _WallTrial {
       this.areaLabel,
       this.budgetLabel,
       this.budgetDetails);
-  final String token,
-      floorId,
-      distanceLabel,
-      areaLabel,
-      budgetLabel,
-      budgetDetails;
-  final HouseDocument original, candidate;
+  final String token;
+  final String floorId;
+  final String distanceLabel;
+  final String areaLabel;
+  final String budgetLabel;
+  final String budgetDetails;
+  final HouseDocument original;
+  final HouseDocument candidate;
   final PlanRect line;
 }
 
 extension _VoiceWallPreview on _HouseEditorState {
   ActionResult prepareWallTrial(
-      String grow, String shrink, int? distance, double? minArea,
+      String grow, String shrink, int? requestedDistance, double? minArea,
       {double? target, bool targetShrinking = false}) {
     // Supersede the old proposal even if this new request cannot be built.
     if (_wallTrial != null) update(() => _wallTrial = null);
+    var distance = requestedDistance;
     if ((distance == null) == (target == null) ||
         (distance != null && distance <= 0) ||
         (target != null && (!target.isFinite || target <= 0)) ||
@@ -66,8 +68,9 @@ extension _VoiceWallPreview on _HouseEditorState {
       final axes = wall.axis.dir == AxisDir.V ? base.axes.v : base.axes.h;
       final limit =
           (axes[wall.axis.index + sign].pos - wall.axis.pos).abs() - 300;
-      if (limit <= 0)
+      if (limit <= 0) {
         return const ActionResult.fail('target_area_out_of_range');
+      }
       final probe = math.min(300, limit);
       final sample = move(probe);
       if (sample is! Applied) {
@@ -79,11 +82,13 @@ extension _VoiceWallPreview on _HouseEditorState {
           composeDocument(document.meta, sample.newState), floor.id);
       final measured =
           sampleBase.roomsById[targetShrinking ? shrink : grow]?.clearArea;
-      if (measured == null || measured == originalArea)
+      if (measured == null || measured == originalArea) {
         return const ActionResult.fail('target_area_out_of_range');
+      }
       distance = (gain * probe / (measured - originalArea).abs()).round();
-      if (distance <= 0 || distance > limit)
+      if (distance <= 0 || distance > limit) {
         return const ActionResult.fail('target_area_out_of_range');
+      }
     }
     final position = wall.axis.pos + sign * distance!;
     final result = move(distance);
@@ -121,9 +126,9 @@ extension _VoiceWallPreview on _HouseEditorState {
       areas.add(
           '${r.name}  ${m2(base.roomsById[r.id]!.clearArea)} → ${m2(nextBase.roomsById[r.id]!.clearArea)} m²');
     }
-    final p = position.toDouble(),
-        lo = wall.start.pos.toDouble(),
-        hi = wall.end.pos.toDouble();
+    final p = position.toDouble();
+    final lo = wall.start.pos.toDouble();
+    final hi = wall.end.pos.toDouble();
     final before = estimate;
     final after = estimateCost(next, deriveHouse(next),
         currency: before.currency, book: priceBook);
@@ -189,13 +194,15 @@ extension _VoiceWallPreview on _HouseEditorState {
 
   (String, String)? wallRooms(WallSegment wall) {
     if (wall.edges.isEmpty) return null;
-    final a = base.owners[wall.edges.first.negative],
-        b = base.owners[wall.edges.first.positive];
+    final a = base.owners[wall.edges.first.negative];
+    final b = base.owners[wall.edges.first.positive];
     if (a == null ||
         b == null ||
         a == b ||
         !base.roomsById.containsKey(a) ||
-        !base.roomsById.containsKey(b)) return null;
+        !base.roomsById.containsKey(b)) {
+      return null;
+    }
     final shared = base.wallsBetween(a, b);
     return shared.length == 1 &&
             shared.first.axis.id == wall.axis.id &&
@@ -231,9 +238,9 @@ extension _VoiceWallPreview on _HouseEditorState {
               SimpleDialogOption(
                   onPressed: () => Navigator.pop(ctx, ''),
                   child: Text(tr3('手动拖墙', 'Қабырғаны сүйреу',
-                      'Перетащить стену', 'Drag wall')))
+                      'Перетащить стену', 'Drag wall', ky: 'Дубалды сүйрөө', uz: 'Devorni surish')))
             ]));
-    if (!current() || room == null) return;
+    if (!mounted || !current() || room == null) return;
     if (room.isEmpty) {
       showSharedWall(wall);
       return;
@@ -242,22 +249,24 @@ extension _VoiceWallPreview on _HouseEditorState {
     final value = await promptText(context,
         title: '$title · ${rooms.firstWhere((r) => r.id == room).name}',
         initial: area.toStringAsFixed(2),
-        cancel: tr3('取消', 'Бас тарту', 'Отмена', 'Cancel'),
-        ok: tr3('预览', 'Алдын ала көру', 'Предпросмотр', 'Preview'),
+        cancel: tr3('取消', 'Бас тарту', 'Отмена', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'),
+        ok: tr3('预览', 'Алдын ала көру', 'Предпросмотр', 'Preview', ky: 'Алдын ала көрүү', uz: 'Oldindan koʻrish'),
         number: true,
         suffix: 'm²');
     if (!current() || value == null) return;
     final target = double.tryParse(value.trim().replaceAll(',', '.'));
-    if (target == area || target == double.parse(area.toStringAsFixed(2)))
+    if (target == area || target == double.parse(area.toStringAsFixed(2))) {
       return;
+    }
     final other = room == pair.$1 ? pair.$2 : pair.$1;
     final grows = target != null && target > area;
     final result = prepareWallTrial(
         grows ? room : other, grows ? other : room, null, null,
         target: target, targetShrinking: !grows);
-    if (!result.ok)
+    if (!result.ok) {
       notify(tr3('这面墙无法达到该面积，请调整目标', 'Бұл ауданға жету мүмкін емес',
-          'Такая площадь недостижима', 'This wall cannot reach that area'));
+          'Такая площадь недостижима', 'This wall cannot reach that area', ky: 'Бул аянтка жетүү мүмкүн эмес', uz: 'Bu maydonga yetib boʻlmaydi'));
+    }
   }
 
   ActionResult resolveWallTrial(String token, bool apply) {
@@ -304,11 +313,11 @@ extension _VoiceWallPreview on _HouseEditorState {
                 TextButton(
                     onPressed: () => resolveWallTrial(trial.token, false),
                     child:
-                        Text(tr3('取消试改', 'Бас тарту', 'Отменить', 'Cancel'))),
+                        Text(tr3('取消试改', 'Бас тарту', 'Отменить', 'Cancel', ky: 'Жокко чыгаруу', uz: 'Bekor qilish'))),
                 FilledButton(
                     key: const ValueKey('apply-wall-preview'),
                     onPressed: () => resolveWallTrial(trial.token, true),
                     child: Text(
-                        tr3('应用移墙', 'Қолдану', 'Применить', 'Apply move'))),
+                        tr3('应用移墙', 'Қолдану', 'Применить', 'Apply move', ky: 'Колдонуу', uz: 'Qoʻllash'))),
               ])));
 }

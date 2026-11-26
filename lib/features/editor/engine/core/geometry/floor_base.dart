@@ -172,12 +172,17 @@ class FloorBase {
   Iterable<WallSegment> wallsBetween(String a, String b) sync* {
     if (a == b) return;
     for (final segment in wallSegments) {
-      if (segment.edges.isNotEmpty && segment.edges.every((edge) {
-        final left = owners[edge.negative], right = owners[edge.positive];
-        return (left == a && right == b) || (left == b && right == a);
-      })) yield segment;
+      if (segment.edges.isNotEmpty &&
+          segment.edges.every((edge) {
+            final left = owners[edge.negative];
+            final right = owners[edge.positive];
+            return (left == a && right == b) || (left == b && right == a);
+          })) {
+        yield segment;
+      }
     }
   }
+
   final List<SpaceGeometry> stairGeometryBase;
   final List<Cell> unassignedCells;
   final double unassignedNominalArea;

@@ -183,7 +183,14 @@ List<ConstructionIssue> siteChecks(HouseDocument doc,
               '${name(buildings[a])} менен ${name(buildings[b])} кесилишет',
               '${name(buildings[a])} va ${name(buildings[b])} kesishadi'
             ),
-            ('请把其中一个挪开。', 'Біреуін жылжытыңыз.', 'Сдвиньте одну из построек.', 'Move one of the buildings.', 'Курулуштардын бирин жылдырыңыз.', 'Binolardan birini suring.'),
+            (
+              '请把其中一个挪开。',
+              'Біреуін жылжытыңыз.',
+              'Сдвиньте одну из построек.',
+              'Move one of the buildings.',
+              'Курулуштардын бирин жылдырыңыз.',
+              'Binolardan birini suring.'
+            ),
             areas: [ra, rb],
             site: true));
       }
@@ -197,7 +204,14 @@ List<ConstructionIssue> siteChecks(HouseDocument doc,
     out.add(ConstructionIssue(
         'S04',
         IssueLevel.chk,
-        ('房子离边界较近', 'Үй шекараға жақын', 'Дом близко к границе', 'The house is close to the boundary', 'Үй чек арага жакын', 'Uy chegaraga yaqin'),
+        (
+          '房子离边界较近',
+          'Үй шекараға жақын',
+          'Дом близко к границе',
+          'The house is close to the boundary',
+          'Үй чек арага жакын',
+          'Uy chegaraga yaqin'
+        ),
         (
           '房子离街道 ${_m(front)} m、离邻居 ${_m(side)} m、离后边界 ${_m(back)} m。常见要求是离街道不少于 5 m、离邻居不少于 3 m，方便防火、采光和屋檐滴水不落到邻家。请以当地审批要求为准。',
           'Үй көшеден ${_m(front).replaceAll('.', ',')} м, көршіден ${_m(side).replaceAll('.', ',')} м, артқы шекарадан ${_m(back).replaceAll('.', ',')} м. Әдетте көшеден кемінде 5 м, көршіден кемінде 3 м талап етіледі — өрт қауіпсіздігі, жарық және шатыр суы көршіге ақпауы үшін. Жергілікті рұқсат талабын нақтылаңыз.',
@@ -300,7 +314,14 @@ List<ConstructionIssue> siteChecks(HouseDocument doc,
     out.add(ConstructionIssue(
         'S08',
         IssueLevel.chk,
-        ('院墙还没有大门', 'Қоршауда қақпа жоқ', 'В заборе нет ворот', 'The fence has no gate', 'Тосмодо дарбаза жок', 'Panjarada darvoza yoʻq'),
+        (
+          '院墙还没有大门',
+          'Қоршауда қақпа жоқ',
+          'В заборе нет ворот',
+          'The fence has no gate',
+          'Тосмодо дарбаза жок',
+          'Panjarada darvoza yoʻq'
+        ),
         (
           '在临街一侧加一个大门，车能开进院子时宽度不少于 3.5 m。',
           'Көше жақтан қақпа қосыңыз; көлік кіретін болса ені кемінде 3,5 м.',

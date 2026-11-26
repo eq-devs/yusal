@@ -630,7 +630,8 @@ class FloorPlanPainter extends CustomPainter {
       final showSize = room.clearRects.length == 1 &&
           screenWidth >= 110 &&
           screenHeight >= 64;
-      final area = '${dec((room.area(areaBasis) / 1e6).toStringAsFixed(1))} $unitM2';
+      final area =
+          '${dec((room.area(areaBasis) / 1e6).toStringAsFixed(1))} $unitM2';
       final net = largest == null
           ? ''
           : '${tr3('净', 'таза', 'в свету', 'clear', ky: 'таза', uz: 'sof')} ${m2dp(largest.right - largest.left)} × ${m2dp(largest.top - largest.bottom)} $unitM';
@@ -823,7 +824,8 @@ class FloorPlanPainter extends CustomPainter {
           center.dy - vector.dy * px(7) - normal.dy * px(5))
       ..close();
     canvas.drawPath(arrow, Paint()..color = t.wall);
-    label(canvas, tr3('北', 'С', 'С', 'N', ky: 'Т', uz: 'Sh'), center + vector * px(20),
+    label(canvas, tr3('北', 'С', 'С', 'N', ky: 'Т', uz: 'Sh'),
+        center + vector * px(20),
         font: 11, weight: FontWeight.w700);
   }
 
@@ -946,8 +948,9 @@ class FloorPlanPainter extends CustomPainter {
             draftLabel ??
                 (draftIsLine
                     ? tr3('松手分房', 'Жіберсеңіз бөлінеді',
-                        'Отпустите, чтобы разделить',
-                        'Release to split', ky: 'Бөлүү үчүн коё бериңиз', uz: 'Boʻlish uchun qoʻyib yuboring')
+                        'Отпустите, чтобы разделить', 'Release to split',
+                        ky: 'Бөлүү үчүн коё бериңиз',
+                        uz: 'Boʻlish uchun qoʻyib yuboring')
                     : '${dec(((draft!.right - draft!.left) / 1000).toStringAsFixed(1))} × '
                         '${dec(((draft!.top - draft!.bottom) / 1000).toStringAsFixed(1))} $unitM'),
             Offset(rect.center.dx, rect.top - 18),

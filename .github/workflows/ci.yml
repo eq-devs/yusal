@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+    branches: [dev, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    # macOS: the shader build hook (flutter_gpu_shaders) needs impellerc,
+    # which the Flutter SDK ships for macOS and Linux; macOS matches the
+    # machine the tests and baselines are written on.
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.3
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Format of the engine
+        run: dart format --output=none --set-exit-if-changed lib/features/editor/engine
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+      - name: Tests
+        run: flutter test --no-pub --reporter github
+      - name: Engine benchmark (compiled)
+        run: |
+          dart compile exe test/perf/engine_bench.dart -o build/engine_bench
+          build/engine_bench build/engine.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: engine-bench
+          path: build/engine.json
+          if-no-files-found: ignore

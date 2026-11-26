@@ -1,0 +1,96 @@
+{
+  "typical": {
+    "size": {
+      "floors": 2,
+      "rooms": 16,
+      "openings": 27,
+      "jsonBytes": 20638,
+      "sceneElements": 242
+    },
+    "ms": {
+      "validateHouse": 0.693,
+      "encodeHouse": 0.621,
+      "loadHouse": 1.185,
+      "deriveFloorBase.cold": 0.269,
+      "deriveHouse.cold": 1.709,
+      "runChecks": 0.317,
+      "estimateCost": 0.26,
+      "command.AddFurniture": 0.08,
+      "command.RenameRoom": 0.418,
+      "command.SetFloorHeight": 0.425,
+      "command.ResizeOpening": 0.465,
+      "command.MoveOpening": 0.448,
+      "command.MoveAxis": 1.11,
+      "dragFrame.resizeOpening": 0.97,
+      "dragFrame.moveAxis": 1.569,
+      "dragFrame.carveRoom": 2.323,
+      "dragFrame.splitSpace": 2.708,
+      "dragFrame.addOpening": 2.893,
+      "dragFrame.moveDrawnWall": 4.332
+    },
+    "size3d": {
+      "faces": 1061,
+      "vertices": 4240,
+      "lines": 0,
+      "bspFragments": 1982,
+      "drawnItems": 3416,
+      "culled": 114
+    },
+    "ms3d": {
+      "buildScene": 5.114,
+      "bspBuild": 4.765,
+      "paintScene": 6.551,
+      "paintSceneFast": 1.493
+    },
+    "ms2d": {
+      "paintPlan": 0.789
+    }
+  },
+  "large": {
+    "size": {
+      "floors": 2,
+      "rooms": 72,
+      "openings": 60,
+      "jsonBytes": 77033,
+      "sceneElements": 475
+    },
+    "ms": {
+      "validateHouse": 1.099,
+      "encodeHouse": 1.871,
+      "loadHouse": 3.966,
+      "deriveFloorBase.cold": 0.747,
+      "deriveHouse.cold": 2.657,
+      "runChecks": 0.792,
+      "estimateCost": 0.238,
+      "command.AddFurniture": 0.074,
+      "command.RenameRoom": 1.175,
+      "command.SetFloorHeight": 1.167,
+      "command.ResizeOpening": 1.331,
+      "command.MoveOpening": 1.308,
+      "command.MoveAxis": 3.106,
+      "dragFrame.resizeOpening": 2.426,
+      "dragFrame.moveAxis": 4.291,
+      "dragFrame.carveRoom": 11.876,
+      "dragFrame.splitSpace": 11.721,
+      "dragFrame.addOpening": 8.455,
+      "dragFrame.moveDrawnWall": 6.361
+    },
+    "size3d": {
+      "faces": 1863,
+      "vertices": 7448,
+      "lines": 0,
+      "bspFragments": 2755,
+      "drawnItems": 1725,
+      "culled": 1005
+    },
+    "ms3d": {
+      "buildScene": 6.58,
+      "bspBuild": 6.743,
+      "paintScene": 4.202,
+      "paintSceneFast": 1.294
+    },
+    "ms2d": {
+      "paintPlan": 0.872
+    }
+  }
+}

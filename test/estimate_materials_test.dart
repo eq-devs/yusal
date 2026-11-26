@@ -109,12 +109,12 @@ void main() {
 
   group('prices by source', () {
     test('own beats the region, the region beats the example', () {
-      final book = PriceBook(region: 'astana', currency: Currency.kzt, prices: {
-        'concrete': const PriceQuote(39200, source: 'stat', date: '2026-09'),
-        'rebar': const PriceQuote(339000, source: 'stat', date: '2026-06'),
+      const book = PriceBook(region: 'astana', currency: Currency.kzt, prices: {
+        'concrete': PriceQuote(39200, source: 'stat', date: '2026-09'),
+        'rebar': PriceQuote(339000, source: 'stat', date: '2026-06'),
       }, labour: {
         'concrete':
-            const PriceQuote(22000, source: 'market', date: '2026-10-01')
+            PriceQuote(22000, source: 'market', date: '2026-10-01')
       });
       var doc = kz();
       final plain = cost(doc);
@@ -148,16 +148,16 @@ void main() {
           masonryPrices[Currency.kzt]![MasonryUnit.brick]);
       expect(
           line(brick, 'masonryInt').price, line(aerated, 'masonryInt').price);
-      final book = PriceBook(region: 'kz', currency: Currency.kzt, prices: {
+      const book = PriceBook(region: 'kz', currency: Currency.kzt, prices: {
         'masonry_brick':
-            const PriceQuote(50000, source: 'team', date: '2026-11')
+            PriceQuote(50000, source: 'team', date: '2026-11')
       });
       expect(line(cost(doc, book: book), 'masonryExt').price, 50000);
       expect(line(cost(kz(), book: book), 'masonryExt').source,
           PriceSource.example);
     });
 
-    test('a price list is read from the back end\'s answer', () {
+    test("a price list is read from the back end's answer", () {
       final book = priceBookFromJson({
         'region': 'almaty',
         'currency': 'kzt',

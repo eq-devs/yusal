@@ -605,6 +605,7 @@ enum AreaBasis {
   outer,
 }
 
+@immutable
 class HouseExtras {
   HouseExtras({
     List<FurnitureItem> furniture = const [],

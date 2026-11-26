@@ -87,7 +87,7 @@ void main() {
   test('describe gives all three figures', () {
     final session = EngineSession(doc(initial()));
     final room =
-        ((session.describe()['floors'] as List).first as Map)['rooms'] as List;
+        ((session.describe()['floors']! as List).first as Map)['rooms'] as List;
     final r = room.single as Map;
     expect(r['areaToOuterFace'], 120.0);
     expect((r['areaToWallCentres'] as num) < 120, isTrue);

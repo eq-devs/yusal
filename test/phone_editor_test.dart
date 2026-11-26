@@ -114,6 +114,51 @@ void main() {
     expect(t.takeException(), isNull);
   });
 
+  testWidgets('add rises the one bottom sheet; it never closes or dims',
+      (t) async {
+    await mount(t, house());
+    final grip = find.byKey(const Key('dock-grip'));
+    final rest = t.getRect(grip).top;
+    expect(find.byTooltip('拖动划房'), findsNothing, reason: 'tools below');
+    await t.tap(find.byKey(const Key('plan-add')));
+    await t.pumpAndSettle();
+    // Not a route over the page: the same sheet, risen, the plan live.
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.byTooltip('拖动划房'), findsOneWidget);
+    final open = t.getRect(grip).top;
+    expect(open, lessThan(rest - 100));
+    // Furniture is a page inside the sheet, with a way back.
+    await t.tap(find.byTooltip('家具'));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('dock-back')), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('furniture-sofa')));
+    await t.pumpAndSettle();
+    // The sheet is back at its bar with the piece in hand.
+    expect(t.getRect(grip).top, closeTo(rest, 1));
+    expect(find.byKey(const Key('dock-back')), findsNothing);
+    expect(find.byKey(const Key('tool-done')), findsOneWidget);
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('the sheet follows the finger and settles on the nearest stop',
+      (t) async {
+    await mount(t, house());
+    final grip = find.byKey(const Key('dock-grip'));
+    final rest = t.getRect(grip).top;
+    final g = await t.startGesture(t.getCenter(grip));
+    await g.moveBy(const Offset(0, -20));
+    await g.moveBy(const Offset(0, -60));
+    await t.pump();
+    // Mid-drag the sheet is where the finger is, not at a stop.
+    expect(t.getRect(grip).top, closeTo(rest - 60, 2));
+    await t.pump(const Duration(seconds: 1));
+    await g.up();
+    await t.pumpAndSettle();
+    // Let go slowly near the bottom: back down.
+    expect(t.getRect(grip).top, closeTo(rest, 1));
+    expect(t.takeException(), isNull);
+  });
+
   testWidgets('layers are switches on a sheet, with the ruler and the key',
       (t) async {
     await mount(t, house());

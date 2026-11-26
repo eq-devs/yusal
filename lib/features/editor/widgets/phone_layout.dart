@@ -21,59 +21,122 @@ extension _PhoneLayout on _HouseEditorState {
     final card = tab == 'plan' ? selectionCard() : null;
     final up = safeInsets.top;
     final down = safeInsets.bottom;
-    return Stack(clipBehavior: Clip.none, children: [
-      Positioned.fill(
-          top: topBar,
-          bottom: main ? _PhoneLayout.bottomBar : 0,
-          child: FadeOnChange(
-              value: tab,
-              child: tab == 'plan' ? phonePlan(card != null) : tabBody(false))),
-      Positioned(
-          top: -up,
-          left: 0,
-          right: 0,
-          height: topBar + up,
-          child: phoneTopBar()),
-      if (main && card == null)
-        Positioned(
-            left: 0,
-            right: 0,
-            bottom: -down,
-            height: _PhoneLayout.bottomBar + down,
-            child: phoneBottomBar()),
-      if (card != null)
-        Positioned(
-            left: 0,
-            right: 0,
-            bottom: -down,
-            child: Column(
-                key: barsKey,
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // The assistant rides on the card, never under it.
-                  const Padding(
-                      padding: EdgeInsets.only(right: 12, bottom: 8),
-                      child: VoiceSlot()),
-                  // Rises in for each new selection, with the click of a
-                  // choice.
-                  RiseIn(
-                      key: ValueKey(selectionIdentity),
-                      haptic: true,
-                      child: card),
-                ])),
-    ]);
+    // A new selection takes the sheet over; when it is let go, the sheet
+    // is back at its bar, not where the tools were left.
+    if (card != null) {
+      dockDetent = DockDetent.small;
+      dockPage = 'add';
+    }
+    return LayoutBuilder(
+        builder: (context, c) => Stack(clipBehavior: Clip.none, children: [
+              Positioned.fill(
+                  top: topBar,
+                  bottom: main ? _PhoneLayout.bottomBar : 0,
+                  child: FadeOnChange(
+                      value: tab,
+                      child: tab == 'plan' ? phonePlan() : tabBody(false))),
+              Positioned(
+                  top: -up,
+                  left: 0,
+                  right: 0,
+                  height: topBar + up,
+                  child: phoneTopBar()),
+              if (main)
+                Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: -down,
+                    child: phoneDock(card, c.maxHeight - topBar + down)),
+            ]));
+  }
+
+  /// The one sheet at the bottom of the drawing. It stays: its bar (plan or
+  /// 3D, add, the assistant) rises to show the tools, the card of the
+  /// selection takes its place, and neither ever dims or blocks the plan.
+  Widget phoneDock(Widget? card, double room) {
+    final t = Tokens.of(context);
+    final down = safeInsets.bottom;
+    final parts = card is DockParts ? card : null;
+    final selected = parts != null;
+    final detent = selected
+        ? (panelCollapsed
+            ? DockDetent.small
+            : panelFull
+                ? DockDetent.large
+                : DockDetent.medium)
+        : dockDetent;
+    final hint = tab == 'plan' && !selected ? phoneHint() : null;
+    // What rides on top of the sheet, as a map's buttons ride on its
+    // sheet: the assistant over a card, the hint and the layers over the
+    // bar. Out of the way at the top stop.
+    final Widget? above = detent == DockDetent.large
+        ? null
+        : selected
+            ? const Padding(
+                padding: EdgeInsets.only(right: 12, bottom: 8),
+                child: Align(
+                    alignment: Alignment.centerRight, child: VoiceSlot()))
+            : tab == 'plan'
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 14, 10),
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(child: hint ?? const SizedBox.shrink()),
+                          const SizedBox(width: 12),
+                          layersButton(),
+                        ]))
+                : null;
+    final sheet = DecoratedBox(
+        decoration: BoxDecoration(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: t.dark ? 0.32 : 0.1),
+                  blurRadius: 18,
+                  offset: const Offset(0, -2))
+            ]),
+        child: DockSheet(
+            contentKey: selected ? 'sel:$selectionIdentity' : 'bar:$tab',
+            gripKey: Key(selected ? 'selection-grip' : 'dock-grip'),
+            detent: detent,
+            maxHeight: math.max(200, room),
+            bottomPadding: down,
+            color: t.panel,
+            gripColor: t.line,
+            reduceMotion: Motion.reduced(context),
+            onDetent: (d) => update(() {
+                  if (selected) {
+                    panelCollapsed = d == DockDetent.small;
+                    panelFull = d == DockDetent.large;
+                  } else {
+                    dockDetent = d;
+                    if (d == DockDetent.small) dockPage = 'add';
+                  }
+                }),
+            header: selected ? parts.header : phoneToolbar(),
+            body: selected
+                ? parts.body
+                : tab == 'plan'
+                    ? addPanel()
+                    : null));
+    return Column(
+        key: barsKey,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AnimatedSwitcher(
+              duration: Motion.reduced(context) ? Duration.zero : Motion.fast,
+              child: above ?? const SizedBox.shrink()),
+          sheet,
+        ]);
   }
 
   /// The plan with nothing around it: no frame, no zoom buttons, no rows.
-  Widget phonePlan(bool selected) {
-    final hint = selected ? null : phoneHint();
+  Widget phonePlan() {
     return Stack(key: planSheetKey, clipBehavior: Clip.none, children: [
       Positioned.fill(child: planCanvas()),
       Positioned(top: 8, left: 12, right: 12, child: statusChip()),
-      if (!selected)
-        Positioned(right: 14, bottom: 10, child: layersButton()),
-      if (hint != null) Positioned(left: 12, right: 68, bottom: 10, child: hint),
       if (wallMenuCard() case final menu?) menu,
       if (loupe() case final l?) l,
     ]);
@@ -183,7 +246,8 @@ extension _PhoneLayout on _HouseEditorState {
             ])));
   }
 
-  Widget phoneBottomBar() {
+  /// The sheet's bar: plan or 3D, the one "add" button, the assistant.
+  Widget phoneToolbar() {
     final t = Tokens.of(context);
     final flat = tab == 'plan';
     Widget segment(String key, String label, bool on, String to) => Semantics(
@@ -230,11 +294,11 @@ extension _PhoneLayout on _HouseEditorState {
           segment('quick-3d', '3D', !flat, 'ext'),
         ]));
     final addLabel = tr3('添加', 'Қосу', 'Добавить', 'Add', ky: 'Кошуу', uz: 'Qoʻshish');
-    return frostedBar(
-        top: false,
+    final open = flat && dockDetent != DockDetent.small;
+    return SizedBox(
+        height: _PhoneLayout.bottomBar - 18,
         child: Padding(
-            key: barsKey,
-            padding: EdgeInsets.fromLTRB(12, 0, 12, safeInsets.bottom),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
             child: Row(children: [
               views,
               const Spacer(),
@@ -250,7 +314,13 @@ extension _PhoneLayout on _HouseEditorState {
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 20)),
                         onPressed: moreTools,
-                        icon: const Icon(Icons.add, size: 20),
+                        // Open, the same button puts the tools away.
+                        icon: AnimatedRotation(
+                            turns: open ? 0.125 : 0,
+                            duration: Motion.reduced(context)
+                                ? Duration.zero
+                                : Motion.fast,
+                            child: const Icon(Icons.add, size: 20)),
                         label: Text(addLabel))),
               const Spacer(),
               const VoiceSlot(),
@@ -439,7 +509,7 @@ extension _PhoneLayout on _HouseEditorState {
   }
 
   /// One thing to put into the house, on the "add" sheet.
-  Widget addTile(BuildContext sheet, String key, IconData icon, String label,
+  Widget addTile(String key, IconData icon, String label,
       {bool on = false, double? width}) {
     final t = Tokens.of(context);
     return Tooltip(
@@ -451,7 +521,7 @@ extension _PhoneLayout on _HouseEditorState {
             child: InkWell(
                 key: ValueKey('add-$key'),
                 borderRadius: BorderRadius.circular(16),
-                onTap: () => Navigator.pop(sheet, 'tool:$key'),
+                onTap: () => dockChoice('tool:$key'),
                 child: SizedBox(
                     width: width,
                     height: 76,
@@ -471,5 +541,127 @@ extension _PhoneLayout on _HouseEditorState {
                                       fontWeight: FontWeight.w600,
                                       color: on ? t.panel : t.ink)))
                         ])))));
+  }
+
+  /// Something picked on the sheet's tools: the sheet goes back down to
+  /// its bar and the tool is in hand. Furniture first shows what to place.
+  void dockChoice(String choice) {
+    if (choice == 'tool:furniture') {
+      HapticFeedback.selectionClick();
+      update(() {
+        dockPage = 'furniture';
+        if (dockDetent == DockDetent.small) dockDetent = DockDetent.medium;
+      });
+      return;
+    }
+    update(() => dockDetent = DockDetent.small);
+    applyAddChoice(choice);
+  }
+
+  /// What the sheet shows as it rises over its bar: the tools, or the
+  /// furniture once furniture was picked.
+  Widget addPanel() {
+    final t = Tokens.of(context);
+    Widget label(String text) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+        child: Text(text,
+            style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w600, color: t.muted)));
+    Widget grid(List<Widget Function(double)> tiles) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+        child: LayoutBuilder(builder: (context, c) {
+          final w = (c.maxWidth - 20) / 3;
+          return Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [for (final tile in tiles) tile(w)]);
+        }));
+    final tools = Column(
+        key: const ValueKey('dock-tools'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          grid([
+            (w) => addTile('room', Icons.add_home_outlined, '加房间',
+                on: stamping && !stampStair, width: w),
+            (w) => addTile('wall', Icons.add_outlined, '墙体',
+                on: tool == EditorTool.drawWall, width: w),
+            (w) => addTile('door', Icons.door_front_door_outlined, '拖入门',
+                on: tool == EditorTool.placeOpening &&
+                    placingOpening == OpeningKind.door,
+                width: w),
+            (w) => addTile('window', Icons.window_outlined, '拖入窗',
+                on: tool == EditorTool.placeOpening &&
+                    placingOpening == OpeningKind.window,
+                width: w),
+            (w) => addTile('furniture', Icons.chair_outlined, '家具',
+                on: tool == EditorTool.placeFurniture, width: w),
+            (w) => addTile(
+                'stair',
+                Icons.stairs_outlined,
+                tr3('楼梯', 'Баспалдақ', 'Лестница', 'Stairs', ky: 'Тепкич', uz: 'Zinapoya'),
+                on: stairStamping,
+                width: w),
+          ]),
+          label(tr3('更多工具', 'Басқа құралдар', 'Другие инструменты', 'More tools', ky: 'Дагы аспаптар', uz: 'Boshqa asboblar')),
+          grid([
+            (w) => addTile('split', Icons.vertical_split_outlined, '拉线分房',
+                on: tool == EditorTool.split, width: w),
+            (w) => addTile('box', Icons.crop_square, '拖动划房',
+                on: tool == EditorTool.box && !stamping, width: w),
+            (w) => addTile(
+                'utility', Icons.electrical_services_outlined, '水电',
+                on: tool == EditorTool.placeUtility, width: w),
+            (w) => addTile('selectWall', Icons.view_week_outlined, '墙体调整',
+                on: tool == EditorTool.selectWall ||
+                    tool == EditorTool.editWall,
+                width: w),
+            (w) => addTile('resize', Icons.open_in_full, '房屋尺寸',
+                on: tool == EditorTool.resize, width: w),
+            (w) => addTile('measure', Icons.straighten, measureLabel,
+                on: tool == EditorTool.measure, width: w),
+          ]),
+          const SizedBox(height: 8),
+          for (final entry in addChoices.entries)
+            ListTile(
+                contentPadding: tilePad,
+                title: Text(entry.value),
+                onTap: () => dockChoice(entry.key)),
+          const SizedBox(height: 8),
+        ]);
+    final furniture = Padding(
+        key: const ValueKey('dock-furniture'),
+        padding: const EdgeInsets.fromLTRB(8, 0, 16, 16),
+        child: furniturePalette(
+            (kind) {
+              HapticFeedback.selectionClick();
+              update(() {
+                dockPage = 'add';
+                dockDetent = DockDetent.small;
+              });
+              resetInteraction(to: tool);
+              startFurniture(kind);
+            },
+            // A page past the tools, with the way back to them, as in
+            // any iOS sheet.
+            title: Row(children: [
+              IconButton(
+                  key: const Key('dock-back'),
+                  tooltip: tr3('返回', 'Артқа', 'Назад', 'Back', ky: 'Артка', uz: 'Orqaga'),
+                  onPressed: () => update(() => dockPage = 'add'),
+                  icon: const Icon(Icons.chevron_left, size: 26)),
+              Text(
+                  tr3('选择家具', 'Жиһаз таңдау', 'Выбрать мебель',
+                      'Pick furniture',
+                      ky: 'Эмерек тандоо', uz: 'Mebel tanlash'),
+                  style: const TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w700)),
+            ])));
+    return AnimatedSwitcher(
+        duration: Motion.reduced(context) ? Duration.zero : Motion.fast,
+        layoutBuilder: (current, previous) => Stack(
+            alignment: Alignment.topCenter,
+            children: [...previous, if (current != null) current]),
+        child: dockPage == 'furniture' ? furniture : tools);
   }
 }

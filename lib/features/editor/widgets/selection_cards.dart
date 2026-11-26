@@ -83,6 +83,41 @@ extension _SelectionCards on _HouseEditorState {
           onPressed: () => update(clearSelection),
           icon: const Icon(Icons.close, size: 18)),
     ]);
+    // Phones: the card is the content of the page's one bottom sheet, which
+    // brings its own grip and three stops.
+    if (phone) {
+      return DockParts(
+          header: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    head,
+                    if (panelCollapsed && summary != null)
+                      Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(summary,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: mono(size: 12, color: t.muted))),
+                    if (actions.isNotEmpty)
+                      Padding(
+                          padding: const EdgeInsets.only(top: 6, bottom: 4),
+                          child: fadeRow(actions)),
+                  ])),
+          body: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 8, 12),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (subtitle != null)
+                      Text(subtitle,
+                          style: TextStyle(fontSize: 12, color: t.muted)),
+                    ...children,
+                  ])));
+    }
     // Phones: a grip to pull the card open or push it shut, as on any
     // bottom sheet.
     final grip = GestureDetector(
@@ -883,3 +918,16 @@ String areaBasisHint(AreaBasis b) => switch (b) {
           'Ішкі қабырға осіне, сыртқы қабырғаның сыртына дейін',
           'До осей внутренних и наружной грани наружных стен', 'To inner wall centrelines and the outer face of outer walls', ky: 'Ички дубалдардын огуна жана сырткы дубалдардын сырткы бетине чейин', uz: 'Ichki devorlar oʻqigacha va tashqi devorlarning tashqi yuzasigacha'),
     };
+
+/// A selection card split for the phone's bottom sheet: what shows at its
+/// lowest stop, and what it reveals as it rises.
+class DockParts extends StatelessWidget {
+  const DockParts({super.key, required this.header, required this.body});
+  final Widget header;
+  final Widget body;
+  @override
+  Widget build(BuildContext context) => Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [header, body]);
+}

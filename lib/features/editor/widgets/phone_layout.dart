@@ -253,9 +253,12 @@ extension _PhoneLayout on _HouseEditorState {
   Widget phoneToolbar() {
     final t = Tokens.of(context);
     final flat = tab == 'plan';
-    Widget segment(String key, String label, bool on, String to) => Semantics(
+    Widget segment(String key, String label, bool on, String to,
+            {IconData? icon, VoidCallback? go}) =>
+        Semantics(
         button: true,
         selected: on,
+        label: icon == null ? null : label,
         child: AnimatedContainer(
             duration: Motion.reduced(context) ? Duration.zero : Motion.fast,
             decoration: BoxDecoration(
@@ -275,18 +278,25 @@ extension _PhoneLayout on _HouseEditorState {
                 child: InkWell(
                     key: ValueKey(key),
                     customBorder: const StadiumBorder(),
-                    onTap: on ? null : () => showTab(to),
+                    onTap: on ? null : go ?? () => showTab(to),
                     child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 9),
-                        child: Text(label,
-                            style: TextStyle(
-                                fontSize: 14,
-                                height: 1.2,
-                                color: on ? t.ink : t.muted,
-                                fontWeight: on
-                                    ? FontWeight.w700
-                                    : FontWeight.w500)))))));
+                        padding: EdgeInsets.symmetric(
+                            horizontal: icon == null ? 14 : 12,
+                            vertical: icon == null ? 9 : 7),
+                        child: icon != null
+                            ? Tooltip(
+                                message: label,
+                                excludeFromSemantics: true,
+                                child: Icon(icon,
+                                    size: 21, color: on ? t.ink : t.muted))
+                            : Text(label,
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    height: 1.2,
+                                    color: on ? t.ink : t.muted,
+                                    fontWeight: on
+                                        ? FontWeight.w700
+                                        : FontWeight.w500)))))));
     final views = Container(
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
@@ -294,10 +304,45 @@ extension _PhoneLayout on _HouseEditorState {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           segment('quick-2d',
               tr3('平面', 'Жоспар', 'План', 'Plan', ky: 'План', uz: 'Reja'), flat, 'plan'),
-          segment('quick-3d', '3D', !flat, 'ext'),
+          segment('quick-3d', '3D', tab == 'ext', 'ext'),
+          // Inside the house: the walk-through, one tap away like the
+          // other two views.
+          segment(
+              'quick-walk',
+              tr3('室内漫游', 'Ішкі серуен', 'Прогулка по дому',
+                  'Walk through the house',
+                  ky: 'Үйдүн ичин кыдыруу', uz: 'Uy ichini aylanish'),
+              tab == 'walk',
+              'walk',
+              icon: Icons.directions_walk,
+              go: walkHere),
         ]));
     final addLabel = tr3('添加', 'Қосу', 'Добавить', 'Add', ky: 'Кошуу', uz: 'Qoʻshish');
     final open = flat && dockDetent != DockDetent.small;
+    // Three views, "add" and the assistant share one row: in a long
+    // language, with large text or on a small phone "add" keeps only its
+    // plus sign rather than push the row off the screen.
+    final scaler = MediaQuery.textScalerOf(context);
+    double textWidth(String text) => (TextPainter(
+            text: TextSpan(
+                text: text,
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+            textDirection: TextDirection.ltr,
+            textScaler: scaler,
+            maxLines: 1)
+          ..layout())
+        .width;
+    final viewsWidth = 6 +
+        textWidth(tr3('平面', 'Жоспар', 'План', 'Plan', ky: 'План', uz: 'Reja')) +
+        28 +
+        textWidth('3D') +
+        28 +
+        21 +
+        24;
+    final addWidth = 40 + 20 + 8 + textWidth(addLabel);
+    final addFits = 24 + viewsWidth + addWidth + 44 + 24 <=
+        MediaQuery.sizeOf(context).width;
     return SizedBox(
         height: _PhoneLayout.bottomBar - 18,
         child: Padding(
@@ -310,21 +355,36 @@ extension _PhoneLayout on _HouseEditorState {
               if (flat)
                 Tooltip(
                     message: addLabel,
-                    child: FilledButton.icon(
-                        key: const Key('plan-add'),
-                        style: FilledButton.styleFrom(
-                            minimumSize: const Size(0, 46),
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 20)),
-                        onPressed: moreTools,
-                        // Open, the same button puts the tools away.
-                        icon: AnimatedRotation(
-                            turns: open ? 0.125 : 0,
-                            duration: Motion.reduced(context)
-                                ? Duration.zero
-                                : Motion.fast,
-                            child: const Icon(Icons.add, size: 20)),
-                        label: Text(addLabel))),
+                    // Open, the same button puts the tools away.
+                    child: Builder(builder: (context) {
+                      final plus = AnimatedRotation(
+                          turns: open ? 0.125 : 0,
+                          duration:
+                              Motion.reduced(context) ? Duration.zero : Motion.fast,
+                          child: Icon(Icons.add, size: addFits ? 20 : 22));
+                      return addFits
+                          ? FilledButton.icon(
+                              key: const Key('plan-add'),
+                              style: FilledButton.styleFrom(
+                                  minimumSize: const Size(0, 46),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20)),
+                              onPressed: moreTools,
+                              icon: plus,
+                              label: Text(addLabel))
+                          : Semantics(
+                              label: addLabel,
+                              button: true,
+                              excludeSemantics: true,
+                              child: FilledButton(
+                                  key: const Key('plan-add'),
+                                  style: FilledButton.styleFrom(
+                                      minimumSize: const Size(46, 46),
+                                      padding: EdgeInsets.zero,
+                                      shape: const CircleBorder()),
+                                  onPressed: moreTools,
+                                  child: plus));
+                    })),
               const Spacer(),
               const VoiceSlot(),
             ])));

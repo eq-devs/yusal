@@ -8,6 +8,7 @@ import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/editor/page.dart';
 import 'package:yusal/features/editor/widgets/dock_sheet.dart';
 import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
+import 'package:yusal/features/editor/engine/render3d/scene_view.dart';
 import 'package:yusal/service/storage/project_store.dart';
 
 import 'storage_test.dart' show MemoryFiles;
@@ -339,7 +340,8 @@ void main() {
     await t.tap(find.byKey(const ValueKey('tab-qty')));
     await t.pumpAndSettle();
     expect(canvas, findsNothing);
-    expect(find.text('门窗与工程量'), findsOneWidget, reason: 'the page says what it is');
+    expect(find.text('门窗与工程量'), findsOneWidget,
+        reason: 'the page says what it is');
     // Back returns to the drawing, not out of the design.
     await t.tap(find.byType(BackButton));
     await t.pumpAndSettle();
@@ -350,6 +352,40 @@ void main() {
     await t.tap(find.byKey(const ValueKey('quick-2d')));
     await t.pumpAndSettle();
     expect(canvas, findsOneWidget);
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('on a phone the walk-through is one tap away, inside a room',
+      (t) async {
+    await mount(t, house());
+    SceneView scene() => t.widget<SceneView>(find.byType(SceneView));
+    await t.tap(find.byKey(const ValueKey('quick-walk')));
+    await t.pumpAndSettle();
+    expect(canvas, findsNothing);
+    expect(scene().walk, isTrue);
+    // Standing in the house's only room, not outside the front.
+    final start = scene().walkStart!;
+    expect(start.x, inInclusiveRange(0, 10000));
+    expect(start.y, inInclusiveRange(0, 12000));
+    // 3D goes back to the outside view, and walk returns where one stood.
+    await t.tap(find.byKey(const ValueKey('quick-3d')));
+    await t.pumpAndSettle();
+    expect(scene().walk, isFalse);
+    await t.tap(find.byKey(const ValueKey('quick-walk')));
+    await t.pumpAndSettle();
+    expect(scene().walk, isTrue);
+    expect(scene().walkStart!.token, start.token);
+    await t.tap(find.byKey(const ValueKey('quick-2d')));
+    await t.pumpAndSettle();
+    expect(canvas, findsOneWidget);
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('the three views fit a 320-wide phone', (t) async {
+    await mount(t, house());
+    t.view.physicalSize = const Size(320, 640);
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('quick-walk')), findsOneWidget);
     expect(t.takeException(), isNull);
   });
 }

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/engine/core/commands/kz_template.dart';
 import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
 import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/editor/widgets/dock_sheet.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
 import 'package:yusal/service/storage/project_store.dart';
 
@@ -115,7 +116,8 @@ void main() {
     expect(find.text('card'), findsOneWidget);
   });
 
-  testWidgets('the card of a selected room rises in', (t) async {
+  testWidgets('the card of a selected room fades into the sheet that stays',
+      (t) async {
     t.view.physicalSize = const Size(390, 844);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -127,7 +129,7 @@ void main() {
         child: MaterialApp(
             home: HouseEditor(entry: ProjectEntry(id, doc), store: store))));
     await t.pumpAndSettle();
-    expect(find.byType(RiseIn), findsNothing);
+    final sheet = t.state(find.byType(DockSheet));
     final canvas = find.byWidgetPredicate(
         (w) => w is CustomPaint && w.painter is FloorPlanPainter);
     final painter =
@@ -136,20 +138,20 @@ void main() {
         painter.point(doc.footprint.width * 0.3, doc.footprint.depth * 0.3,
             t.getSize(canvas.first)));
     await t.pump();
-    expect(find.byType(RiseIn), findsOneWidget);
-    final opacity = t.widget<Opacity>(find
-        .descendant(of: find.byType(RiseIn), matching: find.byType(Opacity))
-        .first);
-    expect(opacity.opacity, lessThan(1), reason: 'it starts faint and low');
+    await t.pump(const Duration(milliseconds: 40));
+    // The same sheet, not a new one sliding up.
+    expect(t.state(find.byType(DockSheet)), same(sheet));
+    double fade() => t
+        .widget<FadeTransition>(find
+            .ancestor(
+                of: find.byKey(const Key('room-use')),
+                matching: find.byType(FadeTransition))
+            .first)
+        .opacity
+        .value;
+    expect(fade(), lessThan(1), reason: 'the card fades in');
     await t.pumpAndSettle();
-    expect(
-        t
-            .widget<Opacity>(find
-                .descendant(
-                    of: find.byType(RiseIn), matching: find.byType(Opacity))
-                .first)
-            .opacity,
-        1);
+    expect(fade(), 1);
     await t.pumpWidget(const ProviderScope(child: SizedBox.shrink()));
     await t.pumpAndSettle();
   });

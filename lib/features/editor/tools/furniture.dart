@@ -7,40 +7,55 @@ extension _FurnitureTool on _HouseEditorState {
   Future<FurnitureKind?> pickFurnitureKind() => showMotionSheet<FurnitureKind>(
       context: context,
       isScrollControlled: true,
-      builder: (context) {
-        final t = Tokens.of(context);
-        return SafeArea(
-            child: SizedBox(
-                height: math.min(MediaQuery.sizeOf(context).height * 0.75, 560),
-                child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    children: [
-                      Text(
-                          tr3('选择家具', 'Жиһаз таңдау', 'Выбрать мебель',
-                              'Pick furniture',
-                              ky: 'Эмерек тандоо', uz: 'Mebel tanlash'),
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w700)),
-                      for (final (group, kinds) in furnitureGroups()) ...[
-                        Padding(
-                            padding: const EdgeInsets.only(top: 14, bottom: 6),
-                            child: Text(group,
-                                style:
-                                    TextStyle(fontSize: 12, color: t.muted))),
-                        Wrap(spacing: 8, runSpacing: 8, children: [
-                          for (final kind in kinds)
-                            Btn(
-                                label: furnitureName(kind),
-                                icon: furnitureIcon(kind),
-                                onPressed: () => Navigator.pop(context, kind)),
-                        ]),
-                      ],
-                    ])));
-      });
+      builder: (context) => SafeArea(
+          child: SizedBox(
+              height: math.min(MediaQuery.sizeOf(context).height * 0.75, 560),
+              child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: furniturePalette(
+                      (kind) => Navigator.pop(context, kind))))));
+
+  /// The furniture in groups, each a button; on a sheet of its own, or on
+  /// the phone's bottom sheet past the tools.
+  Widget furniturePalette(ValueChanged<FurnitureKind> onPick,
+      {Widget? title}) {
+    final t = Tokens.of(context);
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          title ??
+              Text(
+                  tr3('选择家具', 'Жиһаз таңдау', 'Выбрать мебель',
+                      'Pick furniture',
+                      ky: 'Эмерек тандоо', uz: 'Mebel tanlash'),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w700)),
+          for (final (group, kinds) in furnitureGroups()) ...[
+            Padding(
+                padding: const EdgeInsets.only(top: 14, bottom: 6),
+                child:
+                    Text(group, style: TextStyle(fontSize: 12, color: t.muted))),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final kind in kinds)
+                Btn(
+                    key: ValueKey('furniture-${kind.name}'),
+                    label: furnitureName(kind),
+                    icon: furnitureIcon(kind),
+                    onPressed: () => onPick(kind)),
+            ]),
+          ],
+        ]);
+  }
 
   Future<void> chooseFurniture() async {
     final kind = await pickFurnitureKind();
     if (kind == null || !mounted) return;
+    startFurniture(kind);
+  }
+
+  /// Takes up [kind]: each tap on the plan places one.
+  void startFurniture(FurnitureKind kind) {
     update(() {
       cancelDrag();
       clearWallSelection();

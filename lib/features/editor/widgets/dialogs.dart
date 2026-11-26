@@ -494,93 +494,33 @@ extension _EditorDialogs on _HouseEditorState {
                             ]))))));
   }
 
+  /// Everything that can be put into the house. On a phone it is the
+  /// bottom sheet rising over its bar; elsewhere a sheet of its own.
   Future<void> moreTools() async {
+    if (phone) {
+      HapticFeedback.selectionClick();
+      update(() {
+        dockPage = 'add';
+        dockDetent = dockDetent == DockDetent.small
+            ? DockDetent.medium
+            : DockDetent.small;
+      });
+      return;
+    }
     final choice = await showMotionSheet<String>(
         context: context,
         isScrollControlled: true,
         builder: (context) => SafeArea(
             child: SizedBox(
-                height: math.min(MediaQuery.sizeOf(context).height * 0.7,
-                    phone ? 560 : 500),
+                height: math.min(MediaQuery.sizeOf(context).height * 0.7, 500),
                 child: ListView(children: [
-                  if (phone) ...[
-                    sheetTitle(tr3('添加', 'Қосу', 'Добавить', 'Add', ky: 'Кошуу', uz: 'Qoʻshish')),
-                    Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-                        child: LayoutBuilder(builder: (context, c) {
-                          final w = (c.maxWidth - 20) / 3;
-                          return Wrap(spacing: 10, runSpacing: 10, children: [
-                            addTile(context, 'room', Icons.add_home_outlined,
-                                '加房间',
-                                on: stamping && !stampStair, width: w),
-                            addTile(context, 'wall', Icons.add_outlined, '墙体',
-                                on: tool == EditorTool.drawWall, width: w),
-                            addTile(context, 'door',
-                                Icons.door_front_door_outlined, '拖入门',
-                                on: tool == EditorTool.placeOpening &&
-                                    placingOpening == OpeningKind.door,
-                                width: w),
-                            addTile(context, 'window', Icons.window_outlined,
-                                '拖入窗',
-                                on: tool == EditorTool.placeOpening &&
-                                    placingOpening == OpeningKind.window,
-                                width: w),
-                            addTile(context, 'furniture', Icons.chair_outlined,
-                                '家具',
-                                on: tool == EditorTool.placeFurniture,
-                                width: w),
-                            addTile(
-                                context,
-                                'stair',
-                                Icons.stairs_outlined,
-                                tr3('楼梯', 'Баспалдақ', 'Лестница', 'Stairs', ky: 'Тепкич', uz: 'Zinapoya'),
-                                on: stairStamping,
-                                width: w),
-                          ]);
-                        })),
-                    Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                        child: Text(
-                            tr3('更多工具', 'Басқа құралдар', 'Другие инструменты', 'More tools', ky: 'Дагы аспаптар', uz: 'Boshqa asboblar'),
-                            style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Tokens.of(context).muted))),
-                    Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                        child: LayoutBuilder(builder: (context, c) {
-                          final w = (c.maxWidth - 20) / 3;
-                          return Wrap(spacing: 10, runSpacing: 10, children: [
-                            addTile(context, 'split',
-                                Icons.vertical_split_outlined, '拉线分房',
-                                on: tool == EditorTool.split, width: w),
-                            addTile(context, 'box', Icons.crop_square, '拖动划房',
-                                on: tool == EditorTool.box && !stamping,
-                                width: w),
-                            addTile(context, 'utility',
-                                Icons.electrical_services_outlined, '水电',
-                                on: tool == EditorTool.placeUtility, width: w),
-                            addTile(context, 'selectWall',
-                                Icons.view_week_outlined, '墙体调整',
-                                on: tool == EditorTool.selectWall ||
-                                    tool == EditorTool.editWall,
-                                width: w),
-                            addTile(context, 'resize', Icons.open_in_full,
-                                '房屋尺寸',
-                                on: tool == EditorTool.resize, width: w),
-                            addTile(context, 'measure', Icons.straighten,
-                                measureLabel,
-                                on: tool == EditorTool.measure, width: w),
-                          ]);
-                        })),
-                  ] else
-                    Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                            tr3('更多工具', 'Басқа құралдар', 'Другие инструменты', 'More tools', ky: 'Дагы аспаптар', uz: 'Boshqa asboblar'),
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w600))),
-                  if (phoneTools && !phone)
+                  Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                          tr3('更多工具', 'Басқа құралдар', 'Другие инструменты', 'More tools', ky: 'Дагы аспаптар', uz: 'Boshqa asboblar'),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w600))),
+                  if (phoneTools)
                     Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                         child: Wrap(spacing: 8, runSpacing: 8, children: [
@@ -594,24 +534,33 @@ extension _EditorDialogs on _HouseEditorState {
                                     }),
                                 child: w)
                         ])),
-                  for (final entry in {
-                    'fit': tr3(
-                        '恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид', 'Reset view', ky: 'Көрүнүштү баштапкы абалга келтирүү', uz: 'Koʻrinishni asliga qaytarish'),
-                    'addRoom': tr3('按尺寸加房间', 'Өлшеммен бөлме қосу',
-                        'Добавить комнату по размерам',
-                        'Add a room by size', ky: 'Өлчөмү боюнча бөлмө кошуу', uz: 'Oʻlcham boʻyicha xona qoʻshish'),
-                    'grid': tr3('网格', 'Тор', 'Сетка', 'Grid', ky: 'Тор', uz: 'Toʻr'),
-                    'opening': tr3('门窗', 'Есік-терезе', 'Окна и двери', 'Windows and doors', ky: 'Терезелер жана эшиктер', uz: 'Derazalar va eshiklar'),
-                    'stair': tr3('楼梯', 'Баспалдақ', 'Лестница', 'Stairs', ky: 'Тепкич', uz: 'Zinapoya'),
-                    for (final type in RoomType.values)
-                      type.name: roomTypeName(type),
-                    'erase': tr3('擦除', 'Өшіру', 'Стереть', 'Erase', ky: 'Өчүргүч', uz: 'Oʻchirgʻich')
-                  }.entries)
-                    ListTile(contentPadding: tilePad, 
+                  for (final entry in addChoices.entries)
+                    ListTile(contentPadding: tilePad,
                         title: Text(entry.value),
                         onTap: () => Navigator.pop(context, entry.key)),
                 ]))));
     if (choice == null || !mounted) return;
+    applyAddChoice(choice);
+  }
+
+  /// The rest of what the add sheet offers, past its tool tiles.
+  Map<String, String> get addChoices => {
+        'fit': tr3(
+            '恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид', 'Reset view', ky: 'Көрүнүштү баштапкы абалга келтирүү', uz: 'Koʻrinishni asliga qaytarish'),
+        'addRoom': tr3('按尺寸加房间', 'Өлшеммен бөлме қосу',
+            'Добавить комнату по размерам',
+            'Add a room by size', ky: 'Өлчөмү боюнча бөлмө кошуу', uz: 'Oʻlcham boʻyicha xona qoʻshish'),
+        'grid': tr3('网格', 'Тор', 'Сетка', 'Grid', ky: 'Тор', uz: 'Toʻr'),
+        'opening': tr3('门窗', 'Есік-терезе', 'Окна и двери', 'Windows and doors', ky: 'Терезелер жана эшиктер', uz: 'Derazalar va eshiklar'),
+        'stair': tr3('楼梯', 'Баспалдақ', 'Лестница', 'Stairs', ky: 'Тепкич', uz: 'Zinapoya'),
+        for (final type in RoomType.values)
+          type.name: roomTypeName(type),
+        'erase': tr3('擦除', 'Өшіру', 'Стереть', 'Erase', ky: 'Өчүргүч', uz: 'Oʻchirgʻich')
+      };
+
+  /// Takes up what was picked on the add sheet: `tool:<key>` for a tile,
+  /// or one of [addChoices].
+  void applyAddChoice(String choice) {
     if (choice.startsWith('tool:')) {
       final key = choice.substring(5);
       if (key == 'stair') return startStairStamp();
@@ -622,7 +571,10 @@ extension _EditorDialogs on _HouseEditorState {
       canvasTransform.value = Matrix4.identity();
       return;
     }
-    if (choice == 'addRoom') return addRoomBySize();
+    if (choice == 'addRoom') {
+      addRoomBySize();
+      return;
+    }
     if (choice == 'stair') return startStairStamp();
     update(() {
       erase = choice == 'erase';

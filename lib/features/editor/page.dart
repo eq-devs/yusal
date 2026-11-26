@@ -30,6 +30,7 @@ import 'package:yusal/service/storage/last_open.dart';
 import 'package:yusal/features/editor/widgets/footprint_sketch.dart';
 import 'package:yusal/features/editor/widgets/wall_length_dialog.dart';
 import 'package:yusal/features/editor/widgets/perf_meter.dart';
+import 'package:yusal/features/editor/widgets/dock_sheet.dart';
 import 'package:yusal/features/editor/util/wall_attachment_points.dart';
 import 'package:yusal/features/editor/util/wall_snap.dart';
 import 'package:yusal/features/editor/util/drawing_export.dart';
@@ -430,6 +431,12 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
 
   /// The selection card pulled up to its tallest stop.
   bool panelFull = false;
+
+  /// Phones: how far the bottom sheet is up while nothing is selected, and
+  /// what it shows past its bar ('add': the tools, 'furniture': the
+  /// furniture to place).
+  DockDetent dockDetent = DockDetent.small;
+  String dockPage = 'add';
 
   /// Phone and upright tablet: the drawing fills the page under floating
   /// bars. Decided by the last build.

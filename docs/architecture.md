@@ -66,7 +66,7 @@ Live<List<X>>(provider: xListProvider, builder: (context, list) => …);
 
 一个 feature 打开另一个 feature 的页面时，不引用那个页面，而是用 `shared/ui/routes.dart` 里的目的地：`pushPage(context, (_) => pageFor(ToDemand(id)))`。`app.dart` 的 `appPage` 用一个穷尽的 `switch` 把每个目的地变成页面，新加目的地不写页面就编译不过；`main()` 和测试里设置 `Routes.pages = appPage`。通知和推送里的引用用 `openRef`。
 
-`test/platform/design_system_test.dart` 另外限制 Material 图标：只有清单里的文件还在用（YIcons 还没画的房间类型、家具和表单控件），数量只能减少。
+`test/platform/design_system_test.dart` 另外限制 Material 图标：图标一律用 YIcons（`tool/brand/icons.json`，`python3 tool/brand/gen_yicons.py` 生成字体和 `yicons.dart`），唯一例外是苹果登录按钮上的苹果标志。
 
 后端错误码：yusal-api 的 `docs/api_codes.json` 在这里有一份副本，`test/platform/api_codes_test.dart` 检查每个服务端错误码都能落到一个 `ApiCodes` 上。
 

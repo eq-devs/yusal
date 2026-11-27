@@ -57,51 +57,13 @@ void main() {
         isEmpty);
   });
 
-  test('Material icons only where YIcons has no drawing yet', () {
-    // YIcons (tool/brand/icons.json) is the icon set. These files still use
-    // Material for room types, furniture and form controls the set does
-    // not draw; the counts may only go down, and a file at 0 leaves the list.
+  test('Material icons only for the Apple logo', () {
+    // YIcons (tool/brand/icons.json) is the icon set. The one Material icon
+    // left is Apple's logo on "Sign in with Apple", a brand mark that is
+    // not ours to redraw.
     const remaining = {
-      'features/admin/page.dart': 7,
-      'features/auth/page.dart': 7,
+      'features/auth/page.dart': 1,
       'features/auth/pages/sign_in_methods.dart': 1,
-      'features/backup/page.dart': 1,
-      'features/chat/pages/inbox.dart': 3,
-      'features/coop/page.dart': 1,
-      'features/demand/pages/share.dart': 1,
-      'features/discover/page.dart': 2,
-      'features/editor/engine/render2d/furniture_names.dart': 22,
-      'features/editor/engine/render2d/planning_names.dart': 14,
-      'features/editor/page.dart': 3,
-      'features/editor/pages/home.dart': 1,
-      'features/editor/tabs/cost.dart': 1,
-      'features/editor/tabs/heat.dart': 1,
-      'features/editor/tabs/other.dart': 2,
-      'features/editor/tabs/plan.dart': 5,
-      'features/editor/tabs/scene.dart': 1,
-      'features/editor/tabs/site.dart': 1,
-      'features/editor/tools/outline.dart': 4,
-      'features/editor/tools/picking.dart': 1,
-      'features/editor/tools/utility.dart': 2,
-      'features/editor/tools/wall.dart': 4,
-      'features/editor/widgets/dialogs.dart': 1,
-      'features/editor/widgets/header.dart': 1,
-      'features/editor/widgets/phone_layout.dart': 9,
-      'features/editor/widgets/selection_cards.dart': 6,
-      'features/editor/widgets/start_sheet.dart': 1,
-      'features/home/page.dart': 2,
-      'features/home/pages/post.dart': 2,
-      'features/coop/widgets/site_tab.dart': 2,
-      'features/me/page.dart': 2,
-      'features/me/pages/voice_settings.dart': 5,
-      'features/trust/page.dart': 5,
-      'features/profile/page.dart': 1,
-      'features/profile/widgets/profile_card.dart': 1,
-      'features/projects/page.dart': 1,
-      'features/shared/ui/house_progress.dart': 2,
-      'features/shared/ui/photos.dart': 1,
-      'features/voice/widgets/read_aloud_button.dart': 2,
-      'features/voice/widgets/voice_overlay.dart': 2,
     };
     final uses = RegExp(r'\bIcons\.\w+');
     final actual = <String, int>{

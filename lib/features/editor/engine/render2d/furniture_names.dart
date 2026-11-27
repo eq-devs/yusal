@@ -127,38 +127,38 @@ List<(String, List<FurnitureKind>)> furnitureGroups() => [
     ];
 
 IconData furnitureIcon(FurnitureKind kind) => switch (kind) {
-      FurnitureKind.bed || FurnitureKind.singleBed => Icons.bed_outlined,
+      FurnitureKind.bed || FurnitureKind.singleBed => YIcons.bed,
       FurnitureKind.wardrobe ||
       FurnitureKind.pantry ||
       FurnitureKind.shoeCabinet =>
-        Icons.door_sliding_outlined,
+        YIcons.wardrobe,
       FurnitureKind.table ||
       FurnitureKind.diningTable ||
       FurnitureKind.desk =>
-        Icons.table_restaurant_outlined,
-      FurnitureKind.chair || FurnitureKind.bench => Icons.chair_alt_outlined,
-      FurnitureKind.sofa => Icons.weekend_outlined,
-      FurnitureKind.tvStand => Icons.tv_outlined,
-      FurnitureKind.shelf => Icons.shelves,
+        YIcons.table,
+      FurnitureKind.chair || FurnitureKind.bench => YIcons.seat,
+      FurnitureKind.sofa => YIcons.chair,
+      FurnitureKind.tvStand => YIcons.tv,
+      FurnitureKind.shelf => YIcons.shelf,
       FurnitureKind.rug ||
       FurnitureKind.alasha ||
       FurnitureKind.korpe =>
-        Icons.texture,
-      FurnitureKind.wallRug => Icons.wallpaper,
-      FurnitureKind.cushion => Icons.crop_portrait,
-      FurnitureKind.dastarkhan => Icons.circle_outlined,
+        YIcons.rug,
+      FurnitureKind.wallRug => YIcons.rug,
+      FurnitureKind.cushion => YIcons.cushion,
+      FurnitureKind.dastarkhan => YIcons.rug,
       FurnitureKind.sandyq => YIcons.material,
-      FurnitureKind.hooks => Icons.checkroom,
-      FurnitureKind.counter => Icons.countertops_outlined,
-      FurnitureKind.stove => Icons.local_fire_department_outlined,
-      FurnitureKind.sink || FurnitureKind.basin => Icons.wash_outlined,
-      FurnitureKind.fridge => Icons.kitchen_outlined,
-      FurnitureKind.bathtub => Icons.bathtub_outlined,
-      FurnitureKind.shower => Icons.shower_outlined,
-      FurnitureKind.toilet => Icons.wc_outlined,
-      FurnitureKind.washer => Icons.local_laundry_service_outlined,
-      FurnitureKind.boiler => Icons.fireplace_outlined,
-      FurnitureKind.terrace || FurnitureKind.porch => Icons.deck_outlined,
+      FurnitureKind.hooks => YIcons.hanger,
+      FurnitureKind.counter => YIcons.counter,
+      FurnitureKind.stove => YIcons.flame,
+      FurnitureKind.sink || FurnitureKind.basin => YIcons.sink,
+      FurnitureKind.fridge => YIcons.fridge,
+      FurnitureKind.bathtub => YIcons.bath,
+      FurnitureKind.shower => YIcons.shower,
+      FurnitureKind.toilet => YIcons.toilet,
+      FurnitureKind.washer => YIcons.washer,
+      FurnitureKind.boiler => YIcons.boiler,
+      FurnitureKind.terrace || FurnitureKind.porch => YIcons.deck,
       FurnitureKind.custom => YIcons.grid,
     };
 

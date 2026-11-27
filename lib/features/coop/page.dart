@@ -513,7 +513,7 @@ class _AgreementCard extends StatelessWidget {
                 Icon(
                     g.confirmedBy.contains(id)
                         ? YIcons.checkCircle
-                        : Icons.radio_button_unchecked,
+                        : YIcons.radioOff,
                     size: 18,
                     color: g.confirmedBy.contains(id) ? t.ok : t.faint),
                 const SizedBox(width: 8),

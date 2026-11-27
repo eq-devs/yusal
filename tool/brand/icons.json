@@ -28,7 +28,8 @@
    "replaces": [
     "home_outlined",
     "home_work_outlined",
-    "other_houses_outlined"
+    "other_houses_outlined",
+    "cottage_outlined"
    ]
   },
   "discover": {
@@ -209,7 +210,9 @@
      "d": "M12.5 18V13.5a4.5 4.5 0 0 1 4.5 4.5z"
     }
    ],
-   "replaces": []
+   "replaces": [
+    "grid_on_outlined"
+   ]
   },
   "cube": {
    "group": "domain",
@@ -311,7 +314,8 @@
     }
    ],
    "replaces": [
-    "door_front_door_outlined"
+    "door_front_door_outlined",
+    "meeting_room_outlined"
    ]
   },
   "window": {
@@ -362,7 +366,8 @@
     }
    ],
    "replaces": [
-    "chair_outlined"
+    "chair_outlined",
+    "weekend_outlined"
    ]
   },
   "material": {
@@ -406,7 +411,8 @@
    "replaces": [
     "auto_awesome_mosaic_outlined",
     "category_outlined",
-    "dashboard_outlined"
+    "dashboard_outlined",
+    "grid_on"
    ]
   },
   "budget": {
@@ -538,7 +544,8 @@
     }
    ],
    "replaces": [
-    "auto_awesome"
+    "auto_awesome",
+    "auto_fix_high"
    ]
   },
   "light": {
@@ -711,7 +718,9 @@
      "d": "M17.6 17.6l2.9 2.9"
     }
    ],
-   "replaces": []
+   "replaces": [
+    "search_off"
+   ]
   },
   "bell": {
    "group": "feature",
@@ -1202,7 +1211,8 @@
     }
    ],
    "replaces": [
-    "ios_share"
+    "ios_share",
+    "volunteer_activism_outlined"
    ]
   },
   "download": {
@@ -1293,7 +1303,8 @@
     }
    ],
    "replaces": [
-    "mail_outline"
+    "mail_outline",
+    "mark_email_unread_outlined"
    ]
   },
   "list": {
@@ -1318,7 +1329,8 @@
     }
    ],
    "replaces": [
-    "list_alt"
+    "list_alt",
+    "table_rows_outlined"
    ]
   },
   "add": {
@@ -1333,7 +1345,8 @@
    "replaces": [
     "add",
     "add_circle_outline",
-    "add_outlined"
+    "add_outlined",
+    "add_box_outlined"
    ]
   },
   "remove": {
@@ -1629,7 +1642,8 @@
     }
    ],
    "replaces": [
-    "delete_outline"
+    "delete_outline",
+    "delete_sweep_outlined"
    ]
   },
   "block": {
@@ -1646,7 +1660,8 @@
     }
    ],
    "replaces": [
-    "block"
+    "block",
+    "block_outlined"
    ]
   },
   "send": {
@@ -1717,6 +1732,1226 @@
    ],
    "replaces": [
     "phone_outlined"
+   ]
+  },
+  "bed": {
+   "group": "furniture",
+   "label": "床",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 5v15M3.5 16h17M20.5 20v-6.5a2.5 2.5 0 0 0-2.5-2.5h-7.5v5"
+    },
+    {
+     "role": "a",
+     "d": "M6.5 13h1.5"
+    }
+   ],
+   "replaces": [
+    "bed_outlined"
+   ]
+  },
+  "bath": {
+   "group": "furniture",
+   "label": "浴缸",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12h18v2.5a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4zM7 18.5l-1 2M17 18.5l1 2M5.5 12V6.5a2.5 2.5 0 0 1 4.6-1.4"
+    },
+    {
+     "role": "a",
+     "d": "M7 15h4"
+    }
+   ],
+   "replaces": [
+    "bathtub_outlined"
+   ]
+  },
+  "shower": {
+   "group": "furniture",
+   "label": "淋浴",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 21V7.5a3.5 3.5 0 0 1 7 0V9M8.5 12.5a3.5 3.5 0 0 1 7 0z"
+    },
+    {
+     "role": "a",
+     "d": "M9.5 16v.6M12 16v.6M14.5 16v.6M10.75 19.4v.6M13.25 19.4v.6"
+    }
+   ],
+   "replaces": [
+    "shower_outlined"
+   ]
+  },
+  "toilet": {
+   "group": "furniture",
+   "label": "卫生间",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6.5 3.5h4a1 1 0 0 1 1 1v7h-6v-7a1 1 0 0 1 1-1zM4 11.5h16a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM9.5 16.5l-1 4h7l-1-4"
+    },
+    {
+     "role": "a",
+     "d": "M7.5 6.5h2"
+    }
+   ],
+   "replaces": [
+    "wc_outlined"
+   ]
+  },
+  "fridge": {
+   "group": "furniture",
+   "label": "冰箱",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM5 10h14"
+    },
+    {
+     "role": "a",
+     "d": "M8.5 6v1.5M8.5 13v3"
+    }
+   ],
+   "replaces": [
+    "kitchen_outlined"
+   ]
+  },
+  "counter": {
+   "group": "furniture",
+   "label": "台面",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 9.5h18M5 9.5v11h14v-11M12 9.5v11"
+    },
+    {
+     "role": "a",
+     "d": "M14.5 13.5h2M7.5 13.5h2"
+    }
+   ],
+   "replaces": [
+    "countertops_outlined"
+   ]
+  },
+  "flame": {
+   "group": "furniture",
+   "label": "炉灶 · 火",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 21a6.5 6.5 0 0 0 6.5-6.5c0-4.2-3-6.8-4.3-11-2.2 1.7-3.7 3.4-4.2 6-.9-.8-1.4-1.9-1.6-3C6.5 9 5.5 11.6 5.5 14.5A6.5 6.5 0 0 0 12 21z"
+    },
+    {
+     "role": "A",
+     "d": "M12 18.5a2.2 2.2 0 0 0 2.2-2.2c0-1.4-1.1-2.4-2.2-3.8-1.1 1.4-2.2 2.4-2.2 3.8a2.2 2.2 0 0 0 2.2 2.2z"
+    }
+   ],
+   "replaces": [
+    "local_fire_department_outlined"
+   ]
+  },
+  "sink": {
+   "group": "furniture",
+   "label": "水池",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 12.5h17a6 6 0 0 1-6 6h-5a6 6 0 0 1-6-6zM12 12.5V6.5a2.25 2.25 0 0 1 4.5 0"
+    },
+    {
+     "role": "A",
+     "d": "M16.5 9c.7.9 1.2 1.6 1.2 2.2a1.2 1.2 0 0 1-2.4 0c0-.6.5-1.3 1.2-2.2z"
+    }
+   ],
+   "replaces": [
+    "wash_outlined"
+   ]
+  },
+  "washer": {
+   "group": "furniture",
+   "label": "洗衣机",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6 3h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM4 7.5h16M8 14a4 4 0 1 0 8 0a4 4 0 1 0 -8 0z"
+    },
+    {
+     "role": "a",
+     "d": "M7 5.25h2"
+    }
+   ],
+   "replaces": [
+    "local_laundry_service_outlined"
+   ]
+  },
+  "boiler": {
+   "group": "furniture",
+   "label": "锅炉",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M8 3h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM9.5 19v2M14.5 19v2"
+    },
+    {
+     "role": "A",
+     "d": "M12 15.5a2.2 2.2 0 0 0 2.2-2.2c0-1.4-1.1-2.4-2.2-3.8-1.1 1.4-2.2 2.4-2.2 3.8a2.2 2.2 0 0 0 2.2 2.2z"
+    }
+   ],
+   "replaces": [
+    "fireplace_outlined"
+   ]
+  },
+  "radiator": {
+   "group": "utility",
+   "label": "暖气片",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6 6v12M10 6v12M14 6v12M18 6v12"
+    },
+    {
+     "role": "a",
+     "d": "M3 16h3M18 16h3"
+    }
+   ],
+   "replaces": [
+    "heat_pump_outlined"
+   ]
+  },
+  "seat": {
+   "group": "furniture",
+   "label": "椅子",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M8.5 3.5h7a1 1 0 0 1 1 1v7h-9v-7a1 1 0 0 1 1-1zM6 11.5h12v3H6zM7 14.5v6M17 14.5v6"
+    },
+    {
+     "role": "a",
+     "d": "M10.5 7.5h3"
+    }
+   ],
+   "replaces": [
+    "chair_alt_outlined"
+   ]
+  },
+  "table": {
+   "group": "furniture",
+   "label": "桌子",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 8.5h18M5.5 8.5v12M18.5 8.5v12"
+    },
+    {
+     "role": "a",
+     "d": "M8.5 12.5h7"
+    }
+   ],
+   "replaces": [
+    "table_restaurant_outlined"
+   ]
+  },
+  "tv": {
+   "group": "furniture",
+   "label": "电视",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4.5 5.5h15a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2zM8.5 21.5h7"
+    },
+    {
+     "role": "a",
+     "d": "M9 2.5l3 3 3-3"
+    }
+   ],
+   "replaces": [
+    "tv_outlined"
+   ]
+  },
+  "shelf": {
+   "group": "furniture",
+   "label": "置物架",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4.5 3v18M19.5 3v18M4.5 9h15M4.5 15h15"
+    },
+    {
+     "role": "a",
+     "d": "M8 12v-.5M8 18v-.5M11 18v-.5"
+    }
+   ],
+   "replaces": [
+    "shelves"
+   ]
+  },
+  "wardrobe": {
+   "group": "furniture",
+   "label": "衣柜",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5.5 3h13a1 1 0 0 1 1 1v15.5a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM12 3v17.5"
+    },
+    {
+     "role": "a",
+     "d": "M9.5 11v2M14.5 11v2"
+    }
+   ],
+   "replaces": [
+    "door_sliding_outlined"
+   ]
+  },
+  "rug": {
+   "group": "furniture",
+   "label": "地毯",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18V6A1.5 1.5 0 0 1 5 4.5z"
+    },
+    {
+     "role": "a",
+     "d": "M12 8l4 4-4 4-4-4z"
+    }
+   ],
+   "replaces": [
+    "texture",
+    "wallpaper",
+    "circle_outlined"
+   ]
+  },
+  "cushion": {
+   "group": "furniture",
+   "label": "靠垫",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M7 4.5c2 .8 8 .8 10 0 1.8 1 2.8 2.2 2.5 3.5-.8 2.6-.8 5.4 0 8 .3 1.3-.7 2.5-2.5 3.5-2-.8-8-.8-10 0-1.8-1-2.8-2.2-2.5-3.5.8-2.6.8-5.4 0-8-.3-1.3.7-2.5 2.5-3.5z"
+    },
+    {
+     "role": "a",
+     "d": "M9.5 12h5"
+    }
+   ],
+   "replaces": [
+    "crop_portrait"
+   ]
+  },
+  "hanger": {
+   "group": "furniture",
+   "label": "挂钩",
+   "shapes": [
+    {
+     "role": "a",
+     "d": "M10 5.5a2 2 0 1 1 2 2V9"
+    },
+    {
+     "role": "s",
+     "d": "M12 9l8.2 5.2a1.5 1.5 0 0 1-.8 2.8H4.6a1.5 1.5 0 0 1-.8-2.8z"
+    }
+   ],
+   "replaces": [
+    "checkroom"
+   ]
+  },
+  "deck": {
+   "group": "site",
+   "label": "露台",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 13.5h17M5.5 13.5v7M18.5 13.5v7M5.5 17h13M6 8.5a6 4 0 0 1 12 0z"
+    },
+    {
+     "role": "a",
+     "d": "M12 13.5V8.5"
+    }
+   ],
+   "replaces": [
+    "deck_outlined"
+   ]
+  },
+  "barn": {
+   "group": "site",
+   "label": "仓房",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 20.5V10L12 4l8.5 6v10.5zM2 20.5h20"
+    },
+    {
+     "role": "a",
+     "d": "M9.5 20.5v-6h5v6"
+    }
+   ],
+   "replaces": [
+    "agriculture_outlined"
+   ]
+  },
+  "sauna": {
+   "group": "site",
+   "label": "浴房",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 20.5V11l8-6.5 8 6.5v9.5zM2.5 20.5h19"
+    },
+    {
+     "role": "a",
+     "d": "M10 18c-.8-.8-.8-1.7 0-2.5s.8-1.7 0-2.5M14 18c-.8-.8-.8-1.7 0-2.5s.8-1.7 0-2.5"
+    }
+   ],
+   "replaces": [
+    "hot_tub_outlined"
+   ]
+  },
+  "garage": {
+   "group": "site",
+   "label": "车库",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 20.5V9.5L12 4l8.5 5.5v11M7 20.5v-8h10v8"
+    },
+    {
+     "role": "a",
+     "d": "M7 16.25h10"
+    }
+   ],
+   "replaces": [
+    "garage_outlined"
+   ]
+  },
+  "shed": {
+   "group": "site",
+   "label": "棚子",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 20.5V9l17-4.5v16M2 20.5h20"
+    },
+    {
+     "role": "a",
+     "d": "M9 20.5v-6h5v6"
+    }
+   ],
+   "replaces": [
+    "warehouse_outlined"
+   ]
+  },
+  "tank": {
+   "group": "site",
+   "label": "化粪池",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M2.5 8.5h19M6 8.5v9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-9"
+    },
+    {
+     "role": "a",
+     "d": "M12 3.5v9"
+    }
+   ],
+   "replaces": [
+    "recycling"
+   ]
+  },
+  "grass": {
+   "group": "site",
+   "label": "菜园 · 草地",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 20.5h18M6.5 20.5c0-4-1-6.5-2.5-8M15 20.5c.3-3.2 1.6-5.6 4-7.5"
+    },
+    {
+     "role": "a",
+     "d": "M10.5 20.5c0-5 .8-8.5 3-11.5"
+    }
+   ],
+   "replaces": [
+    "grass"
+   ]
+  },
+  "terrain": {
+   "group": "site",
+   "label": "场地",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M2.5 19.5l6.5-10 4 6 2.5-3.5 6 7.5z"
+    },
+    {
+     "role": "A",
+     "d": "M15.5 6.5a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0 -3.6 0z"
+    }
+   ],
+   "replaces": [
+    "landscape_outlined"
+   ]
+  },
+  "fence": {
+   "group": "site",
+   "label": "围栏 · 大门",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 20.5V6.5l1.5-2.5L8 6.5v14M16 20.5V6.5l1.5-2.5L19 6.5v14"
+    },
+    {
+     "role": "a",
+     "d": "M8 9.5h8M8 16h8"
+    }
+   ],
+   "replaces": [
+    "fence_outlined"
+   ]
+  },
+  "roof": {
+   "group": "domain",
+   "label": "屋顶",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5.5 20.5v-6.5M18.5 20.5v-6.5M15.5 7.2V4.5h2.5v4.8"
+    },
+    {
+     "role": "a",
+     "d": "M2 14L12 5l10 9"
+    }
+   ],
+   "replaces": [
+    "roofing",
+    "roofing_outlined"
+   ]
+  },
+  "foundation": {
+   "group": "domain",
+   "label": "基础",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 13.5h17v7h-17zM9 13.5v7M15 13.5v7"
+    },
+    {
+     "role": "a",
+     "d": "M6.5 13.5V4.5M17.5 13.5V4.5"
+    }
+   ],
+   "replaces": [
+    "foundation_outlined"
+   ]
+  },
+  "sliding-door": {
+   "group": "domain",
+   "label": "推拉门",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 20.5h18M5 20.5V4.5h14v16"
+    },
+    {
+     "role": "a",
+     "d": "M12 4.5v16M9.5 11v2"
+    }
+   ],
+   "replaces": [
+    "door_sliding_outlined"
+   ]
+  },
+  "socket": {
+   "group": "utility",
+   "label": "插座",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "a",
+     "d": "M9.5 10.5v3M14.5 10.5v3"
+    }
+   ],
+   "replaces": [
+    "power_outlined"
+   ]
+  },
+  "toggle": {
+   "group": "utility",
+   "label": "开关",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M7 6.5h10a5.5 5.5 0 0 1 0 11H7a5.5 5.5 0 0 1 0-11z"
+    },
+    {
+     "role": "A",
+     "d": "M14 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0z"
+    }
+   ],
+   "replaces": [
+    "toggle_on_outlined"
+   ]
+  },
+  "wind": {
+   "group": "utility",
+   "label": "通风",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3"
+    },
+    {
+     "role": "a",
+     "d": "M3 12h7"
+    }
+   ],
+   "replaces": [
+    "air"
+   ]
+  },
+  "drain": {
+   "group": "utility",
+   "label": "排水",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 3.5v11M7.5 10.5L12 15l4.5-4.5"
+    },
+    {
+     "role": "a",
+     "d": "M5 20h14"
+    }
+   ],
+   "replaces": [
+    "vertical_align_bottom"
+   ]
+  },
+  "thermometer": {
+   "group": "utility",
+   "label": "保温 · 温度",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M14.5 13.6V5.5a2.5 2.5 0 0 0-5 0v8.1a4.5 4.5 0 1 0 5 0z"
+    },
+    {
+     "role": "a",
+     "d": "M12 16.5V9"
+    }
+   ],
+   "replaces": [
+    "thermostat_outlined"
+   ]
+  },
+  "walk": {
+   "group": "domain",
+   "label": "漫游",
+   "shapes": [
+    {
+     "role": "A",
+     "d": "M13 4.5a1.75 1.75 0 1 0 3.5 0a1.75 1.75 0 1 0 -3.5 0z"
+    },
+    {
+     "role": "s",
+     "d": "M8 21l3-6.5 3 2.5v4.5M11 14.5l1.5-6-3.5 1.5L7.5 13M12.5 8.5l1.8 3 3.2 1"
+    }
+   ],
+   "replaces": [
+    "directions_walk"
+   ]
+  },
+  "tap": {
+   "group": "util",
+   "label": "点选",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M10 16.5V9a1.75 1.75 0 0 1 3.5 0v5l3.4.9a2 2 0 0 1 1.5 2.3l-.5 2.4a2 2 0 0 1-2 1.6h-4.4a2 2 0 0 1-1.6-.8L7 18.2a1.5 1.5 0 0 1 2.2-2z"
+    },
+    {
+     "role": "a",
+     "d": "M7.2 8.5a4.6 4.6 0 0 1 9.1 0"
+    }
+   ],
+   "replaces": [
+    "touch_app_outlined"
+   ]
+  },
+  "hand": {
+   "group": "util",
+   "label": "浏览",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M8 12.5V6.5a1.5 1.5 0 0 1 3 0V11M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6.5a1.5 1.5 0 0 1 3 0v7.5a6.5 6.5 0 0 1-6.5 6.5h-.5a6 6 0 0 1-4.6-2.2L3.7 15.5a1.5 1.5 0 0 1 2.3-2L8 15.5"
+    }
+   ],
+   "replaces": [
+    "pan_tool_outlined"
+   ]
+  },
+  "sketch": {
+   "group": "util",
+   "label": "手绘",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 17c2-3 4-6.5 5.5-6.5 2.5 0-1.5 7 1 7 2 0 4-6 6-6 1.5 0 .5 3.5 2 3.5 1 0 1.8-.8 2.5-2"
+    },
+    {
+     "role": "a",
+     "d": "M15 4.5l2.5 2.5"
+    }
+   ],
+   "replaces": [
+    "gesture"
+   ]
+  },
+  "thickness": {
+   "group": "util",
+   "label": "墙厚",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 6h16"
+    },
+    {
+     "role": "F",
+     "d": "M4 10.25h16v2.5H4z"
+    },
+    {
+     "role": "A",
+     "d": "M4 15.5h16v4H4z"
+    }
+   ],
+   "replaces": [
+    "line_weight"
+   ]
+  },
+  "split": {
+   "group": "util",
+   "label": "分房",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6.5 3.5h11a3 3 0 0 1 3 3v11a3 3 0 0 1 -3 3h-11a3 3 0 0 1 -3 -3v-11a3 3 0 0 1 3 -3z"
+    },
+    {
+     "role": "a",
+     "d": "M12 3.5v17"
+    }
+   ],
+   "replaces": [
+    "vertical_split_outlined"
+   ]
+  },
+  "wall": {
+   "group": "util",
+   "label": "墙体",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 5.5h17v13h-17zM3.5 12h17M9 5.5V12M15 5.5V12M6 12v6.5M18 12v6.5"
+    },
+    {
+     "role": "a",
+     "d": "M12 12v6.5"
+    }
+   ],
+   "replaces": [
+    "view_week_outlined"
+   ]
+  },
+  "crop": {
+   "group": "util",
+   "label": "切角",
+   "shapes": [
+    {
+     "role": "a",
+     "d": "M6.5 2.5v13a2 2 0 0 0 2 2h13"
+    },
+    {
+     "role": "s",
+     "d": "M2.5 6.5h13a2 2 0 0 1 2 2v13"
+    }
+   ],
+   "replaces": [
+    "crop"
+   ]
+  },
+  "align-center": {
+   "group": "util",
+   "label": "居中",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 6h16M4 18h16"
+    },
+    {
+     "role": "a",
+     "d": "M8 12h8"
+    }
+   ],
+   "replaces": [
+    "format_align_center"
+   ]
+  },
+  "join": {
+   "group": "util",
+   "label": "合并",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a6 6 0 1 0 12 0a6 6 0 1 0 -12 0zM9 12a6 6 0 1 0 12 0a6 6 0 1 0 -12 0z"
+    },
+    {
+     "role": "A",
+     "d": "M12 6.8a6 6 0 0 1 0 10.4a6 6 0 0 1 0-10.4z"
+    }
+   ],
+   "replaces": [
+    "join_inner"
+   ]
+  },
+  "arrow-ne": {
+   "group": "util",
+   "label": "右上",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M7 17L17 7M9 7h8v8"
+    }
+   ],
+   "replaces": [
+    "north_east"
+   ]
+  },
+  "arrow-nw": {
+   "group": "util",
+   "label": "左上",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M17 17L7 7M15 7H7v8"
+    }
+   ],
+   "replaces": [
+    "north_west"
+   ]
+  },
+  "arrow-se": {
+   "group": "util",
+   "label": "右下",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M7 7l10 10M17 9v8H9"
+    }
+   ],
+   "replaces": [
+    "south_east"
+   ]
+  },
+  "arrow-sw": {
+   "group": "util",
+   "label": "左下",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M17 7L7 17M7 9v8h8"
+    }
+   ],
+   "replaces": [
+    "south_west"
+   ]
+  },
+  "palette": {
+   "group": "util",
+   "label": "配色",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 3a9 9 0 0 0 0 18c1.1 0 1.5-.8 1.5-1.6 0-.5-.3-.9-.3-1.4 0-.8.6-1.5 1.5-1.5H17a4 4 0 0 0 4-4C21 7 17 3 12 3z"
+    },
+    {
+     "role": "F",
+     "d": "M9.3 7.8a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0zM13.8 7.8a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0z"
+    },
+    {
+     "role": "A",
+     "d": "M6.3 11.8a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0z"
+    }
+   ],
+   "replaces": [
+    "palette_outlined"
+   ]
+  },
+  "theme": {
+   "group": "util",
+   "label": "外观",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 12a8 8 0 1 0 16 0a8 8 0 1 0 -16 0z"
+    },
+    {
+     "role": "A",
+     "d": "M12 4a8 8 0 0 1 0 16z"
+    }
+   ],
+   "replaces": [
+    "brightness_6_outlined"
+   ]
+  },
+  "radio-on": {
+   "group": "util",
+   "label": "已选",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "A",
+     "d": "M8.5 12a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0z"
+    }
+   ],
+   "replaces": [
+    "radio_button_checked"
+   ]
+  },
+  "radio-off": {
+   "group": "util",
+   "label": "未选",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    }
+   ],
+   "replaces": [
+    "radio_button_unchecked"
+   ]
+  },
+  "dot": {
+   "group": "util",
+   "label": "圆点",
+   "shapes": [
+    {
+     "role": "F",
+     "d": "M6 12a6 6 0 1 0 12 0a6 6 0 1 0 -12 0z"
+    }
+   ],
+   "replaces": [
+    "circle"
+   ]
+  },
+  "speaker": {
+   "group": "feature",
+   "label": "朗读",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 9.5h3l5-4.5v14l-5-4.5H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z"
+    },
+    {
+     "role": "a",
+     "d": "M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"
+    }
+   ],
+   "replaces": [
+    "volume_up_outlined",
+    "hearing_outlined"
+   ]
+  },
+  "stop": {
+   "group": "feature",
+   "label": "停止",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "A",
+     "d": "M9 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5z"
+    }
+   ],
+   "replaces": [
+    "stop_circle",
+    "stop_circle_outlined"
+   ]
+  },
+  "stop-fill": {
+   "group": "feature",
+   "label": "停止录音",
+   "shapes": [
+    {
+     "role": "F",
+     "d": "M7 8.5A1.5 1.5 0 0 1 8.5 7h7A1.5 1.5 0 0 1 17 8.5v7a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 15.5z"
+    }
+   ],
+   "replaces": [
+    "stop_rounded"
+   ]
+  },
+  "play": {
+   "group": "feature",
+   "label": "播放",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "A",
+     "d": "M10 8.5v7l6-3.5z"
+    }
+   ],
+   "replaces": [
+    "play_circle_outline"
+   ]
+  },
+  "speed": {
+   "group": "feature",
+   "label": "速度 · 上限",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4.2 17.5a8.5 8.5 0 1 1 15.6 0"
+    },
+    {
+     "role": "a",
+     "d": "M12 14.5l3.5-4.5"
+    }
+   ],
+   "replaces": [
+    "speed",
+    "speed_outlined"
+   ]
+  },
+  "sort": {
+   "group": "util",
+   "label": "排序",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M8 20V4.5M4.5 8L8 4.5 11.5 8M16 4v15.5M12.5 16l3.5 3.5 3.5-3.5"
+    }
+   ],
+   "replaces": [
+    "swap_vert"
+   ]
+  },
+  "gavel": {
+   "group": "feature",
+   "label": "裁决",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12.5 3l6.5 6.5-3.5 3.5L9 6.5zM12.3 9.7L4.5 17.5"
+    },
+    {
+     "role": "a",
+     "d": "M13 20.5h7.5"
+    }
+   ],
+   "replaces": [
+    "gavel_outlined"
+   ]
+  },
+  "shield": {
+   "group": "feature",
+   "label": "安全",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 3l7.5 3v5.5c0 4.5-3.2 8.2-7.5 9.5-4.3-1.3-7.5-5-7.5-9.5V6z"
+    },
+    {
+     "role": "a",
+     "d": "M12 8v4.5M12 15.5v.5"
+    }
+   ],
+   "replaces": [
+    "gpp_maybe_outlined"
+   ]
+  },
+  "bell-ring": {
+   "group": "feature",
+   "label": "提醒",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6 16v-5.5a6 6 0 0 1 12 0V16l1.5 2h-15zM10.5 21h3"
+    },
+    {
+     "role": "a",
+     "d": "M3.5 8.5A8 8 0 0 1 6 4M20.5 8.5A8 8 0 0 0 18 4"
+    }
+   ],
+   "replaces": [
+    "notifications_active_outlined"
+   ]
+  },
+  "bell-off": {
+   "group": "feature",
+   "label": "免打扰",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6 16v-5.5a6 6 0 0 1 12 0V16l1.5 2h-15zM3.5 3.5l17 17"
+    },
+    {
+     "role": "a",
+     "d": "M10.5 21h3"
+    }
+   ],
+   "replaces": [
+    "notifications_paused_outlined"
+   ]
+  },
+  "moon": {
+   "group": "feature",
+   "label": "夜间",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"
+    },
+    {
+     "role": "a",
+     "d": "M17 3.5v3M15.5 5h3"
+    }
+   ],
+   "replaces": [
+    "bedtime_outlined"
+   ]
+  },
+  "megaphone": {
+   "group": "feature",
+   "label": "公告",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 9.5h3l8-4.5v14l-8-4.5H4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1zM7 14.5l1.5 5.5h2l-1-5"
+    },
+    {
+     "role": "a",
+     "d": "M18.5 9.5a3 3 0 0 1 0 5"
+    }
+   ],
+   "replaces": [
+    "campaign_outlined"
+   ]
+  },
+  "person-add": {
+   "group": "feature",
+   "label": "注册",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 8a4 4 0 1 0 8 0a4 4 0 1 0 -8 0zM2.5 20.5a6.5 6.5 0 0 1 13 0"
+    },
+    {
+     "role": "a",
+     "d": "M19 8v6M16 11h6"
+    }
+   ],
+   "replaces": [
+    "person_add_alt"
+   ]
+  },
+  "person-off": {
+   "group": "feature",
+   "label": "已注销",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M8 8a4 4 0 1 0 8 0a4 4 0 1 0 -8 0zM5.5 20.5a6.5 6.5 0 0 1 13 0"
+    },
+    {
+     "role": "a",
+     "d": "M3.5 3.5l17 17"
+    }
+   ],
+   "replaces": [
+    "person_off_outlined"
+   ]
+  },
+  "person-search": {
+   "group": "feature",
+   "label": "找人",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 8a4 4 0 1 0 8 0a4 4 0 1 0 -8 0zM2.5 20.5a6.5 6.5 0 0 1 9-6"
+    },
+    {
+     "role": "a",
+     "d": "M14 16a3 3 0 1 0 6 0a3 3 0 1 0 -6 0zM19.2 18.2l2 2"
+    }
+   ],
+   "replaces": [
+    "person_search_outlined"
+   ]
+  },
+  "link-off": {
+   "group": "util",
+   "label": "取消链接",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M10 13.700a4.300 4.300 0 0 0 6.100.300l3-3a4.300 4.300 0 0 0-6.100-6.100l-1.500 1.500M14 10.300a4.300 4.300 0 0 0-6.100-.300l-3 3a4.300 4.300 0 0 0 6.100 6.100l1.500-1.500"
+    },
+    {
+     "role": "a",
+     "d": "M3.5 3.5l17 17"
+    }
+   ],
+   "replaces": [
+    "link_off"
+   ]
+  },
+  "image-off": {
+   "group": "feature",
+   "label": "图片损坏",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6.5 4h11a2.5 2.5 0 0 1 2.5 2.5v11a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11A2.5 2.5 0 0 1 6.5 4z"
+    },
+    {
+     "role": "a",
+     "d": "M3.5 3.5l17 17"
+    }
+   ],
+   "replaces": [
+    "broken_image_outlined"
+   ]
+  },
+  "offline": {
+   "group": "util",
+   "label": "离线",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M7 19.500a4.500 4.500 0 0 1-.700-8.950 6 6 0 0 1 11.600 1.500A3.750 3.750 0 0 1 17.250 19.500z"
+    },
+    {
+     "role": "a",
+     "d": "M3.5 3.5l17 17"
+    }
+   ],
+   "replaces": [
+    "cloud_off_outlined",
+    "wifi_off_outlined"
    ]
   }
  }

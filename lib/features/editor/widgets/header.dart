@@ -325,7 +325,7 @@ extension _EditorHeader on _HouseEditorState {
                   onPressed: () => showTab(group == 'draw' ? 'ext' : 'plan'),
                   icon: group == 'draw'
                       ? YIcons.cube
-                      : Icons.grid_on_outlined,
+                      : YIcons.plan,
                   label: group == 'draw'
                       ? tr3('看 3D', '3D көру', 'В 3D', 'To 3D', ky: '3D көрүнүшкө', uz: '3D ga')
                       : tr3('回平面', 'Жоспарға', 'К плану', 'To the plan', ky: 'Планга', uz: 'Rejaga')),

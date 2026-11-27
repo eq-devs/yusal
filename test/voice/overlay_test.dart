@@ -184,7 +184,7 @@ void main() {
     await t.tap(find.byKey(const Key('voice-button')));
     await t.pump();
     expect(find.byKey(const Key('voice-pill')), findsOneWidget);
-    expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+    expect(find.byIcon(YIcons.stopFill), findsOneWidget);
     expect(backend.said, isEmpty);
     // The next sends what was said.
     await t.tap(find.byKey(const Key('voice-button')));
@@ -193,7 +193,7 @@ void main() {
     expect(
         backend.said.map((s) => (s.text, s.spoken)), [('бір қабат қос', true)]);
     expect(find.text('Жарайды.'), findsOneWidget);
-    expect(find.byIcon(Icons.stop_rounded), findsNothing);
+    expect(find.byIcon(YIcons.stopFill), findsNothing);
     // Nothing is read aloud.
     expect(audio.log, ['record']);
 
@@ -225,7 +225,7 @@ void main() {
     await t.tap(find.byKey(const Key('voice-button')));
     await t.pump();
     expect(find.text('请在系统设置里允许使用麦克风'), findsOneWidget);
-    expect(find.byIcon(Icons.stop_rounded), findsNothing);
+    expect(find.byIcon(YIcons.stopFill), findsNothing);
 
     // No audio device, or a backend without speech: typed only.
     await t.pumpWidget(const ProviderScope(child: SizedBox()));

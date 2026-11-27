@@ -495,7 +495,7 @@ extension _CostTab on _HouseEditorState {
                       'Share my prices with my region',
                       ky: 'Бааларымды аймагым менен бөлүшүү',
                       uz: 'Narxlarimni hududim bilan boʻlishish'),
-                  icon: Icons.volunteer_activism_outlined,
+                  icon: YIcons.share,
                   onPressed: sharePrices),
           ]),
         ]);

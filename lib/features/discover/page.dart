@@ -178,7 +178,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 (kind, trade, region, availableNow, query.text)),
             builder: (context, list) => list.isEmpty
                 ? EmptyState(
-                    icon: Icons.person_search_outlined,
+                    icon: YIcons.personSearch,
                     yicon: YIcon.hire,
                     title:
                         tr3('没有符合条件的人', 'Сәйкес адам жоқ', 'Никого не нашли', 'No one found', ky: 'Эч ким табылган жок', uz: 'Hech kim topilmadi'),
@@ -203,7 +203,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
               final (list, favs) = data;
               if (list.isEmpty) {
                 return EmptyState(
-                    icon: Icons.search_off,
+                    icon: YIcons.search,
                     yicon: YIcon.search,
                     title: tr3('暂时没有符合条件的需求', 'Сәйкес тапсырыс жоқ',
                         'Нет подходящих заявок',

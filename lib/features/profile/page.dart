@@ -30,7 +30,7 @@ class ProfilePage extends StatelessWidget {
             ? PageScaffold(
                 title: '',
                 body: EmptyState(
-                    icon: Icons.person_off_outlined,
+                    icon: YIcons.personOff,
                     title:
                         tr3('名片不存在或已隐藏', 'Профиль жоқ', 'Профиль недоступен', 'Profile unavailable', ky: 'Профиль жеткиликсиз', uz: 'Profil mavjud emas')))
             : _ProfileView(data: data));

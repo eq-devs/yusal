@@ -462,7 +462,7 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                         if (s.phase == VoicePhase.acting)
                           IconButton(
                               tooltip: tr3('停止', 'Тоқтату', 'Стоп', 'Stop', ky: 'Токтотуу', uz: 'Toʻxtatish'),
-                              icon: const Icon(Icons.stop_circle),
+                              icon: const Icon(YIcons.stop),
                               onPressed: s.stop),
                         if (!s.busy)
                           IconButton(
@@ -701,7 +701,7 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                 level: level,
                 mood: mood,
                 icon: listening
-                    ? Icons.stop_rounded
+                    ? YIcons.stopFill
                     : typing && widget.speech == null
                         ? YIcons.close
                         // At rest it says what a tap does.

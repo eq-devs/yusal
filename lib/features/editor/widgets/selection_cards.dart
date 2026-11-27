@@ -386,12 +386,12 @@ extension _SelectionCards on _HouseEditorState {
           Wrap(spacing: 8, runSpacing: 8, children: [
             Btn(
                 label: tr3('走进去看看', 'Ішіне кіріп көру', 'Войти и осмотреться', 'Walk in and look around', ky: 'Кирип, айланага көз чаптыруу', uz: 'Kirib, atrofni koʻrish'),
-                icon: Icons.directions_walk,
+                icon: YIcons.walk,
                 onPressed: () => walkInto(room.id)),
             Btn(
                 label: tr3(
                     '与相邻房间合并', 'Көршімен біріктіру', 'Объединить с соседней', 'Merge with the next room', ky: 'Кийинки бөлмө менен бириктирүү', uz: 'Keyingi xona bilan birlashtirish'),
-                icon: Icons.join_inner,
+                icon: YIcons.join,
                 onPressed: () => mergeRoom(room)),
             Btn(
                 label: tr3('删除房间', 'Бөлмені жою', 'Удалить комнату', 'Delete the room', ky: 'Бөлмөнү өчүрүү', uz: 'Xonani oʻchirish'),
@@ -609,7 +609,7 @@ extension _SelectionCards on _HouseEditorState {
             Btn(
                 label: tr3(
                     '换开门方向', 'Ашылу бағыты', 'Сменить направление открывания', 'Switch the swing direction', ky: 'Ачылуу багытын алмаштыруу', uz: 'Ochilish yoʻnalishini almashtirish'),
-                icon: Icons.swap_vert,
+                icon: YIcons.sort,
                 onPressed: () => action('FlipDoor', {
                       'openingId': o.id,
                       'opensTo': o.opensTo == OpeningSide.positiveSide
@@ -626,7 +626,7 @@ extension _SelectionCards on _HouseEditorState {
           ],
           Btn(
               label: tr3('放到墙中间', 'Қабырға ортасына', 'По центру стены', 'Centre on the wall', ky: 'Дубалдын ортосуна коюу', uz: 'Devor oʻrtasiga joylash'),
-              icon: Icons.format_align_center,
+              icon: YIcons.alignCenter,
               onPressed: () => action('MoveOpening', {
                     'openingId': o.id,
                     'position': {'type': 'center'}
@@ -807,8 +807,8 @@ extension _SelectionCards on _HouseEditorState {
                         child: Row(children: [
                           Icon(
                               b == now
-                                  ? Icons.radio_button_checked
-                                  : Icons.radio_button_unchecked,
+                                  ? YIcons.radioOn
+                                  : YIcons.radioOff,
                               size: 18),
                           const SizedBox(width: 10),
                           Expanded(

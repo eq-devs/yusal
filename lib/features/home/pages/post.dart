@@ -400,7 +400,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                                             padding:
                                                 const EdgeInsets.only(top: 12),
                                             child: Row(children: [
-                                              Icon(Icons.campaign_outlined,
+                                              Icon(YIcons.megaphone,
                                                   size: 18, color: t.accent),
                                               const SizedBox(width: 6),
                                               Expanded(
@@ -751,7 +751,7 @@ class _FactSheet extends StatelessWidget {
         cell(YIcons.layers, '${post.floors}',
             tr3('层数', 'Қабат', 'Этажей', 'Floors', ky: 'Кабаттар', uz: 'Qavatlar')),
         const SizedBox(width: 8),
-        cell(Icons.meeting_room_outlined, '${post.rooms}',
+        cell(YIcons.door, '${post.rooms}',
             tr3('房间', 'Бөлме', 'Комнат', 'Rooms', ky: 'Бөлмөлөр', uz: 'Xonalar')),
       ]),
       if (post.estimatedCost != null)

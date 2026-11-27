@@ -314,7 +314,7 @@ extension _PhoneLayout on _HouseEditorState {
                   ky: 'Үйдүн ичин кыдыруу', uz: 'Uy ichini aylanish'),
               tab == 'walk',
               'walk',
-              icon: Icons.directions_walk,
+              icon: YIcons.walk,
               go: walkHere),
         ]));
     final addLabel = tr3('添加', 'Қосу', 'Добавить', 'Add', ky: 'Кошуу', uz: 'Qoʻshish');
@@ -493,14 +493,14 @@ extension _PhoneLayout on _HouseEditorState {
     final app = ref.read(settingsProvider);
     final labels = {for (final (key, label) in editorTabs) key: label};
     const pageIcons = {
-      'site': Icons.landscape_outlined,
+      'site': YIcons.terrain,
       'iss': YIcons.contract,
-      'walk': Icons.directions_walk,
+      'walk': YIcons.walk,
       'cost': YIcons.budget,
-      'qty': Icons.table_rows_outlined,
+      'qty': YIcons.list,
       'build': YIcons.calendar,
       'det': YIcons.design,
-      'heat': Icons.thermostat_outlined,
+      'heat': YIcons.thermometer,
     };
     final choice = await showMotionSheet<String>(
         context: context,
@@ -537,7 +537,7 @@ extension _PhoneLayout on _HouseEditorState {
                     for (final key in pageIcons.keys)
                       row('tab:$key', pageIcons[key]!, labels[key]!),
                     group(tr3('房屋', 'Үй', 'Дом', 'House', ky: 'Үй', uz: 'Uy')),
-                    row('roof', Icons.roofing,
+                    row('roof', YIcons.roof,
                         tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши', 'Roof type', ky: 'Чатырдын түрү', uz: 'Tom turi')),
                     row('size', YIcons.fit,
                         tr3('房屋长宽', 'Үйдің ені мен ұзындығы', 'Ширина и длина дома', 'House width and length', ky: 'Үйдүн туурасы жана узундугу', uz: 'Uy eni va uzunligi')),
@@ -558,7 +558,7 @@ extension _PhoneLayout on _HouseEditorState {
                     row('lang', YIcons.globe, 'Тіл / Язык / 语言 / Language'),
                     row(
                         'theme',
-                        Icons.brightness_6_outlined,
+                        YIcons.theme,
                         switch (app.theme) {
                           ThemeChoice.auto => tr3('☀ 日间', '☀ Күндіз', '☀ День', '☀ Day', ky: '☀ Күндүз', uz: '☀ Kunduzi'),
                           ThemeChoice.day => tr3('☾ 夜间', '☾ Түн', '☾ Ночь', '☾ Night', ky: '☾ Түн', uz: '☾ Tun'),
@@ -668,14 +668,14 @@ extension _PhoneLayout on _HouseEditorState {
           ]),
           label(tr3('更多工具', 'Басқа құралдар', 'Другие инструменты', 'More tools', ky: 'Дагы аспаптар', uz: 'Boshqa asboblar')),
           grid([
-            (w) => addTile('split', Icons.vertical_split_outlined, '拉线分房',
+            (w) => addTile('split', YIcons.split, '拉线分房',
                 on: tool == EditorTool.split, width: w),
             (w) => addTile('box', YIcons.room, '拖动划房',
                 on: tool == EditorTool.box && !stamping, width: w),
             (w) => addTile(
                 'utility', YIcons.bolt, '水电',
                 on: tool == EditorTool.placeUtility, width: w),
-            (w) => addTile('selectWall', Icons.view_week_outlined, '墙体调整',
+            (w) => addTile('selectWall', YIcons.wall, '墙体调整',
                 on: tool == EditorTool.selectWall ||
                     tool == EditorTool.editWall,
                 width: w),

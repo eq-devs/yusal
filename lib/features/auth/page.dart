@@ -82,10 +82,10 @@ class _LoginPageState extends State<LoginPage> {
       '业主',
       [
         ('seed:aigerim', 'Айгерім · 施工中', YIcons.home),
-        ('seed:dinara', 'Динара · 已完工', Icons.cottage_outlined),
+        ('seed:dinara', 'Динара · 已完工', YIcons.home),
         ('seed:asel', 'Асель · 比价中', YIcons.budget),
         ('seed:zhanar', 'Жанар · 求点评', YIcons.chat),
-        ('Test Owner', '新用户 · 空账号', Icons.person_add_alt),
+        ('Test Owner', '新用户 · 空账号', YIcons.personAdd),
       ]
     ),
     (
@@ -96,22 +96,22 @@ class _LoginPageState extends State<LoginPage> {
         ('seed:ruslan', 'Руслан · 认证审核中', YIcons.water),
         ('seed:gulnar', 'Гүлнар · 工程师', YIcons.design),
         ('seed:nurlan', 'Нұрлан · 施工队', YIcons.people),
-        ('seed:samat', 'Самат · 屋面队', Icons.roofing_outlined),
+        ('seed:samat', 'Самат · 屋面队', YIcons.roof),
       ]
     ),
     (
       '后台',
       [
         ('Test Admin', '超级管理员', YIcons.verified),
-        ('seed:moderator', '审核员', Icons.gavel_outlined),
-        ('seed:operator', '运营', Icons.campaign_outlined),
+        ('seed:moderator', '审核员', YIcons.gavel),
+        ('seed:operator', '运营', YIcons.megaphone),
         ('seed:viewer', '只读', YIcons.eye),
       ]
     ),
     (
       '受限',
       [
-        ('seed:spam', 'Стройбаза · 受限 · 申诉中', Icons.block_outlined),
+        ('seed:spam', 'Стройбаза · 受限 · 申诉中', YIcons.block),
       ]
     ),
   ];

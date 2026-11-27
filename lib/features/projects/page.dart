@@ -588,7 +588,7 @@ class _ActiveHouses extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: YSpace.lg, vertical: YSpace.sm),
                             child: Row(children: [
-                              Icon(Icons.circle, size: 8, color: t.accent),
+                              Icon(YIcons.dot, size: 8, color: t.accent),
                               const SizedBox(width: YSpace.md),
                               Expanded(
                                   child: Text(text, style: YText.labelStrong)),

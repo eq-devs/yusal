@@ -173,9 +173,9 @@ void main() {
       // Tap the orb to listen, tap it again when done.
       await t.tap(find.byKey(const Key('voice-button')));
       await waitFor(
-          t, () => find.byIcon(Icons.stop_rounded).evaluate().isNotEmpty,
+          t, () => find.byIcon(YIcons.stopFill).evaluate().isNotEmpty,
           settle: false);
-      expect(find.byIcon(Icons.stop_rounded), findsOneWidget,
+      expect(find.byIcon(YIcons.stopFill), findsOneWidget,
           reason: 'the microphone must be allowed (see the top of this file)');
       await real(t, 1500);
       await t.tap(find.byKey(const Key('voice-button')));

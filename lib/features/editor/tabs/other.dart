@@ -284,7 +284,7 @@ extension _OtherTabs on _HouseEditorState {
 
   Widget roofStyleButton() => Btn(
       label: tr3('换屋顶样式', 'Шатыр түрін ауыстыру', 'Сменить тип крыши', 'Change the roof type', ky: 'Чатырдын түрүн өзгөртүү', uz: 'Tom turini oʻzgartirish'),
-      icon: Icons.roofing,
+      icon: YIcons.roof,
       onPressed: chooseRoof);
 
   Widget layerCard(
@@ -760,7 +760,7 @@ extension _OtherTabs on _HouseEditorState {
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
       for (final s in sleeves)
         Row(children: [
-          Icon(Icons.circle, size: 10, color: t.chk),
+          Icon(YIcons.dot, size: 10, color: t.chk),
           const SizedBox(width: 6),
           Expanded(
               child: Text(

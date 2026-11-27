@@ -147,7 +147,7 @@ class _HomePageState extends State<HomePage> {
                                                       child: FilterPill(
                                                           key: const Key(
                                                               'feed-sort'),
-                                                          icon: Icons.swap_vert,
+                                                          icon: YIcons.sort,
                                                           label: feedSortName(
                                                               filter.sort),
                                                           selected: false,
@@ -308,7 +308,7 @@ class _HomePageState extends State<HomePage> {
                                       child: Padding(
                                           padding: const EdgeInsets.all(20),
                                           child: EmptyState(
-                                              icon: Icons.wifi_off_outlined,
+                                              icon: YIcons.offline,
                                               title: tr3(
                                                   '暂时无法加载房子',
                                                   'Үйлерді жүктеу мүмкін болмады',

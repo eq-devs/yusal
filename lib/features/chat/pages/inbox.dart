@@ -278,15 +278,15 @@ IconData noticeIcon(NoticeKind k) => switch (k) {
       NoticeKind.outcomeFollowUp => YIcons.help,
       NoticeKind.contentRemoved ||
       NoticeKind.accountRestricted =>
-        Icons.gpp_maybe_outlined,
+        YIcons.shield,
       NoticeKind.reportResolved => YIcons.flag,
       NoticeKind.accountRestored ||
       NoticeKind.appealAnswered =>
-        Icons.gavel_outlined,
+        YIcons.gavel,
       NoticeKind.verificationApproved ||
       NoticeKind.verificationRejected =>
         YIcons.verified,
-      NoticeKind.newDemandMatch => Icons.notifications_active_outlined,
+      NoticeKind.newDemandMatch => YIcons.bellRing,
       _ => YIcons.bell,
     };
 

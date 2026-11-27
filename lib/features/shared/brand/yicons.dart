@@ -207,6 +207,152 @@ abstract final class YIcons {
   static const IconData inbox = IconData(0xe061, fontFamily: _f);
   /// 电话
   static const IconData phone = IconData(0xe062, fontFamily: _f);
+  /// 床
+  static const IconData bed = IconData(0xe063, fontFamily: _f);
+  /// 浴缸
+  static const IconData bath = IconData(0xe064, fontFamily: _f);
+  /// 淋浴
+  static const IconData shower = IconData(0xe065, fontFamily: _f);
+  /// 卫生间
+  static const IconData toilet = IconData(0xe066, fontFamily: _f);
+  /// 冰箱
+  static const IconData fridge = IconData(0xe067, fontFamily: _f);
+  /// 台面
+  static const IconData counter = IconData(0xe068, fontFamily: _f);
+  /// 炉灶 · 火
+  static const IconData flame = IconData(0xe069, fontFamily: _f);
+  /// 水池
+  static const IconData sink = IconData(0xe06a, fontFamily: _f);
+  /// 洗衣机
+  static const IconData washer = IconData(0xe06b, fontFamily: _f);
+  /// 锅炉
+  static const IconData boiler = IconData(0xe06c, fontFamily: _f);
+  /// 暖气片
+  static const IconData radiator = IconData(0xe06d, fontFamily: _f);
+  /// 椅子
+  static const IconData seat = IconData(0xe06e, fontFamily: _f);
+  /// 桌子
+  static const IconData table = IconData(0xe06f, fontFamily: _f);
+  /// 电视
+  static const IconData tv = IconData(0xe070, fontFamily: _f);
+  /// 置物架
+  static const IconData shelf = IconData(0xe071, fontFamily: _f);
+  /// 衣柜
+  static const IconData wardrobe = IconData(0xe072, fontFamily: _f);
+  /// 地毯
+  static const IconData rug = IconData(0xe073, fontFamily: _f);
+  /// 靠垫
+  static const IconData cushion = IconData(0xe074, fontFamily: _f);
+  /// 挂钩
+  static const IconData hanger = IconData(0xe075, fontFamily: _f);
+  /// 露台
+  static const IconData deck = IconData(0xe076, fontFamily: _f);
+  /// 仓房
+  static const IconData barn = IconData(0xe077, fontFamily: _f);
+  /// 浴房
+  static const IconData sauna = IconData(0xe078, fontFamily: _f);
+  /// 车库
+  static const IconData garage = IconData(0xe079, fontFamily: _f);
+  /// 棚子
+  static const IconData shed = IconData(0xe07a, fontFamily: _f);
+  /// 化粪池
+  static const IconData tank = IconData(0xe07b, fontFamily: _f);
+  /// 菜园 · 草地
+  static const IconData grass = IconData(0xe07c, fontFamily: _f);
+  /// 场地
+  static const IconData terrain = IconData(0xe07d, fontFamily: _f);
+  /// 围栏 · 大门
+  static const IconData fence = IconData(0xe07e, fontFamily: _f);
+  /// 屋顶
+  static const IconData roof = IconData(0xe07f, fontFamily: _f);
+  /// 基础
+  static const IconData foundation = IconData(0xe080, fontFamily: _f);
+  /// 推拉门
+  static const IconData slidingDoor = IconData(0xe081, fontFamily: _f);
+  /// 插座
+  static const IconData socket = IconData(0xe082, fontFamily: _f);
+  /// 开关
+  static const IconData toggle = IconData(0xe083, fontFamily: _f);
+  /// 通风
+  static const IconData wind = IconData(0xe084, fontFamily: _f);
+  /// 排水
+  static const IconData drain = IconData(0xe085, fontFamily: _f);
+  /// 保温 · 温度
+  static const IconData thermometer = IconData(0xe086, fontFamily: _f);
+  /// 漫游
+  static const IconData walk = IconData(0xe087, fontFamily: _f);
+  /// 点选
+  static const IconData tap = IconData(0xe088, fontFamily: _f);
+  /// 浏览
+  static const IconData hand = IconData(0xe089, fontFamily: _f);
+  /// 手绘
+  static const IconData sketch = IconData(0xe08a, fontFamily: _f);
+  /// 墙厚
+  static const IconData thickness = IconData(0xe08b, fontFamily: _f);
+  /// 分房
+  static const IconData split = IconData(0xe08c, fontFamily: _f);
+  /// 墙体
+  static const IconData wall = IconData(0xe08d, fontFamily: _f);
+  /// 切角
+  static const IconData crop = IconData(0xe08e, fontFamily: _f);
+  /// 居中
+  static const IconData alignCenter = IconData(0xe08f, fontFamily: _f);
+  /// 合并
+  static const IconData join = IconData(0xe090, fontFamily: _f);
+  /// 右上
+  static const IconData arrowNe = IconData(0xe091, fontFamily: _f);
+  /// 左上
+  static const IconData arrowNw = IconData(0xe092, fontFamily: _f);
+  /// 右下
+  static const IconData arrowSe = IconData(0xe093, fontFamily: _f);
+  /// 左下
+  static const IconData arrowSw = IconData(0xe094, fontFamily: _f);
+  /// 配色
+  static const IconData palette = IconData(0xe095, fontFamily: _f);
+  /// 外观
+  static const IconData theme = IconData(0xe096, fontFamily: _f);
+  /// 已选
+  static const IconData radioOn = IconData(0xe097, fontFamily: _f);
+  /// 未选
+  static const IconData radioOff = IconData(0xe098, fontFamily: _f);
+  /// 圆点
+  static const IconData dot = IconData(0xe099, fontFamily: _f);
+  /// 朗读
+  static const IconData speaker = IconData(0xe09a, fontFamily: _f);
+  /// 停止
+  static const IconData stop = IconData(0xe09b, fontFamily: _f);
+  /// 停止录音
+  static const IconData stopFill = IconData(0xe09c, fontFamily: _f);
+  /// 播放
+  static const IconData play = IconData(0xe09d, fontFamily: _f);
+  /// 速度 · 上限
+  static const IconData speed = IconData(0xe09e, fontFamily: _f);
+  /// 排序
+  static const IconData sort = IconData(0xe09f, fontFamily: _f);
+  /// 裁决
+  static const IconData gavel = IconData(0xe0a0, fontFamily: _f);
+  /// 安全
+  static const IconData shield = IconData(0xe0a1, fontFamily: _f);
+  /// 提醒
+  static const IconData bellRing = IconData(0xe0a2, fontFamily: _f);
+  /// 免打扰
+  static const IconData bellOff = IconData(0xe0a3, fontFamily: _f);
+  /// 夜间
+  static const IconData moon = IconData(0xe0a4, fontFamily: _f);
+  /// 公告
+  static const IconData megaphone = IconData(0xe0a5, fontFamily: _f);
+  /// 注册
+  static const IconData personAdd = IconData(0xe0a6, fontFamily: _f);
+  /// 已注销
+  static const IconData personOff = IconData(0xe0a7, fontFamily: _f);
+  /// 找人
+  static const IconData personSearch = IconData(0xe0a8, fontFamily: _f);
+  /// 取消链接
+  static const IconData linkOff = IconData(0xe0a9, fontFamily: _f);
+  /// 图片损坏
+  static const IconData imageOff = IconData(0xe0aa, fontFamily: _f);
+  /// 离线
+  static const IconData offline = IconData(0xe0ab, fontFamily: _f);
 }
 
 /// The Yusal icons with their layers, for [YusalIcon].
@@ -409,6 +555,152 @@ enum YIcon {
   inbox(YIcons.inbox, null, null),
   /// 电话
   phone(YIcons.phone, null, null),
+  /// 床
+  bed(YIcons.bed, IconData(0xe463, fontFamily: _f), IconData(0xe863, fontFamily: _f)),
+  /// 浴缸
+  bath(YIcons.bath, IconData(0xe464, fontFamily: _f), IconData(0xe864, fontFamily: _f)),
+  /// 淋浴
+  shower(YIcons.shower, IconData(0xe465, fontFamily: _f), IconData(0xe865, fontFamily: _f)),
+  /// 卫生间
+  toilet(YIcons.toilet, IconData(0xe466, fontFamily: _f), IconData(0xe866, fontFamily: _f)),
+  /// 冰箱
+  fridge(YIcons.fridge, IconData(0xe467, fontFamily: _f), IconData(0xe867, fontFamily: _f)),
+  /// 台面
+  counter(YIcons.counter, IconData(0xe468, fontFamily: _f), IconData(0xe868, fontFamily: _f)),
+  /// 炉灶 · 火
+  flame(YIcons.flame, IconData(0xe469, fontFamily: _f), IconData(0xe869, fontFamily: _f)),
+  /// 水池
+  sink(YIcons.sink, IconData(0xe46a, fontFamily: _f), IconData(0xe86a, fontFamily: _f)),
+  /// 洗衣机
+  washer(YIcons.washer, IconData(0xe46b, fontFamily: _f), IconData(0xe86b, fontFamily: _f)),
+  /// 锅炉
+  boiler(YIcons.boiler, IconData(0xe46c, fontFamily: _f), IconData(0xe86c, fontFamily: _f)),
+  /// 暖气片
+  radiator(YIcons.radiator, IconData(0xe46d, fontFamily: _f), IconData(0xe86d, fontFamily: _f)),
+  /// 椅子
+  seat(YIcons.seat, IconData(0xe46e, fontFamily: _f), IconData(0xe86e, fontFamily: _f)),
+  /// 桌子
+  table(YIcons.table, IconData(0xe46f, fontFamily: _f), IconData(0xe86f, fontFamily: _f)),
+  /// 电视
+  tv(YIcons.tv, IconData(0xe470, fontFamily: _f), IconData(0xe870, fontFamily: _f)),
+  /// 置物架
+  shelf(YIcons.shelf, IconData(0xe471, fontFamily: _f), IconData(0xe871, fontFamily: _f)),
+  /// 衣柜
+  wardrobe(YIcons.wardrobe, IconData(0xe472, fontFamily: _f), IconData(0xe872, fontFamily: _f)),
+  /// 地毯
+  rug(YIcons.rug, IconData(0xe473, fontFamily: _f), IconData(0xe873, fontFamily: _f)),
+  /// 靠垫
+  cushion(YIcons.cushion, IconData(0xe474, fontFamily: _f), IconData(0xe874, fontFamily: _f)),
+  /// 挂钩
+  hanger(YIcons.hanger, IconData(0xe475, fontFamily: _f), IconData(0xe875, fontFamily: _f)),
+  /// 露台
+  deck(YIcons.deck, IconData(0xe476, fontFamily: _f), IconData(0xe876, fontFamily: _f)),
+  /// 仓房
+  barn(YIcons.barn, IconData(0xe477, fontFamily: _f), IconData(0xe877, fontFamily: _f)),
+  /// 浴房
+  sauna(YIcons.sauna, IconData(0xe478, fontFamily: _f), IconData(0xe878, fontFamily: _f)),
+  /// 车库
+  garage(YIcons.garage, IconData(0xe479, fontFamily: _f), IconData(0xe879, fontFamily: _f)),
+  /// 棚子
+  shed(YIcons.shed, IconData(0xe47a, fontFamily: _f), IconData(0xe87a, fontFamily: _f)),
+  /// 化粪池
+  tank(YIcons.tank, IconData(0xe47b, fontFamily: _f), IconData(0xe87b, fontFamily: _f)),
+  /// 菜园 · 草地
+  grass(YIcons.grass, IconData(0xe47c, fontFamily: _f), IconData(0xe87c, fontFamily: _f)),
+  /// 场地
+  terrain(YIcons.terrain, IconData(0xe47d, fontFamily: _f), IconData(0xe87d, fontFamily: _f)),
+  /// 围栏 · 大门
+  fence(YIcons.fence, IconData(0xe47e, fontFamily: _f), IconData(0xe87e, fontFamily: _f)),
+  /// 屋顶
+  roof(YIcons.roof, IconData(0xe47f, fontFamily: _f), IconData(0xe87f, fontFamily: _f)),
+  /// 基础
+  foundation(YIcons.foundation, IconData(0xe480, fontFamily: _f), IconData(0xe880, fontFamily: _f)),
+  /// 推拉门
+  slidingDoor(YIcons.slidingDoor, IconData(0xe481, fontFamily: _f), IconData(0xe881, fontFamily: _f)),
+  /// 插座
+  socket(YIcons.socket, IconData(0xe482, fontFamily: _f), IconData(0xe882, fontFamily: _f)),
+  /// 开关
+  toggle(YIcons.toggle, IconData(0xe483, fontFamily: _f), IconData(0xe883, fontFamily: _f)),
+  /// 通风
+  wind(YIcons.wind, IconData(0xe484, fontFamily: _f), IconData(0xe884, fontFamily: _f)),
+  /// 排水
+  drain(YIcons.drain, IconData(0xe485, fontFamily: _f), IconData(0xe885, fontFamily: _f)),
+  /// 保温 · 温度
+  thermometer(YIcons.thermometer, IconData(0xe486, fontFamily: _f), IconData(0xe886, fontFamily: _f)),
+  /// 漫游
+  walk(YIcons.walk, IconData(0xe487, fontFamily: _f), IconData(0xe887, fontFamily: _f)),
+  /// 点选
+  tap(YIcons.tap, IconData(0xe488, fontFamily: _f), IconData(0xe888, fontFamily: _f)),
+  /// 浏览
+  hand(YIcons.hand, null, null),
+  /// 手绘
+  sketch(YIcons.sketch, IconData(0xe48a, fontFamily: _f), IconData(0xe88a, fontFamily: _f)),
+  /// 墙厚
+  thickness(YIcons.thickness, IconData(0xe48b, fontFamily: _f), IconData(0xe88b, fontFamily: _f)),
+  /// 分房
+  split(YIcons.split, IconData(0xe48c, fontFamily: _f), IconData(0xe88c, fontFamily: _f)),
+  /// 墙体
+  wall(YIcons.wall, IconData(0xe48d, fontFamily: _f), IconData(0xe88d, fontFamily: _f)),
+  /// 切角
+  crop(YIcons.crop, IconData(0xe48e, fontFamily: _f), IconData(0xe88e, fontFamily: _f)),
+  /// 居中
+  alignCenter(YIcons.alignCenter, IconData(0xe48f, fontFamily: _f), IconData(0xe88f, fontFamily: _f)),
+  /// 合并
+  join(YIcons.join, IconData(0xe490, fontFamily: _f), IconData(0xe890, fontFamily: _f)),
+  /// 右上
+  arrowNe(YIcons.arrowNe, null, null),
+  /// 左上
+  arrowNw(YIcons.arrowNw, null, null),
+  /// 右下
+  arrowSe(YIcons.arrowSe, null, null),
+  /// 左下
+  arrowSw(YIcons.arrowSw, null, null),
+  /// 配色
+  palette(YIcons.palette, IconData(0xe495, fontFamily: _f), IconData(0xe895, fontFamily: _f)),
+  /// 外观
+  theme(YIcons.theme, IconData(0xe496, fontFamily: _f), IconData(0xe896, fontFamily: _f)),
+  /// 已选
+  radioOn(YIcons.radioOn, IconData(0xe497, fontFamily: _f), IconData(0xe897, fontFamily: _f)),
+  /// 未选
+  radioOff(YIcons.radioOff, null, null),
+  /// 圆点
+  dot(YIcons.dot, null, null),
+  /// 朗读
+  speaker(YIcons.speaker, IconData(0xe49a, fontFamily: _f), IconData(0xe89a, fontFamily: _f)),
+  /// 停止
+  stop(YIcons.stop, IconData(0xe49b, fontFamily: _f), IconData(0xe89b, fontFamily: _f)),
+  /// 停止录音
+  stopFill(YIcons.stopFill, null, null),
+  /// 播放
+  play(YIcons.play, IconData(0xe49d, fontFamily: _f), IconData(0xe89d, fontFamily: _f)),
+  /// 速度 · 上限
+  speed(YIcons.speed, IconData(0xe49e, fontFamily: _f), IconData(0xe89e, fontFamily: _f)),
+  /// 排序
+  sort(YIcons.sort, null, null),
+  /// 裁决
+  gavel(YIcons.gavel, IconData(0xe4a0, fontFamily: _f), IconData(0xe8a0, fontFamily: _f)),
+  /// 安全
+  shield(YIcons.shield, IconData(0xe4a1, fontFamily: _f), IconData(0xe8a1, fontFamily: _f)),
+  /// 提醒
+  bellRing(YIcons.bellRing, IconData(0xe4a2, fontFamily: _f), IconData(0xe8a2, fontFamily: _f)),
+  /// 免打扰
+  bellOff(YIcons.bellOff, IconData(0xe4a3, fontFamily: _f), IconData(0xe8a3, fontFamily: _f)),
+  /// 夜间
+  moon(YIcons.moon, IconData(0xe4a4, fontFamily: _f), IconData(0xe8a4, fontFamily: _f)),
+  /// 公告
+  megaphone(YIcons.megaphone, IconData(0xe4a5, fontFamily: _f), IconData(0xe8a5, fontFamily: _f)),
+  /// 注册
+  personAdd(YIcons.personAdd, IconData(0xe4a6, fontFamily: _f), IconData(0xe8a6, fontFamily: _f)),
+  /// 已注销
+  personOff(YIcons.personOff, IconData(0xe4a7, fontFamily: _f), IconData(0xe8a7, fontFamily: _f)),
+  /// 找人
+  personSearch(YIcons.personSearch, IconData(0xe4a8, fontFamily: _f), IconData(0xe8a8, fontFamily: _f)),
+  /// 取消链接
+  linkOff(YIcons.linkOff, IconData(0xe4a9, fontFamily: _f), IconData(0xe8a9, fontFamily: _f)),
+  /// 图片损坏
+  imageOff(YIcons.imageOff, IconData(0xe4aa, fontFamily: _f), IconData(0xe8aa, fontFamily: _f)),
+  /// 离线
+  offline(YIcons.offline, IconData(0xe4ab, fontFamily: _f), IconData(0xe8ab, fontFamily: _f)),
   ;
 
   const YIcon(this.glyph, this.ink, this.accent);

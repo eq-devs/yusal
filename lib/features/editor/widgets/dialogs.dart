@@ -446,7 +446,7 @@ extension _EditorDialogs on _HouseEditorState {
                                     Navigator.pop(context);
                                     cutCornerDialog();
                                   },
-                                  icon: const Icon(Icons.crop),
+                                  icon: const Icon(YIcons.crop),
                                   label: Text(tr3(
                                       '切掉一个角（L 形）',
                                       'Бұрышты кесу (L пішін)',

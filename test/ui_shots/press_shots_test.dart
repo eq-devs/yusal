@@ -50,7 +50,7 @@ void main() {
                                   value: 'Қазақша',
                                   onTap: () {}),
                               SettingsRow(
-                                  icon: Icons.brightness_6_outlined,
+                                  icon: YIcons.theme,
                                   title: 'Көрініс',
                                   onTap: () {}),
                             ]),

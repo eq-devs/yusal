@@ -115,8 +115,7 @@ class MePage extends ConsumerWidget {
                                     if (account.can(AdminPerms.read))
                                       SettingsRow(
                                           key: const Key('me-admin'),
-                                          icon: Icons
-                                              .admin_panel_settings_outlined,
+                                          icon: YIcons.verified,
                                           title: tr3(
                                               '管理后台', 'Әкімшілік', 'Админка', 'Admin', ky: 'Админ', uz: 'Admin'),
                                           onTap: () => pushPage<void>(context,
@@ -145,7 +144,7 @@ class MePage extends ConsumerWidget {
                                           }),
                                       SettingsRow(
                                           key: const Key('me-theme'),
-                                          icon: Icons.brightness_6_outlined,
+                                          icon: YIcons.theme,
                                           title: tr3('外观', 'Көрініс', 'Тема', 'Theme', ky: 'Тема', uz: 'Mavzu'),
                                           value: themes
                                               .firstWhere(
@@ -163,8 +162,7 @@ class MePage extends ConsumerWidget {
                                       if (voiceBuiltIn && voicePlatform)
                                         SettingsRow(
                                             key: const Key('me-voice'),
-                                            icon: Icons
-                                                .record_voice_over_outlined,
+                                            icon: YIcons.mic,
                                             title: tr3('语音', 'Дауыс', 'Голос',
                                                 'Voice', ky: 'Үн', uz: 'Ovoz'),
                                             onTap: () => pushPage<void>(
@@ -403,7 +401,7 @@ class _ProProfiles extends StatelessWidget {
                 SettingsGroup(children: [
                   SettingsRow(
                       key: const Key('me-demand-alert'),
-                      icon: Icons.notifications_active_outlined,
+                      icon: YIcons.bellRing,
                       title: tr3('新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки', 'New requests', ky: 'Жаңы суроо-талаптар', uz: 'Yangi soʻrovlar'),
                       subtitle: tr3(
                           '按地区、工种订阅，有新需求时提醒你',

@@ -325,7 +325,7 @@ class _VoiceSettingsPageState extends State<VoiceSettingsPage> {
                           children: [
                             SettingsRow(
                                 key: const Key('voice-tts-engine'),
-                                icon: Icons.volume_up_outlined,
+                                icon: YIcons.speaker,
                                 title: tr3('在哪里朗读', 'Қайда оқылады', 'Где озвучивать',
                                     'Where replies are read',
                                     ky: 'Кайда окулат', uz: 'Qayerda oʻqiladi'),
@@ -347,14 +347,14 @@ class _VoiceSettingsPageState extends State<VoiceSettingsPage> {
                                   onTap: pickVoice),
                             SettingsRow(
                                 key: const Key('voice-tts-speed'),
-                                icon: Icons.speed_outlined,
+                                icon: YIcons.speed,
                                 title: tr3('语速', 'Жылдамдық', 'Скорость', 'Speed',
         ky: 'Ылдамдык', uz: 'Tezlik'),
                                 value: _speedName(settings.speed),
                                 onTap: pickSpeed),
                             SettingsRow(
                                 key: const Key('voice-auto-read'),
-                                icon: Icons.play_circle_outline,
+                                icon: YIcons.play,
                                 title: tr3('自动朗读每条回答', 'Әр жауапты өзі оқысын',
                                     'Озвучивать каждый ответ',
                                     'Read every reply aloud',
@@ -368,8 +368,8 @@ class _VoiceSettingsPageState extends State<VoiceSettingsPage> {
                             SettingsRow(
                                 key: const Key('voice-listen'),
                                 icon: reader.speaking.value
-                                    ? Icons.stop_circle_outlined
-                                    : Icons.hearing_outlined,
+                                    ? YIcons.stop
+                                    : YIcons.speaker,
                                 title: reader.speaking.value
                                     ? tr3('停止', 'Тоқтату', 'Остановить', 'Stop',
                                         ky: 'Токтотуу', uz: 'Toʻxtatish')

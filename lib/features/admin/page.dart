@@ -407,7 +407,7 @@ class _Workbench extends StatelessWidget {
                         ],
                         onTap: () => open(_Review.reports)),
                     _TodoTile(
-                        icon: Icons.gavel_outlined,
+                        icon: YIcons.gavel,
                         title: tr3('申诉', 'Апелляциялар', 'Апелляции', 'Appeals', ky: 'Даттануулар', uz: 'Apellyatsiyalar'),
                         count: todo.appeals.count,
                         lines: [for (final x in todo.appeals.items) x.text],
@@ -1871,7 +1871,7 @@ class _MoreTab extends StatelessWidget {
                 children: [
                   SettingsRow(
                       key: const Key('admin-feedback'),
-                      icon: Icons.mark_email_unread_outlined,
+                      icon: YIcons.mail,
                       title: tr3('用户反馈', 'Пікірлер', 'Обратная связь', 'Feedback', ky: 'Пикир-сунуштар', uz: 'Fikr-mulohazalar'),
                       onTap: () => pushPage<void>(
                           context, (_) => const FeedbackInboxPage())),
@@ -1903,7 +1903,7 @@ class _MoreTab extends StatelessWidget {
                   if (_may(context, AdminPerms.operate))
                     SettingsRow(
                         key: const Key('admin-broadcast'),
-                        icon: Icons.campaign_outlined,
+                        icon: YIcons.megaphone,
                         title: tr3('群发通知', 'Жаппай хабарландыру', 'Рассылка', 'Broadcast', ky: 'Жалпы билдирүү', uz: 'Ommaviy xabar'),
                         subtitle: tr3('推送到所有用户的手机', 'Барлық телефонға',
                             'На все телефоны',
@@ -1921,7 +1921,7 @@ class _MoreTab extends StatelessWidget {
                           pushPage<void>(context, (_) => const PricesPage())),
                   SettingsRow(
                       key: const Key('admin-banned-words'),
-                      icon: Icons.block_outlined,
+                      icon: YIcons.block,
                       title: tr3('违禁词', 'Тыйым сөздер', 'Запрещённые слова', 'Banned words', ky: 'Тыюу салынган сөздөр', uz: 'Taqiqlangan soʻzlar'),
                       onTap: () => pushPage<void>(
                           context, (_) => const BannedWordsPage())),
@@ -1930,7 +1930,7 @@ class _MoreTab extends StatelessWidget {
                 title: tr3('推送', 'Хабарландырулар', 'Уведомления', 'Notifications', ky: 'Билдирмелер', uz: 'Bildirishnomalar'),
                 children: [
                   SettingsRow(
-                      icon: Icons.notifications_paused_outlined,
+                      icon: YIcons.bellOff,
                       title: _pushTitle,
                       subtitle: tr3(
                           '平台免打扰时段与每人每日上限',
@@ -2110,7 +2110,7 @@ class _PushPolicyPage extends StatelessWidget {
                     children: [
                       SettingsGroup(children: [
                         SettingsRow(
-                            icon: Icons.bedtime_outlined,
+                            icon: YIcons.moon,
                             title: quietStart,
                             value:
                                 p.quietStart.isEmpty ? _noQuiet : p.quietStart,
@@ -2160,7 +2160,7 @@ class _PushPolicyPage extends StatelessWidget {
                                   }
                                 : null),
                         SettingsRow(
-                            icon: Icons.speed,
+                            icon: YIcons.speed,
                             title: dailyCap,
                             value: _cap(p.dailyCap),
                             onTap: canOperate

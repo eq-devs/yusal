@@ -321,7 +321,7 @@ extension _HeatTab on _HouseEditorState {
                   label: tr3('在平面上布置暖气片', 'Жоспарға радиатор қою',
                       'Разместить радиаторы на плане',
                       'Place radiators on the plan', ky: 'Радиаторлорду планга коюу', uz: 'Radiatorlarni rejaga joylash'),
-                  icon: Icons.heat_pump_outlined,
+                  icon: YIcons.radiator,
                   onPressed: () {
                     showTab('plan');
                     update(() => showUtilities = true);

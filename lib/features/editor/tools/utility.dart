@@ -56,14 +56,14 @@ extension _UtilityTool on _HouseEditorState {
                                   'Auto-place on this floor',
                                   ky: 'Бул кабатта автоматтык жайгаштыруу',
                                   uz: 'Bu qavatda avtomatik joylash'),
-                              icon: Icons.auto_fix_high,
+                              icon: YIcons.ai,
                               primary: true,
                               onPressed: () => Navigator.pop(context, 'auto')),
                           if (count > 0)
                             Btn(
                                 label:
                                     '${tr3('清除本层点位', 'Қабат нүктелерін өшіру', 'Удалить точки этажа', "Delete this floor's points", ky: 'Бул кабаттын чекиттерин өчүрүү', uz: 'Bu qavat nuqtalarini oʻchirish')} ($count)',
-                                icon: Icons.delete_sweep_outlined,
+                                icon: YIcons.delete,
                                 danger: true,
                                 onPressed: () =>
                                     Navigator.pop(context, 'clear')),

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 import 'package:qazvoice/qazvoice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yusal/features/me/pages/voice_settings.dart';
@@ -321,11 +322,11 @@ void main() {
       await t.pumpAndSettle();
       expect(r.spoken, ['Дайын']);
       expect(find.byKey(const Key('voice-download')), findsNothing);
-      expect(find.byIcon(Icons.stop_circle_outlined), findsOneWidget);
+      expect(find.byIcon(YIcons.stop), findsOneWidget);
       await t.tap(find.byKey(const Key('voice-speak')));
       await t.pumpAndSettle();
       expect(r.stops, 1);
-      expect(find.byIcon(Icons.volume_up_outlined), findsOneWidget);
+      expect(find.byIcon(YIcons.speaker), findsOneWidget);
     });
 
     testWidgets('first tap offers the download, shows progress, then reads',

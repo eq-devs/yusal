@@ -124,8 +124,8 @@ class _ReadAloudButtonState extends State<ReadAloudButton> {
                         value: status.fraction > 0 ? status.fraction : null))
                 : Icon(
                     speaking
-                        ? Icons.stop_circle_outlined
-                        : Icons.volume_up_outlined,
+                        ? YIcons.stop
+                        : YIcons.speaker,
                     size: 20));
       });
 }

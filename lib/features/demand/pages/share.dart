@@ -127,7 +127,7 @@ class _PublicPreview extends StatelessWidget {
           decoration: frame,
           padding: const EdgeInsets.all(24),
           child: EmptyState(
-              icon: Icons.link_off,
+              icon: YIcons.linkOff,
               title: tr3(
                   '此链接已撤销，或需求已关闭／下架',
                   'Сілтеме өшірілген не тапсырыс жабылған',

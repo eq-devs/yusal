@@ -119,7 +119,7 @@ extension _SiteTab on _HouseEditorState {
                   child: Btn(
                       label:
                           tr3('设置宅基地', 'Учаскені баптау', 'Настроить участок', 'Set up the site', ky: 'Участокту даярдоо', uz: 'Uchastkani sozlash'),
-                      icon: Icons.fence_outlined,
+                      icon: YIcons.fence,
                       primary: true,
                       onPressed: () async {
                         final d = defaultSitePlan(

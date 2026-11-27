@@ -32,13 +32,13 @@ String utilityName(UtilityKind kind) => switch (kind) {
 
 IconData utilityIcon(UtilityKind kind) => switch (kind) {
       UtilityKind.panel => YIcons.bolt,
-      UtilityKind.socket => Icons.power_outlined,
-      UtilityKind.lightSwitch => Icons.toggle_on_outlined,
+      UtilityKind.socket => YIcons.socket,
+      UtilityKind.lightSwitch => YIcons.toggle,
       UtilityKind.light => YIcons.idea,
-      UtilityKind.vent => Icons.air,
+      UtilityKind.vent => YIcons.wind,
       UtilityKind.water => YIcons.water,
-      UtilityKind.drain => Icons.vertical_align_bottom,
-      UtilityKind.radiator => Icons.heat_pump_outlined,
+      UtilityKind.drain => YIcons.drain,
+      UtilityKind.radiator => YIcons.radiator,
     };
 
 /// Electrical, water and heating groups for the palette and the legend.
@@ -93,17 +93,17 @@ String siteName(SiteKind kind) => switch (kind) {
     };
 
 IconData siteIcon(SiteKind kind) => switch (kind) {
-      SiteKind.barn => Icons.agriculture_outlined,
-      SiteKind.bathhouse => Icons.hot_tub_outlined,
-      SiteKind.garage => Icons.garage_outlined,
-      SiteKind.toilet => Icons.wc_outlined,
-      SiteKind.shed => Icons.warehouse_outlined,
+      SiteKind.barn => YIcons.barn,
+      SiteKind.bathhouse => YIcons.sauna,
+      SiteKind.garage => YIcons.garage,
+      SiteKind.toilet => YIcons.toilet,
+      SiteKind.shed => YIcons.shed,
       SiteKind.greenhouse => YIcons.tree,
       SiteKind.well => YIcons.water,
-      SiteKind.septic => Icons.recycling,
-      SiteKind.garden => Icons.grass,
-      SiteKind.yard => Icons.grid_on,
-      SiteKind.gate => Icons.door_sliding_outlined,
+      SiteKind.septic => YIcons.tank,
+      SiteKind.garden => YIcons.grass,
+      SiteKind.yard => YIcons.grid,
+      SiteKind.gate => YIcons.fence,
       SiteKind.custom => YIcons.grid,
     };
 

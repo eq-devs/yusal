@@ -56,7 +56,7 @@ class ProfileCard extends StatelessWidget {
                     style: TextStyle(color: t.muted, fontSize: YFont.small)),
                 const SizedBox(height: 6),
                 Row(children: [
-                  Icon(Icons.circle,
+                  Icon(YIcons.dot,
                       size: 9, color: available ? t.ok : t.faint),
                   const SizedBox(width: 6),
                   Flexible(

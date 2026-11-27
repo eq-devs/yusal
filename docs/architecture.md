@@ -54,4 +54,17 @@ Live<List<X>>(provider: xListProvider, builder: (context, list) => …);
 - **会话：** 所有 repository 共用 `ApiClient.app`，它负责令牌、当前账号和变更通知。
 - **测试：** 用 `MockBackend` override 掉各个 repository provider（见 `test/support/`）。
 
-`test/architecture_test.dart` 检查两件事：顶层目录只能是上面这几个，每个 feature 只能用上面列出的子目录。
+## 依赖方向（由测试强制）
+
+`test/architecture_test.dart` 检查：
+
+- 顶层目录只能是上面这几个，每个 feature 只能用上面列出的子目录；
+- `features/editor/engine/core` 是纯 Dart，只引用自己和 `package:meta`；
+- 底层（`constant/`、`localization/`、`service/`、`utils/`、`features/shared/`）只能引用底层和引擎 core，不能引用某个 feature 的页面、状态或仓库（唯一例外：`shared/ui/scope.dart` 的 `requireLogin` 打开登录页）；
+- feature 之间的依赖必须在测试里的清单上：新增一条要写清理由，删掉一条要从清单里删，所以清单只会变短。
+
+`test/platform/design_system_test.dart` 另外限制 Material 图标：只有清单里的文件还在用（YIcons 还没画的房间类型、家具和表单控件），数量只能减少。
+
+后端错误码：yusal-api 的 `docs/api_codes.json` 在这里有一份副本，`test/platform/api_codes_test.dart` 检查每个服务端错误码都能落到一个 `ApiCodes` 上。
+
+治理进度、任务池和架构决策记录在 [`docs/governance/`](governance/)。

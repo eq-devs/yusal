@@ -4,11 +4,9 @@
 
 ## 待确认（需要产品或架构决定）
 
-1. **拆 feature 之间的环。** 现有环：chat↔coop、chat↔demand、demand↔coop、demand↔home、demand↔me、home↔me、me↔profile、profile↔chat、editor↔voice 等。多数是页面互相 `push` 对方的页面。两种做法：(a) 每个 feature 只暴露一个 `routes.dart`（打开它的页面的函数），别的 feature 只能引用它，环变成对 routes 的单向依赖；(b) 命名路由表放在 `app.dart`。推荐 (a)：改动局部，测试壳不用改。需要确认后再动，因为会碰几十个文件。
-2. **`shared/ui/scope.dart` → `auth/page.dart`。** `attempt()`/`requireLogin()` 打开登录页，是底层对 feature 的唯一反向依赖。跟第 1 条一起用 routes 方案解决最自然。
-3. **126 处 Material 图标。** 房间类型、家具、表单控件 YIcons 里还没画。需要设计补画后再替换；测试已限制只减不增。
-4. **两个 `money()`。** `localization/l10n.dart` 的是"1 250 000 ₸"（平台金额，带单位）；`render2d/planning_names.dart` 的是按语言选千分位、不带单位（设计预算）。语义不同，不能直接合并；是否统一千分位规则（哈萨克语空格、中文逗号）是产品决定。
-5. **PR 63（语音设置）** 未合并，和新布局冲突，要先决定是否还要。
+1. **按 feature 整体看仍有一个大的强连通分量。** 三层各自无环，但"A 的界面读 B 的仓库、B 的界面读 A 的仓库"这类交叉还在（例如聊天页读需求、需求页读聊天）。要彻底消掉，得让语音、聊天等横切能力用注册方式接入各页面，改动面很大、收益有限。建议维持现在的分层规则，除非出现具体的改动痛点。
+2. **新画的 73 个图标**需要设计过目（预览图见 PR 说明）；改形状只要改 `tool/brand/icons.json` 再运行 `gen_yicons.py`。
+3. **PR 63** 已移植进本分支，原 PR 可以关闭。
 
 ## 可以直接做（下一轮候选）
 

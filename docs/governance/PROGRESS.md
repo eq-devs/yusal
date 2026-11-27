@@ -19,3 +19,14 @@
 | — | API | CLAUDE.md、README、`rules.go` 里指向已不存在的 `lib/platform/...` 的路径改成现在的位置 | — |
 
 ADR：[0001 错误词汇](adr/0001-error-vocabulary.md)、[0002 依赖方向](adr/0002-dependency-direction.md)。
+
+## 第 2 轮（2026-11-27）：q 确认"全部做"
+
+| 批次 | 仓库 | 内容 | 防回归 |
+|---|---|---|---|
+| 6 | App | 拆 feature 循环：跨 feature 打开页面改用 `shared/ui/routes.dart` 的 `Destination`（`app.dart` 穷尽 `switch`）；`requireLogin` 不再引用 auth；举报、申诉、认证、提醒、反馈拆成 `features/trust`；`PlanViewer` 归 editor，`SiteTab` 归 coop，`ShellNav` 归 shared/ui；语音的后端契约、`DesignHost`、表单动作放回正确的层。依赖清单删除，换成分层无环规则 | `architecture_test.dart`：层只引用下层、同层 feature 无环 |
+| 7 | App | 两个 `money()` 合成一个分组函数 `groupDigits`：所有语言用空格（平台金额约 47 处调用用的规则，编辑器约 41 处原来中英文用逗号）；`money()` 只负责加 ₸ 和单位 | `money_test.dart` |
+| 8 | App | PR 63（语音设置）移植到现有目录：`me/pages/voice_settings.dart`、`voice/state/reply_reader.dart`、`service/voice/*`，新文案补齐六种语言 | `read_aloud_test.dart` |
+| 9 | App | 按 YIcons 风格新画 73 个图标并生成字体，替换全部 Material 图标（只留苹果登录的苹果标志） | `design_system_test.dart` |
+
+ADR 0002 增加了"分层无环"的修订。

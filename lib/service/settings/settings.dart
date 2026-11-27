@@ -149,6 +149,18 @@ String get listSep => tr3('、', ', ', ', ', ', ', ky: ', ', uz: ', ');
 String dec(String number) =>
     isWestern && !isEn ? number.replaceAll('.', ',') : number;
 
+/// Whole number in groups of three split by a space, in every language:
+/// 1250000 → "1 250 000". Used for money and other large amounts.
+String groupDigits(num value) {
+  final digits = value.round().abs().toString();
+  final out = StringBuffer(value < 0 ? '-' : '');
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) out.write(' ');
+    out.write(digits[i]);
+  }
+  return out.toString();
+}
+
 /// Metres from millimetres, two decimals: 3600 → "3.60".
 String m2dp(num mm) => dec((mm / 1000).toStringAsFixed(2));
 

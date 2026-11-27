@@ -510,7 +510,7 @@ extension _PlanTab on _HouseEditorState {
       costChipFor = history.present;
       costChip = v <= 0
           ? ''
-          : '≈ ${currencySymbol(e.currency)} ${v < 1e6 ? money(v) : isKk ? '${dec((v / 1e6).toStringAsFixed(1))} млн' : isUz ? '${dec((v / 1e6).toStringAsFixed(1))} mln' : isEn ? '${(v / 1e6).toStringAsFixed(1)}M' : '${(v / 1e4).round()} 万'}';
+          : '≈ ${currencySymbol(e.currency)} ${v < 1e6 ? groupDigits(v) : isKk ? '${dec((v / 1e6).toStringAsFixed(1))} млн' : isUz ? '${dec((v / 1e6).toStringAsFixed(1))} mln' : isEn ? '${(v / 1e6).toStringAsFixed(1)}M' : '${(v / 1e4).round()} 万'}';
     }
     return costChip;
   }

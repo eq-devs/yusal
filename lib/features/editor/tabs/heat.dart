@@ -11,7 +11,7 @@ extension _HeatTab on _HouseEditorState {
     final loss = heatLoss(doc, derived);
     final spec = doc.extras.heat;
     String kw(double w) => dec((w / 1000).toStringAsFixed(1));
-    String w0(double w) => money(w);
+    String w0(double w) => groupDigits(w);
     String u(double v) => dec(v.toStringAsFixed(2));
     Future<void> editInt(String field, String title, {String? suffix}) async {
       final v = await askNumber(title, spec.ints[field]!, suffix: suffix);
@@ -48,7 +48,7 @@ extension _HeatTab on _HouseEditorState {
                 tr3('建议锅炉功率 (留 15% 余量)', 'Ұсынылатын қазандық (15% қормен)',
                     'Рекомендуемый котёл (с запасом 15%)',
                     'Recommended boiler (15% margin)', ky: 'Сунушталган казан (15% запас)', uz: 'Tavsiya etilgan qozon (15% zaxira)')),
-            Kv('${money(loss.seasonKwh)} ${tr3('度', 'кВт·сағ', 'кВт·ч', 'kWh', ky: 'кВт·с', uz: 'kVt·soat')}',
+            Kv('${groupDigits(loss.seasonKwh)} ${tr3('度', 'кВт·сағ', 'кВт·ч', 'kWh', ky: 'кВт·с', uz: 'kVt·soat')}',
                 tr3('一个采暖季用热', 'Бір жылыту маусымы', 'За отопительный сезон', 'Per heating season', ky: 'Жылытуу мезгилине', uz: 'Isitish mavsumiga')),
             Kv('${dec(loss.fuel.toStringAsFixed(spec.fuel == FuelKind.coal || spec.fuel == FuelKind.wood ? 1 : 0))} ${fuelUnit(spec.fuel)}',
                 '${tr3('约需', 'Шамамен', 'Примерно', 'About', ky: 'Болжол менен', uz: 'Taxminan')} ${fuelName(spec.fuel)} · ${tr3('效率', 'ПӘК', 'КПД', 'Efficiency', ky: 'ПАК', uz: 'FIK')} ${spec.efficiency}%',

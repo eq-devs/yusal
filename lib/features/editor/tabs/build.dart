@@ -104,10 +104,10 @@ extension _BuildTab on _HouseEditorState {
                     'Total duration (sum of stages)', ky: 'Жалпы мөөнөт (этаптардын суммасы)', uz: 'Umumiy muddat (bosqichlar yigʻindisi)')),
             Kv('${stages.where((s) => s.status == StageStatus.done).length} / ${stages.length}',
                 tr3('完成阶段', 'Аяқталған кезең', 'Завершено этапов', 'Stages finished', ky: 'Бүткөн этаптар', uz: 'Tugagan bosqichlar')),
-            Kv('$sym ${money(spent)}', tr3('已花费', 'Жұмсалды', 'Потрачено', 'Spent', ky: 'Жумшалды', uz: 'Sarflandi'),
+            Kv('$sym ${groupDigits(spent)}', tr3('已花费', 'Жұмсалды', 'Потрачено', 'Spent', ky: 'Жумшалды', uz: 'Sarflandi'),
                 color: spent > budget ? t.crit : null),
             Kv(
-                '$sym ${money(budget)}',
+                '$sym ${groupDigits(budget)}',
                 tr3('预算 (见“预算”页)', 'Смета («Смета» беті)',
                     'Смета (см. раздел «Смета»)',
                     'Estimate (see “Estimate”)', ky: 'Смета («Смета» бөлүмүн караңыз)', uz: 'Smeta (“Smeta” boʻlimiga qarang)')),
@@ -196,9 +196,9 @@ extension _BuildTab on _HouseEditorState {
                             if (p.start != null)
                               '${formatDay(p.start!)} → ${formatDay(p.end!)}',
                             if (b != null)
-                              '${tr3('预算', 'смета', 'смета', 'estimate', ky: 'смета', uz: 'smeta')} $sym ${money(b)}',
+                              '${tr3('预算', 'смета', 'смета', 'estimate', ky: 'смета', uz: 'smeta')} $sym ${groupDigits(b)}',
                             if (s.spent > 0)
-                              '${tr3('已花', 'жұмсалды', 'потрачено', 'spent', ky: 'жумшалды', uz: 'sarflandi')} $sym ${money(s.spent)}',
+                              '${tr3('已花', 'жұмсалды', 'потрачено', 'spent', ky: 'жумшалды', uz: 'sarflandi')} $sym ${groupDigits(s.spent)}',
                             if (checks.isNotEmpty)
                               '✓ ${s.checks.where((c) => c < checks.length).length}/${checks.length}',
                           ].join(' · '),
@@ -250,7 +250,7 @@ extension _BuildTab on _HouseEditorState {
                     action('SetStage', {'stageKey': s.key, 'days': v.round()});
                   }
                 }),
-                Kv('$sym ${money(s.spent)}',
+                Kv('$sym ${groupDigits(s.spent)}',
                     tr3('已花费', 'Жұмсалды', 'Потрачено', 'Spent', ky: 'Жумшалды', uz: 'Sarflandi'), onTap: () async {
                   final v = await askNumber(
                       '${tr3('已花费', 'Жұмсалды', 'Потрачено', 'Spent', ky: 'Жумшалды', uz: 'Sarflandi')} ($sym)', s.spent);

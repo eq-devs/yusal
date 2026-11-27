@@ -433,7 +433,7 @@ List<_Sheet> _sheets(DrawingInput input) {
       ),
       (
         tr3('预算合计', 'Смета барлығы', 'Итого по смете', 'Estimate total', ky: 'Сметанын жыйынтыгы', uz: 'Smeta jami'),
-        '$sym ${money(cost.total)}'
+        '$sym ${groupDigits(cost.total)}'
       ),
       (
         tr3('设计热负荷', 'Жылу жүктемесі', 'Тепловая нагрузка', 'Heat load', ky: 'Жылуулук жүгү', uz: 'Issiqlik yuklamasi'),
@@ -498,25 +498,25 @@ List<_Sheet> _sheets(DrawingInput input) {
       _figures(c, Rect.fromLTRB(legend.left, y, legend.right, legend.bottom), [
         (
           tr3('照明线 3×1.5', 'Жарық сымы 3×1,5', 'Кабель освещения 3×1,5', 'Lighting cable 3×1.5', ky: 'Жарык кабели 3×1,5', uz: 'Yoritish kabeli 3×1,5'),
-          '${money(take.lightCable)} $unitM'
+          '${groupDigits(take.lightCable)} $unitM'
         ),
         (
           tr3('插座线 3×2.5', 'Розетка сымы 3×2,5', 'Кабель розеток 3×2,5', 'Socket cable 3×2.5', ky: 'Розетка кабели 3×2,5', uz: 'Rozetka kabeli 3×2,5'),
-          '${money(take.powerCable)} $unitM'
+          '${groupDigits(take.powerCable)} $unitM'
         ),
         (
           tr3('给水管 (冷热)', 'Су құбыры (суық+ыстық)',
               'Труба водоснабжения (хол.+гор.)',
               'Water pipe (cold + hot)', ky: 'Суу түтүгү (муздак + ысык)', uz: 'Suv quvuri (sovuq + issiq)'),
-          '${money(take.waterPipe)} $unitM'
+          '${groupDigits(take.waterPipe)} $unitM'
         ),
         (
           tr3('排水管', 'Кәріз құбыры', 'Канализационная труба', 'Drain pipe', ky: 'Канализация түтүгү', uz: 'Kanalizatsiya quvuri'),
-          '${money(take.drainPipe)} $unitM'
+          '${groupDigits(take.drainPipe)} $unitM'
         ),
         (
           tr3('暖气管 (供回)', 'Жылу құбыры', 'Труба отопления (подача/обратка)', 'Heating pipe (flow/return)', ky: 'Жылытуу түтүгү (берүү/кайтаруу)', uz: 'Isitish quvuri (berish/qaytish)'),
-          '${money(take.heatingPipe)} $unitM'
+          '${groupDigits(take.heatingPipe)} $unitM'
         ),
       ]);
     }));
@@ -768,7 +768,7 @@ List<_Sheet> _sheets(DrawingInput input) {
       _Cell(costStageName(stage), bold: true),
       const _Cell(''),
       const _Cell(''),
-      _Cell(money(cost.stageMaterials(stage)), numeric: true, bold: true),
+      _Cell(groupDigits(cost.stageMaterials(stage)), numeric: true, bold: true),
     ]);
     for (final l in lines) {
       costRows.add([
@@ -778,8 +778,8 @@ List<_Sheet> _sheets(DrawingInput input) {
         _Cell(
             '${_n(l.quantity, l.quantity >= 100 ? 0 : 2)} ${l.custom ? l.unit : unitName(l.unit)}',
             numeric: true),
-        _Cell(money(l.price), numeric: true),
-        _Cell(money(l.total), numeric: true),
+        _Cell(groupDigits(l.price), numeric: true),
+        _Cell(groupDigits(l.total), numeric: true),
       ]);
     }
   }
@@ -788,33 +788,33 @@ List<_Sheet> _sheets(DrawingInput input) {
       _Cell(tr3('材料合计', 'Материалдар', 'Материалы', 'Materials', ky: 'Материалдар', uz: 'Materiallar'), bold: true),
       const _Cell(''),
       const _Cell(''),
-      _Cell(money(cost.materials), numeric: true, bold: true)
+      _Cell(groupDigits(cost.materials), numeric: true, bold: true)
     ],
     [
       _Cell('${tr3('人工', 'Жұмыс ақысы', 'Оплата работ', 'Labour', ky: 'Жумуш', uz: 'Ish haqi')}${cost.labourByWork ? '' : ' ${cost.labourPct}%'}',
           bold: true),
       const _Cell(''),
       const _Cell(''),
-      _Cell(money(cost.labour), numeric: true, bold: true)
+      _Cell(groupDigits(cost.labour), numeric: true, bold: true)
     ],
     [
       _Cell('${tr3('预备费', 'Резерв', 'Резерв', 'Contingency', ky: 'Күтүлбөгөн чыгымдар', uz: 'Kutilmagan xarajatlar')} ${cost.contingencyPct}%',
           bold: true),
       const _Cell(''),
       const _Cell(''),
-      _Cell(money(cost.contingency), numeric: true, bold: true)
+      _Cell(groupDigits(cost.contingency), numeric: true, bold: true)
     ],
     [
       _Cell('${tr3('总计', 'Барлығы', 'Итого', 'Total', ky: 'Бардыгы', uz: 'Jami')} ($sym)', bold: true),
-      _Cell('${money(cost.perArea)} $sym/$unitM2', numeric: true, muted: true),
+      _Cell('${groupDigits(cost.perArea)} $sym/$unitM2', numeric: true, muted: true),
       const _Cell(''),
-      _Cell(money(cost.total), numeric: true, bold: true)
+      _Cell(groupDigits(cost.total), numeric: true, bold: true)
     ],
     [
       _Cell(tr3('可能的区间', 'Ықтимал аралық', 'Возможный диапазон', 'Likely range', ky: 'Мүмкүн болгон аралык', uz: 'Ehtimoliy oraliq'), muted: true),
       const _Cell(''),
       const _Cell(''),
-      _Cell('${money(cost.low)} – ${money(cost.high)}',
+      _Cell('${groupDigits(cost.low)} – ${groupDigits(cost.high)}',
           numeric: true, muted: true)
     ],
   ]);
@@ -913,7 +913,7 @@ List<_Sheet> _sheets(DrawingInput input) {
         [
           _Cell(input.roomName(room)),
           _Cell(_n(s.area), numeric: true),
-          _Cell(money(s.total), numeric: true),
+          _Cell(groupDigits(s.total), numeric: true),
           _Cell('${s.sections}', numeric: true),
         ]
   ];
@@ -952,7 +952,7 @@ List<_Sheet> _sheets(DrawingInput input) {
       ),
       (
         tr3('采暖季用热', 'Маусымдық жылу', 'Расход тепла за сезон', 'Heat use per season', ky: 'Мезгилге жылуулук сарпталышы', uz: 'Mavsumiy issiqlik sarfi'),
-        '${money(loss.seasonKwh)} kWh'
+        '${groupDigits(loss.seasonKwh)} kWh'
       ),
       (
         '${tr3('燃料', 'Отын', 'Топливо', 'Fuel', ky: 'Отун', uz: 'Yoqilgʻi')} · ${fuelName(x.heat.fuel)}',
@@ -992,13 +992,13 @@ List<_Sheet> _sheets(DrawingInput input) {
           _Cell(name),
           _Cell(_n(u, 2), numeric: true),
           _Cell('${_n(a)} $unitM2', numeric: true),
-          _Cell(money(w), numeric: true),
+          _Cell(groupDigits(w), numeric: true),
         ],
       [
         _Cell(tr3('通风换气', 'Желдету', 'Вентиляция', 'Ventilation', ky: 'Желдетүү', uz: 'Shamollatish')),
         const _Cell('—', numeric: true),
         _Cell('${_n(loss.volume)} $unitM3', numeric: true),
-        _Cell(money(loss.air), numeric: true),
+        _Cell(groupDigits(loss.air), numeric: true),
       ],
     ], [
       3,
@@ -1107,9 +1107,9 @@ List<_Sheet> _sheets(DrawingInput input) {
           _Cell(
               budgets[plan[i].stage.key] == null
                   ? '—'
-                  : money(budgets[plan[i].stage.key]!),
+                  : groupDigits(budgets[plan[i].stage.key]!),
               numeric: true),
-          _Cell(money(plan[i].stage.spent), numeric: true),
+          _Cell(groupDigits(plan[i].stage.spent), numeric: true),
           _Cell(
               '${plan[i].stage.checks.length}/${stageChecks[plan[i].stage.key]?.length ?? 0}',
               numeric: true),

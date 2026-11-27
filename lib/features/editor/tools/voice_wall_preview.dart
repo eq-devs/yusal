@@ -138,9 +138,9 @@ extension _VoiceWallPreview on _HouseEditorState {
         'Estimated budget change',
         ky: 'Сметанын өзгөрүшү', uz: 'Smeta farqi');
     final budgetLabel =
-        '$caption  ${delta > 0 ? '+' : ''}${money(delta)} $symbol';
+        '$caption  ${delta > 0 ? '+' : ''}${groupDigits(delta)} $symbol';
     final details = <String>[
-      '${money(before.total)} → ${money(after.total)} $symbol'
+      '${groupDigits(before.total)} → ${groupDigits(after.total)} $symbol'
     ];
     final finishChanges = <String, Object?>{};
     for (final key in ['finishArea', 'finishTileArea']) {
@@ -154,7 +154,7 @@ extension _VoiceWallPreview on _HouseEditorState {
       final label = costLineName(key);
       final signed =
           '${areaChange > 0 ? '+' : ''}${dec(areaChange.toStringAsFixed(2))}';
-      details.add('$label  $signed m² × ${money(price)} $symbol/m²');
+      details.add('$label  $signed m² × ${groupDigits(price)} $symbol/m²');
       finishChanges[key] = {
         'area_change_m2': areaChange,
         'unit_price': price,

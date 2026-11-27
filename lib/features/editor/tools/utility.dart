@@ -342,11 +342,11 @@ extension _UtilityTool on _HouseEditorState {
           tr3('电气点位', 'Электр нүктелері', 'Электроточки', 'Electrical points',
               ky: 'Электр чекиттери', uz: 'Elektr nuqtalari')),
       Kv(
-          '${money(take.lightCable + take.powerCable)} $unitM',
+          '${groupDigits(take.lightCable + take.powerCable)} $unitM',
           tr3('电线约', 'Сым шамамен', 'Провод примерно', 'Wire, approx.',
               ky: 'Зым, болжол менен', uz: 'Sim, taxminan')),
       Kv(
-          '${money(take.waterPipe + take.drainPipe)} $unitM',
+          '${groupDigits(take.waterPipe + take.drainPipe)} $unitM',
           tr3('水管约', 'Су құбыры шамамен', 'Водопроводная труба примерно',
               'Water pipe, approx.',
               ky: 'Суу түтүгү, болжол менен', uz: 'Suv quvuri, taxminan')),

@@ -289,18 +289,6 @@ String currencyName(Currency c) => c == Currency.cny
 /// The currency used when the design has not chosen one.
 Currency get languageCurrency => isWestern ? Currency.kzt : Currency.cny;
 
-/// 1234567 → "1 234 567" (Kazakh) or "1,234,567" (Chinese).
-String money(num value) {
-  final digits = value.round().abs().toString();
-  final sep = isWestern && !isEn ? ' ' : ',';
-  final out = StringBuffer(value < 0 ? '-' : '');
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) out.write(sep);
-    out.write(digits[i]);
-  }
-  return out.toString();
-}
-
 String fuelName(FuelKind f) => switch (f) {
       FuelKind.coal =>
         tr3('煤', 'Көмір', 'Уголь', 'Coal', ky: 'Көмүр', uz: 'Koʻmir'),

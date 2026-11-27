@@ -29,7 +29,7 @@ void main() {
               .widget<Text>(
                   find.descendant(of: chip, matching: find.byType(Text)))
               .data,
-          matches(r'^≈ \S+ [\d,]+( 万)?$'));
+          matches(r'^≈ \S+ \d[\d ]*( 万)?$'));
       expect(t.takeException(), isNull);
       // It leads to the budget page.
       await t.tap(chip);

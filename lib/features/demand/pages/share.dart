@@ -11,6 +11,7 @@ import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/demand/page.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Base address of public share pages (to be served by the web host).
 const shareBase = 'https://yusal.app/d/';
@@ -45,7 +46,7 @@ class SharePage extends StatelessWidget {
                       IconButton(
                           tooltip:
                               tr3('复制链接', 'Сілтемені көшіру', 'Копировать', 'Copy', ky: 'Көчүрүү', uz: 'Nusxalash'),
-                          icon: const Icon(Icons.copy),
+                          icon: const Icon(YIcons.copy),
                           onPressed: () async {
                             await Clipboard.setData(ClipboardData(text: link));
                             if (context.mounted) {
@@ -56,7 +57,7 @@ class SharePage extends StatelessWidget {
                     ])),
                     const SizedBox(height: 12),
                     BusyButton(
-                        icon: Icons.ios_share,
+                        icon: YIcons.share,
                         label: tr3('通过其他应用分享', 'Басқа қолданбамен бөлісу',
                             'Отправить через…',
                             'Send via…', ky: 'Жөнөтүү…', uz: 'Yuborish…'),

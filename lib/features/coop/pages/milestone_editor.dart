@@ -6,6 +6,7 @@ import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Edits the inspection points of an agreement that is still waiting for
 /// confirmation: name, share of the amount, what is checked and when.
@@ -154,7 +155,7 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
                                 ? null
                                 : () =>
                                     setState(() => rows.removeAt(i).dispose()),
-                            icon: const Icon(Icons.delete_outline)),
+                            icon: const Icon(YIcons.delete)),
                       ]),
                       const SizedBox(height: 8),
                       TextField(
@@ -184,7 +185,7 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
                                       .add(const Duration(days: 365 * 3)));
                               if (d != null) setState(() => rows[i].due = d);
                             },
-                            icon: const Icon(Icons.event_outlined, size: 18),
+                            icon: const Icon(YIcons.calendar, size: 18),
                             label: Text(rows[i].due == null
                                 ? tr3('预计日期', 'Мерзім', 'Срок', 'Deadline', ky: 'Мөөнөт', uz: 'Muddat')
                                 : fmtDay(rows[i].due))),
@@ -197,7 +198,7 @@ class _MilestoneEditorPageState extends State<MilestoneEditorPage> {
                     key:
                         'c:${tr3('新节点', 'Жаңа кезең', 'Новый этап', 'New stage', ky: 'Жаңы этап', uz: 'Yangi bosqich')} ${rows.length + 1}',
                     percent: 0)))),
-                icon: const Icon(Icons.add),
+                icon: const Icon(YIcons.add),
                 label: Text(tr3('加一个节点', 'Кезең қосу', 'Добавить этап', 'Add a stage', ky: 'Этап кошуу', uz: 'Bosqich qoʻshish'))),
         ]));
   }

@@ -15,6 +15,7 @@ import 'package:yusal/features/voice/repository/speech.dart';
 import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 
 import 'session_test.dart' show ScriptedBackend, act;
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// A page the assistant can act on, so its orb shows.
 class VoicePage extends StatefulWidget {
@@ -138,7 +139,7 @@ void main() {
     await t.pumpAndSettle();
     // The step ran and failed (no shell here): it is listed with its name.
     expect(find.text('切换主页面'), findsOneWidget);
-    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    expect(find.byIcon(YIcons.alert), findsOneWidget);
     // Nothing changed a design, so there is nothing to undo.
     expect(find.byKey(const Key('voice-undo')), findsNothing);
 
@@ -284,7 +285,7 @@ void main() {
     await t.pump();
     expect(find.byKey(const Key('voice-button')), findsOneWidget);
     // At rest the orb says what a tap does.
-    expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+    expect(find.byIcon(YIcons.ai), findsOneWidget);
     repos.signInAs(null);
     await t.pump();
     expect(find.byKey(const Key('voice-button')), findsNothing);

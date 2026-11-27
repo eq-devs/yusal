@@ -44,7 +44,7 @@ extension _SceneTab on _HouseEditorState {
                     tooltip:
                         tr3('导出图片', 'Суретті сақтау', 'Сохранить картинку', 'Save picture', ky: 'Сүрөттү сактоо', uz: 'Rasmni saqlash'),
                     onPressed: shareSceneImage,
-                    icon: const Icon(Icons.photo_camera_outlined, size: 22)))),
+                    icon: const Icon(YIcons.camera, size: 22)))),
       // Within thumb reach on the stage itself: frame the house again
       // after turning or zooming away (CAD viewers' "zoom to fit").
       if (!walk)
@@ -58,7 +58,7 @@ extension _SceneTab on _HouseEditorState {
                     key: const ValueKey('scene-fit'),
                     tooltip: tr3('适配画面', 'Экранға сыйғызу', 'Вписать в экран', 'Fit to screen', ky: 'Экранга батыруу', uz: 'Ekranga sigʻdirish'),
                     onPressed: refitScene,
-                    icon: const Icon(Icons.fit_screen_outlined, size: 22)))),
+                    icon: const Icon(YIcons.fit, size: 22)))),
     ]));
     if (phoneTools) {
       return Padding(
@@ -149,14 +149,14 @@ extension _SceneTab on _HouseEditorState {
               const SizedBox(width: 8),
               TextButton.icon(
                   onPressed: () => openInPlan(source),
-                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  icon: const Icon(YIcons.edit, size: 16),
                   label:
                       Text(tr3('在 2D 中编辑', '2D-де өзгерту', 'Изменить в 2D', 'Edit in 2D', ky: '2D форматта түзөтүү', uz: '2D da tahrirlash'))),
               IconButton(
                   tooltip: tr3('关闭', 'Жабу', 'Закрыть', 'Close', ky: 'Жабуу', uz: 'Yopish'),
                   visualDensity: VisualDensity.compact,
                   onPressed: () => update(() => scenePicked = null),
-                  icon: const Icon(Icons.close, size: 16)),
+                  icon: const Icon(YIcons.close, size: 16)),
             ])));
   }
 
@@ -302,8 +302,8 @@ extension _SceneTab on _HouseEditorState {
           key: const ValueKey('scene-style'),
           avatar: Icon(
               switch (s.style) {
-                SceneStyle.white => Icons.view_in_ar_outlined,
-                SceneStyle.lines => Icons.draw_outlined,
+                SceneStyle.white => YIcons.cube,
+                SceneStyle.lines => YIcons.design,
                 _ => Icons.palette_outlined,
               },
               size: 16),
@@ -561,7 +561,7 @@ extension _SceneTab on _HouseEditorState {
                 style: TextStyle(fontSize: 13, color: t.muted)),
             Btn(
                 label: tr3('门外', 'Есік алды', 'Перед входом', 'In front of the entrance', ky: 'Кире бериштин алдында', uz: 'Kirish oldida'),
-                icon: Icons.door_front_door_outlined,
+                icon: YIcons.door,
                 onPressed: () => update(() => walkStart = null)),
             for (final room in floor.rooms)
               if (g.base.roomGeometry
@@ -577,7 +577,7 @@ extension _SceneTab on _HouseEditorState {
                     }),
             Btn(
                 label: tr3('后院', 'Аула', 'Задний двор', 'Backyard', ky: 'Арткы короо', uz: 'Orqa hovli'),
-                icon: Icons.park_outlined,
+                icon: YIcons.tree,
                 // Behind the house, looking back at it.
                 onPressed: () => go(w / 2, d + 4000, math.pi)),
           ]),

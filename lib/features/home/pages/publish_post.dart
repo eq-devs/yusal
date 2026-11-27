@@ -13,6 +13,7 @@ import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/shared/ui/unsaved_changes_guard.dart';
 import 'package:yusal/features/home/pages/post.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Shares a local design to the feed: a title, a few words, the region,
 /// whether builders are welcome. Area, floors, rooms and the cost estimate
@@ -156,7 +157,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Cover(
-                      icon: Icons.home_outlined,
+                      icon: YIcons.home,
                       seed: widget.entry.id,
                       height: 200,
                       image: preview == null
@@ -185,7 +186,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
                         child: _IntentCard(
                             key: const Key('intent-feedback'),
                             selected: !openForBuilders,
-                            icon: Icons.forum_outlined,
+                            icon: YIcons.chat,
                             title:
                                 tr3('听听大家意见', 'Пікір тыңдау', 'Узнать мнения', 'Get opinions', ky: 'Пикир алуу', uz: 'Fikr olish'),
                             body: tr3('只分享，收点评和建议', 'Тек бөлісу',
@@ -198,7 +199,7 @@ class _PublishPostPageState extends State<PublishPostPage> {
                         child: _IntentCard(
                             key: const Key('intent-build'),
                             selected: openForBuilders,
-                            icon: Icons.construction,
+                            icon: YIcons.tools,
                             title: tr3('准备盖，找施工方', 'Салуға дайын',
                                 'Строю, ищу мастеров',
                                 "I'm building and looking for pros", ky: 'Курам жатам, адис издейм', uz: 'Qurayapman, mutaxassis qidiryapman'),

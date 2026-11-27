@@ -74,7 +74,7 @@ extension _HeatTab on _HouseEditorState {
                 tr3('恢复默认', 'Әдепкі мәндер', 'Вернуть значения по умолчанию', 'Restore the defaults', ky: 'Демейкини калыбына келтирүү', uz: 'Standartni tiklash'),
             visualDensity: VisualDensity.compact,
             onPressed: () => action('SetHeat', {'reset': true}),
-            icon: const Icon(Icons.restart_alt, size: 18)),
+            icon: const Icon(YIcons.refresh, size: 18)),
         children: [
           KvGrid([
             Kv(
@@ -274,7 +274,7 @@ extension _HeatTab on _HouseEditorState {
               alignment: Alignment.centerLeft,
               child: Btn(
                   label: tr3('编辑构造层', 'Қабаттарды өзгерту', 'Изменить слои', 'Edit layers', ky: 'Катмарларды түзөтүү', uz: 'Qatlamlarni tahrirlash'),
-                  icon: Icons.layers_outlined,
+                  icon: YIcons.layers,
                   onPressed: () => showTab('det'))),
         ]);
     final rows = <List<TableCellData>>[];

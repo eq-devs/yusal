@@ -48,7 +48,7 @@ class SearchField extends StatelessWidget {
               else
                 IconButton(
                     tooltip: tr3('清除', 'Тазалау', 'Очистить', 'Clear', ky: 'Тазалоо', uz: 'Tozalash'),
-                    icon: const Icon(Icons.close, size: 20),
+                    icon: const Icon(YIcons.close, size: 20),
                     onPressed: () {
                       controller.clear();
                       onChanged('');
@@ -149,7 +149,7 @@ class SettingsRow extends StatelessWidget {
                     trailing!
                   else if (onTap != null && !danger) ...[
                     const SizedBox(width: YSpace.xs),
-                    Icon(Icons.chevron_right, size: 20, color: t.faint),
+                    Icon(YIcons.chevronRight, size: 20, color: t.faint),
                   ],
                 ]))));
   }
@@ -370,7 +370,7 @@ class SignInPrompt extends StatelessWidget {
                   height: 64,
                   decoration: BoxDecoration(
                       color: t.surface, shape: BoxShape.circle),
-                  child: Icon(icon ?? Icons.lock_outline,
+                  child: Icon(icon ?? YIcons.lock,
                       size: 28, color: t.ink)),
               const SizedBox(height: YSpace.lg),
               Text(text, textAlign: TextAlign.center, style: YText.heading),

@@ -6,6 +6,7 @@ import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/service/voice/read_aloud.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 String _mb(int bytes) => '${(bytes / 1000000).round()} MB';
 
@@ -108,7 +109,7 @@ class _KazakhVoicePageState extends State<KazakhVoicePage> {
                 tr3('已下载，可以朗读了', 'Жүктелген, оқуға дайын',
                     'Скачано, можно слушать',
                     'Downloaded; ready to listen', ky: 'Жүктөлдү; угууга даяр', uz: 'Yuklab olindi; tinglashga tayyor'),
-                icon: Icons.check_circle_outline),
+                icon: YIcons.checkCircle),
             const SizedBox(height: YSpace.md),
             BusyButton(
                 key: const Key('kazakh-voice-delete'),

@@ -435,7 +435,7 @@ extension _EditorDialogs on _HouseEditorState {
                                       placementHint = null;
                                     });
                                   },
-                                  icon: const Icon(Icons.open_in_full),
+                                  icon: const Icon(YIcons.expand),
                                   label: Text(tr3(
                                       '拖动外边框调整',
                                       'Сыртқы жиекті сүйреп өзгерту',
@@ -460,7 +460,7 @@ extension _EditorDialogs on _HouseEditorState {
                                     action('MirrorPlan',
                                         {'direction': 'horizontal'});
                                   },
-                                  icon: const Icon(Icons.flip),
+                                  icon: const Icon(YIcons.flip),
                                   label: Text(tr3(
                                       '整个房子左右翻转',
                                       'Бүкіл үйді оңнан солға аудару',
@@ -473,7 +473,7 @@ extension _EditorDialogs on _HouseEditorState {
                                         {'direction': 'vertical'});
                                   },
                                   icon: const RotatedBox(
-                                      quarterTurns: 1, child: Icon(Icons.flip)),
+                                      quarterTurns: 1, child: Icon(YIcons.flip)),
                                   label: Text(tr3(
                                       '整个房子上下翻转',
                                       'Бүкіл үйді жоғарыдан төменге аудару',
@@ -485,7 +485,7 @@ extension _EditorDialogs on _HouseEditorState {
                                       Navigator.pop(context);
                                       restoreOutlineAction();
                                     },
-                                    icon: const Icon(Icons.crop_square),
+                                    icon: const Icon(YIcons.room),
                                     label: Text(tr3(
                                         '恢复矩形外形',
                                         'Тіктөртбұрышқа қайтару',
@@ -608,12 +608,12 @@ extension _EditorDialogs on _HouseEditorState {
                                   ? FontWeight.w700
                                   : FontWeight.w400)),
                       trailing:
-                          i == floorIndex ? const Icon(Icons.check) : null,
+                          i == floorIndex ? const Icon(YIcons.check) : null,
                       onTap: () => Navigator.pop(context, 'floor:$i')),
                 ListTile(
                     key: const Key('add-floor'),
                     contentPadding: tilePad,
-                    leading: const Icon(Icons.add),
+                    leading: const Icon(YIcons.add),
                     title: Text(tr3('加一层', 'Қабат қосу', 'Добавить этаж', 'Add a floor', ky: 'Кабат кошуу', uz: 'Qavat qoʻshish')),
                     onTap: () => Navigator.pop(context, 'above')),
                 const Divider(height: 17, indent: 20, endIndent: 20),

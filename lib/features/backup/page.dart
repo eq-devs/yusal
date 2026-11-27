@@ -13,6 +13,7 @@ import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Compares the local design with its cloud copy.
 BackupState backupState(
@@ -67,7 +68,7 @@ class BackupPage extends StatelessWidget {
                               const SizedBox(height: 16),
                               if (rows.isEmpty)
                                 EmptyState(
-                                    icon: Icons.folder_open,
+                                    icon: YIcons.doc,
                                     title: tr3(
                                         '还没有设计', 'Жоба жоқ', 'Нет проектов', 'No designs', ky: 'Долбоорлор жок', uz: 'Loyihalar yoʻq')),
                               for (final row in rows)
@@ -221,7 +222,7 @@ class _BackupTile extends StatelessWidget {
         color: highlighted ? t.accentSoft : null,
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Icon(e == null ? Icons.cloud_outlined : Icons.home_outlined),
+            Icon(e == null ? YIcons.cloud : YIcons.home),
             const SizedBox(width: 12),
             Expanded(
                 child: Text(name,

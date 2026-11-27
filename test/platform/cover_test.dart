@@ -8,6 +8,7 @@ import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 void main() {
   Widget app(MockBackend b, Widget child) => MaterialApp(
@@ -23,7 +24,7 @@ void main() {
     final post = (await b.feed(const FeedFilter()))
         .firstWhere((p) => p.snapshotId.isNotEmpty);
     Widget coverX() => Cover(
-        icon: Icons.home_outlined,
+        icon: YIcons.home,
         seed: post.id,
         height: 200,
         child: PlanCover(snapshotId: post.snapshotId, postId: post.id));

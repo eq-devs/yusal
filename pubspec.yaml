@@ -72,6 +72,10 @@ flutter:
       fonts:
         - asset: assets/fonts/InterDisplay-600.otf
           weight: 600
+    # The Yusal icon set, built by tool/brand/gen_yicons.py.
+    - family: YusalIcons
+      fonts:
+        - asset: assets/fonts/YusalIcons.ttf
     - family: JetBrainsMono
       fonts:
         - asset: assets/fonts/JetBrainsMono-Regular.ttf

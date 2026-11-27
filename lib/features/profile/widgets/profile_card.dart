@@ -6,6 +6,7 @@ import 'package:yusal/features/profile/state/profile.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Card of a worker or team profile.
 class ProfileCard extends StatelessWidget {
@@ -123,7 +124,7 @@ class _TrackRecord extends StatelessWidget {
               padding: const EdgeInsets.only(top: 4),
               child: Row(children: [
                 if (scores.isNotEmpty) ...[
-                  Icon(Icons.star, size: 15, color: t.ink),
+                  Icon(YIcons.starFill, size: 15, color: t.ink),
                   const SizedBox(width: 3),
                   Text(
                       '${(scores.reduce((a, b) => a + b) / scores.length).toStringAsFixed(1)} (${scores.length})',

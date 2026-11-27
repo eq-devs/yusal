@@ -64,7 +64,7 @@ extension _SelectionCards on _HouseEditorState {
             tooltip: deleteLabel ?? tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
             visualDensity: VisualDensity.compact,
             onPressed: onDelete,
-            icon: Icon(Icons.delete_outline, size: 20, color: t.crit)),
+            icon: Icon(YIcons.delete, size: 20, color: t.crit)),
       if (!wide)
         IconButton(
             tooltip: panelCollapsed
@@ -75,13 +75,13 @@ extension _SelectionCards on _HouseEditorState {
                   panelCollapsed = !panelCollapsed;
                   panelFull = false;
                 }),
-            icon: Icon(panelCollapsed ? Icons.expand_less : Icons.expand_more,
+            icon: Icon(panelCollapsed ? YIcons.chevronUp : YIcons.chevronDown,
                 size: 20)),
       IconButton(
           tooltip: tr3('关闭', 'Жабу', 'Закрыть', 'Close', ky: 'Жабуу', uz: 'Yopish'),
           visualDensity: VisualDensity.compact,
           onPressed: () => update(clearSelection),
-          icon: const Icon(Icons.close, size: 18)),
+          icon: const Icon(YIcons.close, size: 18)),
     ]);
     // Phones: the card is the content of the page's one bottom sheet, which
     // brings its own grip and three stops.
@@ -227,7 +227,7 @@ extension _SelectionCards on _HouseEditorState {
                           color: t.ink)),
                   if (tag != null) tag,
                   if (onTap != null)
-                    Icon(Icons.edit_outlined, size: 14, color: t.muted),
+                    Icon(YIcons.edit, size: 14, color: t.muted),
                 ])));
   }
 
@@ -283,12 +283,12 @@ extension _SelectionCards on _HouseEditorState {
           Btn(
               key: const Key('room-use'),
               label: tr3('改用途', 'Түрін өзгерту', 'Назначение', 'Use', ky: 'Колдонулушу', uz: 'Vazifasi'),
-              icon: Icons.label_outline,
+              icon: YIcons.tag,
               onPressed: () => update(() => panelCollapsed = false)),
           Btn(
               key: const Key('room-door'),
               label: tr3('加门', 'Есік қосу', 'Дверь', 'Door', ky: 'Эшик', uz: 'Eshik'),
-              icon: Icons.door_front_door_outlined,
+              icon: YIcons.door,
               onPressed: () => update(() {
                     clearSelection();
                     placingOpening = OpeningKind.door;
@@ -302,7 +302,7 @@ extension _SelectionCards on _HouseEditorState {
           Btn(
               key: const Key('room-furniture'),
               label: tr3('放家具', 'Жиһаз қою', 'Мебель', 'Furniture', ky: 'Эмерек', uz: 'Mebel'),
-              icon: Icons.chair_outlined,
+              icon: YIcons.chair,
               onPressed: chooseFurniture),
         ],
         children: [
@@ -395,7 +395,7 @@ extension _SelectionCards on _HouseEditorState {
                 onPressed: () => mergeRoom(room)),
             Btn(
                 label: tr3('删除房间', 'Бөлмені жою', 'Удалить комнату', 'Delete the room', ky: 'Бөлмөнү өчүрүү', uz: 'Xonani oʻchirish'),
-                icon: Icons.delete_outline,
+                icon: YIcons.delete,
                 danger: true,
                 onPressed: () {
                   final updated = paintCells(
@@ -595,13 +595,13 @@ extension _SelectionCards on _HouseEditorState {
                     OpeningKind.sliding =>
                       tr3('推拉门', 'сырғымалы есік', 'раздвижная дверь', 'sliding door', ky: 'жылма эшик', uz: 'surma eshik'),
                   }}',
-                  icon: Icons.swap_horiz,
+                  icon: YIcons.swap,
                   onPressed: () => action(
                       'SetOpeningKind', {'openingId': o.id, 'kind': kind})),
           if (o is DoorOpening) ...[
             Btn(
                 label: tr3('门轴换边', 'Топсаны ауыстыру', 'Перевесить петли', 'Swap the hinges', ky: 'Илгичтерди алмаштыруу', uz: 'Ilgaklarni almashtirish'),
-                icon: Icons.flip,
+                icon: YIcons.flip,
                 onPressed: () => action('FlipDoor', {
                       'openingId': o.id,
                       'hinge': o.hinge == Hinge.start ? 'end' : 'start'
@@ -620,7 +620,7 @@ extension _SelectionCards on _HouseEditorState {
               Btn(
                   label:
                       tr3('设为大门', 'Басты кіреберіс', 'Сделать главным входом', 'Make it the main entrance', ky: 'Негизги кире бериш кылуу', uz: 'Asosiy kirish qilish'),
-                  icon: Icons.home_outlined,
+                  icon: YIcons.home,
                   onPressed: () =>
                       action('SetMainEntrance', {'openingId': o.id})),
           ],
@@ -717,12 +717,12 @@ extension _SelectionCards on _HouseEditorState {
         actions: [
           Btn(
               label: tr3('旋转 90°', '90° бұру', 'Повернуть на 90°', 'Rotate 90°', ky: '90° буруу', uz: '90° burish'),
-              icon: Icons.rotate_90_degrees_ccw,
+              icon: YIcons.rotate,
               onPressed: () =>
                   action('RotateFurniture', {'furnitureId': f.id})),
           Btn(
               label: tr3('复制', 'Көшіру', 'Копировать', 'Copy', ky: 'Көчүрүү', uz: 'Nusxalash'),
-              icon: Icons.copy_all_outlined,
+              icon: YIcons.copy,
               onPressed: () {
                 final id = const Uuid().v4();
                 action('AddFurniture', {
@@ -742,7 +742,7 @@ extension _SelectionCards on _HouseEditorState {
               }),
           Btn(
               label: tr3('换类型', 'Түрін ауыстыру', 'Сменить тип', 'Change the type', ky: 'Түрүн өзгөртүү', uz: 'Turini oʻzgartirish'),
-              icon: Icons.category_outlined,
+              icon: YIcons.grid,
               onPressed: () async {
                 final kind = await pickFurnitureKind();
                 if (kind != null) {

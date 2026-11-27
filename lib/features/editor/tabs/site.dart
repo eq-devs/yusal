@@ -225,7 +225,7 @@ extension _SiteTab on _HouseEditorState {
                 tooltip: tr3('关闭', 'Жабу', 'Закрыть', 'Close', ky: 'Жабуу', uz: 'Yopish'),
                 visualDensity: VisualDensity.compact,
                 onPressed: () => update(() => selectedSiteId = null),
-                icon: const Icon(Icons.close, size: 18)),
+                icon: const Icon(YIcons.close, size: 18)),
             children: [
               KvGrid([
                 Kv(
@@ -261,12 +261,12 @@ extension _SiteTab on _HouseEditorState {
               Wrap(spacing: 8, runSpacing: 8, children: [
                 Btn(
                     label: tr3('转 90°', '90° бұру', 'Повернуть на 90°', 'Rotate 90°', ky: '90° буруу', uz: '90° burish'),
-                    icon: Icons.rotate_90_degrees_ccw,
+                    icon: YIcons.rotate,
                     onPressed: () =>
                         action('RotateSiteItem', {'siteItemId': i.id})),
                 Btn(
                     label: tr3('名称', 'Атауы', 'Наименование', 'Name', ky: 'Аталышы', uz: 'Nomi'),
-                    icon: Icons.edit_outlined,
+                    icon: YIcons.edit,
                     onPressed: () async {
                       final v = await askText(
                           tr3('名称', 'Атауы', 'Наименование', 'Name', ky: 'Аталышы', uz: 'Nomi'), siteItemName(i));
@@ -279,7 +279,7 @@ extension _SiteTab on _HouseEditorState {
                     }),
                 Btn(
                     label: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
-                    icon: Icons.delete_outline,
+                    icon: YIcons.delete,
                     danger: true,
                     onPressed: () {
                       update(() => selectedSiteId = null);
@@ -315,7 +315,7 @@ extension _SiteTab on _HouseEditorState {
                 action('ClearSite', {});
               }
             },
-            icon: const Icon(Icons.delete_outline, size: 18)),
+            icon: const Icon(YIcons.delete, size: 18)),
         children: [
           KvGrid([
             Kv(
@@ -360,7 +360,7 @@ extension _SiteTab on _HouseEditorState {
           Wrap(spacing: 8, runSpacing: 8, children: [
             Btn(
                 label: tr3('添加设施', 'Нысан қосу', 'Добавить объект', 'Add an item', ky: 'Нерсе кошуу', uz: 'Element qoʻshish'),
-                icon: Icons.add,
+                icon: YIcons.add,
                 primary: true,
                 onPressed: addSiteItem),
             PillToggle(

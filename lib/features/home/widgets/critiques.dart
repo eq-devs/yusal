@@ -199,7 +199,7 @@ class _ComposerEntry extends StatelessWidget {
                       ? SizedBox(
                           width: 28,
                           height: 28,
-                          child: Icon(Icons.edit_outlined,
+                          child: Icon(YIcons.edit,
                               size: 18, color: t.muted))
                       : Avatar(me.displayName, size: 28),
                   const SizedBox(width: 10),
@@ -303,7 +303,7 @@ class _CritiqueBoxState extends State<_CritiqueBox> {
               selected: topic == k,
               showCheckmark: false,
               avatar: focus.contains(k) && topic != k
-                  ? Icon(Icons.star_rounded, size: 14, color: t.accent)
+                  ? Icon(YIcons.starFill, size: 14, color: t.accent)
                   : null,
               onSelected: (_) => setState(() => topic = topic == k ? null : k)),
       ]),
@@ -321,7 +321,7 @@ class _CritiqueBoxState extends State<_CritiqueBox> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 10),
                       child: Icon(
-                          i <= (rating ?? 0) ? Icons.star : Icons.star_border,
+                          i <= (rating ?? 0) ? YIcons.starFill : YIcons.star,
                           size: 26,
                           color: t.accent)))),
         const SizedBox(width: 6),
@@ -494,8 +494,8 @@ class _CritiqueTile extends StatelessWidget {
                                             .markHelpful(c.id, !c.helpful)),
                                     icon: Icon(
                                         c.helpful
-                                            ? Icons.thumb_up_alt
-                                            : Icons.thumb_up_alt_outlined,
+                                            ? YIcons.thumb
+                                            : YIcons.thumb,
                                         size: 16),
                                     label: Text(c.helpful
                                         ? tr3('已标有用', 'Пайдалы', 'Полезно', 'Helpful', ky: 'Пайдалуу', uz: 'Foydali')
@@ -506,7 +506,7 @@ class _CritiqueTile extends StatelessWidget {
                       IconButton(
                           visualDensity: VisualDensity.compact,
                           tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
-                          icon: Icon(Icons.close, size: 16, color: t.faint),
+                          icon: Icon(YIcons.close, size: 16, color: t.faint),
                           onPressed: () => attempt(
                               context,
                               () => context
@@ -518,7 +518,7 @@ class _CritiqueTile extends StatelessWidget {
                           visualDensity: VisualDensity.compact,
                           tooltip: tr3('举报', 'Шағым', 'Пожаловаться', 'Report', ky: 'Арыз берүү', uz: 'Shikoyat qilish'),
                           icon:
-                              YusalIcon(YIcon.report, size: 16, color: t.faint),
+                              YusalIcon(YIcon.flag, size: 16, color: t.faint),
                           onPressed: () => reportContent(
                               context, ReportTarget.comment, c.id)),
                   ]);

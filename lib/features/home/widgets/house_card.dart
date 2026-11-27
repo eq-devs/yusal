@@ -10,6 +10,7 @@ import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// A house in the feed: the plan as a big picture, then the facts a
 /// visitor scans first (where, how big, what it costs) and who made it.
@@ -53,7 +54,7 @@ class HouseCard extends StatelessWidget {
                             child: PostPicture(
                                 post: p,
                                 builder: (context, image, loading) => Cover(
-                                    icon: Icons.home_outlined,
+                                    icon: YIcons.home,
                                     seed: p.id,
                                     height: compact ? 150 : 230,
                                     image: image,
@@ -83,7 +84,7 @@ class HouseCard extends StatelessWidget {
                                                   active: liked,
                                                   child: Icon(
                                                       liked
-                                                          ? Icons.favorite
+                                                          ? YIcons.heartFill
                                                           : Icons
                                                               .favorite_border,
                                                       size: 20,
@@ -127,7 +128,7 @@ class HouseCard extends StatelessWidget {
                                 style: display(
                                     size: compact ? 16 : 18, color: t.ink))),
                         if (p.rating != null) ...[
-                          Icon(Icons.star, size: 15, color: t.ink),
+                          Icon(YIcons.starFill, size: 15, color: t.ink),
                           const SizedBox(width: 3),
                           Text(p.rating!.toStringAsFixed(1),
                               style: TextStyle(
@@ -194,7 +195,7 @@ class HouseCard extends StatelessWidget {
                                               style: TextStyle(
                                                   color: t.muted,
                                                   fontSize: YFont.small))),
-                                      Icon(Icons.favorite,
+                                      Icon(YIcons.heartFill,
                                           size: 14, color: t.faint),
                                       const SizedBox(width: 3),
                                       Text('${p.likeCount}',
@@ -202,7 +203,7 @@ class HouseCard extends StatelessWidget {
                                               color: t.muted,
                                               fontSize: YFont.small)),
                                       const SizedBox(width: 10),
-                                      Icon(Icons.chat_bubble_outline,
+                                      Icon(YIcons.chat,
                                           size: 14, color: t.faint),
                                       const SizedBox(width: 3),
                                       Text('${p.commentCount}',
@@ -224,7 +225,7 @@ class HouseCard extends StatelessWidget {
                                       style: OutlinedButton.styleFrom(
                                           visualDensity: VisualDensity.compact),
                                       icon: const Icon(
-                                          Icons.content_copy_outlined,
+                                          YIcons.copy,
                                           size: 16),
                                       label: Text(startFromThis())),
                                   if (p.reuseCount > 0)

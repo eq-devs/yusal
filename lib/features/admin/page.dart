@@ -31,6 +31,7 @@ import 'package:yusal/features/profile/page.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 part 'pages/console.dart';
 
@@ -71,7 +72,7 @@ class _AdminPageState extends State<AdminPage> {
           return Scaffold(
               appBar: AppBar(),
               body: EmptyState(
-                  icon: Icons.lock_outline,
+                  icon: YIcons.lock,
                   title: tr3('没有后台权限', 'Әкімшілікке рұқсат жоқ',
                       'Нет доступа к админке',
                       'No access to admin', ky: 'Администраторлук бөлүмгө кирүү укугу жок', uz: 'Admin boʻlimiga kirish huquqi yoʻq')));
@@ -100,15 +101,15 @@ class _AdminPageState extends State<AdminPage> {
                 onDestinationSelected: (i) => setState(() => _tab = i),
                 destinations: [
                   NavigationDestination(
-                      icon: const Icon(Icons.dashboard_outlined),
+                      icon: const Icon(YIcons.grid),
                       label: tabs[0]),
                   NavigationDestination(
-                      icon: const Icon(Icons.fact_check_outlined),
+                      icon: const Icon(YIcons.contract),
                       label: tabs[1]),
                   NavigationDestination(
-                      icon: const Icon(Icons.people_outline), label: tabs[2]),
+                      icon: const Icon(YIcons.people), label: tabs[2]),
                   NavigationDestination(
-                      icon: const Icon(Icons.more_horiz), label: tabs[3]),
+                      icon: const Icon(YIcons.more), label: tabs[3]),
                 ]));
       });
 }
@@ -296,7 +297,7 @@ class _PagedListState<T> extends State<_PagedList<T>> {
                       if (widget.header != null) widget.header!,
                       if (items.isEmpty)
                         EmptyState(
-                            icon: Icons.inbox_outlined, title: widget.empty),
+                            icon: YIcons.inbox, title: widget.empty),
                       for (final x in items) widget.item(context, x),
                       if (more)
                         Center(
@@ -390,7 +391,7 @@ class _Workbench extends StatelessWidget {
                         style: display(size: 22)),
                     const SizedBox(height: YSpace.md),
                     _TodoTile(
-                        icon: Icons.fact_check_outlined,
+                        icon: YIcons.contract,
                         title: tr3(
                             '需求审核', 'Тапсырыстарды тексеру', 'Проверка заявок', 'Request review', ky: 'Суроо-талаптарды текшерүү', uz: 'Soʻrovlarni tekshirish'),
                         count: todo.review.count,
@@ -399,7 +400,7 @@ class _Workbench extends StatelessWidget {
                         ],
                         onTap: () => open(_Review.demands)),
                     _TodoTile(
-                        icon: Icons.flag_outlined,
+                        icon: YIcons.flag,
                         title: tr3('举报', 'Шағымдар', 'Жалобы', 'Reports', ky: 'Арыздар', uz: 'Shikoyatlar'),
                         count: todo.reports.count,
                         lines: [
@@ -414,7 +415,7 @@ class _Workbench extends StatelessWidget {
                         lines: [for (final x in todo.appeals.items) x.text],
                         onTap: () => open(_Review.appeals)),
                     _TodoTile(
-                        icon: Icons.verified_outlined,
+                        icon: YIcons.verified,
                         title: tr3('工人认证', 'Шеберлерді растау',
                             'Верификация мастеров',
                             'Pro verification', ky: 'Адисти текшерүү', uz: 'Mutaxassisni tekshirish'),
@@ -424,7 +425,7 @@ class _Workbench extends StatelessWidget {
                         ],
                         onTap: () => open(_Review.verifications)),
                     _TodoTile(
-                        icon: Icons.report_problem_outlined,
+                        icon: YIcons.warning,
                         title: tr3(
                             '超过 3 天未解决的争议',
                             '3 күннен астам шешілмеген даулар',
@@ -873,12 +874,12 @@ class _DemandQueueState extends State<_DemandQueue> {
                     key: ValueKey('q-${d.id}'),
                     background: _SwipeBg(
                         color: t.ok,
-                        icon: Icons.check,
+                        icon: YIcons.check,
                         label: _approveWord,
                         left: true),
                     secondaryBackground: _SwipeBg(
                         color: t.crit,
-                        icon: Icons.close,
+                        icon: YIcons.close,
                         label: tr3('拒绝', 'Қабылдамау', 'Отклонить', 'Reject', ky: 'Четке кагуу', uz: 'Rad etish'),
                         left: false),
                     confirmDismiss: (dir) async {
@@ -950,7 +951,7 @@ class _DemandCard extends StatelessWidget {
                     children: [
                       Row(children: [
                         if (selected) ...[
-                          Icon(Icons.check_circle, color: t.accent, size: 20),
+                          Icon(YIcons.checkCircle, color: t.accent, size: 20),
                           const SizedBox(width: 6),
                         ],
                         Expanded(child: Text(v.title, style: YText.bodyStrong)),
@@ -1835,7 +1836,7 @@ class _MoreTab extends StatelessWidget {
           children: [
             SettingsGroup(title: tr3('内容', 'Мазмұн', 'Контент', 'Content', ky: 'Мазмун', uz: 'Kontent'), children: [
               SettingsRow(
-                  icon: Icons.list_alt,
+                  icon: YIcons.list,
                   title: tr3('全部需求', 'Барлық тапсырыстар', 'Все заявки', 'All requests', ky: 'Бардык суроо-талаптар', uz: 'Barcha soʻrovlar'),
                   subtitle: tr3(
                       '按状态筛选、搜索标题，可下架已公开的需求',
@@ -1849,12 +1850,12 @@ class _MoreTab extends StatelessWidget {
                 title: tr3('团队与记录', 'Команда және журнал', 'Команда и журнал', 'Team and log', ky: 'Команда жана журнал', uz: 'Jamoa va jurnal'),
                 children: [
                   SettingsRow(
-                      icon: Icons.badge_outlined,
+                      icon: YIcons.profile,
                       title: _teamTitle,
                       onTap: () =>
                           pushPage<void>(context, (_) => const _TeamPage())),
                   SettingsRow(
-                      icon: Icons.history,
+                      icon: YIcons.clock,
                       title:
                           tr3('操作记录', 'Әрекеттер журналы', 'Журнал действий', 'Action log', ky: 'Аракеттер журналы', uz: 'Amallar jurnali'),
                       subtitle: tr3(
@@ -1878,20 +1879,20 @@ class _MoreTab extends StatelessWidget {
                           context, (_) => const FeedbackInboxPage())),
                   SettingsRow(
                       key: const Key('admin-trends'),
-                      icon: Icons.insights_outlined,
+                      icon: YIcons.progress,
                       title: tr3(
                           '近 30 天趋势', 'Соңғы 30 күн', 'Динамика за 30 дней', '30-day trends', ky: '30 күндүк тенденциялар', uz: '30 kunlik tendensiyalar'),
                       onTap: () =>
                           pushPage<void>(context, (_) => const TrendsPage())),
                   if (_may(context, AdminPerms.team)) ...[
                     SettingsRow(
-                        icon: Icons.file_download_outlined,
+                        icon: YIcons.download,
                         title: tr3('导出用户表', 'Қолданушыларды экспорттау',
                             'Экспорт пользователей',
                             'Export users', ky: 'Колдонуучуларды экспорттоо', uz: 'Foydalanuvchilarni eksport qilish'),
                         onTap: () => _export(context, 'users')),
                     SettingsRow(
-                        icon: Icons.file_download_outlined,
+                        icon: YIcons.download,
                         title: tr3('导出需求表', 'Тапсырыстарды экспорттау',
                             'Экспорт заявок',
                             'Export requests', ky: 'Суроо-талаптарды экспорттоо', uz: 'Soʻrovlarni eksport qilish'),
@@ -1913,7 +1914,7 @@ class _MoreTab extends StatelessWidget {
                             context, (_) => const BroadcastPage())),
                   SettingsRow(
                       key: const Key('admin-prices'),
-                      icon: Icons.sell_outlined,
+                      icon: YIcons.tag,
                       title: tr3('地区价格', 'Аймақ бағалары', 'Цены по регионам', 'Regional prices', ky: 'Аймактык баалар', uz: 'Hududiy narxlar'),
                       subtitle: tr3('预算页按地区使用的单价', 'Сметада аймақ бойынша қолданылатын бағалар',
                           'Цены, которые смета берёт по региону',
@@ -2140,7 +2141,7 @@ class _PushPolicyPage extends StatelessWidget {
                                   }
                                 : null),
                         SettingsRow(
-                            icon: Icons.wb_sunny_outlined,
+                            icon: YIcons.light,
                             title: quietEnd,
                             value: p.quietEnd.isEmpty ? _noQuiet : p.quietEnd,
                             onTap: canOperate && p.quietStart.isNotEmpty

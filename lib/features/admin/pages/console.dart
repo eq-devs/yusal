@@ -216,7 +216,7 @@ class _BroadcastPageState extends State<BroadcastPage> {
                 const SizedBox(height: YSpace.lg),
                 BusyButton(
                     label: tr3('发送', 'Жіберу', 'Отправить', 'Send', ky: 'Жөнөтүү', uz: 'Yuborish'),
-                    icon: Icons.send_outlined,
+                    icon: YIcons.send,
                     onPressed: () => _send(api)),
               ]));
   }

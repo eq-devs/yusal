@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/service/voice/read_aloud.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 String _mb(int bytes) => '${(bytes / 1000000).round()} MB';
 
@@ -172,7 +173,7 @@ class _VoiceDownloadDialogState extends State<_VoiceDownloadDialog> {
             decoration: BoxDecoration(
                 color: colors.primary.withValues(alpha: .12),
                 shape: BoxShape.circle),
-            child: Icon(Icons.record_voice_over_outlined,
+            child: Icon(YIcons.mic,
                 color: colors.primary, size: 28)),
         title: Text(
             tr3('下载哈萨克语语音', 'Қазақша дауысты жүктеу',
@@ -273,7 +274,7 @@ class _VoiceDownloadDialogState extends State<_VoiceDownloadDialog> {
                 FilledButton.icon(
                     key: const Key('voice-download-start'),
                     onPressed: download,
-                    icon: const Icon(Icons.download_rounded, size: 18),
+                    icon: const Icon(YIcons.download, size: 18),
                     label: Text(s.phase == VoiceModelPhase.paused
                         ? tr3('继续', 'Жалғастыру', 'Продолжить', 'Continue', ky: 'Улантуу', uz: 'Davom etish')
                         : tr3('下载', 'Жүктеу', 'Скачать', 'Download', ky: 'Жүктөп алуу', uz: 'Yuklab olish'))),

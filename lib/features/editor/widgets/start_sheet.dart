@@ -183,7 +183,7 @@ class _NewDesignFormState extends State<_NewDesignForm> {
                               padding: const EdgeInsets.only(right: 8),
                               visualDensity: VisualDensity.compact),
                           onPressed: back,
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                          icon: const Icon(YIcons.chevronLeft,
                               size: 16),
                           label: Text(tr3('返回', 'Артқа', 'Назад', 'Back',
                               ky: 'Артка', uz: 'Orqaga')))),

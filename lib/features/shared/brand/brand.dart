@@ -18,9 +18,6 @@ abstract final class YusalBrand {
 
   static const cream = Color(0xffF7F3EE);
   static const ink = Color(0xff1E1C19);
-
-  /// The brand icons' secondary tone.
-  static const stone = Color(0xffC2B8AB);
 }
 
 enum _Piece { top, left, right, word }

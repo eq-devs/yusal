@@ -112,7 +112,7 @@ extension _OtherTabs on _HouseEditorState {
           Positioned(
               right: 0,
               top: 12,
-              child: Icon(Icons.edit_outlined, size: 13, color: t.muted)),
+              child: Icon(YIcons.edit, size: 13, color: t.muted)),
         ]));
   }
 
@@ -170,7 +170,7 @@ extension _OtherTabs on _HouseEditorState {
               Wrap(spacing: 8, runSpacing: 8, children: [
                 Btn(
                     label: tr3('布置家具', 'Жиһаз қою', 'Расставить мебель', 'Arrange furniture', ky: 'Эмеректерди жайгаштыруу', uz: 'Mebellarni joylashtirish'),
-                    icon: Icons.chair_outlined,
+                    icon: YIcons.chair,
                     onPressed: () {
                       showTab('plan');
                       chooseFurniture();
@@ -337,7 +337,7 @@ extension _OtherTabs on _HouseEditorState {
                   'roof' => defaultRoofLayers,
                   _ => defaultFloorLayers
                 }),
-            icon: const Icon(Icons.restart_alt, size: 18)),
+            icon: const Icon(YIcons.refresh, size: 18)),
         children: [
           const SizedBox(height: 6),
           SectionView(
@@ -377,14 +377,14 @@ extension _OtherTabs on _HouseEditorState {
                                   next.insert(i - 1, next.removeAt(i));
                                   save(next);
                                 },
-                          icon: const Icon(Icons.arrow_upward, size: 16)),
+                          icon: const Icon(YIcons.arrowUp, size: 16)),
                       IconButton(
                           tooltip: tr3('删除这一层', 'Қабатты жою', 'Удалить слой', 'Delete the layer', ky: 'Катмарды өчүрүү', uz: 'Qatlamni oʻchirish'),
                           visualDensity: VisualDensity.compact,
                           onPressed: layers.length <= 1
                               ? null
                               : () => save([...layers]..removeAt(i)),
-                          icon: const Icon(Icons.close, size: 16)),
+                          icon: const Icon(YIcons.close, size: 16)),
                     ]))),
           Align(
               alignment: Alignment.centerLeft,
@@ -394,7 +394,7 @@ extension _OtherTabs on _HouseEditorState {
                         Layer(tr3('新构造层', 'Жаңа қабат', 'Новый слой', 'New layer', ky: 'Жаңы катмар', uz: 'Yangi qatlam'),
                             'Жаңа қабат', 50, LayerMaterial.plaster)
                       ]),
-                  icon: const Icon(Icons.add, size: 16),
+                  icon: const Icon(YIcons.add, size: 16),
                   label: Text(tr3('添加一层', 'Қабат қосу', 'Добавить слой', 'Add a layer', ky: 'Катмар кошуу', uz: 'Qatlam qoʻshish')))),
           ...extra,
           editableNote(note),
@@ -710,14 +710,14 @@ extension _OtherTabs on _HouseEditorState {
                     derive();
                     tab = 'plan';
                   }),
-              icon: const Icon(Icons.layers_outlined, size: 18)),
+              icon: const Icon(YIcons.layers, size: 18)),
           IconButton(
               tooltip: tr3('恢复默认参数', 'Әдепкі параметрлер',
                   'Вернуть параметры по умолчанию',
                   'Restore the default parameters', ky: 'Демейки параметрлерди калыбына келтирүү', uz: 'Standart parametrlarni tiklash'),
               visualDensity: VisualDensity.compact,
               onPressed: () => action('SetFoundation', {'reset': true}),
-              icon: const Icon(Icons.restart_alt, size: 18)),
+              icon: const Icon(YIcons.refresh, size: 18)),
         ]),
         children: [
           const SizedBox(height: 8),
@@ -770,7 +770,7 @@ extension _OtherTabs on _HouseEditorState {
               tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
               visualDensity: VisualDensity.compact,
               onPressed: () => action('DeleteSleeve', {'sleeveId': s.id}),
-              icon: const Icon(Icons.close, size: 16)),
+              icon: const Icon(YIcons.close, size: 16)),
         ]),
       Wrap(spacing: 6, children: [
         for (final kind in SleeveKind.values)
@@ -1344,7 +1344,7 @@ extension _OtherTabs on _HouseEditorState {
                   onChanged: (v) => update(() => issueFilter = v ? l : null)),
             Btn(
                 label: tr3('添加问题', 'Мәселе қосу', 'Добавить замечание', 'Add an issue', ky: 'Маселе кошуу', uz: 'Muammo qoʻshish'),
-                icon: Icons.add,
+                icon: YIcons.add,
                 primary: true,
                 onPressed: () => editIssue(null)),
           ]),
@@ -1413,7 +1413,7 @@ extension _OtherTabs on _HouseEditorState {
                                     : tr3('在平面图中定位', 'Жоспардан көрсету',
                                         'Показать на плане',
                                         'Show on the plan', ky: 'Планда көрсөтүү', uz: 'Rejada koʻrsatish'),
-                                icon: Icons.my_location,
+                                icon: YIcons.location,
                                 onPressed: () => i.site
                                     ? update(() {
                                         tab = 'site';
@@ -1427,11 +1427,11 @@ extension _OtherTabs on _HouseEditorState {
                           if (i.own != null) ...[
                             Btn(
                                 label: tr3('编辑', 'Өзгерту', 'Изменить', 'Edit', ky: 'Түзөтүү', uz: 'Tahrirlash'),
-                                icon: Icons.edit_outlined,
+                                icon: YIcons.edit,
                                 onPressed: () => editIssue(i.own)),
                             Btn(
                                 label: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
-                                icon: Icons.delete_outline,
+                                icon: YIcons.delete,
                                 danger: true,
                                 onPressed: () => action(
                                     'DeleteIssue', {'issueId': i.own!.id})),

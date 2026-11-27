@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Chinese / Kazakh names of furniture kinds, sleeves and layer materials.
 const furnitureNames = <FurnitureKind, (String, String)>{
@@ -146,7 +147,7 @@ IconData furnitureIcon(FurnitureKind kind) => switch (kind) {
       FurnitureKind.wallRug => Icons.wallpaper,
       FurnitureKind.cushion => Icons.crop_portrait,
       FurnitureKind.dastarkhan => Icons.circle_outlined,
-      FurnitureKind.sandyq => Icons.inventory_2_outlined,
+      FurnitureKind.sandyq => YIcons.material,
       FurnitureKind.hooks => Icons.checkroom,
       FurnitureKind.counter => Icons.countertops_outlined,
       FurnitureKind.stove => Icons.local_fire_department_outlined,
@@ -158,7 +159,7 @@ IconData furnitureIcon(FurnitureKind kind) => switch (kind) {
       FurnitureKind.washer => Icons.local_laundry_service_outlined,
       FurnitureKind.boiler => Icons.fireplace_outlined,
       FurnitureKind.terrace || FurnitureKind.porch => Icons.deck_outlined,
-      FurnitureKind.custom => Icons.category_outlined,
+      FurnitureKind.custom => YIcons.grid,
     };
 
 String sleeveName(SleeveKind kind) => switch (kind) {

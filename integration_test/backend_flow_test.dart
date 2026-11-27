@@ -21,6 +21,7 @@ import 'package:yusal/service/storage/last_open.dart';
 import 'package:yusal/service/storage/project_store.dart';
 
 import 'e2e_support.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 Future<void> openPost(WidgetTester t, String title) async {
   await home(t);
@@ -136,7 +137,7 @@ void main() {
       final composer = find.byKey(const Key('critique-text'));
       await waitFor(t, composer);
       // Fourth star: rating 4.
-      await t.tap(find.byIcon(Icons.star_border).at(3));
+      await t.tap(find.byIcon(YIcons.star).at(3));
       await t.pumpAndSettle();
       await t.enterText(composer, '厨房可以再大一点 $run');
       await tapIt(t, find.byKey(const Key('critique-send')));
@@ -169,7 +170,7 @@ void main() {
       await waitFor(t, find.text('好的，我改一下 $run'));
       await tapIt(t, find.byKey(Key('critique-helpful-${critique.id}')));
       // The page reloads and shows the mark as set.
-      await waitFor(t, find.byIcon(Icons.thumb_up_alt));
+      await waitFor(t, find.byIcon(YIcons.thumb));
       await shot(t, '06-reply-and-helpful');
 
       comments = await t.runAsync(() => repos.posts.comments(post.id));

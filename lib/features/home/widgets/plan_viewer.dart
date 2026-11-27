@@ -13,6 +13,7 @@ import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 HouseDocument? _document(DesignSnapshot? snapshot) {
   final text = snapshot?.planJson;
@@ -125,7 +126,7 @@ class PlanAttachment extends StatelessWidget {
           const SizedBox(height: 8),
           FilledButton.icon(
               onPressed: () => _open(context),
-              icon: const Icon(Icons.open_in_full),
+              icon: const Icon(YIcons.expand),
               label: Text(tr3('打开图纸', 'Сызбаны ашу', 'Открыть чертежи', 'Open drawings', ky: 'Чиймелерди ачуу', uz: 'Chizmalarni ochish'))),
         ] else
           Text(hidden
@@ -181,7 +182,7 @@ class _PlanViewerState extends State<PlanViewer> {
                       transform.value = Matrix4.identity();
                       viewToken++;
                     }),
-                icon: const Icon(Icons.fit_screen)),
+                icon: const Icon(YIcons.fit)),
           ]),
       body: SafeArea(
           child: Column(children: [

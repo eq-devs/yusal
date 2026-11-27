@@ -12,6 +12,7 @@ import 'package:yusal/features/shared/ui/photos.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 // User-facing trust and safety: reporting, appeals, worker verification,
 // new-demand alerts and push settings.
@@ -162,7 +163,7 @@ class NotificationSettingsPage extends StatelessWidget {
                             tr3('推送到手机', 'Телефонға жіберу', 'Пуш-уведомления', 'Push notifications', ky: 'Push-билдирмелер', uz: 'Push-bildirishnomalar'),
                         children: [
                           SettingsRow(
-                              icon: Icons.handshake_outlined,
+                              icon: YIcons.coop,
                               title: tr3('合作与报名', 'Келісім мен өтінімдер',
                                   'Сделки и отклики',
                                   'Deals and responses', ky: 'Келишимдер жана жооптор', uz: 'Bitimlar va javoblar'),
@@ -174,7 +175,7 @@ class NotificationSettingsPage extends StatelessWidget {
                               trailing:
                                   const Switch(value: true, onChanged: null)),
                           SettingsRow(
-                              icon: Icons.forum_outlined,
+                              icon: YIcons.chat,
                               title: tr3(
                                   '点赞与点评', 'Ұнату мен пікір', 'Лайки и отзывы', 'Likes and reviews', ky: 'Жактыруулар жана пикирлер', uz: 'Yoqtirishlar va sharhlar'),
                               trailing: Switch(
@@ -277,7 +278,7 @@ class DemandAlertPage extends StatelessWidget {
                         title: tr3('条件', 'Шарттар', 'Условия', 'Conditions', ky: 'Шарттар', uz: 'Shartlar'),
                         children: [
                           SettingsRow(
-                              icon: Icons.place_outlined,
+                              icon: YIcons.location,
                               title: tr3('地区', 'Аймақ', 'Регион', 'Region', ky: 'Аймак', uz: 'Hudud'),
                               value: all(
                                   [for (final r in a.regions) regionName(r)]),
@@ -295,7 +296,7 @@ class DemandAlertPage extends StatelessWidget {
                                 }
                               }),
                           SettingsRow(
-                              icon: Icons.handyman_outlined,
+                              icon: YIcons.tools,
                               title: tr3('工种', 'Мамандық', 'Специальность', 'Trade', ky: 'Кесип', uz: 'Kasb'),
                               value:
                                   all([for (final c in a.trades) tradeName(c)]),
@@ -313,7 +314,7 @@ class DemandAlertPage extends StatelessWidget {
                                 }
                               }),
                           SettingsRow(
-                              icon: Icons.category_outlined,
+                              icon: YIcons.grid,
                               title: tr3('需求类型', 'Түрі', 'Тип', 'Type', ky: 'Түрү', uz: 'Turi'),
                               value: all(
                                   [for (final x in a.types) demandTypeName(x)]),
@@ -471,7 +472,7 @@ class _VerificationPageState extends State<VerificationPage> {
                                   max: 6 - _photos.length);
                               if (mounted) setState(() => _photos.addAll(more));
                             },
-                            icon: const Icon(Icons.add_a_photo_outlined),
+                            icon: const Icon(YIcons.camera),
                             label: Text(
                                 tr3('添加照片', 'Фото қосу', 'Добавить фото', 'Add photos', ky: 'Сүрөт кошуу', uz: 'Rasm qoʻshish'))),
                       const SizedBox(height: YSpace.md),
@@ -499,7 +500,7 @@ class _VerificationPageState extends State<VerificationPage> {
 List<Widget> trustRows(BuildContext context, Account account) => [
       SettingsRow(
           key: const Key('me-notification-settings'),
-          icon: Icons.notifications_none,
+          icon: YIcons.bell,
           title: tr3('通知设置', 'Хабарламалар', 'Уведомления', 'Notifications', ky: 'Билдирмелер', uz: 'Bildirishnomalar'),
           onTap: () =>
               pushPage<void>(context, (_) => const NotificationSettingsPage())),

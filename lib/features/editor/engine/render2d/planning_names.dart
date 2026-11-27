@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/engine/core/analysis/build_schedule.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Chinese / Kazakh names for the planning pages: utility points, plot
 /// items, estimate lines and units, fuels and building stages.
@@ -30,12 +31,12 @@ String utilityName(UtilityKind kind) => switch (kind) {
     };
 
 IconData utilityIcon(UtilityKind kind) => switch (kind) {
-      UtilityKind.panel => Icons.electrical_services,
+      UtilityKind.panel => YIcons.bolt,
       UtilityKind.socket => Icons.power_outlined,
       UtilityKind.lightSwitch => Icons.toggle_on_outlined,
-      UtilityKind.light => Icons.lightbulb_outline,
+      UtilityKind.light => YIcons.idea,
       UtilityKind.vent => Icons.air,
-      UtilityKind.water => Icons.water_drop_outlined,
+      UtilityKind.water => YIcons.water,
       UtilityKind.drain => Icons.vertical_align_bottom,
       UtilityKind.radiator => Icons.heat_pump_outlined,
     };
@@ -97,13 +98,13 @@ IconData siteIcon(SiteKind kind) => switch (kind) {
       SiteKind.garage => Icons.garage_outlined,
       SiteKind.toilet => Icons.wc_outlined,
       SiteKind.shed => Icons.warehouse_outlined,
-      SiteKind.greenhouse => Icons.yard_outlined,
-      SiteKind.well => Icons.water_outlined,
+      SiteKind.greenhouse => YIcons.tree,
+      SiteKind.well => YIcons.water,
       SiteKind.septic => Icons.recycling,
       SiteKind.garden => Icons.grass,
       SiteKind.yard => Icons.grid_on,
       SiteKind.gate => Icons.door_sliding_outlined,
-      SiteKind.custom => Icons.category_outlined,
+      SiteKind.custom => YIcons.grid,
     };
 
 String costStageName(String stage) => switch (stage) {

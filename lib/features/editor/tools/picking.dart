@@ -100,11 +100,11 @@ extension _Picking on _HouseEditorState {
                 heading(tr3(
                     '在点的位置加', 'Осы жерге қосу', 'Добавить здесь', 'Add here',
                     ky: 'Бул жерге кошуу', uz: 'Shu yerga qoʻshish')),
-                item('door', Icons.door_front_door_outlined,
+                item('door', YIcons.door,
                     tr3('门', 'Есік', 'Дверь', 'Door', ky: 'Эшик', uz: 'Eshik')),
                 item(
                     'window',
-                    Icons.window_outlined,
+                    YIcons.window,
                     tr3('窗', 'Терезе', 'Окно', 'Window',
                         ky: 'Терезе', uz: 'Deraza')),
                 item(
@@ -117,20 +117,20 @@ extension _Picking on _HouseEditorState {
                     ky: 'Бул дубал', uz: 'Bu devor')),
                 item(
                     'thickness',
-                    Icons.straighten,
+                    YIcons.ruler,
                     tr3('调整墙厚', 'Қалыңдығын өзгерту', 'Изменить толщину',
                         'Change thickness',
                         ky: 'Калыңдыгын өзгөртүү',
                         uz: 'Qalinligini oʻzgartirish')),
                 item(
                     'open',
-                    Icons.crop_free,
+                    YIcons.fit,
                     tr3('去掉这段墙（开放）', 'Қабырғасыз (ашық)', 'Без стены (открыто)',
                         'No wall (open)',
                         ky: 'Дубал жок (ачык)', uz: 'Devor yoʻq (ochiq)')),
                 item(
                     'default',
-                    Icons.restart_alt,
+                    YIcons.refresh,
                     tr3(
                         '恢复默认墙',
                         'Әдепкі қабырғаны қайтару',

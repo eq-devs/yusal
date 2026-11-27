@@ -389,7 +389,7 @@ extension _CostTab on _HouseEditorState {
                               ky: 'Аймакты тандап, жергиликтүү бааларды алуу',
                               uz: 'Hududni tanlab, mahalliy narxlarni olish')
                           : '${tr3('地区', 'Аймақ', 'Регион', 'Region', ky: 'Аймак', uz: 'Hudud')}: ${priceRegionName(spec.region!)}',
-                      icon: Icons.place_outlined,
+                      icon: YIcons.location,
                       onPressed: pickRegion),
                 setting(
                     tr3('人工怎么算', 'Жұмыс ақысы қалай есептеледі',
@@ -476,14 +476,14 @@ extension _CostTab on _HouseEditorState {
           Wrap(spacing: 8, runSpacing: 8, children: [
             Btn(
                 label: tr3('施工进度', 'Құрылыс кестесі', 'График строительства', 'Build schedule', ky: 'Курулуш графиги', uz: 'Qurilish jadvali'),
-                icon: Icons.event_note_outlined,
+                icon: YIcons.calendar,
                 onPressed: () => showTab('build')),
             if (spec.prices.isNotEmpty)
               Btn(
                   label: tr3('全部恢复示例单价', 'Барлық мысал бағаны қайтару',
                       'Вернуть все примерные цены',
                       'Restore all approximate prices', ky: 'Бардык болжолдуу бааларды калыбына келтирүү', uz: 'Barcha taxminiy narxlarni tiklash'),
-                  icon: Icons.restart_alt,
+                  icon: YIcons.refresh,
                   onPressed: () => action('SetCost', {'resetPrices': true})),
             if (spec.region != null &&
                 (spec.prices.isNotEmpty || spec.labourPrices.isNotEmpty))
@@ -605,7 +605,7 @@ extension _CostTab on _HouseEditorState {
               alignment: Alignment.centerLeft,
               child: Btn(
                   label: tr3('添加费用', 'Шығын қосу', 'Добавить расход', 'Add a cost', ky: 'Чыгым кошуу', uz: 'Xarajat qoʻshish'),
-                  icon: Icons.add,
+                  icon: YIcons.add,
                   onPressed: () => editCostItem(null))),
         ]);
     final list = materialList(history.present, derived, estimate: e);
@@ -641,7 +641,7 @@ extension _CostTab on _HouseEditorState {
                       : tr3('分享清单', 'Тізіммен бөлісу', 'Поделиться списком',
                           'Share the list',
                           ky: 'Тизме менен бөлүшүү', uz: 'Roʻyxatni ulashish'),
-                  icon: Icons.ios_share,
+                  icon: YIcons.share,
                   onPressed: () => shareMaterials(list))),
           for (final st in listStages) ...[
             Padding(

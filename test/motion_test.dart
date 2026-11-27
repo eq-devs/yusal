@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 Widget _app(Widget child, {bool reduced = false}) => MaterialApp(
     home: Builder(
@@ -135,30 +136,30 @@ void main() {
   testWidgets('PopOnActive dips, bounces past 1 and lands on 1',
       (tester) async {
     Widget build(bool on) => _app(Center(
-        child: PopOnActive(active: on, child: const Icon(Icons.favorite))));
+        child: PopOnActive(active: on, child: const Icon(YIcons.heartFill))));
     await tester.pumpWidget(ProviderScope(child: build(false)));
     await tester.pumpWidget(ProviderScope(child: build(true)));
     // Dips first, then the bouncy spring carries it past 1.
     await tester.pump(const Duration(milliseconds: 16));
-    expect(_scaleOf(tester, find.byIcon(Icons.favorite)), lessThan(1));
+    expect(_scaleOf(tester, find.byIcon(YIcons.heartFill)), lessThan(1));
     var peak = 0.0;
     for (var i = 0; i < 40; i++) {
       await tester.pump(const Duration(milliseconds: 16));
-      final s = _scaleOf(tester, find.byIcon(Icons.favorite));
+      final s = _scaleOf(tester, find.byIcon(YIcons.heartFill));
       if (s > peak) peak = s;
     }
     expect(peak, greaterThan(1));
     await tester.pumpAndSettle();
-    expect(_scaleOf(tester, find.byIcon(Icons.favorite)), closeTo(1, 1e-3));
+    expect(_scaleOf(tester, find.byIcon(YIcons.heartFill)), closeTo(1, 1e-3));
   });
 
   testWidgets('PopOnActive stays still on un-save', (tester) async {
     Widget build(bool on) => _app(Center(
-        child: PopOnActive(active: on, child: const Icon(Icons.favorite))));
+        child: PopOnActive(active: on, child: const Icon(YIcons.heartFill))));
     await tester.pumpWidget(ProviderScope(child: build(true)));
     await tester.pumpWidget(ProviderScope(child: build(false)));
     await tester.pump(Motion.pop * 0.35);
-    expect(_scaleOf(tester, find.byIcon(Icons.favorite)), closeTo(1, 1e-3));
+    expect(_scaleOf(tester, find.byIcon(YIcons.heartFill)), closeTo(1, 1e-3));
   });
 
   testWidgets('same HeroSource key twice on a screen pushes cleanly',

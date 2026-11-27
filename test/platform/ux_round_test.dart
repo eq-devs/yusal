@@ -23,6 +23,7 @@ import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
 import 'explore_test.dart' show launch;
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// WCAG contrast ratio of two opaque colours.
 double contrast(Color a, Color b) {
@@ -91,7 +92,7 @@ void main() {
             FilterPill(label: '地区', selected: false, onTap: () {}),
           ]),
           SettingsGroup(children: [
-            SettingsRow(icon: Icons.language, title: '语言', onTap: () {}),
+            SettingsRow(icon: YIcons.globe, title: '语言', onTap: () {}),
           ]),
         ]))));
     expect(t.getSize(find.byType(FilterPill)).height,

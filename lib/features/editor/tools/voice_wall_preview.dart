@@ -301,7 +301,7 @@ extension _VoiceWallPreview on _HouseEditorState {
               children: [
                 Text(trial.areaLabel),
                 TextButton.icon(
-                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                    icon: const Icon(YIcons.contract, size: 18),
                     label: Text(trial.budgetLabel),
                     onPressed: () => showDialog<void>(
                         context: context,

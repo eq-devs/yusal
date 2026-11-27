@@ -6,6 +6,7 @@ import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Most photos one site entry or inspection request can carry.
 const maxSitePhotos = 9;
@@ -131,7 +132,7 @@ class PhotoStrip extends StatelessWidget {
                         onTap: () => onRemove!(i),
                         child: Padding(
                             padding: const EdgeInsets.all(3),
-                            child: Icon(Icons.close, size: 14, color: t.bg))))),
+                            child: Icon(YIcons.close, size: 14, color: t.bg))))),
         ]),
     ]);
   }

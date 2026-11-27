@@ -41,7 +41,7 @@ class DemandDetailPage extends StatelessWidget {
             return PageScaffold(
                 title: '',
                 body: EmptyState(
-                    icon: Icons.visibility_off_outlined,
+                    icon: YIcons.eyeOff,
                     title: tr3('需求不存在、已下架或无权查看', 'Тапсырыс табылмады не жабық',
                         'Заявка не найдена или недоступна',
                         'Request not found or unavailable', ky: 'Суроо-талап табылган жок же жеткиликсиз', uz: 'Soʻrov topilmadi yoki mavjud emas')));
@@ -138,7 +138,7 @@ class _DemandDetailState extends State<_DemandDetail>
                       onTap: () => pushPage<void>(
                           context, (_) => PostPage(postId: post.id)),
                       child: Row(children: [
-                        Icon(Icons.home_outlined, size: 18, color: t.ink),
+                        Icon(YIcons.home, size: 18, color: t.ink),
                         const SizedBox(width: 6),
                         Expanded(
                             child: Text(
@@ -150,7 +150,7 @@ class _DemandDetailState extends State<_DemandDetail>
                                 style: TextStyle(
                                     color: t.ink,
                                     fontWeight: FontWeight.w600))),
-                        Icon(Icons.chevron_right, color: t.muted),
+                        Icon(YIcons.chevronRight, color: t.muted),
                       ])))),
       Wrap(spacing: 8, runSpacing: 6, children: [
         StatusPill(demandTypeName(d.type)),
@@ -215,28 +215,28 @@ class _DemandDetailState extends State<_DemandDetail>
       ],
       InfoRow(tr3('工种', 'Мамандық', 'Специальность', 'Trade', ky: 'Кесип', uz: 'Kasb'),
           v.trades.map(tradeName).join(listSep),
-          icon: Icons.handyman_outlined),
+          icon: YIcons.tools),
       InfoRow(tr3('开工', 'Басталуы', 'Начало', 'Start', ky: 'Башталышы', uz: 'Boshlanishi'), fmtDay(v.startDate),
-          icon: Icons.event_outlined),
+          icon: YIcons.calendar),
       if (v.durationDays != null)
         InfoRow(tr3('预计天数', 'Күн саны', 'Срок, дней', 'Duration, days', ky: 'Мөөнөтү, күн', uz: 'Muddati, kun'), '${v.durationDays}',
-            icon: Icons.timelapse_outlined),
+            icon: YIcons.progress),
       InfoRow(tr3('预算', 'Бюджет', 'Бюджет', 'Budget', ky: 'Бюджет', uz: 'Byudjet'),
           '${budgetText(v.budget)} · ${materialName(v.budget.materials)}',
-          icon: Icons.payments_outlined),
+          icon: YIcons.budget),
       if (v.photoCount > 0)
         InfoRow(tr3('现场照片', 'Фото', 'Фото', 'Photos', ky: 'Сүрөттөр', uz: 'Rasmlar'), '${v.photoCount}',
-            icon: Icons.photo_library_outlined),
+            icon: YIcons.image),
       if (v.siteNotes.isNotEmpty)
         InfoRow(tr3('现场限制', 'Орын шектеулері', 'Ограничения', 'Restrictions', ky: 'Чектөөлөр', uz: 'Cheklovlar'), v.siteNotes,
-            icon: Icons.warning_amber_outlined),
+            icon: YIcons.warning),
       if (mine && v.exactAddress.isNotEmpty)
         InfoRow(
             tr3('具体地址（仅自己可见）', 'Мекенжай (тек сізге)',
                 'Адрес (видите только вы)',
                 'Address (only you see it)', ky: 'Дарек (сиз гана көрөсүз)', uz: 'Manzil (faqat siz koʻrasiz)'),
             v.exactAddress,
-            icon: Icons.lock_outline),
+            icon: YIcons.lock),
       if (v.hire != null) ..._hire(context, v.hire!),
       if (v.contract != null) ..._contract(context, v.contract!),
       if (data.snapshot != null)
@@ -253,7 +253,7 @@ class _DemandDetailState extends State<_DemandDetail>
         for (final c in data.coops)
           ListTile(
               title: Text(cooperationStatusName(c)),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(YIcons.chevronRight),
               onTap: () => openCooperation(context, c.id)),
       ],
       const SizedBox(height: 24),
@@ -300,7 +300,7 @@ class _DemandDetailState extends State<_DemandDetail>
         IconButton(
             tooltip: tr3('联系发布者', 'Жариялаушыға жазу', 'Написать автору', 'Message the author', ky: 'Авторго жазуу', uz: 'Muallifga yozish'),
             onPressed: contact,
-            icon: const Icon(Icons.chat_bubble_outline)),
+            icon: const Icon(YIcons.chat)),
         const SizedBox(width: 6),
         StateSwitcher(
             child: KeyedSubtree(
@@ -497,7 +497,7 @@ class _DemandDetailState extends State<_DemandDetail>
           onTap: () =>
               pushPage<void>(context, (_) => ApplicationsPage(demandId: d.id)),
           child: Row(children: [
-            const Icon(Icons.inbox_outlined),
+            const Icon(YIcons.inbox),
             const SizedBox(width: 12),
             Expanded(
                 child: Text(
@@ -513,7 +513,7 @@ class _DemandDetailState extends State<_DemandDetail>
                             'Предложения (${data.applicationCount})',
                             'Quotes (${data.applicationCount})', ky: 'Сунуштар (${data.applicationCount})', uz: 'Takliflar (${data.applicationCount})'),
                     style: const TextStyle(fontWeight: FontWeight.w700))),
-            const Icon(Icons.chevron_right),
+            const Icon(YIcons.chevronRight),
           ])),
       const SizedBox(height: 12),
       Wrap(spacing: 8, runSpacing: 8, children: [

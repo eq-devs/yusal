@@ -10,6 +10,7 @@ import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/constant/theme.dart';
 
 import 'editor_shots_test.dart' show loadFont;
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 void main() {
   final out = Platform.environment['SHOTS_OUT'];
@@ -44,7 +45,7 @@ void main() {
                             SettingsGroup(children: [
                               SettingsRow(
                                   key: const Key('row'),
-                                  icon: Icons.language,
+                                  icon: YIcons.globe,
                                   title: 'Тіл',
                                   value: 'Қазақша',
                                   onTap: () {}),
@@ -69,7 +70,7 @@ void main() {
                               IconButton(
                                   key: const Key('icon'),
                                   onPressed: () {},
-                                  icon: const Icon(Icons.favorite_border)),
+                                  icon: const Icon(YIcons.heart)),
                             ]),
                           ])))))));
       await t.pumpAndSettle();

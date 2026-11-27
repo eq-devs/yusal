@@ -306,7 +306,7 @@ class FilterPill extends StatelessWidget {
                                       fontWeight: FontWeight.w600,
                                       color: fg)),
                               if (menu)
-                                Icon(Icons.expand_more, size: 18, color: fg),
+                                Icon(YIcons.chevronDown, size: 18, color: fg),
                             ])))))));
   }
 }
@@ -429,7 +429,7 @@ class Hint extends StatelessWidget {
             color: warn ? t.accentSoft : t.surface,
             borderRadius: BorderRadius.circular(YRadius.control)),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(icon ?? (warn ? Icons.error_outline : Icons.info_outline),
+          Icon(icon ?? (warn ? YIcons.alert : YIcons.info),
               size: 18, color: warn ? t.warn : t.muted),
           const SizedBox(width: 10),
           Expanded(
@@ -555,7 +555,7 @@ Future<T?> pickOne<T>(
                               ListTile(
                                   title: Text(label),
                                   trailing: value == selected
-                                      ? const Icon(Icons.check)
+                                      ? const Icon(YIcons.check)
                                       : null,
                                   onTap: () {
                                     HapticFeedback.selectionClick();
@@ -766,7 +766,7 @@ class Stars extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = YTokens.of(context);
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(Icons.star_rounded, size: size + 2, color: t.ink),
+      Icon(YIcons.starFill, size: size + 2, color: t.ink),
       const SizedBox(width: 2),
       Text(value.toStringAsFixed(1),
           style: TextStyle(fontSize: size, fontWeight: FontWeight.w600)),
@@ -848,7 +848,7 @@ class VerifiedBadge extends StatelessWidget {
           'Личность и объекты проверены, качество не гарантируется',
           'Identity and projects verified; quality not guaranteed', ky: 'Инсандыгы жана долбоорлору текшерилген; сапатка кепилдик жок', uz: 'Shaxsi va loyihalari tekshirilgan; sifat kafolatlanmaydi'),
       child:
-          Icon(Icons.verified, size: size, color: YTokens.of(context).accent));
+          Icon(YIcons.verified, size: size, color: YTokens.of(context).accent));
 }
 
 /// Space the floating Discover header takes at the top of each segment's

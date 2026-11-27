@@ -1,0 +1,1723 @@
+{
+ "grid": 24,
+ "stroke": 2,
+ "cap": "round",
+ "join": "round",
+ "ink": "#26211D",
+ "accent": "#F96A10",
+ "roles": {
+  "s": "ink stroke",
+  "a": "accent stroke",
+  "F": "ink fill",
+  "A": "accent fill"
+ },
+ "icons": {
+  "home": {
+   "group": "nav",
+   "label": "我的家",
+   "shapes": [
+    {
+     "role": "a",
+     "d": "M3.2 10.16L10.53 3.57A2.2 2.2 0 0 1 13.47 3.57L20.8 10.16"
+    },
+    {
+     "role": "s",
+     "d": "M5.5 13.2V17.5a3 3 0 0 0 3 3h7a3 3 0 0 0 3-3V13.2"
+    }
+   ],
+   "replaces": [
+    "home_outlined",
+    "home_work_outlined",
+    "other_houses_outlined"
+   ]
+  },
+  "discover": {
+   "group": "nav",
+   "label": "发现",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "A",
+     "d": "M14.76 8.44A0.6 0.6 0 0 1 15.56 9.24L13.69 13.39A0.6 0.6 0 0 1 13.39 13.69L9.24 15.56A0.6 0.6 0 0 1 8.44 14.76L10.31 10.61A0.6 0.6 0 0 1 10.61 10.31z"
+    }
+   ],
+   "replaces": []
+  },
+  "chat": {
+   "group": "nav",
+   "label": "消息",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6 4.5h12a3 3 0 0 1 3 3v6.5a3 3 0 0 1-3 3h-6.5L7 20.5v-3.5H6a3 3 0 0 1-3-3V7.5a3 3 0 0 1 3-3z"
+    },
+    {
+     "role": "F",
+     "d": "M7.05 10.75a1.15 1.15 0 1 0 2.3 0a1.15 1.15 0 1 0 -2.3 0z"
+    },
+    {
+     "role": "F",
+     "d": "M10.85 10.75a1.15 1.15 0 1 0 2.3 0a1.15 1.15 0 1 0 -2.3 0z"
+    },
+    {
+     "role": "A",
+     "d": "M14.65 10.75a1.15 1.15 0 1 0 2.3 0a1.15 1.15 0 1 0 -2.3 0z"
+    }
+   ],
+   "replaces": [
+    "chat_bubble_outline",
+    "chat_outlined",
+    "forum_outlined"
+   ]
+  },
+  "profile": {
+   "group": "nav",
+   "label": "我的",
+   "shapes": [
+    {
+     "role": "a",
+     "d": "M8.5 7.25a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0z"
+    },
+    {
+     "role": "s",
+     "d": "M5 20.5a7 6.5 0 0 1 14 0"
+    }
+   ],
+   "replaces": [
+    "account_circle_outlined",
+    "badge_outlined"
+   ]
+  },
+  "people": {
+   "group": "nav",
+   "label": "社区",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5.75 7.5a3.25 3.25 0 1 0 6.5 0a3.25 3.25 0 1 0 -6.5 0z"
+    },
+    {
+     "role": "s",
+     "d": "M3 20.5a6 6 0 0 1 12 0"
+    },
+    {
+     "role": "a",
+     "d": "M15.5 4.4a3.25 3.25 0 0 1 0 6.2"
+    },
+    {
+     "role": "a",
+     "d": "M18 14.6a6 6 0 0 1 3 5.4"
+    }
+   ],
+   "replaces": [
+    "groups_outlined",
+    "people_outline"
+   ]
+  },
+  "design": {
+   "group": "nav",
+   "label": "设计",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M11 4H6.5a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3H17a3 3 0 0 0 3-3V13"
+    },
+    {
+     "role": "a",
+     "d": "M10.8 13.2l.9-3.4 6.4-6.4a1.77 1.77 0 0 1 2.5 2.5l-6.4 6.4z"
+    }
+   ],
+   "replaces": [
+    "architecture",
+    "architecture_outlined",
+    "draw_outlined"
+   ]
+  },
+  "hire": {
+   "group": "nav",
+   "label": "找师傅",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 17.5h17"
+    },
+    {
+     "role": "s",
+     "d": "M5.5 17.5v-4a6.5 6.5 0 0 1 13 0v4"
+    },
+    {
+     "role": "a",
+     "d": "M12 10.2v4"
+    }
+   ],
+   "replaces": [
+    "engineering_outlined",
+    "work_outline"
+   ]
+  },
+  "coop": {
+   "group": "nav",
+   "label": "合作",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M10.5 17.5H6a2.5 2.5 0 0 1-2.5-2.5V9A2.5 2.5 0 0 1 6 6.5h4.5v4.4a1.9 1.9 0 1 1 0 2.2z"
+    },
+    {
+     "role": "A",
+     "d": "M13 5.5h5.5a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H13v-2.9a3.9 3.9 0 0 0 0-7.2z"
+    }
+   ],
+   "replaces": [
+    "handshake_outlined"
+   ]
+  },
+  "house-add": {
+   "group": "domain",
+   "label": "新建房子",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M10.53 3.17A2.2 2.2 0 0 1 13.47 3.17L19.47 8.57A1.6 1.6 0 0 1 20 9.76L20 17.5A3 3 0 0 1 17 20.5L7 20.5A3 3 0 0 1 4 17.5L4 9.76A1.6 1.6 0 0 1 4.53 8.57z"
+    },
+    {
+     "role": "a",
+     "d": "M12 10.5v6M9 13.5h6"
+    }
+   ],
+   "replaces": [
+    "add_home_outlined"
+   ]
+  },
+  "plan": {
+   "group": "domain",
+   "label": "户型图",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6.5 3.5h11a3 3 0 0 1 3 3v11a3 3 0 0 1 -3 3h-11a3 3 0 0 1 -3 -3v-11a3 3 0 0 1 3 -3z"
+    },
+    {
+     "role": "s",
+     "d": "M12 3.5v5.5M3.5 13h5"
+    },
+    {
+     "role": "A",
+     "d": "M12.5 18V13.5a4.5 4.5 0 0 1 4.5 4.5z"
+    }
+   ],
+   "replaces": []
+  },
+  "cube": {
+   "group": "domain",
+   "label": "3D 查看",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M11.4 3.14A1.2 1.2 0 0 1 12.6 3.14L19.4 7.05A1.2 1.2 0 0 1 20 8.09L20 15.91A1.2 1.2 0 0 1 19.4 16.95L12.6 20.86A1.2 1.2 0 0 1 11.4 20.86L4.6 16.95A1.2 1.2 0 0 1 4 15.91L4 8.09A1.2 1.2 0 0 1 4.6 7.05z"
+    },
+    {
+     "role": "a",
+     "d": "M12 12.2L7.3 9.5M12 12.2l4.7-2.7M12 12.2v5.3"
+    }
+   ],
+   "replaces": [
+    "view_in_ar_outlined"
+   ]
+  },
+  "layers": {
+   "group": "domain",
+   "label": "楼层",
+   "shapes": [
+    {
+     "role": "a",
+     "d": "M11.51 3.48A1 1 0 0 1 12.49 3.48L18.76 7.03A1 1 0 0 1 18.76 8.77L12.49 12.32A1 1 0 0 1 11.51 12.32L5.24 8.77A1 1 0 0 1 5.24 7.03z"
+    },
+    {
+     "role": "s",
+     "d": "M4.5 12.6L12 16.8l7.5-4.2M4.5 16.6L12 20.8l7.5-4.2"
+    }
+   ],
+   "replaces": [
+    "layers_outlined"
+   ]
+  },
+  "measure": {
+   "group": "domain",
+   "label": "测量",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 6v12M20 6v12"
+    },
+    {
+     "role": "a",
+     "d": "M7.5 12h9M10 9.5L7.5 12l2.5 2.5M14 9.5l2.5 2.5-2.5 2.5"
+    }
+   ],
+   "replaces": [
+    "height",
+    "square_foot"
+   ]
+  },
+  "ruler": {
+   "group": "domain",
+   "label": "尺子",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 7.5h14a2.5 2.5 0 0 1 2.5 2.5v4a2.5 2.5 0 0 1 -2.5 2.5h-14a2.5 2.5 0 0 1 -2.5 -2.5v-4a2.5 2.5 0 0 1 2.5 -2.5z"
+    },
+    {
+     "role": "s",
+     "d": "M7 7.5v3.5M12 7.5v5M17 7.5v3.5"
+    }
+   ],
+   "replaces": [
+    "straighten"
+   ]
+  },
+  "room": {
+   "group": "domain",
+   "label": "房间",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M8 3.5H6.5a3 3 0 0 0-3 3v11a3 3 0 0 0 3 3h11a3 3 0 0 0 3-3v-11a3 3 0 0 0-3-3H16"
+    },
+    {
+     "role": "a",
+     "d": "M11 3.5h2"
+    }
+   ],
+   "replaces": [
+    "crop_square"
+   ]
+  },
+  "door": {
+   "group": "domain",
+   "label": "门",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6.5 20.5V6a2.5 2.5 0 0 1 2.5-2.5h6A2.5 2.5 0 0 1 17.5 6v14.5M3.5 20.5h17"
+    },
+    {
+     "role": "A",
+     "d": "M12.7 12.5a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0z"
+    }
+   ],
+   "replaces": [
+    "door_front_door_outlined"
+   ]
+  },
+  "window": {
+   "group": "domain",
+   "label": "窗",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M7.5 3.5h9a3 3 0 0 1 3 3v11a3 3 0 0 1 -3 3h-9a3 3 0 0 1 -3 -3v-11a3 3 0 0 1 3 -3z"
+    },
+    {
+     "role": "a",
+     "d": "M12 7.5v9M8.5 12h7"
+    }
+   ],
+   "replaces": [
+    "window_outlined"
+   ]
+  },
+  "stairs": {
+   "group": "domain",
+   "label": "楼梯",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 20.5H8V16h4.5v-4.5H17V7h3.5"
+    }
+   ],
+   "replaces": [
+    "stairs_outlined"
+   ]
+  },
+  "chair": {
+   "group": "domain",
+   "label": "家具",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M7.5 10.5V7.5A2.5 2.5 0 0 1 10 5h4a2.5 2.5 0 0 1 2.5 2.5v3"
+    },
+    {
+     "role": "s",
+     "d": "M4 12.5a1.75 1.75 0 0 1 3.5 0v2.5h9v-2.5a1.75 1.75 0 0 1 3.5 0v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM7 18.5v2M17 18.5v2"
+    },
+    {
+     "role": "a",
+     "d": "M10.5 11h3"
+    }
+   ],
+   "replaces": [
+    "chair_outlined"
+   ]
+  },
+  "material": {
+   "group": "domain",
+   "label": "材料",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6.5 9h2.6a2.1 2.1 0 1 1 2.8 0h2.6a2 2 0 0 1 2 2v2.6a2.1 2.1 0 1 1 0 2.8V19a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z"
+    },
+    {
+     "role": "A",
+     "d": "M9 15a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0z"
+    }
+   ],
+   "replaces": [
+    "inventory_2_outlined"
+   ]
+  },
+  "grid": {
+   "group": "domain",
+   "label": "分类",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5.5 3.5h3a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-3a2 2 0 0 1 -2 -2v-3a2 2 0 0 1 2 -2z"
+    },
+    {
+     "role": "s",
+     "d": "M15.5 3.5h3a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-3a2 2 0 0 1 -2 -2v-3a2 2 0 0 1 2 -2z"
+    },
+    {
+     "role": "s",
+     "d": "M5.5 13.5h3a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-3a2 2 0 0 1 -2 -2v-3a2 2 0 0 1 2 -2z"
+    },
+    {
+     "role": "A",
+     "d": "M15.5 12.5h3a3 3 0 0 1 3 3v3a3 3 0 0 1 -3 3h-3a3 3 0 0 1 -3 -3v-3a3 3 0 0 1 3 -3z"
+    }
+   ],
+   "replaces": [
+    "auto_awesome_mosaic_outlined",
+    "category_outlined",
+    "dashboard_outlined"
+   ]
+  },
+  "budget": {
+   "group": "domain",
+   "label": "预算 · 报价",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "a",
+     "d": "M8.5 8.2h7M8.5 11.4h7M12 11.4v5.6"
+    }
+   ],
+   "replaces": [
+    "payments_outlined",
+    "request_quote_outlined"
+   ]
+  },
+  "contract": {
+   "group": "domain",
+   "label": "合同",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M7 3.5h6.5l5 5V18a2.5 2.5 0 0 1-2.5 2.5H7A2.5 2.5 0 0 1 4.5 18V6A2.5 2.5 0 0 1 7 3.5z"
+    },
+    {
+     "role": "s",
+     "d": "M8.5 12h5"
+    },
+    {
+     "role": "a",
+     "d": "M8.5 16.6c.9-1.5 1.8-1.5 2.5 0s1.6 1.5 2.5 0 1.3-1.2 1.8-.4"
+    }
+   ],
+   "replaces": [
+    "assignment_outlined",
+    "fact_check_outlined",
+    "receipt_long_outlined"
+   ]
+  },
+  "doc": {
+   "group": "domain",
+   "label": "文档",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M7 3.5h6.5l5 5V18a2.5 2.5 0 0 1-2.5 2.5H7A2.5 2.5 0 0 1 4.5 18V6A2.5 2.5 0 0 1 7 3.5z"
+    },
+    {
+     "role": "s",
+     "d": "M8.5 16.5h7"
+    },
+    {
+     "role": "a",
+     "d": "M8.5 12.5h4"
+    }
+   ],
+   "replaces": [
+    "description_outlined",
+    "file_open_outlined",
+    "folder_open",
+    "picture_as_pdf_outlined"
+   ]
+  },
+  "progress": {
+   "group": "domain",
+   "label": "工程进度",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M10.53 3.17A2.2 2.2 0 0 1 13.47 3.17L19.47 8.57A1.6 1.6 0 0 1 20 9.76L20 17.5A3 3 0 0 1 17 20.5L7 20.5A3 3 0 0 1 4 17.5L4 9.76A1.6 1.6 0 0 1 4.53 8.57z"
+    },
+    {
+     "role": "A",
+     "d": "M8.2 13.5h7.6a1.2 1.2 0 0 1 1.2 1.2v1.6a1.2 1.2 0 0 1 -1.2 1.2h-7.6a1.2 1.2 0 0 1 -1.2 -1.2v-1.6a1.2 1.2 0 0 1 1.2 -1.2z"
+    }
+   ],
+   "replaces": [
+    "insights_outlined",
+    "timelapse_outlined"
+   ]
+  },
+  "tools": {
+   "group": "domain",
+   "label": "工具",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+    }
+   ],
+   "replaces": [
+    "construction",
+    "construction_outlined",
+    "handyman_outlined"
+   ]
+  },
+  "idea": {
+   "group": "domain",
+   "label": "灵感",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M8.5 14.5a6 6 0 1 1 7 0c-.6.5-1 1.2-1 2v.5h-5v-.5c0-.8-.4-1.5-1-2z"
+    },
+    {
+     "role": "a",
+     "d": "M10 20.5h4"
+    }
+   ],
+   "replaces": [
+    "lightbulb_outline"
+   ]
+  },
+  "ai": {
+   "group": "domain",
+   "label": "AI 助手",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M10.5 5.5c.65 3.9 2.6 5.85 6.5 6.5-3.9.65-5.85 2.6-6.5 6.5-.65-3.9-2.6-5.85-6.5-6.5 3.9-.65 5.85-2.6 6.5-6.5z"
+    },
+    {
+     "role": "A",
+     "d": "M18.5 2.5c.3 1.8.95 2.45 2.75 2.75-1.8.3-2.45.95-2.75 2.75-.3-1.8-.95-2.45-2.75-2.75 1.8-.3 2.45-.95 2.75-2.75z"
+    }
+   ],
+   "replaces": [
+    "auto_awesome"
+   ]
+  },
+  "light": {
+   "group": "domain",
+   "label": "采光",
+   "shapes": [
+    {
+     "role": "a",
+     "d": "M8.4 12a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0z"
+    },
+    {
+     "role": "s",
+     "d": "M19.4 12L21.2 12M17.23 17.23L18.51 18.51M12 19.4L12 21.2M6.77 17.23L5.49 18.51M4.6 12L2.8 12M6.77 6.77L5.49 5.49M12 4.6L12 2.8M17.23 6.77L18.51 5.49"
+    }
+   ],
+   "replaces": [
+    "wb_sunny_outlined"
+   ]
+  },
+  "water": {
+   "group": "domain",
+   "label": "水电",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 3.5c2.2 2.5 6.5 6.9 6.5 11a6.5 6.5 0 0 1-13 0c0-4.1 4.3-8.5 6.5-11z"
+    },
+    {
+     "role": "a",
+     "d": "M9.2 14.8a2.9 2.9 0 0 0 2.6 2.6"
+    }
+   ],
+   "replaces": [
+    "plumbing_outlined",
+    "water_drop_outlined",
+    "water_outlined"
+   ]
+  },
+  "bolt": {
+   "group": "domain",
+   "label": "电路",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M13 3.5L5.5 13.5h5.5l-1 7 7.5-10h-5.5z"
+    }
+   ],
+   "replaces": [
+    "electrical_services",
+    "electrical_services_outlined"
+   ]
+  },
+  "tree": {
+   "group": "domain",
+   "label": "庭院",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6 9.5a6 6 0 1 0 12 0a6 6 0 1 0 -12 0z"
+    },
+    {
+     "role": "s",
+     "d": "M12 21v-9M12 15l2.6-2.6"
+    }
+   ],
+   "replaces": [
+    "park_outlined",
+    "yard_outlined"
+   ]
+  },
+  "fit": {
+   "group": "domain",
+   "label": "适应屏幕",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 8.5V6A2.5 2.5 0 0 1 6 3.5h2.5M15.5 3.5H18A2.5 2.5 0 0 1 20.5 6v2.5M20.5 15.5V18a2.5 2.5 0 0 1-2.5 2.5h-2.5M8.5 20.5H6A2.5 2.5 0 0 1 3.5 18v-2.5"
+    },
+    {
+     "role": "A",
+     "d": "M10.5 8.5h3a2 2 0 0 1 2 2v3a2 2 0 0 1 -2 2h-3a2 2 0 0 1 -2 -2v-3a2 2 0 0 1 2 -2z"
+    }
+   ],
+   "replaces": [
+    "aspect_ratio",
+    "crop_free",
+    "fit_screen",
+    "fit_screen_outlined"
+   ]
+  },
+  "flip": {
+   "group": "domain",
+   "label": "镜像",
+   "shapes": [
+    {
+     "role": "a",
+     "d": "M12 3.5v17"
+    },
+    {
+     "role": "s",
+     "d": "M8.5 7.5v9.5H3.5z"
+    },
+    {
+     "role": "s",
+     "d": "M15.5 7.5v9.5h5z"
+    }
+   ],
+   "replaces": [
+    "flip"
+   ]
+  },
+  "move": {
+   "group": "domain",
+   "label": "移动",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 3.5v17M3.5 12h17M9.5 6L12 3.5 14.5 6M9.5 18l2.5 2.5 2.5-2.5M6 9.5L3.5 12 6 14.5M18 9.5l2.5 2.5-2.5 2.5"
+    }
+   ],
+   "replaces": [
+    "open_with"
+   ]
+  },
+  "rotate": {
+   "group": "domain",
+   "label": "旋转",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 12a7 7 0 1 0 2.05-4.95M7 3.4v3.7h3.7"
+    },
+    {
+     "role": "A",
+     "d": "M10.5 12a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0z"
+    }
+   ],
+   "replaces": [
+    "rotate_90_degrees_ccw"
+   ]
+  },
+  "tag": {
+   "group": "domain",
+   "label": "标签 · 价格",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 6a2.5 2.5 0 0 1 2.5-2.5h5.6a2.5 2.5 0 0 1 1.77.73l6.4 6.4a2.5 2.5 0 0 1 0 3.54l-5.6 5.6a2.5 2.5 0 0 1-3.54 0l-6.4-6.4A2.5 2.5 0 0 1 3.5 11.6z"
+    },
+    {
+     "role": "A",
+     "d": "M6.7 8.2a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0z"
+    }
+   ],
+   "replaces": [
+    "label_outline",
+    "sell_outlined"
+   ]
+  },
+  "search": {
+   "group": "feature",
+   "label": "搜索",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 10.5a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0 -13 0z"
+    },
+    {
+     "role": "a",
+     "d": "M17.6 17.6l2.9 2.9"
+    }
+   ],
+   "replaces": []
+  },
+  "bell": {
+   "group": "feature",
+   "label": "通知",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6 16v-5.5a6 6 0 0 1 12 0V16l1.5 2h-15z"
+    },
+    {
+     "role": "a",
+     "d": "M10.5 21h3"
+    }
+   ],
+   "replaces": [
+    "notifications_none"
+   ]
+  },
+  "calendar": {
+   "group": "feature",
+   "label": "日程",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6.5 5h11a3 3 0 0 1 3 3v9.5a3 3 0 0 1 -3 3h-11a3 3 0 0 1 -3 -3v-9.5a3 3 0 0 1 3 -3z"
+    },
+    {
+     "role": "s",
+     "d": "M8 3v3.5M16 3v3.5M3.5 10h17"
+    },
+    {
+     "role": "A",
+     "d": "M14.2 13h1.6a1.2 1.2 0 0 1 1.2 1.2v1.6a1.2 1.2 0 0 1 -1.2 1.2h-1.6a1.2 1.2 0 0 1 -1.2 -1.2v-1.6a1.2 1.2 0 0 1 1.2 -1.2z"
+    }
+   ],
+   "replaces": [
+    "event_note_outlined",
+    "event_outlined"
+   ]
+  },
+  "calendar-check": {
+   "group": "feature",
+   "label": "预约",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6.5 5h11a3 3 0 0 1 3 3v9.5a3 3 0 0 1 -3 3h-11a3 3 0 0 1 -3 -3v-9.5a3 3 0 0 1 3 -3z"
+    },
+    {
+     "role": "s",
+     "d": "M8 3v3.5M16 3v3.5"
+    },
+    {
+     "role": "a",
+     "d": "M8.5 13.2l2.5 2.5 4.5-4.7"
+    }
+   ],
+   "replaces": [
+    "event_available_outlined"
+   ]
+  },
+  "clock": {
+   "group": "feature",
+   "label": "时间",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "a",
+     "d": "M12 7.5V12l3 2"
+    }
+   ],
+   "replaces": [
+    "history",
+    "hourglass_empty",
+    "schedule"
+   ]
+  },
+  "location": {
+   "group": "feature",
+   "label": "附近",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 21.2c-2.3-2.2-7-6.6-7-11.2a7 7 0 0 1 14 0c0 4.6-4.7 9-7 11.2z"
+    },
+    {
+     "role": "A",
+     "d": "M9.6 10a2.4 2.4 0 1 0 4.8 0a2.4 2.4 0 1 0 -4.8 0z"
+    }
+   ],
+   "replaces": [
+    "my_location",
+    "place_outlined"
+   ]
+  },
+  "camera": {
+   "group": "feature",
+   "label": "拍照",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 7.5h2.2l1.4-2.1a2 2 0 0 1 1.66-.9h3.48a2 2 0 0 1 1.66.9l1.4 2.1H19A2.5 2.5 0 0 1 21.5 10v7.5A2.5 2.5 0 0 1 19 20H5a2.5 2.5 0 0 1-2.5-2.5V10A2.5 2.5 0 0 1 5 7.5z"
+    },
+    {
+     "role": "a",
+     "d": "M9.2 13.6a2.8 2.8 0 1 0 5.6 0a2.8 2.8 0 1 0 -5.6 0z"
+    }
+   ],
+   "replaces": [
+    "add_a_photo_outlined",
+    "photo_camera_outlined"
+   ]
+  },
+  "image": {
+   "group": "feature",
+   "label": "图片",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6 4.5h12a3 3 0 0 1 3 3v9a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-9a3 3 0 0 1 3 -3z"
+    },
+    {
+     "role": "s",
+     "d": "M6.5 16l3.5-3.8 2.8 3 1.9-1.9 2.8 2.7"
+    },
+    {
+     "role": "A",
+     "d": "M14 9.2a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0z"
+    }
+   ],
+   "replaces": [
+    "image_outlined",
+    "photo_library_outlined",
+    "photo_outlined"
+   ]
+  },
+  "mic": {
+   "group": "feature",
+   "label": "语音",
+   "shapes": [
+    {
+     "role": "a",
+     "d": "M12 3h0a3 3 0 0 1 3 3v5a3 3 0 0 1 -3 3h0a3 3 0 0 1 -3 -3v-5a3 3 0 0 1 3 -3z"
+    },
+    {
+     "role": "s",
+     "d": "M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"
+    }
+   ],
+   "replaces": [
+    "mic",
+    "record_voice_over_outlined"
+   ]
+  },
+  "heart": {
+   "group": "feature",
+   "label": "收藏",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 20.3C9.2 18.2 3.5 14.2 3.5 9.2A4.7 4.7 0 0 1 12 6.6a4.7 4.7 0 0 1 8.5 2.6c0 5-5.7 9-8.5 11.1z"
+    }
+   ],
+   "replaces": [
+    "favorite_border"
+   ]
+  },
+  "heart-fill": {
+   "group": "feature",
+   "label": "已收藏",
+   "shapes": [
+    {
+     "role": "A",
+     "d": "M12 21.3C9 19.1 2.5 14.6 2.5 9.2A5.7 5.7 0 0 1 12 5a5.7 5.7 0 0 1 9.5 4.2c0 5.4-6.5 9.9-9.5 12.1z"
+    }
+   ],
+   "replaces": [
+    "favorite"
+   ]
+  },
+  "star": {
+   "group": "feature",
+   "label": "评分",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M11.18 5.06A0.9 0.9 0 0 1 12.82 5.06L14.49 8.83A0.4 0.4 0 0 0 14.82 9.06L18.92 9.49A0.9 0.9 0 0 1 19.43 11.05L16.36 13.8A0.4 0.4 0 0 0 16.23 14.19L17.1 18.22A0.9 0.9 0 0 1 15.77 19.19L12.2 17.12A0.4 0.4 0 0 0 11.8 17.12L8.23 19.19A0.9 0.9 0 0 1 6.9 18.22L7.77 14.19A0.4 0.4 0 0 0 7.64 13.8L4.57 11.05A0.9 0.9 0 0 1 5.08 9.49L9.18 9.06A0.4 0.4 0 0 0 9.51 8.83z"
+    }
+   ],
+   "replaces": [
+    "star_border",
+    "star_outline",
+    "star_outline_rounded"
+   ]
+  },
+  "star-fill": {
+   "group": "feature",
+   "label": "已评分",
+   "shapes": [
+    {
+     "role": "A",
+     "d": "M10.56 5.22A1.6 1.6 0 0 1 13.44 5.22L14.9 8.28A0.4 0.4 0 0 0 15.21 8.5L18.57 8.95A1.6 1.6 0 0 1 19.46 11.69L17.01 14.03A0.4 0.4 0 0 0 16.89 14.39L17.5 17.72A1.6 1.6 0 0 1 15.17 19.42L12.19 17.8A0.4 0.4 0 0 0 11.81 17.8L8.83 19.42A1.6 1.6 0 0 1 6.5 17.72L7.11 14.39A0.4 0.4 0 0 0 6.99 14.03L4.54 11.69A1.6 1.6 0 0 1 5.43 8.95L8.79 8.5A0.4 0.4 0 0 0 9.1 8.28z"
+    }
+   ],
+   "replaces": [
+    "star",
+    "star_rounded"
+   ]
+  },
+  "thumb": {
+   "group": "feature",
+   "label": "点赞",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M8.5 10.5l3.2-6.4a2.3 2.3 0 0 1 2.3 2.7l-.5 3.2h4.8a2 2 0 0 1 2 2.4l-1.1 6a2 2 0 0 1-2 1.6H8.5z"
+    },
+    {
+     "role": "a",
+     "d": "M4.5 11v8.5"
+    }
+   ],
+   "replaces": [
+    "thumb_up_alt",
+    "thumb_up_alt_outlined"
+   ]
+  },
+  "thumb-fill": {
+   "group": "feature",
+   "label": "已点赞",
+   "shapes": [
+    {
+     "role": "A",
+     "d": "M8.5 9.5l2.6-5.4a1.6 1.6 0 0 1 1.4-.9 2.9 2.9 0 0 1 2.5 3.4L14.6 9h4.2a3 3 0 0 1 2.950 3.600l-1.1 6a3 3 0 0 1-2.950 2.400H8.5z"
+    },
+    {
+     "role": "A",
+     "d": "M4.5 9.5h0.5a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1 -1.5 1.5h-0.5a1.5 1.5 0 0 1 -1.5 -1.5v-8.5a1.5 1.5 0 0 1 1.5 -1.5z"
+    }
+   ],
+   "replaces": []
+  },
+  "flag": {
+   "group": "feature",
+   "label": "举报",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 21V3.5"
+    },
+    {
+     "role": "a",
+     "d": "M8.5 4.5h10.5l-2.6 3.75 2.6 3.75H8.5z"
+    }
+   ],
+   "replaces": [
+    "flag_outlined"
+   ]
+  },
+  "verified": {
+   "group": "feature",
+   "label": "已认证",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 3l7.5 2.7v5.8c0 4.5-3 8-7.5 9.5-4.5-1.5-7.5-5-7.5-9.5V5.7z"
+    },
+    {
+     "role": "a",
+     "d": "M8.8 11.9l2.3 2.3 4.2-4.4"
+    }
+   ],
+   "replaces": [
+    "admin_panel_settings_outlined",
+    "verified",
+    "verified_outlined"
+   ]
+  },
+  "lock": {
+   "group": "feature",
+   "label": "隐私",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M8 10h8a3 3 0 0 1 3 3v4.5a3 3 0 0 1 -3 3h-8a3 3 0 0 1 -3 -3v-4.5a3 3 0 0 1 3 -3z"
+    },
+    {
+     "role": "s",
+     "d": "M8 10V7.5a4 4 0 0 1 8 0V10"
+    },
+    {
+     "role": "A",
+     "d": "M10.5 15.25a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0z"
+    }
+   ],
+   "replaces": [
+    "key_outlined",
+    "lock_outline"
+   ]
+  },
+  "eye": {
+   "group": "feature",
+   "label": "可见",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M2.8 12c1.6-3.3 5-6.5 9.2-6.5s7.6 3.2 9.2 6.5c-1.6 3.3-5 6.5-9.2 6.5S4.4 15.300 2.8 12z"
+    },
+    {
+     "role": "a",
+     "d": "M9.5 12a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0z"
+    }
+   ],
+   "replaces": [
+    "visibility_outlined"
+   ]
+  },
+  "eye-off": {
+   "group": "feature",
+   "label": "隐藏",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M2.8 12c1.6-3.3 5-6.5 9.2-6.5s7.6 3.2 9.2 6.5c-1.6 3.3-5 6.5-9.2 6.5S4.4 15.300 2.8 12z"
+    },
+    {
+     "role": "s",
+     "d": "M4.5 4l15 16"
+    }
+   ],
+   "replaces": [
+    "visibility_off_outlined"
+   ]
+  },
+  "info": {
+   "group": "feature",
+   "label": "说明",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "s",
+     "d": "M12 11.5v5"
+    },
+    {
+     "role": "A",
+     "d": "M10.75 7.9a1.25 1.25 0 1 0 2.5 0a1.25 1.25 0 1 0 -2.5 0z"
+    }
+   ],
+   "replaces": [
+    "info_outline"
+   ]
+  },
+  "help": {
+   "group": "feature",
+   "label": "帮助",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "s",
+     "d": "M9.6 9.6a2.5 2.5 0 1 1 3.6 2.25c-.75.4-1.2 1-1.2 1.75"
+    },
+    {
+     "role": "A",
+     "d": "M10.75 16.6a1.25 1.25 0 1 0 2.5 0a1.25 1.25 0 1 0 -2.5 0z"
+    }
+   ],
+   "replaces": [
+    "help_outline"
+   ]
+  },
+  "alert": {
+   "group": "feature",
+   "label": "出错",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "s",
+     "d": "M12 7.4v5.4"
+    },
+    {
+     "role": "A",
+     "d": "M10.75 16.2a1.25 1.25 0 1 0 2.5 0a1.25 1.25 0 1 0 -2.5 0z"
+    }
+   ],
+   "replaces": [
+    "error_outline"
+   ]
+  },
+  "warning": {
+   "group": "feature",
+   "label": "注意",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M9.9 6.35A2.4 2.4 0 0 1 14.1 6.35L19.61 16.23A2.4 2.4 0 0 1 17.51 19.8L6.49 19.8A2.4 2.4 0 0 1 4.39 16.23z"
+    },
+    {
+     "role": "s",
+     "d": "M12 9.5v4"
+    },
+    {
+     "role": "A",
+     "d": "M10.8 16.5a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0 -2.4 0z"
+    }
+   ],
+   "replaces": [
+    "report_problem_outlined",
+    "warning_amber_outlined"
+   ]
+  },
+  "check-circle": {
+   "group": "feature",
+   "label": "完成",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "a",
+     "d": "M8 12.2l2.8 2.8 5.2-5.4"
+    }
+   ],
+   "replaces": [
+    "check_circle",
+    "check_circle_outline"
+   ]
+  },
+  "settings": {
+   "group": "feature",
+   "label": "设置",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M10.03 5.73A0.5 0.5 0 0 0 10.34 5.33L10.49 3.97A0.5 0.5 0 0 1 10.99 3.52L13.01 3.52A0.5 0.5 0 0 1 13.51 3.97L13.66 5.33A0.5 0.5 0 0 0 13.97 5.73L15.04 6.18A0.5 0.5 0 0 0 15.54 6.11L16.62 5.25A0.5 0.5 0 0 1 17.28 5.29L18.71 6.72A0.5 0.5 0 0 1 18.75 7.38L17.89 8.46A0.5 0.5 0 0 0 17.82 8.96L18.27 10.03A0.5 0.5 0 0 0 18.67 10.34L20.03 10.49A0.5 0.5 0 0 1 20.48 10.99L20.48 13.01A0.5 0.5 0 0 1 20.03 13.51L18.67 13.66A0.5 0.5 0 0 0 18.27 13.97L17.82 15.04A0.5 0.5 0 0 0 17.89 15.54L18.75 16.62A0.5 0.5 0 0 1 18.71 17.28L17.28 18.71A0.5 0.5 0 0 1 16.62 18.75L15.54 17.89A0.5 0.5 0 0 0 15.04 17.82L13.97 18.27A0.5 0.5 0 0 0 13.66 18.67L13.51 20.03A0.5 0.5 0 0 1 13.01 20.48L10.99 20.48A0.5 0.5 0 0 1 10.49 20.03L10.34 18.67A0.5 0.5 0 0 0 10.03 18.27L8.96 17.82A0.5 0.5 0 0 0 8.46 17.89L7.38 18.75A0.5 0.5 0 0 1 6.72 18.71L5.29 17.28A0.5 0.5 0 0 1 5.25 16.62L6.11 15.54A0.5 0.5 0 0 0 6.18 15.04L5.73 13.97A0.5 0.5 0 0 0 5.33 13.66L3.97 13.51A0.5 0.5 0 0 1 3.52 13.01L3.52 10.99A0.5 0.5 0 0 1 3.97 10.49L5.33 10.34A0.5 0.5 0 0 0 5.73 10.03L6.18 8.96A0.5 0.5 0 0 0 6.11 8.46L5.25 7.38A0.5 0.5 0 0 1 5.29 6.72L6.72 5.29A0.5 0.5 0 0 1 7.38 5.25L8.46 6.11A0.5 0.5 0 0 0 8.96 6.18z"
+    },
+    {
+     "role": "a",
+     "d": "M9.4 12a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0z"
+    }
+   ],
+   "replaces": []
+  },
+  "filter": {
+   "group": "feature",
+   "label": "筛选",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.5 7.5h5.5M19.5 7.5h1M3.5 16.5h3.5M12 16.5h8.500"
+    },
+    {
+     "role": "a",
+     "d": "M12 7.5a2.25 2.25 0 1 0 4.5 0a2.25 2.25 0 1 0 -4.5 0z"
+    },
+    {
+     "role": "s",
+     "d": "M7 16.5a2.25 2.25 0 1 0 4.5 0a2.25 2.25 0 1 0 -4.5 0z"
+    }
+   ],
+   "replaces": [
+    "tune"
+   ]
+  },
+  "share": {
+   "group": "feature",
+   "label": "分享",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M8 10H7.500a2.5 2.5 0 0 0-2.5 2.5V18A2.5 2.5 0 0 0 7.5 20.500h9A2.5 2.5 0 0 0 19 18v-5.5a2.5 2.5 0 0 0-2.5-2.500H16"
+    },
+    {
+     "role": "a",
+     "d": "M12 14.500V3.500M8.500 7L12 3.500 15.500 7"
+    }
+   ],
+   "replaces": [
+    "ios_share"
+   ]
+  },
+  "download": {
+   "group": "feature",
+   "label": "下载",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 15v3A2.5 2.5 0 0 0 6.500 20.500h11A2.5 2.5 0 0 0 20 18v-3"
+    },
+    {
+     "role": "a",
+     "d": "M12 3.500v11M7.500 10L12 14.500 16.500 10"
+    }
+   ],
+   "replaces": [
+    "download_outlined",
+    "download_rounded",
+    "file_download_outlined"
+   ]
+  },
+  "external": {
+   "group": "feature",
+   "label": "打开",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M10.500 5H7A3 3 0 0 0 4 8v9a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3v-3.500"
+    },
+    {
+     "role": "a",
+     "d": "M14.500 3.500h6v6M20.500 3.500L12 12"
+    }
+   ],
+   "replaces": [
+    "open_in_new"
+   ]
+  },
+  "save": {
+   "group": "feature",
+   "label": "保存",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6.500 3.500h8.700a2.5 2.5 0 0 1 1.770.730l2.800 2.800a2.5 2.5 0 0 1 .730 1.770V17.500a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3v-11a3 3 0 0 1 3-3z"
+    },
+    {
+     "role": "s",
+     "d": "M8.500 3.500v4h5"
+    },
+    {
+     "role": "a",
+     "d": "M8.500 15h7"
+    }
+   ],
+   "replaces": [
+    "save_outlined"
+   ]
+  },
+  "logout": {
+   "group": "feature",
+   "label": "退出",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M10 3.500H7A3 3 0 0 0 4 6.500v11a3 3 0 0 0 3 3h3"
+    },
+    {
+     "role": "a",
+     "d": "M10 12h10.500M17 8.500l3.500 3.500-3.500 3.500"
+    }
+   ],
+   "replaces": [
+    "logout"
+   ]
+  },
+  "mail": {
+   "group": "feature",
+   "label": "邮件",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6 5h12a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3z"
+    },
+    {
+     "role": "a",
+     "d": "M7.500 9.500l4.500 3.200 4.500-3.200"
+    }
+   ],
+   "replaces": [
+    "mail_outline"
+   ]
+  },
+  "list": {
+   "group": "feature",
+   "label": "清单",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M9.500 6.500h11M9.500 12h11M9.500 17.500h11"
+    },
+    {
+     "role": "A",
+     "d": "M3.4 6.5a1.35 1.35 0 1 0 2.7 0a1.35 1.35 0 1 0 -2.7 0z"
+    },
+    {
+     "role": "F",
+     "d": "M3.4 12a1.35 1.35 0 1 0 2.7 0a1.35 1.35 0 1 0 -2.7 0z"
+    },
+    {
+     "role": "F",
+     "d": "M3.4 17.5a1.35 1.35 0 1 0 2.7 0a1.35 1.35 0 1 0 -2.7 0z"
+    }
+   ],
+   "replaces": [
+    "list_alt"
+   ]
+  },
+  "add": {
+   "group": "util",
+   "label": "新建",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 5v14M5 12h14"
+    }
+   ],
+   "replaces": [
+    "add",
+    "add_circle_outline",
+    "add_outlined"
+   ]
+  },
+  "remove": {
+   "group": "util",
+   "label": "减少",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 12h14"
+    }
+   ],
+   "replaces": [
+    "remove"
+   ]
+  },
+  "close": {
+   "group": "util",
+   "label": "关闭",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6 6l12 12M18 6L6 18"
+    }
+   ],
+   "replaces": [
+    "cancel_outlined",
+    "close"
+   ]
+  },
+  "check": {
+   "group": "util",
+   "label": "确认",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4.500 12.500l5 5L19.500 7"
+    }
+   ],
+   "replaces": [
+    "check",
+    "done_all"
+   ]
+  },
+  "chevron-right": {
+   "group": "util",
+   "label": "进入",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M9 5l7 7-7 7"
+    }
+   ],
+   "replaces": [
+    "chevron_right"
+   ]
+  },
+  "chevron-left": {
+   "group": "util",
+   "label": "返回",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M15 5l-7 7 7 7"
+    }
+   ],
+   "replaces": [
+    "arrow_back_ios_new_rounded",
+    "chevron_left"
+   ]
+  },
+  "chevron-down": {
+   "group": "util",
+   "label": "展开",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 9l7 7 7-7"
+    }
+   ],
+   "replaces": [
+    "expand_more"
+   ]
+  },
+  "chevron-up": {
+   "group": "util",
+   "label": "收起",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M5 15l7-7 7 7"
+    }
+   ],
+   "replaces": [
+    "expand_less"
+   ]
+  },
+  "arrow-left": {
+   "group": "util",
+   "label": "后退",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M20 12H4M10.500 5.500L4 12l6.500 6.500"
+    }
+   ],
+   "replaces": [
+    "arrow_back"
+   ]
+  },
+  "arrow-right": {
+   "group": "util",
+   "label": "前进",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 12h16M13.500 5.500L20 12l-6.500 6.500"
+    }
+   ],
+   "replaces": []
+  },
+  "arrow-up": {
+   "group": "util",
+   "label": "向上",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 20V4M5.500 10.500L12 4l6.500 6.500"
+    }
+   ],
+   "replaces": [
+    "arrow_upward"
+   ]
+  },
+  "arrow-down": {
+   "group": "util",
+   "label": "向下",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M12 4v16M5.500 13.500L12 20l6.500-6.500"
+    }
+   ],
+   "replaces": [
+    "arrow_downward"
+   ]
+  },
+  "more": {
+   "group": "util",
+   "label": "更多",
+   "shapes": [
+    {
+     "role": "F",
+     "d": "M3.4 12a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0z"
+    },
+    {
+     "role": "F",
+     "d": "M10.4 12a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0z"
+    },
+    {
+     "role": "F",
+     "d": "M17.4 12a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0z"
+    }
+   ],
+   "replaces": [
+    "more_horiz"
+   ]
+  },
+  "undo": {
+   "group": "util",
+   "label": "撤销",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M8.500 14L4 9.500 8.500 5M4 9.500h10.500a5.500 5.500 0 0 1 0 11H11"
+    }
+   ],
+   "replaces": [
+    "undo"
+   ]
+  },
+  "redo": {
+   "group": "util",
+   "label": "重做",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M15.500 14L20 9.500 15.500 5M20 9.500H9.500a5.500 5.500 0 0 0 0 11H13"
+    }
+   ],
+   "replaces": [
+    "redo"
+   ]
+  },
+  "refresh": {
+   "group": "util",
+   "label": "重置",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M19 12a7 7 0 1 1-2.050-4.950M17 3.400v3.700h-3.700"
+    }
+   ],
+   "replaces": [
+    "refresh",
+    "restart_alt",
+    "sync"
+   ]
+  },
+  "expand": {
+   "group": "util",
+   "label": "全屏",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M14 4h6v6M20 4l-6.500 6.500M10 20H4v-6M4 20l6.500-6.500"
+    }
+   ],
+   "replaces": [
+    "open_in_full"
+   ]
+  },
+  "swap": {
+   "group": "util",
+   "label": "对调",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 8h15.500M16 4.500L19.500 8 16 11.500M20 16H4.500M8 12.500L4.500 16 8 19.500"
+    }
+   ],
+   "replaces": [
+    "compare_arrows",
+    "swap_horiz"
+   ]
+  },
+  "copy": {
+   "group": "util",
+   "label": "复制",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M6.5 8h6.5a3 3 0 0 1 3 3v6.5a3 3 0 0 1 -3 3h-6.5a3 3 0 0 1 -3 -3v-6.5a3 3 0 0 1 3 -3z"
+    },
+    {
+     "role": "s",
+     "d": "M8.500 4.500a2.5 2.5 0 0 1 2-1H17.500a3 3 0 0 1 3 3V13.500a2.5 2.5 0 0 1-1 2"
+    }
+   ],
+   "replaces": [
+    "content_copy_outlined",
+    "copy",
+    "copy_all_outlined"
+   ]
+  },
+  "link": {
+   "group": "util",
+   "label": "链接",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M10 13.700a4.300 4.300 0 0 0 6.100.300l3-3a4.300 4.300 0 0 0-6.100-6.100l-1.500 1.500M14 10.300a4.300 4.300 0 0 0-6.100-.300l-3 3a4.300 4.300 0 0 0 6.100 6.100l1.500-1.500"
+    }
+   ],
+   "replaces": [
+    "link"
+   ]
+  },
+  "edit": {
+   "group": "util",
+   "label": "编辑",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4.500 19.500l1-4.400L16.400 4.200a2.050 2.050 0 0 1 2.900 0l.500.500a2.050 2.050 0 0 1 0 2.900L8.900 18.500z"
+    },
+    {
+     "role": "s",
+     "d": "M14 6.600l3.400 3.400"
+    }
+   ],
+   "replaces": [
+    "edit_note",
+    "edit_outlined"
+   ]
+  },
+  "delete": {
+   "group": "util",
+   "label": "删除",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M4 6.500h16M9.500 6.500V5A1.500 1.500 0 0 1 11 3.500h2A1.500 1.500 0 0 1 14.500 5v1.500M6 6.500l.800 11.700a2.500 2.500 0 0 0 2.500 2.300h5.400a2.500 2.500 0 0 0 2.500-2.300L18 6.500M10 11v5M14 11v5"
+    }
+   ],
+   "replaces": [
+    "delete_outline"
+   ]
+  },
+  "block": {
+   "group": "util",
+   "label": "屏蔽",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "s",
+     "d": "M5.700 5.700l12.600 12.600"
+    }
+   ],
+   "replaces": [
+    "block"
+   ]
+  },
+  "send": {
+   "group": "util",
+   "label": "发送",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M20.500 3.500L3.500 10.200l6.800 3.500 3.500 6.800zM10.300 13.700L20.500 3.500"
+    }
+   ],
+   "replaces": [
+    "send_outlined"
+   ]
+  },
+  "globe": {
+   "group": "util",
+   "label": "语言",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0z"
+    },
+    {
+     "role": "s",
+     "d": "M3 12h18M12 3c2.400 2.500 3.600 5.500 3.600 9s-1.200 6.500-3.600 9c-2.400-2.500-3.600-5.500-3.600-9s1.200-6.500 3.600-9z"
+    }
+   ],
+   "replaces": [
+    "language",
+    "public"
+   ]
+  },
+  "cloud": {
+   "group": "util",
+   "label": "云同步",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M7 19.500a4.500 4.500 0 0 1-.700-8.950 6 6 0 0 1 11.600 1.500A3.750 3.750 0 0 1 17.250 19.500z"
+    }
+   ],
+   "replaces": [
+    "cloud_outlined"
+   ]
+  },
+  "inbox": {
+   "group": "util",
+   "label": "收件箱",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M3.500 13.500l2.600-7.300A2.500 2.500 0 0 1 8.450 4.500h7.100a2.500 2.500 0 0 1 2.350 1.700l2.600 7.300V17.500a2.500 2.500 0 0 1-2.500 2.500H6a2.500 2.500 0 0 1-2.500-2.500zM3.500 13.500h4.700l1.300 2.500h5l1.300-2.500h4.700"
+    }
+   ],
+   "replaces": [
+    "inbox_outlined"
+   ]
+  },
+  "phone": {
+   "group": "util",
+   "label": "电话",
+   "shapes": [
+    {
+     "role": "s",
+     "d": "M20.500 16.400v2.400a1.900 1.900 0 0 1-2.100 1.900 17.700 17.700 0 0 1-7.700-2.750 17.400 17.400 0 0 1-5.350-5.350A17.700 17.700 0 0 1 2.600 4.850 1.900 1.900 0 0 1 4.500 2.800h2.400a1.900 1.900 0 0 1 1.900 1.650c.1.850.350 1.700.650 2.500a1.900 1.900 0 0 1-.450 2L8 9.950a14.300 14.300 0 0 0 5.350 5.350l1-1a1.900 1.900 0 0 1 2-.450c.800.300 1.650.550 2.500.650a1.900 1.900 0 0 1 1.650 1.900z"
+    }
+   ],
+   "replaces": [
+    "phone_outlined"
+   ]
+  }
+ }
+}

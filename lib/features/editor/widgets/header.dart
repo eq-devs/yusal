@@ -84,7 +84,7 @@ extension _EditorHeader on _HouseEditorState {
             key: const Key('add-floor'),
             tooltip: '加一层'.trKey('Қабат қосу', 'Добавить этаж', 'Add a floor', 'Кабат кошуу', 'Qavat qoʻshish'),
             onPressed: addFloorAbove,
-            icon: const Icon(Icons.add, size: 20))
+            icon: const Icon(YIcons.add, size: 20))
         : Padding(
             padding: const EdgeInsets.only(left: 6),
             child: OutlinedButton.icon(
@@ -93,23 +93,23 @@ extension _EditorHeader on _HouseEditorState {
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.symmetric(horizontal: 10)),
                 onPressed: addFloorAbove,
-                icon: const Icon(Icons.add, size: 16),
+                icon: const Icon(YIcons.add, size: 16),
                 label: Text(tr3('加一层', 'Қабат қосу', 'Этаж', 'Floor', ky: 'Кабат', uz: 'Qavat'))));
     final floorOps = icon('楼层操作', 'Қабат әрекеттері', 'Действия с этажом',
-        'Floor actions', Icons.layers_outlined, floorOptions, ky: 'Кабат боюнча аракеттер', uz: 'Qavat amallari');
+        'Floor actions', YIcons.layers, floorOptions, ky: 'Кабат боюнча аракеттер', uz: 'Qavat amallari');
     final sizeButton = icon('房屋长宽', 'Үйдің ені мен ұзындығы',
-        'Ширина и длина дома', 'House width and length', Icons.aspect_ratio, footprintOptions, ky: 'Үйдүн туурасы жана узундугу', uz: 'Uy eni va uzunligi');
+        'Ширина и длина дома', 'House width and length', YIcons.fit, footprintOptions, ky: 'Үйдүн туурасы жана узундугу', uz: 'Uy eni va uzunligi');
     final history_ = Row(mainAxisSize: MainAxisSize.min, children: [
-      icon('撤销', 'Болдырмау', 'Отменить', 'Undo', Icons.undo,
+      icon('撤销', 'Болдырмау', 'Отменить', 'Undo', YIcons.undo,
           history.canUndo ? undo : null,
           size: 21, ky: 'Артка кайтаруу', uz: 'Bekor qilish'),
-      icon('重做', 'Қайталау', 'Повторить', 'Redo', Icons.redo,
+      icon('重做', 'Қайталау', 'Повторить', 'Redo', YIcons.redo,
           history.canRedo ? redo : null,
           size: 21, ky: 'Кайра аткаруу', uz: 'Qaytarish'),
     ]);
     final saveButton = icon(
         '立即保存', 'Қазір сақтау', 'Сохранить сейчас', 'Save now',
-        Icons.save_outlined, save, ky: 'Азыр сактоо', uz: 'Hozir saqlash');
+        YIcons.save, save, ky: 'Азыр сактоо', uz: 'Hozir saqlash');
     final more = PopupMenuButton<String>(
         tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия', 'More actions', 'Дагы аракеттер', 'Boshqa amallar'),
         onSelected: menuAction,
@@ -324,7 +324,7 @@ extension _EditorHeader on _HouseEditorState {
                       flat || group == 'draw' ? 'quick-3d' : 'quick-2d'),
                   onPressed: () => showTab(group == 'draw' ? 'ext' : 'plan'),
                   icon: group == 'draw'
-                      ? Icons.view_in_ar_outlined
+                      ? YIcons.cube
                       : Icons.grid_on_outlined,
                   label: group == 'draw'
                       ? tr3('看 3D', '3D көру', 'В 3D', 'To 3D', ky: '3D көрүнүшкө', uz: '3D ga')
@@ -361,12 +361,12 @@ extension _EditorHeader on _HouseEditorState {
           IconButton(
               tooltip: '撤销'.trKey('Болдырмау', 'Отменить', 'Undo', 'Артка кайтаруу', 'Bekor qilish'),
               visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.undo, size: 20),
+              icon: const Icon(YIcons.undo, size: 20),
               onPressed: history.canUndo ? undo : null),
           IconButton(
               tooltip: '重做'.trKey('Қайталау', 'Повторить', 'Redo', 'Кайра аткаруу', 'Qaytarish'),
               visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.redo, size: 20),
+              icon: const Icon(YIcons.redo, size: 20),
               onPressed: history.canRedo ? redo : null),
           PopupMenuButton<String>(
               tooltip: '更多操作'.trKey('Басқа әрекеттер', 'Другие действия', 'More actions', 'Дагы аракеттер', 'Boshqa amallar'),
@@ -458,7 +458,7 @@ extension _EditorHeader on _HouseEditorState {
                 ListTile(contentPadding: tilePad, 
                     title: Text(label),
                     trailing:
-                        value == app.lang ? const Icon(Icons.check) : null,
+                        value == app.lang ? const Icon(YIcons.check) : null,
                     onTap: () => Navigator.pop(context, value)),
             ])));
     if (lang != null) choose.setLang(lang);

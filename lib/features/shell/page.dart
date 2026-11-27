@@ -157,8 +157,8 @@ class _PlatformShellState extends State<PlatformShell>
     final drafting = Theme.of(context);
     final destinations = [
       (
-        const YusalIcon(YIcon.community, mono: true),
-        const YusalIcon(YIcon.community),
+        const YusalIcon(YIcon.discover, mono: true),
+        const YusalIcon(YIcon.discover),
         tr3('发现', 'Шолу', 'Обзор', 'Discover', ky: 'Ачылыштар', uz: 'Kashf qilish')
       ),
       (

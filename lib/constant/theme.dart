@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:yusal/constant/tokens.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Platform look, after the ANT Community app's design system (one accent
 /// used sparingly, selection in ink, flat hairline cards, one shadow tier
@@ -306,7 +307,7 @@ ThemeData buildPlatformTheme(YTokens t) {
               fontWeight: FontWeight.w600)),
       actionIconTheme: ActionIconThemeData(
           backButtonIconBuilder: (_) =>
-              const Icon(Icons.arrow_back_ios_new_rounded, size: 20)),
+              const Icon(YIcons.chevronLeft, size: 20)),
       cardTheme: CardThemeData(
           color: t.card,
           elevation: 0,

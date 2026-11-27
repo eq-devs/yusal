@@ -209,7 +209,7 @@ extension _PhoneLayout on _HouseEditorState {
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
                                                 color: t.ink))),
-                                    Icon(Icons.expand_more,
+                                    Icon(YIcons.chevronDown,
                                         size: 16, color: t.muted)
                                   ])))),
                   const SizedBox(width: 8),
@@ -235,15 +235,15 @@ extension _PhoneLayout on _HouseEditorState {
               Expanded(child: title),
               icon(
                   '撤销'.trKey('Болдырмау', 'Отменить', 'Undo', 'Артка кайтаруу', 'Bekor qilish'),
-                  Icons.undo,
+                  YIcons.undo,
                   history.canUndo ? undo : null),
               icon(
                   '重做'.trKey('Қайталау', 'Повторить', 'Redo', 'Кайра аткаруу', 'Qaytarish'),
-                  Icons.redo,
+                  YIcons.redo,
                   history.canRedo ? redo : null),
               icon(
                   '更多操作'.trKey('Басқа әрекеттер', 'Другие действия', 'More actions', 'Дагы аракеттер', 'Boshqa amallar'),
-                  Icons.more_horiz,
+                  YIcons.more,
                   phoneMore,
                   key: const Key('editor-more')),
             ])));
@@ -361,7 +361,7 @@ extension _PhoneLayout on _HouseEditorState {
                           turns: open ? 0.125 : 0,
                           duration:
                               Motion.reduced(context) ? Duration.zero : Motion.fast,
-                          child: Icon(Icons.add, size: addFits ? 20 : 22));
+                          child: Icon(YIcons.add, size: addFits ? 20 : 22));
                       return addFits
                           ? FilledButton.icon(
                               key: const Key('plan-add'),
@@ -434,7 +434,7 @@ extension _PhoneLayout on _HouseEditorState {
             key: const Key('plan-layers'),
             tooltip: tip,
             onPressed: layersSheet,
-            icon: const Icon(Icons.layers_outlined, size: 22)));
+            icon: const Icon(YIcons.layers, size: 22)));
   }
 
   /// What the plan shows, the ruler, and the key to the drawing.
@@ -464,12 +464,12 @@ extension _PhoneLayout on _HouseEditorState {
                       Divider(height: 17, indent: 20, endIndent: 20, color: t.line),
                       ListTile(
                           contentPadding: tilePad,
-                          leading: const Icon(Icons.straighten),
+                          leading: const Icon(YIcons.ruler),
                           title: Text(measureLabel),
                           onTap: () => Navigator.pop(context, 'measure')),
                       ListTile(
                           contentPadding: tilePad,
-                          leading: const Icon(Icons.fit_screen_outlined),
+                          leading: const Icon(YIcons.fit),
                           title: Text(tr3('恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид', 'Reset view', ky: 'Көрүнүштү баштапкы абалга келтирүү', uz: 'Koʻrinishni asliga qaytarish')),
                           onTap: () => Navigator.pop(context, 'fit')),
                       Padding(
@@ -494,12 +494,12 @@ extension _PhoneLayout on _HouseEditorState {
     final labels = {for (final (key, label) in editorTabs) key: label};
     const pageIcons = {
       'site': Icons.landscape_outlined,
-      'iss': Icons.fact_check_outlined,
+      'iss': YIcons.contract,
       'walk': Icons.directions_walk,
-      'cost': Icons.payments_outlined,
+      'cost': YIcons.budget,
       'qty': Icons.table_rows_outlined,
-      'build': Icons.event_note_outlined,
-      'det': Icons.architecture,
+      'build': YIcons.calendar,
+      'det': YIcons.design,
       'heat': Icons.thermostat_outlined,
     };
     final choice = await showMotionSheet<String>(
@@ -539,23 +539,23 @@ extension _PhoneLayout on _HouseEditorState {
                     group(tr3('房屋', 'Үй', 'Дом', 'House', ky: 'Үй', uz: 'Uy')),
                     row('roof', Icons.roofing,
                         tr3('屋顶样式', 'Шатыр түрі', 'Тип крыши', 'Roof type', ky: 'Чатырдын түрү', uz: 'Tom turi')),
-                    row('size', Icons.aspect_ratio,
+                    row('size', YIcons.fit,
                         tr3('房屋长宽', 'Үйдің ені мен ұзындығы', 'Ширина и длина дома', 'House width and length', ky: 'Үйдүн туурасы жана узундугу', uz: 'Uy eni va uzunligi')),
-                    row('settings', Icons.tune,
+                    row('settings', YIcons.filter,
                         tr3('设置', 'Баптаулар', 'Настройки', 'Settings', ky: 'Жөндөөлөр', uz: 'Sozlamalar')),
                     group(tr3('方案与导出', 'Нұсқалар мен экспорт', 'Варианты и экспорт', 'Options and export', ky: 'Варианттар жана экспорт', uz: 'Variantlar va eksport')),
-                    row('variant', Icons.copy_all_outlined,
+                    row('variant', YIcons.copy,
                         tr3('复制为新方案', 'Жаңа нұсқа ретінде көшіру', 'Копировать как новый вариант', 'Copy as a new option', ky: 'Жаңы вариант катары көчүрүү', uz: 'Yangi variant sifatida nusxalash')),
-                    row('compare', Icons.compare_arrows,
+                    row('compare', YIcons.swap,
                         tr3('方案对比', 'Нұсқаларды салыстыру', 'Сравнение вариантов', 'Compare options', ky: 'Варианттарды салыштыруу', uz: 'Variantlarni solishtirish')),
-                    row('pdf', Icons.picture_as_pdf_outlined,
+                    row('pdf', YIcons.doc,
                         tr3('导出图纸 PDF', 'Сызбаларды PDF ету', 'Экспорт чертежей в PDF', 'Export drawings to PDF', ky: 'Чиймелерди PDF форматына экспорттоо', uz: 'Chizmalarni PDF ga eksport qilish')),
-                    row('png', Icons.image_outlined,
+                    row('png', YIcons.image,
                         tr3('导出本层平面图 PNG', 'Қабат жоспарын PNG ету', 'Экспорт плана этажа в PNG', 'Export floor plan to PNG', ky: 'Кабат планын PNG форматына экспорттоо', uz: 'Qavat rejasini PNG ga eksport qilish')),
-                    row('export', Icons.ios_share,
+                    row('export', YIcons.share,
                         tr3('导出 .house', '.house файлын шығару', 'Экспорт .house', 'Export .house', ky: '.house экспорттоо', uz: '.house eksport qilish')),
                     group(tr3('应用', 'Қолданба', 'Приложение', 'App', ky: 'Колдонмо', uz: 'Ilova')),
-                    row('lang', Icons.language, 'Тіл / Язык / 语言 / Language'),
+                    row('lang', YIcons.globe, 'Тіл / Язык / 语言 / Language'),
                     row(
                         'theme',
                         Icons.brightness_6_outlined,
@@ -645,23 +645,23 @@ extension _PhoneLayout on _HouseEditorState {
         mainAxisSize: MainAxisSize.min,
         children: [
           grid([
-            (w) => addTile('room', Icons.add_home_outlined, '加房间',
+            (w) => addTile('room', YIcons.houseAdd, '加房间',
                 on: stamping && !stampStair, width: w),
-            (w) => addTile('wall', Icons.add_outlined, '墙体',
+            (w) => addTile('wall', YIcons.add, '墙体',
                 on: tool == EditorTool.drawWall, width: w),
-            (w) => addTile('door', Icons.door_front_door_outlined, '拖入门',
+            (w) => addTile('door', YIcons.door, '拖入门',
                 on: tool == EditorTool.placeOpening &&
                     placingOpening == OpeningKind.door,
                 width: w),
-            (w) => addTile('window', Icons.window_outlined, '拖入窗',
+            (w) => addTile('window', YIcons.window, '拖入窗',
                 on: tool == EditorTool.placeOpening &&
                     placingOpening == OpeningKind.window,
                 width: w),
-            (w) => addTile('furniture', Icons.chair_outlined, '家具',
+            (w) => addTile('furniture', YIcons.chair, '家具',
                 on: tool == EditorTool.placeFurniture, width: w),
             (w) => addTile(
                 'stair',
-                Icons.stairs_outlined,
+                YIcons.stairs,
                 tr3('楼梯', 'Баспалдақ', 'Лестница', 'Stairs', ky: 'Тепкич', uz: 'Zinapoya'),
                 on: stairStamping,
                 width: w),
@@ -670,18 +670,18 @@ extension _PhoneLayout on _HouseEditorState {
           grid([
             (w) => addTile('split', Icons.vertical_split_outlined, '拉线分房',
                 on: tool == EditorTool.split, width: w),
-            (w) => addTile('box', Icons.crop_square, '拖动划房',
+            (w) => addTile('box', YIcons.room, '拖动划房',
                 on: tool == EditorTool.box && !stamping, width: w),
             (w) => addTile(
-                'utility', Icons.electrical_services_outlined, '水电',
+                'utility', YIcons.bolt, '水电',
                 on: tool == EditorTool.placeUtility, width: w),
             (w) => addTile('selectWall', Icons.view_week_outlined, '墙体调整',
                 on: tool == EditorTool.selectWall ||
                     tool == EditorTool.editWall,
                 width: w),
-            (w) => addTile('resize', Icons.open_in_full, '房屋尺寸',
+            (w) => addTile('resize', YIcons.expand, '房屋尺寸',
                 on: tool == EditorTool.resize, width: w),
-            (w) => addTile('measure', Icons.straighten, measureLabel,
+            (w) => addTile('measure', YIcons.ruler, measureLabel,
                 on: tool == EditorTool.measure, width: w),
           ]),
           const SizedBox(height: 8),
@@ -712,7 +712,7 @@ extension _PhoneLayout on _HouseEditorState {
                   key: const Key('dock-back'),
                   tooltip: tr3('返回', 'Артқа', 'Назад', 'Back', ky: 'Артка', uz: 'Orqaga'),
                   onPressed: () => update(() => dockPage = 'add'),
-                  icon: const Icon(Icons.chevron_left, size: 26)),
+                  icon: const Icon(YIcons.chevronLeft, size: 26)),
               Text(
                   tr3('选择家具', 'Жиһаз таңдау', 'Выбрать мебель',
                       'Pick furniture',

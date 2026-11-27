@@ -8,6 +8,7 @@ import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/auth/repository/social_sign_in.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// The ways the signed-in account can sign in: link Google or Apple, set an
 /// email password, or remove one. The last way cannot be removed.
@@ -138,12 +139,12 @@ class _SignInMethodsPageState extends State<SignInMethodsPage> {
                           _find('google') != null)
                         _row(
                             key: const Key('method-google'),
-                            icon: Icons.account_circle_outlined,
+                            icon: YIcons.profile,
                             provider: 'google',
                             name: 'Google'),
                       SettingsRow(
                           key: const Key('method-email'),
-                          icon: Icons.mail_outline,
+                          icon: YIcons.mail,
                           title: tr3(
                               '邮箱和密码', 'Пошта мен құпиясөз', 'Почта и пароль', 'Email and password', ky: 'Email жана сырсөз', uz: 'Email va parol'),
                           subtitle: email != null
@@ -213,8 +214,8 @@ class _PasswordDialogState extends State<_PasswordDialog> {
                     tr3('至少 8 位', 'Кемінде 8 таңба', 'Не короче 8 символов', 'At least 8 characters', ky: 'Кеминде 8 белги', uz: 'Kamida 8 ta belgi'),
                 suffixIcon: IconButton(
                     icon: Icon(_show
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined),
+                        ? YIcons.eyeOff
+                        : YIcons.eye),
                     onPressed: () => setState(() => _show = !_show)))),
         actions: [
           TextButton(

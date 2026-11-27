@@ -845,7 +845,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                   Icon(icon, size: 28),
                   Text(openingNames[kind]!,
                       style: const TextStyle(fontSize: 13)),
-                  const Icon(Icons.arrow_downward, size: 16),
+                  const Icon(YIcons.arrowDown, size: 16),
                 ]))),
         onDragStarted: () => setState(() {
               cancelDrag();
@@ -1512,7 +1512,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
               ListTile(
                   contentPadding: tilePad,
                   key: const Key('add-floor-empty'),
-                  leading: const Icon(Icons.crop_square),
+                  leading: const Icon(YIcons.room),
                   title: Text(tr3(
                       '空的一层', 'Бос қабат', 'Пустой этаж', 'Empty floor',
                       ky: 'Бош кабат', uz: 'Boʻsh qavat')),
@@ -1527,7 +1527,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
               ListTile(
                   contentPadding: tilePad,
                   key: const Key('add-floor-copy'),
-                  leading: const Icon(Icons.copy_all_outlined),
+                  leading: const Icon(YIcons.copy),
                   title: Text(tr3('照楼下复制一层', 'Астыңғы қабатты көшіру',
                       'Скопировать нижний этаж', 'Copy the floor below',
                       ky: 'Астыңкы кабатты көчүрүү',
@@ -2690,12 +2690,12 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
               'Keep dragging · walls are at least 0.30 m',
               ky: 'Сүйрөй бериңиз · дубалдар кеминде 0,30 м',
               uz: 'Surishda davom eting · devorlar kamida 0,30 m'),
-          icon: Icons.straighten,
+          icon: YIcons.ruler,
           color: info
         );
       }
       if (spatialError != null) {
-        return (text: spatialError!, icon: Icons.block, color: bad);
+        return (text: spatialError!, icon: YIcons.block, color: bad);
       }
       final direction = drawingEnd!.dy == drawingOrigin!.dy
           ? tr3('横墙', 'Көлденең қабырға', 'Горизонтальная стена',
@@ -2711,7 +2711,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                   '$direction ${meters(length)} m · joined to a wall',
                   ky: '$direction ${meters(length)} м · дубалга туташкан',
                   uz: '$direction ${meters(length)} m · devorga ulangan'),
-              icon: Icons.link,
+              icon: YIcons.link,
               color: good
             )
           : (
@@ -2748,7 +2748,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                       'House length ${meters(depth)} m · all floors change',
                       ky: 'Үйдүн узундугу ${meters(depth)} м · бардык кабаттар өзгөрөт',
                       uz: 'Uy uzunligi ${meters(depth)} m · barcha qavatlar oʻzgaradi'),
-              icon: Icons.open_in_full,
+              icon: YIcons.expand,
               color: good
             )
           : (
@@ -2760,7 +2760,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                       "Existing walls or rooms don't fit this size",
                       ky: 'Бар дубалдар же бөлмөлөр бул өлчөмгө батпайт',
                       uz: 'Mavjud devorlar yoki xonalar bu oʻlchamga sigʻmaydi'),
-              icon: Icons.block,
+              icon: YIcons.block,
               color: bad
             );
     }
@@ -2775,7 +2775,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                   'Release to place here: $name',
                   ky: 'Бул жерге коюу үчүн коё бериңиз: $name',
                   uz: 'Bu yerga qoʻyish uchun qoʻyib yuboring: $name'),
-              icon: Icons.check_circle_outline,
+              icon: YIcons.checkCircle,
               color: good
             )
           : (
@@ -2784,7 +2784,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                       'Здесь не помещается: $name', "Doesn't fit here: $name",
                       ky: 'Бул жерге батпайт: $name',
                       uz: 'Bu yerga sigʻmaydi: $name'),
-              icon: Icons.block,
+              icon: YIcons.block,
               color: bad
             );
     }
@@ -2798,7 +2798,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                   'Snapped to the wall, release to place: ${openingNames[draggingNewOpening]}',
                   ky: 'Дубалга жабышты, коюу үчүн коё бериңиз: ${openingNames[draggingNewOpening]}',
                   uz: 'Devorga yopishdi, qoʻyish uchun qoʻyib yuboring: ${openingNames[draggingNewOpening]}'),
-              icon: Icons.check_circle_outline,
+              icon: YIcons.checkCircle,
               color: good
             )
           : (
@@ -2816,7 +2816,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
     }
     if (wallGrip != null && editPreviewStart != null) {
       if (spatialError != null) {
-        return (text: spatialError!, icon: Icons.block, color: bad);
+        return (text: spatialError!, icon: YIcons.block, color: bad);
       }
       if (editCommand == 'MoveDrawnWall') {
         return (
@@ -2827,12 +2827,12 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
               '${wallDraftLabel!} · joined walls change together',
               ky: '${wallDraftLabel!} · туташкан дубалдар бирге өзгөрөт',
               uz: '${wallDraftLabel!} · ulangan devorlar birga oʻzgaradi'),
-          icon: Icons.open_with,
+          icon: YIcons.move,
           color: good
         );
       }
       if (wallGrip == WallGrip.middle) {
-        return (text: wallDraftLabel!, icon: Icons.open_with, color: good);
+        return (text: wallDraftLabel!, icon: YIcons.move, color: good);
       }
       return drawConnected
           ? (
@@ -2843,7 +2843,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                   'Wall ${wallDraftLabel!} · joined to a wall',
                   ky: 'Дубал ${wallDraftLabel!} · дубалга туташкан',
                   uz: 'Devor ${wallDraftLabel!} · devorga ulangan'),
-              icon: Icons.link,
+              icon: YIcons.link,
               color: good
             )
           : (
@@ -3003,12 +3003,12 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
             child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(
               failed
-                  ? Icons.error_outline
+                  ? YIcons.alert
                   : saving
-                      ? Icons.sync
+                      ? YIcons.refresh
                       : dirty
-                          ? Icons.edit_note
-                          : Icons.check_circle_outline,
+                          ? YIcons.edit
+                          : YIcons.checkCircle,
               size: 14,
               color: color),
           const SizedBox(width: 2),

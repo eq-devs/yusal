@@ -16,6 +16,7 @@ import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/demand/pages/compare.dart';
 import 'package:yusal/features/demand/page.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// The publisher's list of sign-ups or quotes: talk, invite to cooperate,
 /// decline, compare.
@@ -79,7 +80,7 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
                                   demand: d,
                                   quotes: quotes,
                                   profiles: data.profiles)),
-                          icon: const Icon(Icons.compare_arrows),
+                          icon: const Icon(YIcons.swap),
                           label: Text(tr3(
                               '对比 ${quotes.length} 份报价',
                               '${quotes.length} ұсынысты салыстыру',
@@ -89,7 +90,7 @@ class _ApplicationsPageState extends State<ApplicationsPage> {
                     const SizedBox(height: 16),
                     if (live.isEmpty)
                       EmptyState(
-                          icon: Icons.hourglass_empty,
+                          icon: YIcons.clock,
                           title: tr3('还没有人报名或报价', 'Әзірге өтінім жоқ',
                               'Пока нет откликов',
                               'No responses yet', ky: 'Азырынча жооп жок', uz: 'Hozircha javob yoʻq'),
@@ -243,7 +244,7 @@ class ApplicationCard extends StatelessWidget {
       Wrap(spacing: 8, runSpacing: 8, children: [
         OutlinedButton.icon(
             onPressed: chat,
-            icon: const Icon(Icons.chat_bubble_outline, size: 18),
+            icon: const Icon(YIcons.chat, size: 18),
             label: Text(tr3('沟通', 'Жазу', 'Написать', 'Message', ky: 'Билдирүү', uz: 'Xabar'))),
         if (a.status == ApplicationStatus.submitted) ...[
           FilledButton(

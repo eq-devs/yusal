@@ -251,7 +251,7 @@ extension _UtilityTool on _HouseEditorState {
                 ky: 'Жабуу', uz: 'Yopish'),
             visualDensity: VisualDensity.compact,
             onPressed: () => update(() => selectedUtilityId = null),
-            icon: const Icon(Icons.close, size: 18)),
+            icon: const Icon(YIcons.close, size: 18)),
         children: [
           KvGrid([
             Kv(utilityName(u.kind),
@@ -296,7 +296,7 @@ extension _UtilityTool on _HouseEditorState {
             Btn(
                 label: tr3('备注', 'Белгі', 'Примечание', 'Note',
                     ky: 'Эскертме', uz: 'Izoh'),
-                icon: Icons.edit_outlined,
+                icon: YIcons.edit,
                 onPressed: () async {
                   final v = await askText(
                       tr3(
@@ -315,7 +315,7 @@ extension _UtilityTool on _HouseEditorState {
             Btn(
                 label: tr3('删除', 'Жою', 'Удалить', 'Delete',
                     ky: 'Өчүрүү', uz: 'Oʻchirish'),
-                icon: Icons.delete_outline,
+                icon: YIcons.delete,
                 danger: true,
                 onPressed: () {
                   update(() => selectedUtilityId = null);

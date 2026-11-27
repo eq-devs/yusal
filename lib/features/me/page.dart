@@ -30,6 +30,7 @@ import 'package:yusal/features/me/pages/trust.dart';
 import 'package:yusal/features/me/state/me.dart';
 import 'package:yusal/features/profile/state/profile.dart';
 import 'package:yusal/features/auth/widgets/edit_phone.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Fourth tab: who I am, what I published, my professional profile,
 /// settings and the account itself, each as its own group.
@@ -86,13 +87,13 @@ class MePage extends ConsumerWidget {
                                   const SizedBox(height: YSpace.xl),
                                   SettingsGroup(children: [
                                     SettingsRow(
-                                        icon: Icons.favorite_border,
+                                        icon: YIcons.heart,
                                         title:
                                             tr3('收藏', 'Таңдаулы', 'Избранное', 'Favourites', ky: 'Тандалгандар', uz: 'Sevimlilar'),
                                         onTap: () => pushPage<void>(context,
                                             (_) => const FavouritesPage())),
                                     SettingsRow(
-                                        icon: Icons.cloud_outlined,
+                                        icon: YIcons.cloud,
                                         title: tr3('设计备份与恢复', 'Сақтық көшірме',
                                             'Резервные копии',
                                             'Backups', ky: 'Резервдик көчүрмөлөр', uz: 'Zaxira nusxalar'),
@@ -100,7 +101,7 @@ class MePage extends ConsumerWidget {
                                             (_) => const BackupPage())),
                                     SettingsRow(
                                         key: const Key('me-phone'),
-                                        icon: Icons.phone_outlined,
+                                        icon: YIcons.phone,
                                         title: tr3('手机号', 'Телефон нөмірі',
                                             'Номер телефона',
                                             'Phone number', ky: 'Телефон номери', uz: 'Telefon raqami'),
@@ -111,7 +112,7 @@ class MePage extends ConsumerWidget {
                                             'Visible only when you share it in chat', ky: 'Чатта бөлүшкөндө гана көрүнөт', uz: 'Faqat chatda ulashganingizda koʻrinadi'),
                                         onTap: () => editPhone(context)),
                                     SettingsRow(
-                                        icon: Icons.block,
+                                        icon: YIcons.block,
                                         title: tr3('隐私与拉黑', 'Құпиялық',
                                             'Приватность и блокировки',
                                             'Privacy and blocking', ky: 'Купуялык жана бөгөттөө', uz: 'Maxfiylik va bloklash'),
@@ -135,7 +136,7 @@ class MePage extends ConsumerWidget {
                                     children: [
                                       SettingsRow(
                                           key: const Key('me-language'),
-                                          icon: Icons.language,
+                                          icon: YIcons.globe,
                                           title: tr3('语言', 'Тіл', 'Язык', 'Language', ky: 'Тил', uz: 'Til'),
                                           value: _langs
                                               .firstWhere(
@@ -188,7 +189,7 @@ class MePage extends ConsumerWidget {
                                                           reader: reader)))),
                                       SettingsRow(
                                           key: const Key('me-feedback'),
-                                          icon: Icons.chat_bubble_outline,
+                                          icon: YIcons.chat,
                                           title: tr3('意见反馈', 'Пікір қалдыру',
                                               'Обратная связь',
                                               'Feedback', ky: 'Пикир-сунуш', uz: 'Fikr-mulohaza'),
@@ -204,7 +205,7 @@ class MePage extends ConsumerWidget {
                                           SettingsRow(
                                               key: const Key(
                                                   'me-sign-in-methods'),
-                                              icon: Icons.key_outlined,
+                                              icon: YIcons.lock,
                                               title: tr3(
                                                   '登录方式',
                                                   'Кіру тәсілдері',
@@ -216,7 +217,7 @@ class MePage extends ConsumerWidget {
                                                       api: api))),
                                         SettingsRow(
                                             key: const Key('me-sign-out'),
-                                            icon: Icons.logout,
+                                            icon: YIcons.logout,
                                             title: tr3('退出登录', 'Шығу', 'Выйти', 'Sign out', ky: 'Чыгуу', uz: 'Chiqish'),
                                             trailing: const SizedBox.shrink(),
                                             onTap: () async {
@@ -246,7 +247,7 @@ class MePage extends ConsumerWidget {
                                             }),
                                         SettingsRow(
                                             key: const Key('me-delete-account'),
-                                            icon: Icons.delete_outline,
+                                            icon: YIcons.delete,
                                             danger: true,
                                             title: tr3('注销账号', 'Аккаунтты жою',
                                                 'Удалить аккаунт',
@@ -337,7 +338,7 @@ class _AccountHeader extends StatelessWidget {
       ])),
       IconButton(
           tooltip: tr3('改称呼', 'Атын өзгерту', 'Изменить имя', 'Change the name', ky: 'Атын өзгөртүү', uz: 'Ismni oʻzgartirish'),
-          icon: const Icon(Icons.edit_outlined),
+          icon: const Icon(YIcons.edit),
           onPressed: () async {
             final name = await askText(context, tr3('称呼', 'Аты', 'Имя', 'Name', ky: 'Аты', uz: 'Ism'),
                 initial: account.displayName, lines: 1);
@@ -431,7 +432,7 @@ class _ProProfiles extends StatelessWidget {
                     if (!p.verified)
                       SettingsRow(
                           key: Key('me-verify-${p.id}'),
-                          icon: Icons.verified_outlined,
+                          icon: YIcons.verified,
                           title: tr3('实名核验：${p.name}', 'Тексеру: ${p.name}',
                               'Проверка: ${p.name}',
                               'Verification: ${p.name}', ky: 'Текшерүү: ${p.name}', uz: 'Tekshiruv: ${p.name}'),
@@ -449,7 +450,7 @@ class _ProProfiles extends StatelessWidget {
                     child: TextButton.icon(
                         onPressed: () => pushPage<void>(
                             context, (_) => const ProfileEditPage()),
-                        icon: const Icon(Icons.add, size: 20),
+                        icon: const Icon(YIcons.add, size: 20),
                         label: Text(
                             tr3('再建一个名片', 'Тағы профиль', 'Ещё профиль', 'Another profile', ky: 'Башка профиль', uz: 'Boshqa profil')))),
               ] else ...[
@@ -460,9 +461,9 @@ class _ProProfiles extends StatelessWidget {
                         SettingsRow(
                             key: Key('me-join-${r.name}'),
                             icon: switch (r) {
-                              ProRole.worker => Icons.handyman_outlined,
-                              ProRole.contractor => Icons.groups_outlined,
-                              ProRole.engineer => Icons.architecture_outlined,
+                              ProRole.worker => YIcons.tools,
+                              ProRole.contractor => YIcons.people,
+                              ProRole.engineer => YIcons.design,
                             },
                             title: proRoleName(r),
                             onTap: () => pushPage<void>(
@@ -500,7 +501,7 @@ class MyApplicationsPage extends StatelessWidget {
             builder: (context, list) => Column(children: [
                   if (list.isEmpty)
                     EmptyState(
-                        icon: Icons.assignment_outlined,
+                        icon: YIcons.contract,
                         title:
                             tr3('还没有报名或报价', 'Өтінім жоқ', 'Откликов пока нет', 'No responses yet', ky: 'Азырынча жооп жок', uz: 'Hozircha javob yoʻq')),
                   for (final (a, d) in list)
@@ -574,7 +575,7 @@ class FavouritesPage extends StatelessWidget {
               final (houses, profiles, demands) = data;
               if (houses.isEmpty && profiles.isEmpty && demands.isEmpty) {
                 return EmptyState(
-                    icon: Icons.favorite_border,
+                    icon: YIcons.heart,
                     title: tr3('还没有收藏', 'Бос', 'Пусто', 'Empty', ky: 'Бош', uz: 'Boʻsh'),
                     body: tr3(
                         '在房子、师傅名片或需求上点 ♡，就会出现在这里',

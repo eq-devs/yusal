@@ -27,6 +27,7 @@ import 'package:yusal/service/storage/last_open.dart';
 import 'package:yusal/service/storage/project_store.dart';
 
 import 'e2e_support.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Stands in for the gallery: returns one generated photo.
 class FakeGallery extends FileSelectorPlatform {
@@ -77,7 +78,7 @@ Future<void> submitSiteEntry(WidgetTester t, String note) async {
 Future<void> reviewAll(WidgetTester t, String text) async {
   await waitFor(t, find.byType(ReviewPage));
   while (find.byTooltip('5').evaluate().isNotEmpty &&
-      find.byIcon(Icons.star_outline_rounded).evaluate().isNotEmpty) {
+      find.byIcon(YIcons.star).evaluate().isNotEmpty) {
     final fives = find.byTooltip('5');
     // Tap the first row that still has empty stars.
     var tapped = false;
@@ -85,7 +86,7 @@ Future<void> reviewAll(WidgetTester t, String text) async {
       final row = find.ancestor(of: fives.at(i), matching: find.byType(Row));
       if (find
           .descendant(
-              of: row.first, matching: find.byIcon(Icons.star_outline_rounded))
+              of: row.first, matching: find.byIcon(YIcons.star))
           .evaluate()
           .isNotEmpty) {
         await tapIt(t, fives.at(i));

@@ -245,8 +245,8 @@ class _HomePageState extends State<HomePage> {
                                                       selected:
                                                           filter.region != null,
                                                       icon:
-                                                          Icons.place_outlined,
-                                                      yicon: YIcon.nearby,
+                                                          YIcons.location,
+                                                      yicon: YIcon.location,
                                                       menu: true,
                                                       onTap: () async {
                                                         final r =
@@ -367,7 +367,7 @@ class _HomePageState extends State<HomePage> {
     if (posts.isEmpty) {
       return SliverToBoxAdapter(
           child: EmptyState(
-              icon: Icons.home_outlined,
+              icon: YIcons.home,
               yicon: YIcon.home,
               title: tr3('还没有符合条件的房子', 'Үй табылмады', 'Домов не найдено', 'No houses found', ky: 'Үйлөр табылган жок', uz: 'Uylar topilmadi'),
               body: tr3('换个筛选，或者发布你自己的设计。', 'Сүзгіні өзгертіңіз.',
@@ -435,7 +435,7 @@ class _ProBanner extends StatelessWidget {
                           'Find a pro or work', ky: 'Адис же иш табуу', uz: 'Mutaxassis yoki ish topish'),
                       style: const TextStyle(
                           fontWeight: FontWeight.w600, fontSize: YFont.label))),
-              Icon(Icons.chevron_right, color: t.muted),
+              Icon(YIcons.chevronRight, color: t.muted),
             ])));
   }
 }

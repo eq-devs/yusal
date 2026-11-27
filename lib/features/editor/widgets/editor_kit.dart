@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:yusal/constant/tokens.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Small building blocks shared by every editor screen: segmented switches,
 /// a tab strip, cards, value grids, pills. One look for all of them: soft
@@ -312,7 +313,7 @@ class KvGrid extends StatelessWidget {
                               if (item.onTap != null)
                                 Padding(
                                     padding: const EdgeInsets.only(left: 4),
-                                    child: Icon(Icons.edit_outlined,
+                                    child: Icon(YIcons.edit,
                                         size: 13, color: t.muted))
                             ]),
                             Text(item.label,
@@ -551,7 +552,7 @@ class PlainTable extends StatelessWidget {
             children: [
               Flexible(child: text),
               const SizedBox(width: 4),
-              Icon(Icons.edit_outlined, size: 12, color: t.muted)
+              Icon(YIcons.edit, size: 12, color: t.muted)
             ]);
       }
       final highlight = d.highlight || column == highlightColumn;

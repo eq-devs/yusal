@@ -115,7 +115,7 @@ class _PostPageState extends ConsumerState<PostPage> {
             return PageScaffold(
                 title: '',
                 body: EmptyState(
-                    icon: Icons.home_outlined,
+                    icon: YIcons.home,
                     title: tr3(
                         '这栋房子已经不可见', 'Үй қолжетімсіз', 'Дом больше недоступен', 'The house is no longer available', ky: 'Үй мындан ары жеткиликсиз', uz: 'Uy endi mavjud emas'),
                     action: OutlinedButton(
@@ -325,13 +325,13 @@ class _PostPageState extends ConsumerState<PostPage> {
                                     active: liked,
                                     child: Icon(
                                         liked
-                                            ? Icons.favorite
-                                            : Icons.favorite_border,
+                                            ? YIcons.heartFill
+                                            : YIcons.heart,
                                         size: 20)),
                                 onPressed: toggle)),
                       IconAction(
                           label: tr3('更多', 'Тағы', 'Ещё', 'More', ky: 'Дагы', uz: 'Yana'),
-                          icon: const Icon(Icons.more_horiz, size: 20),
+                          icon: const Icon(YIcons.more, size: 20),
                           onPressed: more),
                       const SizedBox(width: YSpace.sm),
                     ],
@@ -436,7 +436,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                                             trailing: mine && snap != null
                                                 ? TextButton.icon(
                                                     onPressed: recruit,
-                                                    icon: const Icon(Icons.add,
+                                                    icon: const Icon(YIcons.add,
                                                         size: 18),
                                                     label: Text(tr3('招人',
                                                         'Іздеу', 'Найти', 'Find', ky: 'Табуу', uz: 'Topish')))
@@ -603,14 +603,14 @@ class _PostPageState extends ConsumerState<PostPage> {
               color: liked ? t.accent : null,
               icon: PopOnActive(
                   active: liked,
-                  child: Icon(liked ? Icons.favorite : Icons.favorite_border,
+                  child: Icon(liked ? YIcons.heartFill : YIcons.heart,
                       size: 22, color: liked ? t.accent : null)),
               onTap: toggle));
       final comment = _CountAction(
           key: const Key('post-comment'),
           tooltip: tr3('写点评', 'Пікір жазу', 'Написать отзыв', 'Write a review', ky: 'Пикир жазуу', uz: 'Sharh yozish'),
           count: post.commentCount,
-          icon: const Icon(Icons.chat_bubble_outline, size: 21),
+          icon: const Icon(YIcons.chat, size: 21),
           onTap: () => openCritiqueComposer(context, post));
       return ActionBar(
           child: Row(children: [
@@ -622,7 +622,7 @@ class _PostPageState extends ConsumerState<PostPage> {
               child: FilledButton.icon(
                   key: const Key('post-main-action'),
                   onPressed: () => startFromPost(context, post),
-                  icon: const Icon(Icons.content_copy_outlined, size: 18),
+                  icon: const Icon(YIcons.copy, size: 18),
                   label: Text(startFromThis(),
                       maxLines: 1, overflow: TextOverflow.ellipsis))),
         ] else ...[
@@ -707,7 +707,7 @@ class _BuildSection extends StatelessWidget {
             subtitle: Text(
                 '${x.scope} · ${x.ended ? tr3('已完工', 'Аяқталды', 'Завершено', 'Finished', ky: 'Бүттү', uz: 'Tugallandi') : tr3('施工中', 'Жүріп жатыр', 'В работе', 'In progress', ky: 'Аткарылууда', uz: 'Jarayonda')}',
                 style: TextStyle(color: t.muted)),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(YIcons.chevronRight),
             onTap: () => pushPage<void>(
                 context, (_) => ProfilePage(profileId: x.profile.id))),
       Text(
@@ -750,10 +750,10 @@ class _FactSheet extends StatelessWidget {
     final summary = snapshot?.summary ?? '';
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Row(children: [
-        cell(Icons.square_foot, '${post.area.round()} $sqm',
+        cell(YIcons.measure, '${post.area.round()} $sqm',
             tr3('建筑面积', 'Ауданы', 'Площадь', 'Area', ky: 'Аянт', uz: 'Maydon')),
         const SizedBox(width: 8),
-        cell(Icons.layers_outlined, '${post.floors}',
+        cell(YIcons.layers, '${post.floors}',
             tr3('层数', 'Қабат', 'Этажей', 'Floors', ky: 'Кабаттар', uz: 'Qavatlar')),
         const SizedBox(width: 8),
         cell(Icons.meeting_room_outlined, '${post.rooms}',
@@ -825,12 +825,12 @@ class _PostLeading extends StatelessWidget {
       child: fromLink
           ? IconAction(
               label: tr3('首页', 'Басты бет', 'Главная', 'Home', ky: 'Башкы бет', uz: 'Bosh sahifa'),
-              icon: const Icon(Icons.home_outlined, size: 20),
+              icon: const Icon(YIcons.home, size: 20),
               onPressed: () => Navigator.of(context)
                   .pushReplacement(platformRoute((_) => const PlatformShell())))
           : IconAction(
               label: MaterialLocalizations.of(context).backButtonTooltip,
-              icon: const Icon(Icons.arrow_back, size: 20),
+              icon: const Icon(YIcons.arrowLeft, size: 20),
               onPressed: () => Navigator.maybePop(context)));
 }
 
@@ -864,7 +864,7 @@ class _PostCover extends StatelessWidget {
       // jump as the flight starts.
       cropInFlight: false,
       child: Cover(
-          icon: Icons.home_outlined,
+          icon: YIcons.home,
           seed: post.id,
           height: 300,
           image: image,
@@ -955,12 +955,12 @@ class _MetaLine extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6),
         child: Text('·', style: muted));
     return Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
-      YusalIcon(YIcon.nearby, size: 15, color: t.muted),
+      YusalIcon(YIcon.location, size: 15, color: t.muted),
       const SizedBox(width: 2),
       Text(regionName(post.region), style: muted),
       if (post.rating != null) ...[
         dot(),
-        Icon(Icons.star_rounded, size: 15, color: t.accent),
+        Icon(YIcons.starFill, size: 15, color: t.accent),
         const SizedBox(width: 2),
         Text('${post.rating!.toStringAsFixed(1)} (${post.ratingCount})',
             style: muted.copyWith(color: t.ink, fontWeight: FontWeight.w600)),
@@ -1017,7 +1017,7 @@ class _Byline extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                         visualDensity: VisualDensity.compact),
                     onPressed: onContact,
-                    icon: const Icon(Icons.chat_outlined, size: 16),
+                    icon: const Icon(YIcons.chat, size: 16),
                     label: Text(tr3('私信', 'Жазу', 'Написать', 'Message', ky: 'Билдирүү', uz: 'Xabar'))),
             ]));
   }

@@ -12,6 +12,7 @@ import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/profile/pages/edit.dart';
 import 'package:yusal/features/profile/state/profile.dart';
 import 'package:yusal/features/me/pages/trust.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Public page of a worker or team. Shows only facts the platform can
 /// prove: verified phone, two-sided cooperations, visible reviews.
@@ -78,7 +79,7 @@ class _ProfileView extends StatelessWidget {
           if (mine)
             IconButton(
                 tooltip: tr3('编辑', 'Өзгерту', 'Редактировать', 'Edit', ky: 'Түзөтүү', uz: 'Tahrirlash'),
-                icon: const Icon(Icons.edit_outlined),
+                icon: const Icon(YIcons.edit),
                 onPressed: () =>
                     pushPage<void>(context, (_) => ProfileEditPage(profile: p)))
           else ...[
@@ -88,7 +89,7 @@ class _ProfileView extends StatelessWidget {
                     ? tr3('取消收藏', 'Таңдаулыдан алу', 'Убрать из избранного', 'Remove from favourites', ky: 'Тандалгандардан алып салуу', uz: 'Sevimlilardan olib tashlash')
                     : tr3('收藏', 'Таңдаулы', 'В избранное', 'Add to favourites', ky: 'Тандалгандарга кошуу', uz: 'Sevimlilarga qoʻshish'),
                 icon: Icon(
-                    data.favourite ? Icons.favorite : Icons.favorite_border,
+                    data.favourite ? YIcons.heartFill : YIcons.heart,
                     color: data.favourite ? t.accent : null),
                 onPressed: () async {
                   if (!await requireLogin(context) || !context.mounted) return;
@@ -138,7 +139,7 @@ class _ProfileView extends StatelessWidget {
                     success: tr3('已更新确认时间', 'Жаңартылды', 'Обновлено', 'Updated', ky: 'Жаңыланды', uz: 'Yangilandi')))
             : FilledButton.icon(
                 onPressed: contact,
-                icon: const Icon(Icons.chat_bubble_outline),
+                icon: const Icon(YIcons.chat),
                 label: Text(tr3('联系', 'Жазу', 'Написать', 'Message', ky: 'Билдирүү', uz: 'Xabar'))),
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           YCard(
@@ -178,16 +179,16 @@ class _ProfileView extends StatelessWidget {
           const SizedBox(height: 18),
           InfoRow(tr3('接活状态', 'Күйі', 'Статус', 'Status', ky: 'Абалы', uz: 'Holati'),
               '${availabilityName(p)} · ${tr3('确认于 ${fmtDay(p.availabilityConfirmedAt)}', '${fmtDay(p.availabilityConfirmedAt)} расталды', 'обновлено ${fmtDay(p.availabilityConfirmedAt)}', 'updated ${fmtDay(p.availabilityConfirmedAt)}', ky: '${fmtDay(p.availabilityConfirmedAt)} жаңыланды', uz: '${fmtDay(p.availabilityConfirmedAt)} yangilandi')}${stale ? tr3('（较久未更新）', ' (ескі)', ' (давно)', ' (a while ago)', ky: ' (бир топ мурун)', uz: ' (ancha oldin)') : ''}',
-              icon: Icons.event_available_outlined),
+              icon: YIcons.calendarCheck),
           InfoRow(tr3('服务地区', 'Аймақ', 'Районы', 'Districts', ky: 'Райондор', uz: 'Tumanlar'),
               p.regions.map(regionName).join(listSep),
-              icon: Icons.place_outlined),
+              icon: YIcons.location),
           if (p.teamSize != null)
             InfoRow(tr3('团队人数', 'Бригада', 'Бригада', 'Crew', ky: 'Бригада', uz: 'Brigada'), '${p.teamSize}',
-                icon: Icons.groups_outlined),
+                icon: YIcons.people),
           if (p.showPhone && data.owner != null)
             InfoRow(tr3('电话', 'Телефон', 'Телефон', 'Phone', ky: 'Телефон', uz: 'Telefon'), data.owner!.phone,
-                icon: Icons.phone_outlined),
+                icon: YIcons.phone),
           if (p.bio.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(p.bio, style: const TextStyle(height: 1.5)),
@@ -227,8 +228,8 @@ class _ProfileView extends StatelessWidget {
             for (final w in p.works)
               ListTile(
                   leading: Icon(w.source == WorkSource.platform
-                      ? Icons.handshake_outlined
-                      : Icons.photo_outlined),
+                      ? YIcons.coop
+                      : YIcons.image),
                   title: Text(w.title),
                   subtitle: Text(w.source == WorkSource.platform
                       ? tr3('平台合作记录', 'Платформадағы келісім',

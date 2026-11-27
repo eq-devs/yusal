@@ -23,6 +23,7 @@ import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 
 import 'e2e_support.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 const noLlm = bool.fromEnvironment('E2E_NO_LLM');
 const noSpeech = bool.fromEnvironment('E2E_NO_SPEECH');
@@ -102,7 +103,7 @@ void main() {
       // Something this screen cannot do: no action runs, the model answers.
       await say(t, '把客厅改名叫书房');
       expect(screen(), 'shell.houses');
-      expect(find.byIcon(Icons.check_circle), findsNothing);
+      expect(find.byIcon(YIcons.checkCircle), findsNothing);
       expect(t.takeException(), isNull);
     } finally {
       await t.pumpWidget(const SizedBox.shrink());

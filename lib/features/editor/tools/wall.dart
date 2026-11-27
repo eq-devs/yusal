@@ -411,12 +411,12 @@ extension _WallTool on _HouseEditorState {
                         ky: 'Жабуу', uz: 'Yopish'),
                     visualDensity: VisualDensity.compact,
                     onPressed: () => update(closeWallMenu),
-                    icon: const Icon(Icons.close, size: 18))
+                    icon: const Icon(YIcons.close, size: 18))
               ]),
               Row(children: [
                 button(
                     'add',
-                    Icons.add_circle_outline,
+                    YIcons.add,
                     tr3('接墙', 'Жалғау', 'Пристроить', 'Extend',
                         ky: 'Узартуу', uz: 'Uzaytirish'),
                     '从这里接墙'.trKey(
@@ -429,7 +429,7 @@ extension _WallTool on _HouseEditorState {
                 if (inner) ...[
                   button(
                       'length',
-                      Icons.straighten,
+                      YIcons.ruler,
                       tr3('长度', 'Ұзындық', 'Длина', 'Length',
                           ky: 'Узундугу', uz: 'Uzunligi'),
                       '调整长度'.trKey(
@@ -440,7 +440,7 @@ extension _WallTool on _HouseEditorState {
                           'Uzunlikni oʻzgartirish')),
                   button(
                       'move',
-                      Icons.open_with,
+                      YIcons.move,
                       tr3('位置', 'Орны', 'Место', 'Location',
                           ky: 'Жайгашкан жери', uz: 'Joylashuvi'),
                       '移动墙体'.trKey(
@@ -464,7 +464,7 @@ extension _WallTool on _HouseEditorState {
                   if (selectedDrawnId != null)
                     button(
                         'height',
-                        Icons.height,
+                        YIcons.measure,
                         tr3('高度', 'Биіктік', 'Высота', 'Height',
                             ky: 'Бийиктиги', uz: 'Balandligi'),
                         '到顶的墙或矮墙'.trKey(
@@ -475,7 +475,7 @@ extension _WallTool on _HouseEditorState {
                             'Shiftgacha yoki past devor')),
                   button(
                       'delete',
-                      Icons.delete_outline,
+                      YIcons.delete,
                       tr3('删除', 'Жою', 'Удалить', 'Delete',
                           ky: 'Өчүрүү', uz: 'Oʻchirish'),
                       '删除墙体'.trKey(
@@ -488,7 +488,7 @@ extension _WallTool on _HouseEditorState {
                 ] else ...[
                   button(
                       'footprint',
-                      Icons.aspect_ratio,
+                      YIcons.fit,
                       tr3('房屋尺寸', 'Үй өлшемі', 'Размеры дома',
                           'House dimensions',
                           ky: 'Үйдүн өлчөмдөрү', uz: 'Uy oʻlchamlari'),

@@ -183,7 +183,7 @@ class _OptionCard extends StatelessWidget {
                             icon,
                             const SizedBox(width: 14),
                             Expanded(child: text),
-                            Icon(Icons.chevron_right, color: t.faint),
+                            Icon(YIcons.chevronRight, color: t.faint),
                           ])
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

@@ -9,6 +9,7 @@ import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/auth/repository/social_sign_in.dart';
 import 'package:yusal/features/shared/brand/brand.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Sign-in: Google / Apple or email and password, plus the one-tap test
 /// accounts while the app is in development. Pops `true` once signed in so the caller continues the
@@ -80,31 +81,31 @@ class _LoginPageState extends State<LoginPage> {
     (
       '业主',
       [
-        ('seed:aigerim', 'Айгерім · 施工中', Icons.home_outlined),
+        ('seed:aigerim', 'Айгерім · 施工中', YIcons.home),
         ('seed:dinara', 'Динара · 已完工', Icons.cottage_outlined),
-        ('seed:asel', 'Асель · 比价中', Icons.request_quote_outlined),
-        ('seed:zhanar', 'Жанар · 求点评', Icons.forum_outlined),
+        ('seed:asel', 'Асель · 比价中', YIcons.budget),
+        ('seed:zhanar', 'Жанар · 求点评', YIcons.chat),
         ('Test Owner', '新用户 · 空账号', Icons.person_add_alt),
       ]
     ),
     (
       '师傅与团队',
       [
-        ('seed:bolat', 'Болат · 瓦工 · 已认证', Icons.construction_outlined),
-        ('seed:erlan', 'Ерлан · 电工', Icons.electrical_services_outlined),
-        ('seed:ruslan', 'Руслан · 认证审核中', Icons.plumbing_outlined),
-        ('seed:gulnar', 'Гүлнар · 工程师', Icons.architecture_outlined),
-        ('seed:nurlan', 'Нұрлан · 施工队', Icons.groups_outlined),
+        ('seed:bolat', 'Болат · 瓦工 · 已认证', YIcons.tools),
+        ('seed:erlan', 'Ерлан · 电工', YIcons.bolt),
+        ('seed:ruslan', 'Руслан · 认证审核中', YIcons.water),
+        ('seed:gulnar', 'Гүлнар · 工程师', YIcons.design),
+        ('seed:nurlan', 'Нұрлан · 施工队', YIcons.people),
         ('seed:samat', 'Самат · 屋面队', Icons.roofing_outlined),
       ]
     ),
     (
       '后台',
       [
-        ('Test Admin', '超级管理员', Icons.admin_panel_settings_outlined),
+        ('Test Admin', '超级管理员', YIcons.verified),
         ('seed:moderator', '审核员', Icons.gavel_outlined),
         ('seed:operator', '运营', Icons.campaign_outlined),
-        ('seed:viewer', '只读', Icons.visibility_outlined),
+        ('seed:viewer', '只读', YIcons.eye),
       ]
     ),
     (
@@ -156,7 +157,7 @@ class _LoginPageState extends State<LoginPage> {
         BusyButton(
             label:
                 tr3('通过 Google 登录', 'Google арқылы кіру', 'Войти через Google', 'Sign in with Google', ky: 'Google менен кирүү', uz: 'Google orqali kirish'),
-            icon: Icons.account_circle_outlined,
+            icon: YIcons.profile,
             outlined: SocialSignIn.appleAvailable,
             onPressed: () => social(api, 'google')),
       if (!SocialSignIn.appleAvailable && !SocialSignIn.googleAvailable)
@@ -258,8 +259,8 @@ class _LoginPageState extends State<LoginPage> {
                         ? tr3('隐藏密码', 'Жасыру', 'Скрыть пароль', 'Hide password', ky: 'Сырсөздү жашыруу', uz: 'Parolni yashirish')
                         : tr3('显示密码', 'Көрсету', 'Показать пароль', 'Show password', ky: 'Сырсөздү көрсөтүү', uz: 'Parolni koʻrsatish'),
                     icon: Icon(showPassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined),
+                        ? YIcons.eyeOff
+                        : YIcons.eye),
                     onPressed: () =>
                         setState(() => showPassword = !showPassword)))),
       ])),

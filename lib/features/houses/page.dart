@@ -17,6 +17,7 @@ import 'package:yusal/features/houses/model/my_house.dart';
 import 'package:yusal/features/houses/state/my_houses.dart';
 import 'package:yusal/features/houses/widgets/site_tab.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// One house's workspace: where it stands, and every demand, quote and
 /// cooperation for it in one place. Tabs: find people, quotes, cooperation,
@@ -52,7 +53,7 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
             return PageScaffold(
                 title: '',
                 body: EmptyState(
-                    icon: Icons.home_outlined,
+                    icon: YIcons.home,
                     title:
                         tr3('这栋房子还没有需求', 'Тапсырыс жоқ', 'Заявок пока нет', 'No requests yet', ky: 'Азырынча суроо-талап жок', uz: 'Hozircha soʻrov yoʻq')));
           }
@@ -71,7 +72,7 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
                           tooltip: tr3('房子页', 'Үй беті', 'Страница дома', 'House page', ky: 'Үйдүн бети', uz: 'Uy sahifasi'),
                           onPressed: () => pushPage<void>(
                               context, (_) => PostPage(postId: h.postId!)),
-                          icon: const Icon(Icons.public)),
+                          icon: const Icon(YIcons.globe)),
                   ],
                   bottom: PreferredSize(
                       preferredSize: const Size.fromHeight(118),
@@ -140,7 +141,7 @@ class _FindTab extends StatelessWidget {
         OutlinedButton.icon(
             onPressed: () => pushPage<void>(
                 context, (_) => PublishPage(designProjectId: house.projectId)),
-            icon: const Icon(Icons.add),
+            icon: const Icon(YIcons.add),
             label: Text(tr3('为这栋房子再招一个阶段', 'Тағы бір кезең', 'Добавить этап', 'Add a stage', ky: 'Этап кошуу', uz: 'Bosqich qoʻshish'))),
       ]);
 }
@@ -157,7 +158,7 @@ class _QuotesTab extends StatelessWidget {
     ];
     if (rows.isEmpty) {
       return EmptyState(
-          icon: Icons.request_quote_outlined,
+          icon: YIcons.budget,
           title: tr3('还没有报名或报价', 'Әзірге өтінім жоқ', 'Откликов пока нет', 'No responses yet', ky: 'Азырынча жооп жок', uz: 'Hozircha javob yoʻq'),
           body: tr3('需求发布后，师傅的报价会按同一张工程量清单出现在这里。', 'Ұсыныстар осында шығады.',
               'Предложения появятся здесь.',
@@ -187,7 +188,7 @@ class _QuotesTab extends StatelessWidget {
                         style: TextStyle(color: t.muted)),
                     trailing: house.quotes[d.id]!.unread > 0
                         ? Badge(label: Text('${house.quotes[d.id]!.unread}'))
-                        : const Icon(Icons.chevron_right),
+                        : const Icon(YIcons.chevronRight),
                     onTap: () => pushPage<void>(
                         context, (_) => ApplicationsPage(demandId: d.id)))),
         ]);
@@ -203,7 +204,7 @@ class _CoopTab extends StatelessWidget {
     final me = context.session.currentAccount?.id ?? '';
     if (house.cooperations.isEmpty) {
       return EmptyState(
-          icon: Icons.handshake_outlined,
+          icon: YIcons.coop,
           title: tr3('还没有合作', 'Келісім жоқ', 'Пока нет соглашений', 'No agreements yet', ky: 'Азырынча макулдашуу жок', uz: 'Hozircha kelishuv yoʻq'),
           body: tr3('在报价里邀请一位师傅，双方确认合作约定后会出现在这里。', 'Шеберді шақырыңыз.',
               'Пригласите мастера из предложений.',
@@ -228,7 +229,7 @@ class _CoopTab extends StatelessWidget {
                             !c.agreement.confirmedBy.contains(me))
                         ? StatusPill(tr3('待你确认', 'Растаңыз', 'Подтвердите', 'Confirm', ky: 'Ырастоо', uz: 'Tasdiqlash'),
                             color: t.accent, filled: true)
-                        : const Icon(Icons.chevron_right),
+                        : const Icon(YIcons.chevronRight),
                     onTap: () => pushPage<void>(
                         context, (_) => CooperationPage(cooperationId: c.id)))),
         ]);
@@ -254,8 +255,8 @@ class HouseThumb extends StatelessWidget {
                     color: t.surface,
                     child: Icon(
                         house.hasDesign
-                            ? Icons.home_outlined
-                            : Icons.construction,
+                            ? YIcons.home
+                            : YIcons.tools,
                         color: t.muted))
                 : Image.memory(imageBytes(p), fit: BoxFit.cover)));
   }

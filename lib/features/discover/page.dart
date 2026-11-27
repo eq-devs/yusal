@@ -63,7 +63,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     ? tr3('全部类型', 'Барлық түрі', 'Все типы', 'All types', ky: 'Бардык түрлөр', uz: 'Barcha turlar')
                     : demandTypeName(type!),
                 selected: type != null,
-                icon: Icons.tune,
+                icon: YIcons.filter,
                 menu: true,
                 onTap: () async {
                   final v = await pickFilter<DemandType>(
@@ -84,7 +84,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   ? tr3('工种', 'Мамандық', 'Специальность', 'Trade', ky: 'Кесип', uz: 'Kasb')
                   : tradeName(trade!),
               selected: trade != null,
-              icon: Icons.handyman_outlined,
+              icon: YIcons.tools,
               menu: true,
               onTap: () async {
                 final v = await pickFilter<String>(
@@ -101,8 +101,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   ? tr3('地区', 'Аймақ', 'Район', 'District', ky: 'Район', uz: 'Tuman')
                   : regionName(region!),
               selected: region != null,
-              icon: Icons.place_outlined,
-              yicon: YIcon.nearby,
+              icon: YIcons.location,
+              yicon: YIcon.location,
               menu: true,
               onTap: () async {
                 final v = await pickFilter<String>(

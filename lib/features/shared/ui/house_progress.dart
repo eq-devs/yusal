@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/constant/theme.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Where a house stands on the one line every role sees:
 /// design → finding people → building → done.
@@ -60,7 +61,7 @@ class HouseProgress extends StatelessWidget {
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Icon(
                           i < stage.index
-                              ? Icons.check_circle
+                              ? YIcons.checkCircle
                               : i == stage.index
                                   ? Icons.radio_button_checked
                                   : Icons.radio_button_unchecked,

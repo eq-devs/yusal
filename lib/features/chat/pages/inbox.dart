@@ -40,7 +40,7 @@ class InboxButton extends StatelessWidget {
                 backgroundColor: t.accent,
                 textColor: t.accentInk,
                 label: Text(unread > 99 ? '99+' : '$unread'),
-                child: const Icon(Icons.mail_outline))));
+                child: const Icon(YIcons.mail))));
   }
 }
 
@@ -80,7 +80,7 @@ class InboxPage extends StatelessWidget {
         return Scaffold(
             appBar: AppBar(titleSpacing: YSpace.gutter, title: title),
             body: SignInPrompt(
-                icon: Icons.forum_outlined,
+                icon: YIcons.chat,
                 text: tr3('登录后查看消息', 'Хабарларды көру үшін кіріңіз',
                     'Войдите, чтобы видеть сообщения',
                     'Sign in to see messages', ky: 'Билдирүүлөрдү көрүү үчүн кириңиз', uz: 'Xabarlarni koʻrish uchun kiring'),
@@ -99,7 +99,7 @@ class InboxPage extends StatelessWidget {
                   actions: [
                     IconButton(
                         tooltip: tr3('全部已读', 'Барлығы оқылды', 'Прочитать всё', 'Mark all read', ky: 'Баарын окулду деп белгилөө', uz: 'Hammasini oʻqildi deb belgilash'),
-                        icon: const Icon(Icons.done_all),
+                        icon: const Icon(YIcons.check),
                         onPressed: () => attempt(
                             context,
                             () => context
@@ -136,7 +136,7 @@ class _Conversations extends StatelessWidget {
         provider: conversationsProvider,
         builder: (context, list) => list.isEmpty
             ? EmptyState(
-                icon: Icons.forum_outlined,
+                icon: YIcons.chat,
                 title: tr3('还没有会话', 'Чат жоқ', 'Нет чатов', 'No chats', ky: 'Чаттар жок', uz: 'Chatlar yoʻq'),
                 body: tr3('在需求或名片页点击“联系”开始沟通。', 'Тапсырыс бетінен жазыңыз.',
                     'Напишите со страницы заявки или профиля.',
@@ -219,7 +219,7 @@ class _Notices extends StatelessWidget {
         provider: noticesProvider,
         builder: (context, list) => list.isEmpty
             ? EmptyState(
-                icon: Icons.notifications_none,
+                icon: YIcons.bell,
                 title: tr3('暂无通知', 'Хабарлама жоқ', 'Нет уведомлений', 'No notifications', ky: 'Билдирмелер жок', uz: 'Bildirishnomalar yoʻq'))
             : RefreshIndicator(
                 onRefresh: refresh.call,
@@ -256,41 +256,41 @@ class _Notices extends StatelessWidget {
 }
 
 IconData noticeIcon(NoticeKind k) => switch (k) {
-      NoticeKind.newApplication => Icons.inbox_outlined,
+      NoticeKind.newApplication => YIcons.inbox,
       NoticeKind.confirmRequest ||
       NoticeKind.agreementChange =>
-        Icons.handshake_outlined,
+        YIcons.coop,
       NoticeKind.cooperationConfirmed ||
       NoticeKind.reviewApproved =>
-        Icons.check_circle_outline,
+        YIcons.checkCircle,
       NoticeKind.cooperationDeclined ||
       NoticeKind.reviewRejected =>
-        Icons.cancel_outlined,
-      NoticeKind.endRequest || NoticeKind.ended => Icons.flag_outlined,
-      NoticeKind.reviewReceived => Icons.star_outline,
-      NoticeKind.postLiked => Icons.favorite_border,
-      NoticeKind.postReused => Icons.content_copy_outlined,
+        YIcons.close,
+      NoticeKind.endRequest || NoticeKind.ended => YIcons.flag,
+      NoticeKind.reviewReceived => YIcons.star,
+      NoticeKind.postLiked => YIcons.heart,
+      NoticeKind.postReused => YIcons.copy,
       NoticeKind.milestoneRequested ||
       NoticeKind.milestoneAnswered =>
-        Icons.fact_check_outlined,
-      NoticeKind.workLogged => Icons.event_available_outlined,
+        YIcons.contract,
+      NoticeKind.workLogged => YIcons.calendarCheck,
       NoticeKind.postCommented ||
       NoticeKind.commentReplied =>
-        Icons.chat_bubble_outline,
-      NoticeKind.commentHelpful => Icons.thumb_up_alt_outlined,
-      NoticeKind.outcomeFollowUp => Icons.help_outline,
+        YIcons.chat,
+      NoticeKind.commentHelpful => YIcons.thumb,
+      NoticeKind.outcomeFollowUp => YIcons.help,
       NoticeKind.contentRemoved ||
       NoticeKind.accountRestricted =>
         Icons.gpp_maybe_outlined,
-      NoticeKind.reportResolved => Icons.flag_outlined,
+      NoticeKind.reportResolved => YIcons.flag,
       NoticeKind.accountRestored ||
       NoticeKind.appealAnswered =>
         Icons.gavel_outlined,
       NoticeKind.verificationApproved ||
       NoticeKind.verificationRejected =>
-        Icons.verified_outlined,
+        YIcons.verified,
       NoticeKind.newDemandMatch => Icons.notifications_active_outlined,
-      _ => Icons.notifications_none,
+      _ => YIcons.bell,
     };
 
 /// Opens the object a notice points to; closed or missing objects show

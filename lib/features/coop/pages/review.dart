@@ -6,6 +6,7 @@ import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Optional review after a mutually ended cooperation, on a few clear
 /// dimensions. Each dimension can be left out.
@@ -78,8 +79,8 @@ class _ReviewPageState extends State<ReviewPage> {
                         scores[d] == i ? scores.remove(d) : scores[d] = i),
                     icon: Icon(
                         (scores[d] ?? 0) >= i
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
+                            ? YIcons.starFill
+                            : YIcons.star,
                         color: (scores[d] ?? 0) >= i ? t.ink : t.faint,
                         size: 30)),
             ]),

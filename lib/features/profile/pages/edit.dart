@@ -121,7 +121,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           onTap: onTap,
           child: InputDecorator(
               decoration: InputDecoration(
-                  labelText: label, suffixIcon: const Icon(Icons.expand_more)),
+                  labelText: label, suffixIcon: const Icon(YIcons.chevronDown)),
               child: Text(value.isEmpty
                   ? tr3('请选择', 'Таңдаңыз', 'Выберите', 'Choose', ky: 'Тандоо', uz: 'Tanlash')
                   : value))));
@@ -271,7 +271,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     IconButton(
                         tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
                         onPressed: () => setState(() => prices.removeAt(i)),
-                        icon: const Icon(Icons.close)),
+                        icon: const Icon(YIcons.close)),
                   ]),
                   const SizedBox(height: 6),
                   TextField(
@@ -300,8 +300,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           for (final w in works)
             ListTile(
                 leading: Icon(w.source == WorkSource.platform
-                    ? Icons.handshake_outlined
-                    : Icons.photo_outlined),
+                    ? YIcons.coop
+                    : YIcons.image),
                 title: Text(w.title),
                 subtitle: Text(w.source == WorkSource.platform
                     ? tr3('平台合作记录（不可编辑）', 'Платформадан',
@@ -312,7 +312,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                     ? IconButton(
                         tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
                         onPressed: () => setState(() => works.remove(w)),
-                        icon: const Icon(Icons.delete_outline))
+                        icon: const Icon(YIcons.delete))
                     : null),
           if (error != null) Hint(error!, warn: true),
         ]));

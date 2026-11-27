@@ -466,7 +466,7 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                               key: const Key('voice-close'),
                               visualDensity: VisualDensity.compact,
                               tooltip: tr3('关闭', 'Жабу', 'Закрыть', 'Close', ky: 'Жабуу', uz: 'Yopish'),
-                              icon: const Icon(Icons.close, size: 18),
+                              icon: const Icon(YIcons.close, size: 18),
                               onPressed: () =>
                                   setState(() => bannerShown = false)),
                       ]),
@@ -482,8 +482,8 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                                         children: [
                                           Icon(
                                               step.result.ok
-                                                  ? Icons.check_circle
-                                                  : Icons.error_outline,
+                                                  ? YIcons.checkCircle
+                                                  : YIcons.alert,
                                               size: 14,
                                               color: step.result.ok
                                                   ? colors.primary
@@ -549,11 +549,11 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                     key: const Key('voice-mic'),
                     tooltip:
                         tr3('说话（哈萨克语）', 'Сөйлеу', 'Говорить (по-казахски)', 'Speak (in Kazakh)', ky: 'Сүйлөңүз (казакча)', uz: 'Gapiring (qozoqcha)'),
-                    icon: const YusalIcon(YIcon.voice),
+                    icon: const YusalIcon(YIcon.mic),
                     onPressed: s.busy ? null : startListening),
               IconButton(
                   tooltip: tr3('发送', 'Жіберу', 'Отправить', 'Send', ky: 'Жөнөтүү', uz: 'Yuborish'),
-                  icon: const Icon(Icons.arrow_upward),
+                  icon: const Icon(YIcons.arrowUp),
                   onPressed: s.busy ? null : send),
             ]))
         : hint != null
@@ -597,7 +597,7 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.auto_awesome, size: 18, color: colors.primary),
+                    Icon(YIcons.ai, size: 18, color: colors.primary),
                     const SizedBox(width: 6),
                     Flexible(
                         child: Text(tr3('AI 助手', 'AI көмекші', 'AI-помощник', 'AI assistant', ky: 'AI жардамчы', uz: 'AI yordamchi'),
@@ -606,7 +606,7 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                         key: const Key('voice-intro-close'),
                         visualDensity: VisualDensity.compact,
                         tooltip: tr3('知道了', 'Түсінікті', 'Понятно', 'Got it', ky: 'Түшүндүм', uz: 'Tushundim'),
-                        icon: const Icon(Icons.close, size: 18),
+                        icon: const Icon(YIcons.close, size: 18),
                         onPressed: closeIntro),
                   ]),
                   Padding(
@@ -654,7 +654,7 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                 children: [
                   for (final tip in tips)
                     ActionChip(
-                        avatar: const Icon(Icons.lightbulb_outline, size: 16),
+                        avatar: const Icon(YIcons.idea, size: 16),
                         label: Text(tip, style: theme.textTheme.bodyMedium),
                         onPressed: () => send(tip)),
                 ])),
@@ -700,12 +700,12 @@ class _VoiceBarState extends State<VoiceBar> with TickerProviderStateMixin {
                 icon: listening
                     ? Icons.stop_rounded
                     : typing && widget.speech == null
-                        ? Icons.close
+                        ? YIcons.close
                         // At rest it says what a tap does.
                         : !active
                             ? (widget.speech != null
-                                ? Icons.mic
-                                : Icons.auto_awesome)
+                                ? YIcons.mic
+                                : YIcons.ai)
                             : null)));
     final bubbles = Column(
         mainAxisSize: MainAxisSize.min,

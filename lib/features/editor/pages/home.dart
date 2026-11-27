@@ -366,7 +366,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
               showLabels: false,
               viewportInsets: const EdgeInsets.all(6)));
     } catch (_) {
-      return Icon(Icons.other_houses_outlined, color: t.muted);
+      return Icon(YIcons.home, color: t.muted);
     }
   }
 
@@ -411,7 +411,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                           style: TextStyle(
                                               fontSize: 12.5, color: t.muted)),
                                     ])),
-                                Icon(Icons.chevron_right, color: t.muted),
+                                Icon(YIcons.chevronRight, color: t.muted),
                               ]))));
               Widget template(MapEntry<String, (String, String, String)> e) =>
                   Material(
@@ -462,7 +462,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                             // many rooms they want before any size of wall.
                             way(
                                 'wizard',
-                                Icons.auto_awesome,
+                                YIcons.ai,
                                 tr3(
                                     '回答几个问题，帮我出一套',
                                     'Сұрақтарға жауап беріп, жоба алу',
@@ -482,7 +482,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                             const SizedBox(height: 8),
                             way(
                                 'blank',
-                                Icons.crop_square,
+                                YIcons.room,
                                 tr3('按长宽新建', 'Өлшеммен бастау',
                                     'Начать с размеров',
                                     'Start from dimensions', ky: 'Өлчөмдөрдөн баштоо', uz: 'Oʻlchamlardan boshlash'),
@@ -820,7 +820,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                   onChanged: choose.setTheme),
             Btn(
                 label: tr3('导入', 'Импорт', 'Импорт', 'Import', ky: 'Импорт', uz: 'Import'),
-                icon: Icons.file_open_outlined,
+                icon: YIcons.doc,
                 tooltip: tr3(
                     '导入 .house', '.house файлын ашу', 'Открыть файл .house', 'Open a .house file', ky: '.house файлын ачуу', uz: '.house faylini ochish'),
                 onPressed: import),
@@ -851,13 +851,13 @@ class _HouseHomeState extends ConsumerState<HouseHome>
             // a size, a sketch or a template.
             FilledButton.icon(
                 onPressed: createFromTemplate,
-                icon: const Icon(Icons.add),
+                icon: const Icon(YIcons.add),
                 label: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     child: Text(tr3('新建设计', 'Жаңа жоба', 'Новый проект', 'New design', ky: 'Жаңы долбоор', uz: 'Yangi loyiha')))),
             OutlinedButton.icon(
                 onPressed: createFromTemplate,
-                icon: const Icon(Icons.auto_awesome_mosaic_outlined),
+                icon: const Icon(YIcons.grid),
                 label: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     child: Text(tr3(
@@ -905,7 +905,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                 padding: const EdgeInsets.only(bottom: 10),
                                 child: Sheet(
                                     child: ListTile(contentPadding: tilePad, 
-                                        leading: Icon(Icons.error_outline,
+                                        leading: Icon(YIcons.alert,
                                             color: t.crit),
                                         title: Text(entry.key),
                                         subtitle: Text(entry.value),
@@ -916,7 +916,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                                                 'Удалить повреждённый проект',
                                                 'Delete the damaged design', ky: 'Бузулган долбоорду өчүрүү', uz: 'Buzilgan loyihani oʻchirish'),
                                             icon: const Icon(
-                                                Icons.delete_outline),
+                                                YIcons.delete),
                                             onPressed: () =>
                                                 deleteCorrupt(entry.key))))),
                           LayoutBuilder(builder: (context, c) {
@@ -955,7 +955,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                           border: Border.all(color: t.line)),
                       clipBehavior: Clip.antiAlias,
                       child: entry.preview == null
-                          ? Icon(Icons.other_houses_outlined, color: t.muted)
+                          ? Icon(YIcons.home, color: t.muted)
                           // Same bytes every build: decoded once, then
                           // cached, and only at the tile's size.
                           : Image.memory(imageBytes(entry.preview!),
@@ -1082,7 +1082,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
           const SizedBox(height: 12),
           FilledButton.icon(
               onPressed: () => createFromTemplate('kz'),
-              icon: const Icon(Icons.open_in_new, size: 18),
+              icon: const Icon(YIcons.openExternal, size: 18),
               label: Text(tr3('打开这个示例', 'Үлгіні ашу', 'Открыть пример', 'Open the example', ky: 'Мисалды ачуу', uz: 'Namunani ochish'))),
         ]);
     return Sheet(

@@ -18,6 +18,7 @@ import 'package:yusal/features/coop/widgets/agreement_form.dart';
 import 'package:yusal/features/coop/pages/review.dart';
 import 'package:yusal/features/voice/actions/coop.dart';
 import 'package:yusal/features/voice/state/screen.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Cooperation detail: agreement and its versions, two-sided confirmation,
 /// changes, progress notes, ending and optional reviews.
@@ -35,7 +36,7 @@ class CooperationPage extends StatelessWidget {
             ? PageScaffold(
                 title: '',
                 body: EmptyState(
-                    icon: Icons.lock_outline,
+                    icon: YIcons.lock,
                     title: tr3('无权查看或合作不存在', 'Қолжетімсіз', 'Нет доступа', 'No access', ky: 'Кирүү укугу жок', uz: 'Ruxsat yoʻq')))
             : _CoopView(data: data));
   }
@@ -242,7 +243,7 @@ class _CoopViewState extends State<_CoopView>
             FilledButton.icon(
                 key: const Key('coop-log-today'),
                 onPressed: onLogToday(context, c),
-                icon: const Icon(Icons.event_available_outlined, size: 18),
+                icon: const Icon(YIcons.calendarCheck, size: 18),
                 label: Text(logTodayLabel(c))),
           if (change == null && data.demand != null)
             OutlinedButton(
@@ -325,7 +326,7 @@ class _CoopViewState extends State<_CoopView>
         actions: [
           IconButton(
               tooltip: tr3('联系对方', 'Жазу', 'Написать', 'Message', ky: 'Билдирүү', uz: 'Xabar'),
-              icon: const Icon(Icons.chat_bubble_outline),
+              icon: const Icon(YIcons.chat),
               onPressed: () async {
                 final conv = await attempt(
                     context,
@@ -383,7 +384,7 @@ class _CoopViewState extends State<_CoopView>
                     key: const Key('edit-milestones'),
                     onPressed: () => pushPage<void>(
                         context, (_) => MilestoneEditorPage(cooperation: c)),
-                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    icon: const Icon(YIcons.edit, size: 18),
                     label: Text(tr3('修改', 'Өзгерту', 'Изменить', 'Edit', ky: 'Түзөтүү', uz: 'Tahrirlash')))),
             for (final m in c.milestones)
               Padding(
@@ -505,14 +506,14 @@ class _AgreementCard extends StatelessWidget {
               '${g.demandVersionNo}'),
           if (exactAddress != null && exactAddress!.isNotEmpty)
             InfoRow(tr3('具体地址', 'Мекенжай', 'Адрес', 'Address', ky: 'Дарек', uz: 'Manzil'), exactAddress!,
-                icon: Icons.place_outlined),
+                icon: YIcons.location),
           if (ownerId != null) ...[
             const Divider(height: 20),
             for (final id in [ownerId!, providerId!])
               Row(children: [
                 Icon(
                     g.confirmedBy.contains(id)
-                        ? Icons.check_circle
+                        ? YIcons.checkCircle
                         : Icons.radio_button_unchecked,
                     size: 18,
                     color: g.confirmedBy.contains(id) ? t.ok : t.faint),

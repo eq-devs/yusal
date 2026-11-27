@@ -18,6 +18,7 @@ import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/model/form.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 import 'package:yusal/features/me/pages/trust.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// One conversation: text, image placeholders, demand and quote cards,
 /// phone sharing on purpose, failed sends with retry, block and report.
@@ -206,7 +207,7 @@ class _ChatPageState extends State<ChatPage>
             title: '',
             body: Center(
                 child: EmptyState(
-                    icon: Icons.error_outline,
+                    icon: YIcons.alert,
                     title: failureText(e),
                     action: OutlinedButton(
                         onPressed: _refresh.call,
@@ -269,10 +270,10 @@ class _ChatPageState extends State<ChatPage>
                           dense: true,
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 16),
-                          leading: const Icon(Icons.description_outlined),
+                          leading: const Icon(YIcons.doc),
                           title: Text(
                               tr3('关于一个需求', 'Тапсырыс туралы', 'По заявке', 'About the request', ky: 'Суроо-талап жөнүндө', uz: 'Soʻrov haqida')),
-                          trailing: const Icon(Icons.chevron_right),
+                          trailing: const Icon(YIcons.chevronRight),
                           onTap: () => pushPage<void>(
                               context,
                               (_) => DemandDetailPage(
@@ -334,7 +335,7 @@ class _ChatPageState extends State<ChatPage>
                             IconButton(
                                 tooltip: tr3('更多', 'Тағы', 'Ещё', 'More', ky: 'Дагы', uz: 'Yana'),
                                 onPressed: () => more(data),
-                                icon: const Icon(Icons.add_circle_outline)),
+                                icon: const Icon(YIcons.add)),
                             Expanded(
                                 child: TextField(
                                     controller: input,
@@ -366,7 +367,7 @@ class _ChatPageState extends State<ChatPage>
                                 style: IconButton.styleFrom(
                                     backgroundColor: t.accent),
                                 onPressed: send,
-                                icon: Icon(Icons.arrow_upward,
+                                icon: Icon(YIcons.arrowUp,
                                     color: t.accentInk)),
                           ]))),
               ]));
@@ -411,7 +412,7 @@ class _Bubble extends StatelessWidget {
               decoration: BoxDecoration(
                   color: t.line,
                   borderRadius: BorderRadius.circular(YRadius.control)),
-              child: Icon(Icons.image_outlined, size: 40, color: t.muted)),
+              child: Icon(YIcons.image, size: 40, color: t.muted)),
           if (m.text.isNotEmpty)
             Padding(
                 padding: const EdgeInsets.only(top: 4),
@@ -501,7 +502,7 @@ class _Bubble extends StatelessWidget {
                                   .read(chatRepositoryProvider)
                                   .resend(m.id)),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.error_outline, size: 14, color: t.crit),
+                            Icon(YIcons.alert, size: 14, color: t.crit),
                             const SizedBox(width: 4),
                             Text(
                                 tr3('发送失败，点击重试', 'Жіберілмеді, қайталау',
@@ -540,7 +541,7 @@ class _PendingBubble extends StatelessWidget {
                       Text(text, style: TextStyle(color: t.bg, height: 1.35)))),
           Padding(
               padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
-              child: Icon(Icons.schedule, size: 12, color: t.muted)),
+              child: Icon(YIcons.clock, size: 12, color: t.muted)),
         ]));
   }
 }

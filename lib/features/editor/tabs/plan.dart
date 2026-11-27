@@ -59,20 +59,20 @@ extension _PlanTab on _HouseEditorState {
                                 .trKey('Қабат әрекеттері', 'Действия с этажом', 'Floor actions', 'Кабат боюнча аракеттер', 'Qavat amallari'),
                             visualDensity: VisualDensity.compact,
                             onPressed: floorOptions,
-                            icon: const Icon(Icons.layers_outlined, size: 20)),
+                            icon: const Icon(YIcons.layers, size: 20)),
                         IconButton(
                             tooltip: '房屋长宽'.trKey('Үйдің ені мен ұзындығы',
                                 'Ширина и длина дома',
                                 'House width and length', 'Үйдүн туурасы жана узундугу', 'Uy eni va uzunligi'),
                             visualDensity: VisualDensity.compact,
                             onPressed: footprintOptions,
-                            icon: const Icon(Icons.aspect_ratio, size: 20)),
+                            icon: const Icon(YIcons.fit, size: 20)),
                         IconButton(
                             tooltip: '立即保存'
                                 .trKey('Қазір сақтау', 'Сохранить сейчас', 'Save now', 'Азыр сактоо', 'Hozir saqlash'),
                             visualDensity: VisualDensity.compact,
                             onPressed: save,
-                            icon: const Icon(Icons.save_outlined, size: 20)),
+                            icon: const Icon(YIcons.save, size: 20)),
                         Flexible(child: saveIndicator()),
                       ]),
                       if (history.present.floors.length > 1)
@@ -187,7 +187,7 @@ extension _PlanTab on _HouseEditorState {
                           offset: Offset(0, 3))
                     ]),
                 child: Center(
-                    child: Icon(Icons.add, size: 18, color: t.accent)))));
+                    child: Icon(YIcons.add, size: 18, color: t.accent)))));
   }
 
   Widget zoomButtons() {
@@ -211,11 +211,11 @@ extension _PlanTab on _HouseEditorState {
     }
 
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      button(Icons.add, tr3('放大', 'Үлкейту', 'Увеличить', 'Zoom in', ky: 'Чоңойтуу', uz: 'Kattalashtirish'), () => zoom(1.3)),
-      button(Icons.remove, tr3('缩小', 'Кішірейту', 'Уменьшить', 'Zoom out', ky: 'Кичирейтүү', uz: 'Kichiklashtirish'),
+      button(YIcons.add, tr3('放大', 'Үлкейту', 'Увеличить', 'Zoom in', ky: 'Чоңойтуу', uz: 'Kattalashtirish'), () => zoom(1.3)),
+      button(YIcons.remove, tr3('缩小', 'Кішірейту', 'Уменьшить', 'Zoom out', ky: 'Кичирейтүү', uz: 'Kichiklashtirish'),
           () => zoom(1 / 1.3)),
       button(
-          Icons.fit_screen_outlined,
+          YIcons.fit,
           tr3('恢复画布视角', 'Көріністі қалпына келтіру', 'Сбросить вид', 'Reset view', ky: 'Көрүнүштү баштапкы абалга келтирүү', uz: 'Koʻrinishni asliga qaytarish'),
           () => canvasTransform.value = Matrix4.identity()),
     ]);
@@ -327,12 +327,12 @@ extension _PlanTab on _HouseEditorState {
       // people think of a house, so it comes before drawing walls.
       (
         'room',
-        basicTool(Icons.add_home_outlined, '加房间', stamping && !stampStair,
+        basicTool(YIcons.houseAdd, '加房间', stamping && !stampStair,
             addRoomBySize)
       ),
       (
         'wall',
-        basicTool(Icons.add_outlined, '墙体', tool == EditorTool.drawWall,
+        basicTool(YIcons.add, '墙体', tool == EditorTool.drawWall,
             startWallDrawing)
       ),
       if (tool == EditorTool.drawWall)
@@ -357,21 +357,21 @@ extension _PlanTab on _HouseEditorState {
       (
         'box',
         basicTool(
-            Icons.crop_square, '拖动划房', tool == EditorTool.box && !stamping, () => toolBody('box'))
+            YIcons.room, '拖动划房', tool == EditorTool.box && !stamping, () => toolBody('box'))
       ),
       (
         'door',
-        openingTool(OpeningKind.door, Icons.door_front_door_outlined, '拖入门')
+        openingTool(OpeningKind.door, YIcons.door, '拖入门')
       ),
-      ('window', openingTool(OpeningKind.window, Icons.window_outlined, '拖入窗')),
+      ('window', openingTool(OpeningKind.window, YIcons.window, '拖入窗')),
       (
         'furniture',
-        basicTool(Icons.chair_outlined, '家具', tool == EditorTool.placeFurniture,
+        basicTool(YIcons.chair, '家具', tool == EditorTool.placeFurniture,
             chooseFurniture)
       ),
       (
         'utility',
-        basicTool(Icons.electrical_services_outlined, '水电',
+        basicTool(YIcons.bolt, '水电',
             tool == EditorTool.placeUtility, chooseUtility)
       ),
       (
@@ -381,9 +381,9 @@ extension _PlanTab on _HouseEditorState {
       ),
       (
         'resize',
-        basicTool(Icons.open_in_full, '房屋尺寸', tool == EditorTool.resize, () => toolBody('resize'))
+        basicTool(YIcons.expand, '房屋尺寸', tool == EditorTool.resize, () => toolBody('resize'))
       ),
-      ('more', basicTool(Icons.more_horiz, '更多工具', false, moreTools)),
+      ('more', basicTool(YIcons.more, '更多工具', false, moreTools)),
     ];
   }
 
@@ -479,7 +479,7 @@ extension _PlanTab on _HouseEditorState {
           PillToggle(label: label, selected: on, onChanged: set),
         PillToggle(
             label: measureLabel,
-            icon: Icons.straighten,
+            icon: YIcons.ruler,
             checkbox: false,
             selected: tool == EditorTool.measure,
             onChanged: toggleMeasure),
@@ -562,7 +562,7 @@ extension _PlanTab on _HouseEditorState {
       if (tool == EditorTool.resize)
         TextButton.icon(
             onPressed: footprintOptions,
-            icon: const Icon(Icons.edit_outlined, size: 18),
+            icon: const Icon(YIcons.edit, size: 18),
             label: Text(tr3('输入长宽', 'Өлшем енгізу', 'Ввести размеры', 'Enter dimensions', ky: 'Өлчөмдөрдү киргизүү', uz: 'Oʻlchamlarni kiritish'))),
       if (reachAcrossPoint != null)
         TextButton(
@@ -627,7 +627,7 @@ extension _PlanTab on _HouseEditorState {
                 foregroundColor: openIssues.crit > 0 ? t.crit : t.warn,
                 padding: const EdgeInsets.symmetric(horizontal: 8)),
             onPressed: () => showTab('iss'),
-            icon: const Icon(Icons.error_outline, size: 16),
+            icon: const Icon(YIcons.alert, size: 16),
             label: Text(
                 tr3(
                     '问题 ${openIssues.crit + openIssues.warn}',

@@ -8,6 +8,7 @@ import 'package:yusal/features/me/page.dart';
 import 'package:yusal/features/profile/page.dart';
 import 'package:yusal/service/storage/project_store.dart';
 import '../storage_test.dart' show MemoryFiles;
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 void main() {
   testWidgets('a house I hearted shows up under 我的 › 收藏', (t) async {
@@ -59,7 +60,7 @@ void main() {
     await t.tap(find.byKey(const Key('profile-favourite')));
     await t.pumpAndSettle();
     expect(await b.favourites(), contains('prof_mason'));
-    expect(find.byIcon(Icons.favorite), findsOneWidget);
+    expect(find.byIcon(YIcons.heartFill), findsOneWidget);
   });
 
   testWidgets('with nothing saved, the page says where to save from',

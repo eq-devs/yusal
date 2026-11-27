@@ -7,10 +7,11 @@ import 'package:yusal/features/home/widgets/plan_viewer.dart';
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 IconData demandIcon(Demand d) => d.type == DemandType.hire
-    ? Icons.engineering_outlined
-    : Icons.home_work_outlined;
+    ? YIcons.hire
+    : YIcons.home;
 
 Color demandStatusColor(YTokens t, DemandStatus s) => switch (s) {
       DemandStatus.open => t.ok,
@@ -112,7 +113,7 @@ class DemandCard extends StatelessWidget {
             icon: PopOnActive(
                 active: favourite == true,
                 child: Icon(
-                    favourite == true ? Icons.favorite : Icons.favorite_border,
+                    favourite == true ? YIcons.heartFill : YIcons.heart,
                     size: 22,
                     color: favourite == true ? t.accent : t.muted)));
     // The kind of demand leads the card; a drawing, when there is one, is

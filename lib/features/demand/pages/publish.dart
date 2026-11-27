@@ -14,6 +14,7 @@ import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/model/form.dart';
 import 'package:yusal/features/voice/state/screen.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Publish wizard for both demand types: type → work → time and budget →
 /// attachments and privacy → preview. Also edits a published demand, which
@@ -551,7 +552,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                 "A drawing isn't required.", ky: 'Чийме милдеттүү эмес.', uz: 'Chizma shart emas.')),
         _choice(
             selected: type == DemandType.hire,
-            icon: Icons.engineering_outlined,
+            icon: YIcons.hire,
             title: demandTypeName(DemandType.hire),
             body: tr3(
                 '例如：找两名瓦工，按天结算。对方报名并说明到岗时间。',
@@ -561,7 +562,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
             onTap: () => setState(() => type = DemandType.hire)),
         _choice(
             selected: type == DemandType.contract,
-            icon: Icons.home_work_outlined,
+            icon: YIcons.home,
             title: demandTypeName(DemandType.contract),
             body: tr3(
                 '例如：130 平米住宅砌墙。对方说明承接范围、价格和工期。',
@@ -595,7 +596,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
             child: InputDecorator(
                 decoration: InputDecoration(
                     labelText: label,
-                    suffixIcon: const Icon(Icons.expand_more)),
+                    suffixIcon: const Icon(YIcons.chevronDown)),
                 child: Text(
                     value.isEmpty ? tr3('请选择', 'Таңдаңыз', 'Выберите', 'Choose', ky: 'Тандоо', uz: 'Tanlash') : value,
                     style:
@@ -765,7 +766,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                   style: const TextStyle(fontWeight: FontWeight.w700))),
           TextButton.icon(
               onPressed: addQuantity,
-              icon: const Icon(Icons.add, size: 18),
+              icon: const Icon(YIcons.add, size: 18),
               label: Text(tr3('添加', 'Қосу', 'Добавить', 'Add', ky: 'Кошуу', uz: 'Qoʻshish'))),
         ]),
         if (quantities.isEmpty)
@@ -787,7 +788,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
                     style: const TextStyle(fontFeatures: YText.tabular)),
                 IconButton(
                     tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
-                    icon: const Icon(Icons.close, size: 18),
+                    icon: const Icon(YIcons.close, size: 18),
                     onPressed: () => setState(() => quantities.removeAt(i))),
               ])),
         const SizedBox(height: 8),
@@ -812,7 +813,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
       Row(children: [
         OutlinedButton.icon(
             onPressed: () => setState(() => photos++),
-            icon: const Icon(Icons.add_a_photo_outlined),
+            icon: const Icon(YIcons.camera),
             label: Text(tr3('添加照片', 'Фото қосу', 'Добавить фото', 'Add photos', ky: 'Сүрөт кошуу', uz: 'Rasm qoʻshish'))),
         const SizedBox(width: 12),
         Text(
@@ -1028,7 +1029,7 @@ class _PublishPageState extends State<PublishPage> with VoiceScreen {
               'Жарияланбайды: телефон, мекенжай, .house файлы, отбасы жазбалары.',
               'Не публикуется: телефон, точный адрес, файл .house, личные заметки.',
               'Not published: phone, exact address, .house file, private notes.', ky: 'Жарыяланбайт: телефон, так дарек, .house файлы, жеке эскертмелер.', uz: 'Eʼlon qilinmaydi: telefon, aniq manzil, .house fayli, shaxsiy izohlar.'),
-          icon: Icons.lock_outline),
+          icon: YIcons.lock),
     ]);
   }
 

@@ -10,6 +10,7 @@ import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/houses/model/my_house.dart';
 import 'package:yusal/features/shared/ui/photos.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// The building-site tab of a house: each confirmed cooperation with its
 /// inspection points and daily work log.
@@ -131,7 +132,7 @@ class SiteSection extends StatelessWidget {
           FilledButton.tonalIcon(
               key: const Key('log-work'),
               onPressed: onLogToday(context, c),
-              icon: const Icon(Icons.event_available_outlined, size: 18),
+              icon: const Icon(YIcons.calendarCheck, size: 18),
               label: Text(logTodayLabel(c))),
       ]),
       const SizedBox(height: 6),
@@ -143,7 +144,7 @@ class SiteSection extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             dense: true,
             leading: Icon(
-                w.confirmed ? Icons.check_circle : Icons.radio_button_unchecked,
+                w.confirmed ? YIcons.checkCircle : Icons.radio_button_unchecked,
                 color: w.confirmed ? t.ok : t.faint),
             title: Text(
                 '${fmtDay(w.day)} · ${tr3('到场 ${w.headcount} 人', '${w.headcount} адам', '${w.headcount} чел.', '${w.headcount} people', ky: '${w.headcount} адам', uz: '${w.headcount} kishi')}${w.photoCount > 0 ? ' · 📷${w.photoCount}' : ''}'),
@@ -307,7 +308,7 @@ class _SiteEntrySheetState extends State<_SiteEntrySheet> {
                       onPressed: people! > 1
                           ? () => setState(() => people = people! - 1)
                           : null,
-                      icon: const Icon(Icons.remove)),
+                      icon: const Icon(YIcons.remove)),
                   SizedBox(
                       width: 56,
                       child: Text(
@@ -321,7 +322,7 @@ class _SiteEntrySheetState extends State<_SiteEntrySheet> {
                       onPressed: people! < 200
                           ? () => setState(() => people = people! + 1)
                           : null,
-                      icon: const Icon(Icons.add)),
+                      icon: const Icon(YIcons.add)),
                 ]),
               ],
               const SizedBox(height: 14),
@@ -340,7 +341,7 @@ class _SiteEntrySheetState extends State<_SiteEntrySheet> {
                     onPressed: picking || photos.length >= maxSitePhotos
                         ? null
                         : addPhotos,
-                    icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                    icon: const Icon(YIcons.camera, size: 18),
                     label: Text(tr3(
                         '加照片 ${photos.length}/$maxSitePhotos',
                         'Фото ${photos.length}/$maxSitePhotos',

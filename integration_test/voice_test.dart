@@ -29,6 +29,7 @@ import 'package:yusal/features/voice/state/screen.dart';
 import 'package:yusal/features/voice/state/session.dart';
 import 'package:yusal/features/voice/repository/speech.dart';
 import 'package:yusal/features/voice/widgets/voice_overlay.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 VoiceTurn act(String turnId, List<(String, Map<String, Object?>)> calls) =>
     VoiceTurn(turnId: turnId, calls: [
@@ -144,7 +145,7 @@ void main() {
       expect(VoiceScreens.current!.screenId, 'shell.me');
       await showSteps(t, '已打开“我的”。');
       expect(find.text('切换主页面'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(find.byIcon(YIcons.checkCircle), findsOneWidget);
       // The model was told where the user was and what could run there.
       final sent = repos.said.single;
       expect((sent.text, sent.spoken), ('打开我的', false));
@@ -286,7 +287,7 @@ void main() {
       expect(shown('room').values, contains('书房'));
       expect(shown('opening'), hasLength(openings + 1));
       await showSteps(t, '加好了。');
-      expect(find.byIcon(Icons.check_circle), findsNWidgets(3));
+      expect(find.byIcon(YIcons.checkCircle), findsNWidgets(3));
       // Aliases only: no id of the design left the app.
       expect('${repos.said.single.context}', isNot(contains('voice_')));
 

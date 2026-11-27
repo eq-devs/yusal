@@ -327,7 +327,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                           onTap: () => pushPage<void>(
                               context, (_) => const ProfileEditPage()),
                           child: Row(children: [
-                            const Icon(Icons.badge_outlined),
+                            const Icon(YIcons.profile),
                             const SizedBox(width: 12),
                             Expanded(
                                 child: Text(tr3(
@@ -335,7 +335,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                                     'Алдымен профиль жасаңыз.',
                                     'Сначала создайте профиль мастера или бригады.',
                                     'First create a pro or crew profile.', ky: 'Адегенде адистин же бригаданын профилин түзүңүз.', uz: 'Avval mutaxassis yoki brigada profilini yarating.'))),
-                            const Icon(Icons.chevron_right),
+                            const Icon(YIcons.chevronRight),
                           ]))
                     else
                       Wrap(spacing: 8, runSpacing: 8, children: [
@@ -439,7 +439,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                                       tooltip: tr3('删除', 'Жою', 'Удалить', 'Delete', ky: 'Өчүрүү', uz: 'Oʻchirish'),
                                       onPressed: () =>
                                           setState(() => rows.removeAt(i)),
-                                      icon: const Icon(Icons.close, size: 18)),
+                                      icon: const Icon(YIcons.close, size: 18)),
                                 ]),
                                 const SizedBox(height: 6),
                                 Row(children: [
@@ -472,7 +472,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                                       TextEditingController(),
                                       'm3',
                                       TextEditingController()))),
-                              icon: const Icon(Icons.add, size: 18),
+                              icon: const Icon(YIcons.add, size: 18),
                               label: Text(
                                   tr3('添加分项', 'Жол қосу', 'Добавить строку', 'Add a line', ky: 'Сап кошуу', uz: 'Qator qoʻshish'))),
                           const Spacer(),

@@ -10,6 +10,7 @@ import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/houses/state/my_jobs.dart';
 import 'package:yusal/features/houses/widgets/site_tab.dart';
+import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// "我接的活": everything I signed up for or quoted, and the work I'm doing,
 /// grouped by what needs me now.
@@ -49,7 +50,7 @@ class MyJobsView extends StatelessWidget {
               sent.isEmpty &&
               ended.isEmpty) {
             return EmptyState(
-                icon: Icons.work_outline,
+                icon: YIcons.hire,
                 title: tr3('还没有接活', 'Әзірге жұмыс жоқ', 'Пока нет работы', 'No work yet', ky: 'Азырынча иш жок', uz: 'Hozircha ish yoʻq'),
                 body: tr3(
                     '去“发现 · 找活”看看附近在招的房子。',
@@ -178,7 +179,7 @@ class _JobCard extends StatelessWidget {
                               FilledButton.tonalIcon(
                                   onPressed: onLogToday(context, c),
                                   icon: const Icon(
-                                      Icons.event_available_outlined,
+                                      YIcons.calendarCheck,
                                       size: 18),
                                   label: Text(logTodayLabel(c))),
                               if (c.milestones.isNotEmpty)
@@ -205,7 +206,7 @@ class SitePage extends StatelessWidget {
           title: tr3('施工', 'Құрылыс', 'Стройка', 'Build', ky: 'Курулуш', uz: 'Qurilish'),
           body: c == null
               ? EmptyState(
-                  icon: Icons.lock_outline,
+                  icon: YIcons.lock,
                   title: tr3('无法查看', 'Қолжетімсіз', 'Недоступно', 'Unavailable', ky: 'Жеткиликсиз', uz: 'Mavjud emas'))
               : SiteSection(cooperation: c)));
 }

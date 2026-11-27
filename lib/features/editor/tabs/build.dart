@@ -78,7 +78,7 @@ extension _BuildTab on _HouseEditorState {
             onPressed: doc.extras.schedule.isEmpty
                 ? null
                 : () => action('ResetSchedule', {}),
-            icon: const Icon(Icons.restart_alt, size: 18)),
+            icon: const Icon(YIcons.refresh, size: 18)),
         children: [
           const SizedBox(height: 10),
           // Meter: share of work done on a lighter track of the same hue.
@@ -115,7 +115,7 @@ extension _BuildTab on _HouseEditorState {
           Wrap(spacing: 8, runSpacing: 8, children: [
             Btn(
                 label: tr3('添加阶段', 'Кезең қосу', 'Добавить этап', 'Add a stage', ky: 'Этап кошуу', uz: 'Bosqich qoʻshish'),
-                icon: Icons.add,
+                icon: YIcons.add,
                 onPressed: () async {
                   final name = await askText(
                       tr3('阶段名称 (如：打井)', 'Кезең атауы (мысалы: құдық қазу)',
@@ -130,7 +130,7 @@ extension _BuildTab on _HouseEditorState {
                 }),
             Btn(
                 label: tr3('预算', 'Смета', 'Смета', 'Estimate', ky: 'Смета', uz: 'Smeta'),
-                icon: Icons.payments_outlined,
+                icon: YIcons.budget,
                 onPressed: () => showTab('cost')),
           ]),
         ]);
@@ -165,7 +165,7 @@ extension _BuildTab on _HouseEditorState {
                               StageStatus.doing => t.accent,
                               StageStatus.todo => t.muted,
                             }),
-                        Icon(open ? Icons.expand_less : Icons.expand_more,
+                        Icon(open ? YIcons.chevronUp : YIcons.chevronDown,
                             size: 20, color: t.muted),
                       ]),
                       const SizedBox(height: 6),
@@ -264,7 +264,7 @@ extension _BuildTab on _HouseEditorState {
                     label: s.note.isEmpty
                         ? tr3('写备注', 'Жазба қосу', 'Добавить заметку', 'Add a note', ky: 'Эскертме кошуу', uz: 'Izoh qoʻshish')
                         : tr3('改备注', 'Жазбаны өзгерту', 'Изменить заметку', 'Edit the note', ky: 'Эскертмени түзөтүү', uz: 'Izohni tahrirlash'),
-                    icon: Icons.edit_note,
+                    icon: YIcons.edit,
                     onPressed: () async {
                       final v = await askText(
                           tr3(
@@ -281,7 +281,7 @@ extension _BuildTab on _HouseEditorState {
                 if (s.custom)
                   Btn(
                       label: tr3('删除阶段', 'Кезеңді жою', 'Удалить этап', 'Delete the stage', ky: 'Этапты өчүрүү', uz: 'Bosqichni oʻchirish'),
-                      icon: Icons.delete_outline,
+                      icon: YIcons.delete,
                       danger: true,
                       onPressed: () =>
                           action('DeleteStage', {'stageKey': s.key})),

@@ -104,7 +104,7 @@ extension _CompareCard on _HouseEditorState {
           label: tr3('复制为新方案', 'Жаңа нұсқа ретінде көшіру',
               'Копировать как новый вариант',
               'Copy as a new option', ky: 'Жаңы вариант катары көчүрүү', uz: 'Yangi variant sifatida nusxalash'),
-          icon: Icons.copy_all_outlined,
+          icon: YIcons.copy,
           onPressed: duplicateAsVariant),
       Btn(
           label: other == null
@@ -112,12 +112,12 @@ extension _CompareCard on _HouseEditorState {
                   'Выбрать проект для сравнения',
                   'Pick a design to compare', ky: 'Салыштыруу үчүн долбоор тандаңыз', uz: 'Solishtirish uchun loyiha tanlang')
               : tr3('换一个', 'Басқасын таңдау', 'Выбрать другой', 'Pick another', ky: 'Башкасын тандоо', uz: 'Boshqasini tanlash'),
-          icon: Icons.compare_arrows,
+          icon: YIcons.swap,
           onPressed: chooseCompare),
       if (other != null)
         Btn(
             label: tr3('打开它', 'Соны ашу', 'Открыть его', 'Open it', ky: 'Аны ачуу', uz: 'Uni ochish'),
-            icon: Icons.open_in_new,
+            icon: YIcons.openExternal,
             onPressed: openCompared),
     ]);
     if (other == null) {

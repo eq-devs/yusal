@@ -18,6 +18,8 @@ analyzer:
     - "build/**"
     - android/**
     - ios/**
+    - web/**
+    - macos/**
 
 linter:
   rules:

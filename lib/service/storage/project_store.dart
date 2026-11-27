@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:yusal/features/editor/engine/render2d/project_preview.dart';
 import 'package:yusal/service/api/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -50,16 +49,16 @@ class PrefsProjectOwners implements ProjectOwners {
 
 class ProjectStore {
   /// The app's design store: each account sees its own designs. Tests put
-  /// an in-memory store here.
-  static ProjectStore app = ProjectStore(
-      previewRenderer: renderProjectPreview, owners: PrefsProjectOwners())
+  /// an in-memory store here. `main` gives it the editor's
+  /// [previewRenderer].
+  static ProjectStore app = ProjectStore(owners: PrefsProjectOwners())
     ..currentOwner = () => ApiClient.app.currentAccount?.id;
 
   ProjectStore(
       {ProjectFileSystem? fileSystem, this.previewRenderer, this.owners})
       : files = fileSystem ?? ProjectFiles();
   final ProjectFileSystem files;
-  final Future<List<int>?> Function(HouseDocument)? previewRenderer;
+  Future<List<int>?> Function(HouseDocument)? previewRenderer;
 
   /// Null keeps no owners: every design is listed (tests, tools).
   final ProjectOwners? owners;

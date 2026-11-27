@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yusal/service/api/api_failure.dart';
-import 'package:yusal/features/auth/model/auth_json.dart';
+import 'package:yusal/service/api/account_json.dart';
 import 'package:yusal/service/api/session_store.dart';
 import 'package:yusal/features/shared/model/models.dart';
 

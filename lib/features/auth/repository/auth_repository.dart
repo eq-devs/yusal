@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yusal/service/api/api_client.dart';
-import 'package:yusal/features/auth/model/auth_json.dart';
+import 'package:yusal/service/api/account_json.dart';
 import 'package:yusal/service/push/push_setup.dart';
 import 'package:yusal/service/api/api_failure.dart';
 import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/utils/json.dart';
 
 /// Signing in and the signed-in account.
 
@@ -138,8 +139,7 @@ final class HttpAuthRepository implements AuthRepository {
           body: {'password': password}));
 
   static List<SignInMethod> _methods(Object? data) => [
-        for (final m
-            in (data as List? ?? const []).cast<Map<String, dynamic>>())
+        for (final m in jsonMaps(data))
           SignInMethod(m['provider'] as String, m['email'] as String? ?? ''),
       ];
 

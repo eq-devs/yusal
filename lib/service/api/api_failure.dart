@@ -27,6 +27,7 @@ abstract final class ApiCodes {
   static const ownDemand = 'OWN_DEMAND';
   static const blocked = 'BLOCKED';
   static const rateLimited = 'RATE_LIMITED';
+
   /// Client-side: no answer, an unreadable one, or a server fault.
   static const network = 'NETWORK';
   static const restricted = 'RESTRICTED';

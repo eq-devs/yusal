@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
-import 'package:yusal/features/demand/pages/publish.dart';
-import 'package:yusal/features/profile/pages/edit.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
-import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
+import 'package:yusal/features/shared/ui/shell_nav.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/home/page.dart';
 import 'package:yusal/features/home/util/reuse.dart';
@@ -32,11 +31,11 @@ Future<void> showCreateSheet(BuildContext context) async {
       if (post != null && context.mounted) await startFromPost(context, post);
     case 2:
       if (await requireLogin(context) && context.mounted) {
-        await pushPage<void>(context, (_) => const PublishPage());
+        await pushPage<void>(context, (_) => pageFor(const ToPublishDemand()));
       }
     case 3:
       if (await requireLogin(context) && context.mounted) {
-        await pushPage<void>(context, (_) => const ProfileEditPage());
+        await pushPage<void>(context, (_) => pageFor(const ToProfileEdit()));
       }
   }
 }

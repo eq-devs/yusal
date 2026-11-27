@@ -3,7 +3,7 @@ import 'package:yusal/features/home/state/post.dart';
 import 'package:yusal/features/home/repository/post_repository.dart';
 import 'package:flutter/services.dart';
 import 'package:yusal/service/settings/settings.dart';
-import 'package:yusal/features/home/widgets/plan_viewer.dart';
+import 'package:yusal/features/editor/widgets/plan_viewer.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';

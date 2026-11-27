@@ -1,8 +1,8 @@
 import 'dart:async';
 
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yusal/features/auth/page.dart';
 import 'package:yusal/service/api/api_failure.dart';
 import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/localization/l10n.dart';
@@ -279,6 +279,6 @@ Future<T?> attempt<T>(BuildContext context, Future<T> Function() call,
 Future<bool> requireLogin(BuildContext context) async {
   if (context.session.currentAccount != null) return true;
   final ok = await Navigator.of(context)
-      .push<bool>(platformRoute((_) => const LoginPage()));
+      .push<bool>(platformRoute((_) => pageFor(const ToLogin())));
   return ok == true;
 }

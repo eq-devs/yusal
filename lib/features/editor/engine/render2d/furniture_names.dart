@@ -228,3 +228,14 @@ String shownRoomName(Room r) {
   }
   return r.name;
 }
+
+/// Room names by type in the app's language, for a house drawn from a
+/// wish.
+Map<String, String> wishRoomNames() => {
+      for (final t in RoomType.values)
+        if (t != RoomType.custom) t.name: roomTypeName(t),
+      'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл', 'Stair hall',
+          ky: 'Тепкич холлу', uz: 'Zinapoya xolli'),
+      'family': tr3('起居室', 'Отбасы бөлмесі', 'Общая комната', 'Common room',
+          ky: 'Жалпы бөлмө', uz: 'Umumiy xona'),
+    };

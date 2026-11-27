@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:yusal/features/me/repository/trust_repository.dart';
-import 'package:yusal/features/me/state/trust.dart';
+import 'package:yusal/features/trust/repository/trust_repository.dart';
+import 'package:yusal/features/trust/state/trust.dart';
 import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';

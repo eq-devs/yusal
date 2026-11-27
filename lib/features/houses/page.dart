@@ -2,20 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/demand/widgets/demand_card.dart';
-import 'package:yusal/features/coop/page.dart';
-import 'package:yusal/features/demand/pages/applications.dart';
-import 'package:yusal/features/demand/page.dart';
-import 'package:yusal/features/demand/pages/publish.dart';
-import 'package:yusal/features/home/pages/post.dart';
 import 'package:yusal/features/shared/ui/house_progress.dart';
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/houses/model/my_house.dart';
 import 'package:yusal/features/houses/state/my_houses.dart';
-import 'package:yusal/features/houses/widgets/site_tab.dart';
+import 'package:yusal/features/coop/widgets/site_tab.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
 
@@ -71,7 +67,7 @@ class _HouseWorkspacePageState extends State<HouseWorkspacePage>
                           key: const Key('workspace-house-page'),
                           tooltip: tr3('房子页', 'Үй беті', 'Страница дома', 'House page', ky: 'Үйдүн бети', uz: 'Uy sahifasi'),
                           onPressed: () => pushPage<void>(
-                              context, (_) => PostPage(postId: h.postId!)),
+                              context, (_) => pageFor(ToPost(h.postId!))),
                           icon: const Icon(YIcons.globe)),
                   ],
                   bottom: PreferredSize(
@@ -136,11 +132,13 @@ class _FindTab extends StatelessWidget {
                           child: StatusPill(demandStatusName(d.status),
                               color: YTokens.of(context).ok))
                       : null,
-                  onTap: () => pushPage<void>(
-                      context, (_) => DemandDetailPage(demandId: d.id)))),
+                  onTap: () =>
+                      pushPage<void>(context, (_) => pageFor(ToDemand(d.id))))),
         OutlinedButton.icon(
             onPressed: () => pushPage<void>(
-                context, (_) => PublishPage(designProjectId: house.projectId)),
+                context,
+                (_) =>
+                    pageFor(ToPublishDemand(designProjectId: house.projectId))),
             icon: const Icon(YIcons.add),
             label: Text(tr3('为这栋房子再招一个阶段', 'Тағы бір кезең', 'Добавить этап', 'Add a stage', ky: 'Этап кошуу', uz: 'Bosqich qoʻshish'))),
       ]);
@@ -190,7 +188,7 @@ class _QuotesTab extends StatelessWidget {
                         ? Badge(label: Text('${house.quotes[d.id]!.unread}'))
                         : const Icon(YIcons.chevronRight),
                     onTap: () => pushPage<void>(
-                        context, (_) => ApplicationsPage(demandId: d.id)))),
+                        context, (_) => pageFor(ToApplications(d.id))))),
         ]);
   }
 }
@@ -231,7 +229,7 @@ class _CoopTab extends StatelessWidget {
                             color: t.accent, filled: true)
                         : const Icon(YIcons.chevronRight),
                     onTap: () => pushPage<void>(
-                        context, (_) => CooperationPage(cooperationId: c.id)))),
+                        context, (_) => pageFor(ToCooperation(c.id))))),
         ]);
   }
 }

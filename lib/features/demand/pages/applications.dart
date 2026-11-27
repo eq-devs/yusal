@@ -6,16 +6,14 @@ import 'package:yusal/features/coop/repository/cooperation_repository.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/shared/model/rules.dart';
-import 'package:yusal/features/chat/page.dart';
 import 'package:yusal/features/coop/widgets/agreement_form.dart';
 import 'package:yusal/localization/l10n.dart';
-import 'package:yusal/features/profile/page.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/demand/pages/compare.dart';
-import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// The publisher's list of sign-ups or quotes: talk, invite to cooperate,
@@ -186,7 +184,7 @@ class ApplicationCard extends StatelessWidget {
               .read(chatRepositoryProvider)
               .openConversation(a.applicantId, demandId: demand.id));
       if (conv != null && context.mounted) {
-        await pushPage<void>(context, (_) => ChatPage(conversationId: conv.id));
+        await pushPage<void>(context, (_) => pageFor(ToChat(conv.id)));
       }
     }
 
@@ -206,7 +204,7 @@ class ApplicationCard extends StatelessWidget {
           onTap: profile == null
               ? null
               : () => pushPage<void>(
-                  context, (_) => ProfilePage(profileId: profile!.id)),
+                  context, (_) => pageFor(ToProfile(profile!.id))),
           child: Row(children: [
             Avatar(name, team: profile?.kind == ProfileKind.team),
             const SizedBox(width: 12),
@@ -262,7 +260,8 @@ class ApplicationCard extends StatelessWidget {
         ],
         if (coop != null)
           FilledButton.tonal(
-              onPressed: () => openCooperation(context, coop!.id),
+              onPressed: () => pushPage<void>(
+                  context, (_) => pageFor(ToCooperation(coop!.id))),
               child: Text(coop!.status == CooperationStatus.pending
                   ? tr3('查看约定（待对方确认）', 'Келісім (күтуде)', 'Соглашение (ждёт)', 'Agreement (pending)', ky: 'Макулдашуу (күтүүдө)', uz: 'Kelishuv (kutilmoqda)')
                   : tr3('查看合作', 'Келісімді көру', 'Сотрудничество', 'Cooperation', ky: 'Кызматташуу', uz: 'Hamkorlik'))),

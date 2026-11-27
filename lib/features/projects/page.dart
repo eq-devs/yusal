@@ -4,15 +4,11 @@ import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/page.dart';
 import 'package:yusal/features/shared/model/models.dart';
-import 'package:yusal/features/backup/page.dart';
-import 'package:yusal/features/demand/page.dart';
-import 'package:yusal/features/home/pages/post.dart';
-import 'package:yusal/features/home/pages/publish_post.dart';
-import 'package:yusal/features/demand/pages/from_design.dart';
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/components.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/shared/ui/house_progress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -274,10 +270,10 @@ class _DesignCard extends StatelessWidget {
                       switch (action) {
                         case 'post':
                           await pushPage<void>(
-                              context, (_) => PublishPostPage(entry: entry));
+                              context, (_) => pageFor(ToPublishPost(entry)));
                         case 'backup':
                           await pushPage<void>(
-                              context, (_) => BackupPage(highlight: entry.id));
+                              context, (_) => pageFor(ToBackup(highlight: entry.id)));
                         case 'export':
                           await list.export(entry, anchor);
                         case 'delete':
@@ -324,7 +320,7 @@ class _DesignCard extends StatelessWidget {
                         padding:
                             const EdgeInsets.symmetric(horizontal: YSpace.sm)),
                     onPressed: () => pushPage<void>(
-                        context, (_) => FromDesignPage(entry: entry)),
+                        context, (_) => pageFor(ToDemandFromDesign(entry))),
                     child: Text(tr3('找施工方', 'Шебер табу', 'Найти мастеров', 'Find pros', ky: 'Адистерди табуу', uz: 'Mutaxassis topish'),
                         maxLines: 1, overflow: TextOverflow.ellipsis))),
           ]),
@@ -513,8 +509,8 @@ class _ActiveHouses extends StatelessWidget {
     void open(MyHouse h, int tab) => pushPage<void>(
         context,
         (_) => h.shareOnly
-            ? PostPage(postId: h.postId!)
-            : HouseWorkspacePage(houseKey: h.key, initialTab: tab));
+            ? pageFor(ToPost(h.postId!))
+            : pageFor(ToHouseWorkspace(h.key, initialTab: tab)));
     // Finished houses move out of the ongoing ones.
     final done = houses.where((h) => h.stage == HouseStage.done).toList();
     final ongoing = houses.where((h) => h.stage != HouseStage.done).toList();
@@ -657,7 +653,7 @@ class _MyCooperationsState extends State<MyCooperations> {
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: YCard(
                                       onTap: () =>
-                                          openCooperation(context, c.id),
+                                          pushPage<void>(context, (_) => pageFor(ToCooperation(c.id))),
                                       child: Row(children: [
                                         const Icon(YIcons.coop),
                                         const SizedBox(width: 12),

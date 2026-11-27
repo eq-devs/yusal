@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/app.dart';
 import 'package:yusal/features/houses/model/my_house.dart';
 import 'package:yusal/features/houses/state/my_houses.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/service/storage/project_store.dart';
 
 import 'http.dart';
@@ -39,6 +40,7 @@ class TestScope extends StatelessWidget {
 /// The whole app over [repos] (a [Backend] fake or a [TestHttp]) and
 /// [store], signing in through the real login page.
 Widget testApp(Object repos, {ProjectStore? store, Key? key}) {
+  Routes.pages = appPage;
   if (store != null) ProjectStore.app = store;
   return ProviderScope(
       key: key, overrides: overridesFor(repos), child: const HouseApp());

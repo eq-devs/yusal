@@ -7,8 +7,8 @@ import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/localization/l10n.dart';
-import 'package:yusal/features/profile/pages/edit.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/voice/model/action.dart';
@@ -325,7 +325,7 @@ class _ApplyPageState extends State<ApplyPage> with VoiceScreen {
                     if (profiles.isEmpty)
                       YCard(
                           onTap: () => pushPage<void>(
-                              context, (_) => const ProfileEditPage()),
+                              context, (_) => pageFor(const ToProfileEdit())),
                           child: Row(children: [
                             const Icon(YIcons.profile),
                             const SizedBox(width: 12),

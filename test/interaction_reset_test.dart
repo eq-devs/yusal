@@ -9,7 +9,6 @@ import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
 import 'package:yusal/features/editor/page.dart';
-import 'package:yusal/features/voice/actions/design.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 import 'package:yusal/service/storage/project_store.dart';
 

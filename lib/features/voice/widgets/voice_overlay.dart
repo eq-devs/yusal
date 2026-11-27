@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:yusal/features/voice/repository/voice_repository.dart';
 import 'package:yusal/features/shared/ui/voice_slot.dart';
 export 'package:yusal/features/shared/ui/voice_slot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,7 +16,6 @@ import 'package:yusal/service/voice/read_aloud.dart';
 import 'package:yusal/features/voice/actions/actions.dart';
 import 'package:yusal/features/voice/state/executor.dart';
 import 'package:yusal/features/voice/widgets/read_aloud_button.dart';
-import 'package:yusal/features/voice/actions/design.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 import 'package:yusal/features/voice/state/session.dart';
 import 'package:yusal/features/voice/repository/speech.dart';

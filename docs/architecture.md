@@ -60,8 +60,11 @@ Live<List<X>>(provider: xListProvider, builder: (context, list) => …);
 
 - 顶层目录只能是上面这几个，每个 feature 只能用上面列出的子目录；
 - `features/editor/engine/core` 是纯 Dart，只引用自己和 `package:meta`；
-- 底层（`constant/`、`localization/`、`service/`、`utils/`、`features/shared/`）只能引用底层和引擎 core，不能引用某个 feature 的页面、状态或仓库（唯一例外：`shared/ui/scope.dart` 的 `requireLogin` 打开登录页）；
-- feature 之间的依赖必须在测试里的清单上：新增一条要写清理由，删掉一条要从清单里删，所以清单只会变短。
+- 底层（`constant/`、`localization/`、`service/`、`utils/`、`features/shared/`）只能引用底层和引擎 core，不能引用任何 feature；
+- 每个 feature 分三层：数据（`repository/`、`model/`）← 状态（`state/`）← 界面（其余）。下层不能引用上层，本 feature 和别的 feature 都一样；
+- 同一层里，feature 之间不能有环。
+
+一个 feature 打开另一个 feature 的页面时，不引用那个页面，而是用 `shared/ui/routes.dart` 里的目的地：`pushPage(context, (_) => pageFor(ToDemand(id)))`。`app.dart` 的 `appPage` 用一个穷尽的 `switch` 把每个目的地变成页面，新加目的地不写页面就编译不过；`main()` 和测试里设置 `Routes.pages = appPage`。通知和推送里的引用用 `openRef`。
 
 `test/platform/design_system_test.dart` 另外限制 Material 图标：只有清单里的文件还在用（YIcons 还没画的房间类型、家具和表单控件），数量只能减少。
 

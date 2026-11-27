@@ -15,7 +15,7 @@ import 'package:yusal/features/demand/widgets/demand_card.dart';
 import 'package:yusal/features/chat/pages/inbox.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/features/demand/pages/from_design.dart';
-import 'package:yusal/features/home/widgets/plan_viewer.dart';
+import 'package:yusal/features/editor/widgets/plan_viewer.dart';
 import 'package:yusal/features/home/pages/publish_post.dart';
 import 'package:yusal/features/houses/page.dart';
 import 'package:yusal/constant/theme.dart';

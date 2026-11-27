@@ -5,24 +5,21 @@ import 'package:yusal/features/demand/repository/demand_repository.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/shared/model/rules.dart';
-import 'package:yusal/features/apply/page.dart';
 import 'package:yusal/features/demand/widgets/demand_card.dart';
-import 'package:yusal/features/chat/page.dart';
-import 'package:yusal/features/coop/page.dart';
 import 'package:yusal/localization/l10n.dart';
-import 'package:yusal/features/home/widgets/plan_viewer.dart';
+import 'package:yusal/features/editor/widgets/plan_viewer.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/demand/pages/applications.dart';
 import 'package:yusal/features/demand/pages/publish.dart';
 import 'package:yusal/features/demand/pages/share.dart';
-import 'package:yusal/features/home/pages/post.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
 import 'package:yusal/features/voice/actions/demand.dart';
 import 'package:yusal/features/voice/state/screen.dart';
-import 'package:yusal/features/me/pages/trust.dart';
+import 'package:yusal/features/trust/page.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
 
 class DemandDetailPage extends StatelessWidget {
@@ -94,7 +91,7 @@ class _DemandDetailState extends State<_DemandDetail>
     Future<void> apply() async {
       if (!await requireLogin(context) || !context.mounted) return;
       await pushPage<void>(
-          context, (_) => ApplyPage(demand: d, existing: myApp));
+          context, (_) => pageFor(ToApply(d, existing: myApp)));
     }
 
     Future<void> contact() async {
@@ -105,7 +102,7 @@ class _DemandDetailState extends State<_DemandDetail>
               .read(chatRepositoryProvider)
               .openConversation(d.ownerId, demandId: d.id));
       if (conv != null && context.mounted) {
-        await pushPage<void>(context, (_) => ChatPage(conversationId: conv.id));
+        await pushPage<void>(context, (_) => pageFor(ToChat(conv.id)));
       }
     }
 
@@ -136,7 +133,7 @@ class _DemandDetailState extends State<_DemandDetail>
                       key: const Key('demand-house-link'),
                       borderRadius: BorderRadius.circular(YRadius.row),
                       onTap: () => pushPage<void>(
-                          context, (_) => PostPage(postId: post.id)),
+                          context, (_) => pageFor(ToPost(post.id))),
                       child: Row(children: [
                         Icon(YIcons.home, size: 18, color: t.ink),
                         const SizedBox(width: 6),
@@ -254,7 +251,8 @@ class _DemandDetailState extends State<_DemandDetail>
           ListTile(
               title: Text(cooperationStatusName(c)),
               trailing: const Icon(YIcons.chevronRight),
-              onTap: () => openCooperation(context, c.id)),
+              onTap: () =>
+                  pushPage<void>(context, (_) => pageFor(ToCooperation(c.id)))),
       ],
       const SizedBox(height: 24),
     ]);
@@ -648,5 +646,3 @@ class QtyTable extends StatelessWidget {
 }
 
 /// Opens a cooperation page; several pages share it.
-void openCooperation(BuildContext context, String id) =>
-    pushPage<void>(context, (_) => CooperationPage(cooperationId: id));

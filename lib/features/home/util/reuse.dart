@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/serialization/house_codec.dart';
-import 'package:yusal/features/editor/page.dart';
 import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/backup/page.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
-import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
+import 'package:yusal/features/shared/ui/shell_nav.dart';
 
 /// "Start from this one": copies a public design into my houses, opens it
 /// in the design tool and tells the author. No sign-in needed; only the
@@ -53,8 +53,7 @@ Future<String?> startFromPost(BuildContext context, HousePost post,
     await Navigator.of(context).push(MaterialPageRoute<void>(
         builder: (_) => Theme(
             data: drafting,
-            child:
-                HouseEditor(entry: ProjectEntry(id, opened), store: store))));
+            child: pageFor(ToEditor(ProjectEntry(id, opened), store)))));
     if (context.mounted) PlatformReload.of(context)?.bump();
   }
   return id;

@@ -5,14 +5,13 @@ import 'package:yusal/features/coop/state/cooperation.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/shared/model/rules.dart';
-import 'package:yusal/features/chat/page.dart';
-import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
-import 'package:yusal/features/houses/widgets/site_tab.dart';
+import 'package:yusal/features/coop/widgets/site_tab.dart';
 import 'package:yusal/features/coop/pages/milestone_editor.dart';
 import 'package:yusal/features/coop/widgets/agreement_form.dart';
 import 'package:yusal/features/coop/pages/review.dart';
@@ -335,14 +334,14 @@ class _CoopViewState extends State<_CoopView>
                         demandId: c.demandId));
                 if (conv != null && context.mounted) {
                   await pushPage<void>(
-                      context, (_) => ChatPage(conversationId: conv.id));
+                      context, (_) => pageFor(ToChat(conv.id)));
                 }
               }),
         ],
         body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           InkWell(
-              onTap: () => pushPage<void>(
-                  context, (_) => DemandDetailPage(demandId: c.demandId)),
+              onTap: () =>
+                  pushPage<void>(context, (_) => pageFor(ToDemand(c.demandId))),
               child: Text(title,
                   style: const TextStyle(
                       fontSize: YFont.display, fontWeight: FontWeight.w700))),

@@ -24,10 +24,8 @@ import 'package:yusal/features/editor/repository/price_repository.dart'
 import 'package:yusal/features/shared/model/admin_models.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/shared/ui/components.dart';
-import 'package:yusal/features/demand/page.dart';
-import 'package:yusal/features/home/pages/post.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/localization/l10n.dart';
-import 'package:yusal/features/profile/page.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
@@ -862,7 +860,7 @@ class _DemandQueueState extends State<_DemandQueue> {
                     selected: _selected.contains(d.id),
                     onTap: _selected.isEmpty
                         ? () => pushPage<void>(
-                            context, (_) => DemandDetailPage(demandId: d.id))
+                            context, (_) => pageFor(ToDemand(d.id)))
                         : () => setState(() {
                               if (!_selected.remove(d.id)) _selected.add(d.id);
                             }),
@@ -1020,14 +1018,14 @@ class _ReportsState extends State<_Reports> {
     final r = v.report;
     switch (r.target) {
       case ReportTarget.demand:
-        pushPage<void>(context, (_) => DemandDetailPage(demandId: r.targetId));
+        pushPage<void>(context, (_) => pageFor(ToDemand(r.targetId)));
       case ReportTarget.profile:
-        pushPage<void>(context, (_) => ProfilePage(profileId: r.targetId));
+        pushPage<void>(context, (_) => pageFor(ToProfile(r.targetId)));
       case ReportTarget.post:
-        pushPage<void>(context, (_) => PostPage(postId: r.targetId));
+        pushPage<void>(context, (_) => pageFor(ToPost(r.targetId)));
       case ReportTarget.comment:
         if (v.postId != null) {
-          pushPage<void>(context, (_) => PostPage(postId: v.postId!));
+          pushPage<void>(context, (_) => pageFor(ToPost(v.postId!)));
         }
       case ReportTarget.account:
         pushPage<void>(
@@ -1340,7 +1338,7 @@ class _VerificationsState extends State<_Verifications> {
                           children: [
                         InkWell(
                             onTap: () => pushPage<void>(context,
-                                (_) => ProfilePage(profileId: v.profileId)),
+                                (_) => pageFor(ToProfile(v.profileId))),
                             child: Text(v.name, style: YText.bodyStrong)),
                         Text(
                             '${v.ownerName} · ${tr3('电话 ${v.phone}', 'тел. ${v.phone}', 'тел. ${v.phone}', 'tel. ${v.phone}', ky: 'тел. ${v.phone}', uz: 'tel. ${v.phone}')} · ${_date(v.createdAt)}',
@@ -1682,7 +1680,7 @@ class AccountDetailPage extends StatelessWidget {
                                 tr3('已核验', 'расталған', 'проверен', 'verified', ky: 'текшерилген', uz: 'tekshirilgan'),
                             ].join(' · ')),
                             onTap: () => pushPage<void>(
-                                context, (_) => ProfilePage(profileId: p.id)),
+                                context, (_) => pageFor(ToProfile(p.id))),
                             trailing: _may(context, AdminPerms.moderate) &&
                                     p.status != ProfileStatus.hidden
                                 ? TextButton(
@@ -1727,7 +1725,7 @@ class AccountDetailPage extends StatelessWidget {
                                             'Featured: first on the home screen', ky: 'Тандалган: башкы экранда биринчи', uz: 'Tanlangan: bosh ekranda birinchi'))
                                 : null,
                             onTap: () =>
-                                pushPage<void>(context, (_) => PostPage(postId: p.id)),
+                                pushPage<void>(context, (_) => pageFor(ToPost(p.id))),
                             trailing: _may(context, AdminPerms.moderate)
                                 ? TextButton(
                                     onPressed: () async {
@@ -1763,7 +1761,7 @@ class AccountDetailPage extends StatelessWidget {
                         _DemandCard(
                             demand: x,
                             onTap: () => pushPage<void>(context,
-                                (_) => DemandDetailPage(demandId: x.id))),
+                                (_) => pageFor(ToDemand(x.id)))),
                         if (_may(context, AdminPerms.moderate) &&
                             const [
                               DemandStatus.pendingReview,
@@ -1991,7 +1989,7 @@ class _AllDemandsPageState extends State<_AllDemandsPage> with _Search {
                   item: (context, d) => _DemandCard(
                       demand: d,
                       onTap: () => pushPage<void>(
-                          context, (_) => DemandDetailPage(demandId: d.id)),
+                          context, (_) => pageFor(ToDemand(d.id))),
                       onLongPress: canModerate &&
                               (d.status == DemandStatus.open ||
                                   d.status == DemandStatus.paused)

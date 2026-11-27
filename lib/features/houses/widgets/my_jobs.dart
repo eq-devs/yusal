@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
-import 'package:yusal/features/coop/page.dart';
-import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/houses/state/my_jobs.dart';
-import 'package:yusal/features/houses/widgets/site_tab.dart';
+import 'package:yusal/features/coop/widgets/site_tab.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// "我接的活": everything I signed up for or quoted, and the work I'm doing,
@@ -155,8 +154,8 @@ class _JobCard extends StatelessWidget {
             onTap: () => pushPage<void>(
                 context,
                 (_) => c != null
-                    ? CooperationPage(cooperationId: c.id)
-                    : DemandDetailPage(demandId: a!.demandId)),
+                    ? pageFor(ToCooperation(c.id))
+                    : pageFor(ToDemand(a!.demandId))),
             child: Padding(
                 padding: const EdgeInsets.all(14),
                 child: Column(

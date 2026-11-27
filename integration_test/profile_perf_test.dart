@@ -20,6 +20,7 @@ import '../test/support/mock/mock_seed.dart';
 import 'package:yusal/features/profile/page.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/features/shared/ui/shell_nav.dart';
 import 'package:yusal/service/storage/project_store.dart';
 
 import '../test/storage_test.dart' show MemoryFiles;

@@ -71,10 +71,6 @@ void main() {
       // constant/, localization/, service/, utils/ and features/shared are
       // what features build on; they may use the engine core, not a
       // feature's pages, state or repositories.
-      const allowed = {
-        // attempt() and requireLogin() open the login page.
-        'lib/features/shared/ui/scope.dart -> features/auth/page.dart',
-      };
       final odd = [
         for (final MapEntry(key: file, value: targets) in imports.entries)
           if (_isBase(file))
@@ -83,95 +79,87 @@ void main() {
                   !t.startsWith('package:yusal/features/shared/') &&
                   !t.startsWith('package:yusal/features/editor/engine/core/'))
                 '$file -> ${t.substring('package:yusal/'.length)}'
-      ]..removeWhere(allowed.contains);
+      ];
       expect(odd, isEmpty);
     });
 
-    test('features depend on each other only as listed', () {
-      // The feature graph as it is, cycles included (see
-      // docs/governance/TASKS.md). A new edge needs a reason and a line
-      // here; a removed one must be deleted here, so the list only shrinks.
-      const listed = {
-        'admin': {'coop', 'demand', 'editor', 'home', 'me', 'profile'},
-        'apply': {'demand', 'profile', 'voice'},
-        'auth': {'voice'},
-        'backup': {'editor'},
-        'chat': {
-          'apply',
-          'auth',
-          'coop',
-          'demand',
-          'home',
-          'me',
-          'profile',
-          'voice'
-        },
-        'coop': {'auth', 'chat', 'demand', 'houses', 'profile', 'voice'},
-        'demand': {
-          'apply',
-          'auth',
-          'backup',
-          'chat',
-          'coop',
-          'editor',
-          'home',
-          'me',
-          'profile',
-          'voice'
-        },
-        'discover': {'chat', 'demand', 'profile'},
-        'editor': {'voice'},
-        'explore': {'demand', 'discover', 'home', 'profile', 'shell'},
-        'home': {
-          'auth',
-          'backup',
-          'chat',
-          'demand',
-          'discover',
-          'editor',
-          'me',
-          'profile',
-          'shell'
-        },
-        'houses': {'apply', 'backup', 'coop', 'demand', 'home'},
-        'me': {
-          'admin',
-          'apply',
-          'auth',
-          'backup',
-          'chat',
-          'coop',
-          'demand',
-          'home',
-          'profile',
-          'voice'
-        },
-        'profile': {'auth', 'chat', 'coop', 'me'},
-        'projects': {
-          'backup',
-          'coop',
-          'demand',
-          'editor',
-          'home',
-          'houses',
-          'profile'
-        },
-        'shell': {'backup', 'chat', 'explore', 'me', 'projects', 'voice'},
-        'voice': {'chat', 'coop', 'demand', 'editor'},
-      };
-      final actual = <String, Set<String>>{};
-      for (final MapEntry(key: file, value: targets) in imports.entries) {
-        final from = _feature(file);
-        if (from == null || from == 'shared') continue;
-        for (final t in targets) {
-          final to = _feature(t);
-          if (to == null || to == 'shared' || to == from) continue;
-          actual.putIfAbsent(from, () => {}).add(to);
+    test('a feature layer imports only the layers below it', () {
+      // data (repository/, model/) <- state/ <- UI (everything else), in
+      // its own feature and in others.
+      final odd = [
+        for (final MapEntry(key: file, value: targets) in imports.entries)
+          if (_node(file) case final from?)
+            for (final t in targets)
+              if (_node(t) case final to?
+                  when to.layer.index > from.layer.index)
+                '$file -> ${t.substring('package:yusal/'.length)}'
+      ];
+      expect(odd, isEmpty);
+    });
+
+    test('the features of one layer form no cycle', () {
+      // A feature opens another feature's page through a Destination
+      // (shared/ui/routes.dart), so pages never need each other both ways.
+      for (final layer in _Layer.values) {
+        final edges = <String, Set<String>>{};
+        for (final MapEntry(key: file, value: targets) in imports.entries) {
+          final from = _node(file);
+          if (from == null || from.layer != layer) continue;
+          for (final t in targets) {
+            final to = _node(t);
+            if (to == null || to.layer != layer || to.feature == from.feature) {
+              continue;
+            }
+            edges.putIfAbsent(from.feature, () => {}).add(to.feature);
+          }
         }
+        expect(_cycle(edges), isEmpty, reason: '${layer.name} layer');
       }
-      expect(actual, listed);
     });
   });
+}
+
+enum _Layer { data, state, ui }
+
+/// The feature and layer a lib/ path or package:yusal URI belongs to;
+/// null for the base layers, features/shared and the house engine.
+({String feature, _Layer layer})? _node(String path) {
+  final m = RegExp(r'(?:^lib/|^package:yusal/)features/(\w+)/(?:(\w+)/)?')
+      .firstMatch(path);
+  if (m == null) return null;
+  final (feature, top) = (m.group(1)!, m.group(2));
+  if (feature == 'shared' || (feature == 'editor' && top == 'engine')) {
+    return null;
+  }
+  final layer = switch (top) {
+    'repository' || 'model' => _Layer.data,
+    'state' => _Layer.state,
+    _ => _Layer.ui,
+  };
+  return (feature: feature, layer: layer);
+}
+
+/// One cycle of [edges] (its nodes in order), or empty when there is none.
+List<String> _cycle(Map<String, Set<String>> edges) {
+  final done = <String>{};
+  final path = <String>[];
+  List<String> visit(String v) {
+    if (path.contains(v)) return [...path.sublist(path.indexOf(v)), v];
+    if (!done.add(v)) return const [];
+    path.add(v);
+    for (final w in edges[v] ?? const <String>{}) {
+      final c = visit(w);
+      if (c.isNotEmpty) return c;
+    }
+    path.removeLast();
+    return const [];
+  }
+
+  for (final v in edges.keys) {
+    final c = visit(v);
+    if (c.isNotEmpty) return c;
+  }
+  return const [];
 }
 
 /// Each lib/ file's `package:` imports and exports.
@@ -195,9 +183,3 @@ bool _isBase(String file) => [
       'lib/utils/',
       'lib/features/shared/'
     ].any(file.startsWith);
-
-/// The feature a lib/ path or package:yusal URI belongs to.
-String? _feature(String path) =>
-    RegExp(r'(?:^lib/|^package:yusal/)features/(\w+)/')
-        .firstMatch(path)
-        ?.group(1);

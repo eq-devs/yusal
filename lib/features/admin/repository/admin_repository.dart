@@ -6,7 +6,7 @@ import 'package:yusal/service/api/api_client.dart';
 import 'package:yusal/features/coop/model/coop_json.dart';
 import 'package:yusal/features/admin/model/admin_json.dart';
 import 'package:yusal/features/demand/model/demand_json.dart';
-import 'package:yusal/features/me/model/me_json.dart';
+import 'package:yusal/features/trust/model/trust_json.dart';
 import 'package:yusal/features/shared/model/admin_models.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/utils/json.dart';

@@ -3,7 +3,7 @@ import '../support/test_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../support/mock/mock_backend.dart';
 import 'package:yusal/features/shared/model/models.dart';
-import 'package:yusal/features/home/widgets/plan_viewer.dart';
+import 'package:yusal/features/editor/widgets/plan_viewer.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/service/storage/project_store.dart';

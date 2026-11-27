@@ -9,6 +9,7 @@ import 'package:yusal/features/demand/model/demand_json.dart';
 import 'package:yusal/features/me/model/me_json.dart';
 import 'package:yusal/features/shared/model/admin_models.dart';
 import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/utils/json.dart';
 
 /// The back office. Every call checks the caller's role.
 
@@ -118,8 +119,7 @@ final class HttpAdminRepository implements AdminRepository {
     final j = await api.write('POST', '/admin/demands/batch',
             body: {'ids': ids, 'approve': approve, 'reason': reason})
         as Map<String, dynamic>;
-    return BatchResult(_int(j['done']),
-        [for (final f in j['failed'] as List? ?? const []) f as String]);
+    return BatchResult(_int(j['done']), jsonStrings(j['failed']));
   }
 
   static int _int(Object? v) => (v as num?)?.toInt() ?? 0;
@@ -262,9 +262,7 @@ final class HttpAdminRepository implements AdminRepository {
         ? await api.request('GET', '/admin/banned-words')
         : await api.write('PUT', '/admin/banned-words',
             body: {'words': save})) as Map<String, dynamic>;
-    List<String> list(Object? v) =>
-        [for (final w in (v as List? ?? const [])) '$w'];
-    return (builtin: list(r['builtin']), words: list(r['words']));
+    return (builtin: jsonStrings(r['builtin']), words: jsonStrings(r['words']));
   }
 
   /// A region's own price entries and the medians of what users reported
@@ -274,9 +272,9 @@ final class HttpAdminRepository implements AdminRepository {
     final r = await api.request('GET', '/admin/prices',
         query: {'region': region, 'currency': 'kzt'}) as Map<String, dynamic>;
     List<PriceEntry> list(Object? v) => [
-          for (final e in (v as List? ?? const []))
+          for (final e in jsonMaps(v))
             (
-              labour: (e as Map)['kind'] == 'labour',
+              labour: e['kind'] == 'labour',
               key: '${e['key']}',
               price: (e['price'] as num).round(),
               source: '${e['source'] ?? 'market'}',

@@ -7,6 +7,7 @@ import 'package:yusal/service/api/api_failure.dart';
 import 'package:yusal/features/demand/model/demand_json.dart';
 import 'package:yusal/features/home/model/home_json.dart';
 import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/utils/json.dart';
 
 /// Published houses: the feed, likes, critiques and reuse.
 
@@ -92,7 +93,7 @@ final class HttpPostRepository implements PostRepository {
         floors: j['floors'] as int? ?? 1,
         rooms: j['rooms'] as int? ?? 0,
         estimatedCost: j['estimated_cost'] as int?,
-        tags: [for (final t in j['tags'] as List? ?? const []) t as String],
+        tags: jsonStrings(j['tags']),
         openForBuilders: j['open_for_builders'] as bool? ?? false,
         status:
             j['status'] == 'hidden' ? PostStatus.hidden : PostStatus.published,
@@ -103,7 +104,7 @@ final class HttpPostRepository implements PostRepository {
         reuseCount: j['reuse_count'] as int? ?? 0,
         featured: j['featured'] == true,
         showBuild: j['show_build'] as bool? ?? false,
-        focus: [for (final f in j['focus'] as List? ?? const []) f as String],
+        focus: jsonStrings(j['focus']),
         preview: _previews[id]);
   }
 

@@ -138,7 +138,7 @@ AccountDetail accountDetailFrom(
       appeals: [for (final x in jsonMaps(j['appeals'])) appealFrom(x)],
       audit: [for (final e in jsonMaps(j['audit'])) auditFrom(e)],
       banned: a['status'] == 'blocked',
-      methods: [for (final m in (a['methods'] as List? ?? const [])) '$m']);
+      methods: jsonStrings(a['methods']));
 }
 
 FeedbackItem feedbackFrom(Map<String, dynamic> j) => FeedbackItem(

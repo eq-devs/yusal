@@ -9,7 +9,7 @@ Iterable<String> cooperationMedia(Map<String, dynamic> j) => [
         ...jsonMaps(j['milestones']),
         ...jsonMaps(j['work_logs'])
       ])
-        for (final p in (m['photos'] as List? ?? const []).cast<String>())
+        for (final p in jsonStrings(m['photos']))
           if (p.startsWith('/media/')) p
     ];
 

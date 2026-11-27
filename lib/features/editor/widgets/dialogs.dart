@@ -1053,8 +1053,7 @@ extension _EditorDialogs on _HouseEditorState {
         floorName: displayFloorName,
         openingLabel: openingLabel,
         book: priceBook,
-        date:
-            '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}');
+        date: formatDay(today));
     showDialog<void>(
         context: context,
         barrierDismissible: false,

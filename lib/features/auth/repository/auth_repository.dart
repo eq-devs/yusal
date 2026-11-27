@@ -20,8 +20,6 @@ class SignInMethod {
 
 abstract interface class AuthRepository {
   Account? get currentAccount;
-  Future<void> requestCode(String phone);
-  Future<Account> verify(String phone, String code, {String? displayName});
   Future<void> signOut();
   Future<Account> updateName(String name);
 
@@ -144,15 +142,6 @@ final class HttpAuthRepository implements AuthRepository {
             in (data as List? ?? const []).cast<Map<String, dynamic>>())
           SignInMethod(m['provider'] as String, m['email'] as String? ?? ''),
       ];
-
-  @override
-  Future<void> requestCode(String phone) async =>
-      throw const ApiFailure(ApiCodes.invalidState, 'phone sign-in');
-
-  @override
-  Future<Account> verify(String phone, String code,
-          {String? displayName}) async =>
-      throw const ApiFailure(ApiCodes.invalidState, 'phone sign-in');
 
   @override
   Future<void> signOut() async {

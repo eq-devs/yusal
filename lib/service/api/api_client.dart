@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show ChangeNotifier, Listenable;
+import 'package:flutter/foundation.dart'
+    show ChangeNotifier, Listenable, visibleForTesting;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -246,11 +247,12 @@ class ApiClient implements Session {
     }
     if (env['success'] == true) return env['data'];
     throw ApiFailure(
-        _mapCode(env['code'] as String? ?? ''), env['msg'] as String? ?? '');
+        mapCode(env['code'] as String? ?? ''), env['msg'] as String? ?? '');
   }
 
   /// Server codes are the app's [ApiCodes] where they exist.
-  static String _mapCode(String code) => switch (code) {
+  @visibleForTesting
+  static String mapCode(String code) => switch (code) {
         'UNAUTHORIZED' || 'INVALID_TOKEN' => ApiCodes.notSignedIn,
         'ACCOUNT_DISABLED' => ApiCodes.restricted,
         'VALIDATION_ERROR' || 'UNSUPPORTED_PROVIDER' => ApiCodes.invalidInput,

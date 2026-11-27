@@ -371,9 +371,6 @@ String failureText(Object e) {
   }
   return switch (e.code) {
     ApiCodes.notSignedIn => tr3('请先登录', 'Алдымен кіріңіз', 'Сначала войдите', 'Sign in first', ky: 'Адегенде кириңиз', uz: 'Avval kiring'),
-    ApiCodes.badCode => tr3('验证码不正确', 'Код қате', 'Неверный код', 'Wrong code', ky: 'Код туура эмес', uz: 'Kod notoʻgʻri'),
-    ApiCodes.badPhone =>
-      tr3('请输入完整手机号', 'Толық нөмірді енгізіңіз', 'Введите полный номер', 'Enter the full number', ky: 'Номерди толук киргизиңиз', uz: 'Raqamni toʻliq kiriting'),
     ApiCodes.forbidden => tr3('没有权限进行这个操作', 'Рұқсат жоқ', 'Нет доступа', 'No access', ky: 'Кирүү укугу жок', uz: 'Ruxsat yoʻq'),
     ApiCodes.notFound =>
       tr3('内容不存在或已下架', 'Табылмады не алынып тасталды', 'Не найдено или снято', 'Not found or taken down', ky: 'Табылган жок же алынып салынган', uz: 'Topilmadi yoki olib tashlangan'),

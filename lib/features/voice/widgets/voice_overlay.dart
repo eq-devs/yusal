@@ -64,10 +64,10 @@ String _failure(String? code) => switch (code) {
           "Can't reach the server; try again", ky: 'Серверге туташуу мүмкүн эмес; кайра аракет кылыңыз', uz: 'Serverga ulanib boʻlmadi; qayta urining'),
       ApiCodes.notSignedIn =>
         tr3('请先登录，再用语音', 'Алдымен жүйеге кіріңіз', 'Сначала войдите в аккаунт', 'Sign in first', ky: 'Адегенде кириңиз', uz: 'Avval kiring'),
-      'RATE_LIMITED' => tr3('用得太频繁了，请稍后再试', 'Тым жиі, сәл кейінірек көріңіз',
+      ApiCodes.rateLimited => tr3('用得太频繁了，请稍后再试', 'Тым жиі, сәл кейінірек көріңіз',
           'Слишком часто, попробуйте чуть позже',
           'Too many tries; try again a bit later', ky: 'Аракеттер өтө көп; бир аздан кийин кайталаңыз', uz: 'Urinishlar juda koʻp; birozdan keyin qayta urining'),
-      'VOICE_BUSY' => tr3(
+      ApiCodes.voiceBusy => tr3(
           '语音服务正忙，请稍后再试',
           'Дауыс қызметі бос емес, сәл кейінірек көріңіз',
           'Голосовой сервис занят, попробуйте чуть позже',

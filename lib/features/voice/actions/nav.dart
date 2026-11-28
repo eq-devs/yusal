@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import 'package:yusal/features/shared/model/models.dart';
-import 'package:yusal/features/chat/pages/inbox.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:uuid/uuid.dart';
 
+import 'package:yusal/features/editor/engine/render2d/furniture_names.dart';
 import 'package:yusal/features/editor/engine/core/analysis/house_analysis.dart';
 import 'package:yusal/features/editor/engine/core/checks/check_engine.dart';
 import 'package:yusal/features/editor/engine/core/commands/extras_commands.dart';
@@ -10,7 +11,6 @@ import 'package:yusal/features/editor/engine/core/commands/house_spec.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
 import 'package:yusal/features/editor/engine/core/house_core.dart';
-import 'package:yusal/features/editor/model/house_wish.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/actions/houses.dart';
 import 'package:yusal/features/voice/state/screen.dart';
@@ -18,48 +18,6 @@ import 'package:yusal/service/settings/settings.dart';
 
 export 'package:yusal/features/editor/engine/core/commands/house_spec.dart'
     show roomWall;
-
-/// Implemented by the design editor so design actions can reach it.
-abstract interface class DesignHost {
-  /// The floor being edited.
-  String get currentFloorId;
-
-  HouseDocument get document;
-
-  /// Geometry of the floor being edited.
-  FloorBase get floorBase;
-
-  /// Runs a design command without showing its failure: the caller
-  /// reports it.
-  CommandResult runDesign(String kind, Map<String, dynamic> args);
-
-  /// False when there is nothing to undo.
-  bool undoDesign();
-
-  /// Between these, every change undoes as one step.
-  void beginUndoGroup();
-  void endUndoGroup();
-
-  /// Puts [doc]'s design in place of the current one, as one undoable
-  /// change. The design keeps its name and file.
-  void replaceDesign(HouseDocument doc);
-
-  /// Writes unsaved changes now, before the editor is closed.
-  Future<void> saveNow();
-
-  /// Selects the room, opening or piece of furniture with [id] on the
-  /// floor being edited, as a tap on it would. False when it is not there.
-  bool select(String id);
-
-  /// Shows the floor with [floorId]. False when there is none.
-  bool showFloor(String floorId);
-  void showTab(String value);
-  void showRoomWalk(String roomId);
-  void showSharedWall(WallSegment wall);
-  ActionResult previewWallMove(String grow, String shrink, int? distance,
-      {double? minRemainingArea, double? targetArea});
-  ActionResult finishWallPreview(String token, {required bool apply});
-}
 
 /// Failure code of a command that needs the user to choose how to go on.
 const needsResolution = 'needs_resolution';

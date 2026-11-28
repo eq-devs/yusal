@@ -6,15 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/service/voice/read_aloud.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
+import 'package:yusal/features/voice/state/reply_reader.dart';
 
 String _mb(int bytes) => '${(bytes / 1000000).round()} MB';
 
-/// The speaker beside a reply: reads it aloud in Kazakh on the phone.
-/// The first tap offers the one-time voice download; while that runs the
-/// button shows its progress, and the reply is read when it is done.
+/// The speaker beside a reply: reads it aloud with the voice chosen in
+/// the voice settings. With the phone's voice, the first tap offers its
+/// one-time download; while that runs the button shows its progress, and
+/// the reply is read when it is done. With "read every reply" on, it
+/// starts by itself.
 class ReadAloudButton extends StatefulWidget {
   const ReadAloudButton({super.key, required this.reader, required this.text});
-  final ReadAloud reader;
+  final ReplyReader reader;
   final String text;
 
   @override
@@ -22,7 +25,8 @@ class ReadAloudButton extends StatefulWidget {
 }
 
 class _ReadAloudButtonState extends State<ReadAloudButton> {
-  ReadAloud get reader => widget.reader;
+  ReplyReader get reader => widget.reader;
+  ReadAloud? get device => reader.device;
 
   /// The download was started from here: read the reply when it lands,
   /// even if the dialog was put away meanwhile.
@@ -31,7 +35,8 @@ class _ReadAloudButtonState extends State<ReadAloudButton> {
   @override
   void initState() {
     super.initState();
-    reader.status.addListener(_statusChanged);
+    device?.status.addListener(_statusChanged);
+    _autoRead();
   }
 
   @override
@@ -40,15 +45,21 @@ class _ReadAloudButtonState extends State<ReadAloudButton> {
     // Another reply took this one's place.
     if (old.text != widget.text) {
       waiting = false;
-      if (reader.speaking.value) reader.stop();
+      reader.stop();
+      _autoRead();
     }
   }
 
   @override
   void dispose() {
-    reader.status.removeListener(_statusChanged);
-    if (reader.speaking.value) reader.stop();
+    device?.status.removeListener(_statusChanged);
+    reader.stop();
     super.dispose();
+  }
+
+  /// Never asks for a download by itself: only reads when it can.
+  void _autoRead() {
+    if (reader.settings.autoRead && reader.ready) speak();
   }
 
   void _statusChanged() {
@@ -73,24 +84,28 @@ class _ReadAloudButtonState extends State<ReadAloudButton> {
 
   Future<void> tap() async {
     if (reader.speaking.value) return reader.stop();
+    final device = this.device;
+    if (device == null || !reader.usesDevice) return speak();
     try {
-      await reader.start();
+      await device.start();
     } catch (e) {
       if (kDebugMode) debugPrint('read aloud: $e');
     }
     if (!mounted) return;
-    if (reader.ready) return speak();
+    if (device.ready) return speak();
     waiting = true;
-    await showVoiceDownload(context, reader);
+    await showVoiceDownload(context, device);
     // Put away while downloading: still read the reply when it lands.
-    waiting = reader.status.value.busy;
+    waiting = device.status.value.busy;
   }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-      listenable: Listenable.merge([reader.status, reader.speaking]),
+      listenable: Listenable.merge([device?.status, reader.speaking]),
       builder: (context, _) {
-        final status = reader.status.value;
+        final status = reader.usesDevice
+            ? device!.status.value
+            : VoiceModelStatus.notInstalled;
         final speaking = reader.speaking.value;
         return IconButton(
             key: const Key('voice-speak'),
@@ -109,30 +124,35 @@ class _ReadAloudButtonState extends State<ReadAloudButton> {
                         value: status.fraction > 0 ? status.fraction : null))
                 : Icon(
                     speaking
-                        ? Icons.stop_circle_outlined
-                        : Icons.volume_up_outlined,
+                        ? YIcons.stop
+                        : YIcons.speaker,
                     size: 20));
       });
 }
 
-/// Offers the Kazakh voice download and shows it through to the end.
-/// True once the voice is installed, false when the user said no, null
-/// when they put the dialog away and left the download running.
-Future<bool?> showVoiceDownload(BuildContext context, ReadAloud reader) =>
+/// Offers a voice model's download and shows it through to the end:
+/// the Kazakh voice unless [title] and [about] say otherwise. True once
+/// the model is installed, false when the user said no, null when they
+/// put the dialog away and left the download running.
+Future<bool?> showVoiceDownload(BuildContext context, VoiceModel reader,
+        {String? title, String? about}) =>
     showDialog<bool>(
         context: context,
-        builder: (context) => _VoiceDownloadDialog(reader: reader));
+        builder: (context) =>
+            _VoiceDownloadDialog(reader: reader, title: title, about: about));
 
 class _VoiceDownloadDialog extends StatefulWidget {
-  const _VoiceDownloadDialog({required this.reader});
-  final ReadAloud reader;
+  const _VoiceDownloadDialog({required this.reader, this.title, this.about});
+  final VoiceModel reader;
+  final String? title;
+  final String? about;
 
   @override
   State<_VoiceDownloadDialog> createState() => _VoiceDownloadDialogState();
 }
 
 class _VoiceDownloadDialogState extends State<_VoiceDownloadDialog> {
-  ReadAloud get reader => widget.reader;
+  VoiceModel get reader => widget.reader;
 
   @override
   void initState() {
@@ -176,7 +196,8 @@ class _VoiceDownloadDialogState extends State<_VoiceDownloadDialog> {
             child: Icon(YIcons.mic,
                 color: colors.primary, size: 28)),
         title: Text(
-            tr3('下载哈萨克语语音', 'Қазақша дауысты жүктеу',
+            widget.title ??
+                tr3('下载哈萨克语语音', 'Қазақша дауысты жүктеу',
                 'Скачать казахский голос',
                 'Download the Kazakh voice', ky: 'Казак тилиндеги үндү жүктөп алуу', uz: 'Qozoq tilidagi ovozni yuklab olish'),
             textAlign: TextAlign.center),
@@ -186,6 +207,7 @@ class _VoiceDownloadDialogState extends State<_VoiceDownloadDialog> {
             children: [
               if (!s.busy && s.phase != VoiceModelPhase.paused) ...[
                 Text(
+                    widget.about ??
                     tr3(
                         '下载一次，以后助手的回答就能在手机上读出来，不用联网。',
                         'Бір рет жүктеңіз: көмекшінің жауабы телефонның өзінде, интернетсіз дауыстап оқылады.',
@@ -236,11 +258,8 @@ class _VoiceDownloadDialogState extends State<_VoiceDownloadDialog> {
                         tr3('正在校验…', 'Тексерілуде…', 'Проверка…', 'Checking…', ky: 'Текшерилүүдө…', uz: 'Tekshirilmoqda…'),
                       VoiceModelPhase.paused =>
                         tr3('已暂停', 'Тоқтатылды', 'Пауза', 'Paused', ky: 'Тындырылды', uz: 'Toʻxtatildi'),
-                      _ => tr3(
-                          '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}，下完会自动朗读',
-                          '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}, біткен соң жауап оқылады',
-                          '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}, после загрузки ответ прозвучит',
-                          '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}; the reply plays after the download', ky: '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}; жооп жүктөлгөндөн кийин ойнотулат', uz: '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}; javob yuklab olingandan keyin ijro etiladi'),
+                      _ =>
+                          '${_mb((reader.downloadBytes * s.fraction).round())} / ${_mb(reader.downloadBytes)}',
                     },
                     textAlign: TextAlign.center,
                     style: quiet),

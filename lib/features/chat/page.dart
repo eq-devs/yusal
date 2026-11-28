@@ -8,16 +8,16 @@ import 'package:yusal/features/chat/state/chat.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
 import 'package:yusal/service/api/api_failure.dart';
 import 'package:yusal/features/shared/model/models.dart';
-import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/model/form.dart';
 import 'package:yusal/features/voice/state/screen.dart';
-import 'package:yusal/features/me/pages/trust.dart';
+import 'package:yusal/features/trust/page.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// One conversation: text, image placeholders, demand and quote cards,
@@ -276,8 +276,8 @@ class _ChatPageState extends State<ChatPage>
                           trailing: const Icon(YIcons.chevronRight),
                           onTap: () => pushPage<void>(
                               context,
-                              (_) => DemandDetailPage(
-                                  demandId: data.conversation.demandId!)))),
+                              (_) => pageFor(
+                                  ToDemand(data.conversation.demandId!))))),
                 Expanded(
                     child: ListView.builder(
                         reverse: true,
@@ -429,8 +429,8 @@ class _Bubble extends StatelessWidget {
         content = InkWell(
             onTap: demandId == null
                 ? null
-                : () => pushPage<void>(
-                    context, (_) => DemandDetailPage(demandId: demandId)),
+                : () =>
+                    pushPage<void>(context, (_) => pageFor(ToDemand(demandId))),
             child: Container(
                 width: 230,
                 padding: const EdgeInsets.all(12),

@@ -24,10 +24,8 @@ import 'package:yusal/features/editor/repository/price_repository.dart'
 import 'package:yusal/features/shared/model/admin_models.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/shared/ui/components.dart';
-import 'package:yusal/features/demand/page.dart';
-import 'package:yusal/features/home/pages/post.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/localization/l10n.dart';
-import 'package:yusal/features/profile/page.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
@@ -409,7 +407,7 @@ class _Workbench extends StatelessWidget {
                         ],
                         onTap: () => open(_Review.reports)),
                     _TodoTile(
-                        icon: Icons.gavel_outlined,
+                        icon: YIcons.gavel,
                         title: tr3('申诉', 'Апелляциялар', 'Апелляции', 'Appeals', ky: 'Даттануулар', uz: 'Apellyatsiyalar'),
                         count: todo.appeals.count,
                         lines: [for (final x in todo.appeals.items) x.text],
@@ -862,7 +860,7 @@ class _DemandQueueState extends State<_DemandQueue> {
                     selected: _selected.contains(d.id),
                     onTap: _selected.isEmpty
                         ? () => pushPage<void>(
-                            context, (_) => DemandDetailPage(demandId: d.id))
+                            context, (_) => pageFor(ToDemand(d.id)))
                         : () => setState(() {
                               if (!_selected.remove(d.id)) _selected.add(d.id);
                             }),
@@ -1020,14 +1018,14 @@ class _ReportsState extends State<_Reports> {
     final r = v.report;
     switch (r.target) {
       case ReportTarget.demand:
-        pushPage<void>(context, (_) => DemandDetailPage(demandId: r.targetId));
+        pushPage<void>(context, (_) => pageFor(ToDemand(r.targetId)));
       case ReportTarget.profile:
-        pushPage<void>(context, (_) => ProfilePage(profileId: r.targetId));
+        pushPage<void>(context, (_) => pageFor(ToProfile(r.targetId)));
       case ReportTarget.post:
-        pushPage<void>(context, (_) => PostPage(postId: r.targetId));
+        pushPage<void>(context, (_) => pageFor(ToPost(r.targetId)));
       case ReportTarget.comment:
         if (v.postId != null) {
-          pushPage<void>(context, (_) => PostPage(postId: v.postId!));
+          pushPage<void>(context, (_) => pageFor(ToPost(v.postId!)));
         }
       case ReportTarget.account:
         pushPage<void>(
@@ -1340,7 +1338,7 @@ class _VerificationsState extends State<_Verifications> {
                           children: [
                         InkWell(
                             onTap: () => pushPage<void>(context,
-                                (_) => ProfilePage(profileId: v.profileId)),
+                                (_) => pageFor(ToProfile(v.profileId))),
                             child: Text(v.name, style: YText.bodyStrong)),
                         Text(
                             '${v.ownerName} · ${tr3('电话 ${v.phone}', 'тел. ${v.phone}', 'тел. ${v.phone}', 'tel. ${v.phone}', ky: 'тел. ${v.phone}', uz: 'tel. ${v.phone}')} · ${_date(v.createdAt)}',
@@ -1682,7 +1680,7 @@ class AccountDetailPage extends StatelessWidget {
                                 tr3('已核验', 'расталған', 'проверен', 'verified', ky: 'текшерилген', uz: 'tekshirilgan'),
                             ].join(' · ')),
                             onTap: () => pushPage<void>(
-                                context, (_) => ProfilePage(profileId: p.id)),
+                                context, (_) => pageFor(ToProfile(p.id))),
                             trailing: _may(context, AdminPerms.moderate) &&
                                     p.status != ProfileStatus.hidden
                                 ? TextButton(
@@ -1727,7 +1725,7 @@ class AccountDetailPage extends StatelessWidget {
                                             'Featured: first on the home screen', ky: 'Тандалган: башкы экранда биринчи', uz: 'Tanlangan: bosh ekranda birinchi'))
                                 : null,
                             onTap: () =>
-                                pushPage<void>(context, (_) => PostPage(postId: p.id)),
+                                pushPage<void>(context, (_) => pageFor(ToPost(p.id))),
                             trailing: _may(context, AdminPerms.moderate)
                                 ? TextButton(
                                     onPressed: () async {
@@ -1763,7 +1761,7 @@ class AccountDetailPage extends StatelessWidget {
                         _DemandCard(
                             demand: x,
                             onTap: () => pushPage<void>(context,
-                                (_) => DemandDetailPage(demandId: x.id))),
+                                (_) => pageFor(ToDemand(x.id)))),
                         if (_may(context, AdminPerms.moderate) &&
                             const [
                               DemandStatus.pendingReview,
@@ -1873,7 +1871,7 @@ class _MoreTab extends StatelessWidget {
                 children: [
                   SettingsRow(
                       key: const Key('admin-feedback'),
-                      icon: Icons.mark_email_unread_outlined,
+                      icon: YIcons.mail,
                       title: tr3('用户反馈', 'Пікірлер', 'Обратная связь', 'Feedback', ky: 'Пикир-сунуштар', uz: 'Fikr-mulohazalar'),
                       onTap: () => pushPage<void>(
                           context, (_) => const FeedbackInboxPage())),
@@ -1905,7 +1903,7 @@ class _MoreTab extends StatelessWidget {
                   if (_may(context, AdminPerms.operate))
                     SettingsRow(
                         key: const Key('admin-broadcast'),
-                        icon: Icons.campaign_outlined,
+                        icon: YIcons.megaphone,
                         title: tr3('群发通知', 'Жаппай хабарландыру', 'Рассылка', 'Broadcast', ky: 'Жалпы билдирүү', uz: 'Ommaviy xabar'),
                         subtitle: tr3('推送到所有用户的手机', 'Барлық телефонға',
                             'На все телефоны',
@@ -1923,7 +1921,7 @@ class _MoreTab extends StatelessWidget {
                           pushPage<void>(context, (_) => const PricesPage())),
                   SettingsRow(
                       key: const Key('admin-banned-words'),
-                      icon: Icons.block_outlined,
+                      icon: YIcons.block,
                       title: tr3('违禁词', 'Тыйым сөздер', 'Запрещённые слова', 'Banned words', ky: 'Тыюу салынган сөздөр', uz: 'Taqiqlangan soʻzlar'),
                       onTap: () => pushPage<void>(
                           context, (_) => const BannedWordsPage())),
@@ -1932,7 +1930,7 @@ class _MoreTab extends StatelessWidget {
                 title: tr3('推送', 'Хабарландырулар', 'Уведомления', 'Notifications', ky: 'Билдирмелер', uz: 'Bildirishnomalar'),
                 children: [
                   SettingsRow(
-                      icon: Icons.notifications_paused_outlined,
+                      icon: YIcons.bellOff,
                       title: _pushTitle,
                       subtitle: tr3(
                           '平台免打扰时段与每人每日上限',
@@ -1991,7 +1989,7 @@ class _AllDemandsPageState extends State<_AllDemandsPage> with _Search {
                   item: (context, d) => _DemandCard(
                       demand: d,
                       onTap: () => pushPage<void>(
-                          context, (_) => DemandDetailPage(demandId: d.id)),
+                          context, (_) => pageFor(ToDemand(d.id))),
                       onLongPress: canModerate &&
                               (d.status == DemandStatus.open ||
                                   d.status == DemandStatus.paused)
@@ -2112,7 +2110,7 @@ class _PushPolicyPage extends StatelessWidget {
                     children: [
                       SettingsGroup(children: [
                         SettingsRow(
-                            icon: Icons.bedtime_outlined,
+                            icon: YIcons.moon,
                             title: quietStart,
                             value:
                                 p.quietStart.isEmpty ? _noQuiet : p.quietStart,
@@ -2162,7 +2160,7 @@ class _PushPolicyPage extends StatelessWidget {
                                   }
                                 : null),
                         SettingsRow(
-                            icon: Icons.speed,
+                            icon: YIcons.speed,
                             title: dailyCap,
                             value: _cap(p.dailyCap),
                             onTap: canOperate

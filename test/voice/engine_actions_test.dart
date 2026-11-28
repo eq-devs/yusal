@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/page.dart';
 import 'package:yusal/features/voice/actions/actions.dart';
-import 'package:yusal/features/voice/actions/design.dart';
 import 'package:yusal/features/voice/actions/engine.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/state/executor.dart';

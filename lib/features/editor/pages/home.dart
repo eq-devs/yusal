@@ -494,7 +494,7 @@ class _HouseHomeState extends ConsumerState<HouseHome>
                             const SizedBox(height: 8),
                             way(
                                 'sketch',
-                                Icons.gesture,
+                                YIcons.sketch,
                                 tr3('在画布上拖出外形', 'Пішінді сызып беру',
                                     'Нарисовать контур',
                                     'Draw the outline', ky: 'Контурду чийүү', uz: 'Konturni chizish'),

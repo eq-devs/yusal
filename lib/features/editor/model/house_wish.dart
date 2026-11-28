@@ -2,21 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/engine/core/commands/house_layout.dart';
 import 'package:yusal/features/editor/engine/core/commands/house_wish.dart';
-import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/features/editor/engine/core/geometry/derived_house.dart';
 import 'package:yusal/features/editor/engine/core/number_input.dart';
 import 'package:yusal/features/editor/engine/render2d/floor_plan_painter.dart';
 import 'package:yusal/features/editor/engine/render2d/furniture_names.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
-
-/// Room names by type in the app's language, for a house drawn from a
-/// wish.
-Map<String, String> wishRoomNames() => {
-      for (final t in RoomType.values)
-        if (t != RoomType.custom) t.name: roomTypeName(t),
-      'stair': tr3('楼梯间', 'Баспалдақ алаңы', 'Лестничный холл', 'Stair hall', ky: 'Тепкич холлу', uz: 'Zinapoya xolli'),
-      'family': tr3('起居室', 'Отбасы бөлмесі', 'Общая комната', 'Common room', ky: 'Жалпы бөлмө', uz: 'Umumiy xona'),
-    };
 
 /// What the questions collect before a house is asked for.
 class HouseWish {

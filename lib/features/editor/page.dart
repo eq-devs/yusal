@@ -2722,7 +2722,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                   '$direction ${meters(length)} m · end not joined',
                   ky: '$direction ${meters(length)} м · учу туташкан эмес',
                   uz: '$direction ${meters(length)} m · uchi ulanmagan'),
-              icon: Icons.link_off,
+              icon: YIcons.linkOff,
               color: warn
             );
     }
@@ -2810,7 +2810,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                       'Drag onto a wall and the window or door snaps into place',
                       ky: 'Дубалга сүйрөп келиңиз, терезе же эшик өз ордуна түшөт',
                       uz: 'Devorga sudrab keling, deraza yoki eshik oʻz joyiga tushadi'),
-              icon: Icons.touch_app_outlined,
+              icon: YIcons.tap,
               color: warn
             );
     }
@@ -2854,7 +2854,7 @@ class _HouseEditorState extends ConsumerState<HouseEditor>
                   "Wall ${wallDraftLabel!} · this end isn't joined",
                   ky: 'Дубал ${wallDraftLabel!} · бул учу туташкан эмес',
                   uz: 'Devor ${wallDraftLabel!} · bu uchi ulanmagan'),
-              icon: Icons.link_off,
+              icon: YIcons.linkOff,
               color: warn
             );
     }

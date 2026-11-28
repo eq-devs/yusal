@@ -5,10 +5,10 @@ import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/service/api/api_failure.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/localization/l10n.dart';
-import 'package:yusal/features/me/pages/trust.dart';
-import 'package:yusal/features/profile/page.dart';
+import 'package:yusal/features/trust/page.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
@@ -416,7 +416,7 @@ class _CritiqueTile extends StatelessWidget {
                         onTap: pro == null
                             ? null
                             : () => pushPage<void>(
-                                context, (_) => ProfilePage(profileId: pro.id)),
+                                context, (_) => pageFor(ToProfile(pro.id))),
                         child: Avatar(a?.displayName ?? '',
                             size: reply ? 28 : 36,
                             team: pro?.kind == ProfileKind.team)),

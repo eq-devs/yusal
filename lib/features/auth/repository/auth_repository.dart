@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yusal/service/api/api_client.dart';
-import 'package:yusal/features/auth/model/auth_json.dart';
+import 'package:yusal/service/api/account_json.dart';
 import 'package:yusal/service/push/push_setup.dart';
 import 'package:yusal/service/api/api_failure.dart';
 import 'package:yusal/features/shared/model/models.dart';
+import 'package:yusal/utils/json.dart';
 
 /// Signing in and the signed-in account.
 
@@ -20,8 +21,6 @@ class SignInMethod {
 
 abstract interface class AuthRepository {
   Account? get currentAccount;
-  Future<void> requestCode(String phone);
-  Future<Account> verify(String phone, String code, {String? displayName});
   Future<void> signOut();
   Future<Account> updateName(String name);
 
@@ -140,19 +139,9 @@ final class HttpAuthRepository implements AuthRepository {
           body: {'password': password}));
 
   static List<SignInMethod> _methods(Object? data) => [
-        for (final m
-            in (data as List? ?? const []).cast<Map<String, dynamic>>())
+        for (final m in jsonMaps(data))
           SignInMethod(m['provider'] as String, m['email'] as String? ?? ''),
       ];
-
-  @override
-  Future<void> requestCode(String phone) async =>
-      throw const ApiFailure(ApiCodes.invalidState, 'phone sign-in');
-
-  @override
-  Future<Account> verify(String phone, String code,
-          {String? displayName}) async =>
-      throw const ApiFailure(ApiCodes.invalidState, 'phone sign-in');
 
   @override
   Future<void> signOut() async {

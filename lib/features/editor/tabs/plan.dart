@@ -319,7 +319,7 @@ extension _PlanTab on _HouseEditorState {
       (
         'browse',
         basicTool(
-            Icons.pan_tool_outlined, tr3('浏览', 'Шолу', 'Просмотр', 'View', ky: 'Көрүнүш', uz: 'Koʻrinish'), browse, () {
+            YIcons.hand, tr3('浏览', 'Шолу', 'Просмотр', 'View', ky: 'Көрүнүш', uz: 'Koʻrinish'), browse, () {
           tool = EditorTool.browse;
         })
       ),
@@ -338,7 +338,7 @@ extension _PlanTab on _HouseEditorState {
       if (tool == EditorTool.drawWall)
         (
           'freeWall',
-          basicTool(Icons.add_box_outlined, '独立墙', placingWallStart, () {
+          basicTool(YIcons.add, '独立墙', placingWallStart, () {
             drawingOrigin = null;
             placingWallStart = true;
             placementHint = tr3(
@@ -351,7 +351,7 @@ extension _PlanTab on _HouseEditorState {
       (
         'split',
         basicTool(
-            Icons.vertical_split_outlined, '拉线分房', tool == EditorTool.split,
+            YIcons.split, '拉线分房', tool == EditorTool.split,
             () => toolBody('split'))
       ),
       (
@@ -376,7 +376,7 @@ extension _PlanTab on _HouseEditorState {
       ),
       (
         'selectWall',
-        basicTool(Icons.view_week_outlined, '墙体调整',
+        basicTool(YIcons.wall, '墙体调整',
             tool == EditorTool.selectWall || tool == EditorTool.editWall, () => toolBody('selectWall'))
       ),
       (
@@ -510,7 +510,7 @@ extension _PlanTab on _HouseEditorState {
       costChipFor = history.present;
       costChip = v <= 0
           ? ''
-          : '≈ ${currencySymbol(e.currency)} ${v < 1e6 ? money(v) : isKk ? '${dec((v / 1e6).toStringAsFixed(1))} млн' : isUz ? '${dec((v / 1e6).toStringAsFixed(1))} mln' : isEn ? '${(v / 1e6).toStringAsFixed(1)}M' : '${(v / 1e4).round()} 万'}';
+          : '≈ ${currencySymbol(e.currency)} ${v < 1e6 ? groupDigits(v) : isKk ? '${dec((v / 1e6).toStringAsFixed(1))} млн' : isUz ? '${dec((v / 1e6).toStringAsFixed(1))} mln' : isEn ? '${(v / 1e6).toStringAsFixed(1)}M' : '${(v / 1e4).round()} 万'}';
     }
     return costChip;
   }
@@ -548,7 +548,7 @@ extension _PlanTab on _HouseEditorState {
   List<Widget> hintChildren(Tokens t, bool coach) {
     return [
       if (coach) ...[
-        Icon(Icons.touch_app_outlined, size: 18, color: t.accent),
+        Icon(YIcons.tap, size: 18, color: t.accent),
         const SizedBox(width: 6),
       ],
       Expanded(

@@ -63,8 +63,8 @@ class HouseProgress extends StatelessWidget {
                           i < stage.index
                               ? YIcons.checkCircle
                               : i == stage.index
-                                  ? Icons.radio_button_checked
-                                  : Icons.radio_button_unchecked,
+                                  ? YIcons.radioOn
+                                  : YIcons.radioOff,
                           size: 18,
                           color: i <= stage.index ? t.accent : t.faint),
                       const SizedBox(height: 2),

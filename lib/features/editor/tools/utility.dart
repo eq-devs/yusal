@@ -56,14 +56,14 @@ extension _UtilityTool on _HouseEditorState {
                                   'Auto-place on this floor',
                                   ky: 'Бул кабатта автоматтык жайгаштыруу',
                                   uz: 'Bu qavatda avtomatik joylash'),
-                              icon: Icons.auto_fix_high,
+                              icon: YIcons.ai,
                               primary: true,
                               onPressed: () => Navigator.pop(context, 'auto')),
                           if (count > 0)
                             Btn(
                                 label:
                                     '${tr3('清除本层点位', 'Қабат нүктелерін өшіру', 'Удалить точки этажа', "Delete this floor's points", ky: 'Бул кабаттын чекиттерин өчүрүү', uz: 'Bu qavat nuqtalarini oʻchirish')} ($count)',
-                                icon: Icons.delete_sweep_outlined,
+                                icon: YIcons.delete,
                                 danger: true,
                                 onPressed: () =>
                                     Navigator.pop(context, 'clear')),
@@ -342,11 +342,11 @@ extension _UtilityTool on _HouseEditorState {
           tr3('电气点位', 'Электр нүктелері', 'Электроточки', 'Electrical points',
               ky: 'Электр чекиттери', uz: 'Elektr nuqtalari')),
       Kv(
-          '${money(take.lightCable + take.powerCable)} $unitM',
+          '${groupDigits(take.lightCable + take.powerCable)} $unitM',
           tr3('电线约', 'Сым шамамен', 'Провод примерно', 'Wire, approx.',
               ky: 'Зым, болжол менен', uz: 'Sim, taxminan')),
       Kv(
-          '${money(take.waterPipe + take.drainPipe)} $unitM',
+          '${groupDigits(take.waterPipe + take.drainPipe)} $unitM',
           tr3('水管约', 'Су құбыры шамамен', 'Водопроводная труба примерно',
               'Water pipe, approx.',
               ky: 'Суу түтүгү, болжол менен', uz: 'Suv quvuri, taxminan')),

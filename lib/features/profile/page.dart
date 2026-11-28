@@ -3,15 +3,15 @@ import 'package:yusal/features/chat/repository/chat_repository.dart';
 import 'package:yusal/features/profile/repository/profile_repository.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
-import 'package:yusal/features/chat/page.dart';
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/profile/pages/edit.dart';
 import 'package:yusal/features/profile/state/profile.dart';
-import 'package:yusal/features/me/pages/trust.dart';
+import 'package:yusal/features/trust/page.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Public page of a worker or team. Shows only facts the platform can
@@ -30,7 +30,7 @@ class ProfilePage extends StatelessWidget {
             ? PageScaffold(
                 title: '',
                 body: EmptyState(
-                    icon: Icons.person_off_outlined,
+                    icon: YIcons.personOff,
                     title:
                         tr3('名片不存在或已隐藏', 'Профиль жоқ', 'Профиль недоступен', 'Profile unavailable', ky: 'Профиль жеткиликсиз', uz: 'Profil mavjud emas')))
             : _ProfileView(data: data));
@@ -56,7 +56,7 @@ class _ProfileView extends StatelessWidget {
           () =>
               context.read(chatRepositoryProvider).openConversation(p.ownerId));
       if (conv != null && context.mounted) {
-        await pushPage<void>(context, (_) => ChatPage(conversationId: conv.id));
+        await pushPage<void>(context, (_) => pageFor(ToChat(conv.id)));
       }
     }
 

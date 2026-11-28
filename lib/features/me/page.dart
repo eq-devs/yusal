@@ -5,28 +5,21 @@ import 'package:yusal/features/auth/repository/auth_repository.dart';
 import 'package:yusal/features/chat/repository/chat_repository.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
-import 'package:yusal/features/apply/page.dart';
-import 'package:yusal/features/backup/page.dart';
 import 'package:yusal/features/demand/widgets/demand_card.dart';
 import 'package:yusal/features/profile/widgets/profile_card.dart';
 import 'package:yusal/features/shared/ui/components.dart';
-import 'package:yusal/features/demand/page.dart';
 import 'package:yusal/features/home/widgets/house_card.dart';
-import 'package:yusal/features/home/pages/post.dart';
 import 'package:yusal/localization/l10n.dart';
-import 'package:yusal/features/profile/pages/edit.dart';
-import 'package:yusal/features/profile/page.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
-import 'package:yusal/service/voice/read_aloud.dart';
 import 'package:yusal/features/voice/widgets/voice_overlay.dart'
-    show voiceBuiltIn;
+    show voiceBuiltIn, voicePlatform;
 import 'package:yusal/features/auth/pages/sign_in_methods.dart';
-import 'package:yusal/features/admin/page.dart';
 import 'package:yusal/features/me/pages/feedback.dart';
-import 'package:yusal/features/me/pages/kazakh_voice.dart';
-import 'package:yusal/features/me/pages/trust.dart';
+import 'package:yusal/features/me/pages/voice_settings.dart';
+import 'package:yusal/features/trust/page.dart';
 import 'package:yusal/features/me/state/me.dart';
 import 'package:yusal/features/profile/state/profile.dart';
 import 'package:yusal/features/auth/widgets/edit_phone.dart';
@@ -98,7 +91,7 @@ class MePage extends ConsumerWidget {
                                             'Резервные копии',
                                             'Backups', ky: 'Резервдик көчүрмөлөр', uz: 'Zaxira nusxalar'),
                                         onTap: () => pushPage<void>(context,
-                                            (_) => const BackupPage())),
+                                            (_) => pageFor(const ToBackup()))),
                                     SettingsRow(
                                         key: const Key('me-phone'),
                                         icon: YIcons.phone,
@@ -122,12 +115,11 @@ class MePage extends ConsumerWidget {
                                     if (account.can(AdminPerms.read))
                                       SettingsRow(
                                           key: const Key('me-admin'),
-                                          icon: Icons
-                                              .admin_panel_settings_outlined,
+                                          icon: YIcons.verified,
                                           title: tr3(
                                               '管理后台', 'Әкімшілік', 'Админка', 'Admin', ky: 'Админ', uz: 'Admin'),
                                           onTap: () => pushPage<void>(context,
-                                              (_) => const AdminPage())),
+                                              (_) => pageFor(const ToAdmin()))),
                                   ]),
                                   const _ProProfiles(),
                                 ],
@@ -152,7 +144,7 @@ class MePage extends ConsumerWidget {
                                           }),
                                       SettingsRow(
                                           key: const Key('me-theme'),
-                                          icon: Icons.brightness_6_outlined,
+                                          icon: YIcons.theme,
                                           title: tr3('外观', 'Көрініс', 'Тема', 'Theme', ky: 'Тема', uz: 'Mavzu'),
                                           value: themes
                                               .firstWhere(
@@ -167,26 +159,16 @@ class MePage extends ConsumerWidget {
                                                 selected: app.theme);
                                             if (v != null) choose.setTheme(v);
                                           }),
-                                      if (voiceBuiltIn)
-                                        if (ReadAloud.instance
-                                            case final reader?)
-                                          ValueListenableBuilder<VoiceModelStatus>(
-                                              valueListenable: reader.status,
-                                              builder: (context, s, _) => SettingsRow(
-                                                  key: const Key(
-                                                      'me-kazakh-voice'),
-                                                  icon: Icons
-                                                      .record_voice_over_outlined,
-                                                  title: tr3(
-                                                      '哈萨克语朗读',
-                                                      'Қазақша дауыс',
-                                                      'Казахский голос',
-                                                      'Kazakh voice', ky: 'Казакча үн', uz: 'Qozoqcha ovoz'),
-                                                  value: kazakhVoiceValue(s),
-                                                  onTap: () => pushPage<void>(
-                                                      context,
-                                                      (_) => KazakhVoicePage(
-                                                          reader: reader)))),
+                                      if (voiceBuiltIn && voicePlatform)
+                                        SettingsRow(
+                                            key: const Key('me-voice'),
+                                            icon: YIcons.mic,
+                                            title: tr3('语音', 'Дауыс', 'Голос',
+                                                'Voice', ky: 'Үн', uz: 'Ovoz'),
+                                            onTap: () => pushPage<void>(
+                                                context,
+                                                (_) =>
+                                                    const VoiceSettingsPage())),
                                       SettingsRow(
                                           key: const Key('me-feedback'),
                                           icon: YIcons.chat,
@@ -390,8 +372,8 @@ class _MyPosts extends StatelessWidget {
                                     post: post,
                                     onTap: () => pushPage<void>(
                                         context,
-                                        (_) => PostPage(
-                                            postId: post.id, preview: post))))),
+                                        (_) => pageFor(
+                                            ToPost(post.id, preview: post)))))),
                     ])));
   }
 }
@@ -415,11 +397,11 @@ class _ProProfiles extends StatelessWidget {
                       child: ProfileCard(
                           profile: p,
                           onTap: () => pushPage<void>(
-                              context, (_) => ProfilePage(profileId: p.id)))),
+                              context, (_) => pageFor(ToProfile(p.id))))),
                 SettingsGroup(children: [
                   SettingsRow(
                       key: const Key('me-demand-alert'),
-                      icon: Icons.notifications_active_outlined,
+                      icon: YIcons.bellRing,
                       title: tr3('新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки', 'New requests', ky: 'Жаңы суроо-талаптар', uz: 'Yangi soʻrovlar'),
                       subtitle: tr3(
                           '按地区、工种订阅，有新需求时提醒你',
@@ -449,7 +431,7 @@ class _ProProfiles extends StatelessWidget {
                     alignment: AlignmentDirectional.centerStart,
                     child: TextButton.icon(
                         onPressed: () => pushPage<void>(
-                            context, (_) => const ProfileEditPage()),
+                            context, (_) => pageFor(const ToProfileEdit())),
                         icon: const Icon(YIcons.add, size: 20),
                         label: Text(
                             tr3('再建一个名片', 'Тағы профиль', 'Ещё профиль', 'Another profile', ky: 'Башка профиль', uz: 'Boshqa profil')))),
@@ -466,8 +448,8 @@ class _ProProfiles extends StatelessWidget {
                               ProRole.engineer => YIcons.design,
                             },
                             title: proRoleName(r),
-                            onTap: () => pushPage<void>(
-                                context, (_) => ProfileEditPage(role: r))),
+                            onTap: () => pushPage<void>(context,
+                                (_) => pageFor(ToProfileEdit(role: r)))),
                     ]),
                 Padding(
                     padding: const EdgeInsets.fromLTRB(
@@ -511,7 +493,7 @@ class MyApplicationsPage extends StatelessWidget {
                             onTap: d == null
                                 ? null
                                 : () => pushPage<void>(context,
-                                    (_) => ApplyPage(demand: d, existing: a)),
+                                    (_) => pageFor(ToApply(d, existing: a))),
                             child: Row(children: [
                               Expanded(
                                   child: Column(
@@ -545,7 +527,10 @@ class MyApplicationsPage extends StatelessWidget {
                                           .where((c) => c.applicationId == a.id)
                                           .lastOrNull;
                                       if (c != null && context.mounted) {
-                                        openCooperation(context, c.id);
+                                        pushPage<void>(
+                                            context,
+                                            (_) =>
+                                                pageFor(ToCooperation(c.id)));
                                       }
                                     },
                                     child: Text(a.status ==
@@ -596,10 +581,8 @@ class FavouritesPage extends StatelessWidget {
                                 compact: true,
                                 post: p,
                                 liked: true,
-                                onTap: () => pushPage<void>(
-                                    context,
-                                    (_) =>
-                                        PostPage(postId: p.id, preview: p)))),
+                                onTap: () => pushPage<void>(context,
+                                    (_) => pageFor(ToPost(p.id, preview: p))))),
                     ],
                     if (profiles.isNotEmpty) ...[
                       SectionTitle(
@@ -610,8 +593,8 @@ class FavouritesPage extends StatelessWidget {
                             child: ProfileCard(
                                 key: Key('fav-profile-${p.id}'),
                                 profile: p,
-                                onTap: () => pushPage<void>(context,
-                                    (_) => ProfilePage(profileId: p.id)))),
+                                onTap: () => pushPage<void>(
+                                    context, (_) => pageFor(ToProfile(p.id))))),
                     ],
                     if (demands.isNotEmpty) ...[
                       SectionTitle(tr3('需求', 'Тапсырыстар', 'Заявки', 'Requests', ky: 'Суроо-талаптар', uz: 'Soʻrovlar')),
@@ -622,8 +605,8 @@ class FavouritesPage extends StatelessWidget {
                                 key: Key('fav-demand-${d.id}'),
                                 compact: true,
                                 demand: d,
-                                onTap: () => pushPage<void>(context,
-                                    (_) => DemandDetailPage(demandId: d.id)))),
+                                onTap: () => pushPage<void>(
+                                    context, (_) => pageFor(ToDemand(d.id))))),
                     ],
                   ]);
             }));

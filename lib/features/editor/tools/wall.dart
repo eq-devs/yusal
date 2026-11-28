@@ -255,8 +255,8 @@ extension _WallTool on _HouseEditorState {
                         child: Row(children: [
                           Icon(
                               value == now
-                                  ? Icons.radio_button_checked
-                                  : Icons.radio_button_unchecked,
+                                  ? YIcons.radioOn
+                                  : YIcons.radioOff,
                               size: 18),
                           const SizedBox(width: 10),
                           Text(label)
@@ -452,7 +452,7 @@ extension _WallTool on _HouseEditorState {
                   if (low == null)
                     button(
                         'thickness',
-                        Icons.line_weight,
+                        YIcons.thickness,
                         tr3('墙厚', 'Қалыңдық', 'Толщина', 'Thickness',
                             ky: 'Калыңдыгы', uz: 'Qalinligi'),
                         '修改墙厚'.trKey(
@@ -500,7 +500,7 @@ extension _WallTool on _HouseEditorState {
                           'Uy oʻlchamini oʻzgartirish')),
                   button(
                       'outerThickness',
-                      Icons.line_weight,
+                      YIcons.thickness,
                       tr3('墙厚', 'Қалыңдық', 'Толщина', 'Thickness',
                           ky: 'Калыңдыгы', uz: 'Qalinligi'),
                       '外墙厚度'.trKey(

@@ -54,4 +54,20 @@ Live<List<X>>(provider: xListProvider, builder: (context, list) => …);
 - **会话：** 所有 repository 共用 `ApiClient.app`，它负责令牌、当前账号和变更通知。
 - **测试：** 用 `MockBackend` override 掉各个 repository provider（见 `test/support/`）。
 
-`test/architecture_test.dart` 检查两件事：顶层目录只能是上面这几个，每个 feature 只能用上面列出的子目录。
+## 依赖方向（由测试强制）
+
+`test/architecture_test.dart` 检查：
+
+- 顶层目录只能是上面这几个，每个 feature 只能用上面列出的子目录；
+- `features/editor/engine/core` 是纯 Dart，只引用自己和 `package:meta`；
+- 底层（`constant/`、`localization/`、`service/`、`utils/`、`features/shared/`）只能引用底层和引擎 core，不能引用任何 feature；
+- 每个 feature 分三层：数据（`repository/`、`model/`）← 状态（`state/`）← 界面（其余）。下层不能引用上层，本 feature 和别的 feature 都一样；
+- 同一层里，feature 之间不能有环。
+
+一个 feature 打开另一个 feature 的页面时，不引用那个页面，而是用 `shared/ui/routes.dart` 里的目的地：`pushPage(context, (_) => pageFor(ToDemand(id)))`。`app.dart` 的 `appPage` 用一个穷尽的 `switch` 把每个目的地变成页面，新加目的地不写页面就编译不过；`main()` 和测试里设置 `Routes.pages = appPage`。通知和推送里的引用用 `openRef`。
+
+`test/platform/design_system_test.dart` 另外限制 Material 图标：图标一律用 YIcons（`tool/brand/icons.json`，`python3 tool/brand/gen_yicons.py` 生成字体和 `yicons.dart`），唯一例外是苹果登录按钮上的苹果标志。
+
+后端错误码：yusal-api 的 `docs/api_codes.json` 在这里有一份副本，`test/platform/api_codes_test.dart` 检查每个服务端错误码都能落到一个 `ApiCodes` 上。
+
+治理进度、任务池和架构决策记录在 [`docs/governance/`](governance/)。

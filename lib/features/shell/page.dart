@@ -14,19 +14,12 @@ import 'package:yusal/features/projects/page.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart' show Frost, glassAlpha;
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/shell_nav.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
 import 'package:yusal/features/voice/actions/nav.dart';
 import 'package:yusal/features/voice/state/screen.dart';
 import 'package:yusal/features/shared/brand/brand.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
-
-/// Tabs of the app shell, in order.
-abstract final class ShellTab {
-  static const explore = 0;
-  static const houses = 1;
-  static const messages = 2;
-  static const me = 3;
-}
 
 /// The app shell: Discover, My houses, Messages and Me. Every business
 /// object hangs off one house: Discover shows houses, work and people;
@@ -281,28 +274,6 @@ class _PlatformShellState extends State<PlatformShell>
                               destinations: destinations)));
             }))));
   }
-}
-
-/// Lets pages switch shell tabs (e.g. "＋ → design" opens My houses) and
-/// open the design tool with its own drafting look.
-class ShellNav extends InheritedWidget {
-  const ShellNav(
-      {super.key,
-      required this.go,
-      required this.drafting,
-      required this.newDesign,
-      required super.child});
-  final void Function(int tab, {int? exploreSegment}) go;
-  final ThemeData drafting;
-
-  /// Opens My houses with the template picker for a new design.
-  final VoidCallback newDesign;
-
-  static ShellNav? maybeOf(BuildContext context) =>
-      context.getInheritedWidgetOfExactType<ShellNav>();
-
-  @override
-  bool updateShouldNotify(ShellNav old) => false;
 }
 
 /// ANT's floating tab bar: the sections in one frosted pill and Me apart on

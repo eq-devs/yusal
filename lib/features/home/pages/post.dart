@@ -11,15 +11,11 @@ import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/demand/widgets/demand_card.dart';
 import 'package:yusal/features/shared/ui/components.dart';
-import 'package:yusal/features/home/widgets/plan_viewer.dart';
-import 'package:yusal/features/chat/page.dart';
-import 'package:yusal/features/demand/page.dart';
-import 'package:yusal/features/demand/pages/publish.dart';
+import 'package:yusal/features/editor/widgets/plan_viewer.dart';
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/links.dart';
-import 'package:yusal/features/profile/page.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
-import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/home/widgets/critiques.dart';
@@ -27,7 +23,7 @@ import 'package:yusal/features/home/widgets/house_card.dart';
 import 'package:yusal/features/home/util/reuse.dart';
 import 'package:yusal/features/shared/ui/house_progress.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
-import 'package:yusal/features/me/pages/trust.dart';
+import 'package:yusal/features/trust/page.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// One house: the plan, the facts, the story, the people recruiting for
@@ -143,8 +139,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                     .read(chatRepositoryProvider)
                     .openConversation(p.ownerId));
             if (conv != null && context.mounted) {
-              await pushPage<void>(
-                  context, (_) => ChatPage(conversationId: conv.id));
+              await pushPage<void>(context, (_) => pageFor(ToChat(conv.id)));
             }
           }
 
@@ -152,8 +147,8 @@ class _PostPageState extends ConsumerState<PostPage> {
             if (snap == null) return;
             await pushPage<void>(
                 context,
-                (_) =>
-                    PublishPage(snapshot: snap, designProjectId: p.projectId));
+                (_) => pageFor(ToPublishDemand(
+                    snapshot: snap, designProjectId: p.projectId)));
           }
 
           Future<void> share() async {
@@ -405,7 +400,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                                             padding:
                                                 const EdgeInsets.only(top: 12),
                                             child: Row(children: [
-                                              Icon(Icons.campaign_outlined,
+                                              Icon(YIcons.megaphone,
                                                   size: 18, color: t.accent),
                                               const SizedBox(width: 6),
                                               Expanded(
@@ -477,8 +472,8 @@ class _PostPageState extends ConsumerState<PostPage> {
                                                   demand: d,
                                                   onTap: () => pushPage<void>(
                                                       context,
-                                                      (_) => DemandDetailPage(
-                                                          demandId: d.id)))),
+                                                      (_) => pageFor(
+                                                          ToDemand(d.id))))),
                                       ],
                                       if (build != null)
                                         _BuildSection(
@@ -529,7 +524,7 @@ class _PostPageState extends ConsumerState<PostPage> {
               tr3('选一个阶段', 'Кезеңді таңдаңыз', 'Выберите этап', 'Choose a stage', ky: 'Этап тандаңыз', uz: 'Bosqich tanlang'),
               [for (final d in open) (d, d.current.title)]);
       if (d != null && context.mounted) {
-        await pushPage<void>(context, (_) => DemandDetailPage(demandId: d.id));
+        await pushPage<void>(context, (_) => pageFor(ToDemand(d.id)));
       }
     }
 
@@ -709,7 +704,7 @@ class _BuildSection extends StatelessWidget {
                 style: TextStyle(color: t.muted)),
             trailing: const Icon(YIcons.chevronRight),
             onTap: () => pushPage<void>(
-                context, (_) => ProfilePage(profileId: x.profile.id))),
+                context, (_) => pageFor(ToProfile(x.profile.id)))),
       Text(
           tr3(
               '金额来自双方确认的约定和节点验收记录，Yusal 不经手付款。',
@@ -756,7 +751,7 @@ class _FactSheet extends StatelessWidget {
         cell(YIcons.layers, '${post.floors}',
             tr3('层数', 'Қабат', 'Этажей', 'Floors', ky: 'Кабаттар', uz: 'Qavatlar')),
         const SizedBox(width: 8),
-        cell(Icons.meeting_room_outlined, '${post.rooms}',
+        cell(YIcons.door, '${post.rooms}',
             tr3('房间', 'Бөлме', 'Комнат', 'Rooms', ky: 'Бөлмөлөр', uz: 'Xonalar')),
       ]),
       if (post.estimatedCost != null)
@@ -826,8 +821,8 @@ class _PostLeading extends StatelessWidget {
           ? IconAction(
               label: tr3('首页', 'Басты бет', 'Главная', 'Home', ky: 'Башкы бет', uz: 'Bosh sahifa'),
               icon: const Icon(YIcons.home, size: 20),
-              onPressed: () => Navigator.of(context)
-                  .pushReplacement(platformRoute((_) => const PlatformShell())))
+              onPressed: () => Navigator.of(context).pushReplacement(
+                  platformRoute((_) => pageFor(const ToShell()))))
           : IconAction(
               label: MaterialLocalizations.of(context).backButtonTooltip,
               icon: const Icon(YIcons.arrowLeft, size: 20),

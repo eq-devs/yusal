@@ -11,9 +11,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
+import 'package:yusal/features/voice/repository/voice_repository.dart';
 import 'package:yusal/features/shell/page.dart';
 import 'package:yusal/service/storage/project_store.dart';
-import 'package:yusal/features/voice/state/session.dart';
 
 import '../storage_test.dart' show MemoryFiles;
 import 'editor_shots_test.dart' show loadFont;

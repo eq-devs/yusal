@@ -292,7 +292,7 @@ class _NewDesignFormState extends State<_NewDesignForm> {
                           roof: roof,
                           sketch: true
                         )),
-                    icon: const Icon(Icons.gesture),
+                    icon: const Icon(YIcons.sketch),
                     label: Text(tr3('在画布上拖出外形', 'Пішінді сызып беру',
                         'Нарисовать контур', 'Draw the outline',
                         ky: 'Контурду чийүү', uz: 'Konturni chizish')))),

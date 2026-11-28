@@ -7,7 +7,8 @@ import 'package:yusal/features/editor/engine/core/document/house_document.dart';
 import 'package:yusal/service/api/api_client.dart';
 
 /// Regions the price lists are kept for; the first is the whole country.
-/// The back end knows the same keys.
+/// yusal-api keeps the same list (`docs/price_keys.json`, checked by
+/// `test/platform/price_keys_test.dart`).
 const priceRegions = [
   'kz',
   'almaty',

@@ -40,9 +40,6 @@ class MockBackend implements Backend, ClockSource {
   /// Developer switch: chat sends and backups fail as if offline.
   bool simulateOffline = false;
 
-  /// The phone code the mock SMS "sends".
-  static const verificationCode = '1234';
-
   final _changes = ChangeNotifier();
   @override
   Listenable get changes => _changes;
@@ -79,7 +76,6 @@ class MockBackend implements Backend, ClockSource {
   final _favourites = <String, Set<String>>{};
   final _blocks = <String, Set<String>>{};
   final _lastRead = <String, DateTime>{};
-  final _codesSent = <String>{};
   String? currentId;
   int _seq = 0;
 
@@ -204,40 +200,6 @@ class MockBackend implements Backend, ClockSource {
 
   static String normalisePhone(String phone) =>
       phone.replaceAll(RegExp('[^0-9+]'), '');
-
-  @override
-  Future<void> requestCode(String phone) => _io(() {
-        final p = normalisePhone(phone);
-        if (p.replaceAll('+', '').length < 10) {
-          throw const ApiFailure(ApiCodes.badPhone);
-        }
-        _codesSent.add(p);
-      });
-
-  @override
-  Future<Account> verify(String phone, String code, {String? displayName}) =>
-      _io(() {
-        final p = normalisePhone(phone);
-        if (!_codesSent.contains(p) || code.trim() != verificationCode) {
-          throw const ApiFailure(ApiCodes.badCode);
-        }
-        var account = accounts.values
-            .where((a) => a.phone == p && !a.deleted)
-            .firstOrNull;
-        if (account == null) {
-          final id = newId('acc');
-          account = Account(
-              id: id,
-              phone: p,
-              displayName: (displayName ?? '').trim().isEmpty
-                  ? p.substring(p.length - 4)
-                  : displayName!.trim(),
-              createdAt: now);
-          accounts[id] = account;
-        }
-        currentId = account.id;
-        return account;
-      });
 
   @override
   Future<void> signOut() => _io(() => currentId = null);

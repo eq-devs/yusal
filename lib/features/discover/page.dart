@@ -6,11 +6,9 @@ import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/demand/widgets/demand_card.dart';
 import 'package:yusal/features/profile/widgets/profile_card.dart';
 import 'package:yusal/features/chat/pages/inbox.dart';
-import 'package:yusal/features/demand/page.dart';
-import 'package:yusal/features/demand/pages/publish.dart';
 import 'package:yusal/localization/l10n.dart';
-import 'package:yusal/features/profile/page.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
@@ -46,7 +44,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
 
   Future<void> publish() async {
     if (!await requireLogin(context) || !mounted) return;
-    await pushPage<void>(context, (_) => const PublishPage());
+    await pushPage<void>(context, (_) => pageFor(const ToPublishDemand()));
   }
 
   @override
@@ -180,7 +178,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 (kind, trade, region, availableNow, query.text)),
             builder: (context, list) => list.isEmpty
                 ? EmptyState(
-                    icon: Icons.person_search_outlined,
+                    icon: YIcons.personSearch,
                     yicon: YIcon.hire,
                     title:
                         tr3('没有符合条件的人', 'Сәйкес адам жоқ', 'Никого не нашли', 'No one found', ky: 'Эч ким табылган жок', uz: 'Hech kim topilmadi'),
@@ -193,8 +191,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: ProfileCard(
                               profile: p,
-                              onTap: () => pushPage<void>(context,
-                                  (_) => ProfilePage(profileId: p.id)))),
+                              onTap: () => pushPage<void>(
+                                  context, (_) => pageFor(ToProfile(p.id))))),
                   ]))
         : Live<(List<Demand>, Set<String>)>(
             fadeIn: true,
@@ -205,7 +203,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
               final (list, favs) = data;
               if (list.isEmpty) {
                 return EmptyState(
-                    icon: Icons.search_off,
+                    icon: YIcons.search,
                     yicon: YIcon.search,
                     title: tr3('暂时没有符合条件的需求', 'Сәйкес тапсырыс жоқ',
                         'Нет подходящих заявок',
@@ -233,8 +231,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                 () => context
                                     .read(profileRepositoryProvider)
                                     .toggleFavourite(d.id)),
-                            onTap: () => pushPage<void>(context,
-                                (_) => DemandDetailPage(demandId: d.id)))),
+                            onTap: () => pushPage<void>(
+                                context, (_) => pageFor(ToDemand(d.id))))),
                 ]);
               });
             });

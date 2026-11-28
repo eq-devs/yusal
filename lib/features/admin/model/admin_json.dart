@@ -1,5 +1,5 @@
 import 'package:yusal/features/demand/model/demand_json.dart';
-import 'package:yusal/features/me/model/me_json.dart';
+import 'package:yusal/features/trust/model/trust_json.dart';
 import 'package:yusal/features/profile/model/profile_json.dart';
 import 'package:yusal/features/shared/model/admin_models.dart';
 import 'package:yusal/features/shared/model/models.dart';
@@ -138,7 +138,7 @@ AccountDetail accountDetailFrom(
       appeals: [for (final x in jsonMaps(j['appeals'])) appealFrom(x)],
       audit: [for (final e in jsonMaps(j['audit'])) auditFrom(e)],
       banned: a['status'] == 'blocked',
-      methods: [for (final m in (a['methods'] as List? ?? const [])) '$m']);
+      methods: jsonStrings(a['methods']));
 }
 
 FeedbackItem feedbackFrom(Map<String, dynamic> j) => FeedbackItem(

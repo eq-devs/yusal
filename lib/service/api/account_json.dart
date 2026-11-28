@@ -1,9 +1,6 @@
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/utils/json.dart';
 
-/// Auth models to and from yusal-api JSON.
-
-// ── accounts ──
 /// An account from the server: the signed-in user's own view (with email)
 /// or the public view of someone else (with `deleted`).
 Account accountFrom(Map<String, dynamic> u) => Account(

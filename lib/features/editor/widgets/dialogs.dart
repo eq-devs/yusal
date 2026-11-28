@@ -446,7 +446,7 @@ extension _EditorDialogs on _HouseEditorState {
                                     Navigator.pop(context);
                                     cutCornerDialog();
                                   },
-                                  icon: const Icon(Icons.crop),
+                                  icon: const Icon(YIcons.crop),
                                   label: Text(tr3(
                                       '切掉一个角（L 形）',
                                       'Бұрышты кесу (L пішін)',
@@ -1053,8 +1053,7 @@ extension _EditorDialogs on _HouseEditorState {
         floorName: displayFloorName,
         openingLabel: openingLabel,
         book: priceBook,
-        date:
-            '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}');
+        date: formatDay(today));
     showDialog<void>(
         context: context,
         barrierDismissible: false,

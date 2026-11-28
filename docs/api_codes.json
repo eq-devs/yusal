@@ -1,0 +1,31 @@
+{
+  "comment": "Every error code the API answers with ({success:false, code}). Written by `go test ./internal/pkg/apperr -update`; the app's docs/api_codes.json is a copy its tests check against ApiCodes.",
+  "codes": [
+    "ACCOUNT_DISABLED",
+    "BLOCKED",
+    "CONFLICT",
+    "EMAIL_TAKEN",
+    "FORBIDDEN",
+    "INTERNAL_ERROR",
+    "INVALID_CREDENTIALS",
+    "INVALID_INPUT",
+    "INVALID_STATE",
+    "INVALID_TOKEN",
+    "LAST_METHOD",
+    "NOT_ACCEPTING",
+    "NOT_FOUND",
+    "NOT_LINKED",
+    "NO_EMAIL",
+    "OWN_DEMAND",
+    "PROVIDER_LINKED",
+    "PROVIDER_TAKEN",
+    "RATE_LIMITED",
+    "RESTRICTED",
+    "UNAUTHORIZED",
+    "UNSUPPORTED_PROVIDER",
+    "VALIDATION_ERROR",
+    "VOICE_BUSY",
+    "VOICE_UNAVAILABLE",
+    "VOICE_UPSTREAM"
+  ]
+}

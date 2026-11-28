@@ -56,4 +56,23 @@ void main() {
             allow: {'theme.dart', 'widgets.dart'}),
         isEmpty);
   });
+
+  test('Material icons only for the Apple logo', () {
+    // YIcons (tool/brand/icons.json) is the icon set. The one Material icon
+    // left is Apple's logo on "Sign in with Apple", a brand mark that is
+    // not ours to redraw.
+    const remaining = {
+      'features/auth/page.dart': 1,
+      'features/auth/pages/sign_in_methods.dart': 1,
+    };
+    final uses = RegExp(r'\bIcons\.\w+');
+    final actual = <String, int>{
+      for (final f in Directory('lib').listSync(recursive: true))
+        if (f is File && f.path.endsWith('.dart'))
+          if (uses.allMatches(f.readAsStringSync()).length case final n
+              when n > 0)
+            f.path.substring('lib/'.length): n
+    }..remove('features/shared/brand/yicons.dart');
+    expect(actual, remaining);
+  });
 }

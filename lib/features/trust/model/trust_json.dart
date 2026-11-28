@@ -2,7 +2,7 @@ import 'package:yusal/features/shared/model/admin_models.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/utils/json.dart';
 
-/// Me models to and from yusal-api JSON.
+/// Trust and safety models to and from yusal-api JSON.
 
 Appeal appealFrom(Map<String, dynamic> j) => Appeal(
     id: j['id'] as String,

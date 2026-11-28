@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:yusal/features/me/repository/trust_repository.dart';
-import 'package:yusal/features/me/state/trust.dart';
+import 'package:yusal/features/trust/repository/trust_repository.dart';
+import 'package:yusal/features/trust/state/trust.dart';
 import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
@@ -84,7 +84,7 @@ class MyAppealsPage extends StatelessWidget {
           provider: myAppealsProvider,
           builder: (context, list) => list.isEmpty
               ? EmptyState(
-                  icon: Icons.gavel_outlined,
+                  icon: YIcons.gavel,
                   title: tr3('没有申诉记录', 'Шағым жоқ', 'Обжалований нет', 'No appeals', ky: 'Даттануулар жок', uz: 'Apellyatsiyalar yoʻq'))
               : ListView(
                   padding: const EdgeInsets.all(YSpace.gutter),
@@ -183,7 +183,7 @@ class NotificationSettingsPage extends StatelessWidget {
                                   onChanged: (v) => _save(context,
                                       toggled(PushCategory.community, v)))),
                           SettingsRow(
-                              icon: Icons.notifications_active_outlined,
+                              icon: YIcons.bellRing,
                               title: tr3(
                                   '新需求提醒', 'Жаңа тапсырыстар', 'Новые заявки', 'New requests', ky: 'Жаңы суроо-талаптар', uz: 'Yangi soʻrovlar'),
                               trailing: Switch(
@@ -193,7 +193,7 @@ class NotificationSettingsPage extends StatelessWidget {
                         ]),
                     SettingsGroup(children: [
                       SettingsRow(
-                          icon: Icons.bedtime_outlined,
+                          icon: YIcons.moon,
                           title: tr3('免打扰时段', 'Мазаламау', 'Не беспокоить', 'Do not disturb', ky: 'Тынчымды албаңыз', uz: 'Bezovta qilmang'),
                           value: _quietLabel(s.quietStart, s.quietEnd),
                           onTap: () async {
@@ -264,7 +264,7 @@ class DemandAlertPage extends StatelessWidget {
                     SettingsGroup(children: [
                       SettingsRow(
                           key: const Key('alert-on'),
-                          icon: Icons.notifications_active_outlined,
+                          icon: YIcons.bellRing,
                           title: tr3(
                               '有新需求时提醒我',
                               'Жаңа тапсырыс туралы хабарлау',
@@ -506,7 +506,7 @@ List<Widget> trustRows(BuildContext context, Account account) => [
               pushPage<void>(context, (_) => const NotificationSettingsPage())),
       SettingsRow(
           key: const Key('me-appeals'),
-          icon: Icons.gavel_outlined,
+          icon: YIcons.gavel,
           title: tr3('我的申诉', 'Шағымдарым', 'Мои обжалования', 'My appeals', ky: 'Менин даттанууларым', uz: 'Mening apellyatsiyalarim'),
           subtitle: account.restricted
               ? tr3('账号受限中，可在这里申诉', 'Аккаунт шектелген', 'Аккаунт ограничен', 'Account restricted', ky: 'Аккаунт чектелген', uz: 'Akkaunt cheklangan')

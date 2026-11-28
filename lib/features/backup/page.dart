@@ -45,7 +45,7 @@ class BackupPage extends StatelessWidget {
         body: OnChange(
             builder: (context) => context.session.currentAccount == null
                 ? EmptyState(
-                    icon: Icons.cloud_off_outlined,
+                    icon: YIcons.offline,
                     title: tr3(
                         '登录后可以把设计备份到账号',
                         'Кіргеннен кейін сақтауға болады',

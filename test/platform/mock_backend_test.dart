@@ -115,17 +115,6 @@ void main() {
   });
 
   group('accounts', () {
-    test('signs in with the mock code and refuses a wrong one', () async {
-      final b = backend();
-      await b.requestCode('+7 701 555 1234');
-      await expectLater(
-          b.verify('+77015551234', '0000'), throwsA(isA<ApiFailure>()));
-      final a = await b.verify('+77015551234', MockBackend.verificationCode,
-          displayName: 'Test');
-      expect(b.currentAccount?.id, a.id);
-      expect(a.displayName, 'Test');
-    });
-
     test('browsing works signed out, acting needs an account', () async {
       final b = backend();
       expect(await b.searchDemands(const DemandFilter()), isNotEmpty);

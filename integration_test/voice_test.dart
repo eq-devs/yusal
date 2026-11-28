@@ -17,6 +17,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:yusal/features/voice/repository/voice_repository.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/editor/engine/core/commands/room_commands.dart';
 import 'package:yusal/features/editor/page.dart';
@@ -26,7 +27,6 @@ import 'package:yusal/service/storage/last_open.dart';
 import 'package:yusal/service/storage/project_store.dart';
 import 'package:yusal/features/voice/repository/audio_device.dart';
 import 'package:yusal/features/voice/state/screen.dart';
-import 'package:yusal/features/voice/state/session.dart';
 import 'package:yusal/features/voice/repository/speech.dart';
 import 'package:yusal/features/voice/widgets/voice_overlay.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
@@ -173,9 +173,9 @@ void main() {
       // Tap the orb to listen, tap it again when done.
       await t.tap(find.byKey(const Key('voice-button')));
       await waitFor(
-          t, () => find.byIcon(Icons.stop_rounded).evaluate().isNotEmpty,
+          t, () => find.byIcon(YIcons.stopFill).evaluate().isNotEmpty,
           settle: false);
-      expect(find.byIcon(Icons.stop_rounded), findsOneWidget,
+      expect(find.byIcon(YIcons.stopFill), findsOneWidget,
           reason: 'the microphone must be allowed (see the top of this file)');
       await real(t, 1500);
       await t.tap(find.byKey(const Key('voice-button')));

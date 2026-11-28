@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/shared/model/models.dart';
 import 'package:yusal/features/chat/pages/inbox.dart';
-import 'package:yusal/features/discover/page.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
 import 'package:yusal/constant/theme.dart';
@@ -147,7 +147,7 @@ class _HomePageState extends State<HomePage> {
                                                       child: FilterPill(
                                                           key: const Key(
                                                               'feed-sort'),
-                                                          icon: Icons.swap_vert,
+                                                          icon: YIcons.sort,
                                                           label: feedSortName(
                                                               filter.sort),
                                                           selected: false,
@@ -308,7 +308,7 @@ class _HomePageState extends State<HomePage> {
                                       child: Padding(
                                           padding: const EdgeInsets.all(20),
                                           child: EmptyState(
-                                              icon: Icons.wifi_off_outlined,
+                                              icon: YIcons.offline,
                                               title: tr3(
                                                   '暂时无法加载房子',
                                                   'Үйлерді жүктеу мүмкін болмады',
@@ -420,7 +420,7 @@ class _ProBanner extends StatelessWidget {
     return InkWell(
         borderRadius: BorderRadius.circular(yRadius),
         onTap: () =>
-            pushPage<void>(context, (_) => const DiscoverPage(pushed: true)),
+            pushPage<void>(context, (_) => pageFor(const ToDiscover())),
         child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(

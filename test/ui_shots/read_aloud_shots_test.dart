@@ -9,16 +9,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yusal/features/voice/repository/voice_repository.dart';
 import 'package:yusal/service/settings/settings.dart';
 import '../support/mock/mock_backend.dart';
 import '../support/mock/mock_clock.dart';
 import '../support/mock/mock_seed.dart';
 import 'package:yusal/service/voice/read_aloud.dart';
 import 'package:yusal/service/storage/project_store.dart';
-import 'package:yusal/features/voice/state/session.dart';
+import 'package:yusal/features/shell/page.dart';
+import 'package:yusal/service/voice/offline_speech.dart';
 
 import '../storage_test.dart' show MemoryFiles;
-import '../voice/read_aloud_test.dart' show FakeReader;
+import '../voice/read_aloud_test.dart' show FakeReader, FakeSpeech;
 import 'editor_shots_test.dart' show loadFont;
 
 const _reply = 'Екі қабатты, үш жатын бөлмелі үйдің жобасы дайын. '
@@ -70,6 +72,8 @@ void main() {
     appLang = AppLang.kk;
     final reader = FakeReader();
     ReadAloud.instance = reader;
+    OfflineSpeech.standard = FakeSpeech('', installed: true);
+    OfflineSpeech.accurate = FakeSpeech('');
     final repos = KazakhVoice()..signInAs(SeedIds.owner);
     final key = GlobalKey();
     await t.pumpWidget(RepaintBoundary(
@@ -106,6 +110,18 @@ void main() {
     reader.phase.value = const VoiceModelStatus(VoiceModelPhase.installed);
     await t.pump();
     await snap('reading');
+    await t.tap(find.byKey(const Key('voice-close')));
+    await t.pumpAndSettle();
+    await t.tap(find.widgetWithText(ShellBarTab, 'Менің'));
+    await t.pumpAndSettle();
+    await t.scrollUntilVisible(find.byKey(const Key('me-voice')), 200,
+        scrollable: find.byType(Scrollable).first);
+    await t.tap(find.byKey(const Key('me-voice')));
+    await t.pumpAndSettle();
+    await snap('voice_settings');
+    await t.tap(find.byKey(const Key('voice-stt-engine')));
+    await t.pumpAndSettle();
+    await snap('stt_choices');
     debugDefaultTargetPlatformOverride = null;
   });
 }

@@ -109,7 +109,7 @@ extension _Picking on _HouseEditorState {
                         ky: 'Терезе', uz: 'Deraza')),
                 item(
                     'sliding',
-                    Icons.door_sliding_outlined,
+                    YIcons.slidingDoor,
                     tr3('推拉门', 'Сырғымалы есік', 'Раздвижная дверь',
                         'Sliding door',
                         ky: 'Жылма эшик', uz: 'Surma eshik')),

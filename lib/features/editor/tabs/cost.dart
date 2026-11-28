@@ -274,7 +274,7 @@ extension _CostTab on _HouseEditorState {
     final e = estimate;
     final spec = history.present.extras.cost;
     final sym = currencySymbol(e.currency);
-    String cash(num v) => '$sym ${money(v)}';
+    String cash(num v) => '$sym ${groupDigits(v)}';
     String qty(double v) => dec(
         v >= 100 ? v.toStringAsFixed(0) : v.toStringAsFixed(v >= 10 ? 1 : 2));
     final stages = [
@@ -317,7 +317,7 @@ extension _CostTab on _HouseEditorState {
                     ky: 'Бардыгы (жумуш жана күтүлбөгөн чыгымдар менен)',
                     uz: 'Jami (ish haqi va kutilmagan xarajatlar bilan)')),
             Kv(
-                '${cash(e.low)} – ${money(e.high)}',
+                '${cash(e.low)} – ${groupDigits(e.high)}',
                 tr3(
                     '可能的区间 (±${(e.spreadShare * 100).round()}%)',
                     'Ықтимал аралық (±${(e.spreadShare * 100).round()}%)',
@@ -495,7 +495,7 @@ extension _CostTab on _HouseEditorState {
                       'Share my prices with my region',
                       ky: 'Бааларымды аймагым менен бөлүшүү',
                       uz: 'Narxlarimni hududim bilan boʻlishish'),
-                  icon: Icons.volunteer_activism_outlined,
+                  icon: YIcons.share,
                   onPressed: sharePrices),
           ]),
         ]);
@@ -546,19 +546,19 @@ extension _CostTab on _HouseEditorState {
                   TableCellData('${qty(l.quantity)} ${unitName(l.unit)}',
                       numeric: true),
                   TableCellData(
-                      '${money(l.price)}${l.source == PriceSource.region ? ' ◆' : ''}',
+                      '${groupDigits(l.price)}${l.source == PriceSource.region ? ' ◆' : ''}',
                       numeric: true,
                       highlight: spec.prices.containsKey(l.key),
                       onTap: () => editPrice(l, e.currency)),
                   if (e.labourByWork && !self)
                     l.service
                         ? const TableCellData('—', numeric: true, muted: true)
-                        : TableCellData(money(l.labourRate),
+                        : TableCellData(groupDigits(l.labourRate),
                             numeric: true,
                             highlight: l.ownLabour,
                             onTap: () => editLabour(l, e.currency)),
                   TableCellData(
-                      money(
+                      groupDigits(
                           l.total + e.lineLabour(l) * (e.labourByWork ? 1 : 0)),
                       numeric: true),
                 ]
@@ -590,8 +590,8 @@ extension _CostTab on _HouseEditorState {
                   TableCellData(
                       '${dec((item.quantity / 100).toStringAsFixed(item.quantity % 100 == 0 ? 0 : 2))} ${item.unit}',
                       numeric: true),
-                  TableCellData(money(item.price), numeric: true),
-                  TableCellData(money(item.quantity / 100 * item.price),
+                  TableCellData(groupDigits(item.price), numeric: true),
+                  TableCellData(groupDigits(item.quantity / 100 * item.price),
                       numeric: true),
                   TableCellData('×',
                       color: t.crit,

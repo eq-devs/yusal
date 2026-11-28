@@ -32,13 +32,13 @@ String utilityName(UtilityKind kind) => switch (kind) {
 
 IconData utilityIcon(UtilityKind kind) => switch (kind) {
       UtilityKind.panel => YIcons.bolt,
-      UtilityKind.socket => Icons.power_outlined,
-      UtilityKind.lightSwitch => Icons.toggle_on_outlined,
+      UtilityKind.socket => YIcons.socket,
+      UtilityKind.lightSwitch => YIcons.toggle,
       UtilityKind.light => YIcons.idea,
-      UtilityKind.vent => Icons.air,
+      UtilityKind.vent => YIcons.wind,
       UtilityKind.water => YIcons.water,
-      UtilityKind.drain => Icons.vertical_align_bottom,
-      UtilityKind.radiator => Icons.heat_pump_outlined,
+      UtilityKind.drain => YIcons.drain,
+      UtilityKind.radiator => YIcons.radiator,
     };
 
 /// Electrical, water and heating groups for the palette and the legend.
@@ -93,17 +93,17 @@ String siteName(SiteKind kind) => switch (kind) {
     };
 
 IconData siteIcon(SiteKind kind) => switch (kind) {
-      SiteKind.barn => Icons.agriculture_outlined,
-      SiteKind.bathhouse => Icons.hot_tub_outlined,
-      SiteKind.garage => Icons.garage_outlined,
-      SiteKind.toilet => Icons.wc_outlined,
-      SiteKind.shed => Icons.warehouse_outlined,
+      SiteKind.barn => YIcons.barn,
+      SiteKind.bathhouse => YIcons.sauna,
+      SiteKind.garage => YIcons.garage,
+      SiteKind.toilet => YIcons.toilet,
+      SiteKind.shed => YIcons.shed,
       SiteKind.greenhouse => YIcons.tree,
       SiteKind.well => YIcons.water,
-      SiteKind.septic => Icons.recycling,
-      SiteKind.garden => Icons.grass,
-      SiteKind.yard => Icons.grid_on,
-      SiteKind.gate => Icons.door_sliding_outlined,
+      SiteKind.septic => YIcons.tank,
+      SiteKind.garden => YIcons.grass,
+      SiteKind.yard => YIcons.grid,
+      SiteKind.gate => YIcons.fence,
       SiteKind.custom => YIcons.grid,
     };
 
@@ -288,18 +288,6 @@ String currencyName(Currency c) => c == Currency.cny
 
 /// The currency used when the design has not chosen one.
 Currency get languageCurrency => isWestern ? Currency.kzt : Currency.cny;
-
-/// 1234567 → "1 234 567" (Kazakh) or "1,234,567" (Chinese).
-String money(num value) {
-  final digits = value.round().abs().toString();
-  final sep = isWestern && !isEn ? ' ' : ',';
-  final out = StringBuffer(value < 0 ? '-' : '');
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) out.write(sep);
-    out.write(digits[i]);
-  }
-  return out.toString();
-}
 
 String fuelName(FuelKind f) => switch (f) {
       FuelKind.coal =>

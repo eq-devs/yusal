@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import 'package:yusal/features/editor/engine/core/geometry/floor_base.dart';
+import 'package:yusal/features/editor/engine/core/house_core.dart';
 import 'package:yusal/features/voice/model/action.dart';
 import 'package:yusal/features/voice/model/form.dart';
 
@@ -82,4 +84,46 @@ abstract final class VoiceScreens {
         entities: screen?.entities ?? const [],
         page: screen?.context);
   }
+}
+
+/// Implemented by the design editor so design actions can reach it.
+abstract interface class DesignHost {
+  /// The floor being edited.
+  String get currentFloorId;
+
+  HouseDocument get document;
+
+  /// Geometry of the floor being edited.
+  FloorBase get floorBase;
+
+  /// Runs a design command without showing its failure: the caller
+  /// reports it.
+  CommandResult runDesign(String kind, Map<String, dynamic> args);
+
+  /// False when there is nothing to undo.
+  bool undoDesign();
+
+  /// Between these, every change undoes as one step.
+  void beginUndoGroup();
+  void endUndoGroup();
+
+  /// Puts [doc]'s design in place of the current one, as one undoable
+  /// change. The design keeps its name and file.
+  void replaceDesign(HouseDocument doc);
+
+  /// Writes unsaved changes now, before the editor is closed.
+  Future<void> saveNow();
+
+  /// Selects the room, opening or piece of furniture with [id] on the
+  /// floor being edited, as a tap on it would. False when it is not there.
+  bool select(String id);
+
+  /// Shows the floor with [floorId]. False when there is none.
+  bool showFloor(String floorId);
+  void showTab(String value);
+  void showRoomWalk(String roomId);
+  void showSharedWall(WallSegment wall);
+  ActionResult previewWallMove(String grow, String shrink, int? distance,
+      {double? minRemainingArea, double? targetArea});
+  ActionResult finishWallPreview(String token, {required bool apply});
 }

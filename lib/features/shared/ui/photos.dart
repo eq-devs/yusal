@@ -118,7 +118,7 @@ class PhotoStrip extends StatelessWidget {
                           width: size,
                           height: size,
                           color: t.surface,
-                          child: Icon(Icons.broken_image_outlined,
+                          child: Icon(YIcons.imageOff,
                               color: t.muted))))),
           if (onRemove != null)
             Positioned(

@@ -304,7 +304,7 @@ extension _SceneTab on _HouseEditorState {
               switch (s.style) {
                 SceneStyle.white => YIcons.cube,
                 SceneStyle.lines => YIcons.design,
-                _ => Icons.palette_outlined,
+                _ => YIcons.palette,
               },
               size: 16),
           label: Text(sceneStyleName(s.style)),

@@ -5,10 +5,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yusal/constant/tokens.dart';
-import 'package:yusal/features/chat/pages/inbox.dart' show openRef;
 import 'package:yusal/features/coop/repository/cooperation_repository.dart';
 import 'package:yusal/features/demand/repository/demand_repository.dart';
 import 'package:yusal/features/home/pages/post.dart';
+import 'package:yusal/features/admin/page.dart';
+import 'package:yusal/features/apply/page.dart';
+import 'package:yusal/features/demand/pages/applications.dart';
+import 'package:yusal/features/trust/page.dart';
+import 'package:yusal/features/backup/page.dart';
+import 'package:yusal/features/chat/page.dart';
+import 'package:yusal/features/coop/page.dart';
+import 'package:yusal/features/demand/page.dart';
+import 'package:yusal/features/demand/pages/from_design.dart';
+import 'package:yusal/features/discover/page.dart';
+import 'package:yusal/features/editor/page.dart';
+import 'package:yusal/features/houses/page.dart';
+import 'package:yusal/features/auth/page.dart';
+import 'package:yusal/features/profile/page.dart';
+import 'package:yusal/features/profile/pages/edit.dart';
+import 'package:yusal/features/demand/pages/publish.dart';
+import 'package:yusal/features/home/pages/publish_post.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/features/shared/state/session.dart';
 import 'package:yusal/features/shared/ui/links.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
@@ -23,6 +40,7 @@ import 'package:yusal/service/firebase_setup.dart';
 import 'package:yusal/service/push/push_setup.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/service/update/code_push.dart';
+import 'package:yusal/service/voice/voice_settings.dart';
 
 /// App startup, each part run once however often it is asked for.
 ///
@@ -34,6 +52,7 @@ import 'package:yusal/service/update/code_push.dart';
 abstract final class Boot {
   static final Future<void> ready = Future.wait([
     _step('settings', loadSettings),
+    _step('voice settings', VoiceSettings.instance.load),
     _step('session', ApiClient.app.loadSession),
     // Analytics and crash reports on iOS / Android; no-op on the web.
     _step('firebase', FirebaseSetup.init),
@@ -166,6 +185,36 @@ class HouseApp extends ConsumerWidget {
   static Route<dynamic> _route(RouteSettings settings) {
     final id = houseIdFromRoute(settings.name);
     return platformRoute(
-        (_) => id == null ? const PlatformShell() : PostPage(postId: id));
+        (_) => pageFor(id == null ? const ToShell() : ToPost(id)));
   }
 }
+
+/// The page of each [Destination]; installed by `main()` (and the tests'
+/// setup) with `Routes.pages = appPage`.
+Widget appPage(Destination to) => switch (to) {
+      ToAdmin() => const AdminPage(),
+      ToApply(:final demand, :final existing) =>
+        ApplyPage(demand: demand, existing: existing),
+      ToApplications(:final demandId) => ApplicationsPage(demandId: demandId),
+      ToAppeals() => const MyAppealsPage(),
+      ToBackup(:final highlight) => BackupPage(highlight: highlight),
+      ToChat(:final conversationId) => ChatPage(conversationId: conversationId),
+      ToCooperation(:final cooperationId) =>
+        CooperationPage(cooperationId: cooperationId),
+      ToDemand(:final demandId) => DemandDetailPage(demandId: demandId),
+      ToDemandFromDesign(:final entry) => FromDesignPage(entry: entry),
+      ToDiscover() => const DiscoverPage(pushed: true),
+      ToEditor(:final entry, :final store) =>
+        HouseEditor(entry: entry, store: store),
+      ToHouseWorkspace(:final houseKey, :final initialTab) =>
+        HouseWorkspacePage(houseKey: houseKey, initialTab: initialTab),
+      ToLogin() => const LoginPage(),
+      ToPost(:final postId, :final preview) =>
+        PostPage(postId: postId, preview: preview),
+      ToProfile(:final profileId) => ProfilePage(profileId: profileId),
+      ToProfileEdit(:final role) => ProfileEditPage(role: role),
+      ToPublishDemand(:final snapshot, :final designProjectId) =>
+        PublishPage(snapshot: snapshot, designProjectId: designProjectId),
+      ToPublishPost(:final entry) => PublishPostPage(entry: entry),
+      ToShell() => const PlatformShell(),
+    };

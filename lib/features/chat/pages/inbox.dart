@@ -5,18 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:yusal/service/settings/settings.dart';
 import 'package:yusal/features/chat/state/inbox.dart';
 import 'package:yusal/features/shared/model/models.dart';
-import 'package:yusal/features/coop/page.dart';
-import 'package:yusal/features/demand/page.dart';
-import 'package:yusal/features/home/pages/post.dart';
 import 'package:yusal/localization/l10n.dart';
 import 'package:yusal/features/shared/ui/scope.dart';
+import 'package:yusal/features/shared/ui/routes.dart';
 import 'package:yusal/constant/theme.dart';
 import 'package:yusal/features/shared/ui/components.dart';
 import 'package:yusal/features/shared/ui/widgets.dart';
 import 'package:yusal/features/chat/page.dart';
 import 'package:yusal/features/shared/motion/motion.dart';
-import 'package:yusal/features/me/pages/trust.dart';
-import 'package:yusal/features/profile/page.dart';
+import 'package:yusal/features/trust/page.dart';
 import 'package:yusal/features/shared/brand/yicon.dart';
 
 /// Envelope button with the unread count of chats and notices together.
@@ -281,15 +278,15 @@ IconData noticeIcon(NoticeKind k) => switch (k) {
       NoticeKind.outcomeFollowUp => YIcons.help,
       NoticeKind.contentRemoved ||
       NoticeKind.accountRestricted =>
-        Icons.gpp_maybe_outlined,
+        YIcons.shield,
       NoticeKind.reportResolved => YIcons.flag,
       NoticeKind.accountRestored ||
       NoticeKind.appealAnswered =>
-        Icons.gavel_outlined,
+        YIcons.gavel,
       NoticeKind.verificationApproved ||
       NoticeKind.verificationRejected =>
         YIcons.verified,
-      NoticeKind.newDemandMatch => Icons.notifications_active_outlined,
+      NoticeKind.newDemandMatch => YIcons.bellRing,
       _ => YIcons.bell,
     };
 
@@ -327,20 +324,3 @@ Future<void> openNotice(BuildContext context, AppNotification n) async {
   }
   return openRef(context, n.refType, n.refId);
 }
-
-/// Opens the page for a referenced object (notices and tapped pushes).
-Future<void> openRef(BuildContext context, RefType type, String id) =>
-    switch (type) {
-      RefType.cooperation =>
-        pushPage<void>(context, (_) => CooperationPage(cooperationId: id)),
-      RefType.conversation =>
-        pushPage<void>(context, (_) => ChatPage(conversationId: id)),
-      RefType.post => pushPage<void>(context, (_) => PostPage(postId: id)),
-      RefType.profile =>
-        pushPage<void>(context, (_) => ProfilePage(profileId: id)),
-      RefType.appeal ||
-      RefType.account =>
-        pushPage<void>(context, (_) => const MyAppealsPage()),
-      RefType.report => Future<void>.value(),
-      _ => pushPage<void>(context, (_) => DemandDetailPage(demandId: id)),
-    };

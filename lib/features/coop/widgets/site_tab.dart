@@ -26,7 +26,7 @@ class SiteTab extends StatelessWidget {
         .toList();
     if (active.isEmpty) {
       return EmptyState(
-          icon: Icons.foundation_outlined,
+          icon: YIcons.foundation,
           title: tr3('还没开工', 'Құрылыс басталмады', 'Стройка не начата', "Construction hasn't started", ky: 'Курулуш башталган жок', uz: 'Qurilish boshlanmagan'),
           body: tr3(
               '合作确认后，节点验收和每天的记工会出现在这里。',
@@ -144,7 +144,7 @@ class SiteSection extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             dense: true,
             leading: Icon(
-                w.confirmed ? YIcons.checkCircle : Icons.radio_button_unchecked,
+                w.confirmed ? YIcons.checkCircle : YIcons.radioOff,
                 color: w.confirmed ? t.ok : t.faint),
             title: Text(
                 '${fmtDay(w.day)} · ${tr3('到场 ${w.headcount} 人', '${w.headcount} адам', '${w.headcount} чел.', '${w.headcount} people', ky: '${w.headcount} адам', uz: '${w.headcount} kishi')}${w.photoCount > 0 ? ' · 📷${w.photoCount}' : ''}'),

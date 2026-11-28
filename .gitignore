@@ -53,3 +53,4 @@ firebase-debug.log
 
 # Shorebird
 .shorebird/
+test/goldens/failures/
